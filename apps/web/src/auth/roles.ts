@@ -1,0 +1,35 @@
+export const GLOBAL_ROLES = ['SUPPORT_ADMIN', 'SYSTEM_ADMIN'] as const;
+
+export const WARD_ROLES = [
+  'STAND_ADMIN',
+  'BISHOPRIC_EDITOR',
+  'CLERK_EDITOR',
+  'WARD_CLERK',
+  'MEMBERSHIP_CLERK',
+  'CONDUCTOR_VIEW'
+] as const;
+
+export type GlobalRoleName = (typeof GLOBAL_ROLES)[number];
+export type WardRoleName = (typeof WARD_ROLES)[number];
+
+export function hasRole(roles: string[] | undefined, role: string): boolean {
+  return Boolean(roles?.includes(role));
+}
+
+export function canManageWardUsers(session: { roles?: string[]; activeWardId?: string | null }, wardId: string): boolean {
+  const roles = session.roles ?? [];
+
+  if (hasRole(roles, 'SUPPORT_ADMIN')) {
+    return true;
+  }
+
+  return hasRole(roles, 'STAND_ADMIN') && session.activeWardId === wardId;
+}
+
+export function canAssignRole(actorRoles: string[] | undefined, targetRoleName: string): boolean {
+  if (targetRoleName === 'STAND_ADMIN') {
+    return hasRole(actorRoles, 'SUPPORT_ADMIN');
+  }
+
+  return hasRole(actorRoles, 'STAND_ADMIN') || hasRole(actorRoles, 'SUPPORT_ADMIN');
+}
