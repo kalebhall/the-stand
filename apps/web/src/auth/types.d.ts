@@ -2,6 +2,12 @@ import 'next-auth';
 import 'next-auth/jwt';
 
 declare module 'next-auth' {
+  interface User {
+    roles?: string[];
+    mustChangePassword?: boolean;
+    activeWardId?: string | null;
+  }
+
   interface Session {
     activeWardId: string | null;
     user: {
@@ -18,5 +24,6 @@ declare module 'next-auth/jwt' {
   interface JWT {
     roles?: string[];
     mustChangePassword?: boolean;
+    activeWardId?: string | null;
   }
 }
