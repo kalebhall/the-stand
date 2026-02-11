@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 
-import argon2 from 'argon2';
+import { hashPassword } from '@/src/auth/password';
 
 import { pool } from './client';
 
@@ -31,7 +31,7 @@ export async function ensureSupportAdminBootstrap(): Promise<void> {
   }
 
   const password = crypto.randomBytes(24).toString('base64url');
-  const hash = await argon2.hash(password, { type: argon2.argon2id });
+  const hash = await hashPassword(password);
 
   const userResult = await pool.query(
     `INSERT INTO user_account (email, password_hash, must_change_password)
@@ -47,6 +47,12 @@ export async function ensureSupportAdminBootstrap(): Promise<void> {
      VALUES ($1, (SELECT id FROM role WHERE name = 'SUPPORT_ADMIN'))
      ON CONFLICT DO NOTHING`,
     [userResult.rows[0].id]
+  );
+
+  await pool.query(
+    `INSERT INTO audit_log (ward_id, user_id, action, details)
+     VALUES (NULL, $1, 'SUPPORT_ADMIN_BOOTSTRAPPED', jsonb_build_object('email', $2))`,
+    [userResult.rows[0].id, supportEmail]
   );
 
   console.log(`Support Admin bootstrap password (shown once): ${password}`);
