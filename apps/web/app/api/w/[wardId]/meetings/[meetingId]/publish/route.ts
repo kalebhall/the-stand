@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { randomBytes } from 'node:crypto';
 
 import { auth } from '@/src/auth/auth';
 import { canManageMeetings } from '@/src/auth/roles';
@@ -19,6 +20,10 @@ type ProgramItemRow = {
   hymn_number: string | null;
   hymn_title: string | null;
 };
+
+function generatePublicToken(): string {
+  return randomBytes(24).toString('base64url');
+}
 
 export async function POST(_: Request, context: { params: Promise<{ wardId: string; meetingId: string }> }) {
   const session = await auth();
@@ -89,6 +94,20 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
               updated_at = now()
         WHERE id = $1 AND ward_id = $2`,
       [meetingId, wardId]
+    );
+
+    await client.query(
+      `INSERT INTO public_program_share (ward_id, meeting_id, token)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (meeting_id) DO NOTHING`,
+      [wardId, meetingId, generatePublicToken()]
+    );
+
+    await client.query(
+      `INSERT INTO public_program_portal (ward_id, token)
+       VALUES ($1, $2)
+       ON CONFLICT (ward_id) DO NOTHING`,
+      [wardId, generatePublicToken()]
     );
 
     await client.query(

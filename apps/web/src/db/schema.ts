@@ -208,3 +208,32 @@ export const notificationDelivery = pgTable(
     notificationDeliveryEventChannelUnique: unique().on(table.eventOutboxId, table.channel)
   })
 );
+
+export const publicProgramShare = pgTable(
+  'public_program_share',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
+    meetingId: uuid('meeting_id').notNull().references(() => meeting.id, { onDelete: 'cascade' }),
+    token: text('token').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+  },
+  (table) => ({
+    publicProgramShareTokenUnique: unique().on(table.token),
+    publicProgramShareMeetingUnique: unique().on(table.meetingId)
+  })
+);
+
+export const publicProgramPortal = pgTable(
+  'public_program_portal',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
+    token: text('token').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+  },
+  (table) => ({
+    publicProgramPortalTokenUnique: unique().on(table.token),
+    publicProgramPortalWardUnique: unique().on(table.wardId)
+  })
+);
