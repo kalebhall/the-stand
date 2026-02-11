@@ -166,3 +166,45 @@ export const meetingBusinessLine = pgTable('meeting_business_line', {
   status: text('status').notNull().default('pending'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 });
+
+export const eventOutbox = pgTable(
+  'event_outbox',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
+    aggregateType: text('aggregate_type').notNull(),
+    aggregateId: uuid('aggregate_id').notNull(),
+    eventType: text('event_type').notNull(),
+    payload: jsonb('payload').notNull(),
+    status: text('status').notNull().default('pending'),
+    attempts: integer('attempts').notNull().default(0),
+    availableAt: timestamp('available_at', { withTimezone: true }).notNull().defaultNow(),
+    lastError: text('last_error'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
+  },
+  (table) => ({
+    eventOutboxDedupeUnique: unique().on(table.wardId, table.eventType, table.aggregateId)
+  })
+);
+
+export const notificationDelivery = pgTable(
+  'notification_delivery',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
+    eventOutboxId: uuid('event_outbox_id')
+      .notNull()
+      .references(() => eventOutbox.id, { onDelete: 'cascade' }),
+    channel: text('channel').notNull(),
+    deliveryStatus: text('delivery_status').notNull().default('pending'),
+    externalId: text('external_id'),
+    errorMessage: text('error_message'),
+    attemptedAt: timestamp('attempted_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
+  },
+  (table) => ({
+    notificationDeliveryEventChannelUnique: unique().on(table.eventOutboxId, table.channel)
+  })
+);
