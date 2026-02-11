@@ -180,6 +180,50 @@ export const announcement = pgTable('announcement', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 });
 
+
+export const calendarFeed = pgTable(
+  'calendar_feed',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
+    displayName: text('display_name').notNull(),
+    feedScope: text('feed_scope').notNull(),
+    feedUrl: text('feed_url').notNull(),
+    tagMap: jsonb('tag_map'),
+    isActive: boolean('is_active').notNull().default(true),
+    lastRefreshedAt: timestamp('last_refreshed_at', { withTimezone: true }),
+    lastRefreshStatus: text('last_refresh_status'),
+    lastRefreshError: text('last_refresh_error'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+  },
+  (table) => ({
+    calendarFeedWardUrlUnique: unique().on(table.wardId, table.feedUrl)
+  })
+);
+
+export const calendarEventCache = pgTable(
+  'calendar_event_cache',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
+    calendarFeedId: uuid('calendar_feed_id').notNull().references(() => calendarFeed.id, { onDelete: 'cascade' }),
+    externalUid: text('external_uid').notNull(),
+    title: text('title').notNull(),
+    description: text('description'),
+    location: text('location'),
+    startsAt: timestamp('starts_at', { withTimezone: true }).notNull(),
+    endsAt: timestamp('ends_at', { withTimezone: true }),
+    allDay: boolean('all_day').notNull().default(false),
+    tags: text('tags').array().notNull().default([]),
+    sourceUpdatedAt: timestamp('source_updated_at', { withTimezone: true }),
+    copiedToAnnouncementAt: timestamp('copied_to_announcement_at', { withTimezone: true }),
+    importedAt: timestamp('imported_at', { withTimezone: true }).notNull().defaultNow()
+  },
+  (table) => ({
+    calendarEventCacheFeedUidUnique: unique().on(table.wardId, table.calendarFeedId, table.externalUid, table.startsAt)
+  })
+);
+
 export const eventOutbox = pgTable(
   'event_outbox',
   {

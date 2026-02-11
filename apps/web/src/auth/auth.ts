@@ -6,6 +6,7 @@ import { pool } from '@/src/db/client';
 import { ensureSupportAdminBootstrap } from '@/src/db/bootstrap-support-admin';
 import { verifyPassword } from '@/src/auth/password';
 import { enforceRateLimit } from '@/src/lib/rate-limit';
+import { refreshCalendarFeedsForWard } from '@/src/calendar/service';
 
 type SessionUserDetails = {
   id: string;
@@ -135,7 +136,7 @@ export const { auth, handlers } = NextAuth({
     })
   ],
   callbacks: {
-    signIn: async ({ account, profile }) => {
+    signIn: async ({ account, profile, user }) => {
       await ensureSupportAdminBootstrap();
 
       if (account?.provider === 'google') {
@@ -144,6 +145,16 @@ export const { auth, handlers } = NextAuth({
 
         const displayName = typeof profile.name === 'string' ? profile.name : null;
         await ensureUserAccountForGoogleLogin(email.toLowerCase(), displayName);
+      }
+
+      const email = (user?.email ?? profile?.email ?? '').toLowerCase().trim();
+      if (email) {
+        const sessionUser = await loadSessionUserByEmail(email);
+        if (sessionUser?.activeWardId) {
+          await refreshCalendarFeedsForWard({ wardId: sessionUser.activeWardId, userId: sessionUser.id, reason: 'login' }).catch(() => {
+            return null;
+          });
+        }
       }
 
       return true;

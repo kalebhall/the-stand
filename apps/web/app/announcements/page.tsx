@@ -2,6 +2,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
 import { Button } from '@/components/ui/button';
+import { copyCalendarEventToAnnouncement, refreshCalendarFeedsForWard } from '@/src/calendar/service';
 import { isAnnouncementActiveForDate, isAnnouncementPlacement } from '@/src/announcements/types';
 import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth/guards';
 import { canManageMeetings, canViewMeetings } from '@/src/auth/roles';
@@ -17,6 +18,25 @@ type AnnouncementRow = {
   is_permanent: boolean;
   placement: 'PROGRAM_TOP' | 'PROGRAM_BOTTOM';
   created_at: string;
+};
+
+type CalendarFeedRow = {
+  id: string;
+  display_name: string;
+  feed_scope: 'WARD' | 'STAKE' | 'CHURCH';
+  last_refreshed_at: string | null;
+  last_refresh_status: string | null;
+  last_refresh_error: string | null;
+};
+
+type CalendarEventRow = {
+  id: string;
+  calendar_feed_id: string;
+  title: string;
+  description: string | null;
+  starts_at: string;
+  tags: string[];
+  copied_to_announcement_at: string | null;
 };
 
 function formatWindow(startDate: string | null, endDate: string | null, isPermanent: boolean): string {
@@ -154,6 +174,50 @@ export default async function AnnouncementsPage() {
     revalidatePath('/announcements');
   }
 
+  async function refreshCalendar() {
+    'use server';
+
+    const actionSession = await requireAuthenticatedSession();
+    enforcePasswordRotation(actionSession);
+
+    if (
+      !actionSession.activeWardId ||
+      !canManageMeetings({ roles: actionSession.user.roles, activeWardId: actionSession.activeWardId }, actionSession.activeWardId)
+    ) {
+      redirect('/announcements');
+    }
+
+    await refreshCalendarFeedsForWard({ wardId: actionSession.activeWardId, userId: actionSession.user.id, reason: 'manual' });
+    revalidatePath('/announcements');
+  }
+
+  async function copyCalendarEvent(formData: FormData) {
+    'use server';
+
+    const actionSession = await requireAuthenticatedSession();
+    enforcePasswordRotation(actionSession);
+
+    if (
+      !actionSession.activeWardId ||
+      !canManageMeetings({ roles: actionSession.user.roles, activeWardId: actionSession.activeWardId }, actionSession.activeWardId)
+    ) {
+      redirect('/announcements');
+    }
+
+    const calendarEventCacheId = String(formData.get('calendarEventCacheId') ?? '').trim();
+    if (!calendarEventCacheId) {
+      redirect('/announcements');
+    }
+
+    await copyCalendarEventToAnnouncement({
+      wardId: actionSession.activeWardId,
+      userId: actionSession.user.id,
+      calendarEventCacheId
+    });
+
+    revalidatePath('/announcements');
+  }
+
   const client = await pool.connect();
 
   try {
@@ -168,10 +232,29 @@ export default async function AnnouncementsPage() {
       [session.activeWardId]
     );
 
+    const calendarFeedsResult = await client.query(
+      `SELECT id, display_name, feed_scope, last_refreshed_at, last_refresh_status, last_refresh_error
+         FROM calendar_feed
+        WHERE ward_id = $1
+        ORDER BY created_at ASC`,
+      [session.activeWardId]
+    );
+
+    const calendarEventsResult = await client.query(
+      `SELECT id, calendar_feed_id, title, description, starts_at, tags, copied_to_announcement_at
+         FROM calendar_event_cache
+        WHERE ward_id = $1
+        ORDER BY starts_at DESC
+        LIMIT 50`,
+      [session.activeWardId]
+    );
+
     await client.query('COMMIT');
 
     const today = new Date().toISOString().slice(0, 10);
     const announcements = announcementResult.rows as AnnouncementRow[];
+    const calendarFeeds = calendarFeedsResult.rows as CalendarFeedRow[];
+    const calendarEvents = calendarEventsResult.rows as CalendarEventRow[];
     const active = announcements.filter((item) => isAnnouncementActiveForDate({
       startDate: item.start_date,
       endDate: item.end_date,
@@ -186,6 +269,65 @@ export default async function AnnouncementsPage() {
           <h1 className="text-2xl font-semibold tracking-tight">Announcements</h1>
           <p className="text-sm text-muted-foreground">Manage date-window and permanent announcements used in meeting render output.</p>
         </section>
+
+        {canManage ? (
+          <section className="rounded-lg border bg-card p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-semibold">Calendar refresh</h2>
+                <p className="text-sm text-muted-foreground">Refresh ward, stake, and church ICS feeds, then copy entries into announcements.</p>
+              </div>
+              <form action={refreshCalendar}>
+                <Button type="submit" variant="outline">Refresh calendar feeds</Button>
+              </form>
+            </div>
+            <ul className="mt-4 space-y-2 text-sm">
+              {calendarFeeds.length ? (
+                calendarFeeds.map((feed) => (
+                  <li key={feed.id} className="rounded-md border p-2">
+                    <p className="font-medium">{feed.display_name} <span className="text-xs text-muted-foreground">({feed.feed_scope})</span></p>
+                    <p className="text-xs text-muted-foreground">
+                      Last refresh: {feed.last_refreshed_at ?? 'Never'} · Status: {feed.last_refresh_status ?? 'Not run'}
+                    </p>
+                    {feed.last_refresh_error ? <p className="text-xs text-destructive">{feed.last_refresh_error}</p> : null}
+                  </li>
+                ))
+              ) : (
+                <li className="text-muted-foreground">No calendar feeds configured.</li>
+              )}
+            </ul>
+          </section>
+        ) : null}
+
+        {canManage ? (
+          <section className="rounded-lg border bg-card p-4">
+            <h2 className="text-lg font-semibold">Calendar cache</h2>
+            <p className="text-sm text-muted-foreground">Copy imported calendar entries into announcement records using feed tag maps.</p>
+            <ul className="mt-4 space-y-2">
+              {calendarEvents.length ? (
+                calendarEvents.map((event) => (
+                  <li key={event.id} className="rounded-md border p-3 text-sm">
+                    <p className="font-medium">{event.title}</p>
+                    <p className="text-xs text-muted-foreground">{event.starts_at}</p>
+                    {event.description ? <p className="mt-1 text-muted-foreground">{event.description}</p> : null}
+                    {event.tags.length ? <p className="mt-1 text-xs text-muted-foreground">Tags: {event.tags.join(', ')}</p> : null}
+                    <div className="mt-2">
+                      <form action={copyCalendarEvent}>
+                        <input type="hidden" name="calendarEventCacheId" value={event.id} />
+                        <Button type="submit" size="sm" variant="secondary">Copy to announcement</Button>
+                      </form>
+                    </div>
+                    {event.copied_to_announcement_at ? (
+                      <p className="mt-1 text-xs text-muted-foreground">Last copied: {event.copied_to_announcement_at}</p>
+                    ) : null}
+                  </li>
+                ))
+              ) : (
+                <li className="text-sm text-muted-foreground">No cached calendar events yet.</li>
+              )}
+            </ul>
+          </section>
+        ) : null}
 
         {canManage ? (
           <section className="rounded-lg border bg-card p-4">
