@@ -3,6 +3,8 @@ import crypto from 'node:crypto';
 import { hashPassword } from '@/src/auth/password';
 
 import { pool } from './client';
+import { logAuditAction } from './audit';
+import { ensureRoleSeeds } from './roles';
 
 let bootstrapAttempted = false;
 
@@ -15,7 +17,7 @@ export async function ensureSupportAdminBootstrap(): Promise<void> {
     throw new Error('SUPPORT_ADMIN_EMAIL is required for bootstrap');
   }
 
-  await pool.query("INSERT INTO role (name, scope) VALUES ('SUPPORT_ADMIN', 'GLOBAL') ON CONFLICT (name) DO NOTHING");
+  await ensureRoleSeeds();
 
   const roleResult = await pool.query(
     `SELECT u.id
@@ -49,11 +51,11 @@ export async function ensureSupportAdminBootstrap(): Promise<void> {
     [userResult.rows[0].id]
   );
 
-  await pool.query(
-    `INSERT INTO audit_log (ward_id, user_id, action, details)
-     VALUES (NULL, $1, 'SUPPORT_ADMIN_BOOTSTRAPPED', jsonb_build_object('email', $2))`,
-    [userResult.rows[0].id, supportEmail]
-  );
+  await logAuditAction({
+    action: 'SUPPORT_ADMIN_BOOTSTRAPPED',
+    actorUserId: userResult.rows[0].id,
+    details: { email: supportEmail }
+  });
 
   console.log(`Support Admin bootstrap password (shown once): ${password}`);
 }
