@@ -1,0 +1,34 @@
+# /etc/systemd/system/the-stand.service
+#
+# Assumes:
+# - App lives at /opt/the-stand/app
+# - Environment file at /opt/the-stand/app/.env
+# - You run `npm run start` for production Next.js
+#
+# After creating:
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable the-stand
+#   sudo systemctl start the-stand
+#   sudo systemctl status the-stand --no-pager
+
+[Unit]
+Description=The Stand (Web)
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+User=the-stand
+Group=the-stand
+WorkingDirectory=/opt/the-stand/app/apps/web
+EnvironmentFile=/opt/the-stand/app/.env
+ExecStart=/usr/bin/npm run start
+Restart=always
+RestartSec=5
+# Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

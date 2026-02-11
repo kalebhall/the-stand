@@ -1,0 +1,32 @@
+# /etc/systemd/system/the-stand-worker.service
+#
+# Only needed if you run BullMQ workers in a separate process.
+#
+# After creating:
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable the-stand-worker
+#   sudo systemctl start the-stand-worker
+#   sudo systemctl status the-stand-worker --no-pager
+
+[Unit]
+Description=The Stand (Worker)
+After=network.target redis-server.service postgresql.service
+Requires=redis-server.service
+
+[Service]
+Type=simple
+User=the-stand
+Group=the-stand
+WorkingDirectory=/opt/the-stand/app/apps/web
+EnvironmentFile=/opt/the-stand/app/.env
+ExecStart=/usr/bin/npm run worker
+Restart=always
+RestartSec=5
+# Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target
