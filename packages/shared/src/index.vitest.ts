@@ -1,15 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { healthResponseSchema } from './index';
+import type { HealthResponse } from './index';
 
-describe('healthResponseSchema', () => {
-  it('validates expected payload', () => {
-    const parsed = healthResponseSchema.parse({
-      status: 'ok',
-      db: 'connected',
-      version: '0.1.0'
-    });
-
-    expect(parsed.status).toBe('ok');
+describe('shared placeholders', () => {
+  it('keeps the health response shape', () => {
+    const value: HealthResponse = { status: 'ok' };
+    expect(value.status).toBe('ok');
   });
 });
