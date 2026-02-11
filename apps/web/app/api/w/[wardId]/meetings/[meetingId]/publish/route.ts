@@ -21,6 +21,15 @@ type ProgramItemRow = {
   hymn_title: string | null;
 };
 
+type AnnouncementRow = {
+  title: string;
+  body: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  is_permanent: boolean;
+  placement: 'PROGRAM_TOP' | 'PROGRAM_BOTTOM';
+};
+
 function generatePublicToken(): string {
   return randomBytes(24).toString('base64url');
 }
@@ -64,6 +73,14 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
       [meetingId, wardId]
     );
 
+    const announcementResult = await client.query(
+      `SELECT title, body, start_date, end_date, is_permanent, placement
+         FROM announcement
+        WHERE ward_id = $1
+        ORDER BY created_at DESC`,
+      [wardId]
+    );
+
     const versionResult = await client.query('SELECT COALESCE(MAX(version), 0)::int AS latest_version FROM meeting_program_render WHERE meeting_id = $1', [meetingId]);
 
     const nextVersion = Number(versionResult.rows[0].latest_version) + 1;
@@ -79,7 +96,15 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
     const renderHtml = buildMeetingRenderHtml({
       meetingDate: meeting.meeting_date,
       meetingType: meeting.meeting_type,
-      programItems
+      programItems,
+      announcements: (announcementResult.rows as AnnouncementRow[]).map((item) => ({
+        title: item.title,
+        body: item.body,
+        startDate: item.start_date,
+        endDate: item.end_date,
+        isPermanent: item.is_permanent,
+        placement: item.placement
+      }))
     });
 
     await client.query(
