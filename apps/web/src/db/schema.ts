@@ -115,3 +115,24 @@ export const meetingProgramRender = pgTable(
     meetingProgramRenderVersionUnique: unique().on(table.meetingId, table.version)
   })
 );
+
+
+export const wardStandTemplate = pgTable(
+  'ward_stand_template',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
+    welcomeText: text('welcome_text').notNull().default('Welcome to The Church of Jesus Christ of Latter-day Saints.'),
+    sustainTemplate: text('sustain_template')
+      .notNull()
+      .default('Those in favor of sustaining **{memberName}** as **{callingName}**, please manifest it.'),
+    releaseTemplate: text('release_template')
+      .notNull()
+      .default('Those who wish to express appreciation for the service of **{memberName}** as **{callingName}**, please do so.'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
+  },
+  (table) => ({
+    wardStandTemplateWardUnique: unique().on(table.wardId)
+  })
+);

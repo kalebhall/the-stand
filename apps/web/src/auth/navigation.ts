@@ -27,6 +27,7 @@ export function getNavigationItems(roles: string[] | undefined): AppNavItem[] {
 
   if (hasRole(roles, 'STAND_ADMIN')) {
     items.push({ href: '/settings/users', label: 'Settings' });
+    items.push({ href: '/settings/stand-script', label: 'Stand Script' });
     items.push({ href: '/settings/public-portal', label: 'Public Portal' });
   }
 
