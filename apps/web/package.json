@@ -9,7 +9,8 @@
     "start": "next start",
     "lint": "eslint app components lib --max-warnings=0",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "db:migrate": "node scripts/migrate.mjs"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",
