@@ -4,6 +4,9 @@ import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth/guards';
 import { canViewDashboardPublicPortalStatus } from '@/src/auth/navigation';
+import { canViewCallings } from '@/src/auth/roles';
+import { pool } from '@/src/db/client';
+import { setDbContext } from '@/src/db/context';
 
 function DashboardCard({
   title,
@@ -39,6 +42,41 @@ export default async function DashboardPage() {
   enforcePasswordRotation(session);
 
   const showPortalCard = canViewDashboardPublicPortalStatus(session.user.roles);
+  let setApartQueueCount = 'Unavailable';
+
+  if (session.activeWardId && canViewCallings({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId)) {
+    const client = await pool.connect();
+
+    try {
+      await client.query('BEGIN');
+      await setDbContext(client, { userId: session.user.id, wardId: session.activeWardId });
+
+      const result = await client.query(
+        `SELECT COUNT(*)::int AS count
+           FROM calling_assignment ca
+           JOIN LATERAL (
+              SELECT action_status
+                FROM calling_action
+               WHERE calling_assignment_id = ca.id
+                 AND ward_id = ca.ward_id
+               ORDER BY created_at DESC
+               LIMIT 1
+           ) latest ON TRUE
+          WHERE ca.ward_id = $1
+            AND ca.is_active = TRUE
+            AND latest.action_status = 'SUSTAINED'`,
+        [session.activeWardId]
+      );
+
+      await client.query('COMMIT');
+      setApartQueueCount = `${result.rows[0].count} waiting`;
+    } catch {
+      await client.query('ROLLBACK');
+      setApartQueueCount = 'Unavailable';
+    } finally {
+      client.release();
+    }
+  }
 
   return (
     <main className="mx-auto w-full max-w-6xl space-y-6 p-4 sm:p-6">
@@ -59,8 +97,9 @@ export default async function DashboardPage() {
 
         <DashboardCard
           title="Set apart queue count"
-          value="Pending phase 7"
-          detail="Queue metrics will appear after callings workflow is implemented."
+          value={setApartQueueCount}
+          detail="Sustained callings awaiting set apart action."
+          actions={[{ href: '/callings', label: 'Open callings queue' }]}
         />
 
         <DashboardCard

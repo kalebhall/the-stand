@@ -136,3 +136,33 @@ export const wardStandTemplate = pgTable(
     wardStandTemplateWardUnique: unique().on(table.wardId)
   })
 );
+
+export const callingAssignment = pgTable('calling_assignment', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
+  memberName: text('member_name').notNull(),
+  callingName: text('calling_name').notNull(),
+  isActive: boolean('is_active').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+});
+
+export const callingAction = pgTable('calling_action', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
+  callingAssignmentId: uuid('calling_assignment_id')
+    .notNull()
+    .references(() => callingAssignment.id, { onDelete: 'cascade' }),
+  actionStatus: text('action_status').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+});
+
+export const meetingBusinessLine = pgTable('meeting_business_line', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
+  meetingId: uuid('meeting_id').notNull().references(() => meeting.id, { onDelete: 'cascade' }),
+  memberName: text('member_name').notNull(),
+  callingName: text('calling_name').notNull(),
+  actionType: text('action_type').notNull(),
+  status: text('status').notNull().default('pending'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+});
