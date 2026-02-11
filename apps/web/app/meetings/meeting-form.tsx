@@ -13,6 +13,7 @@ type MeetingFormProps = {
   initialMeetingDate?: string;
   initialMeetingType?: string;
   initialProgramItems?: ProgramItemInput[];
+  publishedVersionCount?: number;
 };
 
 const PROGRAM_ITEM_TYPES = ['PRESIDING', 'CONDUCTING', 'OPENING_HYMN', 'INVOCATION', 'SACRAMENT_HYMN', 'SACRAMENT', 'SPEAKER', 'CLOSING_HYMN', 'BENEDICTION', 'ANNOUNCEMENT'];
@@ -23,7 +24,8 @@ export function MeetingForm({
   meetingId,
   initialMeetingDate = '',
   initialMeetingType = 'SACRAMENT',
-  initialProgramItems = []
+  initialProgramItems = [],
+  publishedVersionCount = 0
 }: MeetingFormProps) {
   const router = useRouter();
   const [meetingDate, setMeetingDate] = useState(initialMeetingDate);
@@ -33,6 +35,8 @@ export function MeetingForm({
   );
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [publishedCount, setPublishedCount] = useState(publishedVersionCount);
 
   const canSave = useMemo(() => Boolean(meetingDate && meetingType), [meetingDate, meetingType]);
 
@@ -92,6 +96,30 @@ export function MeetingForm({
 
     setSaving(false);
     router.push('/meetings');
+    router.refresh();
+  }
+
+  async function onPublish() {
+    if (!meetingId) {
+      return;
+    }
+
+    setPublishing(true);
+    setError(null);
+
+    const response = await fetch(`/api/w/${wardId}/meetings/${meetingId}/publish`, {
+      method: 'POST'
+    });
+
+    if (!response.ok) {
+      setPublishing(false);
+      setError('Unable to publish meeting.');
+      return;
+    }
+
+    const payload = (await response.json()) as { version: number };
+    setPublishedCount(payload.version);
+    setPublishing(false);
     router.refresh();
   }
 
@@ -191,9 +219,16 @@ export function MeetingForm({
 
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
 
-      <Button type="submit" disabled={saving || !canSave}>
-        {saving ? 'Saving...' : mode === 'create' ? 'Create meeting' : 'Save changes'}
-      </Button>
+      <div className="flex flex-wrap gap-2">
+        <Button type="submit" disabled={saving || !canSave}>
+          {saving ? 'Saving...' : mode === 'create' ? 'Create meeting' : 'Save changes'}
+        </Button>
+        {mode === 'edit' ? (
+          <Button type="button" variant="outline" onClick={onPublish} disabled={publishing || !meetingId}>
+            {publishing ? 'Publishing...' : publishedCount ? 'Republish' : 'Publish'}
+          </Button>
+        ) : null}
+      </div>
     </form>
   );
 }
