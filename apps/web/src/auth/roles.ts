@@ -69,3 +69,37 @@ export function canManageMeetings(session: { roles?: string[]; activeWardId?: st
 
   return hasRole(roles, 'STAND_ADMIN') || hasRole(roles, 'BISHOPRIC_EDITOR') || hasRole(roles, 'CLERK_EDITOR');
 }
+
+export function canViewCallings(session: { roles?: string[]; activeWardId?: string | null }, wardId: string): boolean {
+  const roles = session.roles ?? [];
+
+  if (hasRole(roles, 'SUPPORT_ADMIN')) {
+    return true;
+  }
+
+  if (session.activeWardId !== wardId) {
+    return false;
+  }
+
+  return (
+    hasRole(roles, 'STAND_ADMIN') ||
+    hasRole(roles, 'BISHOPRIC_EDITOR') ||
+    hasRole(roles, 'CLERK_EDITOR') ||
+    hasRole(roles, 'WARD_CLERK') ||
+    hasRole(roles, 'MEMBERSHIP_CLERK')
+  );
+}
+
+export function canManageCallings(session: { roles?: string[]; activeWardId?: string | null }, wardId: string): boolean {
+  const roles = session.roles ?? [];
+
+  if (hasRole(roles, 'SUPPORT_ADMIN')) {
+    return true;
+  }
+
+  if (session.activeWardId !== wardId) {
+    return false;
+  }
+
+  return hasRole(roles, 'STAND_ADMIN') || hasRole(roles, 'BISHOPRIC_EDITOR') || hasRole(roles, 'CLERK_EDITOR');
+}
