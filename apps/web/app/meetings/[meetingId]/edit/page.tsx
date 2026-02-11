@@ -25,6 +25,11 @@ type ProgramItemRow = {
   hymn_title: string | null;
 };
 
+type MeetingRenderVersionRow = {
+  version: number;
+  created_at: string;
+};
+
 export default async function EditMeetingPage({ params }: { params: Promise<{ meetingId: string }> }) {
   const session = await requireAuthenticatedSession();
   enforcePasswordRotation(session);
@@ -58,6 +63,14 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ me
       [meetingId, session.activeWardId]
     );
 
+    const versionsResult = await client.query(
+      `SELECT version, created_at
+         FROM meeting_program_render
+        WHERE meeting_id = $1 AND ward_id = $2
+        ORDER BY version DESC`,
+      [meetingId, session.activeWardId]
+    );
+
     await client.query('COMMIT');
 
     const meeting = meetingResult.rows[0] as MeetingRow;
@@ -69,6 +82,7 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ me
       hymnNumber: item.hymn_number ?? '',
       hymnTitle: item.hymn_title ?? ''
     }));
+    const versions = versionsResult.rows as MeetingRenderVersionRow[];
 
     return (
       <main className="mx-auto w-full max-w-4xl space-y-6 p-4 sm:p-6">
@@ -82,6 +96,27 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ me
           </Link>
         </section>
 
+        <section className="rounded-lg border bg-card p-4">
+          <h2 className="text-base font-semibold">Published versions</h2>
+          {versions.length ? (
+            <ul className="mt-3 space-y-2">
+              {versions.map((version) => (
+                <li key={version.version} className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-3 text-sm">
+                  <div>
+                    <p className="font-medium">Version {version.version}</p>
+                    <p className="text-xs text-muted-foreground">Published {new Date(version.created_at).toLocaleString()}</p>
+                  </div>
+                  <Link href={`/meetings/${meeting.id}/print?version=${version.version}`} className={cn(buttonVariants({ size: 'sm', variant: 'outline' }))}>
+                    View snapshot
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-2 text-sm text-muted-foreground">No published versions yet.</p>
+          )}
+        </section>
+
         <MeetingForm
           wardId={session.activeWardId}
           mode="edit"
@@ -89,6 +124,7 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ me
           initialMeetingDate={meeting.meeting_date}
           initialMeetingType={meeting.meeting_type}
           initialProgramItems={programItems}
+          publishedVersionCount={versions.length}
         />
       </main>
     );
