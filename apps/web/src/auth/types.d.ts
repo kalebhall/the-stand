@@ -6,6 +6,7 @@ declare module 'next-auth' {
     roles?: string[];
     mustChangePassword?: boolean;
     activeWardId?: string | null;
+    hasPassword?: boolean;
   }
 
   interface Session {
@@ -16,6 +17,7 @@ declare module 'next-auth' {
       name?: string | null;
       roles: string[];
       mustChangePassword: boolean;
+      hasPassword: boolean;
     };
   }
 }
@@ -25,5 +27,6 @@ declare module 'next-auth/jwt' {
     roles?: string[];
     mustChangePassword?: boolean;
     activeWardId?: string | null;
+    hasPassword?: boolean;
   }
 }

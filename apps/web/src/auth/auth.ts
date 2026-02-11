@@ -12,13 +12,14 @@ type SessionUserDetails = {
   email: string;
   displayName: string | null;
   mustChangePassword: boolean;
+  hasPassword: boolean;
   roles: string[];
   activeWardId: string | null;
 };
 
 async function loadSessionUserByEmail(email: string): Promise<SessionUserDetails | null> {
   const userResult = await pool.query(
-    'SELECT id, email, display_name, must_change_password, is_active FROM user_account WHERE email = $1 LIMIT 1',
+    'SELECT id, email, display_name, must_change_password, is_active, password_hash IS NOT NULL AS has_password FROM user_account WHERE email = $1 LIMIT 1',
     [email]
   );
 
@@ -54,9 +55,17 @@ async function loadSessionUserByEmail(email: string): Promise<SessionUserDetails
     email: user.email,
     displayName: user.display_name,
     mustChangePassword: user.must_change_password,
+    hasPassword: user.has_password,
     roles: roleResult.rows.map((row) => row.name as string),
     activeWardId: wardResult.rowCount ? (wardResult.rows[0].ward_id as string) : null
   };
+}
+
+async function loadSessionUserById(id: string): Promise<SessionUserDetails | null> {
+  const userResult = await pool.query('SELECT email FROM user_account WHERE id = $1 LIMIT 1', [id]);
+  if (!userResult.rowCount) return null;
+
+  return loadSessionUserByEmail(userResult.rows[0].email as string);
 }
 
 async function ensureUserAccountForGoogleLogin(email: string, displayName: string | null): Promise<void> {
@@ -119,6 +128,7 @@ export const { auth, handlers } = NextAuth({
           name: sessionUser.displayName,
           roles: sessionUser.roles,
           mustChangePassword: sessionUser.mustChangePassword,
+          hasPassword: sessionUser.hasPassword,
           activeWardId: sessionUser.activeWardId
         };
       }
@@ -143,16 +153,18 @@ export const { auth, handlers } = NextAuth({
         token.sub = user.id;
         token.roles = user.roles;
         token.mustChangePassword = user.mustChangePassword;
+        token.hasPassword = user.hasPassword;
         token.activeWardId = user.activeWardId;
         return token;
       }
 
-      if (account?.provider === 'google' || (token.email && !token.roles)) {
-        const sessionUser = await loadSessionUserByEmail(token.email as string);
+      if (token.sub) {
+        const sessionUser = await loadSessionUserById(token.sub);
         if (sessionUser) {
           token.sub = sessionUser.id;
           token.roles = sessionUser.roles;
           token.mustChangePassword = sessionUser.mustChangePassword;
+          token.hasPassword = sessionUser.hasPassword;
           token.activeWardId = sessionUser.activeWardId;
         }
       }
@@ -164,6 +176,7 @@ export const { auth, handlers } = NextAuth({
         session.user.id = token.sub ?? '';
         session.user.roles = (token.roles as string[] | undefined) ?? [];
         session.user.mustChangePassword = Boolean(token.mustChangePassword);
+        session.user.hasPassword = Boolean(token.hasPassword);
         session.activeWardId = (token.activeWardId as string | undefined) ?? null;
       }
 
