@@ -6,6 +6,10 @@ import { pool } from './client';
 
 let bootstrapAttempted = false;
 
+export function generateBootstrapPassword(): string {
+  return crypto.randomBytes(24).toString('base64url');
+}
+
 export async function ensureSupportAdminBootstrap(): Promise<void> {
   if (bootstrapAttempted) return;
   bootstrapAttempted = true;
@@ -30,7 +34,7 @@ export async function ensureSupportAdminBootstrap(): Promise<void> {
     return;
   }
 
-  const password = crypto.randomBytes(24).toString('base64url');
+  const password = generateBootstrapPassword();
   const hash = await hashPassword(password);
 
   const userResult = await pool.query(
