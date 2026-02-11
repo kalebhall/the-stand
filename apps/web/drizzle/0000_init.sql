@@ -58,11 +58,14 @@ CREATE TABLE IF NOT EXISTS audit_log (
 );
 
 ALTER TABLE ward_user_role ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ward_user_role FORCE ROW LEVEL SECURITY;
 ALTER TABLE audit_log ENABLE ROW LEVEL SECURITY;
+ALTER TABLE audit_log FORCE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS ward_user_role_isolation ON ward_user_role;
 CREATE POLICY ward_user_role_isolation ON ward_user_role
-USING (ward_id = current_setting('app.ward_id', true)::uuid);
+USING (ward_id = current_setting('app.ward_id', true)::uuid)
+WITH CHECK (ward_id = current_setting('app.ward_id', true)::uuid);
 
 DROP POLICY IF EXISTS audit_log_isolation ON audit_log;
 CREATE POLICY audit_log_isolation ON audit_log
