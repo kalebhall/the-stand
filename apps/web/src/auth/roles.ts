@@ -33,3 +33,39 @@ export function canAssignRole(actorRoles: string[] | undefined, targetRoleName: 
 
   return hasRole(actorRoles, 'STAND_ADMIN') || hasRole(actorRoles, 'SUPPORT_ADMIN');
 }
+
+
+export function canViewMeetings(session: { roles?: string[]; activeWardId?: string | null }, wardId: string): boolean {
+  const roles = session.roles ?? [];
+
+  if (hasRole(roles, 'SUPPORT_ADMIN')) {
+    return true;
+  }
+
+  if (session.activeWardId !== wardId) {
+    return false;
+  }
+
+  return (
+    hasRole(roles, 'STAND_ADMIN') ||
+    hasRole(roles, 'BISHOPRIC_EDITOR') ||
+    hasRole(roles, 'CLERK_EDITOR') ||
+    hasRole(roles, 'WARD_CLERK') ||
+    hasRole(roles, 'MEMBERSHIP_CLERK') ||
+    hasRole(roles, 'CONDUCTOR_VIEW')
+  );
+}
+
+export function canManageMeetings(session: { roles?: string[]; activeWardId?: string | null }, wardId: string): boolean {
+  const roles = session.roles ?? [];
+
+  if (hasRole(roles, 'SUPPORT_ADMIN')) {
+    return true;
+  }
+
+  if (session.activeWardId !== wardId) {
+    return false;
+  }
+
+  return hasRole(roles, 'STAND_ADMIN') || hasRole(roles, 'BISHOPRIC_EDITOR') || hasRole(roles, 'CLERK_EDITOR');
+}

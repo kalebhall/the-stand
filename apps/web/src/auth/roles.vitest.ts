@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { canAssignRole, canManageWardUsers } from './roles';
+import { canAssignRole, canManageMeetings, canManageWardUsers, canViewMeetings } from './roles';
 
 describe('canManageWardUsers', () => {
   it('allows ward STAND_ADMIN only within their active ward', () => {
@@ -21,5 +21,18 @@ describe('canAssignRole', () => {
 
   it('allows ward role assignment for STAND_ADMIN', () => {
     expect(canAssignRole(['STAND_ADMIN'], 'WARD_CLERK')).toBe(true);
+  });
+});
+
+
+describe('meeting permissions', () => {
+  it('allows meeting read roles in active ward', () => {
+    expect(canViewMeetings({ roles: ['CONDUCTOR_VIEW'], activeWardId: 'ward-a' }, 'ward-a')).toBe(true);
+    expect(canViewMeetings({ roles: ['CONDUCTOR_VIEW'], activeWardId: 'ward-a' }, 'ward-b')).toBe(false);
+  });
+
+  it('restricts meeting management to editor/admin roles', () => {
+    expect(canManageMeetings({ roles: ['BISHOPRIC_EDITOR'], activeWardId: 'ward-a' }, 'ward-a')).toBe(true);
+    expect(canManageMeetings({ roles: ['CONDUCTOR_VIEW'], activeWardId: 'ward-a' }, 'ward-a')).toBe(false);
   });
 });
