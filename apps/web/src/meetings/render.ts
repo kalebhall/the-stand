@@ -1,3 +1,5 @@
+import { isAnnouncementActiveForDate, type AnnouncementRenderItem } from '../announcements/types';
+
 export type MeetingRenderItem = {
   itemType: string;
   title: string | null;
@@ -10,6 +12,7 @@ export type MeetingRenderInput = {
   meetingDate: string;
   meetingType: string;
   programItems: MeetingRenderItem[];
+  announcements?: AnnouncementRenderItem[];
 };
 
 const SACRAMENT_PRAYERS = [
@@ -34,9 +37,26 @@ function displayHymn(item: MeetingRenderItem) {
   return item.title ?? '';
 }
 
-export function buildMeetingRenderHtml({ meetingDate, meetingType, programItems }: MeetingRenderInput) {
+function renderAnnouncementBlock(items: AnnouncementRenderItem[]) {
+  if (!items.length) {
+    return '';
+  }
+
+  return `<section class="space-y-2"><h2 class="text-base font-semibold">Announcements</h2>${items
+    .map((item) => {
+      const body = item.body ? `<p class="text-sm text-muted-foreground">${escapeHtml(item.body)}</p>` : '';
+      return `<article class="rounded border p-3"><p class="text-sm font-medium">${escapeHtml(item.title)}</p>${body}</article>`;
+    })
+    .join('')}</section>`;
+}
+
+export function buildMeetingRenderHtml({ meetingDate, meetingType, programItems, announcements = [] }: MeetingRenderInput) {
   const escapedDate = escapeHtml(meetingDate);
   const escapedType = escapeHtml(meetingType.replaceAll('_', ' '));
+
+  const activeAnnouncements = announcements.filter((item) => isAnnouncementActiveForDate(item, meetingDate));
+  const topAnnouncements = activeAnnouncements.filter((item) => item.placement === 'PROGRAM_TOP');
+  const bottomAnnouncements = activeAnnouncements.filter((item) => item.placement === 'PROGRAM_BOTTOM');
 
   const itemsHtml = programItems
     .map((item) => {
@@ -52,5 +72,5 @@ export function buildMeetingRenderHtml({ meetingDate, meetingType, programItems 
     .map((line) => `<p class="text-xs leading-relaxed text-muted-foreground">${escapeHtml(line)}</p>`)
     .join('');
 
-  return `<main class="print-page mx-auto max-w-3xl space-y-6 p-4 sm:p-8"><header class="space-y-2 border-b pb-4 text-center"><h1 class="text-2xl font-semibold">Sacrament Meeting Program</h1><p class="text-sm text-muted-foreground">${escapedDate}</p><p class="text-sm text-muted-foreground">${escapedType}</p></header><section class="space-y-2">${itemsHtml}</section><section class="space-y-2"><h2 class="text-base font-semibold">Sacrament Prayers</h2>${prayersHtml}</section></main>`;
+  return `<main class="print-page mx-auto max-w-3xl space-y-6 p-4 sm:p-8"><header class="space-y-2 border-b pb-4 text-center"><h1 class="text-2xl font-semibold">Sacrament Meeting Program</h1><p class="text-sm text-muted-foreground">${escapedDate}</p><p class="text-sm text-muted-foreground">${escapedType}</p></header>${renderAnnouncementBlock(topAnnouncements)}<section class="space-y-2">${itemsHtml}</section>${renderAnnouncementBlock(bottomAnnouncements)}<section class="space-y-2"><h2 class="text-base font-semibold">Sacrament Prayers</h2>${prayersHtml}</section></main>`;
 }

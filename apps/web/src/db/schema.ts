@@ -167,6 +167,19 @@ export const meetingBusinessLine = pgTable('meeting_business_line', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 });
 
+
+export const announcement = pgTable('announcement', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
+  title: text('title').notNull(),
+  body: text('body'),
+  startDate: date('start_date'),
+  endDate: date('end_date'),
+  isPermanent: boolean('is_permanent').notNull().default(false),
+  placement: text('placement').notNull().default('PROGRAM_TOP'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+});
+
 export const eventOutbox = pgTable(
   'event_outbox',
   {

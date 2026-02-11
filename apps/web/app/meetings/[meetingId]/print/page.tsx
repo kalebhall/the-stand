@@ -20,6 +20,15 @@ type ProgramItemRow = {
   hymn_title: string | null;
 };
 
+type AnnouncementRow = {
+  title: string;
+  body: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  is_permanent: boolean;
+  placement: 'PROGRAM_TOP' | 'PROGRAM_BOTTOM';
+};
+
 type RenderRow = {
   render_html: string;
   version: number;
@@ -91,6 +100,14 @@ export default async function PrintMeetingPage({
       [meetingId, session.activeWardId]
     );
 
+    const announcementResult = await client.query(
+      `SELECT title, body, start_date, end_date, is_permanent, placement
+         FROM announcement
+        WHERE ward_id = $1
+        ORDER BY created_at DESC`,
+      [session.activeWardId]
+    );
+
     const renderHtml = buildMeetingRenderHtml({
       meetingDate: meeting.meeting_date,
       meetingType: meeting.meeting_type,
@@ -100,6 +117,14 @@ export default async function PrintMeetingPage({
         notes: item.notes,
         hymnNumber: item.hymn_number,
         hymnTitle: item.hymn_title
+      })),
+      announcements: (announcementResult.rows as AnnouncementRow[]).map((item) => ({
+        title: item.title,
+        body: item.body,
+        startDate: item.start_date,
+        endDate: item.end_date,
+        isPermanent: item.is_permanent,
+        placement: item.placement
       }))
     });
 
