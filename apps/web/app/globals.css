@@ -21,3 +21,20 @@
 body {
   @apply bg-background text-foreground;
 }
+
+@media print {
+  body {
+    background: white;
+    color: black;
+  }
+
+  header,
+  nav {
+    display: none !important;
+  }
+
+  .print-page {
+    max-width: none;
+    padding: 0;
+  }
+}

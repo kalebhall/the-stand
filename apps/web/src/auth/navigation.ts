@@ -6,6 +6,7 @@ export type AppNavItem = {
 };
 
 const CLERK_OR_BISHOPRIC_ROLES = ['BISHOPRIC_EDITOR', 'CLERK_EDITOR', 'WARD_CLERK', 'MEMBERSHIP_CLERK'] as const;
+const MEETING_VIEW_ROLES = [...CLERK_OR_BISHOPRIC_ROLES, 'CONDUCTOR_VIEW'] as const;
 
 function hasAnyRole(roles: string[] | undefined, roleNames: readonly string[]): boolean {
   return roleNames.some((roleName) => hasRole(roles, roleName));
@@ -13,6 +14,10 @@ function hasAnyRole(roles: string[] | undefined, roleNames: readonly string[]): 
 
 export function getNavigationItems(roles: string[] | undefined): AppNavItem[] {
   const items: AppNavItem[] = [{ href: '/dashboard', label: 'Dashboard' }];
+
+  if (hasAnyRole(roles, MEETING_VIEW_ROLES) || hasRole(roles, 'STAND_ADMIN')) {
+    items.push({ href: '/meetings', label: 'Meetings' });
+  }
 
   if (hasAnyRole(roles, CLERK_OR_BISHOPRIC_ROLES) || hasRole(roles, 'STAND_ADMIN')) {
     items.push({ href: '/callings', label: 'Callings' });

@@ -1,12 +1,4 @@
-import {
-  boolean,
-  jsonb,
-  pgTable,
-  text,
-  timestamp,
-  unique,
-  uuid
-} from 'drizzle-orm/pg-core';
+import { boolean, date, integer, jsonb, pgTable, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core';
 
 export const stake = pgTable('stake', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -85,3 +77,41 @@ export const accessRequest = pgTable('access_request', {
   message: text('message').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 });
+
+export const meeting = pgTable('meeting', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
+  meetingDate: date('meeting_date').notNull(),
+  meetingType: text('meeting_type').notNull(),
+  status: text('status').notNull().default('DRAFT'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
+});
+
+export const meetingProgramItem = pgTable('meeting_program_item', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
+  meetingId: uuid('meeting_id').notNull().references(() => meeting.id, { onDelete: 'cascade' }),
+  sequence: integer('sequence').notNull(),
+  itemType: text('item_type').notNull(),
+  title: text('title'),
+  notes: text('notes'),
+  hymnNumber: text('hymn_number'),
+  hymnTitle: text('hymn_title'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+});
+
+export const meetingProgramRender = pgTable(
+  'meeting_program_render',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
+    meetingId: uuid('meeting_id').notNull().references(() => meeting.id, { onDelete: 'cascade' }),
+    version: integer('version').notNull(),
+    renderHtml: text('render_html').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+  },
+  (table) => ({
+    meetingProgramRenderVersionUnique: unique().on(table.meetingId, table.version)
+  })
+);

@@ -15,6 +15,12 @@ describe('getNavigationItems', () => {
     expect(items).toContainEqual({ href: '/callings', label: 'Callings' });
   });
 
+
+  it('includes meetings for conductor role', () => {
+    expect(getNavigationItems(['CONDUCTOR_VIEW'])).toContainEqual({ href: '/meetings', label: 'Meetings' });
+    expect(getNavigationItems(['CONDUCTOR_VIEW'])).not.toContainEqual({ href: '/callings', label: 'Callings' });
+  });
+
   it('includes support console only for support admins', () => {
     expect(getNavigationItems(['SUPPORT_ADMIN'])).toContainEqual({
       href: '/support/access-requests',
