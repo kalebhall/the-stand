@@ -32,6 +32,7 @@ DECLARE
   count_a INTEGER;
   count_b INTEGER;
   count_none INTEGER;
+  count_unset INTEGER;
 BEGIN
   INSERT INTO stake (name) VALUES ('Stake 1') RETURNING id INTO stake_id;
   INSERT INTO ward (stake_id, name, unit_number) VALUES (stake_id, 'Ward A', '100') RETURNING id INTO ward_a;
@@ -56,6 +57,9 @@ BEGIN
   PERFORM set_config('app.ward_id', gen_random_uuid()::text, true);
   SELECT COUNT(*) INTO count_none FROM ward_user_role;
 
+  PERFORM set_config('app.ward_id', '', true);
+  SELECT COUNT(*) INTO count_unset FROM ward_user_role;
+
   IF count_a <> 1 THEN
     RAISE EXCEPTION 'ward A expected 1 row, got %', count_a;
   END IF;
@@ -66,6 +70,10 @@ BEGIN
 
   IF count_none <> 0 THEN
     RAISE EXCEPTION 'unknown ward expected 0 rows, got %', count_none;
+  END IF;
+
+  IF count_unset <> 0 THEN
+    RAISE EXCEPTION 'unset ward context expected 0 rows, got %', count_unset;
   END IF;
 END;
 $$;
