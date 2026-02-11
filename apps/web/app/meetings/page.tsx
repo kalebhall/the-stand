@@ -68,6 +68,9 @@ export default async function MeetingsPage() {
                       Edit
                     </Link>
                   ) : null}
+                  <Link href={`/stand/${meeting.id}`} className={cn(buttonVariants({ size: 'sm', variant: 'outline' }))}>
+                    At the Stand
+                  </Link>
                   <Link href={`/meetings/${meeting.id}/print`} className={cn(buttonVariants({ size: 'sm', variant: 'outline' }))}>
                     Print view
                   </Link>
