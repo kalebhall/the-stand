@@ -19,26 +19,64 @@ type MemberNoteRow = {
   created_by_email: string | null;
 };
 
+type CallingRow = {
+  id: string;
+  member_name: string;
+  calling_name: string;
+  is_active: boolean;
+};
+
 type PreviewMember = {
   fullName: string;
   email: string | null;
   phone: string | null;
 };
 
+type PreviewCalling = {
+  memberName: string;
+  callingName: string;
+  isRelease: boolean;
+};
+
+type CallingDrift = {
+  isStale: boolean;
+  driftCount: number;
+  comparedToImportRunId: string | null;
+};
+
 export function MembershipImportsClient({
   wardId,
   members,
-  memberNotes
+  memberNotes,
+  callingAssignments,
+  initialCallingDrift
 }: {
   wardId: string;
   members: MemberRow[];
   memberNotes: MemberNoteRow[];
+  callingAssignments: CallingRow[];
+  initialCallingDrift: CallingDrift;
 }) {
   const [rawText, setRawText] = useState('');
   const [preview, setPreview] = useState<PreviewMember[]>([]);
   const [summary, setSummary] = useState<{ parsedCount: number; inserted: number; updated: number; commit: boolean } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [callingRawText, setCallingRawText] = useState('');
+  const [callingPreview, setCallingPreview] = useState<PreviewCalling[]>([]);
+  const [callingSummary, setCallingSummary] = useState<{
+    parsedCount: number;
+    activeCount: number;
+    releaseCount: number;
+    inserted: number;
+    reactivated: number;
+    releasesApplied: number;
+    commit: boolean;
+    stale: CallingDrift;
+  } | null>(null);
+  const [callingError, setCallingError] = useState<string | null>(null);
+  const [isCallingSubmitting, setIsCallingSubmitting] = useState(false);
 
   const [selectedMemberId, setSelectedMemberId] = useState(members[0]?.id ?? '');
   const [noteText, setNoteText] = useState('');
@@ -94,6 +132,60 @@ export function MembershipImportsClient({
     }
   }
 
+  async function submitCallingImport(commit: boolean) {
+    setIsCallingSubmitting(true);
+    setCallingError(null);
+
+    try {
+      const response = await fetch(`/api/w/${wardId}/imports/callings`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json'
+        },
+        body: JSON.stringify({ rawText: callingRawText, commit })
+      });
+
+      const payload = (await response.json()) as
+        | {
+            preview: PreviewCalling[];
+            parsedCount: number;
+            activeCount: number;
+            releaseCount: number;
+            inserted: number;
+            reactivated: number;
+            releasesApplied: number;
+            stale: CallingDrift;
+            commit: boolean;
+          }
+        | { error?: string };
+
+      if (!response.ok || !('preview' in payload)) {
+        setCallingError(payload.error ?? 'Calling import failed');
+        return;
+      }
+
+      setCallingPreview(payload.preview);
+      setCallingSummary({
+        parsedCount: payload.parsedCount,
+        activeCount: payload.activeCount,
+        releaseCount: payload.releaseCount,
+        inserted: payload.inserted,
+        reactivated: payload.reactivated,
+        releasesApplied: payload.releasesApplied,
+        stale: payload.stale,
+        commit: payload.commit
+      });
+
+      if (commit) {
+        window.location.reload();
+      }
+    } catch {
+      setCallingError('Calling import failed');
+    } finally {
+      setIsCallingSubmitting(false);
+    }
+  }
+
   async function saveNote() {
     if (!selectedMemberId || !noteText.trim()) {
       setNoteError('Member and note are required.');
@@ -126,6 +218,8 @@ export function MembershipImportsClient({
       setIsSavingNote(false);
     }
   }
+
+  const drift = callingSummary?.stale ?? initialCallingDrift;
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
@@ -178,6 +272,82 @@ export function MembershipImportsClient({
       </section>
 
       <section className="space-y-3 rounded-lg border bg-card p-4">
+        <h2 className="text-lg font-semibold">Calling paste import</h2>
+        <p className="text-sm text-muted-foreground">Paste plain text callings with one assignment per line. Prefix releases with “Release:”.</p>
+
+        <div className={`rounded-md border px-3 py-2 text-sm ${drift.isStale ? 'border-amber-300 bg-amber-50 text-amber-900' : 'border-emerald-300 bg-emerald-50 text-emerald-900'}`}>
+          Drift indicator: {drift.isStale ? `Stale (${drift.driftCount} changes since last committed calling import).` : 'In sync with latest committed calling import.'}
+        </div>
+
+        <textarea
+          value={callingRawText}
+          onChange={(event) => setCallingRawText(event.target.value)}
+          className="min-h-44 w-full rounded-md border bg-background p-3 text-sm"
+          placeholder="John Doe, Elders Quorum President\nRelease: Jane Doe, Relief Society President"
+        />
+
+        <div className="flex flex-wrap gap-2">
+          <Button type="button" variant="outline" onClick={() => submitCallingImport(false)} disabled={isCallingSubmitting}>
+            Dry run preview
+          </Button>
+          <Button type="button" onClick={() => submitCallingImport(true)} disabled={isCallingSubmitting}>
+            Commit import
+          </Button>
+        </div>
+
+        {callingError ? <p className="text-sm text-red-600">{callingError}</p> : null}
+
+        {callingSummary ? (
+          <p className="text-sm text-muted-foreground">
+            {callingSummary.commit ? 'Commit complete.' : 'Preview complete.'} Parsed {callingSummary.parsedCount} rows ({callingSummary.activeCount}{' '}
+            active, {callingSummary.releaseCount} releases).
+            {callingSummary.commit
+              ? ` ${callingSummary.inserted} inserted, ${callingSummary.reactivated} reactivated, ${callingSummary.releasesApplied} releases applied.`
+              : ''}
+          </p>
+        ) : null}
+
+        {callingPreview.length ? (
+          <div className="overflow-x-auto rounded-md border">
+            <table className="min-w-full text-sm">
+              <thead>
+                <tr className="border-b bg-muted/50">
+                  <th className="px-3 py-2 text-left">Member</th>
+                  <th className="px-3 py-2 text-left">Calling</th>
+                  <th className="px-3 py-2 text-left">Type</th>
+                </tr>
+              </thead>
+              <tbody>
+                {callingPreview.map((item) => (
+                  <tr key={`${item.memberName}-${item.callingName}-${item.isRelease ? 'release' : 'sustain'}`} className="border-b last:border-b-0">
+                    <td className="px-3 py-2 font-medium">{item.memberName}</td>
+                    <td className="px-3 py-2">{item.callingName}</td>
+                    <td className="px-3 py-2">{item.isRelease ? 'Release' : 'Sustain'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : null}
+
+        <div className="space-y-2">
+          <h3 className="text-sm font-semibold">Current calling assignments</h3>
+          {callingAssignments.length ? (
+            <ul className="space-y-1 text-sm">
+              {callingAssignments.map((assignment) => (
+                <li key={assignment.id} className="rounded border px-2 py-1">
+                  <span className="font-medium">{assignment.member_name}</span> — {assignment.calling_name}
+                  <span className="ml-2 text-xs text-muted-foreground">{assignment.is_active ? 'Active' : 'Released'}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-muted-foreground">No calling assignments yet.</p>
+          )}
+        </div>
+      </section>
+
+      <section className="space-y-3 rounded-lg border bg-card p-4 lg:col-span-2">
         <h2 className="text-lg font-semibold">Member notes</h2>
         <p className="text-sm text-muted-foreground">Restricted internal notes for membership follow-up.</p>
 
