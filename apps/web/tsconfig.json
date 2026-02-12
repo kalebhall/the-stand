@@ -43,6 +43,7 @@
     "components/**/*.tsx",
     "lib/**/*.ts",
     "src/**/*.ts",
+    "src/**/*.d.ts",
     ".next/types/**/*.ts"
   ],
   "exclude": [
