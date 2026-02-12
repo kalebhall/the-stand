@@ -37,15 +37,15 @@ export async function GET() {
     [session.user.id, result.rowCount ?? 0]
   );
 
-  return NextResponse.json({
-    items: result.rows.map((row) => ({
-      id: row.id,
-      name: row.name,
-      email: row.email,
-      stake: row.stake,
-      ward: row.ward,
-      message: row.message,
-      createdAt: row.created_at
-    }))
-  });
+  const items = (result.rows as AccessRequestRow[]).map((row) => ({
+    id: row.id,
+    name: row.name,
+    email: row.email,
+    stake: row.stake,
+    ward: row.ward,
+    message: row.message,
+    createdAt: row.created_at
+  }));
+
+  return NextResponse.json({ items });
 }
