@@ -294,3 +294,39 @@ export const publicProgramPortal = pgTable(
     publicProgramPortalWardUnique: unique().on(table.wardId)
   })
 );
+
+export const member = pgTable(
+  'member',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
+    fullName: text('full_name').notNull(),
+    email: text('email'),
+    phone: text('phone'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
+  },
+  (table) => ({
+    memberWardNameUnique: unique().on(table.wardId, table.fullName)
+  })
+);
+
+export const memberNote = pgTable('member_note', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
+  memberId: uuid('member_id').notNull().references(() => member.id, { onDelete: 'cascade' }),
+  noteText: text('note_text').notNull(),
+  createdByUserId: uuid('created_by_user_id').references(() => userAccount.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+});
+
+export const importRun = pgTable('import_run', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
+  importType: text('import_type').notNull(),
+  rawText: text('raw_text').notNull(),
+  parsedCount: integer('parsed_count').notNull().default(0),
+  committed: boolean('committed').notNull().default(false),
+  createdByUserId: uuid('created_by_user_id').references(() => userAccount.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+});
