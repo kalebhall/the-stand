@@ -48,12 +48,13 @@ describe('POST /api/w/[wardId]/meetings/[meetingId]/complete', () => {
       .mockResolvedValueOnce({
         rowCount: 2,
         rows: [
-          { member_name: 'Jane Doe', calling_name: 'Primary President', action_type: 'SUSTAIN' },
-          { member_name: 'John Doe', calling_name: 'Elders Quorum President', action_type: 'RELEASE' }
+          { id: 'line-1', member_name: 'Jane Doe', calling_name: 'Primary President', action_type: 'SUSTAIN' },
+          { id: 'line-2', member_name: 'John Doe', calling_name: 'Elders Quorum President', action_type: 'RELEASE' }
         ]
       })
       .mockResolvedValueOnce({})
       .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'event-1' }] })
+      .mockResolvedValueOnce({})
       .mockResolvedValueOnce({})
       .mockResolvedValueOnce({});
   });
@@ -79,9 +80,21 @@ describe('POST /api/w/[wardId]/meetings/[meetingId]/complete', () => {
       JSON.stringify({
         meetingId: 'meeting-1',
         announcedBusinessLines: [
-          { memberName: 'Jane Doe', callingName: 'Primary President', actionType: 'SUSTAIN' },
-          { memberName: 'John Doe', callingName: 'Elders Quorum President', actionType: 'RELEASE' }
+          { id: 'line-1', memberName: 'Jane Doe', callingName: 'Primary President', actionType: 'SUSTAIN' },
+          { id: 'line-2', memberName: 'John Doe', callingName: 'Elders Quorum President', actionType: 'RELEASE' }
         ]
+      })
+    ]);
+
+    expect(queryMock).toHaveBeenCalledWith(expect.stringContaining("'CALLING_RELEASE_ANNOUNCED'"), [
+      'ward-1',
+      'line-2',
+      JSON.stringify({
+        meetingId: 'meeting-1',
+        businessLineId: 'line-2',
+        memberName: 'John Doe',
+        callingName: 'Elders Quorum President',
+        actionType: 'RELEASE'
       })
     ]);
 
