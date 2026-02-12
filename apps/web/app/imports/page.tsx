@@ -5,6 +5,7 @@ import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth
 import { canViewCallings } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
+import { parseCallingsText } from '@/src/imports/callings';
 
 type MemberRow = {
   id: string;
@@ -19,6 +20,13 @@ type MemberNoteRow = {
   note_text: string;
   created_at: string;
   created_by_email: string | null;
+};
+
+type CallingRow = {
+  id: string;
+  member_name: string;
+  calling_name: string;
+  is_active: boolean;
 };
 
 export default async function ImportsPage() {
@@ -53,7 +61,42 @@ export default async function ImportsPage() {
       [session.activeWardId]
     );
 
+    const callingResult = await client.query(
+      `SELECT id, member_name, calling_name, is_active
+         FROM calling_assignment
+        WHERE ward_id = $1
+        ORDER BY member_name ASC`,
+      [session.activeWardId]
+    );
+
+    const latestCallingImportResult = await client.query(
+      `SELECT id, raw_text
+         FROM import_run
+        WHERE ward_id = $1
+          AND import_type = 'CALLINGS'
+          AND committed = TRUE
+        ORDER BY created_at DESC
+        LIMIT 1`,
+      [session.activeWardId]
+    );
+
     await client.query('COMMIT');
+
+    const currentActiveSet = new Set(
+      (callingResult.rows as CallingRow[])
+        .filter((row) => row.is_active)
+        .map((row) => `${row.member_name.toLowerCase()}::${row.calling_name.toLowerCase()}`)
+    );
+
+    const latestImportSet = new Set(
+      parseCallingsText((latestCallingImportResult.rows[0]?.raw_text as string | undefined) ?? '')
+        .filter((entry) => !entry.isRelease)
+        .map((entry) => `${entry.memberName.toLowerCase()}::${entry.callingName.toLowerCase()}`)
+    );
+
+    const driftCount =
+      Array.from(currentActiveSet).filter((key) => !latestImportSet.has(key)).length +
+      Array.from(latestImportSet).filter((key) => !currentActiveSet.has(key)).length;
 
     return (
       <main className="mx-auto w-full max-w-6xl space-y-6 p-4 sm:p-6">
@@ -66,6 +109,12 @@ export default async function ImportsPage() {
           wardId={session.activeWardId}
           members={memberResult.rows as MemberRow[]}
           memberNotes={noteResult.rows as MemberNoteRow[]}
+          callingAssignments={callingResult.rows as CallingRow[]}
+          initialCallingDrift={{
+            isStale: driftCount > 0,
+            driftCount,
+            comparedToImportRunId: (latestCallingImportResult.rows[0]?.id as string | undefined) ?? null
+          }}
         />
       </main>
     );
