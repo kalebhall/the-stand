@@ -38,7 +38,7 @@ export async function GET() {
   );
 
   return NextResponse.json({
-    items: result.rows.map((row: AccessRequestRow) => ({
+    items: result.rows.map((row) => ({
       id: row.id,
       name: row.name,
       email: row.email,
