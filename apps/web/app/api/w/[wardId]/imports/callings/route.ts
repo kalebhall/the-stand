@@ -80,7 +80,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     );
 
     const existingByKey = new Map(
-      existingResult.rows.map((row) => [makeCallingKey(row.member_name, row.calling_name), row] as const)
+      existingResult.rows.map((row: ExistingCallingRow) => [makeCallingKey(row.member_name, row.calling_name), row] as const)
     );
 
     let inserted = 0;
