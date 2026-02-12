@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import type { QueryResultRow } from 'pg';
 import { auth } from '@/src/auth/auth';
 import { canViewCallings } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
