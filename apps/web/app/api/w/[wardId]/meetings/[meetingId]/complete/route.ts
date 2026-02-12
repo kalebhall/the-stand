@@ -4,7 +4,7 @@ import { auth } from '@/src/auth/auth';
 import { canManageMeetings } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
-import { runNotificationWorkerForWard } from '@/src/notifications/runner';
+import { enqueueOutboxNotificationJob } from '@/src/notifications/queue';
 
 type AnnouncedBusinessLineRow = {
   id: string;
@@ -79,13 +79,15 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
     );
 
     const eventOutboxId = outboxResult.rows[0].id as string;
+    const notificationEventOutboxIds = [eventOutboxId];
 
     for (const line of announcedBusinessLines.filter((line) => line.actionType === 'RELEASE')) {
-      await client.query(
+      const releaseOutboxResult = await client.query(
         `INSERT INTO event_outbox (ward_id, aggregate_type, aggregate_id, event_type, payload)
          VALUES ($1, 'meeting_business_line', $2, 'CALLING_RELEASE_ANNOUNCED', $3::jsonb)
          ON CONFLICT (ward_id, event_type, aggregate_id)
-         DO UPDATE SET payload = EXCLUDED.payload, updated_at = now(), status = 'pending'`,
+         DO UPDATE SET payload = EXCLUDED.payload, updated_at = now(), status = 'pending'
+         RETURNING id`,
         [
           wardId,
           line.id,
@@ -98,9 +100,10 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
           })
         ]
       );
+
+      notificationEventOutboxIds.push(releaseOutboxResult.rows[0].id as string);
     }
 
-    await runNotificationWorkerForWard(client, wardId);
 
     await client.query(
       `INSERT INTO audit_log (ward_id, user_id, action, details)
@@ -114,6 +117,10 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
     );
 
     await client.query('COMMIT');
+
+    for (const queuedEventOutboxId of notificationEventOutboxIds) {
+      await enqueueOutboxNotificationJob({ wardId, eventOutboxId: queuedEventOutboxId });
+    }
 
     return NextResponse.json({ success: true, meetingId, eventOutboxId, announcedBusinessLineCount: announcedBusinessLines.length });
   } catch {

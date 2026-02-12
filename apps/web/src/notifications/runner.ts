@@ -48,68 +48,73 @@ async function deliverWebhookEvent(event: OutboxEvent): Promise<{ externalId?: s
   return { externalId: externalIdHeader ?? undefined };
 }
 
-export async function runNotificationWorkerForWard(client: DbClient, wardId: string): Promise<void> {
-  while (true) {
-    const outboxResult = await client.query(
-      `SELECT id,
-              aggregate_type,
-              aggregate_id,
-              event_type,
-              payload,
-              attempts
+export async function processOutboxEvent(client: DbClient, params: { wardId: string; eventOutboxId: string }): Promise<void> {
+  const outboxResult = await client.query(
+    `SELECT id,
+            aggregate_type,
+            aggregate_id,
+            event_type,
+            payload,
+            attempts,
+            status,
+            available_at <= now() AS available_now
        FROM event_outbox
       WHERE ward_id = $1
-        AND status = 'pending'
-        AND available_at <= now()
-      ORDER BY created_at ASC
+        AND id = $2
       LIMIT 1
       FOR UPDATE SKIP LOCKED`,
-      [wardId]
-    );
+    [params.wardId, params.eventOutboxId]
+  );
 
-    if (!outboxResult.rowCount) {
-      return;
-    }
+  if (!outboxResult.rowCount) {
+    throw new Error(`Outbox event ${params.eventOutboxId} not visible yet for ward ${params.wardId}.`);
+  }
 
-    const event = outboxResult.rows[0] as OutboxEvent;
-    const eventOutboxId = event.id;
+  const event = outboxResult.rows[0] as OutboxEvent & { status: string; available_now: boolean };
 
-    await client.query(
-      `UPDATE event_outbox
-          SET status = 'processing',
-              attempts = attempts + 1,
-              updated_at = now()
-        WHERE id = $1 AND ward_id = $2`,
-      [eventOutboxId, wardId]
-    );
+  if (event.status !== 'pending' || !event.available_now) {
+    return;
+  }
 
-    const deliveryResult = await client.query(
-      `INSERT INTO notification_delivery (ward_id, event_outbox_id, channel, delivery_status, attempted_at)
-       VALUES ($1, $2, 'webhook', 'pending', now())
-       ON CONFLICT (event_outbox_id, channel)
-       DO UPDATE SET attempted_at = now(), updated_at = now()
-       RETURNING id`,
-      [wardId, eventOutboxId]
-    );
+  await client.query(
+    `UPDATE event_outbox
+        SET status = 'processing',
+            attempts = attempts + 1,
+            updated_at = now()
+      WHERE id = $1 AND ward_id = $2`,
+    [event.id, params.wardId]
+  );
 
-    const deliveryId = deliveryResult.rows[0].id as string;
+  const deliveryResult = await client.query(
+    `INSERT INTO notification_delivery (ward_id, event_outbox_id, channel, delivery_status, attempted_at)
+     VALUES ($1, $2, 'webhook', 'pending', now())
+     ON CONFLICT (event_outbox_id, channel)
+     DO UPDATE SET attempted_at = now(), updated_at = now()
+     RETURNING id`,
+    [params.wardId, event.id]
+  );
 
-    try {
-      const delivery = await deliverWebhookEvent(event);
-      await markNotificationDeliverySuccess(client, {
-        wardId,
-        deliveryId,
-        externalId: delivery.externalId
-      });
-    } catch (error) {
-      await markNotificationDeliveryFailure(client, {
-        wardId,
-        deliveryId,
-        eventOutboxId,
-        attempts: event.attempts + 1,
-        errorMessage: error instanceof Error ? error.message : 'Unknown webhook delivery error'
-      });
-    }
+  const deliveryId = deliveryResult.rows[0].id as string;
+
+  try {
+    const delivery = await deliverWebhookEvent(event);
+    await markNotificationDeliverySuccess(client, {
+      wardId: params.wardId,
+      deliveryId,
+      externalId: delivery.externalId
+    });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown webhook delivery error';
+
+    await markNotificationDeliveryFailure(client, {
+      wardId: params.wardId,
+      deliveryId,
+      eventOutboxId: event.id,
+      attempts: event.attempts + 1,
+      errorMessage
+    });
+
+    throw new Error(errorMessage);
   }
 }
 
