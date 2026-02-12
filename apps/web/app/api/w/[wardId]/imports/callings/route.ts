@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import type { QueryResultRow } from 'pg';
 
 import { auth } from '@/src/auth/auth';
 import { canViewCallings } from '@/src/auth/roles';
@@ -11,24 +12,24 @@ type CallingsImportBody = {
   commit?: unknown;
 };
 
-type ImportRunRow = {
+type ImportRunRow = QueryResultRow & {
   id: string;
   created_at: string;
 };
 
-type ExistingCallingRow = {
+type ExistingCallingRow = QueryResultRow & {
   id: string;
   member_name: string;
   calling_name: string;
   is_active: boolean;
 };
 
-type ActiveCallingRow = {
+type ActiveCallingRow = QueryResultRow & {
   member_name: string;
   calling_name: string;
 };
 
-type StaleImportRow = {
+type StaleImportRow = QueryResultRow & {
   id: string;
   raw_text: string;
 };
