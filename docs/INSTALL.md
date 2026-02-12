@@ -120,7 +120,7 @@ sudo -u the-stand -H bash -lc "cd /opt/the-stand/app && npm install"
 ```
 6.3 Build Production Bundle
 ```
-sudo -u the-stand -H bash -lc "cd /opt/the-stand/app && npm run build"
+sudo -u the-stand -H bash -lc "cd /opt/the-stand/app && npm --workspace @the-stand/web run build"
 ```
 ---------------------------------------------------------------------
 SECTION 7 — CONFIGURE ENVIRONMENT VARIABLES
@@ -162,7 +162,7 @@ SECTION 8 — RUN DATABASE MIGRATIONS
 
 Example (Drizzle):
 ```
-sudo -u the-stand -H bash -lc "cd /opt/the-stand/app && npm run migrate"
+sudo -u the-stand -H bash -lc "cd /opt/the-stand/app && npm --workspace @the-stand/web run db:migrate"
 ```
 Confirm:
 - All tables created
@@ -202,7 +202,7 @@ User=the-stand
 Group=the-stand
 WorkingDirectory=/opt/the-stand/app
 EnvironmentFile=/opt/the-stand/app/.env
-ExecStart=/usr/bin/npm run start
+ExecStart=/usr/bin/npm --workspace @the-stand/web run start
 Restart=always
 RestartSec=5
 NoNewPrivileges=true
@@ -299,7 +299,8 @@ SECTION 14 — UPDATES
 ```
 sudo -u the-stand -H bash -lc "cd /opt/the-stand/app && git pull"
 sudo -u the-stand -H bash -lc "cd /opt/the-stand/app && npm install"
-sudo -u the-stand -H bash -lc "cd /opt/the-stand/app && npm run build"
+sudo -u the-stand -H bash -lc "cd /opt/the-stand/app && npm --workspace @the-stand/web run db:migrate"
+sudo -u the-stand -H bash -lc "cd /opt/the-stand/app && npm --workspace @the-stand/web run build"
 sudo systemctl restart the-stand
 ```
 ---------------------------------------------------------------------
