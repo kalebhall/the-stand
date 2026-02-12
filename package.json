@@ -10,6 +10,7 @@
     "lint": "eslint --no-config-lookup --ext .js,.mjs scripts",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "node scripts/vitest.mjs",
-    "build": "node scripts/next-build.mjs"
+    "build": "node scripts/next-build.mjs",
+    "test:e2e": "npm --workspace @the-stand/web run test:e2e"
   }
 }
