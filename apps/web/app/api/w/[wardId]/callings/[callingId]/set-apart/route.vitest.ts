@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { authMock, canManageCallingsMock, setDbContextMock, runNotificationWorkerForWardMock, connectMock, releaseMock, queryMock } =
+const { authMock, canManageCallingsMock, setDbContextMock, enqueueOutboxNotificationJobMock, connectMock, releaseMock, queryMock } =
   vi.hoisted(() => ({
     authMock: vi.fn(),
     canManageCallingsMock: vi.fn(),
     setDbContextMock: vi.fn(),
-    runNotificationWorkerForWardMock: vi.fn(),
+    enqueueOutboxNotificationJobMock: vi.fn(),
     connectMock: vi.fn(),
     releaseMock: vi.fn(),
     queryMock: vi.fn()
@@ -14,7 +14,7 @@ const { authMock, canManageCallingsMock, setDbContextMock, runNotificationWorker
 vi.mock('@/src/auth/auth', () => ({ auth: authMock }));
 vi.mock('@/src/auth/roles', () => ({ canManageCallings: canManageCallingsMock }));
 vi.mock('@/src/db/context', () => ({ setDbContext: setDbContextMock }));
-vi.mock('@/src/notifications/runner', () => ({ runNotificationWorkerForWard: runNotificationWorkerForWardMock }));
+vi.mock('@/src/notifications/queue', () => ({ enqueueOutboxNotificationJob: enqueueOutboxNotificationJobMock }));
 vi.mock('@/src/db/client', () => ({
   pool: {
     connect: connectMock
@@ -40,7 +40,7 @@ describe('POST /api/w/[wardId]/callings/[callingId]/set-apart', () => {
       .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'calling-1', action_status: 'SUSTAINED' }] })
       .mockResolvedValueOnce({})
       .mockResolvedValueOnce({})
-      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'event-1' }] })
       .mockResolvedValueOnce({});
   });
 
@@ -61,7 +61,7 @@ describe('POST /api/w/[wardId]/callings/[callingId]/set-apart', () => {
       })
     ]);
 
-    expect(runNotificationWorkerForWardMock).toHaveBeenCalledWith(expect.anything(), 'ward-1');
+    expect(enqueueOutboxNotificationJobMock).toHaveBeenCalledWith({ wardId: 'ward-1', eventOutboxId: 'event-1' });
     expect(releaseMock).toHaveBeenCalled();
   });
 });

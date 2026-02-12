@@ -4,7 +4,7 @@ const {
   authMock,
   canManageMeetingsMock,
   setDbContextMock,
-  runNotificationWorkerForWardMock,
+  enqueueOutboxNotificationJobMock,
   connectMock,
   releaseMock,
   queryMock
@@ -12,7 +12,7 @@ const {
   authMock: vi.fn(),
   canManageMeetingsMock: vi.fn(),
   setDbContextMock: vi.fn(),
-  runNotificationWorkerForWardMock: vi.fn(),
+  enqueueOutboxNotificationJobMock: vi.fn(),
   connectMock: vi.fn(),
   releaseMock: vi.fn(),
   queryMock: vi.fn()
@@ -21,7 +21,7 @@ const {
 vi.mock('@/src/auth/auth', () => ({ auth: authMock }));
 vi.mock('@/src/auth/roles', () => ({ canManageMeetings: canManageMeetingsMock }));
 vi.mock('@/src/db/context', () => ({ setDbContext: setDbContextMock }));
-vi.mock('@/src/notifications/runner', () => ({ runNotificationWorkerForWard: runNotificationWorkerForWardMock }));
+vi.mock('@/src/notifications/queue', () => ({ enqueueOutboxNotificationJob: enqueueOutboxNotificationJobMock }));
 vi.mock('@/src/db/client', () => ({
   pool: {
     connect: connectMock
@@ -54,12 +54,12 @@ describe('POST /api/w/[wardId]/meetings/[meetingId]/complete', () => {
       })
       .mockResolvedValueOnce({})
       .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'event-1' }] })
-      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'event-2' }] })
       .mockResolvedValueOnce({})
       .mockResolvedValueOnce({});
   });
 
-  it('completes meeting and writes announced lines into outbox payload', async () => {
+  it('completes meeting and enqueues notification jobs for created outbox rows', async () => {
     const response = await POST(new Request('http://localhost'), {
       params: Promise.resolve({ wardId: 'ward-1', meetingId: 'meeting-1' })
     });
@@ -98,7 +98,9 @@ describe('POST /api/w/[wardId]/meetings/[meetingId]/complete', () => {
       })
     ]);
 
-    expect(runNotificationWorkerForWardMock).toHaveBeenCalledWith(expect.anything(), 'ward-1');
+    expect(enqueueOutboxNotificationJobMock).toHaveBeenCalledTimes(2);
+    expect(enqueueOutboxNotificationJobMock).toHaveBeenNthCalledWith(1, { wardId: 'ward-1', eventOutboxId: 'event-1' });
+    expect(enqueueOutboxNotificationJobMock).toHaveBeenNthCalledWith(2, { wardId: 'ward-1', eventOutboxId: 'event-2' });
     expect(releaseMock).toHaveBeenCalled();
   });
 });

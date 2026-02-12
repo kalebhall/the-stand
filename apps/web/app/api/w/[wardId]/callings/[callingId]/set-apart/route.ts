@@ -6,7 +6,7 @@ import { CALLING_STATUS } from '@/src/callings/lifecycle';
 import { appendCallingStatus, fetchCurrentCallingStatus } from '@/src/callings/transition';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
-import { runNotificationWorkerForWard } from '@/src/notifications/runner';
+import { enqueueOutboxNotificationJob } from '@/src/notifications/queue';
 
 export async function POST(_: Request, context: { params: Promise<{ wardId: string; callingId: string }> }) {
   const session = await auth();
@@ -59,11 +59,12 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
       [wardId, session.user.id, callingId]
     );
 
-    await client.query(
+    const outboxResult = await client.query(
       `INSERT INTO event_outbox (ward_id, aggregate_type, aggregate_id, event_type, payload)
        VALUES ($1, 'calling_assignment', $2, 'CALLING_SET_APART', $3::jsonb)
        ON CONFLICT (ward_id, event_type, aggregate_id)
-       DO UPDATE SET payload = EXCLUDED.payload, updated_at = now(), status = 'pending'`,
+       DO UPDATE SET payload = EXCLUDED.payload, updated_at = now(), status = 'pending'
+       RETURNING id`,
       [
         wardId,
         callingId,
@@ -74,9 +75,11 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
       ]
     );
 
-    await runNotificationWorkerForWard(client, wardId);
+    const eventOutboxId = outboxResult.rows[0].id as string;
 
     await client.query('COMMIT');
+
+    await enqueueOutboxNotificationJob({ wardId, eventOutboxId });
 
     return NextResponse.json({ id: callingId, status: CALLING_STATUS.SET_APART });
   } catch {
