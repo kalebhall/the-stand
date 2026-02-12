@@ -1,6 +1,8 @@
+import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 
-import { Button } from '@/components/ui/button';
+import { buttonVariants } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth/guards';
 import { canViewMeetings } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
@@ -68,23 +70,38 @@ export default async function StandViewPage({
     await client.query('COMMIT');
 
     const template = templateResult.rows[0] as TemplateRow | undefined;
-    const standRows = buildStandRows(programResult.rows as ProgramItemRow[], {
-      welcomeText: template?.welcome_text,
-      sustainTemplate: template?.sustain_template,
-      releaseTemplate: template?.release_template
-    });
+    const standRows = buildStandRows(
+      (programResult.rows as ProgramItemRow[]).map((item) => ({
+        itemType: item.item_type,
+        title: item.title,
+        notes: item.notes,
+        hymnNumber: item.hymn_number,
+        hymnTitle: item.hymn_title
+      })),
+      {
+        welcomeText: template?.welcome_text,
+        sustainTemplate: template?.sustain_template,
+        releaseTemplate: template?.release_template
+      }
+    );
 
     return (
       <main className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-5xl flex-col gap-6 p-4 sm:p-6 lg:p-8">
         <section className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-card p-3 sm:p-4">
           <h1 className="text-xl font-semibold sm:text-2xl">At the Stand</h1>
           <div className="flex gap-2" role="tablist" aria-label="Stand view mode">
-            <Button asChild variant={selectedMode === 'formal' ? 'default' : 'outline'} size="sm">
-              <a href={`/stand/${meetingId}?mode=formal`}>Formal Script</a>
-            </Button>
-            <Button asChild variant={selectedMode === 'compact' ? 'default' : 'outline'} size="sm">
-              <a href={`/stand/${meetingId}?mode=compact`}>Compact Labels</a>
-            </Button>
+            <Link
+              href={`/stand/${meetingId}?mode=formal`}
+              className={cn(buttonVariants({ variant: selectedMode === 'formal' ? 'default' : 'outline', size: 'sm' }))}
+            >
+              Formal Script
+            </Link>
+            <Link
+              href={`/stand/${meetingId}?mode=compact`}
+              className={cn(buttonVariants({ variant: selectedMode === 'compact' ? 'default' : 'outline', size: 'sm' }))}
+            >
+              Compact Labels
+            </Link>
           </div>
         </section>
 

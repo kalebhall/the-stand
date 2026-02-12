@@ -97,7 +97,7 @@ export default async function DashboardPage() {
     <main className="mx-auto w-full max-w-6xl space-y-6 p-4 sm:p-6">
       <section className="space-y-2">
         <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground">Welcome back, {session.user.displayName ?? session.user.email}.</p>
+        <p className="text-muted-foreground">Welcome back, {session.user.name ?? session.user.email}.</p>
       </section>
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">

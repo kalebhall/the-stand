@@ -25,7 +25,7 @@ export async function GET() {
     return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
   }
 
-  const result = await pool.query<AccessRequestRow>(
+  const result = await pool.query(
     `SELECT id, name, email, stake, ward, message, created_at
      FROM access_request
      ORDER BY created_at DESC`
