@@ -1,6 +1,4 @@
 import { NextResponse } from 'next/server';
-import type { QueryResultRow } from 'pg';
-
 import { auth } from '@/src/auth/auth';
 import { canViewCallings } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
@@ -64,16 +62,20 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     await client.query('BEGIN');
     await setDbContext(client, { userId: session.user.id, wardId });
 
-    const importRunResult = await client.query<ImportRunRow>(
+    const importRunResult = await client.query(
       `INSERT INTO import_run (ward_id, import_type, raw_text, parsed_count, committed, created_by_user_id)
        VALUES ($1, 'CALLINGS', $2, $3, $4, $5)
        RETURNING id, created_at`,
       [wardId, plainText, parsedCallings.length, commit, session.user.id]
     );
 
-    const importRun = importRunResult.rows[0];
+    const importRun = importRunResult.rows[0] as ImportRunRow | undefined;
 
-    const existingResult = await client.query<ExistingCallingRow>(
+    if (!importRun) {
+      throw new Error('Failed to create import run');
+    }
+
+    const existingResult = await client.query(
       `SELECT id, member_name, calling_name, is_active
          FROM calling_assignment
         WHERE ward_id = $1`,
@@ -81,7 +83,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     );
 
     const existingByKey = new Map<string, ExistingCallingRow>(
-      existingResult.rows.map((row: ExistingCallingRow) => [makeCallingKey(row.member_name, row.calling_name), row] as const)
+      (existingResult.rows as ExistingCallingRow[]).map((row) => [makeCallingKey(row.member_name, row.calling_name), row] as const)
     );
 
     let inserted = 0;
@@ -137,7 +139,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
       );
     }
 
-    const currentActiveResult = await client.query<ActiveCallingRow>(
+    const currentActiveResult = await client.query(
       `SELECT member_name, calling_name
          FROM calling_assignment
         WHERE ward_id = $1
@@ -145,7 +147,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
       [wardId]
     );
 
-    const staleResult = await client.query<StaleImportRow>(
+    const staleResult = await client.query(
       `SELECT id, raw_text
          FROM import_run
         WHERE ward_id = $1
@@ -160,11 +162,12 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     let isStale = false;
     let driftCount = 0;
 
-    if (staleResult.rowCount && staleResult.rows[0]?.raw_text) {
-      const staleParsed = parseCallingsText(staleResult.rows[0].raw_text).filter((entry) => !entry.isRelease);
+    if (staleResult.rowCount && (staleResult.rows[0] as StaleImportRow | undefined)?.raw_text) {
+      const staleImport = staleResult.rows[0] as StaleImportRow;
+      const staleParsed = parseCallingsText(staleImport.raw_text).filter((entry) => !entry.isRelease);
       const staleSet = new Set(staleParsed.map((entry) => makeCallingKey(entry.memberName, entry.callingName)));
       const currentActiveSet = new Set(
-        currentActiveResult.rows.map((row) => makeCallingKey(row.member_name, row.calling_name))
+        (currentActiveResult.rows as ActiveCallingRow[]).map((row) => makeCallingKey(row.member_name, row.calling_name))
       );
 
       const inImportNotCurrent = Array.from(staleSet).filter((key) => !currentActiveSet.has(key)).length;
@@ -191,7 +194,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
       stale: {
         isStale,
         driftCount,
-        comparedToImportRunId: staleResult.rows[0]?.id ?? null
+        comparedToImportRunId: (staleResult.rows[0] as StaleImportRow | undefined)?.id ?? null
       },
       preview: parsedCallings
     });
