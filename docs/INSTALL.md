@@ -141,11 +141,16 @@ DATABASE_URL=postgresql://stand_user:REPLACE_WITH_STRONG_PASSWORD@localhost:5432
 SUPPORT_ADMIN_EMAIL=you@example.com
 
 SESSION_SECRET=GENERATE_STRONG_RANDOM_SECRET
-ENCRYPTION_KEY=GENERATE_32_BYTE_SECRET
-
+AUTH_SECRET=GENERATE_STRONG_RANDOM_SECRET
+AUTH_GOOGLE_ID=your_google_client_id
+AUTH_GOOGLE_SECRET=your_google_client_secret
 PASSWORD_AUTH_ENABLED=true
 
+ENCRYPTION_KEY=GENERATE_32_BYTE_SECRET
+
 REDIS_URL=redis://127.0.0.1:6379
+
+NOTIFICATION_WEBHOOK_URL=http://127.0.0.1:5678/webhook/the-stand
 ```
 Generate secure secret:
 ```
@@ -200,9 +205,9 @@ After=network.target postgresql.service
 Type=simple
 User=the-stand
 Group=the-stand
-WorkingDirectory=/opt/the-stand/app
+WorkingDirectory=/opt/the-stand/app/apps/web
 EnvironmentFile=/opt/the-stand/app/.env
-ExecStart=/usr/bin/npm --workspace @the-stand/web run start
+ExecStart=/usr/bin/npm run start
 Restart=always
 RestartSec=5
 NoNewPrivileges=true
@@ -219,6 +224,43 @@ sudo systemctl daemon-reload
 sudo systemctl enable the-stand
 sudo systemctl start the-stand
 sudo systemctl status the-stand --no-pager
+```
+
+10.2 Optional: Background Worker Service (requires Redis)
+
+If using BullMQ for background jobs, create a worker service:
+```
+sudo nano /etc/systemd/system/the-stand-worker.service
+```
+```
+[Unit]
+Description=The Stand (Worker)
+After=network.target redis-server.service postgresql.service
+Requires=redis-server.service
+
+[Service]
+Type=simple
+User=the-stand
+Group=the-stand
+WorkingDirectory=/opt/the-stand/app/apps/web
+EnvironmentFile=/opt/the-stand/app/.env
+ExecStart=/usr/bin/npm run worker
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target
+```
+Enable:
+```
+sudo systemctl daemon-reload
+sudo systemctl enable the-stand-worker
+sudo systemctl start the-stand-worker
+sudo systemctl status the-stand-worker --no-pager
 ```
 ---------------------------------------------------------------------
 SECTION 11 — NGINX REVERSE PROXY
@@ -292,6 +334,13 @@ sudo crontab -e
 Add:
 ```
 15 2 * * * /usr/local/bin/the-stand-backup.sh
+```
+
+13.2 Restore from Backup
+
+Use the restore script included in the repository (`infra/scripts/restore.sh`):
+```
+sudo -u the-stand -H bash -lc "/opt/the-stand/app/infra/scripts/restore.sh /opt/the-stand/backups/the_stand_YYYYMMDD_HHMMSS.sql.gz"
 ```
 ---------------------------------------------------------------------
 SECTION 14 — UPDATES
