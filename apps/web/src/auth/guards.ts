@@ -1,8 +1,9 @@
 import { redirect } from 'next/navigation';
+import type { Session } from 'next-auth';
 
 import { auth } from '@/src/auth/auth';
 
-export async function requireAuthenticatedSession() {
+export async function requireAuthenticatedSession(): Promise<Session> {
   const session = await auth();
 
   if (!session?.user?.id) {
@@ -12,8 +13,8 @@ export async function requireAuthenticatedSession() {
   return session;
 }
 
-export function enforcePasswordRotation(session: Awaited<ReturnType<typeof auth>>) {
-  if (session?.user?.mustChangePassword && session.user.hasPassword) {
+export function enforcePasswordRotation(session: Session) {
+  if (session.user.mustChangePassword && session.user.hasPassword) {
     redirect('/account/change-password');
   }
 }
