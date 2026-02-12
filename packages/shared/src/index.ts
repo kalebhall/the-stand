@@ -4,6 +4,10 @@ export type HealthResponse = {
   status: 'ok';
 };
 
+export const healthResponseSchema = z.object({
+  status: z.literal('ok')
+});
+
 export type RequestAccessInput = {
   fullName: string;
   email: string;
