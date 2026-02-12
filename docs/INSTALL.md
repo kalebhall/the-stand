@@ -112,7 +112,7 @@ SECTION 6 — DEPLOY APPLICATION
 
 6.1 Clone Repository
 ```
-sudo -u the-stand -H bash -lc "cd /opt/the-stand && git clone https://github.com/kalebhall/the-stand.git"
+sudo -u the-stand -H bash -lc "cd /opt/the-stand && git clone https://github.com/kalebhall/the-stand.git app"
 ```
 6.2 Install Dependencies
 ```
