@@ -13,6 +13,7 @@ describe('getNavigationItems', () => {
     expect(items).toContainEqual({ href: '/settings/users', label: 'Settings' });
     expect(items).toContainEqual({ href: '/settings/public-portal', label: 'Public Portal' });
     expect(items).toContainEqual({ href: '/callings', label: 'Callings' });
+    expect(items).toContainEqual({ href: '/notifications', label: 'Notifications' });
   });
 
 

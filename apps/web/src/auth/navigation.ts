@@ -21,6 +21,7 @@ export function getNavigationItems(roles: string[] | undefined): AppNavItem[] {
 
   if (hasAnyRole(roles, CLERK_OR_BISHOPRIC_ROLES) || hasRole(roles, 'STAND_ADMIN')) {
     items.push({ href: '/callings', label: 'Callings' });
+    items.push({ href: '/notifications', label: 'Notifications' });
     items.push({ href: '/announcements', label: 'Announcements' });
     items.push({ href: '/imports', label: 'Imports' });
   }

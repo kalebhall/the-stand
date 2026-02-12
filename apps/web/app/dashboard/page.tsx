@@ -43,6 +43,8 @@ export default async function DashboardPage() {
 
   const showPortalCard = canViewDashboardPublicPortalStatus(session.user.roles);
   let setApartQueueCount = 'Unavailable';
+  let notificationHealthValue = 'No deliveries yet';
+  let notificationHealthDetail = 'No notification attempts recorded for this ward yet.';
 
   if (session.activeWardId && canViewCallings({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId)) {
     const client = await pool.connect();
@@ -68,11 +70,24 @@ export default async function DashboardPage() {
         [session.activeWardId]
       );
 
+      const notificationHealthResult = await client.query(
+        `SELECT MAX(nd.attempted_at) AS last_delivery_at,
+                COUNT(*) FILTER (WHERE nd.delivery_status = 'failure')::int AS failure_count
+           FROM notification_delivery nd
+          WHERE nd.ward_id = $1`,
+        [session.activeWardId]
+      );
+
       await client.query('COMMIT');
       setApartQueueCount = `${result.rows[0].count} waiting`;
+      const notificationHealth = notificationHealthResult.rows[0] as { last_delivery_at: string | null; failure_count: number };
+      notificationHealthValue = notificationHealth.last_delivery_at ?? 'No deliveries yet';
+      notificationHealthDetail = `${notificationHealth.failure_count} failed deliveries`;
     } catch {
       await client.query('ROLLBACK');
       setApartQueueCount = 'Unavailable';
+      notificationHealthValue = 'Unavailable';
+      notificationHealthDetail = 'Notification diagnostics could not be loaded.';
     } finally {
       client.release();
     }
@@ -104,8 +119,9 @@ export default async function DashboardPage() {
 
         <DashboardCard
           title="Notification health"
-          value="Pending phase 11"
-          detail="Delivery diagnostics card is reserved for notifications and outbox implementation."
+          value={notificationHealthValue}
+          detail={notificationHealthDetail}
+          actions={[{ href: '/notifications', label: 'Open diagnostics' }]}
         />
 
         <DashboardCard
