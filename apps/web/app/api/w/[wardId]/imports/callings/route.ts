@@ -79,7 +79,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
       [wardId]
     );
 
-    const existingByKey = new Map(
+    const existingByKey = new Map<string, ExistingCallingRow>(
       existingResult.rows.map((row: ExistingCallingRow) => [makeCallingKey(row.member_name, row.calling_name), row] as const)
     );
 
@@ -89,7 +89,9 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
 
     if (commit) {
       for (const parsed of parsedCallings) {
-        const existing = existingByKey.get(makeCallingKey(parsed.memberName, parsed.callingName));
+        const existing: ExistingCallingRow | undefined = existingByKey.get(
+          makeCallingKey(parsed.memberName, parsed.callingName)
+        );
 
         if (parsed.isRelease) {
           if (existing?.is_active) {
