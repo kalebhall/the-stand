@@ -110,7 +110,7 @@ export function MembershipImportsClient({
         | { error?: string };
 
       if (!response.ok || !('preview' in payload)) {
-        setError(payload.error ?? 'Import failed');
+        setError('error' in payload ? (payload.error ?? 'Import failed') : 'Import failed');
         return;
       }
 
@@ -160,7 +160,7 @@ export function MembershipImportsClient({
         | { error?: string };
 
       if (!response.ok || !('preview' in payload)) {
-        setCallingError(payload.error ?? 'Calling import failed');
+        setCallingError('error' in payload ? (payload.error ?? 'Calling import failed') : 'Calling import failed');
         return;
       }
 

@@ -2,12 +2,10 @@ import Link from 'next/link';
 
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import type { auth } from '@/src/auth/auth';
+import type { Session } from 'next-auth';
 import { getNavigationItems } from '@/src/auth/navigation';
 
-type Session = Awaited<ReturnType<typeof auth>>;
-
-export function AppNavigation({ session }: { session: Session }) {
+export function AppNavigation({ session }: { session: Session | null }) {
   if (!session?.user?.id) {
     return null;
   }
