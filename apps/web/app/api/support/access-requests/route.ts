@@ -4,6 +4,16 @@ import { auth } from '@/src/auth/auth';
 import { hasRole } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 
+type AccessRequestRow = {
+  id: string;
+  name: string;
+  email: string;
+  stake: string;
+  ward: string;
+  message: string;
+  created_at: string;
+};
+
 export async function GET() {
   const session = await auth();
 
@@ -15,7 +25,7 @@ export async function GET() {
     return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
   }
 
-  const result = await pool.query(
+  const result = await pool.query<AccessRequestRow>(
     `SELECT id, name, email, stake, ward, message, created_at
      FROM access_request
      ORDER BY created_at DESC`
@@ -29,13 +39,13 @@ export async function GET() {
 
   return NextResponse.json({
     items: result.rows.map((row) => ({
-      id: row.id as string,
-      name: row.name as string,
-      email: row.email as string,
-      stake: row.stake as string,
-      ward: row.ward as string,
-      message: row.message as string,
-      createdAt: row.created_at as string
+      id: row.id,
+      name: row.name,
+      email: row.email,
+      stake: row.stake,
+      ward: row.ward,
+      message: row.message,
+      createdAt: row.created_at
     }))
   });
 }
