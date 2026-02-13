@@ -21,6 +21,7 @@ User=the-stand
 Group=the-stand
 WorkingDirectory=/opt/the-stand/app/apps/web
 EnvironmentFile=/opt/the-stand/app/.env
+ExecStartPre=/usr/bin/npm run db:migrate
 ExecStart=/usr/bin/npm run start
 Restart=always
 RestartSec=5
