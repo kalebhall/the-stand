@@ -10,6 +10,7 @@ async function loadDatabaseUrlFromEnvFile() {
     process.env.ENV_FILE,
     path.resolve(process.cwd(), '.env'),
     path.resolve(__dirname, '../../.env'),
+    path.resolve(__dirname, '../../../.env'),
   ].filter(Boolean);
 
   for (const envFilePath of envCandidates) {
@@ -49,7 +50,7 @@ const loadedFromEnvFile = !process.env.DATABASE_URL ? await loadDatabaseUrlFromE
 
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) {
-  console.error('DATABASE_URL environment variable is required (set it directly or add it to /opt/the-stand/app/.env or <repo>/.env)');
+  console.error('DATABASE_URL environment variable is required (set it directly or add it to /opt/the-stand/app/.env, apps/.env, or <repo>/.env)');
   process.exit(1);
 }
 
