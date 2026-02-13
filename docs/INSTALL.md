@@ -177,18 +177,86 @@ Confirm:
 SECTION 9 — SUPPORT ADMIN BOOTSTRAP
 ---------------------------------------------------------------------
 
-On first startup:
+9.1 How the Automatic Bootstrap Works
 
-- If no SUPPORT_ADMIN exists,
-  - A secure random password (≥24 chars) is generated
-  - Printed once to logs
-  - must_change_password = true
+When `PASSWORD_AUTH_ENABLED=true` and `SUPPORT_ADMIN_EMAIL` is set, the
+app automatically creates a SUPPORT_ADMIN account on the first
+credentials-related request (not on process startup). If no user with
+the SUPPORT_ADMIN role exists:
 
-Capture password:
+- A secure random password (≥24 chars) is generated
+- The password is hashed with Argon2id and stored in the database
+- `must_change_password` is set to `true`
+- The plaintext password is printed **once** to stdout
+
+To capture the automatic password, search the service logs:
 ```
-sudo journalctl -u the-stand -n 200 --no-pager
+sudo journalctl -u the-stand --no-pager | grep "bootstrap password"
 ```
-Login and immediately rotate password.
+
+If the password is found, log in at `https://stand.yourdomain.com/login`
+and you will be prompted to set a new password immediately.
+
+9.2 Manually Setting the Support Admin Password
+
+If the bootstrap password was not captured from the logs (for example,
+logs rotated, the service was restarted, or you simply missed it), you
+can manually set a new password.
+
+Step 1 — Generate a password hash:
+```
+cd /opt/the-stand/app && node -e "
+const argon2 = require('argon2');
+const crypto = require('crypto');
+const pw = process.argv[1] || crypto.randomBytes(16).toString('base64url');
+argon2.hash(pw, { type: argon2.argon2id, memoryCost: 2**16, timeCost: 3, parallelism: 1 })
+  .then(hash => {
+    console.log('Password: ' + pw);
+    console.log('Hash:     ' + hash);
+  });
+" 'YOUR_NEW_PASSWORD_HERE'
+```
+
+Replace `YOUR_NEW_PASSWORD_HERE` with a strong password (12+ chars).
+If you omit it, a random password will be generated for you.
+
+Step 2 — Update the database:
+```
+sudo -u postgres psql the_stand -c "
+  UPDATE user_account
+     SET password_hash = 'PASTE_HASH_HERE',
+         must_change_password = false
+   WHERE email = 'you@example.com';
+"
+```
+
+Replace `PASTE_HASH_HERE` with the hash from Step 1, and
+`you@example.com` with your `SUPPORT_ADMIN_EMAIL` value.
+
+Step 3 — Verify the login works:
+
+Visit `https://stand.yourdomain.com/login` and sign in with your
+email and the password you set.
+
+9.3 Resetting a Lost Password (Alternative: Re-bootstrap)
+
+If you prefer to let the app generate a fresh password automatically,
+you can remove the SUPPORT_ADMIN role assignment and restart:
+
+```
+sudo -u postgres psql the_stand -c "
+  DELETE FROM user_global_role
+   WHERE role_id = (SELECT id FROM role WHERE name = 'SUPPORT_ADMIN');
+"
+sudo systemctl restart the-stand
+```
+
+Then trigger a new bootstrap by visiting the login page. The app will
+detect that no SUPPORT_ADMIN exists and generate a new password. Capture
+it from the logs immediately:
+```
+sudo journalctl -u the-stand -n 50 --no-pager | grep "bootstrap password"
+```
 
 ---------------------------------------------------------------------
 SECTION 10 — CREATE SYSTEMD SERVICE
