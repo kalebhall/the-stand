@@ -12,12 +12,15 @@ export function generateBootstrapPassword(): string {
 
 export async function ensureSupportAdminBootstrap(): Promise<void> {
   if (bootstrapAttempted) return;
-  bootstrapAttempted = true;
 
   const supportEmail = process.env.SUPPORT_ADMIN_EMAIL;
   if (!supportEmail) {
-    throw new Error('SUPPORT_ADMIN_EMAIL is required for bootstrap');
+    // During build/prerendering, env vars and database are not available.
+    // Skip bootstrap — it will run on the first real request at runtime.
+    return;
   }
+
+  bootstrapAttempted = true;
 
   await pool.query("INSERT INTO role (name, scope) VALUES ('SUPPORT_ADMIN', 'GLOBAL') ON CONFLICT (name) DO NOTHING");
 
