@@ -27,7 +27,7 @@ sudo reboot
 ```
 1.2 Install Base Utilities
 ```
-sudo apt install -y git curl ca-certificates build-essential ufw unzip
+sudo apt install -y git curl ca-certificates build-essential ufw unzip git
 ```
 1.3 Configure Firewall (UFW)
 ```
