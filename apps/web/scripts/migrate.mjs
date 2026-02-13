@@ -1,8 +1,9 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-const migrationsDir = path.resolve(process.cwd(), 'apps/web/drizzle');
-const stateFile = path.resolve(process.cwd(), '.migrations-applied.json');
+const __dirname = path.dirname(new URL(import.meta.url).pathname);
+const migrationsDir = path.resolve(__dirname, '../drizzle');
+const stateFile = path.resolve(__dirname, '../.migrations-applied.json');
 
 const existing = await fs
   .readFile(stateFile, 'utf8')
