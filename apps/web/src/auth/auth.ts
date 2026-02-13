@@ -82,6 +82,9 @@ async function ensureUserAccountForGoogleLogin(email: string, displayName: strin
 export const { auth, handlers } = NextAuth({
   trustHost: true,
   session: { strategy: 'jwt' },
+  pages: {
+    signIn: '/login'
+  },
   providers: [
     Google({
       clientId: process.env.AUTH_GOOGLE_ID ?? '',
