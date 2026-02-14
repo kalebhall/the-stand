@@ -42,6 +42,7 @@ export default async function DashboardPage() {
   enforcePasswordRotation(session);
 
   const showPortalCard = canViewDashboardPublicPortalStatus(session.user.roles);
+  const showSupportCards = session.user.roles?.includes('SUPPORT_ADMIN') ?? false;
   let setApartQueueCount = 'Unavailable';
   let notificationHealthValue = 'No deliveries yet';
   let notificationHealthDetail = 'No notification attempts recorded for this ward yet.';
@@ -136,6 +137,24 @@ export default async function DashboardPage() {
             value="Pending phase 8"
             detail="Public portal indicators and token management are planned for the public program milestone."
           />
+        ) : null}
+
+        {showSupportCards ? (
+          <>
+            <DashboardCard
+              title="Support: User administration"
+              value="Global user controls"
+              detail="Manage all user accounts, review role coverage, and activate or deactivate access across the system."
+              actions={[{ href: '/support/users', label: 'Open user administration' }]}
+            />
+
+            <DashboardCard
+              title="Support: Stake & ward provisioning"
+              value="Provisioning controls"
+              detail="Create new stakes and wards so ward administrators can be assigned and onboarded."
+              actions={[{ href: '/support/provisioning', label: 'Open provisioning' }]}
+            />
+          </>
         ) : null}
       </section>
     </main>

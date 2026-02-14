@@ -33,7 +33,7 @@ export function getNavigationItems(roles: string[] | undefined): AppNavItem[] {
   }
 
   if (hasRole(roles, 'SUPPORT_ADMIN')) {
-    items.push({ href: '/support/access-requests', label: 'Support Console' });
+    items.push({ href: '/support', label: 'Support Console' });
   }
 
   return items;

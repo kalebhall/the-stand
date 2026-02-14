@@ -1,5 +1,8 @@
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
+import { buttonVariants } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import { auth } from '@/src/auth/auth';
 import { hasRole } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
@@ -29,7 +32,15 @@ export default async function SupportAccessRequestsPage() {
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-5 p-6">
-      <h1 className="text-2xl font-semibold">Support Console: Access Requests</h1>
+      <section className="space-y-2">
+        <h1 className="text-2xl font-semibold">Support Console: Access Requests</h1>
+        <p className="text-muted-foreground">
+          Review and triage access intake requests. Use this queue to identify who needs provisioning or role assignment follow-up.
+        </p>
+        <Link href="/support" className={cn(buttonVariants({ size: 'sm', variant: 'outline' }))}>
+          Back to support sections
+        </Link>
+      </section>
       {result.rowCount ? (
         <div className="space-y-3">
           {result.rows.map((row) => (
