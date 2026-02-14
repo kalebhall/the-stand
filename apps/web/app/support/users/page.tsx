@@ -56,6 +56,55 @@ export default async function SupportUsersPage() {
     revalidatePath('/support/users');
   }
 
+  async function updateUser(formData: FormData) {
+    'use server';
+
+    const actingSession = await requireSupportAdmin();
+    const userId = String(formData.get('userId') ?? '');
+    const email = String(formData.get('email') ?? '').trim().toLowerCase();
+    const displayNameRaw = String(formData.get('displayName') ?? '').trim();
+    const displayName = displayNameRaw.length ? displayNameRaw : null;
+
+    if (!userId || !email) {
+      return;
+    }
+
+    await pool.query(`UPDATE user_account SET email = $1, display_name = $2 WHERE id = $3`, [email, displayName, userId]);
+
+    await pool.query(
+      `INSERT INTO audit_log (ward_id, user_id, action, details)
+       VALUES (NULL, $1, 'SUPPORT_USER_UPDATED', jsonb_build_object('targetUserId', $2::text, 'email', $3::text, 'displayName', $4::text))`,
+      [actingSession.user.id, userId, email, displayName]
+    );
+
+    revalidatePath('/support/users');
+  }
+
+  async function deleteUser(formData: FormData) {
+    'use server';
+
+    const actingSession = await requireSupportAdmin();
+    const userId = String(formData.get('userId') ?? '');
+
+    if (!userId || userId === actingSession.user.id) {
+      return;
+    }
+
+    const deleted = await pool.query(`DELETE FROM user_account WHERE id = $1 RETURNING id, email`, [userId]);
+
+    if (!deleted.rowCount) {
+      return;
+    }
+
+    await pool.query(
+      `INSERT INTO audit_log (ward_id, user_id, action, details)
+       VALUES (NULL, $1, 'SUPPORT_USER_DELETED', jsonb_build_object('targetUserId', $2::text, 'email', $3::text))`,
+      [actingSession.user.id, deleted.rows[0].id as string, deleted.rows[0].email as string]
+    );
+
+    revalidatePath('/support/users');
+  }
+
   const usersResult = await pool.query(
     `SELECT ua.id,
             ua.email,
@@ -107,6 +156,31 @@ export default async function SupportUsersPage() {
               </form>
             </div>
 
+            <form action={updateUser} className="mt-3 grid gap-2 md:grid-cols-[1fr_1fr_auto] md:items-end">
+              <input type="hidden" name="userId" value={user.id} />
+              <label className="text-xs text-muted-foreground">
+                Email
+                <input
+                  name="email"
+                  required
+                  type="email"
+                  defaultValue={user.email}
+                  className="mt-1 w-full rounded-md border px-3 py-2 text-sm text-foreground"
+                />
+              </label>
+              <label className="text-xs text-muted-foreground">
+                Display name
+                <input
+                  name="displayName"
+                  defaultValue={user.display_name ?? ''}
+                  className="mt-1 w-full rounded-md border px-3 py-2 text-sm text-foreground"
+                />
+              </label>
+              <button className="rounded-md border px-3 py-2 text-sm font-medium" type="submit">
+                Save profile
+              </button>
+            </form>
+
             <div className="mt-3 grid gap-3 text-sm md:grid-cols-2">
               <div>
                 <p className="font-medium">Global roles</p>
@@ -117,6 +191,18 @@ export default async function SupportUsersPage() {
                 <p className="text-muted-foreground">{user.ward_roles?.length ? user.ward_roles.join(', ') : 'No ward assignments'}</p>
               </div>
             </div>
+
+            <form action={deleteUser} className="mt-3">
+              <input type="hidden" name="userId" value={user.id} />
+              <button
+                className="rounded-md border px-3 py-2 text-sm font-medium"
+                type="submit"
+                disabled={user.id === session.user.id}
+                title={user.id === session.user.id ? 'You cannot delete your own account.' : undefined}
+              >
+                Delete account
+              </button>
+            </form>
           </article>
         ))}
       </section>
