@@ -2,6 +2,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
 import { auth } from '@/src/auth/auth';
+import { hashPassword } from '@/src/auth/password';
 import { hasRole } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 
@@ -31,6 +32,43 @@ async function requireSupportAdmin() {
 
 export default async function SupportUsersPage() {
   const session = await requireSupportAdmin();
+
+  async function createUser(formData: FormData) {
+    'use server';
+
+    const actingSession = await requireSupportAdmin();
+    const email = String(formData.get('email') ?? '').trim().toLowerCase();
+    const displayNameRaw = String(formData.get('displayName') ?? '').trim();
+    const displayName = displayNameRaw.length ? displayNameRaw : null;
+    const password = String(formData.get('password') ?? '').trim();
+
+    if (!email || password.length < 12) {
+      return;
+    }
+
+    const passwordHash = await hashPassword(password);
+
+    const inserted = await pool.query(
+      `INSERT INTO user_account (email, display_name, password_hash, must_change_password)
+       VALUES ($1, $2, $3, true)
+       ON CONFLICT (email)
+       DO NOTHING
+       RETURNING id, email`,
+      [email, displayName, passwordHash]
+    );
+
+    if (!inserted.rowCount) {
+      return;
+    }
+
+    await pool.query(
+      `INSERT INTO audit_log (ward_id, user_id, action, details)
+       VALUES (NULL, $1, 'SUPPORT_USER_CREATED', jsonb_build_object('targetUserId', $2::text, 'email', $3::text, 'hasPassword', true))`,
+      [actingSession.user.id, inserted.rows[0].id as string, inserted.rows[0].email as string]
+    );
+
+    revalidatePath('/support/users');
+  }
 
   async function setUserActivation(formData: FormData) {
     'use server';
@@ -136,6 +174,36 @@ export default async function SupportUsersPage() {
         <p className="text-muted-foreground">
           Manage all user accounts across the system. You can review ward and global role assignments and control account activation.
         </p>
+      </section>
+
+      <section className="rounded-lg border bg-card p-4 text-card-foreground">
+        <h2 className="text-lg font-semibold">Create User Account</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Create a credential-based account. New users are required to change their password after first sign in.
+        </p>
+        <form action={createUser} className="mt-3 grid gap-2 md:grid-cols-[1fr_1fr_1fr_auto] md:items-end">
+          <label className="text-xs text-muted-foreground">
+            Email
+            <input name="email" required type="email" className="mt-1 w-full rounded-md border px-3 py-2 text-sm text-foreground" />
+          </label>
+          <label className="text-xs text-muted-foreground">
+            Display name
+            <input name="displayName" className="mt-1 w-full rounded-md border px-3 py-2 text-sm text-foreground" />
+          </label>
+          <label className="text-xs text-muted-foreground">
+            Temporary password
+            <input
+              name="password"
+              required
+              minLength={12}
+              type="password"
+              className="mt-1 w-full rounded-md border px-3 py-2 text-sm text-foreground"
+            />
+          </label>
+          <button className="rounded-md border px-3 py-2 text-sm font-medium" type="submit">
+            Create account
+          </button>
+        </form>
       </section>
 
       <section className="space-y-3">
