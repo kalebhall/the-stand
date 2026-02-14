@@ -62,5 +62,5 @@ export async function ensureSupportAdminBootstrap(): Promise<void> {
     [userResult.rows[0].id, supportEmail]
   );
 
-  console.log(`Support Admin bootstrap password (shown once): ${password}`);
+  console.log(`Support Admin bootstrap credentials (shown once): email=${supportEmail} password=${password}`);
 }
