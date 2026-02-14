@@ -26,8 +26,10 @@ describe('phase 12 production-readiness checks', () => {
 
       for (const line of logLines) {
         const isBootstrapPasswordLine =
-          file === 'apps/web/src/db/bootstrap-support-admin.ts' &&
-          line.includes('Support Admin bootstrap password (shown once): ${password}');
+          (file === 'apps/web/src/db/bootstrap-support-admin.ts' &&
+            line.includes('Support Admin bootstrap credentials (shown once): email=${supportEmail} password=${password}')) ||
+          (file === 'apps/web/src/bootstrap.mjs' &&
+            line.includes('Support Admin bootstrap credentials (shown once): email=${email} password=${password}'));
 
         if (!isBootstrapPasswordLine) {
           expect(sensitivePattern.test(line), `Unexpected sensitive log in ${file}: ${line}`).toBe(false);

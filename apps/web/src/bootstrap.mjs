@@ -23,7 +23,7 @@ export async function ensureSupportAdminBootstrap() {
   };
 
   bootstrapDone = true;
-  console.log(`Support Admin bootstrap password (shown once): ${password}`);
+  console.log(`Support Admin bootstrap credentials (shown once): email=${email} password=${password}`);
 }
 
 export function getCurrentUser(authorizationHeader) {
