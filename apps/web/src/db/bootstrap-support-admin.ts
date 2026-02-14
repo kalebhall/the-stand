@@ -58,7 +58,7 @@ export async function ensureSupportAdminBootstrap(): Promise<void> {
 
   await pool.query(
     `INSERT INTO audit_log (ward_id, user_id, action, details)
-     VALUES (NULL, $1, 'SUPPORT_ADMIN_BOOTSTRAPPED', jsonb_build_object('email', $2))`,
+     VALUES (NULL, $1, 'SUPPORT_ADMIN_BOOTSTRAPPED', jsonb_build_object('email', $2::text))`,
     [userResult.rows[0].id, supportEmail]
   );
 
