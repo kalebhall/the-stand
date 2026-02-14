@@ -50,7 +50,7 @@ export default async function SupportProvisioningPage() {
 
     await pool.query(
       `INSERT INTO audit_log (ward_id, user_id, action, details)
-       VALUES (NULL, $1, 'SUPPORT_STAKE_CREATED', jsonb_build_object('stakeId', $2, 'stakeName', $3))`,
+       VALUES (NULL, $1, 'SUPPORT_STAKE_CREATED', jsonb_build_object('stakeId', $2::text, 'stakeName', $3::text))`,
       [actingSession.user.id, inserted.rows[0].id as string, inserted.rows[0].name as string]
     );
 
@@ -79,7 +79,7 @@ export default async function SupportProvisioningPage() {
 
     await pool.query(
       `INSERT INTO audit_log (ward_id, user_id, action, details)
-       VALUES (NULL, $1, 'SUPPORT_WARD_CREATED', jsonb_build_object('wardId', $2, 'wardName', $3, 'stakeId', $4, 'unitNumber', $5))`,
+       VALUES (NULL, $1, 'SUPPORT_WARD_CREATED', jsonb_build_object('wardId', $2::text, 'wardName', $3::text, 'stakeId', $4::text, 'unitNumber', $5::text))`,
       [
         actingSession.user.id,
         inserted.rows[0].id as string,
