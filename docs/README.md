@@ -24,3 +24,5 @@ See:
 - PLANS.md
 - INSTALL.md
 - HARDENING.md
+
+- [Support Admin Login Debug Playbook](./DEBUG_SUPPORT_ADMIN_LOGIN.md)
