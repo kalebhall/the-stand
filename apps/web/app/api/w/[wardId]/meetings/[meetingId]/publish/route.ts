@@ -6,6 +6,7 @@ import { canManageMeetings } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 import { buildMeetingRenderHtml } from '@/src/meetings/render';
+import { enqueueOutboxNotificationJob } from '@/src/notifications/queue';
 
 type MeetingRow = {
   id: string;
@@ -135,13 +136,28 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
       [wardId, generatePublicToken()]
     );
 
+    const eventType = nextVersion > 1 ? 'MEETING_REPUBLISHED' : 'MEETING_PUBLISHED';
+
     await client.query(
       `INSERT INTO audit_log (ward_id, user_id, action, details)
        VALUES ($1, $2, $3, jsonb_build_object('meetingId', $4, 'version', $5))`,
-      [wardId, session.user.id, nextVersion > 1 ? 'MEETING_REPUBLISHED' : 'MEETING_PUBLISHED', meetingId, nextVersion]
+      [wardId, session.user.id, eventType, meetingId, nextVersion]
     );
 
+    const outboxResult = await client.query(
+      `INSERT INTO event_outbox (ward_id, aggregate_type, aggregate_id, event_type, payload)
+       VALUES ($1, 'meeting', $2, $3, $4::jsonb)
+       ON CONFLICT (ward_id, event_type, aggregate_id)
+       DO UPDATE SET payload = EXCLUDED.payload, updated_at = now(), status = 'pending'
+       RETURNING id`,
+      [wardId, meetingId, eventType, JSON.stringify({ meetingId, version: nextVersion })]
+    );
+
+    const eventOutboxId = outboxResult.rows[0].id as string;
+
     await client.query('COMMIT');
+
+    await enqueueOutboxNotificationJob({ wardId, eventOutboxId });
 
     return NextResponse.json({ success: true, meetingId, version: nextVersion, status: 'PUBLISHED' });
   } catch {

@@ -1,4 +1,5 @@
 import fs from 'node:fs/promises';
+import { execSync } from 'node:child_process';
 
 const requiredFiles = [
   'apps/web/app/layout.tsx',
@@ -12,4 +13,12 @@ for (const file of requiredFiles) {
   await fs.access(file);
 }
 
-console.log('next build (placeholder): passed');
+console.log('file existence checks: passed');
+
+try {
+  execSync('npm --workspace @the-stand/web run build', { stdio: 'inherit' });
+  console.log('next build: passed');
+} catch (error) {
+  console.error('next build: failed');
+  process.exit(1);
+}

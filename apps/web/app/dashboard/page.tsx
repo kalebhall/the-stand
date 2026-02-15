@@ -46,6 +46,15 @@ export default async function DashboardPage() {
   let setApartQueueCount = 'Unavailable';
   let notificationHealthValue = 'No deliveries yet';
   let notificationHealthDetail = 'No notification attempts recorded for this ward yet.';
+  let nextMeetingValue = 'No meetings scheduled';
+  let nextMeetingDetail = 'Create a meeting to unlock edit, stand, and print quick links.';
+  let nextMeetingActions: { href: string; label: string }[] = [{ href: '/meetings', label: 'Create first meeting' }];
+  let draftCountValue = '0 drafts';
+  let draftCountDetail = 'No draft meetings yet.';
+  let importSummaryValue = 'No imports yet';
+  let importSummaryDetail = 'Use the imports page to import membership or calling data.';
+  let portalStatusValue = 'Not configured';
+  let portalStatusDetail = 'No public portal token has been created yet.';
 
   if (session.activeWardId && canViewCallings({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId)) {
     const client = await pool.connect();
@@ -79,11 +88,70 @@ export default async function DashboardPage() {
         [session.activeWardId]
       );
 
+      const nextMeetingResult = await client.query(
+        `SELECT id, meeting_date, meeting_type, status
+           FROM meeting
+          WHERE ward_id = $1
+            AND meeting_date >= CURRENT_DATE
+            AND status != 'COMPLETED'
+          ORDER BY meeting_date ASC
+          LIMIT 1`,
+        [session.activeWardId]
+      );
+
+      const draftCountResult = await client.query(
+        `SELECT COUNT(*)::int AS count
+           FROM meeting
+          WHERE ward_id = $1
+            AND status = 'DRAFT'`,
+        [session.activeWardId]
+      );
+
+      const importSummaryResult = await client.query(
+        `SELECT import_type, parsed_count, committed, created_at
+           FROM import_run
+          WHERE ward_id = $1
+          ORDER BY created_at DESC
+          LIMIT 1`,
+        [session.activeWardId]
+      );
+
+      const portalResult = await client.query(
+        `SELECT id FROM public_program_portal WHERE ward_id = $1 LIMIT 1`,
+        [session.activeWardId]
+      );
+
       await client.query('COMMIT');
       setApartQueueCount = `${result.rows[0].count} waiting`;
       const notificationHealth = notificationHealthResult.rows[0] as { last_delivery_at: string | null; failure_count: number };
       notificationHealthValue = notificationHealth.last_delivery_at ?? 'No deliveries yet';
       notificationHealthDetail = `${notificationHealth.failure_count} failed deliveries`;
+
+      if (nextMeetingResult.rowCount) {
+        const nextMeeting = nextMeetingResult.rows[0] as { id: string; meeting_date: string; meeting_type: string; status: string };
+        nextMeetingValue = `${nextMeeting.meeting_date} (${nextMeeting.meeting_type.replaceAll('_', ' ')})`;
+        nextMeetingDetail = `Status: ${nextMeeting.status}`;
+        nextMeetingActions = [
+          { href: `/meetings/${nextMeeting.id}/edit`, label: 'Edit' },
+          { href: `/stand/${nextMeeting.id}`, label: 'Stand' },
+          { href: `/meetings/${nextMeeting.id}/print`, label: 'Print' }
+        ];
+      }
+
+      const draftCount = (draftCountResult.rows[0] as { count: number }).count;
+      draftCountValue = `${draftCount} draft${draftCount === 1 ? '' : 's'}`;
+      draftCountDetail = draftCount > 0 ? `${draftCount} meeting${draftCount === 1 ? '' : 's'} in draft status.` : 'No draft meetings yet.';
+
+      if (importSummaryResult.rowCount) {
+        const importRun = importSummaryResult.rows[0] as { import_type: string; parsed_count: number; committed: boolean; created_at: string };
+        importSummaryValue = `${importRun.import_type}: ${importRun.parsed_count} records`;
+        importSummaryDetail = `${importRun.committed ? 'Committed' : 'Preview only'} on ${new Date(importRun.created_at).toLocaleDateString()}`;
+      }
+
+      if (portalResult.rowCount) {
+        portalStatusValue = 'Active';
+        portalStatusDetail = 'Public portal token is configured. Visitors can view your latest published program.';
+      }
     } catch {
       await client.query('ROLLBACK');
       setApartQueueCount = 'Unavailable';
@@ -104,12 +172,17 @@ export default async function DashboardPage() {
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         <DashboardCard
           title="Next meeting"
-          value="No meetings scheduled"
-          detail="Create your first meeting in the next phase to unlock edit, stand, and print quick links."
-          actions={[{ href: '/meetings', label: 'Create first meeting' }]}
+          value={nextMeetingValue}
+          detail={nextMeetingDetail}
+          actions={nextMeetingActions}
         />
 
-        <DashboardCard title="Draft count" value="0 drafts" detail="No draft meetings yet." />
+        <DashboardCard
+          title="Draft count"
+          value={draftCountValue}
+          detail={draftCountDetail}
+          actions={[{ href: '/meetings', label: 'View meetings' }]}
+        />
 
         <DashboardCard
           title="Set apart queue count"
@@ -127,15 +200,17 @@ export default async function DashboardPage() {
 
         <DashboardCard
           title="Last import summary"
-          value="Pending phase 10"
-          detail="Import summaries will populate once membership and calling imports are available."
+          value={importSummaryValue}
+          detail={importSummaryDetail}
+          actions={[{ href: '/imports', label: 'Open imports' }]}
         />
 
         {showPortalCard ? (
           <DashboardCard
             title="Public portal status"
-            value="Pending phase 8"
-            detail="Public portal indicators and token management are planned for the public program milestone."
+            value={portalStatusValue}
+            detail={portalStatusDetail}
+            actions={[{ href: '/settings/public-portal', label: 'Manage portal' }]}
           />
         ) : null}
 

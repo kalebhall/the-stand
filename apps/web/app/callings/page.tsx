@@ -1,9 +1,13 @@
 import { redirect } from 'next/navigation';
 
+import { Button } from '@/components/ui/button';
 import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth/guards';
-import { canViewCallings } from '@/src/auth/roles';
+import { canManageCallings, canViewCallings } from '@/src/auth/roles';
+import { canTransitionCallingStatus, type CallingStatus } from '@/src/callings/lifecycle';
+import { appendCallingStatus, fetchCurrentCallingStatus } from '@/src/callings/transition';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
+import { revalidatePath } from 'next/cache';
 
 type CallingQueueRow = {
   id: string;
@@ -13,6 +17,29 @@ type CallingQueueRow = {
   created_at: string;
 };
 
+const STATUS_LABELS: Record<string, string> = {
+  PROPOSED: 'Proposed',
+  EXTENDED: 'Extended',
+  SUSTAINED: 'Sustained',
+  SET_APART: 'Set Apart'
+};
+
+function nextTransition(status: string): { toStatus: CallingStatus; label: string } | null {
+  if (status === 'PROPOSED' && canTransitionCallingStatus('PROPOSED', 'EXTENDED')) {
+    return { toStatus: 'EXTENDED', label: 'Mark Extended' };
+  }
+
+  if (status === 'EXTENDED' && canTransitionCallingStatus('EXTENDED', 'SUSTAINED')) {
+    return { toStatus: 'SUSTAINED', label: 'Mark Sustained' };
+  }
+
+  if (status === 'SUSTAINED' && canTransitionCallingStatus('SUSTAINED', 'SET_APART')) {
+    return { toStatus: 'SET_APART', label: 'Mark Set Apart' };
+  }
+
+  return null;
+}
+
 export default async function CallingsPage() {
   const session = await requireAuthenticatedSession();
   enforcePasswordRotation(session);
@@ -21,11 +48,97 @@ export default async function CallingsPage() {
     redirect('/dashboard');
   }
 
+  const wardId = session.activeWardId;
+  const canManage = canManageCallings({ roles: session.user.roles, activeWardId: wardId }, wardId);
+
+  async function transitionCalling(formData: FormData) {
+    'use server';
+
+    const actionSession = await requireAuthenticatedSession();
+    enforcePasswordRotation(actionSession);
+
+    if (
+      !actionSession.activeWardId ||
+      !canManageCallings({ roles: actionSession.user.roles, activeWardId: actionSession.activeWardId }, actionSession.activeWardId)
+    ) {
+      redirect('/callings');
+    }
+
+    const callingId = String(formData.get('callingId') ?? '').trim();
+    const toStatus = String(formData.get('toStatus') ?? '').trim() as CallingStatus;
+    if (!callingId || !toStatus) {
+      redirect('/callings');
+    }
+
+    const client = await pool.connect();
+
+    try {
+      await client.query('BEGIN');
+      await setDbContext(client, { userId: actionSession.user.id, wardId: actionSession.activeWardId });
+
+      const currentStatus = await fetchCurrentCallingStatus(client, actionSession.activeWardId, callingId);
+      if (!currentStatus) {
+        await client.query('ROLLBACK');
+        redirect('/callings');
+        return;
+      }
+
+      const transition = await appendCallingStatus(client, {
+        wardId: actionSession.activeWardId,
+        callingId,
+        fromStatus: currentStatus,
+        toStatus
+      });
+
+      if (!transition.ok) {
+        await client.query('ROLLBACK');
+        redirect('/callings');
+        return;
+      }
+
+      if (toStatus === 'SUSTAINED') {
+        const assignmentResult = await client.query(
+          'SELECT member_name, calling_name FROM calling_assignment WHERE id = $1 AND ward_id = $2 LIMIT 1',
+          [callingId, actionSession.activeWardId]
+        );
+        const assignment = assignmentResult.rows[0] as { member_name: string; calling_name: string } | undefined;
+
+        const meetingResult = await client.query(
+          `SELECT id FROM meeting WHERE ward_id = $1 AND meeting_date >= CURRENT_DATE ORDER BY meeting_date ASC LIMIT 1 FOR UPDATE`,
+          [actionSession.activeWardId]
+        );
+
+        if (meetingResult.rowCount && assignment) {
+          await client.query(
+            `INSERT INTO meeting_business_line (ward_id, meeting_id, member_name, calling_name, action_type, status)
+             VALUES ($1, $2, $3, $4, 'SUSTAIN', 'pending')`,
+            [actionSession.activeWardId, meetingResult.rows[0].id, assignment.member_name, assignment.calling_name]
+          );
+        }
+      }
+
+      await client.query(
+        `INSERT INTO audit_log (ward_id, user_id, action, details)
+         VALUES ($1, $2, $3, jsonb_build_object('callingAssignmentId', $4, 'toStatus', $5))`,
+        [actionSession.activeWardId, actionSession.user.id, `CALLING_${toStatus}`, callingId, toStatus]
+      );
+
+      await client.query('COMMIT');
+    } catch {
+      await client.query('ROLLBACK');
+      throw new Error('Failed to transition calling');
+    } finally {
+      client.release();
+    }
+
+    revalidatePath('/callings');
+  }
+
   const client = await pool.connect();
 
   try {
     await client.query('BEGIN');
-    await setDbContext(client, { userId: session.user.id, wardId: session.activeWardId });
+    await setDbContext(client, { userId: session.user.id, wardId });
 
     const callingResult = await client.query(
       `SELECT ca.id,
@@ -44,7 +157,7 @@ export default async function CallingsPage() {
          ) latest ON TRUE
         WHERE ca.ward_id = $1
         ORDER BY ca.created_at DESC`,
-      [session.activeWardId]
+      [wardId]
     );
 
     const setApartQueueResult = await client.query(
@@ -65,7 +178,7 @@ export default async function CallingsPage() {
           AND ca.is_active = TRUE
           AND latest.action_status = 'SUSTAINED'
         ORDER BY ca.created_at ASC`,
-      [session.activeWardId]
+      [wardId]
     );
 
     await client.query('COMMIT');
@@ -86,8 +199,17 @@ export default async function CallingsPage() {
           {setApartQueue.length ? (
             <ul className="space-y-2">
               {setApartQueue.map((item) => (
-                <li key={item.id} className="rounded-md border px-3 py-2 text-sm">
-                  <span className="font-semibold">{item.member_name}</span> — {item.calling_name}
+                <li key={item.id} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
+                  <span>
+                    <span className="font-semibold">{item.member_name}</span> — {item.calling_name}
+                  </span>
+                  {canManage ? (
+                    <form action={transitionCalling}>
+                      <input type="hidden" name="callingId" value={item.id} />
+                      <input type="hidden" name="toStatus" value="SET_APART" />
+                      <Button type="submit" size="sm" variant="outline">Mark Set Apart</Button>
+                    </form>
+                  ) : null}
                 </li>
               ))}
             </ul>
@@ -100,14 +222,28 @@ export default async function CallingsPage() {
           <h2 className="text-lg font-semibold">Calling Assignments</h2>
           {callings.length ? (
             <ul className="mt-3 space-y-2">
-              {callings.map((calling) => (
-                <li key={calling.id} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
-                  <span>
-                    <span className="font-semibold">{calling.member_name}</span> — {calling.calling_name}
-                  </span>
-                  <span className="rounded-full border px-2 py-0.5 text-xs font-medium">{calling.status}</span>
-                </li>
-              ))}
+              {callings.map((calling) => {
+                const transition = canManage ? nextTransition(calling.status) : null;
+                return (
+                  <li key={calling.id} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
+                    <span>
+                      <span className="font-semibold">{calling.member_name}</span> — {calling.calling_name}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="rounded-full border px-2 py-0.5 text-xs font-medium">
+                        {STATUS_LABELS[calling.status] ?? calling.status}
+                      </span>
+                      {transition ? (
+                        <form action={transitionCalling}>
+                          <input type="hidden" name="callingId" value={calling.id} />
+                          <input type="hidden" name="toStatus" value={transition.toStatus} />
+                          <Button type="submit" size="sm" variant="outline">{transition.label}</Button>
+                        </form>
+                      ) : null}
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           ) : (
             <p className="mt-3 text-sm text-muted-foreground">No calling assignments yet.</p>
