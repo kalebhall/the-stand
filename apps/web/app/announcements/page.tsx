@@ -191,6 +191,162 @@ export default async function AnnouncementsPage() {
     revalidatePath('/announcements');
   }
 
+  async function updateAnnouncement(formData: FormData) {
+    'use server';
+
+    const actionSession = await requireAuthenticatedSession();
+    enforcePasswordRotation(actionSession);
+
+    if (
+      !actionSession.activeWardId ||
+      !canManageMeetings({ roles: actionSession.user.roles, activeWardId: actionSession.activeWardId }, actionSession.activeWardId)
+    ) {
+      redirect('/announcements');
+    }
+
+    const announcementId = String(formData.get('announcementId') ?? '').trim();
+    const title = String(formData.get('title') ?? '').trim();
+    const body = String(formData.get('body') ?? '').trim();
+    const startDateInput = String(formData.get('startDate') ?? '').trim();
+    const endDateInput = String(formData.get('endDate') ?? '').trim();
+    const placement = String(formData.get('placement') ?? 'PROGRAM_TOP').trim();
+    const isPermanent = formData.get('isPermanent') === 'on';
+
+    const startDate = startDateInput.length ? startDateInput : null;
+    const endDate = endDateInput.length ? endDateInput : null;
+
+    if (!announcementId || !title || !isAnnouncementPlacement(placement) || (startDate && endDate && startDate > endDate)) {
+      redirect('/announcements');
+    }
+
+    const client = await pool.connect();
+
+    try {
+      await client.query('BEGIN');
+      await setDbContext(client, { userId: actionSession.user.id, wardId: actionSession.activeWardId });
+
+      await client.query(
+        `UPDATE announcement
+            SET title = $1, body = $2, start_date = $3, end_date = $4, is_permanent = $5, placement = $6
+          WHERE id = $7 AND ward_id = $8`,
+        [title, body || null, startDate, endDate, isPermanent, placement, announcementId, actionSession.activeWardId]
+      );
+
+      await client.query(
+        `INSERT INTO audit_log (ward_id, user_id, action, details)
+         VALUES ($1, $2, 'ANNOUNCEMENT_UPDATED', jsonb_build_object('announcementId', $3, 'title', $4, 'placement', $5, 'isPermanent', $6))`,
+        [actionSession.activeWardId, actionSession.user.id, announcementId, title, placement, isPermanent]
+      );
+
+      await client.query('COMMIT');
+    } catch {
+      await client.query('ROLLBACK');
+      throw new Error('Failed to update announcement');
+    } finally {
+      client.release();
+    }
+
+    revalidatePath('/announcements');
+  }
+
+  async function createCalendarFeed(formData: FormData) {
+    'use server';
+
+    const actionSession = await requireAuthenticatedSession();
+    enforcePasswordRotation(actionSession);
+
+    if (
+      !actionSession.activeWardId ||
+      !canManageMeetings({ roles: actionSession.user.roles, activeWardId: actionSession.activeWardId }, actionSession.activeWardId)
+    ) {
+      redirect('/announcements');
+    }
+
+    const displayName = String(formData.get('displayName') ?? '').trim();
+    const feedUrl = String(formData.get('feedUrl') ?? '').trim();
+    const feedScope = String(formData.get('feedScope') ?? 'WARD').trim();
+
+    if (!displayName || !feedUrl || !['WARD', 'STAKE', 'CHURCH'].includes(feedScope)) {
+      redirect('/announcements');
+    }
+
+    const client = await pool.connect();
+
+    try {
+      await client.query('BEGIN');
+      await setDbContext(client, { userId: actionSession.user.id, wardId: actionSession.activeWardId });
+
+      await client.query(
+        `INSERT INTO calendar_feed (ward_id, display_name, feed_url, feed_scope)
+         VALUES ($1, $2, $3, $4)`,
+        [actionSession.activeWardId, displayName, feedUrl, feedScope]
+      );
+
+      await client.query(
+        `INSERT INTO audit_log (ward_id, user_id, action, details)
+         VALUES ($1, $2, 'CALENDAR_FEED_CREATED', jsonb_build_object('displayName', $3, 'feedScope', $4))`,
+        [actionSession.activeWardId, actionSession.user.id, displayName, feedScope]
+      );
+
+      await client.query('COMMIT');
+    } catch {
+      await client.query('ROLLBACK');
+      throw new Error('Failed to create calendar feed');
+    } finally {
+      client.release();
+    }
+
+    revalidatePath('/announcements');
+  }
+
+  async function deleteCalendarFeed(formData: FormData) {
+    'use server';
+
+    const actionSession = await requireAuthenticatedSession();
+    enforcePasswordRotation(actionSession);
+
+    if (
+      !actionSession.activeWardId ||
+      !canManageMeetings({ roles: actionSession.user.roles, activeWardId: actionSession.activeWardId }, actionSession.activeWardId)
+    ) {
+      redirect('/announcements');
+    }
+
+    const feedId = String(formData.get('feedId') ?? '').trim();
+    if (!feedId) {
+      redirect('/announcements');
+    }
+
+    const client = await pool.connect();
+
+    try {
+      await client.query('BEGIN');
+      await setDbContext(client, { userId: actionSession.user.id, wardId: actionSession.activeWardId });
+
+      const deleted = await client.query(
+        'DELETE FROM calendar_feed WHERE id = $1 AND ward_id = $2 RETURNING display_name',
+        [feedId, actionSession.activeWardId]
+      );
+
+      if (deleted.rowCount) {
+        await client.query(
+          `INSERT INTO audit_log (ward_id, user_id, action, details)
+           VALUES ($1, $2, 'CALENDAR_FEED_DELETED', jsonb_build_object('feedId', $3, 'displayName', $4))`,
+          [actionSession.activeWardId, actionSession.user.id, feedId, deleted.rows[0].display_name]
+        );
+      }
+
+      await client.query('COMMIT');
+    } catch {
+      await client.query('ROLLBACK');
+      throw new Error('Failed to delete calendar feed');
+    } finally {
+      client.release();
+    }
+
+    revalidatePath('/announcements');
+  }
+
   async function copyCalendarEvent(formData: FormData) {
     'use server';
 
@@ -285,17 +441,49 @@ export default async function AnnouncementsPage() {
               {calendarFeeds.length ? (
                 calendarFeeds.map((feed) => (
                   <li key={feed.id} className="rounded-md border p-2">
-                    <p className="font-medium">{feed.display_name} <span className="text-xs text-muted-foreground">({feed.feed_scope})</span></p>
-                    <p className="text-xs text-muted-foreground">
-                      Last refresh: {feed.last_refreshed_at ?? 'Never'} · Status: {feed.last_refresh_status ?? 'Not run'}
-                    </p>
-                    {feed.last_refresh_error ? <p className="text-xs text-destructive">{feed.last_refresh_error}</p> : null}
+                    <div className="flex items-center justify-between gap-2">
+                      <div>
+                        <p className="font-medium">{feed.display_name} <span className="text-xs text-muted-foreground">({feed.feed_scope})</span></p>
+                        <p className="text-xs text-muted-foreground">
+                          Last refresh: {feed.last_refreshed_at ?? 'Never'} · Status: {feed.last_refresh_status ?? 'Not run'}
+                        </p>
+                        {feed.last_refresh_error ? <p className="text-xs text-destructive">{feed.last_refresh_error}</p> : null}
+                      </div>
+                      <form action={deleteCalendarFeed}>
+                        <input type="hidden" name="feedId" value={feed.id} />
+                        <Button type="submit" variant="outline" size="sm">Remove</Button>
+                      </form>
+                    </div>
                   </li>
                 ))
               ) : (
                 <li className="text-muted-foreground">No calendar feeds configured.</li>
               )}
             </ul>
+            <details className="mt-4">
+              <summary className="cursor-pointer text-sm font-medium text-muted-foreground">Add calendar feed</summary>
+              <form action={createCalendarFeed} className="mt-3 grid gap-3 sm:grid-cols-3">
+                <label className="grid gap-1 text-sm font-medium">
+                  Display name
+                  <input name="displayName" required className="rounded-md border bg-background px-3 py-2 text-sm" />
+                </label>
+                <label className="grid gap-1 text-sm font-medium">
+                  Feed URL (ICS)
+                  <input name="feedUrl" required type="url" className="rounded-md border bg-background px-3 py-2 text-sm" />
+                </label>
+                <label className="grid gap-1 text-sm font-medium">
+                  Scope
+                  <select name="feedScope" defaultValue="WARD" className="rounded-md border bg-background px-3 py-2 text-sm">
+                    <option value="WARD">Ward</option>
+                    <option value="STAKE">Stake</option>
+                    <option value="CHURCH">Church</option>
+                  </select>
+                </label>
+                <div className="sm:col-span-3">
+                  <Button type="submit" size="sm">Add feed</Button>
+                </div>
+              </form>
+            </details>
           </section>
         ) : null}
 
@@ -385,12 +573,48 @@ export default async function AnnouncementsPage() {
                     {item.body ? <p className="mt-1 text-muted-foreground">{item.body}</p> : null}
                     <p className="mt-2 text-xs text-muted-foreground">{formatWindow(item.start_date, item.end_date, item.is_permanent)}</p>
                     {canManage ? (
-                      <form action={deleteAnnouncement} className="mt-2">
-                        <input type="hidden" name="announcementId" value={item.id} />
-                        <Button type="submit" variant="outline" size="sm">
-                          Delete
-                        </Button>
-                      </form>
+                      <div className="mt-2 flex gap-2">
+                        <form action={deleteAnnouncement}>
+                          <input type="hidden" name="announcementId" value={item.id} />
+                          <Button type="submit" variant="outline" size="sm">Delete</Button>
+                        </form>
+                        <details className="flex-1">
+                          <summary className="cursor-pointer text-sm font-medium text-muted-foreground">Edit</summary>
+                          <form action={updateAnnouncement} className="mt-2 grid gap-2 sm:grid-cols-2">
+                            <input type="hidden" name="announcementId" value={item.id} />
+                            <label className="grid gap-1 text-sm font-medium sm:col-span-2">
+                              Title
+                              <input name="title" defaultValue={item.title} required className="rounded-md border bg-background px-3 py-2 text-sm" />
+                            </label>
+                            <label className="grid gap-1 text-sm font-medium sm:col-span-2">
+                              Body
+                              <textarea name="body" defaultValue={item.body ?? ''} rows={2} className="rounded-md border bg-background px-3 py-2 text-sm" />
+                            </label>
+                            <label className="grid gap-1 text-sm font-medium">
+                              Start date
+                              <input name="startDate" type="date" defaultValue={item.start_date ?? ''} className="rounded-md border bg-background px-3 py-2 text-sm" />
+                            </label>
+                            <label className="grid gap-1 text-sm font-medium">
+                              End date
+                              <input name="endDate" type="date" defaultValue={item.end_date ?? ''} className="rounded-md border bg-background px-3 py-2 text-sm" />
+                            </label>
+                            <label className="grid gap-1 text-sm font-medium">
+                              Placement
+                              <select name="placement" defaultValue={item.placement} className="rounded-md border bg-background px-3 py-2 text-sm">
+                                <option value="PROGRAM_TOP">Program top</option>
+                                <option value="PROGRAM_BOTTOM">Program bottom</option>
+                              </select>
+                            </label>
+                            <label className="mt-7 inline-flex items-center gap-2 text-sm font-medium">
+                              <input name="isPermanent" type="checkbox" defaultChecked={item.is_permanent} className="h-4 w-4 rounded border" />
+                              Permanent
+                            </label>
+                            <div className="sm:col-span-2">
+                              <Button type="submit" size="sm">Save changes</Button>
+                            </div>
+                          </form>
+                        </details>
+                      </div>
                     ) : null}
                   </li>
                 ))}

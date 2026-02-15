@@ -11,6 +11,11 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "node scripts/vitest.mjs",
     "build": "node scripts/next-build.mjs",
-    "test:e2e": "npm --workspace @the-stand/web run test:e2e"
+    "test:e2e": "npm --workspace @the-stand/web run test:e2e",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "prettier": "^3.5.3"
   }
 }
