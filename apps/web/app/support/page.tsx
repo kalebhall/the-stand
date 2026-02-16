@@ -27,6 +27,13 @@ const sections = [
       'Review incoming access requests from leaders and clerks so approved users can be provisioned in the correct ward.',
     href: '/support/access-requests',
     action: 'Review requests'
+  },
+  {
+    title: 'Audit Log',
+    description:
+      'Review all system activity including successes and failures. Filter and sort entries by action, user, ward, or date range.',
+    href: '/support/audit-log',
+    action: 'View audit log'
   }
 ] as const;
 
