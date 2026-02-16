@@ -3,8 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
-
-const assignableRoles = ['BISHOPRIC_EDITOR', 'CLERK_EDITOR', 'WARD_CLERK', 'MEMBERSHIP_CLERK', 'CONDUCTOR_VIEW'] as const;
+import { WARD_ROLES } from '@/src/auth/roles';
 
 type WardUserRole = {
   id: string;
@@ -87,7 +86,7 @@ export function WardUsersManager({ wardId }: { wardId: string }) {
   );
 
   const roleOptions = useMemo(
-    () => assignableRoles.map((roleName) => <option key={roleName}>{roleName}</option>),
+    () => WARD_ROLES.map((roleName) => <option key={roleName} value={roleName}>{roleName}</option>),
     []
   );
 
@@ -125,9 +124,7 @@ export function WardUsersManager({ wardId }: { wardId: string }) {
             </div>
 
             <div className="mt-3 flex flex-wrap gap-2">
-              {user.roles
-                .filter((role) => role.name !== 'STAND_ADMIN')
-                .map((role) => (
+              {user.roles.map((role) => (
                   <Button key={role.id} onClick={() => void revokeRole(user.id, role)} size="sm" type="button" variant="outline">
                     Revoke {role.name}
                   </Button>
