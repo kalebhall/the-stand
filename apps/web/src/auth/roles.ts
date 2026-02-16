@@ -13,7 +13,8 @@ export type GlobalRoleName = (typeof GLOBAL_ROLES)[number];
 export type WardRoleName = (typeof WARD_ROLES)[number];
 
 export function hasRole(roles: string[] | undefined, role: string): boolean {
-  return Boolean(roles?.includes(role));
+  const targetRole = role.trim().toUpperCase();
+  return Boolean(roles?.some((candidateRole) => candidateRole.trim().toUpperCase() === targetRole));
 }
 
 export function canManageWardUsers(session: { roles?: string[]; activeWardId?: string | null }, wardId: string): boolean {

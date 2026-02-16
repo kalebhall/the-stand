@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { canAssignRole, canManageMeetings, canManageWardUsers, canViewMeetings } from './roles';
+import { canAssignRole, canManageMeetings, canManageWardUsers, canViewCallings, canViewMeetings, hasRole } from './roles';
 
 describe('canManageWardUsers', () => {
   it('allows ward STAND_ADMIN only within their active ward', () => {
@@ -34,5 +34,16 @@ describe('meeting permissions', () => {
   it('restricts meeting management to editor/admin roles', () => {
     expect(canManageMeetings({ roles: ['BISHOPRIC_EDITOR'], activeWardId: 'ward-a' }, 'ward-a')).toBe(true);
     expect(canManageMeetings({ roles: ['CONDUCTOR_VIEW'], activeWardId: 'ward-a' }, 'ward-a')).toBe(false);
+  });
+});
+
+describe('role normalization', () => {
+  it('matches roles case-insensitively', () => {
+    expect(hasRole(['stand_admin'], 'STAND_ADMIN')).toBe(true);
+    expect(hasRole(['  Support_Admin  '], 'SUPPORT_ADMIN')).toBe(true);
+  });
+
+  it('allows imports access for stand admins when role casing differs', () => {
+    expect(canViewCallings({ roles: ['stand_admin'], activeWardId: 'ward-a' }, 'ward-a')).toBe(true);
   });
 });
