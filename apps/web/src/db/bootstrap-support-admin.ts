@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 
 import { hashPassword } from '@/src/auth/password';
+import { GLOBAL_ROLES, WARD_ROLES } from '@/src/auth/roles';
 
 import { pool } from './client';
 
@@ -22,7 +23,12 @@ export async function ensureSupportAdminBootstrap(): Promise<void> {
 
   bootstrapAttempted = true;
 
-  await pool.query("INSERT INTO role (name, scope) VALUES ('SUPPORT_ADMIN', 'GLOBAL') ON CONFLICT (name) DO NOTHING");
+  for (const name of GLOBAL_ROLES) {
+    await pool.query("INSERT INTO role (name, scope) VALUES ($1, 'GLOBAL') ON CONFLICT (name) DO NOTHING", [name]);
+  }
+  for (const name of WARD_ROLES) {
+    await pool.query("INSERT INTO role (name, scope) VALUES ($1, 'WARD') ON CONFLICT (name) DO NOTHING", [name]);
+  }
 
   const roleResult = await pool.query(
     `SELECT u.id
