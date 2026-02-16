@@ -203,18 +203,31 @@ export async function assignWardRole(formData: FormData) {
     return;
   }
 
-  await pool.query(
-    `INSERT INTO ward_user_role (ward_id, user_id, role_id)
-     VALUES ($1, $2, $3)
-     ON CONFLICT (ward_id, user_id, role_id) DO NOTHING`,
-    [wardId, userId, roleId]
-  );
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query('SELECT set_config($1, $2, true)', ['app.user_id', actingSession.user.id]);
 
-  await pool.query(
-    `INSERT INTO audit_log (ward_id, user_id, action, details)
-     VALUES (NULL, $1, 'SUPPORT_WARD_ROLE_ASSIGNED', jsonb_build_object('targetUserId', $2::text, 'wardId', $3::text, 'roleName', $4::text))`,
-    [actingSession.user.id, userId, wardId, roleResult.rows[0].name as string]
-  );
+    await client.query(
+      `INSERT INTO ward_user_role (ward_id, user_id, role_id)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (ward_id, user_id, role_id) DO NOTHING`,
+      [wardId, userId, roleId]
+    );
+
+    await client.query(
+      `INSERT INTO audit_log (ward_id, user_id, action, details)
+       VALUES (NULL, $1, 'SUPPORT_WARD_ROLE_ASSIGNED', jsonb_build_object('targetUserId', $2::text, 'wardId', $3::text, 'roleName', $4::text))`,
+      [actingSession.user.id, userId, wardId, roleResult.rows[0].name as string]
+    );
+
+    await client.query('COMMIT');
+  } catch {
+    await client.query('ROLLBACK');
+    throw new Error('Failed to assign ward role');
+  } finally {
+    client.release();
+  }
 
   revalidatePath('/support/users');
 }
@@ -229,22 +242,36 @@ export async function revokeWardRole(formData: FormData) {
     return;
   }
 
-  const deleted = await pool.query(
-    `DELETE FROM ward_user_role
-     WHERE user_id = $1 AND ward_id = $2 AND role_id = $3
-     RETURNING id`,
-    [userId, wardId, roleId]
-  );
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query('SELECT set_config($1, $2, true)', ['app.user_id', actingSession.user.id]);
 
-  if (!deleted.rowCount) {
-    return;
+    const deleted = await client.query(
+      `DELETE FROM ward_user_role
+       WHERE user_id = $1 AND ward_id = $2 AND role_id = $3
+       RETURNING id`,
+      [userId, wardId, roleId]
+    );
+
+    if (!deleted.rowCount) {
+      await client.query('ROLLBACK');
+      return;
+    }
+
+    await client.query(
+      `INSERT INTO audit_log (ward_id, user_id, action, details)
+       VALUES (NULL, $1, 'SUPPORT_WARD_ROLE_REVOKED', jsonb_build_object('targetUserId', $2::text, 'wardId', $3::text, 'roleId', $4::text))`,
+      [actingSession.user.id, userId, wardId, roleId]
+    );
+
+    await client.query('COMMIT');
+  } catch {
+    await client.query('ROLLBACK');
+    throw new Error('Failed to revoke ward role');
+  } finally {
+    client.release();
   }
-
-  await pool.query(
-    `INSERT INTO audit_log (ward_id, user_id, action, details)
-     VALUES (NULL, $1, 'SUPPORT_WARD_ROLE_REVOKED', jsonb_build_object('targetUserId', $2::text, 'wardId', $3::text, 'roleId', $4::text))`,
-    [actingSession.user.id, userId, wardId, roleId]
-  );
 
   revalidatePath('/support/users');
 }
