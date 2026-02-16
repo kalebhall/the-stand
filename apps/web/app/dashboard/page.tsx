@@ -3,8 +3,7 @@ import Link from 'next/link';
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth/guards';
-import { canViewDashboardPublicPortalStatus } from '@/src/auth/navigation';
-import { canViewCallings } from '@/src/auth/roles';
+import { canViewCallings, canViewMeetings, hasRole } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 
@@ -41,7 +40,16 @@ export default async function DashboardPage() {
   const session = await requireAuthenticatedSession();
   enforcePasswordRotation(session);
 
-  const showPortalCard = canViewDashboardPublicPortalStatus(session.user.roles);
+  const wardSession = session.activeWardId
+    ? { roles: session.user.roles, activeWardId: session.activeWardId }
+    : null;
+  const canAccessMeetings = wardSession
+    ? canViewMeetings(wardSession, session.activeWardId!)
+    : false;
+  const canAccessCallings = wardSession
+    ? canViewCallings(wardSession, session.activeWardId!)
+    : false;
+  const canAccessPortal = Boolean(session.activeWardId) && hasRole(session.user.roles, 'STAND_ADMIN');
   const showSupportCards = session.user.roles?.includes('SUPPORT_ADMIN') ?? false;
   let setApartQueueCount = 'Unavailable';
   let notificationHealthValue = 'No deliveries yet';
@@ -56,7 +64,7 @@ export default async function DashboardPage() {
   let portalStatusValue = 'Not configured';
   let portalStatusDetail = 'No public portal token has been created yet.';
 
-  if (session.activeWardId && canViewCallings({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId)) {
+  if (session.activeWardId && canAccessCallings) {
     const client = await pool.connect();
 
     try {
@@ -170,42 +178,52 @@ export default async function DashboardPage() {
       </section>
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        <DashboardCard
-          title="Next meeting"
-          value={nextMeetingValue}
-          detail={nextMeetingDetail}
-          actions={nextMeetingActions}
-        />
+        {canAccessMeetings ? (
+          <DashboardCard
+            title="Next meeting"
+            value={nextMeetingValue}
+            detail={nextMeetingDetail}
+            actions={nextMeetingActions}
+          />
+        ) : null}
 
-        <DashboardCard
-          title="Draft count"
-          value={draftCountValue}
-          detail={draftCountDetail}
-          actions={[{ href: '/meetings', label: 'View meetings' }]}
-        />
+        {canAccessMeetings ? (
+          <DashboardCard
+            title="Draft count"
+            value={draftCountValue}
+            detail={draftCountDetail}
+            actions={[{ href: '/meetings', label: 'View meetings' }]}
+          />
+        ) : null}
 
-        <DashboardCard
-          title="Set apart queue count"
-          value={setApartQueueCount}
-          detail="Sustained callings awaiting set apart action."
-          actions={[{ href: '/callings', label: 'Open callings queue' }]}
-        />
+        {canAccessCallings ? (
+          <DashboardCard
+            title="Set apart queue count"
+            value={setApartQueueCount}
+            detail="Sustained callings awaiting set apart action."
+            actions={[{ href: '/callings', label: 'Open callings queue' }]}
+          />
+        ) : null}
 
-        <DashboardCard
-          title="Notification health"
-          value={notificationHealthValue}
-          detail={notificationHealthDetail}
-          actions={[{ href: '/notifications', label: 'Open diagnostics' }]}
-        />
+        {canAccessCallings ? (
+          <DashboardCard
+            title="Notification health"
+            value={notificationHealthValue}
+            detail={notificationHealthDetail}
+            actions={[{ href: '/notifications', label: 'Open diagnostics' }]}
+          />
+        ) : null}
 
-        <DashboardCard
-          title="Last import summary"
-          value={importSummaryValue}
-          detail={importSummaryDetail}
-          actions={[{ href: '/imports', label: 'Open imports' }]}
-        />
+        {canAccessCallings ? (
+          <DashboardCard
+            title="Last import summary"
+            value={importSummaryValue}
+            detail={importSummaryDetail}
+            actions={[{ href: '/imports', label: 'Open imports' }]}
+          />
+        ) : null}
 
-        {showPortalCard ? (
+        {canAccessPortal ? (
           <DashboardCard
             title="Public portal status"
             value={portalStatusValue}
