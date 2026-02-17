@@ -4,7 +4,10 @@ import { useRouter } from 'next/navigation';
 import { type FormEvent, useMemo, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { MemberAutocomplete } from '@/components/ui/member-autocomplete';
 import { MEETING_TYPES, type ProgramItemInput } from '@/src/meetings/types';
+
+const PERSON_ITEM_TYPES = new Set(['PRESIDING', 'CONDUCTING', 'INVOCATION', 'SPEAKER', 'BENEDICTION']);
 
 type MeetingFormProps = {
   wardId: string;
@@ -183,7 +186,17 @@ export function MeetingForm({
 
               <label className="space-y-1 text-sm">
                 <span className="font-medium">Title</span>
-                <input className="w-full rounded-md border px-3 py-2" value={item.title} onChange={(event) => updateProgramItem(index, 'title', event.target.value)} />
+                {PERSON_ITEM_TYPES.has(item.itemType) ? (
+                  <MemberAutocomplete
+                    wardId={wardId}
+                    value={item.title}
+                    onChange={(value) => updateProgramItem(index, 'title', value)}
+                    className="w-full rounded-md border px-3 py-2"
+                    placeholder="Name"
+                  />
+                ) : (
+                  <input className="w-full rounded-md border px-3 py-2" value={item.title} onChange={(event) => updateProgramItem(index, 'title', event.target.value)} />
+                )}
               </label>
 
               <label className="space-y-1 text-sm">
