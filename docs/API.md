@@ -215,6 +215,11 @@ Flow:
 - Parse
 - Return preview
 - Commit flag required to finalize
+- On commit failures, record `MEMBERSHIP_IMPORT_FAILED` in `audit_log` with error details
+
+Operational logging:
+- Server log verbosity is controlled by `LOG_LEVEL` (`debug`, `info`, `warn`, `error`)
+- Set in `.env` (example: `LOG_LEVEL=debug`) when troubleshooting import behavior
 
 --------------------------------------------------
 USERS (WARD ADMIN)

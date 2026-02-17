@@ -5,6 +5,7 @@ import { canViewCallings } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 import { parseMembershipText, toPlainText } from '@/src/imports/membership';
+import { createLogger } from '@/src/lib/logger';
 
 type MembershipImportBody = {
   rawText?: unknown;
@@ -12,6 +13,7 @@ type MembershipImportBody = {
 };
 
 export async function POST(request: Request, context: { params: Promise<{ wardId: string }> }) {
+  const logger = createLogger('membership-import');
   const session = await auth();
 
   if (!session?.user?.id) {
@@ -87,8 +89,38 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
       updated,
       preview: parsedMembers
     });
-  } catch {
+  } catch (error) {
     await client.query('ROLLBACK');
+
+    const message = error instanceof Error ? error.message : 'unknown error';
+
+    try {
+      await client.query('BEGIN');
+      await setDbContext(client, { userId: session.user.id, wardId });
+      await client.query(
+        `INSERT INTO audit_log (ward_id, user_id, action, details)
+         VALUES ($1, $2, 'MEMBERSHIP_IMPORT_FAILED', jsonb_build_object('commitRequested', $3, 'parsedCount', $4, 'error', $5))`,
+        [wardId, session.user.id, commit, parsedMembers.length, message]
+      );
+      await client.query('COMMIT');
+    } catch (auditError) {
+      await client.query('ROLLBACK');
+
+      logger.error('Failed to write membership import failure to audit log', {
+        wardId,
+        userId: session.user.id,
+        error: auditError instanceof Error ? auditError.message : 'unknown error'
+      });
+    }
+
+    logger.error('Membership import request failed', {
+      wardId,
+      userId: session.user.id,
+      commitRequested: commit,
+      parsedCount: parsedMembers.length,
+      error: message
+    });
+
     return NextResponse.json({ error: 'Failed to import membership', code: 'INTERNAL_ERROR' }, { status: 500 });
   } finally {
     client.release();
