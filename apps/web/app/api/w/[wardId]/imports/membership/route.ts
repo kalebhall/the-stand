@@ -74,7 +74,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
 
       await client.query(
         `INSERT INTO audit_log (ward_id, user_id, action, details)
-         VALUES ($1, $2, 'MEMBERSHIP_IMPORT_COMMITTED', jsonb_build_object('importRunId', $3, 'inserted', $4, 'updated', $5, 'parsedCount', $6))`,
+         VALUES ($1, $2, 'MEMBERSHIP_IMPORT_COMMITTED', jsonb_build_object('importRunId', $3::text, 'inserted', $4::int, 'updated', $5::int, 'parsedCount', $6::int))`,
         [wardId, session.user.id, importRunResult.rows[0].id, inserted, updated, parsedMembers.length]
       );
     }
@@ -99,7 +99,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
       await setDbContext(client, { userId: session.user.id, wardId });
       await client.query(
         `INSERT INTO audit_log (ward_id, user_id, action, details)
-         VALUES ($1, $2, 'MEMBERSHIP_IMPORT_FAILED', jsonb_build_object('commitRequested', $3, 'parsedCount', $4, 'error', $5))`,
+         VALUES ($1, $2, 'MEMBERSHIP_IMPORT_FAILED', jsonb_build_object('commitRequested', $3::boolean, 'parsedCount', $4::int, 'error', $5::text))`,
         [wardId, session.user.id, commit, parsedMembers.length, message]
       );
       await client.query('COMMIT');
