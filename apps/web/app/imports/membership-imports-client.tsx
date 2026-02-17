@@ -89,6 +89,13 @@ export function MembershipImportsClient({
   const [noteError, setNoteError] = useState<string | null>(null);
   const [isSavingNote, setIsSavingNote] = useState(false);
 
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [editingNoteText, setEditingNoteText] = useState('');
+  const [isSavingEditedNote, setIsSavingEditedNote] = useState(false);
+  const [isDeletingNoteId, setIsDeletingNoteId] = useState<string | null>(null);
+  const [isDeletingMemberId, setIsDeletingMemberId] = useState<string | null>(null);
+  const [isDeletingCallingId, setIsDeletingCallingId] = useState<string | null>(null);
+
   const notesByMemberId = useMemo(() => {
     return memberNotes.reduce<Record<string, MemberNoteRow[]>>((accumulator, note) => {
       const existing = accumulator[note.member_id] ?? [];
@@ -225,6 +232,121 @@ export function MembershipImportsClient({
     }
   }
 
+  async function saveEditedNote(memberId: string) {
+    if (!editingNoteId || !editingNoteText.trim()) {
+      setNoteError('Note text is required.');
+      return;
+    }
+
+    setIsSavingEditedNote(true);
+    setNoteError(null);
+
+    try {
+      const response = await fetch(`/api/w/${wardId}/members/${memberId}/notes/${editingNoteId}`, {
+        method: 'PATCH',
+        headers: {
+          'content-type': 'application/json'
+        },
+        body: JSON.stringify({ noteText: editingNoteText })
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json()) as { error?: string };
+        setNoteError(payload.error ?? 'Failed to edit note.');
+        return;
+      }
+
+      setEditingNoteId(null);
+      setEditingNoteText('');
+      window.location.reload();
+    } catch {
+      setNoteError('Failed to edit note.');
+    } finally {
+      setIsSavingEditedNote(false);
+    }
+  }
+
+  async function deleteNote(memberId: string, noteId: string) {
+    if (!window.confirm('Delete this note?')) {
+      return;
+    }
+
+    setIsDeletingNoteId(noteId);
+    setNoteError(null);
+
+    try {
+      const response = await fetch(`/api/w/${wardId}/members/${memberId}/notes/${noteId}`, {
+        method: 'DELETE'
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json()) as { error?: string };
+        setNoteError(payload.error ?? 'Failed to delete note.');
+        return;
+      }
+
+      window.location.reload();
+    } catch {
+      setNoteError('Failed to delete note.');
+    } finally {
+      setIsDeletingNoteId(null);
+    }
+  }
+
+  async function deleteMember(memberId: string) {
+    if (!window.confirm('Delete this member and any notes/callings tied to them?')) {
+      return;
+    }
+
+    setIsDeletingMemberId(memberId);
+    setNoteError(null);
+
+    try {
+      const response = await fetch(`/api/w/${wardId}/members/${memberId}`, {
+        method: 'DELETE'
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json()) as { error?: string };
+        setNoteError(payload.error ?? 'Failed to delete member.');
+        return;
+      }
+
+      window.location.reload();
+    } catch {
+      setNoteError('Failed to delete member.');
+    } finally {
+      setIsDeletingMemberId(null);
+    }
+  }
+
+  async function deleteCalling(callingId: string) {
+    if (!window.confirm('Delete this calling assignment?')) {
+      return;
+    }
+
+    setIsDeletingCallingId(callingId);
+    setCallingError(null);
+
+    try {
+      const response = await fetch(`/api/w/${wardId}/callings/${callingId}`, {
+        method: 'DELETE'
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json()) as { error?: string };
+        setCallingError(payload.error ?? 'Failed to delete calling.');
+        return;
+      }
+
+      window.location.reload();
+    } catch {
+      setCallingError('Failed to delete calling.');
+    } finally {
+      setIsDeletingCallingId(null);
+    }
+  }
+
   const drift = callingSummary?.stale ?? initialCallingDrift;
 
   return (
@@ -347,9 +469,20 @@ export function MembershipImportsClient({
           {callingAssignments.length ? (
             <ul className="space-y-1 text-sm">
               {callingAssignments.map((assignment) => (
-                <li key={assignment.id} className="rounded border px-2 py-1">
-                  <span className="font-medium">{assignment.member_name}</span> — {assignment.calling_name}
-                  <span className="ml-2 text-xs text-muted-foreground">{assignment.is_active ? 'Active' : 'Released'}</span>
+                <li key={assignment.id} className="flex items-center justify-between gap-3 rounded border px-2 py-1">
+                  <div>
+                    <span className="font-medium">{assignment.member_name}</span> — {assignment.calling_name}
+                    <span className="ml-2 text-xs text-muted-foreground">{assignment.is_active ? 'Active' : 'Released'}</span>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => deleteCalling(assignment.id)}
+                    disabled={isDeletingCallingId === assignment.id}
+                  >
+                    Delete
+                  </Button>
                 </li>
               ))}
             </ul>
@@ -360,8 +493,8 @@ export function MembershipImportsClient({
       </section>
 
       <section className="space-y-3 rounded-lg border bg-card p-4 lg:col-span-2">
-        <h2 className="text-lg font-semibold">Member notes</h2>
-        <p className="text-sm text-muted-foreground">Restricted internal notes for membership follow-up.</p>
+        <h2 className="text-lg font-semibold">Members & notes</h2>
+        <p className="text-sm text-muted-foreground">Manage members and restricted internal notes for membership follow-up.</p>
 
         <div className="space-y-2">
           <label className="text-sm font-medium" htmlFor="member-id">
@@ -406,19 +539,84 @@ export function MembershipImportsClient({
               const notes = notesByMemberId[member.id] ?? [];
               return (
                 <article key={member.id} className="rounded-md border p-3">
-                  <h3 className="font-semibold">{member.full_name}</h3>
-                  <p className="text-xs text-muted-foreground">
-                    {member.email ?? 'No email'} · {member.phone ?? 'No phone'}
-                    {member.age != null ? ` · Age ${member.age}` : ''}
-                    {member.birthday ? ` · ${member.birthday}` : ''}
-                    {member.gender ? ` · ${member.gender}` : ''}
-                  </p>
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                      <h3 className="font-semibold">{member.full_name}</h3>
+                      <p className="text-xs text-muted-foreground">
+                        {member.email ?? 'No email'} · {member.phone ?? 'No phone'}
+                        {member.age != null ? ` · Age ${member.age}` : ''}
+                        {member.birthday ? ` · ${member.birthday}` : ''}
+                        {member.gender ? ` · ${member.gender}` : ''}
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => deleteMember(member.id)}
+                      disabled={isDeletingMemberId === member.id}
+                    >
+                      Delete member
+                    </Button>
+                  </div>
                   {notes.length ? (
-                    <ul className="mt-2 space-y-1 text-sm">
+                    <ul className="mt-2 space-y-2 text-sm">
                       {notes.map((note) => (
-                        <li key={note.id} className="rounded bg-muted/50 px-2 py-1">
-                          {note.note_text}
-                          <span className="ml-2 text-xs text-muted-foreground">({note.created_by_email ?? 'Unknown'})</span>
+                        <li key={note.id} className="rounded bg-muted/50 px-2 py-2">
+                          {editingNoteId === note.id ? (
+                            <div className="space-y-2">
+                              <textarea
+                                value={editingNoteText}
+                                onChange={(event) => setEditingNoteText(event.target.value)}
+                                className="min-h-20 w-full rounded-md border bg-background p-2 text-sm"
+                              />
+                              <div className="flex gap-2">
+                                <Button type="button" size="sm" onClick={() => saveEditedNote(member.id)} disabled={isSavingEditedNote}>
+                                  Save
+                                </Button>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    setEditingNoteId(null);
+                                    setEditingNoteText('');
+                                  }}
+                                >
+                                  Cancel
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex flex-wrap items-start justify-between gap-2">
+                              <div>
+                                {note.note_text}
+                                <span className="ml-2 text-xs text-muted-foreground">({note.created_by_email ?? 'Unknown'})</span>
+                              </div>
+                              <div className="flex gap-2">
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    setEditingNoteId(note.id);
+                                    setEditingNoteText(note.note_text);
+                                  }}
+                                >
+                                  Edit
+                                </Button>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => deleteNote(member.id, note.id)}
+                                  disabled={isDeletingNoteId === note.id}
+                                >
+                                  Delete
+                                </Button>
+                              </div>
+                            </div>
+                          )}
                         </li>
                       ))}
                     </ul>
