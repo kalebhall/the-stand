@@ -278,13 +278,13 @@ export default async function AnnouncementsPage() {
 
       const updateResult = await client.query(
         `UPDATE calendar_feed
-            SET display_name = $3,
-                feed_scope = $4,
+            SET display_name = $3::text,
+                feed_scope = $4::text,
                 is_active = TRUE,
                 last_refresh_status = NULL,
                 last_refresh_error = NULL,
                 last_refreshed_at = NULL
-          WHERE ward_id = $1 AND feed_url = $2`,
+          WHERE ward_id = $1::uuid AND feed_url = $2::text`,
         [actionSession.activeWardId, feedUrl, displayName, feedScope]
       );
 
@@ -294,7 +294,7 @@ export default async function AnnouncementsPage() {
         try {
           await client.query(
             `INSERT INTO calendar_feed (ward_id, display_name, feed_url, feed_scope)
-             VALUES ($1, $2, $3, $4)`,
+             VALUES ($1::uuid, $2::text, $3::text, $4::text)`,
             [actionSession.activeWardId, displayName, feedUrl, feedScope]
           );
 
@@ -309,13 +309,13 @@ export default async function AnnouncementsPage() {
 
           await client.query(
             `UPDATE calendar_feed
-                SET display_name = $3,
-                    feed_scope = $4,
+                SET display_name = $3::text,
+                    feed_scope = $4::text,
                     is_active = TRUE,
                     last_refresh_status = NULL,
                     last_refresh_error = NULL,
                     last_refreshed_at = NULL
-              WHERE ward_id = $1 AND feed_url = $2`,
+              WHERE ward_id = $1::uuid AND feed_url = $2::text`,
             [actionSession.activeWardId, feedUrl, displayName, feedScope]
           );
         }
@@ -323,14 +323,12 @@ export default async function AnnouncementsPage() {
 
       await client.query(
         `INSERT INTO audit_log (ward_id, user_id, action, details)
-         VALUES ($1, $2, $3, jsonb_build_object('displayName', $4, 'feedScope', $5, 'feedUrl', $6))`,
+         VALUES ($1, $2, $3, $4::jsonb)`,
         [
           actionSession.activeWardId,
           actionSession.user.id,
           isInsert ? 'CALENDAR_FEED_CREATED' : 'CALENDAR_FEED_UPDATED',
-          displayName,
-          feedScope,
-          feedUrl
+          JSON.stringify({ displayName, feedScope, feedUrl })
         ]
       );
 
@@ -349,8 +347,12 @@ export default async function AnnouncementsPage() {
         await setDbContext(client, { userId: actionSession.user.id, wardId: actionSession.activeWardId });
         await client.query(
           `INSERT INTO audit_log (ward_id, user_id, action, details)
-           VALUES ($1, $2, 'CALENDAR_FEED_CREATE_FAILED', jsonb_build_object('displayName', $3, 'feedScope', $4, 'feedUrl', $5, 'errorMessage', $6, 'errorCode', $7))`,
-          [actionSession.activeWardId, actionSession.user.id, displayName, feedScope, feedUrl, errorMessage, errorCode]
+           VALUES ($1, $2, 'CALENDAR_FEED_CREATE_FAILED', $3::jsonb)`,
+          [
+            actionSession.activeWardId,
+            actionSession.user.id,
+            JSON.stringify({ displayName, feedScope, feedUrl, errorMessage, errorCode })
+          ]
         );
         await client.query('COMMIT');
       } catch {
