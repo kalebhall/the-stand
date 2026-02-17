@@ -24,12 +24,12 @@ describe('getNavigationItems', () => {
 
   it('includes support console only for support admins', () => {
     expect(getNavigationItems(['SUPPORT_ADMIN'])).toContainEqual({
-      href: '/support/access-requests',
+      href: '/support',
       label: 'Support Console'
     });
 
     expect(getNavigationItems(['BISHOPRIC_EDITOR'])).not.toContainEqual({
-      href: '/support/access-requests',
+      href: '/support',
       label: 'Support Console'
     });
   });

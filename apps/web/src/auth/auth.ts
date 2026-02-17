@@ -78,10 +78,15 @@ async function loadSessionUserByEmail(email: string): Promise<SessionUserDetails
 }
 
 async function loadSessionUserById(id: string): Promise<SessionUserDetails | null> {
-  const userResult = await pool.query('SELECT email FROM user_account WHERE id = $1 LIMIT 1', [id]);
-  if (!userResult.rowCount) return null;
+  try {
+    const userResult = await pool.query('SELECT email FROM user_account WHERE id = $1 LIMIT 1', [id]);
+    if (!userResult.rowCount) return null;
 
-  return loadSessionUserByEmail(userResult.rows[0].email as string);
+    return loadSessionUserByEmail(userResult.rows[0].email as string);
+  } catch {
+    // id may not be a valid UUID (e.g. OAuth provider sub claim) — treat as not found
+    return null;
+  }
 }
 
 async function ensureUserAccountForGoogleLogin(email: string, displayName: string | null): Promise<void> {
@@ -180,6 +185,24 @@ export const { auth, handlers } = NextAuth({
     },
     jwt: async ({ token, user, account }) => {
       if (user) {
+        if (account?.provider !== 'credentials') {
+          // OAuth providers (e.g. Google) set user.id to the provider's sub
+          // claim, not our database UUID. Look up the database user by email
+          // so token.sub is our UUID and roles/activeWardId are populated.
+          const email = (user.email ?? '').toLowerCase().trim();
+          if (email) {
+            const sessionUser = await loadSessionUserByEmail(email);
+            if (sessionUser) {
+              token.sub = sessionUser.id;
+              token.roles = sessionUser.roles;
+              token.mustChangePassword = sessionUser.mustChangePassword;
+              token.hasPassword = sessionUser.hasPassword;
+              token.activeWardId = sessionUser.activeWardId;
+              return token;
+            }
+          }
+        }
+
         token.sub = user.id;
         token.roles = user.roles;
         token.mustChangePassword = user.mustChangePassword;
