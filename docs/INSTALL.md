@@ -161,6 +161,12 @@ Secure the file:
 sudo chown the-stand:the-stand /opt/the-stand/app/.env
 sudo chmod 600 /opt/the-stand/app/.env
 ```
+For this project, the Google OAuth callback route is:
+/api/auth/callback/google.
+
+So the full callback URI should be:
+
+https://stand.yourdomain.com/api/auth/callback/google (replace with your actual APP_BASE_URL).
 ---------------------------------------------------------------------
 SECTION 8 — RUN DATABASE MIGRATIONS
 ---------------------------------------------------------------------
