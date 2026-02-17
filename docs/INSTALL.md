@@ -174,6 +174,7 @@ Log levels:
 - `error`: Errors only.
 
 Set `LOG_LEVEL` in `/opt/the-stand/app/.env` (or your deployment environment) and restart the app service for changes to take effect.
+
 For this project, the Google OAuth callback route is:
 ```
 /api/auth/callback/google
