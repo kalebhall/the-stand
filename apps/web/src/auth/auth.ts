@@ -29,12 +29,14 @@ async function loadSessionUserByEmail(email: string): Promise<SessionUserDetails
   const user = userResult.rows[0];
   if (!user.is_active) return null;
 
-  // Use a dedicated client so we can set app.user_id for the RLS
-  // self-lookup policy on ward_user_role. Without this context the
-  // FORCE ROW LEVEL SECURITY policy blocks all rows and ward-scoped
-  // roles (e.g. BISHOPRIC_EDITOR) silently fail to load.
+  // Use a dedicated client inside an explicit transaction so we can
+  // set app.user_id for the RLS self-lookup policy on ward_user_role.
+  // set_config with is_local=true is transaction-scoped, so without
+  // BEGIN the setting vanishes after the auto-committed statement and
+  // the subsequent queries still see no context.
   const client = await pool.connect();
   try {
+    await client.query('BEGIN');
     await client.query('SELECT set_config($1, $2, true)', ['app.user_id', user.id]);
 
     const roleResult = await client.query(
@@ -58,6 +60,8 @@ async function loadSessionUserByEmail(email: string): Promise<SessionUserDetails
         LIMIT 1`,
       [user.id]
     );
+
+    await client.query('COMMIT');
 
     return {
       id: user.id,
