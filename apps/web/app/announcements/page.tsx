@@ -276,35 +276,49 @@ export default async function AnnouncementsPage() {
       await client.query('BEGIN');
       await setDbContext(client, { userId: actionSession.user.id, wardId: actionSession.activeWardId });
 
-      const existingFeed = await client.query<{ id: string }>(
-        `SELECT id
-           FROM calendar_feed
-          WHERE ward_id = $1 AND feed_url = $2
-          LIMIT 1
-          FOR UPDATE`,
-        [actionSession.activeWardId, feedUrl]
+      const updateResult = await client.query(
+        `UPDATE calendar_feed
+            SET display_name = $3,
+                feed_scope = $4,
+                is_active = TRUE,
+                last_refresh_status = NULL,
+                last_refresh_error = NULL,
+                last_refreshed_at = NULL
+          WHERE ward_id = $1 AND feed_url = $2`,
+        [actionSession.activeWardId, feedUrl, displayName, feedScope]
       );
 
-      const isInsert = existingFeed.rowCount === 0;
+      let isInsert = false;
 
-      if (isInsert) {
-        await client.query(
-          `INSERT INTO calendar_feed (ward_id, display_name, feed_url, feed_scope)
-           VALUES ($1, $2, $3, $4)`,
-          [actionSession.activeWardId, displayName, feedUrl, feedScope]
-        );
-      } else {
-        await client.query(
-          `UPDATE calendar_feed
-              SET display_name = $3,
-                  feed_scope = $4,
-                  is_active = TRUE,
-                  last_refresh_status = NULL,
-                  last_refresh_error = NULL,
-                  last_refreshed_at = NULL
-            WHERE ward_id = $1 AND feed_url = $2`,
-          [actionSession.activeWardId, feedUrl, displayName, feedScope]
-        );
+      if (updateResult.rowCount === 0) {
+        try {
+          await client.query(
+            `INSERT INTO calendar_feed (ward_id, display_name, feed_url, feed_scope)
+             VALUES ($1, $2, $3, $4)`,
+            [actionSession.activeWardId, displayName, feedUrl, feedScope]
+          );
+
+          isInsert = true;
+        } catch (error) {
+          const isUniqueViolation =
+            typeof error === 'object' && error !== null && 'code' in error && (error as { code?: string }).code === '23505';
+
+          if (!isUniqueViolation) {
+            throw error;
+          }
+
+          await client.query(
+            `UPDATE calendar_feed
+                SET display_name = $3,
+                    feed_scope = $4,
+                    is_active = TRUE,
+                    last_refresh_status = NULL,
+                    last_refresh_error = NULL,
+                    last_refreshed_at = NULL
+              WHERE ward_id = $1 AND feed_url = $2`,
+            [actionSession.activeWardId, feedUrl, displayName, feedScope]
+          );
+        }
       }
 
       await client.query(
@@ -321,9 +335,29 @@ export default async function AnnouncementsPage() {
       );
 
       await client.query('COMMIT');
-    } catch {
+    } catch (error) {
       await client.query('ROLLBACK');
-      throw new Error('Failed to create calendar feed');
+
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorCode =
+        typeof error === 'object' && error !== null && 'code' in error && typeof (error as { code?: unknown }).code === 'string'
+          ? (error as { code: string }).code
+          : null;
+
+      try {
+        await client.query('BEGIN');
+        await setDbContext(client, { userId: actionSession.user.id, wardId: actionSession.activeWardId });
+        await client.query(
+          `INSERT INTO audit_log (ward_id, user_id, action, details)
+           VALUES ($1, $2, 'CALENDAR_FEED_CREATE_FAILED', jsonb_build_object('displayName', $3, 'feedScope', $4, 'feedUrl', $5, 'errorMessage', $6, 'errorCode', $7))`,
+          [actionSession.activeWardId, actionSession.user.id, displayName, feedScope, feedUrl, errorMessage, errorCode]
+        );
+        await client.query('COMMIT');
+      } catch {
+        await client.query('ROLLBACK');
+      }
+
+      throw new Error('Failed to create calendar feed', { cause: error });
     } finally {
       client.release();
     }
