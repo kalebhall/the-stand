@@ -276,22 +276,36 @@ export default async function AnnouncementsPage() {
       await client.query('BEGIN');
       await setDbContext(client, { userId: actionSession.user.id, wardId: actionSession.activeWardId });
 
-      const upserted = await client.query<{ inserted: boolean }>(
-        `INSERT INTO calendar_feed (ward_id, display_name, feed_url, feed_scope)
-         VALUES ($1, $2, $3, $4)
-         ON CONFLICT (ward_id, feed_url)
-         DO UPDATE
-           SET display_name = EXCLUDED.display_name,
-               feed_scope = EXCLUDED.feed_scope,
-               is_active = TRUE,
-               last_refresh_status = NULL,
-               last_refresh_error = NULL,
-               last_refreshed_at = NULL
-         RETURNING (xmax = 0) AS inserted`,
-        [actionSession.activeWardId, displayName, feedUrl, feedScope]
+      const existingFeed = await client.query<{ id: string }>(
+        `SELECT id
+           FROM calendar_feed
+          WHERE ward_id = $1 AND feed_url = $2
+          LIMIT 1
+          FOR UPDATE`,
+        [actionSession.activeWardId, feedUrl]
       );
 
-      const isInsert = Boolean(upserted.rows[0]?.inserted);
+      const isInsert = existingFeed.rowCount === 0;
+
+      if (isInsert) {
+        await client.query(
+          `INSERT INTO calendar_feed (ward_id, display_name, feed_url, feed_scope)
+           VALUES ($1, $2, $3, $4)`,
+          [actionSession.activeWardId, displayName, feedUrl, feedScope]
+        );
+      } else {
+        await client.query(
+          `UPDATE calendar_feed
+              SET display_name = $3,
+                  feed_scope = $4,
+                  is_active = TRUE,
+                  last_refresh_status = NULL,
+                  last_refresh_error = NULL,
+                  last_refreshed_at = NULL
+            WHERE ward_id = $1 AND feed_url = $2`,
+          [actionSession.activeWardId, feedUrl, displayName, feedScope]
+        );
+      }
 
       await client.query(
         `INSERT INTO audit_log (ward_id, user_id, action, details)
