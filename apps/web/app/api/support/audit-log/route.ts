@@ -133,11 +133,9 @@ export async function GET(request: NextRequest) {
   const client = await pool.connect();
 
   try {
-    // Bypass RLS for support admin - set a dummy context so the query runs without ward isolation
+    // Set app.user_id so app.is_support_admin() RLS checks can evaluate correctly.
     await client.query('BEGIN');
     await client.query('SELECT set_config($1, $2, true)', ['app.user_id', session.user.id]);
-    // Clear ward context so RLS allows all audit_log rows (ward_id IS NULL condition passes)
-    await client.query('SELECT set_config($1, $2, true)', ['app.ward_id', '']);
 
     const [countResult, dataResult] = await Promise.all([
       client.query(countQuery, params),
