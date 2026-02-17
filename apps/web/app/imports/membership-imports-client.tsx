@@ -9,6 +9,9 @@ type MemberRow = {
   full_name: string;
   email: string | null;
   phone: string | null;
+  age: number | null;
+  birthday: string | null;
+  gender: string | null;
 };
 
 type MemberNoteRow = {
@@ -30,6 +33,9 @@ type PreviewMember = {
   fullName: string;
   email: string | null;
   phone: string | null;
+  age: number | null;
+  birthday: string | null;
+  gender: string | null;
 };
 
 type PreviewCalling = {
@@ -225,12 +231,12 @@ export function MembershipImportsClient({
     <div className="grid gap-6 lg:grid-cols-2">
       <section className="space-y-3 rounded-lg border bg-card p-4">
         <h2 className="text-lg font-semibold">Membership paste import</h2>
-        <p className="text-sm text-muted-foreground">Paste plain text with one member per line: Name, Email, Phone.</p>
+        <p className="text-sm text-muted-foreground">Paste member data with a header row (Name, Email, Phone, Age, Birthday, Gender). The header determines field mapping.</p>
         <textarea
           value={rawText}
           onChange={(event) => setRawText(event.target.value)}
           className="min-h-44 w-full rounded-md border bg-background p-3 text-sm"
-          placeholder="Jane Doe, jane@example.com, 801-555-0101"
+          placeholder={"Name, Email, Phone, Age, Birthday, Gender\nJane Doe, jane@example.com, 801-555-0101, 35, Jan 15, Female"}
         />
         <div className="flex flex-wrap gap-2">
           <Button type="button" variant="outline" onClick={() => submitImport(false)} disabled={isSubmitting}>
@@ -255,6 +261,9 @@ export function MembershipImportsClient({
                   <th className="px-3 py-2 text-left">Name</th>
                   <th className="px-3 py-2 text-left">Email</th>
                   <th className="px-3 py-2 text-left">Phone</th>
+                  <th className="px-3 py-2 text-left">Age</th>
+                  <th className="px-3 py-2 text-left">Birthday</th>
+                  <th className="px-3 py-2 text-left">Gender</th>
                 </tr>
               </thead>
               <tbody>
@@ -263,6 +272,9 @@ export function MembershipImportsClient({
                     <td className="px-3 py-2 font-medium">{item.fullName}</td>
                     <td className="px-3 py-2">{item.email ?? '—'}</td>
                     <td className="px-3 py-2">{item.phone ?? '—'}</td>
+                    <td className="px-3 py-2">{item.age ?? '—'}</td>
+                    <td className="px-3 py-2">{item.birthday ?? '—'}</td>
+                    <td className="px-3 py-2">{item.gender ?? '—'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -397,6 +409,9 @@ export function MembershipImportsClient({
                   <h3 className="font-semibold">{member.full_name}</h3>
                   <p className="text-xs text-muted-foreground">
                     {member.email ?? 'No email'} · {member.phone ?? 'No phone'}
+                    {member.age != null ? ` · Age ${member.age}` : ''}
+                    {member.birthday ? ` · ${member.birthday}` : ''}
+                    {member.gender ? ` · ${member.gender}` : ''}
                   </p>
                   {notes.length ? (
                     <ul className="mt-2 space-y-1 text-sm">

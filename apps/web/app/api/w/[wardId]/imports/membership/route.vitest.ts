@@ -51,7 +51,7 @@ describe('POST /api/w/[wardId]/imports/membership', () => {
       parsedCount: 1,
       inserted: 0,
       updated: 0,
-      preview: [{ fullName: 'Jane Doe', email: 'jane@example.com', phone: null }]
+      preview: [{ fullName: 'Jane Doe', email: 'jane@example.com', phone: null, age: null, birthday: null, gender: null }]
     });
 
     expect(queryMock).toHaveBeenCalledTimes(3);
@@ -88,6 +88,9 @@ describe('POST /api/w/[wardId]/imports/membership', () => {
       'ward-1',
       'Jane Doe',
       'jane@example.com',
+      null,
+      null,
+      null,
       null
     ]);
     expect(queryMock).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO audit_log'), [

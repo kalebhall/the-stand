@@ -303,6 +303,9 @@ export const member = pgTable(
     fullName: text('full_name').notNull(),
     email: text('email'),
     phone: text('phone'),
+    age: integer('age'),
+    birthday: text('birthday'),
+    gender: text('gender'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
   },

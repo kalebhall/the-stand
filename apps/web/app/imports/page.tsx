@@ -12,6 +12,9 @@ type MemberRow = {
   full_name: string;
   email: string | null;
   phone: string | null;
+  age: number | null;
+  birthday: string | null;
+  gender: string | null;
 };
 
 type MemberNoteRow = {
@@ -44,7 +47,7 @@ export default async function ImportsPage() {
     await setDbContext(client, { userId: session.user.id, wardId: session.activeWardId });
 
     const memberResult = await client.query(
-      `SELECT id, full_name, email, phone
+      `SELECT id, full_name, email, phone, age, birthday, gender
          FROM member
         WHERE ward_id = $1
         ORDER BY full_name ASC`,
