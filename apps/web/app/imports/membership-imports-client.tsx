@@ -231,12 +231,12 @@ export function MembershipImportsClient({
     <div className="grid gap-6 lg:grid-cols-2">
       <section className="space-y-3 rounded-lg border bg-card p-4">
         <h2 className="text-lg font-semibold">Membership paste import</h2>
-        <p className="text-sm text-muted-foreground">Paste member data with a header row (Name, Email, Phone, Age, Birthday, Gender). The header determines field mapping.</p>
+        <p className="text-sm text-muted-foreground">Paste member data with a header row (tab-delimited preferred: Name, Email, Phone, Age, Birthday, Gender). The header determines field mapping.</p>
         <textarea
           value={rawText}
           onChange={(event) => setRawText(event.target.value)}
           className="min-h-44 w-full rounded-md border bg-background p-3 text-sm"
-          placeholder={"Name, Email, Phone, Age, Birthday, Gender\nJane Doe, jane@example.com, 801-555-0101, 35, Jan 15, Female"}
+          placeholder={"Name\tEmail\tPhone\tAge\tBirthday\tGender\nJane Doe\tjane@example.com\t801-555-0101\t35\tJan 15\tFemale"}
         />
         <div className="flex flex-wrap gap-2">
           <Button type="button" variant="outline" onClick={() => submitImport(false)} disabled={isSubmitting}>
@@ -295,7 +295,7 @@ export function MembershipImportsClient({
           value={callingRawText}
           onChange={(event) => setCallingRawText(event.target.value)}
           className="min-h-44 w-full rounded-md border bg-background p-3 text-sm"
-          placeholder="John Doe, Elders Quorum President\nRelease: Jane Doe, Relief Society President"
+          placeholder={"John Doe\tElders Quorum President\nRelease: Jane Doe\tRelief Society President"}
         />
 
         <div className="flex flex-wrap gap-2">

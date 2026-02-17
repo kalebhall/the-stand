@@ -59,6 +59,15 @@ describe('membership import parsing', () => {
     ]);
   });
 
+
+  it('preserves commas inside tab-delimited values', () => {
+    const result = parseMembershipText(`Name	Email	Birthday
+Jane Doe	jane@example.com	February 14, 1990`);
+
+    expect(result).toEqual([
+      { fullName: 'Jane Doe', email: 'jane@example.com', phone: null, age: null, birthday: 'February 14, 1990', gender: null }
+    ]);
+  });
   it('handles tab-separated header rows', () => {
     const result = parseMembershipText("Name\tEmail\tAge\tBirthday\nJane Doe\tjane@example.com\t30\tFeb 14");
 

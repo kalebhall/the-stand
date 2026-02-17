@@ -52,6 +52,25 @@ function sanitizeEmail(value: string): string | null {
 
 type FieldMapping = 'name' | 'email' | 'phone' | 'age' | 'birthday' | 'gender' | 'unknown';
 
+type Delimiter = 'tab' | 'pipe' | 'comma';
+
+function detectDelimiter(line: string): Delimiter {
+  if (line.includes('\t')) return 'tab';
+  if (/\s\|\s|\|/.test(line)) return 'pipe';
+  return 'comma';
+}
+
+function splitLine(line: string, delimiter: Delimiter): string[] {
+  switch (delimiter) {
+    case 'tab':
+      return line.split('\t');
+    case 'pipe':
+      return line.split(/\s*\|\s*/);
+    case 'comma':
+      return line.split(/\s*,\s*/);
+  }
+}
+
 const HEADER_PATTERNS: Record<FieldMapping, RegExp> = {
   name: /^(full\s*name|name|member\s*name|preferred\s*name)$/i,
   email: /^(e[\s-]*mail|email\s*address)$/i,
@@ -190,8 +209,9 @@ export function parseMembershipText(rawText: string): ParsedMember[] {
   const deduped = new Map<string, ParsedMember>();
 
   // Check if the first line is a header row
-  const firstLineParts = lines[0]
-    .split(/\t|\s*\|\s*|\s*,\s*/)
+  const delimiter = detectDelimiter(lines[0]);
+
+  const firstLineParts = splitLine(lines[0], delimiter)
     .map((part) => part.trim())
     .filter((part) => part.length > 0);
 
@@ -201,9 +221,8 @@ export function parseMembershipText(rawText: string): ParsedMember[] {
   for (let i = startIndex; i < lines.length; i++) {
     // When using header mapping, preserve empty fields to maintain column alignment
     const parts = headerMapping
-      ? lines[i].split(/\t|\s*\|\s*|\s*,\s*/).map((part) => part.trim())
-      : lines[i]
-          .split(/\t|\s*\|\s*|\s*,\s*/)
+      ? splitLine(lines[i], delimiter).map((part) => part.trim())
+      : splitLine(lines[i], detectDelimiter(lines[i]))
           .map((part) => part.trim())
           .filter((part) => part.length > 0);
 
