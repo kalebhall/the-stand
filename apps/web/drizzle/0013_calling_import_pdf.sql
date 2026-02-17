@@ -1,0 +1,8 @@
+ALTER TABLE calling_assignment
+  ADD COLUMN IF NOT EXISTS member_id UUID REFERENCES member(id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS birthday TEXT,
+  ADD COLUMN IF NOT EXISTS organization TEXT,
+  ADD COLUMN IF NOT EXISTS sustained BOOLEAN NOT NULL DEFAULT FALSE,
+  ADD COLUMN IF NOT EXISTS set_apart BOOLEAN NOT NULL DEFAULT FALSE;
+
+CREATE INDEX IF NOT EXISTS calling_assignment_member_id_idx ON calling_assignment (member_id);

@@ -1,99 +1,87 @@
 export type ParsedCalling = {
   memberName: string;
+  birthday: string;
+  organization: string;
   callingName: string;
-  isRelease: boolean;
+  sustained: boolean;
+  setApart: boolean;
 };
 
-const HTML_ENTITY_MAP: Record<string, string> = {
-  '&nbsp;': ' ',
-  '&amp;': '&',
-  '&lt;': '<',
-  '&gt;': '>',
-  '&quot;': '"',
-  '&#39;': "'"
-};
+const HEADER_LINE_PATTERN = /^name\s+gender\s+age\s+birth\s+date\s+organization\s+calling\s+sustained\s+set\s+apart$/i;
 
-export function toPlainText(input: string): string {
-  let output = input;
+function normalizeWhitespace(input: string): string {
+  return input.replace(/\s+/g, ' ').trim();
+}
 
-  output = output.replace(/<br\s*\/?\s*>/gi, '\n');
-  output = output.replace(/<\/p\s*>/gi, '\n');
-  output = output.replace(/<[^>]+>/g, ' ');
-
-  for (const [entity, value] of Object.entries(HTML_ENTITY_MAP)) {
-    output = output.replaceAll(entity, value);
-  }
-
-  output = output.replace(/\r\n?/g, '\n');
-
-  return output
-    .split('\n')
-    .map((line) => line.trim())
-    .filter((line) => line.length > 0)
-    .join('\n');
+function parseBoolean(value: string): boolean {
+  const normalized = value.trim().toLowerCase();
+  return normalized === 'yes' || normalized === 'y' || normalized === 'true' || normalized === 'set apart';
 }
 
 function parseCallingLine(line: string): ParsedCalling | null {
-  const normalized = line.trim();
-  if (!normalized) {
+  const normalizedLine = normalizeWhitespace(line);
+  if (!normalizedLine) {
     return null;
   }
 
-  const release = /^release\s*[:\-]?\s*/i;
-  const sustain = /^sustain(?:ed|ing)?\s*[:\-]?\s*/i;
-
-  const isRelease = release.test(normalized);
-  const withoutPrefix = normalized.replace(release, '').replace(sustain, '').trim();
-  if (!withoutPrefix) {
+  if (HEADER_LINE_PATTERN.test(normalizedLine) || /members\s+with\s+callings/i.test(normalizedLine)) {
     return null;
   }
 
-  const separators = ['\t', '|', ' - ', ' — ', ' – ', ','];
-
-  for (const separator of separators) {
-    const parts = withoutPrefix
-      .split(separator)
-      .map((part) => part.trim())
-      .filter((part) => part.length > 0);
-
-    if (parts.length >= 2) {
-      return {
-        memberName: parts[0],
-        callingName: parts.slice(1).join(' '),
-        isRelease
-      };
-    }
+  if (/^count\b/i.test(normalizedLine) || /^total\b/i.test(normalizedLine)) {
+    return null;
   }
 
-  const byAs = withoutPrefix.match(/^(.*?)\s+as\s+(.+)$/i);
-  if (byAs) {
-    return {
-      memberName: byAs[1].trim(),
-      callingName: byAs[2].trim(),
-      isRelease
-    };
+  const parts = line
+    .trim()
+    .split(/\s{2,}/)
+    .map((part) => normalizeWhitespace(part))
+    .filter((part) => part.length > 0);
+
+  if (parts.length < 8) {
+    return null;
   }
 
-  return null;
+  const [memberName, gender, age, birthday, organization, ...rest] = parts;
+  if (!memberName || !gender || !age || !birthday || !organization || rest.length < 3) {
+    return null;
+  }
+
+  const sustainedRaw = rest[rest.length - 2] ?? '';
+  const setApartRaw = rest[rest.length - 1] ?? '';
+  const callingName = rest.slice(0, -2).join(' ').trim();
+
+  if (!callingName) {
+    return null;
+  }
+
+  return {
+    memberName,
+    birthday,
+    organization,
+    callingName,
+    sustained: parseBoolean(sustainedRaw),
+    setApart: parseBoolean(setApartRaw)
+  };
 }
 
-export function parseCallingsText(rawText: string): ParsedCalling[] {
-  const plainText = toPlainText(rawText);
-  if (!plainText) {
-    return [];
-  }
-
+export function parseCallingsPdfText(rawText: string): ParsedCalling[] {
+  const normalized = rawText.replace(/\r\n?/g, '\n');
   const deduped = new Map<string, ParsedCalling>();
 
-  for (const line of plainText.split('\n')) {
+  for (const line of normalized.split('\n')) {
     const parsed = parseCallingLine(line);
     if (!parsed) {
       continue;
     }
 
-    const key = `${parsed.memberName.toLowerCase()}::${parsed.callingName.toLowerCase()}`;
+    const key = `${parsed.memberName.toLowerCase()}::${parsed.birthday.toLowerCase()}::${parsed.callingName.toLowerCase()}`;
     deduped.set(key, parsed);
   }
 
   return Array.from(deduped.values());
+}
+
+export function makeMemberBirthdayKey(memberName: string, birthday: string): string {
+  return `${memberName.replace(/\s+/g, ' ').trim().toLowerCase()}::${birthday.replace(/\s+/g, ' ').trim().toLowerCase()}`;
 }

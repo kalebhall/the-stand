@@ -140,8 +140,13 @@ export const wardStandTemplate = pgTable(
 export const callingAssignment = pgTable('calling_assignment', {
   id: uuid('id').defaultRandom().primaryKey(),
   wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
+  memberId: uuid('member_id').references(() => member.id, { onDelete: 'set null' }),
   memberName: text('member_name').notNull(),
+  birthday: text('birthday'),
+  organization: text('organization'),
   callingName: text('calling_name').notNull(),
+  sustained: boolean('sustained').notNull().default(false),
+  setApart: boolean('set_apart').notNull().default(false),
   isActive: boolean('is_active').notNull().default(true),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 });
