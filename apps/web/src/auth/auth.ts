@@ -29,37 +29,48 @@ async function loadSessionUserByEmail(email: string): Promise<SessionUserDetails
   const user = userResult.rows[0];
   if (!user.is_active) return null;
 
-  const roleResult = await pool.query(
-    `SELECT r.name
-       FROM role r
-       INNER JOIN user_global_role ugr ON ugr.role_id = r.id
-      WHERE ugr.user_id = $1
-      UNION
-     SELECT r.name
-       FROM role r
-       INNER JOIN ward_user_role wur ON wur.role_id = r.id
-      WHERE wur.user_id = $1`,
-    [user.id]
-  );
+  // Use a dedicated client so we can set app.user_id for the RLS
+  // self-lookup policy on ward_user_role. Without this context the
+  // FORCE ROW LEVEL SECURITY policy blocks all rows and ward-scoped
+  // roles (e.g. BISHOPRIC_EDITOR) silently fail to load.
+  const client = await pool.connect();
+  try {
+    await client.query('SELECT set_config($1, $2, true)', ['app.user_id', user.id]);
 
-  const wardResult = await pool.query(
-    `SELECT ward_id
-       FROM ward_user_role
-      WHERE user_id = $1
-      ORDER BY created_at ASC
-      LIMIT 1`,
-    [user.id]
-  );
+    const roleResult = await client.query(
+      `SELECT r.name
+         FROM role r
+         INNER JOIN user_global_role ugr ON ugr.role_id = r.id
+        WHERE ugr.user_id = $1
+        UNION
+       SELECT r.name
+         FROM role r
+         INNER JOIN ward_user_role wur ON wur.role_id = r.id
+        WHERE wur.user_id = $1`,
+      [user.id]
+    );
 
-  return {
-    id: user.id,
-    email: user.email,
-    displayName: user.display_name,
-    mustChangePassword: user.must_change_password,
-    hasPassword: user.has_password,
-    roles: roleResult.rows.map((row) => row.name as string),
-    activeWardId: wardResult.rowCount ? (wardResult.rows[0].ward_id as string) : null
-  };
+    const wardResult = await client.query(
+      `SELECT ward_id
+         FROM ward_user_role
+        WHERE user_id = $1
+        ORDER BY created_at ASC
+        LIMIT 1`,
+      [user.id]
+    );
+
+    return {
+      id: user.id,
+      email: user.email,
+      displayName: user.display_name,
+      mustChangePassword: user.must_change_password,
+      hasPassword: user.has_password,
+      roles: roleResult.rows.map((row) => row.name as string),
+      activeWardId: wardResult.rowCount ? (wardResult.rows[0].ward_id as string) : null
+    };
+  } finally {
+    client.release();
+  }
 }
 
 async function loadSessionUserById(id: string): Promise<SessionUserDetails | null> {
