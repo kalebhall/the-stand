@@ -276,16 +276,34 @@ export default async function AnnouncementsPage() {
       await client.query('BEGIN');
       await setDbContext(client, { userId: actionSession.user.id, wardId: actionSession.activeWardId });
 
-      await client.query(
+      const upserted = await client.query<{ inserted: boolean }>(
         `INSERT INTO calendar_feed (ward_id, display_name, feed_url, feed_scope)
-         VALUES ($1, $2, $3, $4)`,
+         VALUES ($1, $2, $3, $4)
+         ON CONFLICT (ward_id, feed_url)
+         DO UPDATE
+           SET display_name = EXCLUDED.display_name,
+               feed_scope = EXCLUDED.feed_scope,
+               is_active = TRUE,
+               last_refresh_status = NULL,
+               last_refresh_error = NULL,
+               last_refreshed_at = NULL
+         RETURNING (xmax = 0) AS inserted`,
         [actionSession.activeWardId, displayName, feedUrl, feedScope]
       );
 
+      const isInsert = Boolean(upserted.rows[0]?.inserted);
+
       await client.query(
         `INSERT INTO audit_log (ward_id, user_id, action, details)
-         VALUES ($1, $2, 'CALENDAR_FEED_CREATED', jsonb_build_object('displayName', $3, 'feedScope', $4))`,
-        [actionSession.activeWardId, actionSession.user.id, displayName, feedScope]
+         VALUES ($1, $2, $3, jsonb_build_object('displayName', $4, 'feedScope', $5, 'feedUrl', $6))`,
+        [
+          actionSession.activeWardId,
+          actionSession.user.id,
+          isInsert ? 'CALENDAR_FEED_CREATED' : 'CALENDAR_FEED_UPDATED',
+          displayName,
+          feedScope,
+          feedUrl
+        ]
       );
 
       await client.query('COMMIT');
