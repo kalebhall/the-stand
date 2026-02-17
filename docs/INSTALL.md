@@ -151,6 +151,10 @@ ENCRYPTION_KEY=GENERATE_32_BYTE_SECRET
 REDIS_URL=redis://127.0.0.1:6379
 
 NOTIFICATION_WEBHOOK_URL=http://127.0.0.1:5678/webhook/the-stand
+
+# Logging verbosity for server-side diagnostics
+# Available: debug | info | warn | error
+LOG_LEVEL=info
 ```
 Generate secure secret:
 ```
@@ -161,6 +165,15 @@ Secure the file:
 sudo chown the-stand:the-stand /opt/the-stand/app/.env
 sudo chmod 600 /opt/the-stand/app/.env
 ```
+
+
+Log levels:
+- `debug`: Most verbose; includes troubleshooting details for imports and API handlers.
+- `info`: Standard operational events (default).
+- `warn`: Only warnings and errors.
+- `error`: Errors only.
+
+Set `LOG_LEVEL` in `/opt/the-stand/app/.env` (or your deployment environment) and restart the app service for changes to take effect.
 For this project, the Google OAuth callback route is:
 ```
 /api/auth/callback/google

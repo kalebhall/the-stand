@@ -9,6 +9,8 @@ const { authMock, canViewCallingsMock, setDbContextMock, connectMock, releaseMoc
   queryMock: vi.fn()
 }));
 
+const loggerErrorMock = vi.hoisted(() => vi.fn());
+
 vi.mock('@/src/auth/auth', () => ({ auth: authMock }));
 vi.mock('@/src/auth/roles', () => ({ canViewCallings: canViewCallingsMock }));
 vi.mock('@/src/db/context', () => ({ setDbContext: setDbContextMock }));
@@ -16,6 +18,14 @@ vi.mock('@/src/db/client', () => ({
   pool: {
     connect: connectMock
   }
+}));
+vi.mock('@/src/lib/logger', () => ({
+  createLogger: () => ({
+    debug: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: loggerErrorMock
+  })
 }));
 
 import { POST } from './route';
@@ -101,5 +111,42 @@ describe('POST /api/w/[wardId]/imports/membership', () => {
       1,
       2
     ]);
+  });
+
+  it('writes failure details to audit log when import processing fails', async () => {
+    queryMock
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({ rows: [{ id: 'import-3' }] })
+      .mockRejectedValueOnce(new Error('db-upsert-failed'))
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({});
+
+    const response = await POST(
+      new Request('http://localhost', {
+        method: 'POST',
+        body: JSON.stringify({ rawText: 'Jane Doe, jane@example.com', commit: true })
+      }),
+      { params: Promise.resolve({ wardId: 'ward-1' }) }
+    );
+
+    expect(response.status).toBe(500);
+    expect(await response.json()).toEqual({ error: 'Failed to import membership', code: 'INTERNAL_ERROR' });
+
+    expect(queryMock).toHaveBeenCalledWith(expect.stringContaining("'MEMBERSHIP_IMPORT_FAILED'"), [
+      'ward-1',
+      'user-1',
+      true,
+      1,
+      'db-upsert-failed'
+    ]);
+    expect(loggerErrorMock).toHaveBeenCalledWith('Membership import request failed', {
+      wardId: 'ward-1',
+      userId: 'user-1',
+      commitRequested: true,
+      parsedCount: 1,
+      error: 'db-upsert-failed'
+    });
   });
 });
