@@ -276,16 +276,48 @@ export default async function AnnouncementsPage() {
       await client.query('BEGIN');
       await setDbContext(client, { userId: actionSession.user.id, wardId: actionSession.activeWardId });
 
-      await client.query(
-        `INSERT INTO calendar_feed (ward_id, display_name, feed_url, feed_scope)
-         VALUES ($1, $2, $3, $4)`,
-        [actionSession.activeWardId, displayName, feedUrl, feedScope]
+      const existingFeed = await client.query<{ id: string }>(
+        `SELECT id
+           FROM calendar_feed
+          WHERE ward_id = $1 AND feed_url = $2
+          LIMIT 1
+          FOR UPDATE`,
+        [actionSession.activeWardId, feedUrl]
       );
+
+      const isInsert = existingFeed.rowCount === 0;
+
+      if (isInsert) {
+        await client.query(
+          `INSERT INTO calendar_feed (ward_id, display_name, feed_url, feed_scope)
+           VALUES ($1, $2, $3, $4)`,
+          [actionSession.activeWardId, displayName, feedUrl, feedScope]
+        );
+      } else {
+        await client.query(
+          `UPDATE calendar_feed
+              SET display_name = $3,
+                  feed_scope = $4,
+                  is_active = TRUE,
+                  last_refresh_status = NULL,
+                  last_refresh_error = NULL,
+                  last_refreshed_at = NULL
+            WHERE ward_id = $1 AND feed_url = $2`,
+          [actionSession.activeWardId, feedUrl, displayName, feedScope]
+        );
+      }
 
       await client.query(
         `INSERT INTO audit_log (ward_id, user_id, action, details)
-         VALUES ($1, $2, 'CALENDAR_FEED_CREATED', jsonb_build_object('displayName', $3, 'feedScope', $4))`,
-        [actionSession.activeWardId, actionSession.user.id, displayName, feedScope]
+         VALUES ($1, $2, $3, jsonb_build_object('displayName', $4, 'feedScope', $5, 'feedUrl', $6))`,
+        [
+          actionSession.activeWardId,
+          actionSession.user.id,
+          isInsert ? 'CALENDAR_FEED_CREATED' : 'CALENDAR_FEED_UPDATED',
+          displayName,
+          feedScope,
+          feedUrl
+        ]
       );
 
       await client.query('COMMIT');
