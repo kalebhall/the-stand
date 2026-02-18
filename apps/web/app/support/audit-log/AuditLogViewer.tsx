@@ -127,7 +127,6 @@ export default function AuditLogViewer({
       void fetchData(1);
     }, 300);
     return () => clearTimeout(timeout);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search, actionFilter, dateFrom, dateTo, sortColumn, sortDir]);
 
   const handleSort = useCallback(

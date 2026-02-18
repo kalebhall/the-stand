@@ -36,12 +36,13 @@ describe('POST /api/w/[wardId]/callings/[callingId]/set-apart', () => {
     });
 
     queryMock
-      .mockResolvedValueOnce({})
-      .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'calling-1', action_status: 'SUSTAINED' }] })
-      .mockResolvedValueOnce({})
-      .mockResolvedValueOnce({})
-      .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'event-1' }] })
-      .mockResolvedValueOnce({});
+      .mockResolvedValueOnce({})  // BEGIN
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'calling-1', action_status: 'SUSTAINED' }] })  // SELECT calling status
+      .mockResolvedValueOnce({})  // INSERT calling_action
+      .mockResolvedValueOnce({})  // UPDATE calling_assignment (SET_APART deactivates)
+      .mockResolvedValueOnce({})  // INSERT audit_log
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'event-1' }] })  // INSERT event_outbox RETURNING id
+      .mockResolvedValueOnce({});  // COMMIT
   });
 
   it('queues set apart notification event with LCR instruction', async () => {

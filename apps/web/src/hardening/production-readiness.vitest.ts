@@ -3,8 +3,11 @@ import path from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
+// Resolve paths relative to the repository root (4 levels up from this file)
+const REPO_ROOT = path.resolve(import.meta.dirname, '../../../..');
+
 function read(relativePath: string): string {
-  return readFileSync(path.resolve(process.cwd(), relativePath), 'utf8');
+  return readFileSync(path.resolve(REPO_ROOT, relativePath), 'utf8');
 }
 
 describe('phase 12 production-readiness checks', () => {
