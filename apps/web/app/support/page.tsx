@@ -34,6 +34,13 @@ const sections = [
       'Review all system activity including successes and failures. Filter and sort entries by action, user, ward, or date range.',
     href: '/support/audit-log',
     action: 'View audit log'
+  },
+  {
+    title: 'Hymn Library',
+    description:
+      'Manage the global hymn list used in meeting program autocomplete. Add, edit, or deactivate hymns from the standard hymnbook, new hymnbook, and children\'s songbook.',
+    href: '/support/hymns',
+    action: 'Manage hymns'
   }
 ] as const;
 

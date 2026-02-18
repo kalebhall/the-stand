@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { type FormEvent, useMemo, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { HymnAutocomplete } from '@/components/HymnAutocomplete';
 import { MemberAutocomplete } from '@/components/ui/member-autocomplete';
 import { MEETING_TYPES, type ProgramItemInput } from '@/src/meetings/types';
 
@@ -45,6 +46,12 @@ export function MeetingForm({
 
   function updateProgramItem(index: number, field: keyof ProgramItemInput, value: string) {
     setProgramItems((current) => current.map((item, itemIndex) => (itemIndex === index ? { ...item, [field]: value } : item)));
+  }
+
+  function updateHymn(index: number, hymnNumber: string, hymnTitle: string) {
+    setProgramItems((current) =>
+      current.map((item, itemIndex) => (itemIndex === index ? { ...item, hymnNumber, hymnTitle } : item))
+    );
   }
 
   function moveItem(index: number, direction: -1 | 1) {
@@ -199,15 +206,14 @@ export function MeetingForm({
                 )}
               </label>
 
-              <label className="space-y-1 text-sm">
-                <span className="font-medium">Hymn number</span>
-                <input className="w-full rounded-md border px-3 py-2" value={item.hymnNumber} onChange={(event) => updateProgramItem(index, 'hymnNumber', event.target.value)} />
-              </label>
-
-              <label className="space-y-1 text-sm">
-                <span className="font-medium">Hymn title</span>
-                <input className="w-full rounded-md border px-3 py-2" value={item.hymnTitle} onChange={(event) => updateProgramItem(index, 'hymnTitle', event.target.value)} />
-              </label>
+              <div className="space-y-1 text-sm sm:col-span-2">
+                <span className="font-medium">Hymn</span>
+                <HymnAutocomplete
+                  hymnNumber={item.hymnNumber}
+                  hymnTitle={item.hymnTitle}
+                  onChange={(num, title) => updateHymn(index, num, title)}
+                />
+              </div>
             </div>
 
             <label className="space-y-1 text-sm">
