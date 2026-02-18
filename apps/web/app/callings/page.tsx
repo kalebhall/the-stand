@@ -1,9 +1,11 @@
 import { redirect } from 'next/navigation';
 
+import { AddCallingSection } from '@/components/AddCallingSection';
 import { Button } from '@/components/ui/button';
 import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth/guards';
 import { canManageCallings, canViewCallings } from '@/src/auth/roles';
 import { canTransitionCallingStatus, type CallingStatus } from '@/src/callings/lifecycle';
+import { STANDARD_CALLINGS } from '@/src/callings/standard-callings';
 import { appendCallingStatus, fetchCurrentCallingStatus } from '@/src/callings/transition';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
@@ -192,6 +194,16 @@ export default async function CallingsPage() {
           <h1 className="text-2xl font-semibold tracking-tight">Callings</h1>
           <p className="text-sm text-muted-foreground">Track proposed → extended → sustained → set apart lifecycle.</p>
         </section>
+
+        {canManage ? (
+          <section className="rounded-lg border bg-card p-4">
+            <h2 className="text-lg font-semibold">Add Calling</h2>
+            <p className="mb-3 text-sm text-muted-foreground">
+              Select from standard callings or type a custom calling name.
+            </p>
+            <AddCallingSection wardId={wardId} standardCallings={STANDARD_CALLINGS} />
+          </section>
+        ) : null}
 
         <section className="rounded-lg border bg-card p-4">
           <h2 className="text-lg font-semibold">Set Apart Queue</h2>

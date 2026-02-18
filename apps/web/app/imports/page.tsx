@@ -5,7 +5,7 @@ import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth
 import { canViewCallings } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
-import { parseCallingsText } from '@/src/imports/callings';
+import { parseCallingsPdfText } from '@/src/imports/callings';
 
 type MemberRow = {
   id: string;
@@ -28,7 +28,11 @@ type MemberNoteRow = {
 type CallingRow = {
   id: string;
   member_name: string;
+  birthday: string | null;
+  organization: string | null;
   calling_name: string;
+  sustained: boolean;
+  set_apart: boolean;
   is_active: boolean;
 };
 
@@ -65,7 +69,7 @@ export default async function ImportsPage() {
     );
 
     const callingResult = await client.query(
-      `SELECT id, member_name, calling_name, is_active
+      `SELECT id, member_name, birthday, organization, calling_name, sustained, set_apart, is_active
          FROM calling_assignment
         WHERE ward_id = $1
         ORDER BY member_name ASC`,
@@ -88,13 +92,13 @@ export default async function ImportsPage() {
     const currentActiveSet = new Set(
       (callingResult.rows as CallingRow[])
         .filter((row) => row.is_active)
-        .map((row) => `${row.member_name.toLowerCase()}::${row.calling_name.toLowerCase()}`)
+        .map((row) => `${row.member_name.toLowerCase()}::${(row.birthday ?? '').toLowerCase()}::${row.calling_name.toLowerCase()}`)
     );
 
     const latestImportSet = new Set(
-      parseCallingsText((latestCallingImportResult.rows[0]?.raw_text as string | undefined) ?? '')
-        .filter((entry) => !entry.isRelease)
-        .map((entry) => `${entry.memberName.toLowerCase()}::${entry.callingName.toLowerCase()}`)
+      parseCallingsPdfText((latestCallingImportResult.rows[0]?.raw_text as string | undefined) ?? '').map(
+        (entry) => `${entry.memberName.toLowerCase()}::${entry.birthday.toLowerCase()}::${entry.callingName.toLowerCase()}`
+      )
     );
 
     const driftCount =
@@ -105,7 +109,7 @@ export default async function ImportsPage() {
       <main className="mx-auto w-full max-w-6xl space-y-6 p-4 sm:p-6">
         <section className="space-y-2">
           <h1 className="text-2xl font-semibold tracking-tight">Imports</h1>
-          <p className="text-sm text-muted-foreground">Paste membership text for dry-run preview or commit updates, then maintain restricted member notes.</p>
+          <p className="text-sm text-muted-foreground">Paste membership text, upload callings PDF for dry-run/commit, and maintain restricted member notes.</p>
         </section>
 
         <MembershipImportsClient
