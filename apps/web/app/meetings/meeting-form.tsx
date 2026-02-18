@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { HymnAutocomplete } from '@/components/HymnAutocomplete';
 import { MemberAutocomplete } from '@/components/ui/member-autocomplete';
 import { MEETING_TYPES, type ProgramItemInput } from '@/src/meetings/types';
+import { getDefaultProgramItemsForMeetingType } from '@/src/meetings/default-program';
 
 const PERSON_ITEM_TYPES = new Set(['PRESIDING', 'CONDUCTING', 'INVOCATION', 'SPEAKER', 'BENEDICTION']);
 
@@ -20,7 +21,21 @@ type MeetingFormProps = {
   publishedVersionCount?: number;
 };
 
-const PROGRAM_ITEM_TYPES = ['PRESIDING', 'CONDUCTING', 'OPENING_HYMN', 'INVOCATION', 'SACRAMENT_HYMN', 'SACRAMENT', 'SPEAKER', 'CLOSING_HYMN', 'BENEDICTION', 'ANNOUNCEMENT'];
+const PROGRAM_ITEM_TYPES = [
+  'PRESIDING',
+  'CONDUCTING',
+  'ANNOUNCEMENT',
+  'OPENING_HYMN',
+  'INVOCATION',
+  'WARD_AND_STAKE_BUSINESS',
+  'SACRAMENT_HYMN',
+  'SACRAMENT',
+  'SPEAKER',
+  'REST_HYMN',
+  'TESTIMONIES',
+  'CLOSING_HYMN',
+  'BENEDICTION'
+];
 
 export function MeetingForm({
   wardId,
@@ -35,7 +50,7 @@ export function MeetingForm({
   const [meetingDate, setMeetingDate] = useState(initialMeetingDate);
   const [meetingType, setMeetingType] = useState(initialMeetingType);
   const [programItems, setProgramItems] = useState<ProgramItemInput[]>(
-    initialProgramItems.length ? initialProgramItems : [{ itemType: 'OPENING_HYMN', title: '', notes: '', hymnNumber: '', hymnTitle: '' }]
+    initialProgramItems.length ? initialProgramItems : getDefaultProgramItemsForMeetingType(initialMeetingType)
   );
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -66,6 +81,14 @@ export function MeetingForm({
       next.splice(nextIndex, 0, moved);
       return next;
     });
+  }
+
+  function onMeetingTypeChange(nextMeetingType: string) {
+    setMeetingType(nextMeetingType);
+
+    if (mode === 'create') {
+      setProgramItems(getDefaultProgramItemsForMeetingType(nextMeetingType));
+    }
   }
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
@@ -149,7 +172,7 @@ export function MeetingForm({
 
         <label className="space-y-2 text-sm">
           <span className="font-medium">Meeting type</span>
-          <select className="w-full rounded-md border px-3 py-2" value={meetingType} onChange={(event) => setMeetingType(event.target.value)} required>
+          <select className="w-full rounded-md border px-3 py-2" value={meetingType} onChange={(event) => onMeetingTypeChange(event.target.value)} required>
             {MEETING_TYPES.map((value) => (
               <option key={value} value={value}>
                 {value.replaceAll('_', ' ')}
