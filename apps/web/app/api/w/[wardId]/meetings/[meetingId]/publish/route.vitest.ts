@@ -4,6 +4,7 @@ const {
   authMock,
   canManageMeetingsMock,
   setDbContextMock,
+  enqueueOutboxNotificationJobMock,
   queryMock,
   releaseMock,
   connectMock
@@ -11,6 +12,7 @@ const {
   authMock: vi.fn(),
   canManageMeetingsMock: vi.fn(),
   setDbContextMock: vi.fn(),
+  enqueueOutboxNotificationJobMock: vi.fn(),
   queryMock: vi.fn(),
   releaseMock: vi.fn(),
   connectMock: vi.fn()
@@ -19,6 +21,7 @@ const {
 vi.mock('@/src/auth/auth', () => ({ auth: authMock }));
 vi.mock('@/src/auth/roles', () => ({ canManageMeetings: canManageMeetingsMock }));
 vi.mock('@/src/db/context', () => ({ setDbContext: setDbContextMock }));
+vi.mock('@/src/notifications/queue', () => ({ enqueueOutboxNotificationJob: enqueueOutboxNotificationJobMock }));
 vi.mock('@/src/db/client', () => ({
   pool: {
     connect: connectMock
@@ -36,6 +39,7 @@ describe('POST /api/w/[wardId]/meetings/[meetingId]/publish', () => {
       activeWardId: 'ward-1'
     });
     canManageMeetingsMock.mockReturnValue(true);
+    enqueueOutboxNotificationJobMock.mockResolvedValue(undefined);
 
     connectMock.mockResolvedValue({
       query: queryMock,
@@ -43,14 +47,18 @@ describe('POST /api/w/[wardId]/meetings/[meetingId]/publish', () => {
     });
 
     queryMock
-      .mockResolvedValueOnce({})
-      .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'meeting-1', meeting_date: '2026-01-04', meeting_type: 'SACRAMENT' }] })
-      .mockResolvedValueOnce({ rowCount: 1, rows: [{ item_type: 'OPENING_HYMN', title: null, notes: null, hymn_number: '1', hymn_title: 'The Morning Breaks' }] })
-      .mockResolvedValueOnce({ rows: [{ latest_version: 1 }] })
-      .mockResolvedValueOnce({})
-      .mockResolvedValueOnce({})
-      .mockResolvedValueOnce({})
-      .mockResolvedValueOnce({});
+      .mockResolvedValueOnce({})  // BEGIN
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'meeting-1', meeting_date: '2026-01-04', meeting_type: 'SACRAMENT' }] })  // SELECT meeting
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ item_type: 'OPENING_HYMN', title: null, notes: null, hymn_number: '1', hymn_title: 'The Morning Breaks' }] })  // SELECT program items
+      .mockResolvedValueOnce({ rows: [] })  // SELECT announcements
+      .mockResolvedValueOnce({ rows: [{ latest_version: 1 }] })  // SELECT COALESCE MAX version
+      .mockResolvedValueOnce({})  // INSERT meeting_program_render
+      .mockResolvedValueOnce({})  // UPDATE meeting status
+      .mockResolvedValueOnce({})  // INSERT public_program_share
+      .mockResolvedValueOnce({})  // INSERT public_program_portal
+      .mockResolvedValueOnce({})  // INSERT audit_log
+      .mockResolvedValueOnce({ rows: [{ id: 'event-1' }] })  // INSERT event_outbox RETURNING id
+      .mockResolvedValueOnce({});  // COMMIT
   });
 
   it('creates a new immutable render version and marks meeting as published', async () => {
@@ -62,7 +70,7 @@ describe('POST /api/w/[wardId]/meetings/[meetingId]/publish', () => {
     expect(await response.json()).toEqual({ success: true, meetingId: 'meeting-1', version: 2, status: 'PUBLISHED' });
     expect(queryMock).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO meeting_program_render'), ['ward-1', 'meeting-1', 2, expect.any(String)]);
     expect(queryMock).toHaveBeenCalledWith(expect.stringContaining("SET status = 'PUBLISHED'"), ['meeting-1', 'ward-1']);
-    expect(queryMock).toHaveBeenCalledWith(expect.stringContaining('MEETING_REPUBLISHED'), ['ward-1', 'user-1', 'MEETING_REPUBLISHED', 'meeting-1', 2]);
+    expect(queryMock).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO audit_log'), ['ward-1', 'user-1', 'MEETING_REPUBLISHED', 'meeting-1', 2]);
     expect(releaseMock).toHaveBeenCalled();
   });
 });
