@@ -333,3 +333,14 @@ export const importRun = pgTable('import_run', {
   createdByUserId: uuid('created_by_user_id').references(() => userAccount.id, { onDelete: 'set null' }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 });
+
+export const hymn = pgTable('hymn', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  hymnNumber: text('hymn_number').notNull(),
+  title: text('title').notNull(),
+  book: text('book').notNull(),
+  sortKey: integer('sort_key').notNull(),
+  isActive: boolean('is_active').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
+});
