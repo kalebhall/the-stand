@@ -8,6 +8,18 @@ export type ParsedCalling = {
 };
 
 const HEADER_LINE_PATTERN = /^name\s+gender\s+age\s+birth\s+date\s+organization\s+calling\s+sustained\s+set\s+apart$/i;
+const BOOLEAN_TOKEN_PATTERN = /^(yes|no|true|false|y|n|✔|✓|√)$/i;
+const KNOWN_ORGANIZATIONS = [
+  'Temple and Family History',
+  'Relief Society',
+  'Elders Quorum',
+  'Sunday School',
+  'Young Women',
+  'Young Men',
+  'Ward Mission',
+  'Primary',
+  'Bishopric'
+];
 
 function normalizeWhitespace(input: string): string {
   return input.replace(/\s+/g, ' ').trim();
@@ -16,111 +28,54 @@ function normalizeWhitespace(input: string): string {
 function parseBoolean(value: string): boolean {
   const raw = value.trim();
   if (!raw) return false;
-
   const normalized = raw.toLowerCase();
-
-  // Common checkmarks from PDFs
   if (raw.includes('✔') || raw.includes('✓') || raw.includes('√')) return true;
-
-  // Your "Sustained" column is typically a date like "9 Mar 2025"
-  // Heuristic: if it contains a digit, we assume it's a "yes" via date.
   if (/\d/.test(raw)) return true;
-
   return normalized === 'yes' || normalized === 'y' || normalized === 'true' || normalized === 'set apart';
 }
 
+function parseSingleSpaceRow(normalizedLine: string): ParsedCalling | null {
+  const tokens = normalizedLine.split(' ').filter(Boolean);
+  const genderIdx = tokens.findIndex((t) => /^(male|female|m|f)$/i.test(t));
+  if (genderIdx < 1) return null;
 
-function parseCallingLine(line: string): ParsedCalling | null {
-  const trimmedLine = line.trim();
-  if (!trimmedLine) return null;
+  const memberName = tokens.slice(0, genderIdx).join(' ');
+  const age = tokens[genderIdx + 1];
+  if (!/^\d+$/.test(age ?? '')) return null;
 
-  // Split by 2+ spaces (PDF text extraction usually aligns columns this way)
-  const parts = trimmedLine
-    .split(/\s{2,}/)
-    .map((p) => p.trim())
-    .filter(Boolean);
+  const month = tokens[genderIdx + 2];
+  const day = tokens[genderIdx + 3];
+  if (!month || !day || !/^\d{1,2}$/.test(day)) return null;
+  const birthday = `${month} ${day}`;
 
-  // We expect at least: Member, Gender, Age, Birthday, Organization, Calling
-  // Sustained / Set Apart may be missing (blanks collapse during extraction)
-  if (parts.length < 6) return null;
+  const remainder = [...tokens.slice(genderIdx + 4)];
+  if (!remainder.length) return null;
 
-  const memberName = parts[0] || '';
-  const gender = parts[1] || '';
-  const age = parts[2] || '';
-  const birthday = parts[3] || '';
-  const organization = parts[4] || '';
+  let setApartRaw = '';
+  let sustainedRaw = '';
 
-  // Everything after organization is "the rest"
-  const rest = parts.slice(5);
-
-  // If we have 3+ rest parts, treat last 2 as sustained + setApart
-  // If we have 2 rest parts, treat last 1 as sustained, setApart blank
-  // If we have 1 rest part, it's just callingName
-  let callingName = '';
-  let sustained = '';
-  let setApart = '';
-
-  if (rest.length >= 3) {
-    sustained = rest[rest.length - 2] ?? '';
-    setApart = rest[rest.length - 1] ?? '';
-    callingName = rest.slice(0, rest.length - 2).join(' ').trim();
-  } else if (rest.length === 2) {
-    sustained = rest[rest.length - 1] ?? '';
-    setApart = '';
-    callingName = rest.slice(0, rest.length - 1).join(' ').trim();
-  } else {
-    callingName = (rest[0] ?? '').trim();
-    sustained = '';
-    setApart = '';
+  if (BOOLEAN_TOKEN_PATTERN.test(remainder[remainder.length - 1] ?? '')) {
+    setApartRaw = remainder.pop() ?? '';
+  }
+  if (BOOLEAN_TOKEN_PATTERN.test(remainder[remainder.length - 1] ?? '')) {
+    sustainedRaw = remainder.pop() ?? '';
   }
 
-  // Very light validation (helps wrapped lines not be mis-parsed)
-  if (!memberName || (gender !== 'M' && gender !== 'F') || !birthday || !callingName) {
-    return null;
+  if (remainder.length < 2) return null;
+
+  let organization = remainder[0] ?? '';
+  let orgTokenCount = 1;
+  for (const org of KNOWN_ORGANIZATIONS) {
+    const orgParts = org.split(' ');
+    const matches = orgParts.every((part, idx) => (remainder[idx] ?? '').toLowerCase() === part.toLowerCase());
+    if (matches && orgParts.length > orgTokenCount) {
+      orgTokenCount = orgParts.length;
+      organization = org;
+    }
   }
 
-  return {
-    memberName,
-    gender,
-    age,
-    birthday,
-    organization,
-    callingName,
-    sustained: parseBoolean(sustained),
-    setApart: parseBoolean(setApart),
-  };
-}
-
-  if (HEADER_LINE_PATTERN.test(normalizedLine) || /members\s+with\s+callings/i.test(normalizedLine)) {
-    return null;
-  }
-
-  if (/^count\b/i.test(normalizedLine) || /^total\b/i.test(normalizedLine)) {
-    return null;
-  }
-
-  const parts = line
-    .trim()
-    .split(/\s{2,}/)
-    .map((part) => normalizeWhitespace(part))
-    .filter((part) => part.length > 0);
-
-  if (parts.length < 8) {
-    return null;
-  }
-
-  const [memberName, gender, age, birthday, organization, ...rest] = parts;
-  if (!memberName || !gender || !age || !birthday || !organization || rest.length < 3) {
-    return null;
-  }
-
-  const sustainedRaw = rest[rest.length - 2] ?? '';
-  const setApartRaw = rest[rest.length - 1] ?? '';
-  const callingName = rest.slice(0, -2).join(' ').trim();
-
-  if (!callingName) {
-    return null;
-  }
+  const callingName = remainder.slice(orgTokenCount).join(' ').trim();
+  if (!memberName || !organization || !callingName) return null;
 
   return {
     memberName,
@@ -132,48 +87,94 @@ function parseCallingLine(line: string): ParsedCalling | null {
   };
 }
 
+function parseCallingLine(line: string): ParsedCalling | null {
+  const normalizedLine = normalizeWhitespace(line);
+  if (!normalizedLine) return null;
+
+  if (HEADER_LINE_PATTERN.test(normalizedLine) || /members\s+with\s+callings/i.test(normalizedLine)) return null;
+  if (/^count\b/i.test(normalizedLine) || /^total\b/i.test(normalizedLine)) return null;
+
+  const parts = line
+    .trim()
+    .split(/\s{2,}/)
+    .map((part) => normalizeWhitespace(part))
+    .filter((part) => part.length > 0);
+
+  if (parts.length >= 6) {
+    const [memberName, _gender, _age, birthday, organization, ...rest] = parts;
+    if (!memberName || !birthday || !organization || rest.length < 1) return null;
+
+    let callingName = '';
+    let sustainedRaw = '';
+    let setApartRaw = '';
+
+    if (rest.length >= 3) {
+      sustainedRaw = rest[rest.length - 2] ?? '';
+      setApartRaw = rest[rest.length - 1] ?? '';
+      callingName = rest.slice(0, -2).join(' ').trim();
+    } else if (rest.length === 2) {
+      sustainedRaw = rest[1] ?? '';
+      callingName = rest[0] ?? '';
+    } else {
+      callingName = rest[0] ?? '';
+    }
+
+    if (!callingName) return null;
+
+    return {
+      memberName,
+      birthday,
+      organization,
+      callingName,
+      sustained: parseBoolean(sustainedRaw),
+      setApart: parseBoolean(setApartRaw)
+    };
+  }
+
+  return parseSingleSpaceRow(normalizedLine);
+}
+
+function looksLikeRowStart(line: string): boolean {
+  const normalizedLine = normalizeWhitespace(line);
+  const tokens = normalizedLine.split(' ').filter(Boolean);
+  const genderIdx = tokens.findIndex((t) => /^(male|female|m|f)$/i.test(t));
+  return genderIdx >= 1;
+}
+
 export function parseCallingsPdfText(rawText: string): ParsedCalling[] {
   const normalized = rawText.replace(/\r\n?/g, '\n');
   const deduped = new Map<string, ParsedCalling>();
-
-  // This "carry" lets us stitch wrapped callings back together
   let carry = '';
 
   for (const line of normalized.split('\n')) {
     const cleanLine = line.trim();
     if (!cleanLine) continue;
 
-    const candidate = carry ? `${carry} ${cleanLine}` : cleanLine;
+    if (carry && looksLikeRowStart(cleanLine)) {
+      const carryParsed = parseCallingLine(carry);
+      if (carryParsed) {
+        const key = `${carryParsed.memberName.toLowerCase()}::${carryParsed.birthday.toLowerCase()}::${carryParsed.callingName.toLowerCase()}`;
+        deduped.set(key, carryParsed);
+      }
+      carry = '';
+    }
 
-    // First try parsing the stitched candidate
+    const candidate = carry ? `${carry}  ${cleanLine}` : cleanLine;
     const parsed = parseCallingLine(candidate);
     if (parsed) {
       carry = '';
-
-      // Deduplicate
       const key = `${parsed.memberName.toLowerCase()}::${parsed.birthday.toLowerCase()}::${parsed.callingName.toLowerCase()}`;
       deduped.set(key, parsed);
       continue;
     }
 
-    // If it didn't parse: decide whether this line is a new row start or a continuation.
-    const parts = cleanLine
-      .split(/\s{2,}/)
-      .map((p) => p.trim())
-      .filter(Boolean);
-
-    const looksLikeRowStart = parts.length >= 2 && (parts[1] === 'M' || parts[1] === 'F');
-
-    if (looksLikeRowStart) {
-      // Start a new potential row
+    if (looksLikeRowStart(cleanLine)) {
       carry = cleanLine;
     } else {
-      // Continuation of previous line (wrapped calling text)
-      carry = carry ? `${carry} ${cleanLine}` : cleanLine;
+      carry = carry ? `${carry}  ${cleanLine}` : cleanLine;
     }
   }
 
-  // Last chance: parse anything left in carry
   if (carry) {
     const parsed = parseCallingLine(carry);
     if (parsed) {
