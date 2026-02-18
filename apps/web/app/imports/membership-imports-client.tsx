@@ -272,6 +272,11 @@ export function MembershipImportsClient({
     }
   }
 
+  function beginEditNote(noteId: string, noteTextValue: string) {
+    setEditingNoteId(noteId);
+    setEditingNoteText(noteTextValue);
+  }
+
   async function deleteNote(memberId: string, noteId: string) {
     if (!window.confirm('Delete this note?')) {
       return;
@@ -582,43 +587,33 @@ export function MembershipImportsClient({
                               <textarea
                                 value={editingNoteText}
                                 onChange={(event) => setEditingNoteText(event.target.value)}
-                                className="min-h-20 w-full rounded-md border bg-background p-2 text-sm"
-                              />
-                              <div className="flex gap-2">
-                                <Button type="button" size="sm" onClick={() => saveEditedNote(member.id)} disabled={isSavingEditedNote}>
-                                  Save
-                                </Button>
-                                <Button
-                                  type="button"
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => {
+                                onBlur={() => {
+                                  if (!isSavingEditedNote) {
+                                    void saveEditedNote(member.id);
+                                  }
+                                }}
+                                onKeyDown={(event) => {
+                                  if (event.key === 'Escape') {
                                     setEditingNoteId(null);
                                     setEditingNoteText('');
-                                  }}
-                                >
-                                  Cancel
-                                </Button>
-                              </div>
+                                  }
+                                }}
+                                className="min-h-20 w-full rounded-md border bg-background p-2 text-sm"
+                                autoFocus
+                              />
+                              <p className="text-xs text-muted-foreground">Click outside the note to save. Press Escape to cancel.</p>
                             </div>
                           ) : (
                             <div className="flex flex-wrap items-start justify-between gap-2">
-                              <div>
+                              <div
+                                className="cursor-text"
+                                onDoubleClick={() => beginEditNote(note.id, note.note_text)}
+                                title="Double-click to edit"
+                              >
                                 {note.note_text}
                                 <span className="ml-2 text-xs text-muted-foreground">({note.created_by_email ?? 'Unknown'})</span>
                               </div>
                               <div className="flex gap-2">
-                                <Button
-                                  type="button"
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => {
-                                    setEditingNoteId(note.id);
-                                    setEditingNoteText(note.note_text);
-                                  }}
-                                >
-                                  Edit
-                                </Button>
                                 <Button
                                   type="button"
                                   size="sm"
