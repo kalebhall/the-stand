@@ -263,9 +263,6 @@ export default async function SupportHymnsPage({ searchParams }: { searchParams:
                           <button
                             type="submit"
                             className="text-xs text-red-600 underline underline-offset-2"
-                            onClick={(e) => {
-                              if (!confirm(`Delete "${hymn.hymn_number} — ${hymn.title}"?`)) e.preventDefault();
-                            }}
                           >
                             Delete
                           </button>
