@@ -234,7 +234,7 @@ INSERT INTO hymn (hymn_number, title, book, sort_key) VALUES
 ('1013', 'God''s Gracious Love', 'NEW', 1013),
 ('1014', 'My Shepherd Will Supply My Need', 'NEW', 1014),
 ('1015', 'Oh, the Deep, Deep Love of Jesus', 'NEW', 1015),
-('1016', 'Behold the Wounds in Jesus' Hands', 'NEW', 1016),
+('1016', 'Behold the Wounds in Jesus'' Hands', 'NEW', 1016),
 ('1017', 'This Is the Christ', 'NEW', 1017),
 ('1018', 'Come, Lord Jesus', 'NEW', 1018),
 ('1019', 'To Love like Thee', 'NEW', 1019),
