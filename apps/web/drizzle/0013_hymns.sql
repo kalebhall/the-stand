@@ -219,14 +219,66 @@ INSERT INTO hymn (hymn_number, title, book, sort_key) VALUES
 -- with the standard hymnbook.
 -- ============================================================
 INSERT INTO hymn (hymn_number, title, book, sort_key) VALUES
-('1001', 'Come, Thou Fount of Every Blessing',  'NEW', 10001),
-('1002', 'It Is Well with My Soul',             'NEW', 10002),
-('1003', 'Great Is Thy Faithfulness',           'NEW', 10003),
-('1004', 'His Eye Is on the Sparrow',           'NEW', 10004),
-('1005', 'In Christ Alone',                     'NEW', 10005),
-('1006', 'Christ Is Risen, Hallelujah',         'NEW', 10006),
-('1007', 'Abide with Me',                       'NEW', 10007),
-('1008', 'Be Thou My Vision',                   'NEW', 10008);
+('1001', 'Come, Thou Fount of Every Blessing', 'NEW', 1001);
+('1002', 'When the Savior Comes Again', 'NEW', 1002);
+('1003', 'It Is Well with My Soul', 'NEW', 1003);
+('1004', 'I Will Walk with Jesus', 'NEW', 1004);
+('1005', 'His Eye Is on the Sparrow', 'NEW', 1005);
+('1006', 'Think a Sacred Song', 'NEW', 1006);
+('1007', 'As Bread Is Broken', 'NEW', 1007);
+('1008', 'Bread of Life, Living Water', 'NEW', 1008);
+('1009', 'Gethsemane', 'NEW', 1009);
+('1010', 'Amazing Grace', 'NEW', 1010);
+('1011', 'Holding Hands Around the World', 'NEW', 1011);
+('1012', 'Anytime, Anywhere', 'NEW', 1012);
+('1013', 'God's Gracious Love', 'NEW', 1013);
+('1014', 'My Shepherd Will Supply My Need', 'NEW', 1014);
+('1015', 'Oh, the Deep, Deep Love of Jesus', 'NEW', 1015);
+('1016', 'Behold the Wounds in Jesus' Hands', 'NEW', 1016);
+('1017', 'This Is the Christ', 'NEW', 1017);
+('1018', 'Come, Lord Jesus', 'NEW', 1018);
+('1019', 'To Love like Thee', 'NEW', 1019);
+('1020', 'Softly and Tenderly Jesus Is Calling', 'NEW', 1020);
+('1021', 'I Know That My Savior Loves Me', 'NEW', 1021);
+('1022', 'Faith in Every Footstep', 'NEW', 1022);
+('1023', 'Standing on the Promises', 'NEW', 1023);
+('1024', 'I Have Faith in the Lord Jesus Christ', 'NEW', 1024);
+('1025', 'Take My Heart and Let It Be Consecrated', 'NEW', 1025);
+('1026', 'Holy Places', 'NEW', 1026);
+('1027', 'Welcome Home', 'NEW', 1027);
+('1028', 'This Little Light of Mine', 'NEW', 1028);
+('1029', 'I Can't Count Them All', 'NEW', 1029);
+('1030', 'Close as a Quiet Prayer', 'NEW', 1030);
+('1031', 'Come, Hear the Word the Lord Has Spoken', 'NEW', 1031);
+('1032', 'Look unto Christ', 'NEW', 1032);
+('1033', 'Oh, How Great Is Our Joy', 'NEW', 1033);
+('1034', 'I'm a Pioneer Too', 'NEW', 1034);
+('1035', 'As I Keep the Sabbath Day', 'NEW', 1035);
+('1036', 'Read the Book of Mormon and Pray', 'NEW', 1036);
+('1037', 'I'm Gonna Live So God Can Use Me', 'NEW', 1037);
+('1038', 'The Lord's My Shepherd', 'NEW', 1038);
+('1039', 'Because', 'NEW', 1039);
+('1040', 'His Voice as the Sound', 'NEW', 1040);
+('1041', 'O Lord, Who Gave Thy Life for Me', 'NEW', 1041);
+('1042', 'Thou Gracious God, Whose Mercy Lends', 'NEW', 1042);
+('1043', 'Help Us Remember', 'NEW', 1043);
+('1044', 'How Did The Savior Minister', 'NEW', 1044);
+('1045', 'Jesus Is the Way', 'NEW', 1045);
+('1046', 'Can You Count the Stars in Heaven?', 'NEW', 1046);
+('1047', 'He Cares for Me', 'NEW', 1047);
+('1048', 'Our Prayer to Thee', 'NEW', 1048);
+('1049', 'Joseph Prayed in Faith', 'NEW', 1049);
+('1050', 'Stand by Me', 'NEW', 1050);
+('1051', 'This Day Is a Good Day, Lord', 'NEW', 1051);
+('1201', 'Hail the Day that Sees Him Rise', 'NEW', 1201);
+('1202', 'He Is Born, the Divine Christ Child', 'NEW', 1201);
+('1203', 'What Child Is This?', 'NEW', 1201);
+('1204', 'Star Bright', 'NEW', 1201);
+('1205', 'Let Easter Anthems Ring', 'NEW', 1201);
+('1206', 'Were You There?', 'NEW', 1201);
+('1207', 'Still, Still, Still', 'NEW', 1201);
+('1208', 'Go Tell It on the Mountain', 'NEW', 1201);
+('1209', 'Little Baby in a Manger', 'NEW', 1201);
 
 -- ============================================================
 -- CHILDREN'S SONGBOOK (Primary)
