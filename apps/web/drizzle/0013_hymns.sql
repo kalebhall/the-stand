@@ -1,6 +1,6 @@
 -- Hymn lookup table (global, not ward-scoped).
 -- Stores hymns from the standard hymnbook, new hymnbook, and children's songbook.
--- hymn_number: display number (e.g. '1', '341', 'C1', 'N1')
+-- hymn_number: display number (e.g. '1', '341', '1001', 'C1')
 -- book: 'STANDARD' | 'NEW' | 'CHILDRENS'
 -- sort_key: integer for ordering within search results
 -- NOTE: Standard hymn data covers 1-153 completely and selected hymns beyond that.
@@ -215,18 +215,18 @@ INSERT INTO hymn (hymn_number, title, book, sort_key) VALUES
 
 -- ============================================================
 -- NEW HYMNBOOK (2023+ releases — Hymns for Home and Church)
--- Numbers prefixed N. Update via /support/hymns when official
--- numbering is confirmed.
+-- Uses official hymn numbers (1001+) which do not overlap
+-- with the standard hymnbook.
 -- ============================================================
 INSERT INTO hymn (hymn_number, title, book, sort_key) VALUES
-('N1',  'Come, Thou Fount of Every Blessing',   'NEW', 10001),
-('N2',  'It Is Well with My Soul',              'NEW', 10002),
-('N3',  'Great Is Thy Faithfulness',            'NEW', 10003),
-('N4',  'His Eye Is on the Sparrow',            'NEW', 10004),
-('N5',  'In Christ Alone',                      'NEW', 10005),
-('N6',  'Christ Is Risen, Hallelujah',          'NEW', 10006),
-('N7',  'Abide with Me',                        'NEW', 10007),
-('N8',  'Be Thou My Vision',                    'NEW', 10008);
+('1001', 'Come, Thou Fount of Every Blessing',  'NEW', 10001),
+('1002', 'It Is Well with My Soul',             'NEW', 10002),
+('1003', 'Great Is Thy Faithfulness',           'NEW', 10003),
+('1004', 'His Eye Is on the Sparrow',           'NEW', 10004),
+('1005', 'In Christ Alone',                     'NEW', 10005),
+('1006', 'Christ Is Risen, Hallelujah',         'NEW', 10006),
+('1007', 'Abide with Me',                       'NEW', 10007),
+('1008', 'Be Thou My Vision',                   'NEW', 10008);
 
 -- ============================================================
 -- CHILDREN'S SONGBOOK (Primary)

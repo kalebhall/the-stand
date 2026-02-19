@@ -157,7 +157,7 @@ export default async function SupportHymnsPage({ searchParams }: { searchParams:
           <input
             name="hymnNumber"
             required
-            placeholder="Number (e.g. 30, C1, N1)"
+            placeholder="Number (e.g. 30, 1001, C1)"
             className="rounded-md border px-3 py-2 text-sm"
           />
           <input
