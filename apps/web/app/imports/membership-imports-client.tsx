@@ -89,26 +89,28 @@ export function MembershipImportsClient({
   const [callingError, setCallingError] = useState<string | null>(null);
   const [isCallingSubmitting, setIsCallingSubmitting] = useState(false);
 
-  const [selectedMemberId, setSelectedMemberId] = useState(members[0]?.id ?? '');
-  const [noteText, setNoteText] = useState('');
   const [noteError, setNoteError] = useState<string | null>(null);
-  const [isSavingNote, setIsSavingNote] = useState(false);
-
-  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
-  const [editingNoteText, setEditingNoteText] = useState('');
-  const [isSavingEditedNote, setIsSavingEditedNote] = useState(false);
-  const [isDeletingNoteId, setIsDeletingNoteId] = useState<string | null>(null);
+  const [isSavingMemberNoteId, setIsSavingMemberNoteId] = useState<string | null>(null);
+  const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
   const [isDeletingMemberId, setIsDeletingMemberId] = useState<string | null>(null);
   const [isDeletingCallingId, setIsDeletingCallingId] = useState<string | null>(null);
 
-  const notesByMemberId = useMemo(() => {
-    return memberNotes.reduce<Record<string, MemberNoteRow[]>>((accumulator, note) => {
-      const existing = accumulator[note.member_id] ?? [];
-      existing.push(note);
-      accumulator[note.member_id] = existing;
+  const primaryNoteByMemberId = useMemo(() => {
+    return memberNotes.reduce<Record<string, MemberNoteRow>>((accumulator, note) => {
+      if (!accumulator[note.member_id]) {
+        accumulator[note.member_id] = note;
+      }
       return accumulator;
     }, {});
   }, [memberNotes]);
+
+  const [memberNoteDrafts, setMemberNoteDrafts] = useState<Record<string, string>>(() => {
+    return members.reduce<Record<string, string>>((accumulator, member) => {
+      const existingNote = memberNotes.find((note) => note.member_id === member.id);
+      accumulator[member.id] = existingNote?.note_text ?? '';
+      return accumulator;
+    }, {});
+  });
 
   async function submitImport(commit: boolean) {
     setIsSubmitting(true);
@@ -205,23 +207,46 @@ export function MembershipImportsClient({
     }
   }
 
-  async function saveNote() {
-    if (!selectedMemberId || !noteText.trim()) {
-      setNoteError('Member and note are required.');
+  async function saveMemberNote(memberId: string) {
+    const currentDraft = (memberNoteDrafts[memberId] ?? '').trim();
+    const existingNote = primaryNoteByMemberId[memberId];
+    const existingText = existingNote?.note_text ?? '';
+
+    if (currentDraft === existingText) {
       return;
     }
 
-    setIsSavingNote(true);
+    setIsSavingMemberNoteId(memberId);
     setNoteError(null);
 
     try {
-      const response = await fetch(`/api/w/${wardId}/members/${selectedMemberId}/notes`, {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json'
-        },
-        body: JSON.stringify({ noteText })
-      });
+      if (!currentDraft) {
+        if (existingNote) {
+          const response = await fetch(`/api/w/${wardId}/members/${memberId}/notes/${existingNote.id}`, {
+            method: 'DELETE'
+          });
+
+          if (!response.ok) {
+            const payload = (await response.json()) as { error?: string };
+            setNoteError(payload.error ?? 'Failed to delete note.');
+            return;
+          }
+        }
+
+        window.location.reload();
+        return;
+      }
+
+      const response = await fetch(
+        existingNote ? `/api/w/${wardId}/members/${memberId}/notes/${existingNote.id}` : `/api/w/${wardId}/members/${memberId}/notes`,
+        {
+          method: existingNote ? 'PATCH' : 'POST',
+          headers: {
+            'content-type': 'application/json'
+          },
+          body: JSON.stringify({ noteText: currentDraft })
+        }
+      );
 
       if (!response.ok) {
         const payload = (await response.json()) as { error?: string };
@@ -229,73 +254,11 @@ export function MembershipImportsClient({
         return;
       }
 
-      setNoteText('');
       window.location.reload();
     } catch {
       setNoteError('Failed to save note.');
     } finally {
-      setIsSavingNote(false);
-    }
-  }
-
-  async function saveEditedNote(memberId: string) {
-    if (!editingNoteId || !editingNoteText.trim()) {
-      setNoteError('Note text is required.');
-      return;
-    }
-
-    setIsSavingEditedNote(true);
-    setNoteError(null);
-
-    try {
-      const response = await fetch(`/api/w/${wardId}/members/${memberId}/notes/${editingNoteId}`, {
-        method: 'PATCH',
-        headers: {
-          'content-type': 'application/json'
-        },
-        body: JSON.stringify({ noteText: editingNoteText })
-      });
-
-      if (!response.ok) {
-        const payload = (await response.json()) as { error?: string };
-        setNoteError(payload.error ?? 'Failed to edit note.');
-        return;
-      }
-
-      setEditingNoteId(null);
-      setEditingNoteText('');
-      window.location.reload();
-    } catch {
-      setNoteError('Failed to edit note.');
-    } finally {
-      setIsSavingEditedNote(false);
-    }
-  }
-
-  async function deleteNote(memberId: string, noteId: string) {
-    if (!window.confirm('Delete this note?')) {
-      return;
-    }
-
-    setIsDeletingNoteId(noteId);
-    setNoteError(null);
-
-    try {
-      const response = await fetch(`/api/w/${wardId}/members/${memberId}/notes/${noteId}`, {
-        method: 'DELETE'
-      });
-
-      if (!response.ok) {
-        const payload = (await response.json()) as { error?: string };
-        setNoteError(payload.error ?? 'Failed to delete note.');
-        return;
-      }
-
-      window.location.reload();
-    } catch {
-      setNoteError('Failed to delete note.');
-    } finally {
-      setIsDeletingNoteId(null);
+      setIsSavingMemberNoteId(null);
     }
   }
 
@@ -509,48 +472,11 @@ export function MembershipImportsClient({
       <section className="space-y-3 rounded-lg border bg-card p-4 lg:col-span-2">
         <h2 className="text-lg font-semibold">Members & notes</h2>
         <p className="text-sm text-muted-foreground">Manage members and restricted internal notes for membership follow-up.</p>
-
-        <div className="space-y-2">
-          <label className="text-sm font-medium" htmlFor="member-id">
-            Member
-          </label>
-          <select
-            id="member-id"
-            value={selectedMemberId}
-            onChange={(event) => setSelectedMemberId(event.target.value)}
-            className="w-full rounded-md border bg-background p-2 text-sm"
-          >
-            <option value="">Select member</option>
-            {members.map((member) => (
-              <option key={member.id} value={member.id}>
-                {member.full_name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="space-y-2">
-          <label className="text-sm font-medium" htmlFor="member-note">
-            Note
-          </label>
-          <textarea
-            id="member-note"
-            value={noteText}
-            onChange={(event) => setNoteText(event.target.value)}
-            className="min-h-24 w-full rounded-md border bg-background p-2 text-sm"
-            placeholder="Add a restricted member note"
-          />
-        </div>
-
-        <Button type="button" onClick={saveNote} disabled={isSavingNote || !members.length}>
-          Add note
-        </Button>
         {noteError ? <p className="text-sm text-red-600">{noteError}</p> : null}
 
         <div className="space-y-3">
           {members.length ? (
             members.map((member) => {
-              const notes = notesByMemberId[member.id] ?? [];
               return (
                 <article key={member.id} className="rounded-md border p-3">
                   <div className="flex flex-wrap items-start justify-between gap-2">
@@ -573,70 +499,39 @@ export function MembershipImportsClient({
                       Delete member
                     </Button>
                   </div>
-                  {notes.length ? (
-                    <ul className="mt-2 space-y-2 text-sm">
-                      {notes.map((note) => (
-                        <li key={note.id} className="rounded bg-muted/50 px-2 py-2">
-                          {editingNoteId === note.id ? (
-                            <div className="space-y-2">
-                              <textarea
-                                value={editingNoteText}
-                                onChange={(event) => setEditingNoteText(event.target.value)}
-                                className="min-h-20 w-full rounded-md border bg-background p-2 text-sm"
-                              />
-                              <div className="flex gap-2">
-                                <Button type="button" size="sm" onClick={() => saveEditedNote(member.id)} disabled={isSavingEditedNote}>
-                                  Save
-                                </Button>
-                                <Button
-                                  type="button"
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => {
-                                    setEditingNoteId(null);
-                                    setEditingNoteText('');
-                                  }}
-                                >
-                                  Cancel
-                                </Button>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="flex flex-wrap items-start justify-between gap-2">
-                              <div>
-                                {note.note_text}
-                                <span className="ml-2 text-xs text-muted-foreground">({note.created_by_email ?? 'Unknown'})</span>
-                              </div>
-                              <div className="flex gap-2">
-                                <Button
-                                  type="button"
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => {
-                                    setEditingNoteId(note.id);
-                                    setEditingNoteText(note.note_text);
-                                  }}
-                                >
-                                  Edit
-                                </Button>
-                                <Button
-                                  type="button"
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => deleteNote(member.id, note.id)}
-                                  disabled={isDeletingNoteId === note.id}
-                                >
-                                  Delete
-                                </Button>
-                              </div>
-                            </div>
-                          )}
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="mt-2 text-sm text-muted-foreground">No notes yet.</p>
-                  )}
+                  <div className="mt-3 space-y-1">
+                    <p className="text-xs font-medium text-muted-foreground">Note</p>
+                    {editingMemberId === member.id ? (
+                      <textarea
+                        id={`member-note-${member.id}`}
+                        value={memberNoteDrafts[member.id] ?? ''}
+                        onChange={(event) =>
+                          setMemberNoteDrafts((current) => ({
+                            ...current,
+                            [member.id]: event.target.value
+                          }))
+                        }
+                        onBlur={() => {
+                          setEditingMemberId(null);
+                          void saveMemberNote(member.id);
+                        }}
+                        className="min-h-20 w-full rounded-md border bg-background p-2 text-sm"
+                        placeholder="Add a restricted member note"
+                        autoFocus
+                      />
+                    ) : (
+                      <div
+                        className="min-h-20 cursor-text rounded-md border bg-muted/30 px-2 py-2 text-sm"
+                        onDoubleClick={() => setEditingMemberId(member.id)}
+                        title="Double-click to edit note"
+                      >
+                        {(memberNoteDrafts[member.id] ?? '').trim() || 'No note'}
+                      </div>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      {isSavingMemberNoteId === member.id ? 'Saving…' : 'Double-click the note to edit.'}
+                    </p>
+                  </div>
                 </article>
               );
             })
