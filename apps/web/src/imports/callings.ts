@@ -9,6 +9,7 @@ export type ParsedCalling = {
 
 const HEADER_LINE_PATTERN = /^name\s+gender\s+age\s+birth\s+date\s+organization\s+calling\s+sustained\s+set\s+apart$/i;
 const BOOLEAN_TOKEN_PATTERN = /^(yes|no|true|false|y|n|✔|✓|√)$/i;
+
 const KNOWN_ORGANIZATIONS = [
   'Temple and Family History',
   'Relief Society',
@@ -18,7 +19,9 @@ const KNOWN_ORGANIZATIONS = [
   'Young Men',
   'Ward Mission',
   'Primary',
-  'Bishopric'
+  'Bishopric',
+  'Other Callings',
+  'Aaronic Priesthood Quorums',
 ];
 
 function normalizeWhitespace(input: string): string {
@@ -58,6 +61,15 @@ function parseBoolean(value: string): boolean {
   return normalized === 'yes' || normalized === 'y' || normalized === 'true' || normalized === 'set apart';
 }
 
+function looksLikeDateTail(a?: string, b?: string, c?: string): boolean {
+  // Support "9 Mar 2025" and also "2025✔" as the final token.
+  return (
+    /^\d{1,2}$/.test(a ?? '') &&
+    /^[A-Za-z]{3,}$/.test(b ?? '') &&
+    /^\d{4}/.test(c ?? '')
+  );
+}
+
 function parseSingleSpaceRow(normalizedLine: string): ParsedCalling | null {
   const tokens = normalizedLine.split(' ').filter(Boolean);
   const genderIdx = tokens.findIndex((t) => /^(male|female|m|f)$/i.test(t));
@@ -67,22 +79,59 @@ function parseSingleSpaceRow(normalizedLine: string): ParsedCalling | null {
   const age = tokens[genderIdx + 1];
   if (!/^\d+$/.test(age ?? '')) return null;
 
-  const month = tokens[genderIdx + 2];
-  const day = tokens[genderIdx + 3];
-  if (!month || !day || !/^\d{1,2}$/.test(day)) return null;
-  const birthday = `${month} ${day}`;
+  // Birthday: support BOTH "Jan 15" and "26 May 1960"
+  const t1 = tokens[genderIdx + 2];
+  const t2 = tokens[genderIdx + 3];
+  const t3 = tokens[genderIdx + 4];
 
-  const remainder = [...tokens.slice(genderIdx + 4)];
+  let birthdayRaw = '';
+  let afterBirthdayIdx = genderIdx + 4;
+
+  // DMY: "26 May" or "26 May 1960"
+  if (/^\d{1,2}$/.test(t1 ?? '') && /^[A-Za-z]{3,}$/.test(t2 ?? '')) {
+    birthdayRaw = t3 && /^\d{4}$/.test(t3) ? `${t1} ${t2} ${t3}` : `${t1} ${t2}`;
+    afterBirthdayIdx = t3 && /^\d{4}$/.test(t3) ? genderIdx + 5 : genderIdx + 4;
+  }
+  // MDY-lite: "May 26"
+  else if (/^[A-Za-z]{3,}$/.test(t1 ?? '') && /^\d{1,2}$/.test(t2 ?? '')) {
+    birthdayRaw = `${t1} ${t2}`;
+    afterBirthdayIdx = genderIdx + 4;
+  } else {
+    return null;
+  }
+
+  const birthday = normalizeBirthday(birthdayRaw);
+
+  const remainder = [...tokens.slice(afterBirthdayIdx)];
   if (!remainder.length) return null;
 
   let setApartRaw = '';
   let sustainedRaw = '';
 
-  if (BOOLEAN_TOKEN_PATTERN.test(remainder[remainder.length - 1] ?? '')) {
-    setApartRaw = remainder.pop() ?? '';
-  }
-  if (BOOLEAN_TOKEN_PATTERN.test(remainder[remainder.length - 1] ?? '')) {
-    sustainedRaw = remainder.pop() ?? '';
+  // Pull up to two trailing fields that are either booleans (Yes/No/✔) OR date groups (9 Mar 2025✔).
+  for (let i = 0; i < 2; i++) {
+    const n = remainder.length;
+
+    // Date tail like: 9 Mar 2025✔
+    if (n >= 3 && looksLikeDateTail(remainder[n - 3], remainder[n - 2], remainder[n - 1])) {
+      const group = `${remainder[n - 3]} ${remainder[n - 2]} ${remainder[n - 1]}`;
+      remainder.splice(n - 3, 3);
+
+      if (!setApartRaw) setApartRaw = group;
+      else sustainedRaw = group;
+
+      continue;
+    }
+
+    // Simple boolean tokens: Yes/No/✔/True/etc
+    if (n >= 1 && BOOLEAN_TOKEN_PATTERN.test(remainder[n - 1] ?? '')) {
+      const token = remainder.pop() ?? '';
+      if (!setApartRaw) setApartRaw = token;
+      else sustainedRaw = token;
+      continue;
+    }
+
+    break;
   }
 
   if (remainder.length < 2) return null;
@@ -107,7 +156,7 @@ function parseSingleSpaceRow(normalizedLine: string): ParsedCalling | null {
     organization,
     callingName,
     sustained: parseBoolean(sustainedRaw),
-    setApart: parseBoolean(setApartRaw)
+    setApart: parseBoolean(setApartRaw),
   };
 }
 
