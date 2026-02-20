@@ -25,6 +25,30 @@ function normalizeWhitespace(input: string): string {
   return input.replace(/\s+/g, ' ').trim();
 }
 
+function normalizeBirthday(input: string): string {
+  const raw = normalizeWhitespace(input);
+  if (!raw) return raw;
+
+  // Matches: "26 May 1960" or "26 May" (day month [year])
+  const dmy = raw.match(/^(\d{1,2})\s+([A-Za-z]{3,})\s*(\d{4})?$/);
+  if (dmy) {
+    const day = String(Number(dmy[1])); // strips leading zero
+    const month = dmy[2];
+    // Convert to "May 26" style
+    return `${month} ${day}`;
+  }
+
+  // Already in "May 26" style → keep it
+  const mdy = raw.match(/^([A-Za-z]{3,})\s+(\d{1,2})$/);
+  if (mdy) {
+    const month = mdy[1];
+    const day = String(Number(mdy[2]));
+    return `${month} ${day}`;
+  }
+
+  return raw;
+}
+
 function parseBoolean(value: string): boolean {
   const raw = value.trim();
   if (!raw) return false;
@@ -123,11 +147,11 @@ function parseCallingLine(line: string): ParsedCalling | null {
 
     return {
       memberName,
-      birthday,
+      birthday: normalizeBirthday(birthday),
       organization,
       callingName,
       sustained: parseBoolean(sustainedRaw),
-      setApart: parseBoolean(setApartRaw)
+      setApart: parseBoolean(setApartRaw),
     };
   }
 
@@ -187,5 +211,8 @@ export function parseCallingsPdfText(rawText: string): ParsedCalling[] {
 }
 
 export function makeMemberBirthdayKey(memberName: string, birthday: string): string {
-  return `${memberName.replace(/\s+/g, ' ').trim().toLowerCase()}::${birthday.replace(/\s+/g, ' ').trim().toLowerCase()}`;
+  return `${memberName.replace(/\s+/g, ' ').trim().toLowerCase()}::${normalizeBirthday(birthday)
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase()}`;
 }
