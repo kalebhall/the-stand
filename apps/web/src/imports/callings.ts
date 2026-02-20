@@ -165,13 +165,6 @@ function looksLikeRowStart(line: string): boolean {
   return genderIdx >= 1;
 }
 
-export function makeMemberBirthdayKey(memberName: string, birthday: string): string {
-  return `${memberName.replace(/\s+/g, ' ').trim().toLowerCase()}::${normalizeBirthday(birthday)
-    .replace(/\s+/g, ' ')
-    .trim()
-    .toLowerCase()}`;
-}
-
 export function parseCallingsPdfText(rawText: string): ParsedCalling[] {
   const normalized = rawText.replace(/\r\n?/g, '\n');
   const deduped = new Map<string, ParsedCalling>();
@@ -218,5 +211,8 @@ export function parseCallingsPdfText(rawText: string): ParsedCalling[] {
 }
 
 export function makeMemberBirthdayKey(memberName: string, birthday: string): string {
-  return `${memberName.replace(/\s+/g, ' ').trim().toLowerCase()}::${birthday.replace(/\s+/g, ' ').trim().toLowerCase()}`;
+  return `${memberName.replace(/\s+/g, ' ').trim().toLowerCase()}::${normalizeBirthday(birthday)
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase()}`;
 }
