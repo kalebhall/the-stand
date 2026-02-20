@@ -232,19 +232,168 @@ Key environment variables (see `.env.example`):
 - **Root test script** (`scripts/vitest.mjs`): validates that key route files exist and the health endpoint returns `status: 'ok'`
 - **Root build script** (`scripts/next-build.mjs`): validates required files exist (layout, page, health route, components.json, globals.css)
 
+## Non-Negotiable Principles
+
+These rules must **never** be violated:
+
+1. **Absolute ward isolation** — no user may access data from a ward they don't belong to
+2. **RLS is mandatory** — every ward-scoped table must have PostgreSQL Row Level Security enabled with explicit policies
+3. **No LCR integration** — The Stand never writes to or reads from Church systems directly
+4. **No cross-ward data exposure** — API, DB, and UI layers all enforce ward scoping
+5. **No hardcoded secrets** — all secrets via environment variables
+6. **Public endpoints never accept `ward_id`** — public routes are read-only published snapshots
+7. **All admin/support actions must be audit-logged** — inserts into `audit_log` table
+8. **Do not invent features outside `docs/SRS.md`** — follow `docs/PLANS.md` milestone order
+
+If any implementation risks cross-ward leakage, public exposure of internal data, hardcoded secrets, bypassing RLS, or skipping audit logging — **stop and fix the design**.
+
+## Role Model
+
+### Global Roles
+
+| Role            | Purpose                                                                 |
+| --------------- | ----------------------------------------------------------------------- |
+| `SUPPORT_ADMIN` | System-level admin: creates stakes/wards, assigns ward admins, configures OAuth |
+| `SYSTEM_ADMIN`  | Reserved for infrastructure-level operations (diagnostics, metrics)     |
+
+### Ward Roles
+
+| Role                | Purpose                                                              |
+| ------------------- | -------------------------------------------------------------------- |
+| `STAND_ADMIN`       | Primary ward admin: manages users/roles, full meeting + calling control |
+| `BISHOPRIC_EDITOR`  | Conducting and meeting prep: create/edit/publish meetings, manage callings |
+| `CLERK_EDITOR`      | Admin support: view meetings, manage announcements, mark set-apart   |
+| `WARD_CLERK`        | View meetings/callings, receive notifications (LCR reminders)        |
+| `MEMBERSHIP_CLERK`  | View callings/member notes, receive set-apart reminders              |
+| `CONDUCTOR_VIEW`    | Read-only access to dashboard, meetings, and `/stand/{meetingId}`    |
+
+### Permission Enforcement (Three Layers)
+
+Every ward-scoped API route must:
+1. **Layer 1**: Verify authenticated user + active ward context + required permission (RBAC)
+2. **Layer 2**: Validate ward ID in URL matches session's active ward, and user has a role in that ward
+3. **Layer 3**: PostgreSQL RLS enforces isolation even if application has a bug
+
+Role assignment rules:
+- Only `SUPPORT_ADMIN` may assign `STAND_ADMIN`
+- Only `STAND_ADMIN` may assign other ward roles
+- No role escalation beyond the assigner's own scope
+- Users may belong to multiple wards; active ward is stored in session
+
+## Database Tables
+
+All ward-scoped tables **must** include `ward_id UUID NOT NULL` with RLS enabled and explicit policies.
+
+Per-request context must be set before any query (`src/db/context.ts`):
+```sql
+SET LOCAL app.user_id = '<user_uuid>';
+SET LOCAL app.ward_id = '<ward_uuid>';
+```
+
+Key tables by domain:
+
+| Domain          | Tables                                                                         |
+| --------------- | ------------------------------------------------------------------------------ |
+| Tenancy         | `stake`, `ward`                                                                |
+| Auth            | `user_account`, `role`, `user_global_role`, `ward_user_role`, `audit_log`      |
+| Meetings        | `meeting`, `meeting_program_item`, `meeting_program_render`, `meeting_business_line` |
+| Callings        | `calling_assignment`, `calling_action`                                         |
+| Public portal   | `public_program_share`, `public_program_portal`                                |
+| Announcements   | `announcement`                                                                 |
+| Calendar        | `calendar_feed`, `calendar_event_cache`                                        |
+| Members/Imports | `member`, `member_note`, `import_run`                                          |
+| Notifications   | `event_outbox`, `notification_delivery`                                        |
+| Stand view      | `ward_stand_template`                                                          |
+
+Schema migrations live in `apps/web/drizzle/` (0000–0008). All DB changes require a migration file — never modify the schema without one.
+
+## API Endpoint Reference
+
+All ward-scoped routes follow `/api/w/{wardId}/...`. WardId must match active ward in session.
+
+Standard error response: `{ "error": "string", "code": "ERROR_CODE" }`
+
+| Method          | Path                                              | Auth Required         |
+| --------------- | ------------------------------------------------- | --------------------- |
+| GET             | `/health`                                         | Public                |
+| GET             | `/api/me`                                         | Authenticated         |
+| POST            | `/api/account/change-password`                    | Authenticated         |
+| POST            | `/api/public/access-requests`                     | Public (rate limited) |
+| GET             | `/p/{meetingToken}`                               | Public                |
+| GET             | `/p/ward/{portalToken}`                           | Public                |
+| GET             | `/api/w/{wardId}/meetings`                        | `canViewMeetings`     |
+| POST            | `/api/w/{wardId}/meetings`                        | `canManageMeetings`   |
+| GET/PUT/DELETE  | `/api/w/{wardId}/meetings/{id}`                   | `canManageMeetings`   |
+| POST            | `/api/w/{wardId}/meetings/{id}/publish`           | `canManageMeetings`   |
+| POST            | `/api/w/{wardId}/meetings/{id}/complete`          | `canManageMeetings`   |
+| GET/POST        | `/api/w/{wardId}/meetings/{id}/business-lines`    | `canManageMeetings`   |
+| GET/POST        | `/api/w/{wardId}/callings`                        | `canViewCallings`     |
+| POST            | `/api/w/{wardId}/callings/{id}/extend`            | `canManageCallings`   |
+| POST            | `/api/w/{wardId}/callings/{id}/sustain`           | `canManageCallings`   |
+| POST            | `/api/w/{wardId}/callings/{id}/set-apart`         | `canManageCallings`   |
+| GET/POST/PUT/DELETE | `/api/w/{wardId}/announcements`               | Varies by method      |
+| GET/POST        | `/api/w/{wardId}/calendar`                        | Authenticated         |
+| POST            | `/api/w/{wardId}/imports/membership`              | `STAND_ADMIN`         |
+| POST            | `/api/w/{wardId}/imports/callings`                | `STAND_ADMIN`         |
+| GET             | `/api/w/{wardId}/users`                           | `STAND_ADMIN`         |
+| POST/DELETE     | `/api/w/{wardId}/users/{id}/roles`                | `STAND_ADMIN`         |
+| GET             | `/api/w/{wardId}/notifications/diagnostics`       | Authenticated         |
+| POST            | `/api/support/stakes`                             | `SUPPORT_ADMIN`       |
+| POST            | `/api/support/wards`                              | `SUPPORT_ADMIN`       |
+| POST            | `/api/support/wards/{wardId}/admins`              | `SUPPORT_ADMIN`       |
+| GET             | `/api/support/access-requests`                    | `SUPPORT_ADMIN`       |
+
+Import endpoints accept `{ rawText: string }`. Send `commit: false` for dry-run preview; `commit: true` to finalize. Set `LOG_LEVEL=debug` in `.env` for verbose import logging.
+
+## Callings Lifecycle
+
+```
+proposed → extended → sustained → set apart
+```
+
+- Sustaining a calling **auto-creates** a `meeting_business_line` entry
+- Set-apart triggers a clerk notification with explicit LCR instruction
+- Only `announced` business lines trigger completion notifications
+
+Business line statuses: `pending` → `included` → `excluded` → `announced`
+
+## Known Implementation Gaps
+
+From `docs/GAP_ANALYSIS.md` (audited 2026-02-14). These are known issues that need to be addressed:
+
+### P0 — Security (Critical)
+- **RLS missing on 17 ward-scoped tables** — only `ward_user_role` and `audit_log` have RLS policies in migrations. All other ward tables rely solely on application-level `WHERE ward_id = $1`. RLS policies must be added in a new migration for: `meeting`, `meeting_program_item`, `meeting_program_render`, `meeting_business_line`, `calling_assignment`, `calling_action`, `event_outbox`, `notification_delivery`, `public_program_share`, `public_program_portal`, `announcement`, `calendar_feed`, `calendar_event_cache`, `member`, `member_note`, `import_run`, `ward_stand_template`
+- **In-memory rate limiting** — `src/lib/rate-limit.ts` uses a `Map` that resets on restart; should be Redis- or DB-backed
+
+### P1 — Missing Features
+- `/settings/public-portal` page does not exist (nav link 404s); no API/UI for portal token management
+- Auto-add sustain/release business lines not implemented (schema exists, business logic missing in `src/callings/`)
+- Callings page is read-only — lifecycle action buttons (propose/extend/sustain/set-apart) missing from UI
+- Ward switcher not implemented (users with multiple ward assignments cannot switch)
+
+### P2 — Incomplete
+- Dashboard cards for "next meeting", "draft count", "import summary", and "portal status" are hardcoded
+- Raw paste purge job missing for `import_run.raw_text` retention enforcement
+- `npm run build` and `npm run test` at repo root are file-existence checks, not real builds/tests
+- No `loading.tsx` or `error.tsx` files anywhere in the app
+
 ## Documentation
 
 Comprehensive docs live in `/docs/`:
 
-| File              | Content                           |
-| ----------------- | --------------------------------- |
-| `ARCHITECTURE.md` | Master architecture specification |
-| `SCHEMA.md`       | Database schema documentation     |
-| `API.md`          | API endpoint documentation        |
-| `PERMISSIONS.md`  | Role-based permissions model      |
-| `UI.md`           | UI/UX guidelines                  |
-| `HARDENING.md`    | Security hardening guide          |
-| `INSTALL.md`      | Installation and deployment guide |
-| `SRS.md`          | System requirements specification |
-| `ACCEPTANCE.md`   | Acceptance testing criteria       |
-| `AGENTS.md`       | AI agent capabilities/guidelines  |
+| File                 | Content                                                     |
+| -------------------- | ----------------------------------------------------------- |
+| `AGENTS.md`          | Authoritative behavioral contract for AI agents and contributors |
+| `ARCHITECTURE.md`    | Master architecture specification                           |
+| `SCHEMA.md`          | Database schema documentation                               |
+| `API.md`             | API endpoint documentation                                  |
+| `PERMISSIONS.md`     | Role-based permissions model                                |
+| `UI.md`              | UI/UX guidelines and page specifications                    |
+| `HARDENING.md`       | Security hardening guide (production)                       |
+| `INSTALL.md`         | Installation and deployment guide                           |
+| `SRS.md`             | System requirements specification                           |
+| `ACCEPTANCE.md`      | Acceptance testing criteria                                 |
+| `PLANS.md`           | Phased implementation plan (phases 0–13)                    |
+| `GAP_ANALYSIS.md`    | Codebase audit — what's complete vs. missing                |
+| `RELEASE_NOTES.md`   | Release notes                                               |
+| `README.md`          | Project readme                                              |
