@@ -1,3 +1,5 @@
+import Link from 'next/link';
+import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
 import { AddCallingSection } from '@/components/AddCallingSection';
@@ -9,7 +11,6 @@ import { STANDARD_CALLINGS } from '@/src/callings/standard-callings';
 import { appendCallingStatus, fetchCurrentCallingStatus } from '@/src/callings/transition';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
-import { revalidatePath } from 'next/cache';
 
 type CallingQueueRow = {
   id: string;
@@ -136,6 +137,19 @@ export default async function CallingsPage() {
     revalidatePath('/callings');
   }
 
+  // Fetch standard callings from DB for autocomplete, fall back to hardcoded list
+  let standardCallings: string[] = STANDARD_CALLINGS;
+  try {
+    const scResult = await pool.query(
+      `SELECT name FROM standard_calling WHERE is_active = true ORDER BY unit_type, sort_order, name`
+    );
+    if (scResult.rowCount && scResult.rowCount > 0) {
+      standardCallings = scResult.rows.map((r) => r.name as string);
+    }
+  } catch {
+    // Table may not exist yet; fall back to hardcoded list
+  }
+
   const client = await pool.connect();
 
   try {
@@ -190,9 +204,16 @@ export default async function CallingsPage() {
 
     return (
       <main className="mx-auto w-full max-w-6xl space-y-6 p-4 sm:p-6">
-        <section className="space-y-2">
-          <h1 className="text-2xl font-semibold tracking-tight">Callings</h1>
-          <p className="text-sm text-muted-foreground">Track proposed → extended → sustained → set apart lifecycle.</p>
+        <section className="flex items-start justify-between gap-4">
+          <div className="space-y-2">
+            <h1 className="text-2xl font-semibold tracking-tight">Callings</h1>
+            <p className="text-sm text-muted-foreground">Track proposed → extended → sustained → set apart lifecycle.</p>
+          </div>
+          {canManage ? (
+            <Link href="/callings/standard" className="shrink-0 text-sm text-muted-foreground underline-offset-4 hover:underline">
+              Manage Standard Callings
+            </Link>
+          ) : null}
         </section>
 
         {canManage ? (
@@ -201,7 +222,7 @@ export default async function CallingsPage() {
             <p className="mb-3 text-sm text-muted-foreground">
               Select from standard callings or type a custom calling name.
             </p>
-            <AddCallingSection wardId={wardId} standardCallings={STANDARD_CALLINGS} />
+            <AddCallingSection wardId={wardId} standardCallings={standardCallings} />
           </section>
         ) : null}
 

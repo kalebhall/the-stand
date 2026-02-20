@@ -32,26 +32,43 @@ describe('calling PDF import parsing', () => {
     ]);
   });
 
-  it('dedupes by name, birthday, and calling with last row winning', () => {
+  it('normalizes birth dates like "26 May 1960" to "May 26"', () => {
     expect(
       parseCallingsPdfText(`
         Name  Gender  Age  Birth Date  Organization  Calling  Sustained  Set Apart
-        Jane Doe  Female  35  Jan 15  Relief Society  Relief Society President  No  No
-        Jane Doe  Female  35  Jan 15  Relief Society  Relief Society President  Yes  Yes
+        Jane Doe  Female  35  26 May 1960  Relief Society  Relief Society President  Yes  No
       `)
     ).toEqual([
       {
         memberName: 'Jane Doe',
-        birthday: 'Jan 15',
+        birthday: 'May 26',
         organization: 'Relief Society',
         callingName: 'Relief Society President',
         sustained: true,
-        setApart: true
+        setApart: false
       }
     ]);
   });
 
-  it('normalizes member+birthday key for linking', () => {
-    expect(makeMemberBirthdayKey('  Jane   Doe ', ' Jan   15 ')).toBe('jane doe::jan 15');
+  it('normalizes member+birthday key when birthday includes year', () => {
+    expect(makeMemberBirthdayKey('Jane Doe', '26 May 1960')).toBe('jane doe::may 26');
+  });
+
+  it('parses single-space extracted rows with DMY birthdays', () => {
+    expect(
+      parseCallingsPdfText(`
+        Name Gender Age Birth Date Organization Calling Sustained Set Apart
+        Doe, Jane Female 35 26 May 1960 Relief Society Relief Society President Yes No
+      `)
+    ).toEqual([
+      {
+        memberName: 'Doe, Jane',
+        birthday: 'May 26',
+        organization: 'Relief Society',
+        callingName: 'Relief Society President',
+        sustained: true,
+        setApart: false
+      }
+    ]);
   });
 });

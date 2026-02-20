@@ -66,7 +66,7 @@ export default async function SupportHymnsPage({ searchParams }: { searchParams:
     const title = String(formData.get('title') ?? '').trim();
     const book = String(formData.get('book') ?? '').trim();
     const sortKeyRaw = parseInt(String(formData.get('sortKey') ?? ''), 10);
-    const isActive = formData.get('isActive') === '1';
+    const isActive = formData.getAll('isActive').includes('1');
 
     if (!id || !hymnNumber || !title || !VALID_BOOKS.includes(book as Book) || isNaN(sortKeyRaw)) return;
 
@@ -157,7 +157,7 @@ export default async function SupportHymnsPage({ searchParams }: { searchParams:
           <input
             name="hymnNumber"
             required
-            placeholder="Number (e.g. 30, C1, N1)"
+            placeholder="Number (e.g. 30, 1001, C1)"
             className="rounded-md border px-3 py-2 text-sm"
           />
           <input
@@ -263,9 +263,6 @@ export default async function SupportHymnsPage({ searchParams }: { searchParams:
                           <button
                             type="submit"
                             className="text-xs text-red-600 underline underline-offset-2"
-                            onClick={(e) => {
-                              if (!confirm(`Delete "${hymn.hymn_number} — ${hymn.title}"?`)) e.preventDefault();
-                            }}
                           >
                             Delete
                           </button>

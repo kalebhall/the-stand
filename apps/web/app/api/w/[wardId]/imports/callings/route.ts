@@ -70,7 +70,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     await setDbContext(client, { userId: session.user.id, wardId });
 
     const importRunResult = await client.query(
-       `INSERT INTO import_run (ward_id, import_type, raw_text, parsed_count, committed, created_by_user_id)
+      `INSERT INTO import_run (ward_id, import_type, raw_text, parsed_count, committed, created_by_user_id)
        VALUES ($1, 'CALLINGS', $2, $3, $4, $5)
        RETURNING id, created_at`,
       [wardId, extractedText, parsedCallings.length, commit, session.user.id]
@@ -132,14 +132,23 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
               is_active
             )
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, TRUE)`,
-          [wardId, memberId, parsed.memberName, parsed.birthday, parsed.organization, parsed.callingName, parsed.sustained, parsed.setApart]
+          [
+            wardId,
+            memberId,
+            parsed.memberName,
+            parsed.birthday,
+            parsed.organization,
+            parsed.callingName,
+            parsed.sustained,
+            parsed.setApart
+          ]
         );
         inserted += 1;
       }
 
       await client.query(
         `INSERT INTO audit_log (ward_id, user_id, action, details)
-         VALUES ($1, $2, 'CALLINGS_IMPORT_COMMITTED', jsonb_build_object('importRunId', $3, 'inserted', $4, 'replacedCount', $5, 'matchedMembers', $6, 'unmatchedMembers', $7, 'parsedCount', $8))`,
+         VALUES ($1, $2, 'CALLINGS_IMPORT_COMMITTED', jsonb_build_object('importRunId', $3::text, 'inserted', $4::int, 'replacedCount', $5::int, 'matchedMembers', $6::int, 'unmatchedMembers', $7::int, 'parsedCount', $8::int))`,
         [wardId, session.user.id, importRun.id, inserted, replacedCount, matchedMembers, unmatchedMembers, parsedCallings.length]
       );
     }
@@ -172,7 +181,9 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
       const staleParsed = parseCallingsPdfText(staleImport.raw_text);
       const staleSet = new Set(staleParsed.map((entry) => makeCallingKey(entry.memberName, entry.birthday, entry.callingName)));
       const currentActiveSet = new Set(
-        (currentActiveResult.rows as ActiveCallingRow[]).map((row) => makeCallingKey(row.member_name, row.birthday ?? '', row.calling_name))
+        (currentActiveResult.rows as ActiveCallingRow[]).map((row) =>
+          makeCallingKey(row.member_name, row.birthday ?? '', row.calling_name)
+        )
       );
 
       const inImportNotCurrent = Array.from(staleSet).filter((key) => !currentActiveSet.has(key)).length;
@@ -199,7 +210,8 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
       },
       preview: parsedCallings
     });
-  } catch {
+  } catch (err) {
+    console.error('Callings import failed:', err);
     await client.query('ROLLBACK');
     return NextResponse.json({ error: 'Failed to import callings', code: 'INTERNAL_ERROR' }, { status: 500 });
   } finally {
