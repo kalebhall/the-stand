@@ -32,24 +32,43 @@ describe('calling PDF import parsing', () => {
     ]);
   });
 
-it('normalizes birth dates like "26 May 1960" to "May 26"', () => {
-  expect(
-    parseCallingsPdfText(`
-      Name  Gender  Age  Birth Date  Organization  Calling  Sustained  Set Apart
-      Jane Doe  Female  35  26 May 1960  Relief Society  Relief Society President  Yes  No
-    `)
-  ).toEqual([
-    {
-      memberName: 'Jane Doe',
-      birthday: 'May 26',
-      organization: 'Relief Society',
-      callingName: 'Relief Society President',
-      sustained: true,
-      setApart: false
-    }
-  ]);
-});
+  it('normalizes birth dates like "26 May 1960" to "May 26"', () => {
+    expect(
+      parseCallingsPdfText(`
+        Name  Gender  Age  Birth Date  Organization  Calling  Sustained  Set Apart
+        Jane Doe  Female  35  26 May 1960  Relief Society  Relief Society President  Yes  No
+      `)
+    ).toEqual([
+      {
+        memberName: 'Jane Doe',
+        birthday: 'May 26',
+        organization: 'Relief Society',
+        callingName: 'Relief Society President',
+        sustained: true,
+        setApart: false
+      }
+    ]);
+  });
 
-it('normalizes member+birthday key when birthday includes year', () => {
-  expect(makeMemberBirthdayKey('Jane Doe', '26 May 1960')).toBe('jane doe::may 26');
+  it('normalizes member+birthday key when birthday includes year', () => {
+    expect(makeMemberBirthdayKey('Jane Doe', '26 May 1960')).toBe('jane doe::may 26');
+  });
+
+  it('parses single-space extracted rows with DMY birthdays', () => {
+    expect(
+      parseCallingsPdfText(`
+        Name Gender Age Birth Date Organization Calling Sustained Set Apart
+        Doe, Jane Female 35 26 May 1960 Relief Society Relief Society President Yes No
+      `)
+    ).toEqual([
+      {
+        memberName: 'Doe, Jane',
+        birthday: 'May 26',
+        organization: 'Relief Society',
+        callingName: 'Relief Society President',
+        sustained: true,
+        setApart: false
+      }
+    ]);
+  });
 });
