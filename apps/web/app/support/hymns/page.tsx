@@ -66,7 +66,7 @@ export default async function SupportHymnsPage({ searchParams }: { searchParams:
     const title = String(formData.get('title') ?? '').trim();
     const book = String(formData.get('book') ?? '').trim();
     const sortKeyRaw = parseInt(String(formData.get('sortKey') ?? ''), 10);
-    const isActive = formData.get('isActive') === '1';
+    const isActive = formData.getAll('isActive').includes('1');
 
     if (!id || !hymnNumber || !title || !VALID_BOOKS.includes(book as Book) || isNaN(sortKeyRaw)) return;
 
