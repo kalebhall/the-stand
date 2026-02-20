@@ -271,14 +271,14 @@ INSERT INTO hymn (hymn_number, title, book, sort_key) VALUES
 ('1050', 'Stand by Me', 'NEW', 1050),
 ('1051', 'This Day Is a Good Day, Lord', 'NEW', 1051),
 ('1201', 'Hail the Day that Sees Him Rise', 'NEW', 1201),
-('1202', 'He Is Born, the Divine Christ Child', 'NEW', 1201),
-('1203', 'What Child Is This?', 'NEW', 1201),
-('1204', 'Star Bright', 'NEW', 1201),
-('1205', 'Let Easter Anthems Ring', 'NEW', 1201),
-('1206', 'Were You There?', 'NEW', 1201),
-('1207', 'Still, Still, Still', 'NEW', 1201),
-('1208', 'Go Tell It on the Mountain', 'NEW', 1201),
-('1209', 'Little Baby in a Manger', 'NEW', 1201);
+('1202', 'He Is Born, the Divine Christ Child', 'NEW', 1202),
+('1203', 'What Child Is This?', 'NEW', 1203),
+('1204', 'Star Bright', 'NEW', 1204),
+('1205', 'Let Easter Anthems Ring', 'NEW', 1205),
+('1206', 'Were You There?', 'NEW', 1206),
+('1207', 'Still, Still, Still', 'NEW', 1207),
+('1208', 'Go Tell It on the Mountain', 'NEW', 1208),
+('1209', 'Little Baby in a Manger', 'NEW', 1209);
 
 -- ============================================================
 -- CHILDREN'S SONGBOOK (Primary)
