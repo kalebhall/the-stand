@@ -91,6 +91,7 @@ export function MembershipImportsClient({
 
   const [noteError, setNoteError] = useState<string | null>(null);
   const [isSavingMemberNoteId, setIsSavingMemberNoteId] = useState<string | null>(null);
+  const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
   const [isDeletingMemberId, setIsDeletingMemberId] = useState<string | null>(null);
   const [isDeletingCallingId, setIsDeletingCallingId] = useState<string | null>(null);
 
@@ -499,26 +500,36 @@ export function MembershipImportsClient({
                     </Button>
                   </div>
                   <div className="mt-3 space-y-1">
-                    <label className="text-xs font-medium text-muted-foreground" htmlFor={`member-note-${member.id}`}>
-                      Note
-                    </label>
-                    <textarea
-                      id={`member-note-${member.id}`}
-                      value={memberNoteDrafts[member.id] ?? ''}
-                      onChange={(event) =>
-                        setMemberNoteDrafts((current) => ({
-                          ...current,
-                          [member.id]: event.target.value
-                        }))
-                      }
-                      onBlur={() => {
-                        void saveMemberNote(member.id);
-                      }}
-                      className="min-h-20 w-full rounded-md border bg-background p-2 text-sm"
-                      placeholder="Add a restricted member note"
-                    />
+                    <p className="text-xs font-medium text-muted-foreground">Note</p>
+                    {editingMemberId === member.id ? (
+                      <textarea
+                        id={`member-note-${member.id}`}
+                        value={memberNoteDrafts[member.id] ?? ''}
+                        onChange={(event) =>
+                          setMemberNoteDrafts((current) => ({
+                            ...current,
+                            [member.id]: event.target.value
+                          }))
+                        }
+                        onBlur={() => {
+                          setEditingMemberId(null);
+                          void saveMemberNote(member.id);
+                        }}
+                        className="min-h-20 w-full rounded-md border bg-background p-2 text-sm"
+                        placeholder="Add a restricted member note"
+                        autoFocus
+                      />
+                    ) : (
+                      <div
+                        className="min-h-20 cursor-text rounded-md border bg-muted/30 px-2 py-2 text-sm"
+                        onDoubleClick={() => setEditingMemberId(member.id)}
+                        title="Double-click to edit note"
+                      >
+                        {(memberNoteDrafts[member.id] ?? '').trim() || 'No note'}
+                      </div>
+                    )}
                     <p className="text-xs text-muted-foreground">
-                      {isSavingMemberNoteId === member.id ? 'Saving…' : 'Changes save when this field loses focus.'}
+                      {isSavingMemberNoteId === member.id ? 'Saving…' : 'Double-click the note to edit.'}
                     </p>
                   </div>
                 </article>
