@@ -116,6 +116,37 @@ John Doe  Male  42  Jan 15  Bishopric  Bishop  Yes  No
     expect(parseCallingsPdfTextMock).toHaveBeenCalledWith('stale import');
   });
 
+  it('does not replace assignments when commit is requested but parser returns zero rows', async () => {
+    parseCallingsPdfTextMock.mockReturnValueOnce([]);
+
+    queryMock
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({ rows: [{ id: 'import-zero', created_at: new Date().toISOString() }] })
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({});
+
+    const response = await POST(buildRequest(true), { params: Promise.resolve({ wardId: 'ward-1' }) });
+
+    expect(response.status).toBe(422);
+    expect(await response.json()).toMatchObject({
+      code: 'VALIDATION_ERROR',
+      parsedCount: 0,
+      importRunId: 'import-zero'
+    });
+
+    expect(queryMock).not.toHaveBeenCalledWith(expect.stringContaining('DELETE FROM calling_assignment'), expect.anything());
+    expect(queryMock).toHaveBeenCalledWith(expect.stringContaining("'CALLINGS_IMPORT_ISSUE'"), [
+      'ward-1',
+      'user-1',
+      'import-zero',
+      'PARSE_ZERO_ROWS',
+      true,
+      'callings.pdf',
+      expect.any(Number),
+      expect.any(Number)
+    ]);
+  });
+
   it('commits and replaces existing calling assignments', async () => {
     queryMock
       .mockResolvedValueOnce({})

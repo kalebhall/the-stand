@@ -6,6 +6,7 @@ import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 import { makeMemberBirthdayKey, parseCallingsPdfText } from '@/src/imports/callings';
 import { extractPdfText } from '@/src/imports/pdf';
+import { createLogger } from '@/src/lib/logger';
 
 type ImportRunRow = QueryResultRow & {
   id: string;
@@ -34,6 +35,7 @@ function makeCallingKey(memberName: string, birthday: string, callingName: strin
 }
 
 export async function POST(request: Request, context: { params: Promise<{ wardId: string }> }) {
+  const logger = createLogger('callings-import');
   const session = await auth();
 
   if (!session?.user?.id) {
@@ -55,13 +57,37 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     return NextResponse.json({ error: 'A PDF file is required', code: 'VALIDATION_ERROR' }, { status: 400 });
   }
 
-  const fileName = file.name.toLowerCase();
-  if (!fileName.endsWith('.pdf')) {
+  const fileName = file.name;
+  if (!fileName.toLowerCase().endsWith('.pdf')) {
     return NextResponse.json({ error: 'Only PDF files are supported', code: 'VALIDATION_ERROR' }, { status: 400 });
   }
 
+  logger.debug('Starting callings import request', {
+    wardId,
+    userId: session.user.id,
+    commitRequested: commit,
+    fileName,
+    fileSizeBytes: file.size,
+    fileType: file.type
+  });
+
   const extractedText = await extractPdfText(await file.arrayBuffer());
+  const extractedLines = extractedText
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
   const parsedCallings = parseCallingsPdfText(extractedText);
+
+  logger.debug('Callings PDF parsed', {
+    wardId,
+    userId: session.user.id,
+    commitRequested: commit,
+    extractedCharCount: extractedText.length,
+    extractedLineCount: extractedLines.length,
+    extractedPreview: extractedLines.slice(0, 3),
+    parsedCount: parsedCallings.length,
+    parsedPreview: parsedCallings.slice(0, 3)
+  });
 
   const client = await pool.connect();
 
@@ -80,6 +106,64 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
 
     if (!importRun) {
       throw new Error('Failed to create import run');
+    }
+
+    if (parsedCallings.length === 0) {
+      await client.query(
+        `INSERT INTO audit_log (ward_id, user_id, action, details)
+         VALUES ($1, $2, 'CALLINGS_IMPORT_ISSUE', jsonb_build_object('importRunId', $3::text, 'issue', $4::text, 'commitRequested', $5::boolean, 'fileName', $6::text, 'extractedCharCount', $7::int, 'extractedLineCount', $8::int))`,
+        [
+          wardId,
+          session.user.id,
+          importRun.id,
+          'PARSE_ZERO_ROWS',
+          commit,
+          fileName,
+          extractedText.length,
+          extractedLines.length
+        ]
+      );
+
+      await client.query('COMMIT');
+
+      logger.warn('Callings import parsed zero rows', {
+        wardId,
+        userId: session.user.id,
+        importRunId: importRun.id,
+        commitRequested: commit,
+        fileName,
+        extractedCharCount: extractedText.length,
+        extractedLineCount: extractedLines.length
+      });
+
+      if (commit) {
+        return NextResponse.json(
+          {
+            error: 'No callings rows could be parsed from the uploaded PDF',
+            code: 'VALIDATION_ERROR',
+            parsedCount: 0,
+            importRunId: importRun.id
+          },
+          { status: 422 }
+        );
+      }
+
+      return NextResponse.json({
+        importRunId: importRun.id,
+        commit: false,
+        parsedCount: 0,
+        inserted: 0,
+        replacedCount: 0,
+        matchedMembers: 0,
+        unmatchedMembers: 0,
+        stale: {
+          isStale: false,
+          driftCount: 0,
+          comparedToImportRunId: null
+        },
+        issues: ['PARSE_ZERO_ROWS'],
+        preview: []
+      });
     }
 
     const membersResult = await client.query(
@@ -148,7 +232,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
 
       await client.query(
         `INSERT INTO audit_log (ward_id, user_id, action, details)
-         VALUES ($1, $2, 'CALLINGS_IMPORT_COMMITTED', jsonb_build_object('importRunId', $3, 'inserted', $4, 'replacedCount', $5, 'matchedMembers', $6, 'unmatchedMembers', $7, 'parsedCount', $8))`,
+         VALUES ($1, $2, 'CALLINGS_IMPORT_COMMITTED', jsonb_build_object('importRunId', $3::text, 'inserted', $4::int, 'replacedCount', $5::int, 'matchedMembers', $6::int, 'unmatchedMembers', $7::int, 'parsedCount', $8::int))`,
         [wardId, session.user.id, importRun.id, inserted, replacedCount, matchedMembers, unmatchedMembers, parsedCallings.length]
       );
     }
@@ -195,6 +279,23 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
 
     await client.query('COMMIT');
 
+    logger.info('Callings import completed', {
+      wardId,
+      userId: session.user.id,
+      importRunId: importRun.id,
+      commitApplied: commit,
+      parsedCount: parsedCallings.length,
+      inserted,
+      replacedCount,
+      matchedMembers,
+      unmatchedMembers,
+      stale: {
+        isStale,
+        driftCount,
+        comparedToImportRunId: (staleResult.rows[0] as StaleImportRow | undefined)?.id ?? null
+      }
+    });
+
     return NextResponse.json({
       importRunId: importRun.id,
       commit,
@@ -211,8 +312,37 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
       preview: parsedCallings
     });
   } catch (err) {
-    console.error('Callings import failed:', err);
     await client.query('ROLLBACK');
+
+    const message = err instanceof Error ? err.message : 'unknown error';
+
+    try {
+      await client.query('BEGIN');
+      await setDbContext(client, { userId: session.user.id, wardId });
+      await client.query(
+        `INSERT INTO audit_log (ward_id, user_id, action, details)
+         VALUES ($1, $2, 'CALLINGS_IMPORT_FAILED', jsonb_build_object('commitRequested', $3::boolean, 'parsedCount', $4::int, 'fileName', $5::text, 'error', $6::text))`,
+        [wardId, session.user.id, commit, parsedCallings.length, fileName, message]
+      );
+      await client.query('COMMIT');
+    } catch (auditError) {
+      await client.query('ROLLBACK');
+      logger.error('Failed to write callings import failure to audit log', {
+        wardId,
+        userId: session.user.id,
+        error: auditError instanceof Error ? auditError.message : 'unknown error'
+      });
+    }
+
+    logger.error('Callings import failed', {
+      wardId,
+      userId: session.user.id,
+      commitRequested: commit,
+      fileName,
+      parsedCount: parsedCallings.length,
+      error: message
+    });
+
     return NextResponse.json({ error: 'Failed to import callings', code: 'INTERNAL_ERROR' }, { status: 500 });
   } finally {
     client.release();
