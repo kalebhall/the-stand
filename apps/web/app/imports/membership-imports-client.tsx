@@ -68,11 +68,28 @@ async function readErrorMessage(response: Response, fallback: string): Promise<s
   }
 
   const text = (await response.text().catch(() => '')).trim();
-  if (text) {
-    return `${fallback}: ${text}`;
+  if (!text) {
+    return `${fallback} (HTTP ${response.status})`;
   }
 
-  return `${fallback} (HTTP ${response.status})`;
+  const isHtml = contentType.includes('text/html') || text.startsWith('<!DOCTYPE html') || text.startsWith('<html');
+  if (isHtml) {
+    const titleMatch = text.match(/<title>([^<]+)<\/title>/i);
+    const title = titleMatch?.[1]?.trim();
+    const lower = text.toLowerCase();
+
+    if (lower.includes('cloudflare') && (lower.includes('gateway time-out') || lower.includes('error code 504') || response.status === 504)) {
+      return 'LCR import request timed out at Cloudflare (504) before the server could finish. This import can take too long for the proxy timeout—retry, or run the app behind a path/hostname that bypasses Cloudflare timeout limits for this endpoint.';
+    }
+
+    if (title) {
+      return `${fallback}: ${title}`;
+    }
+
+    return `${fallback}: the server returned an HTML error page (HTTP ${response.status}).`;
+  }
+
+  return `${fallback}: ${text}`;
 }
 
 export function MembershipImportsClient({
