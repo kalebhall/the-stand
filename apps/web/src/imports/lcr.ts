@@ -169,20 +169,18 @@ async function findFirstVisibleLocator(page: {
     };
   };
 }, selectors: string[], timeoutMs: number): Promise<{ fill: (value: string) => Promise<void>; click: () => Promise<void>; count: () => Promise<number>; isVisible: (options?: { timeout?: number }) => Promise<boolean>; } | null> {
-  const startedAt = Date.now();
+  const deadline = Date.now() + timeoutMs;
 
-  for (const selector of selectors) {
-    const elapsed = Date.now() - startedAt;
-    const remaining = timeoutMs - elapsed;
-    if (remaining <= 0) {
-      break;
+  while (Date.now() < deadline) {
+    for (const selector of selectors) {
+      const locator = page.locator(selector).first();
+      const visible = await locator.waitFor({ state: 'visible', timeout: 250 }).then(() => true).catch(() => false);
+      if (visible) {
+        return locator;
+      }
     }
 
-    const locator = page.locator(selector).first();
-    const visible = await locator.waitFor({ state: 'visible', timeout: remaining }).then(() => true).catch(() => false);
-    if (visible) {
-      return locator;
-    }
+    await new Promise((resolve) => setTimeout(resolve, 100));
   }
 
   return null;
@@ -226,7 +224,7 @@ export async function importFromLcr(credentials: LcrImportCredentials): Promise<
 
     const usernameField = await findFirstVisibleLocator(
       page,
-      ['input[type="email"]', 'input[autocomplete="username"]', 'input[name*="user" i]', 'input[name*="email" i]'],
+      ['input[type="email"]', 'input[autocomplete="username"]', 'input[name*="user" i]', 'input[name*="email" i]', 'input[id*="user" i]', 'input[id*="identifier" i]', 'input[type="text"]'],
       30_000
     );
 
