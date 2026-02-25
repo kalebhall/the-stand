@@ -335,7 +335,15 @@ export async function importFromLcr(credentials: LcrImportCredentials): Promise<
         );
       }
 
-      await page.waitForURL(/lcr\.churchofjesuschrist\.org\/.+/, { timeout: 60_000 });
+      await page
+        .waitForURL(/lcr\.churchofjesuschrist\.org\/.+/, { waitUntil: 'domcontentloaded', timeout: 90_000 })
+        .catch(async () => {
+          const currentUrl = page.url();
+          if (/lcr\.churchofjesuschrist\.org\/.+/.test(currentUrl)) {
+            return;
+          }
+          throw new Error(`LCR sign-in did not reach LCR after authentication (current URL: ${currentUrl}).`);
+        });
     }
 
     await page.goto(MEMBER_LIST_URL, { waitUntil: 'domcontentloaded', timeout: 60_000 });
