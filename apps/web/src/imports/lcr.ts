@@ -136,25 +136,74 @@ export function formatLaunchErrorForTest(error: unknown): string {
 async function scrapeFirstTable(page: {
   waitForSelector: (selector: string, options?: { timeout?: number }) => Promise<unknown>;
   evaluate: <T>(pageFunction: () => T) => Promise<T>;
-}): Promise<ScrapedTable> {
-  await page.waitForSelector('table', { timeout: 30_000 });
+  url: () => string;
+  title: () => Promise<string>;
+}, sourceLabel: 'members' | 'callings'): Promise<ScrapedTable> {
+  const candidateSelectors = [
+    'table',
+    '[role="table"]',
+    '[role="grid"]',
+    '[data-testid*="table" i]',
+    '[class*="table" i]'
+  ];
 
-  return page.evaluate(() => {
-    const table = document.querySelector('table');
-    if (!table) {
-      return { headers: [], rows: [] };
+  let found = false;
+  for (const selector of candidateSelectors) {
+    const visible = await page
+      .waitForSelector(selector, { timeout: 6_000 })
+      .then(() => true)
+      .catch(() => false);
+
+    if (visible) {
+      found = true;
+      break;
+    }
+  }
+
+  if (!found) {
+    const title = await page.title().catch(() => 'unknown title');
+    throw new Error(`Could not find a data table/grid on the ${sourceLabel} page (url: ${page.url()}, title: ${title}).`);
+  }
+
+  const extracted = await page.evaluate(() => {
+    const normalize = (value: string | null | undefined) => value?.replace(/\s+/g, ' ').trim() ?? '';
+
+    const htmlTable = document.querySelector('table');
+    if (htmlTable) {
+      const headerCells = Array.from(htmlTable.querySelectorAll('thead th'));
+      const rowNodes = Array.from(htmlTable.querySelectorAll('tbody tr'));
+
+      const headers = headerCells.map((cell) => normalize(cell.textContent));
+      const rows = rowNodes.map((row) => Array.from(row.querySelectorAll('td')).map((cell) => normalize(cell.textContent)));
+      if (rows.length > 0) {
+        return { headers, rows };
+      }
     }
 
-    const headerCells = Array.from(table.querySelectorAll('thead th'));
-    const rowNodes = Array.from(table.querySelectorAll('tbody tr'));
+    const grid = (document.querySelector('[role="grid"]') ?? document.querySelector('[role="table"]')) as HTMLElement | null;
+    if (grid) {
+      const headerCells = Array.from(grid.querySelectorAll('[role="columnheader"]'));
+      const dataRows = Array.from(grid.querySelectorAll('[role="row"]')).filter((row) => row.querySelector('[role="gridcell"], [role="cell"]'));
 
-    return {
-      headers: headerCells.map((cell) => cell.textContent?.replace(/\s+/g, ' ').trim() ?? ''),
-      rows: rowNodes.map((row) =>
-        Array.from(row.querySelectorAll('td')).map((cell) => cell.textContent?.replace(/\s+/g, ' ').trim() ?? '')
-      )
-    };
+      const headers = headerCells.map((cell) => normalize(cell.textContent));
+      const rows = dataRows.map((row) =>
+        Array.from(row.querySelectorAll('[role="gridcell"], [role="cell"]')).map((cell) => normalize(cell.textContent))
+      );
+
+      if (rows.length > 0) {
+        return { headers, rows };
+      }
+    }
+
+    return { headers: [], rows: [] };
   });
+
+  if (!extracted.rows.length) {
+    const title = await page.title().catch(() => 'unknown title');
+    throw new Error(`Found ${sourceLabel} page container but no rows to import (url: ${page.url()}, title: ${title}).`);
+  }
+
+  return extracted;
 }
 
 
@@ -341,10 +390,10 @@ export async function importFromLcr(credentials: LcrImportCredentials): Promise<
     }
 
     await page.goto(MEMBER_LIST_URL, { waitUntil: 'domcontentloaded', timeout: 90_000 });
-    const memberTable = await scrapeFirstTable(page);
+    const memberTable = await scrapeFirstTable(page, 'members');
 
     await page.goto(CALLING_LIST_URL, { waitUntil: 'domcontentloaded', timeout: 60_000 });
-    const callingTable = await scrapeFirstTable(page);
+    const callingTable = await scrapeFirstTable(page, 'callings');
 
     return {
       members: parseMembersFromTable(memberTable),
