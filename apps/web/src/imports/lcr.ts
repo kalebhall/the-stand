@@ -1,0 +1,173 @@
+import type { ParsedCalling } from '@/src/imports/callings';
+import type { ParsedMember } from '@/src/imports/membership';
+
+const MEMBER_LIST_URL = 'https://lcr.churchofjesuschrist.org/records/member-list?lang=eng';
+const CALLING_LIST_URL = 'https://lcr.churchofjesuschrist.org/mlt/report/member-callings?lang=eng';
+
+type ScrapedTable = {
+  headers: string[];
+  rows: string[][];
+};
+
+export type LcrImportCredentials = {
+  username: string;
+  password: string;
+  twoFactorCode?: string;
+};
+
+export type LcrImportData = {
+  members: ParsedMember[];
+  callings: ParsedCalling[];
+  memberRawText: string;
+  callingRawText: string;
+};
+
+function normalize(value: string): string {
+  return value.replace(/\s+/g, ' ').trim();
+}
+
+function findHeaderIndex(headers: string[], patterns: RegExp[]): number {
+  return headers.findIndex((header) => patterns.some((pattern) => pattern.test(header)));
+}
+
+function parseBoolean(value: string): boolean {
+  const normalized = normalize(value).toLowerCase();
+  return normalized === 'yes' || normalized === 'true' || normalized === 'y' || normalized.includes('✔') || normalized.includes('✓');
+}
+
+function parseAge(value: string): number | null {
+  const parsed = Number.parseInt(normalize(value), 10);
+  return Number.isNaN(parsed) ? null : parsed;
+}
+
+function parseMembersFromTable(table: ScrapedTable): ParsedMember[] {
+  const headers = table.headers.map((header) => normalize(header).toLowerCase());
+  const nameIndex = findHeaderIndex(headers, [/^name$/, /member\s*name/, /preferred\s*name/]);
+  const emailIndex = findHeaderIndex(headers, [/email/]);
+  const phoneIndex = findHeaderIndex(headers, [/phone/, /mobile/, /cell/]);
+  const ageIndex = findHeaderIndex(headers, [/age/]);
+  const birthdayIndex = findHeaderIndex(headers, [/birth\s*date/, /^birthday$/, /dob/]);
+  const genderIndex = findHeaderIndex(headers, [/gender/, /^sex$/]);
+
+  const deduped = new Map<string, ParsedMember>();
+
+  for (const row of table.rows) {
+    const fullName = normalize(row[nameIndex] ?? '');
+    if (!fullName) continue;
+
+    const member: ParsedMember = {
+      fullName,
+      email: normalize(row[emailIndex] ?? '') || null,
+      phone: normalize(row[phoneIndex] ?? '') || null,
+      age: parseAge(row[ageIndex] ?? ''),
+      birthday: normalize(row[birthdayIndex] ?? '') || null,
+      gender: normalize(row[genderIndex] ?? '') || null
+    };
+
+    deduped.set(fullName.toLowerCase(), member);
+  }
+
+  return Array.from(deduped.values());
+}
+
+function parseCallingsFromTable(table: ScrapedTable): ParsedCalling[] {
+  const headers = table.headers.map((header) => normalize(header).toLowerCase());
+  const nameIndex = findHeaderIndex(headers, [/^name$/, /member\s*name/]);
+  const birthdayIndex = findHeaderIndex(headers, [/birth\s*date/, /^birthday$/, /dob/]);
+  const organizationIndex = findHeaderIndex(headers, [/organization/]);
+  const callingIndex = findHeaderIndex(headers, [/calling/]);
+  const sustainedIndex = findHeaderIndex(headers, [/sustained/]);
+  const setApartIndex = findHeaderIndex(headers, [/set\s*apart/]);
+
+  const deduped = new Map<string, ParsedCalling>();
+
+  for (const row of table.rows) {
+    const memberName = normalize(row[nameIndex] ?? '');
+    const birthday = normalize(row[birthdayIndex] ?? '');
+    const organization = normalize(row[organizationIndex] ?? '');
+    const callingName = normalize(row[callingIndex] ?? '');
+    if (!memberName || !callingName) continue;
+
+    const parsed: ParsedCalling = {
+      memberName,
+      birthday,
+      organization,
+      callingName,
+      sustained: parseBoolean(row[sustainedIndex] ?? ''),
+      setApart: parseBoolean(row[setApartIndex] ?? '')
+    };
+
+    deduped.set(`${memberName.toLowerCase()}::${birthday.toLowerCase()}::${callingName.toLowerCase()}`, parsed);
+  }
+
+  return Array.from(deduped.values());
+}
+
+
+export function parseMembersFromTableForTest(table: ScrapedTable): ParsedMember[] {
+  return parseMembersFromTable(table);
+}
+
+export function parseCallingsFromTableForTest(table: ScrapedTable): ParsedCalling[] {
+  return parseCallingsFromTable(table);
+}
+async function scrapeFirstTable(page: { waitForSelector: (selector: string, options?: { timeout?: number }) => Promise<unknown>; evaluate: <T>(pageFunction: () => T) => Promise<T>; }): Promise<ScrapedTable> {
+  await page.waitForSelector('table', { timeout: 30_000 });
+
+  return page.evaluate(() => {
+    const table = document.querySelector('table');
+    if (!table) {
+      return { headers: [], rows: [] };
+    }
+
+    const headerCells = Array.from(table.querySelectorAll('thead th'));
+    const rowNodes = Array.from(table.querySelectorAll('tbody tr'));
+
+    return {
+      headers: headerCells.map((cell) => cell.textContent?.replace(/\s+/g, ' ').trim() ?? ''),
+      rows: rowNodes.map((row) =>
+        Array.from(row.querySelectorAll('td')).map((cell) => cell.textContent?.replace(/\s+/g, ' ').trim() ?? '')
+      )
+    };
+  });
+}
+
+export async function importFromLcr(credentials: LcrImportCredentials): Promise<LcrImportData> {
+  const { chromium } = await import('@playwright/test');
+  const browser = await chromium.launch({ headless: true });
+
+  try {
+    const page = await browser.newPage();
+    await page.goto(MEMBER_LIST_URL, { waitUntil: 'domcontentloaded', timeout: 60_000 });
+
+    await page.fill('input[type="email"], input[name*="user" i], input[name*="email" i]', credentials.username);
+    await page.fill('input[type="password"], input[name*="pass" i]', credentials.password);
+    await page.click('button[type="submit"], input[type="submit"]');
+
+    const codeInput = page.locator('input[name*="code" i], input[name*="otp" i], input[autocomplete="one-time-code"]');
+    if ((await codeInput.count()) > 0 && (await codeInput.first().isVisible({ timeout: 10_000 }).catch(() => false))) {
+      if (!credentials.twoFactorCode) {
+        throw new Error('Two-factor code is required for this account.');
+      }
+      await codeInput.first().fill(credentials.twoFactorCode);
+      await page.click('button[type="submit"], input[type="submit"]');
+    }
+
+    await page.waitForURL(/lcr\.churchofjesuschrist\.org\/.+/, { timeout: 60_000 });
+
+    await page.goto(MEMBER_LIST_URL, { waitUntil: 'domcontentloaded', timeout: 60_000 });
+    const memberTable = await scrapeFirstTable(page);
+
+    await page.goto(CALLING_LIST_URL, { waitUntil: 'domcontentloaded', timeout: 60_000 });
+    const callingTable = await scrapeFirstTable(page);
+
+    return {
+      members: parseMembersFromTable(memberTable),
+      callings: parseCallingsFromTable(callingTable),
+      memberRawText: JSON.stringify(memberTable),
+      callingRawText: JSON.stringify(callingTable)
+    };
+  } finally {
+    await browser.close();
+  }
+}
