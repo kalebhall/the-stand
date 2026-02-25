@@ -109,7 +109,7 @@ export default async function ImportsPage() {
       <main className="mx-auto w-full max-w-6xl space-y-6 p-4 sm:p-6">
         <section className="space-y-2">
           <h1 className="text-2xl font-semibold tracking-tight">Imports</h1>
-          <p className="text-sm text-muted-foreground">Import directly from LCR with temporary credentials, or use paste/PDF fallback and maintain restricted member notes.</p>
+          <p className="text-sm text-muted-foreground">Paste member and calling data exported from your ward administration tools, then maintain restricted member notes.</p>
         </section>
 
         <MembershipImportsClient

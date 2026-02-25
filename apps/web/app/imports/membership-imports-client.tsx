@@ -57,40 +57,6 @@ type CallingDrift = {
 };
 
 
-async function readErrorMessage(response: Response, fallback: string): Promise<string> {
-  const contentType = response.headers.get('content-type') ?? '';
-
-  if (contentType.includes('application/json')) {
-    const payload = (await response.json().catch(() => null)) as { error?: string; code?: string } | null;
-    if (payload?.error) {
-      return payload.code ? `${payload.error} (${payload.code})` : payload.error;
-    }
-  }
-
-  const text = (await response.text().catch(() => '')).trim();
-  if (!text) {
-    return `${fallback} (HTTP ${response.status})`;
-  }
-
-  const isHtml = contentType.includes('text/html') || text.startsWith('<!DOCTYPE html') || text.startsWith('<html');
-  if (isHtml) {
-    const titleMatch = text.match(/<title>([^<]+)<\/title>/i);
-    const title = titleMatch?.[1]?.trim();
-    const lower = text.toLowerCase();
-
-    if (lower.includes('cloudflare') && (lower.includes('gateway time-out') || lower.includes('error code 504') || response.status === 504)) {
-      return 'LCR import request timed out at Cloudflare (504) before the server could finish. This import can take too long for the proxy timeout—retry, or run the app behind a path/hostname that bypasses Cloudflare timeout limits for this endpoint.';
-    }
-
-    if (title) {
-      return `${fallback}: ${title}`;
-    }
-
-    return `${fallback}: the server returned an HTML error page (HTTP ${response.status}).`;
-  }
-
-  return `${fallback}: ${text}`;
-}
 
 export function MembershipImportsClient({
   wardId,
@@ -111,7 +77,9 @@ export function MembershipImportsClient({
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const [callingInputMode, setCallingInputMode] = useState<'pdf' | 'paste'>('pdf');
   const [callingPdfFile, setCallingPdfFile] = useState<File | null>(null);
+  const [callingRawText, setCallingRawText] = useState('');
   const [callingPreview, setCallingPreview] = useState<PreviewCalling[]>([]);
   const [callingSummary, setCallingSummary] = useState<{
     parsedCount: number;
@@ -125,23 +93,7 @@ export function MembershipImportsClient({
   const [callingError, setCallingError] = useState<string | null>(null);
   const [isCallingSubmitting, setIsCallingSubmitting] = useState(false);
 
-  const [lcrUsername, setLcrUsername] = useState('');
-  const [lcrPassword, setLcrPassword] = useState('');
-  const [lcrTwoFactorCode, setLcrTwoFactorCode] = useState('');
-  const [lcrSummary, setLcrSummary] = useState<{
-    commit: boolean;
-    membershipParsedCount: number;
-    membershipInserted: number;
-    membershipUpdated: number;
-    callingsParsedCount: number;
-    callingsInserted: number;
-    callingsReplacedCount: number;
-    matchedMembers: number;
-    unmatchedMembers: number;
-  } | null>(null);
-  const [lcrError, setLcrError] = useState<string | null>(null);
-  const [isLcrSubmitting, setIsLcrSubmitting] = useState(false);
-  const [lcrJobState, setLcrJobState] = useState<'idle' | 'queued' | 'running'>('idle');
+  const [headerCopied, setHeaderCopied] = useState(false);
 
   const [noteError, setNoteError] = useState<string | null>(null);
   const [isSavingMemberNoteId, setIsSavingMemberNoteId] = useState<string | null>(null);
@@ -211,16 +163,25 @@ export function MembershipImportsClient({
     setCallingError(null);
 
     try {
-      const formData = new FormData();
-      formData.set('commit', commit ? 'true' : 'false');
-      if (callingPdfFile) {
-        formData.set('file', callingPdfFile);
-      }
+      let response: Response;
 
-      const response = await fetch(`/api/w/${wardId}/imports/callings`, {
-        method: 'POST',
-        body: formData
-      });
+      if (callingInputMode === 'paste') {
+        response = await fetch(`/api/w/${wardId}/imports/callings`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ rawText: callingRawText, commit })
+        });
+      } else {
+        const formData = new FormData();
+        formData.set('commit', commit ? 'true' : 'false');
+        if (callingPdfFile) {
+          formData.set('file', callingPdfFile);
+        }
+        response = await fetch(`/api/w/${wardId}/imports/callings`, {
+          method: 'POST',
+          body: formData
+        });
+      }
 
       const payload = (await response.json()) as
         | {
@@ -317,126 +278,6 @@ export function MembershipImportsClient({
   }
 
 
-  async function waitForLcrJob(jobId: string): Promise<{
-    commit: boolean;
-    membership: { parsedCount: number; inserted: number; updated: number };
-    callings: {
-      parsedCount: number;
-      inserted: number;
-      replacedCount: number;
-      matchedMembers: number;
-      unmatchedMembers: number;
-    };
-  }> {
-    const timeoutAt = Date.now() + 4 * 60_000;
-
-    while (Date.now() < timeoutAt) {
-      const response = await fetch(`/api/w/${wardId}/imports/lcr/${jobId}`, {
-        method: 'GET',
-        headers: { accept: 'application/json' }
-      });
-
-      if (response.status === 404) {
-        throw new Error('Import job expired before completion. Please retry.');
-      }
-
-      if (!response.ok) {
-        throw new Error(await readErrorMessage(response, 'LCR import failed'));
-      }
-
-      const payload = (await response.json().catch(() => null)) as
-        | {
-            state: 'queued' | 'running';
-            result: null;
-          }
-        | {
-            state: 'succeeded';
-            result: {
-              commit: boolean;
-              membership: { parsedCount: number; inserted: number; updated: number };
-              callings: {
-                parsedCount: number;
-                inserted: number;
-                replacedCount: number;
-                matchedMembers: number;
-                unmatchedMembers: number;
-              };
-            };
-          }
-        | null;
-
-      if (!payload) {
-        throw new Error('LCR import failed: received an empty job status response.');
-      }
-
-      if (payload.state === 'succeeded' && payload.result) {
-        return payload.result;
-      }
-
-      setLcrJobState(payload.state);
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-    }
-
-    throw new Error('LCR import is still running after 4 minutes. Please check again or retry.');
-  }
-
-  async function submitLcrImport(commit: boolean) {
-    setIsLcrSubmitting(true);
-    setLcrError(null);
-
-    try {
-      const response = await fetch(`/api/w/${wardId}/imports/lcr`, {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json'
-        },
-        body: JSON.stringify({
-          username: lcrUsername,
-          password: lcrPassword,
-          twoFactorCode: lcrTwoFactorCode,
-          commit
-        })
-      });
-
-      if (!response.ok) {
-        setLcrError(await readErrorMessage(response, 'LCR import failed'));
-        return;
-      }
-
-      const startPayload = (await response.json().catch(() => null)) as { jobId?: string; state?: 'queued' | 'running' } | null;
-      if (!startPayload?.jobId) {
-        setLcrError('LCR import failed: server did not return a background job id.');
-        return;
-      }
-
-      setLcrJobState(startPayload.state ?? 'queued');
-      const payload = await waitForLcrJob(startPayload.jobId);
-
-      setLcrSummary({
-        commit: payload.commit,
-        membershipParsedCount: payload.membership.parsedCount,
-        membershipInserted: payload.membership.inserted,
-        membershipUpdated: payload.membership.updated,
-        callingsParsedCount: payload.callings.parsedCount,
-        callingsInserted: payload.callings.inserted,
-        callingsReplacedCount: payload.callings.replacedCount,
-        matchedMembers: payload.callings.matchedMembers,
-        unmatchedMembers: payload.callings.unmatchedMembers
-      });
-
-      if (commit) {
-        setLcrPassword('');
-        setLcrTwoFactorCode('');
-        window.location.reload();
-      }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'unknown error';
-      setLcrError(`LCR import failed: ${message}`);
-    } finally {
-      setIsLcrSubmitting(false);
-      setLcrJobState('idle');
-    }
-  }
 
   async function deleteMember(memberId: string) {
     if (!window.confirm('Delete this member and any notes/callings tied to them?')) {
@@ -494,77 +335,40 @@ export function MembershipImportsClient({
 
   const drift = callingSummary?.stale ?? initialCallingDrift;
 
+  const memberLineCount = rawText.trim() ? rawText.trim().split('\n').filter(Boolean).length : 0;
+
+  function copyMembershipHeader() {
+    void navigator.clipboard.writeText('Name\tEmail\tPhone\tAge\tBirthday\tGender').then(() => {
+      setHeaderCopied(true);
+      setTimeout(() => setHeaderCopied(false), 2000);
+    });
+  }
+
+  function switchCallingMode(mode: 'pdf' | 'paste') {
+    setCallingInputMode(mode);
+    setCallingPreview([]);
+    setCallingSummary(null);
+    setCallingError(null);
+  }
+
   return (
     <div className="grid gap-6 lg:grid-cols-2">
-      <section className="space-y-3 rounded-lg border bg-card p-4 lg:col-span-2">
-        <h2 className="text-lg font-semibold">LCR direct import (members + callings)</h2>
-        <p className="text-sm text-muted-foreground">
-          Enter your Church Account credentials to temporarily sign in and import data directly from LCR. Credentials and
-          two-factor codes are only used for this request and are not saved.
-        </p>
-        <div className="grid gap-3 md:grid-cols-3">
-          <label className="space-y-1 text-sm">
-            <span className="text-muted-foreground">Username</span>
-            <input
-              type="text"
-              autoComplete="username"
-              value={lcrUsername}
-              onChange={(event) => setLcrUsername(event.target.value)}
-              className="w-full rounded-md border bg-background px-3 py-2"
-              placeholder="your-account@example.com"
-            />
-          </label>
-          <label className="space-y-1 text-sm">
-            <span className="text-muted-foreground">Password</span>
-            <input
-              type="password"
-              autoComplete="current-password"
-              value={lcrPassword}
-              onChange={(event) => setLcrPassword(event.target.value)}
-              className="w-full rounded-md border bg-background px-3 py-2"
-              placeholder="••••••••"
-            />
-          </label>
-          <label className="space-y-1 text-sm">
-            <span className="text-muted-foreground">2-factor code (optional)</span>
-            <input
-              type="text"
-              value={lcrTwoFactorCode}
-              onChange={(event) => setLcrTwoFactorCode(event.target.value)}
-              className="w-full rounded-md border bg-background px-3 py-2"
-              placeholder="123456"
-            />
-          </label>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="outline" onClick={() => submitLcrImport(false)} disabled={isLcrSubmitting}>
-            Dry run from LCR
-          </Button>
-          <Button type="button" onClick={() => submitLcrImport(true)} disabled={isLcrSubmitting}>
-            Commit from LCR
-          </Button>
-        </div>
-        {lcrJobState !== 'idle' ? <p className="text-sm text-muted-foreground">Background import job is {lcrJobState}…</p> : null}
-        {lcrError ? <p className="text-sm text-red-600">{lcrError}</p> : null}
-        {lcrSummary ? (
-          <p className="text-sm text-muted-foreground">
-            {lcrSummary.commit ? 'Commit complete.' : 'Preview complete.'} Members parsed {lcrSummary.membershipParsedCount}
-            {lcrSummary.commit ? ` (${lcrSummary.membershipInserted} inserted, ${lcrSummary.membershipUpdated} updated). ` : '. '}
-            Callings parsed {lcrSummary.callingsParsedCount}
-            {lcrSummary.commit
-              ? ` (${lcrSummary.callingsReplacedCount} replaced, ${lcrSummary.callingsInserted} inserted, ${lcrSummary.matchedMembers} matched, ${lcrSummary.unmatchedMembers} unmatched).`
-              : '.'}
-          </p>
-        ) : null}
-      </section>
-
       <section className="space-y-3 rounded-lg border bg-card p-4">
-        <h2 className="text-lg font-semibold">Membership paste import</h2>
-        <p className="text-sm text-muted-foreground">Paste member data with a header row (tab-delimited preferred: Name, Email, Phone, Age, Birthday, Gender). The header determines field mapping.</p>
+        <h2 className="text-lg font-semibold">Membership import</h2>
+        <p className="text-sm text-muted-foreground">
+          In your ward directory, select all members and copy the table. Paste the result below — tab-delimited with a header row is
+          preferred. Column order is detected automatically.
+        </p>
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-xs text-muted-foreground">{memberLineCount > 0 ? `${memberLineCount} row${memberLineCount === 1 ? '' : 's'} pasted` : 'No data pasted yet'}</span>
+          <Button type="button" variant="outline" size="sm" onClick={copyMembershipHeader}>
+            {headerCopied ? 'Copied!' : 'Copy header row'}
+          </Button>
+        </div>
         <textarea
           value={rawText}
           onChange={(event) => setRawText(event.target.value)}
-          className="min-h-44 w-full rounded-md border bg-background p-3 text-sm"
+          className="min-h-44 w-full rounded-md border bg-background p-3 font-mono text-sm"
           placeholder={"Name\tEmail\tPhone\tAge\tBirthday\tGender\nJane Doe\tjane@example.com\t801-555-0101\t35\tJan 15\tFemale"}
         />
         <div className="flex flex-wrap gap-2">
@@ -613,19 +417,51 @@ export function MembershipImportsClient({
       </section>
 
       <section className="space-y-3 rounded-lg border bg-card p-4">
-        <h2 className="text-lg font-semibold">Calling PDF import</h2>
-        <p className="text-sm text-muted-foreground">Upload a PDF generated from Members with Callings. Import replaces all current callings.</p>
+        <h2 className="text-lg font-semibold">Callings import</h2>
+        <p className="text-sm text-muted-foreground">Import replaces all current callings. Use the Members with Callings report.</p>
 
         <div className={`rounded-md border px-3 py-2 text-sm ${drift.isStale ? 'border-amber-300 bg-amber-50 text-amber-900' : 'border-emerald-300 bg-emerald-50 text-emerald-900'}`}>
           Drift indicator: {drift.isStale ? `Stale (${drift.driftCount} changes since last committed calling import).` : 'In sync with latest committed calling import.'}
         </div>
 
-        <input
-          type="file"
-          accept="application/pdf,.pdf"
-          onChange={(event) => setCallingPdfFile(event.target.files?.[0] ?? null)}
-          className="w-full rounded-md border bg-background p-2 text-sm"
-        />
+        <div className="flex gap-1 rounded-md border bg-muted/30 p-1 text-sm">
+          <button
+            type="button"
+            onClick={() => switchCallingMode('pdf')}
+            className={`flex-1 rounded px-3 py-1 transition-colors ${callingInputMode === 'pdf' ? 'bg-background font-medium shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+          >
+            Upload PDF
+          </button>
+          <button
+            type="button"
+            onClick={() => switchCallingMode('paste')}
+            className={`flex-1 rounded px-3 py-1 transition-colors ${callingInputMode === 'paste' ? 'bg-background font-medium shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+          >
+            Paste text
+          </button>
+        </div>
+
+        {callingInputMode === 'pdf' ? (
+          <input
+            type="file"
+            accept="application/pdf,.pdf"
+            onChange={(event) => setCallingPdfFile(event.target.files?.[0] ?? null)}
+            className="w-full rounded-md border bg-background p-2 text-sm"
+          />
+        ) : (
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground">
+              Open the Members with Callings report, select all content, and paste below. Tab-separated (browser copy) and
+              multi-space (PDF extract) formats are both accepted.
+            </p>
+            <textarea
+              value={callingRawText}
+              onChange={(event) => setCallingRawText(event.target.value)}
+              className="min-h-44 w-full rounded-md border bg-background p-3 font-mono text-sm"
+              placeholder={"Name\tGender\tAge\tBirth Date\tOrganization\tCalling\tSustained\tSet Apart\nJane Doe\tFemale\t35\tJan 15\tRelief Society\tRelief Society President\tYes\tNo"}
+            />
+          </div>
+        )}
 
         <div className="flex flex-wrap gap-2">
           <Button type="button" variant="outline" onClick={() => submitCallingImport(false)} disabled={isCallingSubmitting}>
