@@ -103,6 +103,23 @@ function parseCallingsFromTable(table: ScrapedTable): ParsedCalling[] {
   return Array.from(deduped.values());
 }
 
+function formatLaunchError(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error);
+
+  if (message.includes("Executable doesn't exist")) {
+    return 'LCR import browser is not installed on the server. Run `npx playwright install chromium` on the deployment host.';
+  }
+
+  if (message.includes('error while loading shared libraries') || message.includes('libnspr4.so')) {
+    return 'LCR import browser dependencies are missing on the server OS (for example `libnspr4`). Install Playwright system dependencies (`npx playwright install-deps chromium`) and retry.';
+  }
+
+  if (message.includes('Target page, context or browser has been closed')) {
+    return 'LCR import browser failed to stay open. This is usually a server dependency issue (missing shared libs). Install OS dependencies with `npx playwright install-deps chromium` and ensure Chromium can start.';
+  }
+
+  return `Failed to start browser for LCR import: ${message}`;
+}
 
 export function parseMembersFromTableForTest(table: ScrapedTable): ParsedMember[] {
   return parseMembersFromTable(table);
@@ -111,7 +128,15 @@ export function parseMembersFromTableForTest(table: ScrapedTable): ParsedMember[
 export function parseCallingsFromTableForTest(table: ScrapedTable): ParsedCalling[] {
   return parseCallingsFromTable(table);
 }
-async function scrapeFirstTable(page: { waitForSelector: (selector: string, options?: { timeout?: number }) => Promise<unknown>; evaluate: <T>(pageFunction: () => T) => Promise<T>; }): Promise<ScrapedTable> {
+
+export function formatLaunchErrorForTest(error: unknown): string {
+  return formatLaunchError(error);
+}
+
+async function scrapeFirstTable(page: {
+  waitForSelector: (selector: string, options?: { timeout?: number }) => Promise<unknown>;
+  evaluate: <T>(pageFunction: () => T) => Promise<T>;
+}): Promise<ScrapedTable> {
   await page.waitForSelector('table', { timeout: 30_000 });
 
   return page.evaluate(() => {
@@ -133,7 +158,7 @@ async function scrapeFirstTable(page: { waitForSelector: (selector: string, opti
 }
 
 export async function importFromLcr(credentials: LcrImportCredentials): Promise<LcrImportData> {
-    const playwrightModule = (await import('playwright').catch(() => null)) ?? (await import('@playwright/test').catch(() => null));
+  const playwrightModule = (await import('playwright').catch(() => null)) ?? (await import('@playwright/test').catch(() => null));
   if (!playwrightModule) {
     throw new Error('LCR import is unavailable because Playwright is not installed in the server runtime.');
   }
@@ -144,11 +169,7 @@ export async function importFromLcr(credentials: LcrImportCredentials): Promise<
   try {
     browser = await chromium.launch({ headless: true });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'unknown launch error';
-    if (message.includes("Executable doesn't exist")) {
-      throw new Error('LCR import browser is not installed on the server. Run `npx playwright install chromium` on the deployment host.');
-    }
-    throw new Error(`Failed to start browser for LCR import: ${message}`);
+    throw new Error(formatLaunchError(error));
   }
 
   try {

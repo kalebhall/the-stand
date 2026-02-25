@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { parseCallingsFromTableForTest, parseMembersFromTableForTest } from './lcr';
+import { formatLaunchErrorForTest, parseCallingsFromTableForTest, parseMembersFromTableForTest } from './lcr';
 
 describe('lcr table parsing', () => {
   it('parses member rows', () => {
@@ -59,5 +59,21 @@ describe('lcr table parsing', () => {
         setApart: true
       }
     ]);
+  });
+});
+
+describe('lcr launch error formatting', () => {
+  it('returns install guidance for missing shared libs', () => {
+    const formatted = formatLaunchErrorForTest(
+      new Error('browserType.launch: Target page, context or browser has been closed ... error while loading shared libraries: libnspr4.so')
+    );
+
+    expect(formatted).toContain('Install Playwright system dependencies');
+    expect(formatted).toContain('install-deps chromium');
+  });
+
+  it('returns install guidance for missing browser executable', () => {
+    const formatted = formatLaunchErrorForTest(new Error("browserType.launch: Executable doesn't exist"));
+    expect(formatted).toContain('playwright install chromium');
   });
 });
