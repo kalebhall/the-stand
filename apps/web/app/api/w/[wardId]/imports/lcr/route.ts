@@ -7,6 +7,7 @@ import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 import { makeMemberBirthdayKey } from '@/src/imports/callings';
 import { importFromLcr } from '@/src/imports/lcr';
+import { createLogger } from '@/src/lib/logger';
 
 export const runtime = 'nodejs';
 
@@ -21,6 +22,7 @@ type ImportRunRow = QueryResultRow & { id: string };
 type MemberRow = QueryResultRow & { id: string; full_name: string; birthday: string | null };
 
 export async function POST(request: Request, context: { params: Promise<{ wardId: string }> }) {
+  const logger = createLogger('lcr-import');
   const session = await auth().catch(() => null);
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, { status: 401 });
@@ -180,9 +182,23 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
         preview: imported.callings
       }
     });
-  } catch {
+  } catch (error) {
     await client.query('ROLLBACK');
-    return NextResponse.json({ error: 'Failed to process LCR import', code: 'INTERNAL_ERROR' }, { status: 500 });
+
+    const message = error instanceof Error ? error.message : 'unknown error';
+    logger.error('Failed to process LCR import', {
+      wardId,
+      userId: session.user.id,
+      commitRequested: commit,
+      parsedMemberCount: imported.members.length,
+      parsedCallingCount: imported.callings.length,
+      error: message
+    });
+
+    return NextResponse.json(
+      { error: `Failed to process LCR import: ${message}`, code: 'INTERNAL_ERROR' },
+      { status: 500 }
+    );
   } finally {
     client.release();
   }

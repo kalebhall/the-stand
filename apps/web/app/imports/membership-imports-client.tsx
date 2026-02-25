@@ -56,6 +56,25 @@ type CallingDrift = {
   comparedToImportRunId: string | null;
 };
 
+
+async function readErrorMessage(response: Response, fallback: string): Promise<string> {
+  const contentType = response.headers.get('content-type') ?? '';
+
+  if (contentType.includes('application/json')) {
+    const payload = (await response.json().catch(() => null)) as { error?: string; code?: string } | null;
+    if (payload?.error) {
+      return payload.code ? `${payload.error} (${payload.code})` : payload.error;
+    }
+  }
+
+  const text = (await response.text().catch(() => '')).trim();
+  if (text) {
+    return `${fallback}: ${text}`;
+  }
+
+  return `${fallback} (HTTP ${response.status})`;
+}
+
 export function MembershipImportsClient({
   wardId,
   members,
@@ -297,7 +316,12 @@ export function MembershipImportsClient({
         })
       });
 
-      const payload = (await response.json()) as
+      if (!response.ok) {
+        setLcrError(await readErrorMessage(response, 'LCR import failed'));
+        return;
+      }
+
+      const payload = (await response.json().catch(() => null)) as
         | {
             commit: boolean;
             membership: { parsedCount: number; inserted: number; updated: number };
@@ -309,10 +333,10 @@ export function MembershipImportsClient({
               unmatchedMembers: number;
             };
           }
-        | { error?: string };
+        | null;
 
-      if (!response.ok || !('membership' in payload) || !('callings' in payload)) {
-        setLcrError('error' in payload ? (payload.error ?? 'LCR import failed') : 'LCR import failed');
+      if (!payload || !('membership' in payload) || !('callings' in payload)) {
+        setLcrError('LCR import failed: received an unexpected response from the server.');
         return;
       }
 
@@ -333,8 +357,9 @@ export function MembershipImportsClient({
         setLcrTwoFactorCode('');
         window.location.reload();
       }
-    } catch {
-      setLcrError('LCR import failed');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'unknown error';
+      setLcrError(`LCR import failed: ${message}`);
     } finally {
       setIsLcrSubmitting(false);
     }
