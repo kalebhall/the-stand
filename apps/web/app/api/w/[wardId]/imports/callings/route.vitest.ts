@@ -39,6 +39,14 @@ function buildRequest(commit: boolean): Request {
   });
 }
 
+function buildJsonRequest(commit: boolean, rawText = 'Jane Doe  Female  35  Jan 15  Bishopric  Bishop  Yes  No'): Request {
+  return new Request('http://localhost', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ rawText, commit })
+  });
+}
+
 describe('POST /api/w/[wardId]/imports/callings', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -146,6 +154,41 @@ John Doe  Male  42  Jan 15  Bishopric  Bishop  Yes  No
       expect.any(Number),
       expect.any(Number)
     ]);
+  });
+
+  it('accepts rawText JSON body as an alternative to PDF upload', async () => {
+    queryMock
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({ rows: [{ id: 'import-paste', created_at: new Date().toISOString() }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'member-1', full_name: 'John Doe', birthday: 'Jan 15' }] })
+      .mockResolvedValueOnce({ rowCount: 0, rows: [] })
+      .mockResolvedValueOnce({ rows: [{ member_name: 'John Doe', birthday: 'Jan 15', calling_name: 'Bishop' }] })
+      .mockResolvedValueOnce({ rowCount: 0, rows: [] })
+      .mockResolvedValueOnce({});
+
+    const response = await POST(buildJsonRequest(false), { params: Promise.resolve({ wardId: 'ward-1' }) });
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({
+      importRunId: 'import-paste',
+      commit: false,
+      parsedCount: 1
+    });
+    // PDF extraction must NOT be called for a paste import
+    expect(extractPdfTextMock).not.toHaveBeenCalled();
+  });
+
+  it('rejects JSON body that is missing rawText', async () => {
+    const request = new Request('http://localhost', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ commit: false })
+    });
+
+    const response = await POST(request, { params: Promise.resolve({ wardId: 'ward-1' }) });
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toMatchObject({ code: 'VALIDATION_ERROR' });
   });
 
   it('commits and replaces existing calling assignments', async () => {

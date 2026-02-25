@@ -55,30 +55,44 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
   }
 
-  const formData = await request.formData().catch(() => null);
-  const commitValue = formData?.get('commit');
-  const commit = commitValue === 'true';
-  const file = formData?.get('file');
+  const contentType = request.headers.get('content-type') ?? '';
+  let extractedText: string;
+  let fileName: string;
+  let commit: boolean;
 
-  if (!(file instanceof File)) {
-    return NextResponse.json({ error: 'A PDF file is required', code: 'VALIDATION_ERROR' }, { status: 400 });
-  }
+  if (contentType.includes('application/json')) {
+    const body = (await request.json().catch(() => null)) as { rawText?: unknown; commit?: unknown } | null;
+    if (!body || typeof body.rawText !== 'string' || !body.rawText.trim()) {
+      return NextResponse.json({ error: 'rawText is required', code: 'VALIDATION_ERROR' }, { status: 400 });
+    }
+    commit = body.commit === true;
+    // Normalize tabs to double-spaces so the multi-column parser path fires correctly
+    extractedText = body.rawText.replace(/\t/g, '  ');
+    fileName = 'paste';
+  } else {
+    const formData = await request.formData().catch(() => null);
+    const commitValue = formData?.get('commit');
+    commit = commitValue === 'true';
+    const file = formData?.get('file');
 
-  const fileName = file.name;
-  if (!fileName.toLowerCase().endsWith('.pdf')) {
-    return NextResponse.json({ error: 'Only PDF files are supported', code: 'VALIDATION_ERROR' }, { status: 400 });
+    if (!(file instanceof File)) {
+      return NextResponse.json({ error: 'A PDF file is required', code: 'VALIDATION_ERROR' }, { status: 400 });
+    }
+
+    fileName = file.name;
+    if (!fileName.toLowerCase().endsWith('.pdf')) {
+      return NextResponse.json({ error: 'Only PDF files are supported', code: 'VALIDATION_ERROR' }, { status: 400 });
+    }
+
+    extractedText = await extractPdfText(await file.arrayBuffer());
   }
 
   logger.debug('Starting callings import request', {
     wardId,
     userId: session.user.id,
     commitRequested: commit,
-    fileName,
-    fileSizeBytes: file.size,
-    fileType: file.type
+    fileName
   });
-
-  const extractedText = await extractPdfText(await file.arrayBuffer());
   const extractedLines = extractedText
     .split(/\r?\n/)
     .map((line) => line.trim())
