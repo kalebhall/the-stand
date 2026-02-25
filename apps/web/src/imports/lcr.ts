@@ -335,18 +335,12 @@ export async function importFromLcr(credentials: LcrImportCredentials): Promise<
         );
       }
 
-      await page
-        .waitForURL(/lcr\.churchofjesuschrist\.org\/.+/, { waitUntil: 'domcontentloaded', timeout: 90_000 })
-        .catch(async () => {
-          const currentUrl = page.url();
-          if (/lcr\.churchofjesuschrist\.org\/.+/.test(currentUrl)) {
-            return;
-          }
-          throw new Error(`LCR sign-in did not reach LCR after authentication (current URL: ${currentUrl}).`);
-        });
+      // Don't require auth flow to land on a specific post-login URL.
+      // Once credentials/2FA are submitted, navigate directly to each import URL.
+      await page.waitForTimeout(1000);
     }
 
-    await page.goto(MEMBER_LIST_URL, { waitUntil: 'domcontentloaded', timeout: 60_000 });
+    await page.goto(MEMBER_LIST_URL, { waitUntil: 'domcontentloaded', timeout: 90_000 });
     const memberTable = await scrapeFirstTable(page);
 
     await page.goto(CALLING_LIST_URL, { waitUntil: 'domcontentloaded', timeout: 60_000 });
