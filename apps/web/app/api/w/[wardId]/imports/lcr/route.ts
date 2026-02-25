@@ -21,7 +21,7 @@ type ImportRunRow = QueryResultRow & { id: string };
 type MemberRow = QueryResultRow & { id: string; full_name: string; birthday: string | null };
 
 export async function POST(request: Request, context: { params: Promise<{ wardId: string }> }) {
-  const session = await auth();
+  const session = await auth().catch(() => null);
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, { status: 401 });
   }

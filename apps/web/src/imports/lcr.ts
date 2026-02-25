@@ -133,8 +133,23 @@ async function scrapeFirstTable(page: { waitForSelector: (selector: string, opti
 }
 
 export async function importFromLcr(credentials: LcrImportCredentials): Promise<LcrImportData> {
-  const { chromium } = await import('@playwright/test');
-  const browser = await chromium.launch({ headless: true });
+    const playwrightModule = (await import('playwright').catch(() => null)) ?? (await import('@playwright/test').catch(() => null));
+  if (!playwrightModule) {
+    throw new Error('LCR import is unavailable because Playwright is not installed in the server runtime.');
+  }
+
+  const { chromium } = playwrightModule;
+
+  let browser;
+  try {
+    browser = await chromium.launch({ headless: true });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'unknown launch error';
+    if (message.includes("Executable doesn't exist")) {
+      throw new Error('LCR import browser is not installed on the server. Run `npx playwright install chromium` on the deployment host.');
+    }
+    throw new Error(`Failed to start browser for LCR import: ${message}`);
+  }
 
   try {
     const page = await browser.newPage();
@@ -168,6 +183,6 @@ export async function importFromLcr(credentials: LcrImportCredentials): Promise<
       callingRawText: JSON.stringify(callingTable)
     };
   } finally {
-    await browser.close();
+    await browser?.close();
   }
 }
