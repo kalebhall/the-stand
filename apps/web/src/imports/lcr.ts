@@ -158,25 +158,39 @@ async function scrapeFirstTable(page: {
 }
 
 
-async function findFirstVisibleLocator(page: {
-  locator: (selector: string) => {
-    first: () => {
-      waitFor: (options: { state: 'visible'; timeout: number }) => Promise<void>;
-      fill: (value: string) => Promise<void>;
-      click: () => Promise<void>;
-      count: () => Promise<number>;
-      isVisible: (options?: { timeout?: number }) => Promise<boolean>;
-    };
-  };
-}, selectors: string[], timeoutMs: number): Promise<{ fill: (value: string) => Promise<void>; click: () => Promise<void>; count: () => Promise<number>; isVisible: (options?: { timeout?: number }) => Promise<boolean>; } | null> {
+type LocatorLike = {
+  waitFor: (options: { state: 'visible'; timeout: number }) => Promise<void>;
+  fill: (value: string) => Promise<void>;
+  click: () => Promise<void>;
+};
+
+type FrameLike = {
+  locator: (selector: string) => { first: () => LocatorLike };
+};
+
+type PageLike = FrameLike & {
+  frames: () => FrameLike[];
+  url: () => string;
+};
+
+function getPageAndFrames(page: PageLike): FrameLike[] {
+  const frames = page.frames();
+  return [page, ...frames];
+}
+
+async function findFirstVisibleLocator(page: PageLike, selectors: string[], timeoutMs: number): Promise<LocatorLike | null> {
   const deadline = Date.now() + timeoutMs;
 
   while (Date.now() < deadline) {
-    for (const selector of selectors) {
-      const locator = page.locator(selector).first();
-      const visible = await locator.waitFor({ state: 'visible', timeout: 250 }).then(() => true).catch(() => false);
-      if (visible) {
-        return locator;
+    const contexts = getPageAndFrames(page);
+
+    for (const context of contexts) {
+      for (const selector of selectors) {
+        const locator = context.locator(selector).first();
+        const visible = await locator.waitFor({ state: 'visible', timeout: 250 }).then(() => true).catch(() => false);
+        if (visible) {
+          return locator;
+        }
       }
     }
 
@@ -186,21 +200,27 @@ async function findFirstVisibleLocator(page: {
   return null;
 }
 
-async function clickFirstVisibleLocator(page: {
-  locator: (selector: string) => {
-    first: () => {
-      waitFor: (options: { state: 'visible'; timeout: number }) => Promise<void>;
-      click: () => Promise<void>;
-    };
-  };
-}, selectors: string[], timeoutMs: number): Promise<boolean> {
-  const button = await findFirstVisibleLocator(page as never, selectors, timeoutMs);
+async function clickFirstVisibleLocator(page: PageLike, selectors: string[], timeoutMs: number): Promise<boolean> {
+  const button = await findFirstVisibleLocator(page, selectors, timeoutMs);
   if (!button) {
     return false;
   }
 
   await button.click();
   return true;
+}
+
+async function clickAccountChooserIfPresent(page: PageLike): Promise<void> {
+  await clickFirstVisibleLocator(
+    page,
+    [
+      'button:has-text("Use another account")',
+      'a:has-text("Use another account")',
+      'button:has-text("Sign in with another account")',
+      'button:has-text("Use a different account")'
+    ],
+    5_000
+  );
 }
 
 export async function importFromLcr(credentials: LcrImportCredentials): Promise<LcrImportData> {
@@ -222,17 +242,47 @@ export async function importFromLcr(credentials: LcrImportCredentials): Promise<
     const page = await browser.newPage();
     await page.goto(MEMBER_LIST_URL, { waitUntil: 'domcontentloaded', timeout: 60_000 });
 
-    const usernameField = await findFirstVisibleLocator(
-      page,
-      ['input[type="email"]', 'input[autocomplete="username"]', 'input[name*="user" i]', 'input[name*="email" i]', 'input[id*="user" i]', 'input[id*="identifier" i]', 'input[type="text"]'],
-      30_000
-    );
+    const alreadySignedIn = /lcr\.churchofjesuschrist\.org/.test(page.url()) && !/id\.churchofjesuschrist\.org/.test(page.url());
 
-    if (!usernameField) {
-      throw new Error('LCR sign-in username field was not found.');
-    }
+    if (!alreadySignedIn) {
+      let usernameField = await findFirstVisibleLocator(
+        page,
+        [
+          'input[type="email"]',
+          'input[autocomplete="username"]',
+          'input[name*="user" i]',
+          'input[name*="email" i]',
+          'input[id*="user" i]',
+          'input[id*="identifier" i]',
+          'input[id*="okta-signin-username" i]',
+          'input[type="text"]'
+        ],
+        12_000
+      );
 
-    await usernameField.fill(credentials.username);
+      if (!usernameField) {
+        await clickAccountChooserIfPresent(page);
+        usernameField = await findFirstVisibleLocator(
+          page,
+          [
+            'input[type="email"]',
+            'input[autocomplete="username"]',
+            'input[name*="user" i]',
+            'input[name*="email" i]',
+            'input[id*="user" i]',
+            'input[id*="identifier" i]',
+            'input[id*="okta-signin-username" i]',
+            'input[type="text"]'
+          ],
+          20_000
+        );
+      }
+
+      if (!usernameField) {
+        throw new Error('LCR sign-in username field was not found. The sign-in page may have changed.');
+      }
+
+      await usernameField.fill(credentials.username);
 
     const advancedToPassword = await clickFirstVisibleLocator(
       page,
@@ -266,26 +316,27 @@ export async function importFromLcr(credentials: LcrImportCredentials): Promise<
       throw new Error('LCR sign-in submit button was not found after entering password.');
     }
 
-    const codeInput = await findFirstVisibleLocator(
-      page,
-      ['input[name*="code" i]', 'input[name*="otp" i]', 'input[autocomplete="one-time-code"]'],
-      10_000
-    );
-
-    if (codeInput) {
-      if (!credentials.twoFactorCode) {
-        throw new Error('Two-factor code is required for this account.');
-      }
-      await codeInput.fill(credentials.twoFactorCode);
-
-      await clickFirstVisibleLocator(
+      const codeInput = await findFirstVisibleLocator(
         page,
-        ['button[type="submit"]', 'input[type="submit"]', 'button:has-text("Verify")', 'button:has-text("Continue")'],
+        ['input[name*="code" i]', 'input[name*="otp" i]', 'input[autocomplete="one-time-code"]'],
         10_000
       );
-    }
 
-    await page.waitForURL(/lcr\.churchofjesuschrist\.org\/.+/, { timeout: 60_000 });
+      if (codeInput) {
+        if (!credentials.twoFactorCode) {
+          throw new Error('Two-factor code is required for this account.');
+        }
+        await codeInput.fill(credentials.twoFactorCode);
+
+        await clickFirstVisibleLocator(
+          page,
+          ['button[type="submit"]', 'input[type="submit"]', 'button:has-text("Verify")', 'button:has-text("Continue")'],
+          10_000
+        );
+      }
+
+      await page.waitForURL(/lcr\.churchofjesuschrist\.org\/.+/, { timeout: 60_000 });
+    }
 
     await page.goto(MEMBER_LIST_URL, { waitUntil: 'domcontentloaded', timeout: 60_000 });
     const memberTable = await scrapeFirstTable(page);
