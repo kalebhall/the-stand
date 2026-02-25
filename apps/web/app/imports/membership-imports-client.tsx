@@ -141,6 +141,7 @@ export function MembershipImportsClient({
   } | null>(null);
   const [lcrError, setLcrError] = useState<string | null>(null);
   const [isLcrSubmitting, setIsLcrSubmitting] = useState(false);
+  const [lcrJobState, setLcrJobState] = useState<'idle' | 'queued' | 'running'>('idle');
 
   const [noteError, setNoteError] = useState<string | null>(null);
   const [isSavingMemberNoteId, setIsSavingMemberNoteId] = useState<string | null>(null);
@@ -315,6 +316,70 @@ export function MembershipImportsClient({
     }
   }
 
+
+  async function waitForLcrJob(jobId: string): Promise<{
+    commit: boolean;
+    membership: { parsedCount: number; inserted: number; updated: number };
+    callings: {
+      parsedCount: number;
+      inserted: number;
+      replacedCount: number;
+      matchedMembers: number;
+      unmatchedMembers: number;
+    };
+  }> {
+    const timeoutAt = Date.now() + 4 * 60_000;
+
+    while (Date.now() < timeoutAt) {
+      const response = await fetch(`/api/w/${wardId}/imports/lcr/${jobId}`, {
+        method: 'GET',
+        headers: { accept: 'application/json' }
+      });
+
+      if (response.status === 404) {
+        throw new Error('Import job expired before completion. Please retry.');
+      }
+
+      if (!response.ok) {
+        throw new Error(await readErrorMessage(response, 'LCR import failed'));
+      }
+
+      const payload = (await response.json().catch(() => null)) as
+        | {
+            state: 'queued' | 'running';
+            result: null;
+          }
+        | {
+            state: 'succeeded';
+            result: {
+              commit: boolean;
+              membership: { parsedCount: number; inserted: number; updated: number };
+              callings: {
+                parsedCount: number;
+                inserted: number;
+                replacedCount: number;
+                matchedMembers: number;
+                unmatchedMembers: number;
+              };
+            };
+          }
+        | null;
+
+      if (!payload) {
+        throw new Error('LCR import failed: received an empty job status response.');
+      }
+
+      if (payload.state === 'succeeded' && payload.result) {
+        return payload.result;
+      }
+
+      setLcrJobState(payload.state);
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+    }
+
+    throw new Error('LCR import is still running after 4 minutes. Please check again or retry.');
+  }
+
   async function submitLcrImport(commit: boolean) {
     setIsLcrSubmitting(true);
     setLcrError(null);
@@ -338,24 +403,14 @@ export function MembershipImportsClient({
         return;
       }
 
-      const payload = (await response.json().catch(() => null)) as
-        | {
-            commit: boolean;
-            membership: { parsedCount: number; inserted: number; updated: number };
-            callings: {
-              parsedCount: number;
-              inserted: number;
-              replacedCount: number;
-              matchedMembers: number;
-              unmatchedMembers: number;
-            };
-          }
-        | null;
-
-      if (!payload || !('membership' in payload) || !('callings' in payload)) {
-        setLcrError('LCR import failed: received an unexpected response from the server.');
+      const startPayload = (await response.json().catch(() => null)) as { jobId?: string; state?: 'queued' | 'running' } | null;
+      if (!startPayload?.jobId) {
+        setLcrError('LCR import failed: server did not return a background job id.');
         return;
       }
+
+      setLcrJobState(startPayload.state ?? 'queued');
+      const payload = await waitForLcrJob(startPayload.jobId);
 
       setLcrSummary({
         commit: payload.commit,
@@ -379,6 +434,7 @@ export function MembershipImportsClient({
       setLcrError(`LCR import failed: ${message}`);
     } finally {
       setIsLcrSubmitting(false);
+      setLcrJobState('idle');
     }
   }
 
@@ -488,6 +544,7 @@ export function MembershipImportsClient({
             Commit from LCR
           </Button>
         </div>
+        {lcrJobState !== 'idle' ? <p className="text-sm text-muted-foreground">Background import job is {lcrJobState}…</p> : null}
         {lcrError ? <p className="text-sm text-red-600">{lcrError}</p> : null}
         {lcrSummary ? (
           <p className="text-sm text-muted-foreground">
