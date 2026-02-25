@@ -30,6 +30,13 @@ type StaleImportRow = QueryResultRow & {
   raw_text: string;
 };
 
+function looksLikePotentialCallingRow(line: string): boolean {
+  const normalized = line.replace(/\s+/g, ' ').trim();
+  if (!normalized) return false;
+
+  return /\b(male|female|m|f)\b/i.test(normalized) && /\b\d{1,2}\b/.test(normalized);
+}
+
 function makeCallingKey(memberName: string, birthday: string, callingName: string): string {
   return `${memberName.toLowerCase()}::${birthday.toLowerCase()}::${callingName.toLowerCase()}`;
 }
@@ -77,6 +84,8 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     .map((line) => line.trim())
     .filter(Boolean);
   const parsedCallings = parseCallingsPdfText(extractedText);
+  const potentialRowLines = extractedLines.filter((line) => looksLikePotentialCallingRow(line));
+  const nonRowSample = extractedLines.filter((line) => !looksLikePotentialCallingRow(line)).slice(0, 5);
 
   logger.debug('Callings PDF parsed', {
     wardId,
@@ -85,6 +94,9 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     extractedCharCount: extractedText.length,
     extractedLineCount: extractedLines.length,
     extractedPreview: extractedLines.slice(0, 3),
+    potentialRowLineCount: potentialRowLines.length,
+    potentialRowLinePreview: potentialRowLines.slice(0, 5),
+    nonRowLinePreview: nonRowSample,
     parsedCount: parsedCallings.length,
     parsedPreview: parsedCallings.slice(0, 3)
   });
@@ -111,7 +123,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     if (parsedCallings.length === 0) {
       await client.query(
         `INSERT INTO audit_log (ward_id, user_id, action, details)
-         VALUES ($1, $2, 'CALLINGS_IMPORT_ISSUE', jsonb_build_object('importRunId', $3::text, 'issue', $4::text, 'commitRequested', $5::boolean, 'fileName', $6::text, 'extractedCharCount', $7::int, 'extractedLineCount', $8::int))`,
+         VALUES ($1, $2, 'CALLINGS_IMPORT_ISSUE', jsonb_build_object('importRunId', $3::text, 'issue', $4::text, 'commitRequested', $5::boolean, 'fileName', $6::text, 'extractedCharCount', $7::int, 'extractedLineCount', $8::int, 'potentialRowLineCount', $9::int))`,
         [
           wardId,
           session.user.id,
@@ -120,7 +132,8 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
           commit,
           fileName,
           extractedText.length,
-          extractedLines.length
+          extractedLines.length,
+          potentialRowLines.length
         ]
       );
 
@@ -133,7 +146,10 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
         commitRequested: commit,
         fileName,
         extractedCharCount: extractedText.length,
-        extractedLineCount: extractedLines.length
+        extractedLineCount: extractedLines.length,
+        potentialRowLineCount: potentialRowLines.length,
+        potentialRowLinePreview: potentialRowLines.slice(0, 10),
+        nonRowLinePreview: nonRowSample
       });
 
       if (commit) {
@@ -321,8 +337,17 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
       await setDbContext(client, { userId: session.user.id, wardId });
       await client.query(
         `INSERT INTO audit_log (ward_id, user_id, action, details)
-         VALUES ($1, $2, 'CALLINGS_IMPORT_FAILED', jsonb_build_object('commitRequested', $3::boolean, 'parsedCount', $4::int, 'fileName', $5::text, 'error', $6::text))`,
-        [wardId, session.user.id, commit, parsedCallings.length, fileName, message]
+         VALUES ($1, $2, 'CALLINGS_IMPORT_FAILED', jsonb_build_object('commitRequested', $3::boolean, 'parsedCount', $4::int, 'fileName', $5::text, 'error', $6::text, 'extractedLineCount', $7::int, 'potentialRowLineCount', $8::int))`,
+        [
+          wardId,
+          session.user.id,
+          commit,
+          parsedCallings.length,
+          fileName,
+          message,
+          extractedLines.length,
+          potentialRowLines.length
+        ]
       );
       await client.query('COMMIT');
     } catch (auditError) {
