@@ -89,6 +89,23 @@ export function MembershipImportsClient({
   const [callingError, setCallingError] = useState<string | null>(null);
   const [isCallingSubmitting, setIsCallingSubmitting] = useState(false);
 
+  const [lcrUsername, setLcrUsername] = useState('');
+  const [lcrPassword, setLcrPassword] = useState('');
+  const [lcrTwoFactorCode, setLcrTwoFactorCode] = useState('');
+  const [lcrSummary, setLcrSummary] = useState<{
+    commit: boolean;
+    membershipParsedCount: number;
+    membershipInserted: number;
+    membershipUpdated: number;
+    callingsParsedCount: number;
+    callingsInserted: number;
+    callingsReplacedCount: number;
+    matchedMembers: number;
+    unmatchedMembers: number;
+  } | null>(null);
+  const [lcrError, setLcrError] = useState<string | null>(null);
+  const [isLcrSubmitting, setIsLcrSubmitting] = useState(false);
+
   const [noteError, setNoteError] = useState<string | null>(null);
   const [isSavingMemberNoteId, setIsSavingMemberNoteId] = useState<string | null>(null);
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
@@ -262,6 +279,67 @@ export function MembershipImportsClient({
     }
   }
 
+  async function submitLcrImport(commit: boolean) {
+    setIsLcrSubmitting(true);
+    setLcrError(null);
+
+    try {
+      const response = await fetch(`/api/w/${wardId}/imports/lcr`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json'
+        },
+        body: JSON.stringify({
+          username: lcrUsername,
+          password: lcrPassword,
+          twoFactorCode: lcrTwoFactorCode,
+          commit
+        })
+      });
+
+      const payload = (await response.json()) as
+        | {
+            commit: boolean;
+            membership: { parsedCount: number; inserted: number; updated: number };
+            callings: {
+              parsedCount: number;
+              inserted: number;
+              replacedCount: number;
+              matchedMembers: number;
+              unmatchedMembers: number;
+            };
+          }
+        | { error?: string };
+
+      if (!response.ok || !('membership' in payload) || !('callings' in payload)) {
+        setLcrError('error' in payload ? (payload.error ?? 'LCR import failed') : 'LCR import failed');
+        return;
+      }
+
+      setLcrSummary({
+        commit: payload.commit,
+        membershipParsedCount: payload.membership.parsedCount,
+        membershipInserted: payload.membership.inserted,
+        membershipUpdated: payload.membership.updated,
+        callingsParsedCount: payload.callings.parsedCount,
+        callingsInserted: payload.callings.inserted,
+        callingsReplacedCount: payload.callings.replacedCount,
+        matchedMembers: payload.callings.matchedMembers,
+        unmatchedMembers: payload.callings.unmatchedMembers
+      });
+
+      if (commit) {
+        setLcrPassword('');
+        setLcrTwoFactorCode('');
+        window.location.reload();
+      }
+    } catch {
+      setLcrError('LCR import failed');
+    } finally {
+      setIsLcrSubmitting(false);
+    }
+  }
+
   async function deleteMember(memberId: string) {
     if (!window.confirm('Delete this member and any notes/callings tied to them?')) {
       return;
@@ -320,6 +398,67 @@ export function MembershipImportsClient({
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
+      <section className="space-y-3 rounded-lg border bg-card p-4 lg:col-span-2">
+        <h2 className="text-lg font-semibold">LCR direct import (members + callings)</h2>
+        <p className="text-sm text-muted-foreground">
+          Enter your Church Account credentials to temporarily sign in and import data directly from LCR. Credentials and
+          two-factor codes are only used for this request and are not saved.
+        </p>
+        <div className="grid gap-3 md:grid-cols-3">
+          <label className="space-y-1 text-sm">
+            <span className="text-muted-foreground">Username</span>
+            <input
+              type="text"
+              autoComplete="username"
+              value={lcrUsername}
+              onChange={(event) => setLcrUsername(event.target.value)}
+              className="w-full rounded-md border bg-background px-3 py-2"
+              placeholder="your-account@example.com"
+            />
+          </label>
+          <label className="space-y-1 text-sm">
+            <span className="text-muted-foreground">Password</span>
+            <input
+              type="password"
+              autoComplete="current-password"
+              value={lcrPassword}
+              onChange={(event) => setLcrPassword(event.target.value)}
+              className="w-full rounded-md border bg-background px-3 py-2"
+              placeholder="••••••••"
+            />
+          </label>
+          <label className="space-y-1 text-sm">
+            <span className="text-muted-foreground">2-factor code (optional)</span>
+            <input
+              type="text"
+              value={lcrTwoFactorCode}
+              onChange={(event) => setLcrTwoFactorCode(event.target.value)}
+              className="w-full rounded-md border bg-background px-3 py-2"
+              placeholder="123456"
+            />
+          </label>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button type="button" variant="outline" onClick={() => submitLcrImport(false)} disabled={isLcrSubmitting}>
+            Dry run from LCR
+          </Button>
+          <Button type="button" onClick={() => submitLcrImport(true)} disabled={isLcrSubmitting}>
+            Commit from LCR
+          </Button>
+        </div>
+        {lcrError ? <p className="text-sm text-red-600">{lcrError}</p> : null}
+        {lcrSummary ? (
+          <p className="text-sm text-muted-foreground">
+            {lcrSummary.commit ? 'Commit complete.' : 'Preview complete.'} Members parsed {lcrSummary.membershipParsedCount}
+            {lcrSummary.commit ? ` (${lcrSummary.membershipInserted} inserted, ${lcrSummary.membershipUpdated} updated). ` : '. '}
+            Callings parsed {lcrSummary.callingsParsedCount}
+            {lcrSummary.commit
+              ? ` (${lcrSummary.callingsReplacedCount} replaced, ${lcrSummary.callingsInserted} inserted, ${lcrSummary.matchedMembers} matched, ${lcrSummary.unmatchedMembers} unmatched).`
+              : '.'}
+          </p>
+        ) : null}
+      </section>
+
       <section className="space-y-3 rounded-lg border bg-card p-4">
         <h2 className="text-lg font-semibold">Membership paste import</h2>
         <p className="text-sm text-muted-foreground">Paste member data with a header row (tab-delimited preferred: Name, Email, Phone, Age, Birthday, Gender). The header determines field mapping.</p>
