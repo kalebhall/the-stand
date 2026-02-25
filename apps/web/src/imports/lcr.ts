@@ -272,6 +272,81 @@ async function clickAccountChooserIfPresent(page: PageLike): Promise<void> {
   );
 }
 
+
+async function completeChurchAuthIfPrompted(page: PageLike, credentials: LcrImportCredentials): Promise<boolean> {
+  let acted = false;
+
+  await clickAccountChooserIfPresent(page);
+
+  const usernameField = await findFirstVisibleLocator(
+    page,
+    [
+      'input[type="email"]',
+      'input[autocomplete="username"]',
+      'input[name*="user" i]',
+      'input[name*="email" i]',
+      'input[id*="user" i]',
+      'input[id*="identifier" i]',
+      'input[id*="okta-signin-username" i]',
+      'input[type="text"]'
+    ],
+    5_000
+  );
+
+  if (usernameField) {
+    acted = true;
+    await usernameField.fill(credentials.username);
+    await clickFirstVisibleLocator(
+      page,
+      ['button[type="submit"]', 'input[type="submit"]', 'button:has-text("Next")', 'button:has-text("Continue")'],
+      10_000
+    );
+  }
+
+  const passwordField = await findFirstVisibleLocator(
+    page,
+    ['input[type="password"]', 'input[autocomplete="current-password"]', 'input[name*="pass" i]'],
+    10_000
+  );
+
+  if (passwordField) {
+    acted = true;
+    await passwordField.fill(credentials.password);
+    await clickFirstVisibleLocator(
+      page,
+      ['button[type="submit"]', 'input[type="submit"]', 'button:has-text("Sign in")', 'button:has-text("Continue")'],
+      10_000
+    );
+  }
+
+  const codeInput = await findFirstVisibleLocator(
+    page,
+    ['input[name*="code" i]', 'input[name*="otp" i]', 'input[autocomplete="one-time-code"]'],
+    5_000
+  );
+
+  if (codeInput) {
+    if (!credentials.twoFactorCode) {
+      throw new Error('Two-factor code is required for this account.');
+    }
+    acted = true;
+    await codeInput.fill(credentials.twoFactorCode);
+    await clickFirstVisibleLocator(
+      page,
+      ['button[type="submit"]', 'input[type="submit"]', 'button:has-text("Verify")', 'button:has-text("Continue")'],
+      10_000
+    );
+  }
+
+  await clickFirstVisibleLocator(
+    page,
+    ['button:has-text("Continue")', 'button:has-text("Accept")', 'button:has-text("Allow")', 'button:has-text("Done")'],
+    3_000
+  );
+
+  return acted;
+}
+
 export async function importFromLcr(credentials: LcrImportCredentials): Promise<LcrImportData> {
   const playwrightModule = (await import('playwright').catch(() => null)) ?? (await import('@playwright/test').catch(() => null));
   if (!playwrightModule) {
@@ -294,102 +369,26 @@ export async function importFromLcr(credentials: LcrImportCredentials): Promise<
     const alreadySignedIn = /lcr\.churchofjesuschrist\.org/.test(page.url()) && !/id\.churchofjesuschrist\.org/.test(page.url());
 
     if (!alreadySignedIn) {
-      let usernameField = await findFirstVisibleLocator(
-        page,
-        [
-          'input[type="email"]',
-          'input[autocomplete="username"]',
-          'input[name*="user" i]',
-          'input[name*="email" i]',
-          'input[id*="user" i]',
-          'input[id*="identifier" i]',
-          'input[id*="okta-signin-username" i]',
-          'input[type="text"]'
-        ],
-        12_000
-      );
-
-      if (!usernameField) {
-        await clickAccountChooserIfPresent(page);
-        usernameField = await findFirstVisibleLocator(
-          page,
-          [
-            'input[type="email"]',
-            'input[autocomplete="username"]',
-            'input[name*="user" i]',
-            'input[name*="email" i]',
-            'input[id*="user" i]',
-            'input[id*="identifier" i]',
-            'input[id*="okta-signin-username" i]',
-            'input[type="text"]'
-          ],
-          20_000
-        );
+      const acted = await completeChurchAuthIfPrompted(page, credentials);
+      if (!acted) {
+        throw new Error('LCR sign-in fields were not found. The sign-in page may have changed.');
       }
-
-      if (!usernameField) {
-        throw new Error('LCR sign-in username field was not found. The sign-in page may have changed.');
-      }
-
-      await usernameField.fill(credentials.username);
-
-    const advancedToPassword = await clickFirstVisibleLocator(
-      page,
-      ['button[type="submit"]', 'input[type="submit"]', 'button:has-text("Next")', 'button:has-text("Continue")'],
-      15_000
-    );
-
-    if (!advancedToPassword) {
-      throw new Error('LCR sign-in submit button was not found after entering username.');
-    }
-
-    const passwordField = await findFirstVisibleLocator(
-      page,
-      ['input[type="password"]', 'input[autocomplete="current-password"]', 'input[name*="pass" i]'],
-      30_000
-    );
-
-    if (!passwordField) {
-      throw new Error('LCR sign-in password field did not appear after submitting username.');
-    }
-
-    await passwordField.fill(credentials.password);
-
-    const submittedPassword = await clickFirstVisibleLocator(
-      page,
-      ['button[type="submit"]', 'input[type="submit"]', 'button:has-text("Sign in")', 'button:has-text("Continue")'],
-      15_000
-    );
-
-    if (!submittedPassword) {
-      throw new Error('LCR sign-in submit button was not found after entering password.');
-    }
-
-      const codeInput = await findFirstVisibleLocator(
-        page,
-        ['input[name*="code" i]', 'input[name*="otp" i]', 'input[autocomplete="one-time-code"]'],
-        10_000
-      );
-
-      if (codeInput) {
-        if (!credentials.twoFactorCode) {
-          throw new Error('Two-factor code is required for this account.');
-        }
-        await codeInput.fill(credentials.twoFactorCode);
-
-        await clickFirstVisibleLocator(
-          page,
-          ['button[type="submit"]', 'input[type="submit"]', 'button:has-text("Verify")', 'button:has-text("Continue")'],
-          10_000
-        );
-      }
-
-      // Don't require auth flow to land on a specific post-login URL.
-      // Once credentials/2FA are submitted, navigate directly to each import URL.
       await page.waitForTimeout(1000);
     }
 
     await page.goto(MEMBER_LIST_URL, { waitUntil: 'domcontentloaded', timeout: 90_000 });
+
+    if (/id\.churchofjesuschrist\.org/.test(page.url())) {
+      await completeChurchAuthIfPrompted(page, credentials);
+      await page.waitForTimeout(1000);
+      await page.goto(MEMBER_LIST_URL, { waitUntil: 'domcontentloaded', timeout: 90_000 });
+    }
+
+    if (/id\.churchofjesuschrist\.org/.test(page.url())) {
+      const currentTitle = await page.title().catch(() => 'unknown title');
+      throw new Error(`LCR authentication is incomplete; still on sign-in domain after retry (url: ${page.url()}, title: ${currentTitle}).`);
+    }
+
     const memberTable = await scrapeFirstTable(page, 'members');
 
     await page.goto(CALLING_LIST_URL, { waitUntil: 'domcontentloaded', timeout: 60_000 });
