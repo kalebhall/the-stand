@@ -1,17 +1,109 @@
 @import "tailwindcss";
 
 :root {
+  /* Church-inspired color scheme */
+  /* Clean white background matching churchofjesuschrist.org */
   --background: #ffffff;
-  --foreground: #0f172a;
-  --muted-foreground: #475569;
+  --foreground: #1e293b; /* Dark slate for readability */
+  
+  /* Church blue accent - deep navy blue */
+  --primary: #003057;
+  --primary-foreground: #ffffff;
+  
+  /* Warm gold accent for secondary elements */
+  --secondary: #d4af37;
+  --secondary-foreground: #1e293b;
+  
+  /* Muted colors for less prominent content */
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  
+  /* Card backgrounds */
+  --card: #ffffff;
+  --card-foreground: #1e293b;
+  
+  /* Borders - subtle gray */
   --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #003057;
+  
+  /* Destructive actions */
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  
+  /* Accent for highlights */
+  --accent: #f8fafc;
+  --accent-foreground: #1e293b;
+  
+  /* Popover backgrounds */
+  --popover: #ffffff;
+  --popover-foreground: #1e293b;
+  
+  /* Radius for rounded corners */
+  --radius: 0.5rem;
+}
+
+/* Dark mode support (optional) */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0f172a;
+    --foreground: #f1f5f9;
+    
+    --primary: #1e5a8e;
+    --primary-foreground: #ffffff;
+    
+    --secondary: #b8941f;
+    --secondary-foreground: #f1f5f9;
+    
+    --muted: #1e293b;
+    --muted-foreground: #94a3b8;
+    
+    --card: #1e293b;
+    --card-foreground: #f1f5f9;
+    
+    --border: #334155;
+    --input: #334155;
+    --ring: #1e5a8e;
+    
+    --destructive: #ef4444;
+    --destructive-foreground: #ffffff;
+    
+    --accent: #1e293b;
+    --accent-foreground: #f1f5f9;
+    
+    --popover: #1e293b;
+    --popover-foreground: #f1f5f9;
+  }
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  
+  --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
+  
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  
   --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
 }
 
 * {
@@ -20,6 +112,7 @@
 
 body {
   @apply bg-background text-foreground;
+  font-feature-settings: "rlig" 1, "calt" 1;
 }
 
 @media print {
