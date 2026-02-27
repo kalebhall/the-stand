@@ -40,6 +40,7 @@ function sanitizePhone(value: string): string | null {
   const normalized = value.replace(/\s+/g, ' ').trim();
   // Remove common non-phone patterns
   if (normalized.length === 0) return null;
+  if (normalized === ',') return null; // Reject lone commas
   if (/^\d+$/.test(normalized) && normalized.length < 7) return null; // Too short to be phone
   return normalized.length ? normalized : null;
 }
@@ -152,12 +153,19 @@ function parseAge(value: string): number | null {
   return parsed;
 }
 
-function parseGender(value: string): string | null {
+function parseGenderPdf(value: string): string | null {
   const trimmed = value.trim().toUpperCase();
   if (!trimmed) return null;
-  // Normalize to single letter
+  // Normalize to single letter for PDF format
   if (trimmed === 'MALE' || trimmed === 'M') return 'M';
   if (trimmed === 'FEMALE' || trimmed === 'F') return 'F';
+  return trimmed;
+}
+
+function parseGenderLegacy(value: string): string | null {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  // Keep as-is for legacy CSV/TSV format to preserve "Male"/"Female"
   return trimmed;
 }
 
@@ -190,7 +198,7 @@ function parseMemberFromMapping(parts: string[], mapping: FieldMapping[]): Parse
         birthday = normalizeBirthday(value);
         break;
       case 'gender':
-        gender = parseGender(value);
+        gender = parseGenderLegacy(value);
         break;
       case 'unknown':
         // Try to infer unknown columns by content
@@ -237,7 +245,7 @@ function parsePdfMemberLine(line: string): ParsedMember | null {
   if (!/^(m|f|male|female)$/i.test(genderRaw)) return null;
   if (!/^\d+$/.test(ageRaw)) return null;
 
-  const gender = parseGender(genderRaw);
+  const gender = parseGenderPdf(genderRaw);
   const age = parseAge(ageRaw);
   
   // Next field should be birthday
