@@ -60,6 +60,14 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     }
 
     extractedText = await extractPdfText(await file.arrayBuffer());
+    
+    // DEBUG: Log first 500 chars of extracted text
+    logger.debug('PDF extraction result', {
+      fileName,
+      extractedLength: extractedText.length,
+      preview: extractedText.substring(0, 500),
+      firstThreeLines: extractedText.split('\n').slice(0, 3)
+    });
   } else {
     return NextResponse.json({ error: 'Unsupported content type', code: 'VALIDATION_ERROR' }, { status: 400 });
   }
@@ -100,12 +108,12 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     if (!importRunId) {
       throw new Error('Failed to create import run');
     }
-
+    
     if (parsedMembers.length === 0) {
       await client.query(
         `INSERT INTO audit_log (ward_id, user_id, action, details)
-         VALUES ($1, $2, 'MEMBERSHIP_IMPORT_ISSUE', jsonb_build_object('importRunId', $3::text, 'issue', $4::text, 'commitRequested', $5::boolean, 'fileName', $6::text))`,
-        [wardId, session.user.id, importRunId, 'PARSE_ZERO_ROWS', commit, fileName]
+         VALUES ($1, $2, 'MEMBERSHIP_IMPORT_ISSUE', jsonb_build_object('importRunId', $3::text, 'issue', $4::text, 'commitRequested', $5::boolean, 'fileName', $6::text, 'extractedTextPreview', $7::text))`,
+        [wardId, session.user.id, importRunId, 'PARSE_ZERO_ROWS', commit, fileName, extractedText.substring(0, 1000)]
       );
 
       await client.query('COMMIT');
@@ -115,7 +123,8 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
         userId: session.user.id,
         importRunId,
         commitRequested: commit,
-        fileName
+        fileName,
+        extractedTextPreview: extractedText.substring(0, 500)
       });
 
       if (commit) {
@@ -124,7 +133,11 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
             error: 'No member rows could be parsed from the uploaded file',
             code: 'VALIDATION_ERROR',
             parsedCount: 0,
-            importRunId
+            importRunId,
+            debug: {
+              extractedLength: extractedText.length,
+              preview: extractedText.substring(0, 200)
+            }
           },
           { status: 422 }
         );
@@ -137,7 +150,11 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
         inserted: 0,
         updated: 0,
         issues: ['PARSE_ZERO_ROWS'],
-        preview: []
+        preview: [],
+        debug: {
+          extractedLength: extractedText.length,
+          preview: extractedText.substring(0, 200)
+        }
       });
     }
 
