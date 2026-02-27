@@ -43,34 +43,57 @@
   --radius: 0.5rem;
 }
 
-/* Dark mode support (optional) */
+/* Dark mode support - via class injected by next-themes */
+.dark {
+  --background: #0f172a;
+  --foreground: #f1f5f9;
+  
+  --primary: #1e5a8e;
+  --primary-foreground: #ffffff;
+  
+  --secondary: #b8941f;
+  --secondary-foreground: #f1f5f9;
+  
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
+  
+  --card: #1e293b;
+  --card-foreground: #f1f5f9;
+  
+  --border: #334155;
+  --input: #334155;
+  --ring: #1e5a8e;
+  
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  
+  --accent: #1e293b;
+  --accent-foreground: #f1f5f9;
+  
+  --popover: #1e293b;
+  --popover-foreground: #f1f5f9;
+}
+
+/* Fallback for system preference when class is not present yet */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not(.light) {
     --background: #0f172a;
     --foreground: #f1f5f9;
-    
     --primary: #1e5a8e;
     --primary-foreground: #ffffff;
-    
     --secondary: #b8941f;
     --secondary-foreground: #f1f5f9;
-    
     --muted: #1e293b;
     --muted-foreground: #94a3b8;
-    
     --card: #1e293b;
     --card-foreground: #f1f5f9;
-    
     --border: #334155;
     --input: #334155;
     --ring: #1e5a8e;
-    
     --destructive: #ef4444;
     --destructive-foreground: #ffffff;
-    
     --accent: #1e293b;
     --accent-foreground: #f1f5f9;
-    
     --popover: #1e293b;
     --popover-foreground: #f1f5f9;
   }
@@ -130,4 +153,16 @@ body {
     max-width: none;
     padding: 0;
   }
+}
+
+/* Fix header button text colors in dark mode */
+.dark header nav a, 
+.dark header div a {
+  color: var(--foreground);
+}
+
+.dark header nav a:hover, 
+.dark header div a:hover {
+  background-color: var(--accent);
+  color: var(--accent-foreground);
 }
