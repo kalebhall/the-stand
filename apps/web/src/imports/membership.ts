@@ -86,14 +86,15 @@ function normalizeBirthday(value: string): string | null {
 
 type FieldMapping = 'name' | 'email' | 'phone' | 'age' | 'birthday' | 'gender' | 'unknown';
 
-type Delimiter = 'tab' | 'pipe' | 'comma' | 'multispace';
+type Delimiter = 'tab' | 'pipe' | 'comma' | 'multispace' | 'single_space';
 
 function detectDelimiter(line: string): Delimiter {
   if (line.includes('\t')) return 'tab';
   if (/\s\|\s|\|/.test(line)) return 'pipe';
   // Check for multiple spaces (common in PDF extraction)
   if (/\s{2,}/.test(line)) return 'multispace';
-  return 'comma';
+  if (line.includes(',')) return 'comma';
+  return 'single_space';
 }
 
 function splitLine(line: string, delimiter: Delimiter): string[] {
@@ -106,6 +107,8 @@ function splitLine(line: string, delimiter: Delimiter): string[] {
       return line.split(/\s{2,}/);
     case 'comma':
       return line.split(/\s*,\s*/);
+    case 'single_space':
+      return line.split(/\s+/);
   }
 }
 
@@ -231,24 +234,34 @@ function parsePdfMemberLine(line: string): ParsedMember | null {
   if (/^for\s+church\s+use\s+only/i.test(normalized)) return null;
   if (/^\d+\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\s+\d{4}$/i.test(normalized)) return null;
 
-  // Use multispace delimiter for PDF text
-  const parts = splitLine(line, 'multispace').map((p) => p.trim()).filter(Boolean);
+  // Use single space delimiter for PDF text since pdf-parse just outputs plain text with single spaces
+  const parts = splitLine(line, 'single_space').map((p) => p.trim()).filter(Boolean);
   
   if (parts.length < 4) return null;
 
-  // LCR format: Name, Gender, Age, Birth Date, [Phone], [Email]
-  const [name, genderRaw, ageRaw, ...rest] = parts;
-  
-  if (!name || !genderRaw || !ageRaw) return null;
-  
-  // Validate this looks like a member row
-  if (!/^(m|f|male|female)$/i.test(genderRaw)) return null;
-  if (!/^\d+$/.test(ageRaw)) return null;
+  // Since it's split by single spaces, the name could be multiple tokens (e.g. "Acosta, Frank")
+  // Find where the gender and age are
+  let genderIdx = -1;
+  for (let i = 1; i < parts.length - 1; i++) {
+    const isGender = /^(m|f|male|female)$/i.test(parts[i]!);
+    const isAge = /^\d+$/.test(parts[i+1]!);
+    if (isGender && isAge) {
+      genderIdx = i;
+      break;
+    }
+  }
+
+  if (genderIdx === -1) return null;
+
+  const name = parts.slice(0, genderIdx).join(' ');
+  const genderRaw = parts[genderIdx]!;
+  const ageRaw = parts[genderIdx + 1]!;
 
   const gender = parseGenderPdf(genderRaw);
   const age = parseAge(ageRaw);
   
   // Next field should be birthday
+  const rest = parts.slice(genderIdx + 2);
   if (rest.length === 0) return null;
   
   // Birthday can be 1-3 tokens: "26 May 1994" or "26 May" or "May 26"
@@ -339,8 +352,9 @@ export function parseMembershipText(rawText: string): ParsedMember[] {
 
   const deduped = new Map<string, ParsedMember>();
 
-  // Check if this looks like PDF text (has multi-space separators)
-  const isPdfFormat = lines.some((line) => /\s{2,}/.test(line) && /\b(male|female|m|f)\b/i.test(line));
+  // Check if this looks like PDF text (has the M/F pattern with age numbers after it)
+  // pdf-parse might just use single spaces, so we check for the pattern "Name M 65" or "Name F 45"
+  const isPdfFormat = lines.some((line) => /\b(m|f|male|female)\s+\d{1,3}\b/i.test(line) || /\s{2,}/.test(line));
 
   if (isPdfFormat) {
     // Use PDF parser
@@ -361,7 +375,7 @@ export function parseMembershipText(rawText: string): ParsedMember[] {
         continue;
       }
 
-      deduped.set(parsed.fullName.toLowerCase(), parsed);
+        deduped.set(parsed.fullName.toLowerCase(), parsed);
     }
   } else {
     // Use legacy CSV/TSV parser
