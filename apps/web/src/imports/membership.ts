@@ -38,6 +38,9 @@ export function toPlainText(input: string): string {
 
 function sanitizePhone(value: string): string | null {
   const normalized = value.replace(/\s+/g, ' ').trim();
+  // Remove common non-phone patterns
+  if (normalized.length === 0) return null;
+  if (/^\d+$/.test(normalized) && normalized.length < 7) return null; // Too short to be phone
   return normalized.length ? normalized : null;
 }
 
@@ -50,13 +53,45 @@ function sanitizeEmail(value: string): string | null {
   return normalized.includes('@') ? normalized : null;
 }
 
+function normalizeWhitespace(input: string): string {
+  return input.replace(/\s+/g, ' ').trim();
+}
+
+function normalizeBirthday(value: string): string | null {
+  const raw = normalizeWhitespace(value);
+  if (!raw) return null;
+
+  // Matches: "26 May 1994" or "26 Mar 1994" (day month year) - LCR format
+  const dmy = raw.match(/^(\d{1,2})\s+([A-Za-z]{3,})\s*(\d{4})?$/);
+  if (dmy) {
+    const day = String(Number(dmy[1])); // strips leading zero
+    const month = dmy[2];
+    const year = dmy[3];
+    // Store as "May 26 1994" or just "May 26" if no year
+    return year ? `${month} ${day} ${year}` : `${month} ${day}`;
+  }
+
+  // Already in "May 26" or "May 26 1994" style → keep it
+  const mdy = raw.match(/^([A-Za-z]{3,})\s+(\d{1,2})(?:\s+(\d{4}))?$/);
+  if (mdy) {
+    const month = mdy[1];
+    const day = String(Number(mdy[2]));
+    const year = mdy[3];
+    return year ? `${month} ${day} ${year}` : `${month} ${day}`;
+  }
+
+  return raw;
+}
+
 type FieldMapping = 'name' | 'email' | 'phone' | 'age' | 'birthday' | 'gender' | 'unknown';
 
-type Delimiter = 'tab' | 'pipe' | 'comma';
+type Delimiter = 'tab' | 'pipe' | 'comma' | 'multispace';
 
 function detectDelimiter(line: string): Delimiter {
   if (line.includes('\t')) return 'tab';
   if (/\s\|\s|\|/.test(line)) return 'pipe';
+  // Check for multiple spaces (common in PDF extraction)
+  if (/\s{2,}/.test(line)) return 'multispace';
   return 'comma';
 }
 
@@ -66,6 +101,8 @@ function splitLine(line: string, delimiter: Delimiter): string[] {
       return line.split('\t');
     case 'pipe':
       return line.split(/\s*\|\s*/);
+    case 'multispace':
+      return line.split(/\s{2,}/);
     case 'comma':
       return line.split(/\s*,\s*/);
   }
@@ -115,15 +152,12 @@ function parseAge(value: string): number | null {
   return parsed;
 }
 
-function parseBirthday(value: string): string | null {
-  const trimmed = value.trim();
-  if (!trimmed) return null;
-  return trimmed;
-}
-
 function parseGender(value: string): string | null {
-  const trimmed = value.trim();
+  const trimmed = value.trim().toUpperCase();
   if (!trimmed) return null;
+  // Normalize to single letter
+  if (trimmed === 'MALE' || trimmed === 'M') return 'M';
+  if (trimmed === 'FEMALE' || trimmed === 'F') return 'F';
   return trimmed;
 }
 
@@ -153,7 +187,7 @@ function parseMemberFromMapping(parts: string[], mapping: FieldMapping[]): Parse
         age = parseAge(value);
         break;
       case 'birthday':
-        birthday = parseBirthday(value);
+        birthday = normalizeBirthday(value);
         break;
       case 'gender':
         gender = parseGender(value);
@@ -162,7 +196,9 @@ function parseMemberFromMapping(parts: string[], mapping: FieldMapping[]): Parse
         // Try to infer unknown columns by content
         if (!email && value.includes('@')) {
           email = sanitizeEmail(value);
-        } else if (!phone && !fullName) {
+        } else if (!phone && /\d{3}[\s\-.]?\d{3}[\s\-.]?\d{4}/.test(value)) {
+          phone = sanitizePhone(value);
+        } else if (!fullName) {
           fullName = value;
         }
         break;
@@ -172,6 +208,93 @@ function parseMemberFromMapping(parts: string[], mapping: FieldMapping[]): Parse
   if (!fullName) return null;
 
   return { fullName, email, phone, age, birthday, gender };
+}
+
+// Parse LCR PDF format: Name Gender Age Birth Date Phone Number E-mail
+function parsePdfMemberLine(line: string): ParsedMember | null {
+  const normalized = normalizeWhitespace(line);
+  
+  // Skip header and footer lines
+  if (/^name\s+gender\s+age\s+birth\s+date/i.test(normalized)) return null;
+  if (/^member\s+list/i.test(normalized)) return null;
+  if (/^individuals$/i.test(normalized)) return null;
+  if (/^freedom\s+park\s+ward/i.test(normalized)) return null;
+  if (/^las\s+vegas\s+nevada/i.test(normalized)) return null;
+  if (/^for\s+church\s+use\s+only/i.test(normalized)) return null;
+  if (/^\d+\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\s+\d{4}$/i.test(normalized)) return null;
+
+  // Use multispace delimiter for PDF text
+  const parts = splitLine(line, 'multispace').map((p) => p.trim()).filter(Boolean);
+  
+  if (parts.length < 4) return null;
+
+  // LCR format: Name, Gender, Age, Birth Date, [Phone], [Email]
+  const [name, genderRaw, ageRaw, ...rest] = parts;
+  
+  if (!name || !genderRaw || !ageRaw) return null;
+  
+  // Validate this looks like a member row
+  if (!/^(m|f|male|female)$/i.test(genderRaw)) return null;
+  if (!/^\d+$/.test(ageRaw)) return null;
+
+  const gender = parseGender(genderRaw);
+  const age = parseAge(ageRaw);
+  
+  // Next field should be birthday
+  if (rest.length === 0) return null;
+  
+  // Birthday can be 1-3 tokens: "26 May 1994" or "26 May" or "May 26"
+  let birthday: string | null = null;
+  let remainingIdx = 0;
+  
+  // Try parsing as "26 May 1994" (3 tokens)
+  if (rest.length >= 3 && /^\d{1,2}$/.test(rest[0] ?? '') && /^[A-Za-z]{3,}$/.test(rest[1] ?? '')) {
+    const day = rest[0];
+    const month = rest[1];
+    const yearOrNext = rest[2];
+    
+    if (/^\d{4}$/.test(yearOrNext ?? '')) {
+      birthday = normalizeBirthday(`${day} ${month} ${yearOrNext}`);
+      remainingIdx = 3;
+    } else {
+      birthday = normalizeBirthday(`${day} ${month}`);
+      remainingIdx = 2;
+    }
+  }
+  // Try "26 May" (2 tokens)
+  else if (rest.length >= 2 && /^\d{1,2}$/.test(rest[0] ?? '') && /^[A-Za-z]{3,}$/.test(rest[1] ?? '')) {
+    birthday = normalizeBirthday(`${rest[0]} ${rest[1]}`);
+    remainingIdx = 2;
+  }
+  // Try "May 26" format
+  else if (rest.length >= 2 && /^[A-Za-z]{3,}$/.test(rest[0] ?? '') && /^\d{1,2}$/.test(rest[1] ?? '')) {
+    birthday = normalizeBirthday(`${rest[0]} ${rest[1]}`);
+    remainingIdx = 2;
+  }
+  
+  if (!birthday) return null;
+  
+  // Remaining tokens are phone and/or email
+  const remaining = rest.slice(remainingIdx);
+  let phone: string | null = null;
+  let email: string | null = null;
+  
+  for (const token of remaining) {
+    if (!email && token.includes('@')) {
+      email = sanitizeEmail(token);
+    } else if (!phone && /\d/.test(token)) {
+      phone = sanitizePhone(token);
+    }
+  }
+  
+  return {
+    fullName: name,
+    gender,
+    age,
+    birthday,
+    phone,
+    email
+  };
 }
 
 function parseMemberLegacy(parts: string[]): ParsedMember | null {
@@ -208,46 +331,72 @@ export function parseMembershipText(rawText: string): ParsedMember[] {
 
   const deduped = new Map<string, ParsedMember>();
 
-  // Check if the first line is a header row
-  const delimiter = detectDelimiter(lines[0]);
+  // Check if this looks like PDF text (has multi-space separators)
+  const isPdfFormat = lines.some((line) => /\s{2,}/.test(line) && /\b(male|female|m|f)\b/i.test(line));
 
-  const firstLineParts = splitLine(lines[0], delimiter)
-    .map((part) => part.trim())
-    .filter((part) => part.length > 0);
+  if (isPdfFormat) {
+    // Use PDF parser
+    for (const line of lines) {
+      const parsed = parsePdfMemberLine(line);
+      if (!parsed) continue;
 
-  const headerMapping = detectHeaderMapping(firstLineParts);
-  const startIndex = headerMapping ? 1 : 0;
+      const existing = deduped.get(parsed.fullName.toLowerCase());
+      if (existing) {
+        deduped.set(parsed.fullName.toLowerCase(), {
+          fullName: parsed.fullName,
+          email: parsed.email ?? existing.email,
+          phone: parsed.phone ?? existing.phone,
+          age: parsed.age ?? existing.age,
+          birthday: parsed.birthday ?? existing.birthday,
+          gender: parsed.gender ?? existing.gender
+        });
+        continue;
+      }
 
-  for (let i = startIndex; i < lines.length; i++) {
-    // When using header mapping, preserve empty fields to maintain column alignment
-    const parts = headerMapping
-      ? splitLine(lines[i], delimiter).map((part) => part.trim())
-      : splitLine(lines[i], detectDelimiter(lines[i]))
-          .map((part) => part.trim())
-          .filter((part) => part.length > 0);
-
-    if (!parts.length || (headerMapping && parts.every((p) => !p))) {
-      continue;
+      deduped.set(parsed.fullName.toLowerCase(), parsed);
     }
+  } else {
+    // Use legacy CSV/TSV parser
+    const delimiter = detectDelimiter(lines[0]);
 
-    const parsed = headerMapping ? parseMemberFromMapping(parts, headerMapping) : parseMemberLegacy(parts);
+    const firstLineParts = splitLine(lines[0], delimiter)
+      .map((part) => part.trim())
+      .filter((part) => part.length > 0);
 
-    if (!parsed) continue;
+    const headerMapping = detectHeaderMapping(firstLineParts);
+    const startIndex = headerMapping ? 1 : 0;
 
-    const existing = deduped.get(parsed.fullName.toLowerCase());
-    if (existing) {
-      deduped.set(parsed.fullName.toLowerCase(), {
-        fullName: parsed.fullName,
-        email: parsed.email ?? existing.email,
-        phone: parsed.phone ?? existing.phone,
-        age: parsed.age ?? existing.age,
-        birthday: parsed.birthday ?? existing.birthday,
-        gender: parsed.gender ?? existing.gender
-      });
-      continue;
+    for (let i = startIndex; i < lines.length; i++) {
+      // When using header mapping, preserve empty fields to maintain column alignment
+      const parts = headerMapping
+        ? splitLine(lines[i], delimiter).map((part) => part.trim())
+        : splitLine(lines[i], detectDelimiter(lines[i]))
+            .map((part) => part.trim())
+            .filter((part) => part.length > 0);
+
+      if (!parts.length || (headerMapping && parts.every((p) => !p))) {
+        continue;
+      }
+
+      const parsed = headerMapping ? parseMemberFromMapping(parts, headerMapping) : parseMemberLegacy(parts);
+
+      if (!parsed) continue;
+
+      const existing = deduped.get(parsed.fullName.toLowerCase());
+      if (existing) {
+        deduped.set(parsed.fullName.toLowerCase(), {
+          fullName: parsed.fullName,
+          email: parsed.email ?? existing.email,
+          phone: parsed.phone ?? existing.phone,
+          age: parsed.age ?? existing.age,
+          birthday: parsed.birthday ?? existing.birthday,
+          gender: parsed.gender ?? existing.gender
+        });
+        continue;
+      }
+
+      deduped.set(parsed.fullName.toLowerCase(), parsed);
     }
-
-    deduped.set(parsed.fullName.toLowerCase(), parsed);
   }
 
   return Array.from(deduped.values());
