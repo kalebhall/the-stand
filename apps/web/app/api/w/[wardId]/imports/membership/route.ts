@@ -5,6 +5,7 @@ import { canViewCallings } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 import { parseMembershipText, toPlainText } from '@/src/imports/membership';
+import { extractPdfText } from '@/src/imports/pdf';
 import { createLogger } from '@/src/lib/logger';
 
 type MembershipImportBody = {
@@ -25,12 +26,54 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
   }
 
-  const body = (await request.json().catch(() => ({}))) as MembershipImportBody;
-  const rawText = typeof body.rawText === 'string' ? body.rawText : '';
-  const commit = body.commit === true;
+  const contentType = request.headers.get('content-type') ?? '';
+  let extractedText: string;
+  let fileName: string;
+  let commit: boolean;
 
-  const plainText = toPlainText(rawText);
-  const parsedMembers = parseMembershipText(plainText);
+  if (contentType.includes('application/json')) {
+    // Plain text paste (legacy format)
+    const body = (await request.json().catch(() => ({}))) as MembershipImportBody;
+    const rawText = typeof body.rawText === 'string' ? body.rawText : '';
+    commit = body.commit === true;
+    extractedText = toPlainText(rawText);
+    fileName = 'paste';
+  } else {
+    // PDF upload
+    const formData = await request.formData().catch(() => null);
+    const commitValue = formData?.get('commit');
+    commit = commitValue === 'true';
+    const file = formData?.get('file');
+
+    if (!(file instanceof File)) {
+      return NextResponse.json({ error: 'A PDF file is required', code: 'VALIDATION_ERROR' }, { status: 400 });
+    }
+
+    fileName = file.name;
+    if (!fileName.toLowerCase().endsWith('.pdf')) {
+      return NextResponse.json({ error: 'Only PDF files are supported', code: 'VALIDATION_ERROR' }, { status: 400 });
+    }
+
+    extractedText = await extractPdfText(await file.arrayBuffer());
+  }
+
+  logger.debug('Starting membership import request', {
+    wardId,
+    userId: session.user.id,
+    commitRequested: commit,
+    fileName
+  });
+
+  const parsedMembers = parseMembershipText(extractedText);
+
+  logger.debug('Membership data parsed', {
+    wardId,
+    userId: session.user.id,
+    commitRequested: commit,
+    extractedCharCount: extractedText.length,
+    parsedCount: parsedMembers.length,
+    parsedPreview: parsedMembers.slice(0, 3)
+  });
 
   const client = await pool.connect();
 
@@ -42,8 +85,54 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
       `INSERT INTO import_run (ward_id, import_type, raw_text, parsed_count, committed, created_by_user_id)
        VALUES ($1, 'MEMBERSHIP', $2, $3, $4, $5)
        RETURNING id`,
-      [wardId, plainText, parsedMembers.length, commit, session.user.id]
+      [wardId, extractedText, parsedMembers.length, commit, session.user.id]
     );
+
+    const importRunId = importRunResult.rows[0]?.id as string | undefined;
+
+    if (!importRunId) {
+      throw new Error('Failed to create import run');
+    }
+
+    if (parsedMembers.length === 0) {
+      await client.query(
+        `INSERT INTO audit_log (ward_id, user_id, action, details)
+         VALUES ($1, $2, 'MEMBERSHIP_IMPORT_ISSUE', jsonb_build_object('importRunId', $3::text, 'issue', $4::text, 'commitRequested', $5::boolean, 'fileName', $6::text))`,
+        [wardId, session.user.id, importRunId, 'PARSE_ZERO_ROWS', commit, fileName]
+      );
+
+      await client.query('COMMIT');
+
+      logger.warn('Membership import parsed zero rows', {
+        wardId,
+        userId: session.user.id,
+        importRunId,
+        commitRequested: commit,
+        fileName
+      });
+
+      if (commit) {
+        return NextResponse.json(
+          {
+            error: 'No member rows could be parsed from the uploaded file',
+            code: 'VALIDATION_ERROR',
+            parsedCount: 0,
+            importRunId
+          },
+          { status: 422 }
+        );
+      }
+
+      return NextResponse.json({
+        importRunId,
+        commit: false,
+        parsedCount: 0,
+        inserted: 0,
+        updated: 0,
+        issues: ['PARSE_ZERO_ROWS'],
+        preview: []
+      });
+    }
 
     let inserted = 0;
     let updated = 0;
@@ -74,15 +163,26 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
 
       await client.query(
         `INSERT INTO audit_log (ward_id, user_id, action, details)
-         VALUES ($1, $2, 'MEMBERSHIP_IMPORT_COMMITTED', jsonb_build_object('importRunId', $3::text, 'inserted', $4::int, 'updated', $5::int, 'parsedCount', $6::int))`,
-        [wardId, session.user.id, importRunResult.rows[0].id, inserted, updated, parsedMembers.length]
+         VALUES ($1, $2, 'MEMBERSHIP_IMPORT_COMMITTED', jsonb_build_object('importRunId', $3::text, 'inserted', $4::int, 'updated', $5::int, 'parsedCount', $6::int, 'fileName', $7::text))`,
+        [wardId, session.user.id, importRunId, inserted, updated, parsedMembers.length, fileName]
       );
     }
 
     await client.query('COMMIT');
 
+    logger.info('Membership import completed', {
+      wardId,
+      userId: session.user.id,
+      importRunId,
+      commitApplied: commit,
+      parsedCount: parsedMembers.length,
+      inserted,
+      updated,
+      fileName
+    });
+
     return NextResponse.json({
-      importRunId: importRunResult.rows[0].id as string,
+      importRunId,
       commit,
       parsedCount: parsedMembers.length,
       inserted,
@@ -99,8 +199,8 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
       await setDbContext(client, { userId: session.user.id, wardId });
       await client.query(
         `INSERT INTO audit_log (ward_id, user_id, action, details)
-         VALUES ($1, $2, 'MEMBERSHIP_IMPORT_FAILED', jsonb_build_object('commitRequested', $3::boolean, 'parsedCount', $4::int, 'error', $5::text))`,
-        [wardId, session.user.id, commit, parsedMembers.length, message]
+         VALUES ($1, $2, 'MEMBERSHIP_IMPORT_FAILED', jsonb_build_object('commitRequested', $3::boolean, 'parsedCount', $4::int, 'fileName', $5::text, 'error', $6::text))`,
+        [wardId, session.user.id, commit, parsedMembers.length, fileName, message]
       );
       await client.query('COMMIT');
     } catch (auditError) {
@@ -118,6 +218,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
       userId: session.user.id,
       commitRequested: commit,
       parsedCount: parsedMembers.length,
+      fileName,
       error: message
     });
 
