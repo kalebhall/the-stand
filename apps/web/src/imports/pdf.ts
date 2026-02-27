@@ -2,14 +2,14 @@ import { inflateSync } from 'node:zlib';
 
 function decodePdfString(value: string): string {
   return value
-    .replace(/\\\\\(/g, '(')
-    .replace(/\\\\\)/g, ')')
-    .replace(/\\\\n/g, '\n')
-    .replace(/\\\\r/g, '\r')
-    .replace(/\\\\t/g, '\t')
-    .replace(/\\\\b/g, '\b')
-    .replace(/\\\\f/g, '\f')
-    .replace(/\\\\\\\\/g, '\\');
+    .replace(/\\\(/g, '(')
+    .replace(/\\\)/g, ')')
+    .replace(/\\n/g, '\n')
+    .replace(/\\r/g, '\r')
+    .replace(/\\t/g, '\t')
+    .replace(/\\b/g, '\b')
+    .replace(/\\f/g, '\f')
+    .replace(/\\\\/g, '\\');
 }
 
 function extractTextFromStream(stream: string): string {
@@ -19,52 +19,29 @@ function extractTextFromStream(stream: string): string {
   type TextElement = { text: string; x: number; y: number };
   const textElements: TextElement[] = [];
 
-  // Parse stream into tokens to better track state
-  const tokens = stream.split(/\s+/);
-  
-  let currentX = 0;
-  let currentY = 0;
-  
-  // A very basic state machine to extract text and positions
-  for (let i = 0; i < tokens.length; i++) {
-    const token = tokens[i];
-    
-    // Position matrix: a b c d e f Tm (e is x, f is y)
-    if (token === 'Tm' && i >= 6) {
-      const e = Number.parseFloat(tokens[i - 2] ?? '0');
-      const f = Number.parseFloat(tokens[i - 1] ?? '0');
-      if (!Number.isNaN(e)) currentX = e;
-      if (!Number.isNaN(f)) currentY = f;
-    }
-    // Text operator: (text) Tj
-    else if (token === 'Tj' && i >= 1) {
-      let prev = tokens[i - 1] ?? '';
-      // It might be split across tokens if it contains spaces, but the regex match is better for that
-    }
-  }
-
   // Use a more robust approach: find all Tm operations and the text operations that follow them
-  const operationRegex = /([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)\s+Tm|(\([^)]*\))\s*Tj|\[(.*?)\]\s*TJ/g;
+  // Fixed regex to properly handle escaped characters in PDF strings
+  const operationRegex = /([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)\s+Tm|(\((?:[^()\\]|\\.)*\))\s*Tj|\[((?:[^\[\]]|\((?:[^()\\]|\\.)*\))*)\]\s*TJ/g;
   
   let currentTx = 0;
   let currentTy = 0;
   
   let match;
   while ((match = operationRegex.exec(stream)) !== null) {
-    if (match[6]) {
+    if (match[6] !== undefined) {
       // It's a Tm operation (match[5] is x, match[6] is y)
       currentTx = Number.parseFloat(match[5] ?? '0');
       currentTy = Number.parseFloat(match[6] ?? '0');
-    } else if (match[7]) {
+    } else if (match[7] !== undefined) {
       // It's a Tj operation - simple string
       const text = decodePdfString(match[7].slice(1, -1));
       if (text.trim() || text === ' ') {
         textElements.push({ text, x: currentTx, y: currentTy });
       }
-    } else if (match[8]) {
+    } else if (match[8] !== undefined) {
       // It's a TJ operation - array of strings and numbers
       const arrayContent = match[8];
-      const stringMatches = Array.from(arrayContent.matchAll(/\((?:\\.|[^)\\])*\)/g));
+      const stringMatches = Array.from(arrayContent.matchAll(/\((?:[^()\\]|\\.)*\)/g));
       
       let combinedText = '';
       for (const strMatch of stringMatches) {
@@ -79,16 +56,16 @@ function extractTextFromStream(stream: string): string {
 
   // If we couldn't extract positioned text properly, fall back to simple text extraction
   if (textElements.length === 0) {
-    const tjMatches = stream.matchAll(/\((?:\\.|[^)\\])*\)\s*Tj/g);
+    const tjMatches = stream.matchAll(/\((?:[^()\\]|\\.)*\)\s*Tj/g);
     for (const match of tjMatches) {
       const token = match[0].replace(/\s*Tj$/, '');
       segments.push(decodePdfString(token.slice(1, -1)));
     }
 
-    const tjArrayMatches = stream.matchAll(/\[(.*?)\]\s*TJ/gs);
+    const tjArrayMatches = stream.matchAll(/\[((?:[^\[\]]|\((?:[^()\\]|\\.)*\))*)\]\s*TJ/gs);
     for (const match of tjArrayMatches) {
       const arrayContent = match[1] ?? '';
-      const strings = Array.from(arrayContent.matchAll(/\((?:\\.|[^)\\])*\)/g)).map((item) =>
+      const strings = Array.from(arrayContent.matchAll(/\((?:[^()\\]|\\.)*\)/g)).map((item) =>
         decodePdfString(item[0].slice(1, -1))
       );
       if (strings.length) {
@@ -140,8 +117,8 @@ function extractTextFromStream(stream: string): string {
 
       if (i > 0) {
         const gap = element.x - (lastX + lastWidth);
-        // If the gap is significant (likely a column break), insert a double space or tab
-        // PDF units are typically points (1/72 inch). 10-15 points is a good threshold for a space.
+        // If the gap is significant (likely a column break), insert multiple spaces
+        // PDF units are typically points (1/72 inch). 20 points is a good threshold for a column.
         if (gap > 20) {
           lineText += '   '; // Use triple space to denote column boundary
         } else if (gap > 2) {
@@ -155,7 +132,9 @@ function extractTextFromStream(stream: string): string {
       lastWidth = element.text.length * 5; 
     }
     
-    segments.push(lineText);
+    if (lineText.trim()) {
+      segments.push(lineText);
+    }
   }
 
   return segments.join('\n');
