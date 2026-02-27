@@ -14,13 +14,40 @@ function decodePdfString(value: string): string {
 
 function extractTextFromStream(stream: string): string {
   const segments: string[] = [];
+  let currentY: number | null = null;
+  const lineSegments: Map<number, string[]> = new Map();
 
-  const tjMatches = stream.matchAll(/\((?:\\.|[^\\)])*\)\s*Tj/g);
-  for (const match of tjMatches) {
-    const token = match[0].replace(/\s*Tj$/, '');
-    segments.push(decodePdfString(token.slice(1, -1)));
+  // Extract text positioning data (Tm matrix operations)
+  const tmMatches = stream.matchAll(/([\d.\-]+)\s+([\d.\-]+)\s+([\d.\-]+)\s+([\d.\-]+)\s+([\d.\-]+)\s+([\d.\-]+)\s+Tm/g);
+  const positions: Array<{ x: number; y: number }> = [];
+  for (const match of tmMatches) {
+    const x = Number.parseFloat(match[5] ?? '0');
+    const y = Number.parseFloat(match[6] ?? '0');
+    positions.push({ x, y });
   }
 
+  // Extract text with simple Tj operator
+  const tjMatches = stream.matchAll(/\((?:\\.|[^\\)])*\)\s*Tj/g);
+  let posIndex = 0;
+  for (const match of tjMatches) {
+    const token = match[0].replace(/\s*Tj$/, '');
+    const text = decodePdfString(token.slice(1, -1));
+    
+    if (positions[posIndex]) {
+      const pos = positions[posIndex];
+      const yKey = Math.round(pos.y * 10) / 10; // Round to 1 decimal for grouping
+      
+      if (!lineSegments.has(yKey)) {
+        lineSegments.set(yKey, []);
+      }
+      lineSegments.get(yKey)?.push(text);
+    } else {
+      segments.push(text);
+    }
+    posIndex++;
+  }
+
+  // Extract text with TJ array operator (for kerned text)
   const tjArrayMatches = stream.matchAll(/\[(.*?)\]\s*TJ/gs);
   for (const match of tjArrayMatches) {
     const arrayContent = match[1] ?? '';
@@ -29,6 +56,17 @@ function extractTextFromStream(stream: string): string {
     );
     if (strings.length) {
       segments.push(strings.join(''));
+    }
+  }
+
+  // If we have positioned text, reconstruct lines
+  if (lineSegments.size > 0) {
+    const sortedYs = Array.from(lineSegments.keys()).sort((a, b) => b - a); // Top to bottom
+    for (const y of sortedYs) {
+      const lineTexts = lineSegments.get(y) ?? [];
+      if (lineTexts.length > 0) {
+        segments.push(lineTexts.join(' '));
+      }
     }
   }
 

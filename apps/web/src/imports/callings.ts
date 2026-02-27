@@ -8,20 +8,27 @@ export type ParsedCalling = {
 };
 
 const HEADER_LINE_PATTERN = /^name\s+gender\s+age\s+birth\s+date\s+organization\s+calling\s+sustained\s+set\s+apart$/i;
-const BOOLEAN_TOKEN_PATTERN = /^(yes|no|true|false|y|n|✔|✓|√)$/i;
+const BOOLEAN_TOKEN_PATTERN = /^(yes|no|true|false|y|n|✔|✓|√|×)$/i;
 
 const KNOWN_ORGANIZATIONS = [
+  'Stake Young Women',
+  'Stake Primary',
+  'Stake Temple and Family History',
   'Temple and Family History',
   'Relief Society',
   'Elders Quorum',
   'Sunday School',
   'Young Women',
   'Young Men',
+  'Aaronic Priesthood Quorums',
+  'Ward Missionaries',
   'Ward Mission',
   'Primary',
   'Bishopric',
+  'Patriarch',
+  'Temple Sealers',
+  'Temple Workers',
   'Other Callings',
-  'Aaronic Priesthood Quorums',
 ];
 
 function normalizeWhitespace(input: string): string {
@@ -166,6 +173,10 @@ function parseCallingLine(line: string): ParsedCalling | null {
 
   if (HEADER_LINE_PATTERN.test(normalizedLine) || /members\s+with\s+callings/i.test(normalizedLine)) return null;
   if (/^count\b/i.test(normalizedLine) || /^total\b/i.test(normalizedLine)) return null;
+  if (/^for\s+church\s+use\s+only/i.test(normalizedLine)) return null;
+  if (/freedom\s+park\s+ward/i.test(normalizedLine)) return null;
+  if (/las\s+vegas\s+nevada/i.test(normalizedLine)) return null;
+  if (/^february\s+\d+,\s+\d+$/i.test(normalizedLine)) return null;
 
   const parts = line
     .trim()
@@ -222,6 +233,13 @@ export function parseCallingsPdfText(rawText: string): ParsedCalling[] {
   for (const line of normalized.split('\n')) {
     const cleanLine = line.trim();
     if (!cleanLine) continue;
+
+    // Skip header/footer lines
+    if (/^for\s+church\s+use\s+only/i.test(cleanLine)) continue;
+    if (/freedom\s+park\s+ward/i.test(cleanLine)) continue;
+    if (/las\s+vegas\s+nevada/i.test(cleanLine)) continue;
+    if (/^members\s+with\s+callings/i.test(cleanLine)) continue;
+    if (/^february\s+\d+,\s+\d+$/i.test(cleanLine)) continue;
 
     if (carry && looksLikeRowStart(cleanLine)) {
       const carryParsed = parseCallingLine(carry);
