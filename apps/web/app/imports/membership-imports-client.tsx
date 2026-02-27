@@ -71,6 +71,8 @@ export function MembershipImportsClient({
   callingAssignments: CallingRow[];
   initialCallingDrift: CallingDrift;
 }) {
+  const [memberInputMode, setMemberInputMode] = useState<'pdf' | 'paste'>('pdf');
+  const [memberPdfFile, setMemberPdfFile] = useState<File | null>(null);
   const [rawText, setRawText] = useState('');
   const [preview, setPreview] = useState<PreviewMember[]>([]);
   const [summary, setSummary] = useState<{ parsedCount: number; inserted: number; updated: number; commit: boolean } | null>(null);
@@ -123,13 +125,25 @@ export function MembershipImportsClient({
     setError(null);
 
     try {
-      const response = await fetch(`/api/w/${wardId}/imports/membership`, {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json'
-        },
-        body: JSON.stringify({ rawText, commit })
-      });
+      let response: Response;
+
+      if (memberInputMode === 'paste') {
+        response = await fetch(`/api/w/${wardId}/imports/membership`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ rawText, commit })
+        });
+      } else {
+        const formData = new FormData();
+        formData.set('commit', commit ? 'true' : 'false');
+        if (memberPdfFile) {
+          formData.set('file', memberPdfFile);
+        }
+        response = await fetch(`/api/w/${wardId}/imports/membership`, {
+          method: 'POST',
+          body: formData
+        });
+      }
 
       const payload = (await response.json()) as
         | { preview: PreviewMember[]; parsedCount: number; inserted: number; updated: number; commit: boolean }
@@ -351,26 +365,62 @@ export function MembershipImportsClient({
     setCallingError(null);
   }
 
+  function switchMemberMode(mode: 'pdf' | 'paste') {
+    setMemberInputMode(mode);
+    setPreview([]);
+    setSummary(null);
+    setError(null);
+  }
+
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       <section className="space-y-3 rounded-lg border bg-card p-4">
         <h2 className="text-lg font-semibold">Membership import</h2>
         <p className="text-sm text-muted-foreground">
-          In your ward directory, select all members and copy the table. Paste the result below — tab-delimited with a header row is
-          preferred. Column order is detected automatically.
+          Upload the Member List PDF from LCR, or paste tab-delimited text from your ward directory.
         </p>
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-xs text-muted-foreground">{memberLineCount > 0 ? `${memberLineCount} row${memberLineCount === 1 ? '' : 's'} pasted` : 'No data pasted yet'}</span>
-          <Button type="button" variant="outline" size="sm" onClick={copyMembershipHeader}>
-            {headerCopied ? 'Copied!' : 'Copy header row'}
-          </Button>
+
+        <div className="flex gap-1 rounded-md border bg-muted/30 p-1 text-sm">
+          <button
+            type="button"
+            onClick={() => switchMemberMode('pdf')}
+            className={`flex-1 rounded px-3 py-1 transition-colors ${memberInputMode === 'pdf' ? 'bg-background font-medium shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+          >
+            Upload PDF
+          </button>
+          <button
+            type="button"
+            onClick={() => switchMemberMode('paste')}
+            className={`flex-1 rounded px-3 py-1 transition-colors ${memberInputMode === 'paste' ? 'bg-background font-medium shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+          >
+            Paste text
+          </button>
         </div>
-        <textarea
-          value={rawText}
-          onChange={(event) => setRawText(event.target.value)}
-          className="min-h-44 w-full rounded-md border bg-background p-3 font-mono text-sm"
-          placeholder={"Name\tEmail\tPhone\tAge\tBirthday\tGender\nJane Doe\tjane@example.com\t801-555-0101\t35\tJan 15\tFemale"}
-        />
+
+        {memberInputMode === 'pdf' ? (
+          <input
+            type="file"
+            accept="application/pdf,.pdf"
+            onChange={(event) => setMemberPdfFile(event.target.files?.[0] ?? null)}
+            className="w-full rounded-md border bg-background p-2 text-sm"
+          />
+        ) : (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs text-muted-foreground">{memberLineCount > 0 ? `${memberLineCount} row${memberLineCount === 1 ? '' : 's'} pasted` : 'No data pasted yet'}</span>
+              <Button type="button" variant="outline" size="sm" onClick={copyMembershipHeader}>
+                {headerCopied ? 'Copied!' : 'Copy header row'}
+              </Button>
+            </div>
+            <textarea
+              value={rawText}
+              onChange={(event) => setRawText(event.target.value)}
+              className="min-h-44 w-full rounded-md border bg-background p-3 font-mono text-sm"
+              placeholder={"Name\tEmail\tPhone\tAge\tBirthday\tGender\nJane Doe\tjane@example.com\t801-555-0101\t35\tJan 15\tFemale"}
+            />
+          </div>
+        )}
+
         <div className="flex flex-wrap gap-2">
           <Button type="button" variant="outline" onClick={() => submitImport(false)} disabled={isSubmitting}>
             Dry run preview
