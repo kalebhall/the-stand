@@ -28,8 +28,8 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
 
   const contentType = request.headers.get('content-type') ?? '';
   let extractedText: string;
-  let fileName: string;
-  let commit: boolean;
+  let fileName = 'paste';
+  let commit = false;
 
   if (contentType.includes('application/json')) {
     // Plain text paste (legacy format)
@@ -38,12 +38,17 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     commit = body.commit === true;
     extractedText = toPlainText(rawText);
     fileName = 'paste';
-  } else {
-    // PDF upload
+  } else if (contentType.includes('multipart/form-data') || contentType === '') {
+    // PDF upload (or FormData without explicit content-type)
     const formData = await request.formData().catch(() => null);
-    const commitValue = formData?.get('commit');
+    
+    if (!formData) {
+      return NextResponse.json({ error: 'Invalid request format', code: 'VALIDATION_ERROR' }, { status: 400 });
+    }
+    
+    const commitValue = formData.get('commit');
     commit = commitValue === 'true';
-    const file = formData?.get('file');
+    const file = formData.get('file');
 
     if (!(file instanceof File)) {
       return NextResponse.json({ error: 'A PDF file is required', code: 'VALIDATION_ERROR' }, { status: 400 });
@@ -55,6 +60,8 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     }
 
     extractedText = await extractPdfText(await file.arrayBuffer());
+  } else {
+    return NextResponse.json({ error: 'Unsupported content type', code: 'VALIDATION_ERROR' }, { status: 400 });
   }
 
   logger.debug('Starting membership import request', {
@@ -212,7 +219,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
         error: auditError instanceof Error ? auditError.message : 'unknown error'
       });
     }
-
+    
     logger.error('Membership import request failed', {
       wardId,
       userId: session.user.id,
