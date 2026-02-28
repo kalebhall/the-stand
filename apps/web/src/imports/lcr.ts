@@ -43,8 +43,10 @@ function parseAge(value: string): number | null {
 function parseMembersFromTable(table: ScrapedTable): ParsedMember[] {
   const headers = table.headers.map((header) => normalize(header).toLowerCase());
   const nameIndex = findHeaderIndex(headers, [/^name$/, /member\s*name/, /preferred\s*name/]);
-  const emailIndex = findHeaderIndex(headers, [/email/]);
-  const phoneIndex = findHeaderIndex(headers, [/phone/, /mobile/, /cell/]);
+  // Updated to handle 'e-mail', 'email', 'e mail'
+  const emailIndex = findHeaderIndex(headers, [/e[-\s]?mail/]);
+  // Updated to handle 'phone number', 'phone', 'mobile', 'cell'
+  const phoneIndex = findHeaderIndex(headers, [/phone(?:\s*number)?/, /mobile/, /cell/]);
   const ageIndex = findHeaderIndex(headers, [/age/]);
   const birthdayIndex = findHeaderIndex(headers, [/birth\s*date/, /^birthday$/, /dob/]);
   const genderIndex = findHeaderIndex(headers, [/gender/, /^sex$/]);
