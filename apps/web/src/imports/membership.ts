@@ -232,10 +232,12 @@ function isHeaderOrFooterLine(line: string): boolean {
   if (/^phone\s*number$/i.test(normalized)) return true;
   if (/^e[\s-]*mail$/i.test(normalized)) return true;
   
-  // Multi-word header patterns (in case they're combined)
+  // Combined header patterns (when PDF puts multiple columns on one line)
   if (/^gender\s+age$/i.test(normalized)) return true;
   if (/^birth\s+date\s+phone\s+number$/i.test(normalized)) return true;
   if (/^phone\s+number\s+e[\s-]*mail$/i.test(normalized)) return true;
+  if (/^birth\s+date\s+phone$/i.test(normalized)) return true;
+  if (/^phone\s+e[\s-]*mail$/i.test(normalized)) return true;
   
   // Full header line (legacy)
   if (/^name\s+gender\s+age\s+birth\s+date/i.test(normalized)) return true;
