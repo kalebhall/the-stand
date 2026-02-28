@@ -224,12 +224,21 @@ function parseMemberFromMapping(parts: string[], mapping: FieldMapping[]): Parse
 function isHeaderOrFooterLine(line: string): boolean {
   const normalized = normalizeWhitespace(line);
   
-  // Header patterns
+  // Single-word header lines (LCR PDF splits headers across lines)
+  if (/^name$/i.test(normalized)) return true;
+  if (/^gender$/i.test(normalized)) return true;
+  if (/^age$/i.test(normalized)) return true;
+  if (/^birth\s*date$/i.test(normalized)) return true;
+  if (/^phone\s*number$/i.test(normalized)) return true;
+  if (/^e[\s-]*mail$/i.test(normalized)) return true;
+  
+  // Multi-word header patterns (in case they're combined)
+  if (/^gender\s+age$/i.test(normalized)) return true;
+  if (/^birth\s+date\s+phone\s+number$/i.test(normalized)) return true;
+  if (/^phone\s+number\s+e[\s-]*mail$/i.test(normalized)) return true;
+  
+  // Full header line (legacy)
   if (/^name\s+gender\s+age\s+birth\s+date/i.test(normalized)) return true;
-  if (/^name\s+gender\s+age/i.test(normalized)) return true;
-  if (/^gender\s+age\s+birth/i.test(normalized)) return true;
-  if (/^phone\s+number\s+e[\s-]*mail/i.test(normalized)) return true;
-  if (/^birth\s+date\s+phone/i.test(normalized)) return true;
   
   // Document title/organizational headers
   if (/^member\s+list/i.test(normalized)) return true;
@@ -261,95 +270,134 @@ function isHeaderOrFooterLine(line: string): boolean {
   return false;
 }
 
-// Parse LCR PDF format: Name Gender Age Birth Date Phone Number E-mail
-function parsePdfMemberLine(line: string): ParsedMember | null {
+function looksLikeNameLine(line: string): boolean {
   const normalized = normalizeWhitespace(line);
-  
-  // Skip header and footer lines using comprehensive check
-  if (isHeaderOrFooterLine(normalized)) return null;
-  
-  // Use single space delimiter for PDF text since pdf-parse just outputs plain text with single spaces
-  const parts = splitLine(line, 'single_space').map((p) => p.trim()).filter(Boolean);
-  
-  if (parts.length < 4) return null;
+  // Name lines contain a comma and some letters, but no leading digits
+  return /,/.test(normalized) && /[a-z]/i.test(normalized) && !/^\d/.test(normalized);
+}
 
-  // Since it's split by single spaces, the name could be multiple tokens (e.g. "Acosta, Frank")
-  // Find where the gender and age are
-  let genderIdx = -1;
-  for (let i = 1; i < parts.length - 1; i++) {
-    const isGender = /^(m|f|male|female)$/i.test(parts[i]!);
-    const isAge = /^\d+$/.test(parts[i+1]!);
-    if (isGender && isAge) {
-      genderIdx = i;
-      break;
-    }
-  }
+function looksLikeGenderLine(line: string): boolean {
+  const normalized = normalizeWhitespace(line);
+  return /^(m|f|male|female)$/i.test(normalized);
+}
 
-  if (genderIdx === -1) return null;
+function looksLikeAgeBirthdayLine(line: string): boolean {
+  const normalized = normalizeWhitespace(line);
+  // Starts with age (number), followed by date pattern (dd Mmm yyyy or dd Mmm)
+  return /^\d{1,3}\s+\d{1,2}\s+[a-z]{3,}/i.test(normalized);
+}
 
-  const name = parts.slice(0, genderIdx).join(' ');
-  const genderRaw = parts[genderIdx]!;
-  const ageRaw = parts[genderIdx + 1]!;
+// Parse LCR PDF format where records span multiple lines:
+// Line 1: Name (Last, First Middle)
+// Line 2: Gender (M or F)
+// Line 3: Age dd Mmm yyyy [phone]
+// Line 4 (optional): email
+function parsePdfMembersMultiLine(lines: string[]): ParsedMember[] {
+  const members: ParsedMember[] = [];
+  let i = 0;
 
-  const gender = parseGenderPdf(genderRaw);
-  const age = parseAge(ageRaw);
-  
-  // Next field should be birthday
-  const rest = parts.slice(genderIdx + 2);
-  if (rest.length === 0) return null;
-  
-  // Birthday can be 1-3 tokens: "26 May 1994" or "26 May" or "May 26"
-  let birthday: string | null = null;
-  let remainingIdx = 0;
-  
-  // Try parsing as "26 May 1994" (3 tokens)
-  if (rest.length >= 3 && /^\d{1,2}$/.test(rest[0] ?? '') && /^[A-Za-z]{3,}$/.test(rest[1] ?? '')) {
-    const day = rest[0];
-    const month = rest[1];
-    const yearOrNext = rest[2];
+  while (i < lines.length) {
+    const line = lines[i];
     
-    if (/^\d{4}$/.test(yearOrNext ?? '')) {
-      birthday = normalizeBirthday(`${day} ${month} ${yearOrNext}`);
-      remainingIdx = 3;
-    } else {
-      birthday = normalizeBirthday(`${day} ${month}`);
-      remainingIdx = 2;
+    // Skip header/footer lines
+    if (isHeaderOrFooterLine(line)) {
+      i++;
+      continue;
     }
-  }
-  // Try "26 May" (2 tokens)
-  else if (rest.length >= 2 && /^\d{1,2}$/.test(rest[0] ?? '') && /^[A-Za-z]{3,}$/.test(rest[1] ?? '')) {
-    birthday = normalizeBirthday(`${rest[0]} ${rest[1]}`);
-    remainingIdx = 2;
-  }
-  // Try "May 26" format
-  else if (rest.length >= 2 && /^[A-Za-z]{3,}$/.test(rest[0] ?? '') && /^\d{1,2}$/.test(rest[1] ?? '')) {
-    birthday = normalizeBirthday(`${rest[0]} ${rest[1]}`);
-    remainingIdx = 2;
-  }
-  
-  if (!birthday) return null;
-  
-  // Remaining tokens are phone and/or email
-  const remaining = rest.slice(remainingIdx);
-  let phone: string | null = null;
-  let email: string | null = null;
-  
-  for (const token of remaining) {
-    if (!email && token.includes('@')) {
-      email = sanitizeEmail(token);
-    } else if (!phone && /\d/.test(token)) {
-      phone = sanitizePhone(token);
+
+    // Check if this looks like the start of a member record
+    if (!looksLikeNameLine(line)) {
+      i++;
+      continue;
     }
+
+    const name = normalizeWhitespace(line);
+    i++;
+
+    // Next line should be gender
+    if (i >= lines.length) break;
+    let nextLine = lines[i];
+    
+    // Skip any header/footer that snuck in
+    while (i < lines.length && isHeaderOrFooterLine(nextLine)) {
+      i++;
+      nextLine = lines[i];
+    }
+    
+    if (i >= lines.length || !looksLikeGenderLine(nextLine)) {
+      // Not a valid record, continue
+      continue;
+    }
+
+    const gender = parseGenderPdf(nextLine);
+    i++;
+
+    // Next line should be age + birthday + optional phone
+    if (i >= lines.length) break;
+    nextLine = lines[i];
+    
+    // Skip any header/footer
+    while (i < lines.length && isHeaderOrFooterLine(nextLine)) {
+      i++;
+      nextLine = lines[i];
+    }
+    
+    if (i >= lines.length || !looksLikeAgeBirthdayLine(nextLine)) {
+      // Not a valid record
+      continue;
+    }
+
+    const ageBirthdayPhoneLine = normalizeWhitespace(nextLine);
+    const parts = ageBirthdayPhoneLine.split(/\s+/);
+    
+    // Parse: age dd Mmm yyyy [phone]
+    // Minimum is 4 parts: age, day, month, year
+    if (parts.length < 4) {
+      i++;
+      continue;
+    }
+
+    const ageStr = parts[0];
+    const age = parseAge(ageStr);
+    
+    // Birthday is next 3 parts: dd Mmm yyyy
+    const birthdayStr = `${parts[1]} ${parts[2]} ${parts[3]}`;
+    const birthday = normalizeBirthday(birthdayStr);
+    
+    // Phone is remaining parts (if any)
+    const phone = parts.length > 4 ? sanitizePhone(parts.slice(4).join(' ')) : null;
+    
+    i++;
+
+    // Next line might be email (or might be the next name)
+    let email: string | null = null;
+    if (i < lines.length) {
+      nextLine = lines[i];
+      
+      // Skip headers/footers
+      while (i < lines.length && isHeaderOrFooterLine(nextLine)) {
+        i++;
+        nextLine = lines[i];
+      }
+      
+      if (i < lines.length && nextLine.includes('@') && !looksLikeNameLine(nextLine)) {
+        email = sanitizeEmail(nextLine);
+        i++;
+      }
+    }
+
+    // We have a complete member record
+    members.push({
+      fullName: name,
+      gender,
+      age,
+      birthday,
+      phone,
+      email
+    });
   }
-  
-  return {
-    fullName: name,
-    gender,
-    age,
-    birthday,
-    phone,
-    email
-  };
+
+  return members;
 }
 
 function parseMemberLegacy(parts: string[]): ParsedMember | null {
@@ -384,35 +432,44 @@ export function parseMembershipText(rawText: string): ParsedMember[] {
     return [];
   }
 
-  const deduped = new Map<string, ParsedMember>();
-
-  // Check if this looks like PDF text (has the M/F pattern with age numbers after it)
-  // pdf-parse might just use single spaces, so we check for the pattern "Name M 65" or "Name F 45"
-  const isPdfFormat = lines.some((line) => /\b(m|f|male|female)\s+\d{1,3}\b/i.test(line) || /\s{2,}/.test(line));
+  // Check if this looks like LCR PDF text (multi-line format)
+  // Look for the pattern: name line with comma, followed by M/F, followed by age+date
+  let isPdfFormat = false;
+  for (let i = 0; i < Math.min(lines.length - 2, 50); i++) {
+    if (looksLikeNameLine(lines[i]) && 
+        i + 1 < lines.length && looksLikeGenderLine(lines[i + 1]) &&
+        i + 2 < lines.length && looksLikeAgeBirthdayLine(lines[i + 2])) {
+      isPdfFormat = true;
+      break;
+    }
+  }
 
   if (isPdfFormat) {
-    // Use PDF parser
-    for (const line of lines) {
-      const parsed = parsePdfMemberLine(line);
-      if (!parsed) continue;
-
-      const existing = deduped.get(parsed.fullName.toLowerCase());
+    // Use multi-line PDF parser
+    const members = parsePdfMembersMultiLine(lines);
+    
+    // Deduplicate by name
+    const deduped = new Map<string, ParsedMember>();
+    for (const member of members) {
+      const existing = deduped.get(member.fullName.toLowerCase());
       if (existing) {
-        deduped.set(parsed.fullName.toLowerCase(), {
-          fullName: parsed.fullName,
-          email: parsed.email ?? existing.email,
-          phone: parsed.phone ?? existing.phone,
-          age: parsed.age ?? existing.age,
-          birthday: parsed.birthday ?? existing.birthday,
-          gender: parsed.gender ?? existing.gender
+        deduped.set(member.fullName.toLowerCase(), {
+          fullName: member.fullName,
+          email: member.email ?? existing.email,
+          phone: member.phone ?? existing.phone,
+          age: member.age ?? existing.age,
+          birthday: member.birthday ?? existing.birthday,
+          gender: member.gender ?? existing.gender
         });
-        continue;
+      } else {
+        deduped.set(member.fullName.toLowerCase(), member);
       }
-
-        deduped.set(parsed.fullName.toLowerCase(), parsed);
     }
+    
+    return Array.from(deduped.values());
   } else {
     // Use legacy CSV/TSV parser
+    const deduped = new Map<string, ParsedMember>();
     const delimiter = detectDelimiter(lines[0]);
 
     const firstLineParts = splitLine(lines[0], delimiter)
@@ -453,7 +510,7 @@ export function parseMembershipText(rawText: string): ParsedMember[] {
 
       deduped.set(parsed.fullName.toLowerCase(), parsed);
     }
+    
+    return Array.from(deduped.values());
   }
-
-  return Array.from(deduped.values());
 }
