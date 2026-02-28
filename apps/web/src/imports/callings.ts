@@ -77,6 +77,48 @@ function looksLikeDateTail(a?: string, b?: string, c?: string): boolean {
   );
 }
 
+function isHeaderOrFooterLine(line: string): boolean {
+  const normalized = normalizeWhitespace(line);
+  
+  // Header patterns
+  if (HEADER_LINE_PATTERN.test(normalized)) return true;
+  if (/^name\s+gender\s+age/i.test(normalized)) return true;
+  if (/^gender\s+age\s+birth/i.test(normalized)) return true;
+  if (/^birth\s+date\s+organization/i.test(normalized)) return true;
+  if (/^organization\s+calling\s+sustained/i.test(normalized)) return true;
+  if (/^calling\s+sustained\s+set\s+apart/i.test(normalized)) return true;
+  if (/^sustained\s+set\s+apart/i.test(normalized)) return true;
+  
+  // Document title/organizational headers
+  if (/^members\s+with\s+callings/i.test(normalized)) return true;
+  if (/^freedom\s+park\s+ward/i.test(normalized)) return true;
+  if (/^las\s+vegas\s+nevada/i.test(normalized)) return true;
+  if (/ward\s*\(\d+\)/i.test(normalized)) return true;
+  if (/stake\s*\(\d+\)/i.test(normalized)) return true;
+  
+  // Footer patterns
+  if (/^for\s+church\s+use\s+only/i.test(normalized)) return true;
+  if (/^©\s*\d{4}\s+by\s+intellectual\s+reserve/i.test(normalized)) return true;
+  if (/all\s+rights\s+reserved/i.test(normalized)) return true;
+  
+  // Date stamps (e.g., "26 Feb 2026" or "February 20, 2026")
+  if (/^\d{1,2}\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\s+\d{4}$/i.test(normalized)) return true;
+  if (/^(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{1,2},\s+\d{4}$/i.test(normalized)) return true;
+  
+  // Page numbers and markers
+  if (/^\.{3}$/i.test(normalized)) return true; // Just "..."
+  if (/^\d+$/i.test(normalized) && normalized.length <= 3) return true; // Page numbers like "1", "2", "10"
+  if (/^page\s+\d+/i.test(normalized)) return true;
+  
+  // Count/total rows
+  if (/^count\s*:\s*\d+/i.test(normalized)) return true;
+  if (/^total\s*:\s*\d+/i.test(normalized)) return true;
+  if (/^count\s+\d+/i.test(normalized)) return true;
+  if (/^count:/i.test(normalized)) return true;
+  
+  return false;
+}
+
 function parseSingleSpaceRow(normalizedLine: string): ParsedCalling | null {
   const tokens = normalizedLine.split(' ').filter(Boolean);
   const genderIdx = tokens.findIndex((t) => /^(male|female|m|f)$/i.test(t));
@@ -171,12 +213,8 @@ function parseCallingLine(line: string): ParsedCalling | null {
   const normalizedLine = normalizeWhitespace(line);
   if (!normalizedLine) return null;
 
-  if (HEADER_LINE_PATTERN.test(normalizedLine) || /members\s+with\s+callings/i.test(normalizedLine)) return null;
-  if (/^count\b/i.test(normalizedLine) || /^total\b/i.test(normalizedLine)) return null;
-  if (/^for\s+church\s+use\s+only/i.test(normalizedLine)) return null;
-  if (/freedom\s+park\s+ward/i.test(normalizedLine)) return null;
-  if (/las\s+vegas\s+nevada/i.test(normalizedLine)) return null;
-  if (/^february\s+\d+,\s+\d+$/i.test(normalizedLine)) return null;
+  // Use comprehensive header/footer detection
+  if (isHeaderOrFooterLine(normalizedLine)) return null;
 
   const parts = line
     .trim()
@@ -197,8 +235,17 @@ function parseCallingLine(line: string): ParsedCalling | null {
       setApartRaw = rest[rest.length - 1] ?? '';
       callingName = rest.slice(0, -2).join(' ').trim();
     } else if (rest.length === 2) {
-      sustainedRaw = rest[1] ?? '';
-      callingName = rest[0] ?? '';
+      // Could be: [calling, sustained] or [calling, setApart]
+      // If second field looks like a date/boolean, it's one of the status fields
+      const lastField = rest[1] ?? '';
+      if (BOOLEAN_TOKEN_PATTERN.test(lastField) || /\d/.test(lastField)) {
+        callingName = rest[0] ?? '';
+        // Assume it's setApart if present (more common to have setApart without sustained)
+        setApartRaw = lastField;
+      } else {
+        // Both fields are part of the calling name
+        callingName = rest.join(' ').trim();
+      }
     } else {
       callingName = rest[0] ?? '';
     }
@@ -234,12 +281,8 @@ export function parseCallingsPdfText(rawText: string): ParsedCalling[] {
     const cleanLine = line.trim();
     if (!cleanLine) continue;
 
-    // Skip header/footer lines
-    if (/^for\s+church\s+use\s+only/i.test(cleanLine)) continue;
-    if (/freedom\s+park\s+ward/i.test(cleanLine)) continue;
-    if (/las\s+vegas\s+nevada/i.test(cleanLine)) continue;
-    if (/^members\s+with\s+callings/i.test(cleanLine)) continue;
-    if (/^february\s+\d+,\s+\d+$/i.test(cleanLine)) continue;
+    // Skip header/footer lines using comprehensive check
+    if (isHeaderOrFooterLine(cleanLine)) continue;
 
     if (carry && looksLikeRowStart(cleanLine)) {
       const carryParsed = parseCallingLine(carry);

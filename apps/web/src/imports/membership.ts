@@ -221,19 +221,53 @@ function parseMemberFromMapping(parts: string[], mapping: FieldMapping[]): Parse
   return { fullName, email, phone, age, birthday, gender };
 }
 
+function isHeaderOrFooterLine(line: string): boolean {
+  const normalized = normalizeWhitespace(line);
+  
+  // Header patterns
+  if (/^name\s+gender\s+age\s+birth\s+date/i.test(normalized)) return true;
+  if (/^name\s+gender\s+age/i.test(normalized)) return true;
+  if (/^gender\s+age\s+birth/i.test(normalized)) return true;
+  if (/^phone\s+number\s+e[\s-]*mail/i.test(normalized)) return true;
+  if (/^birth\s+date\s+phone/i.test(normalized)) return true;
+  
+  // Document title/organizational headers
+  if (/^member\s+list/i.test(normalized)) return true;
+  if (/^individuals$/i.test(normalized)) return true;
+  if (/^freedom\s+park\s+ward/i.test(normalized)) return true;
+  if (/^las\s+vegas\s+nevada/i.test(normalized)) return true;
+  if (/ward\s*\(\d+\)/i.test(normalized)) return true;
+  if (/stake\s*\(\d+\)/i.test(normalized)) return true;
+  
+  // Footer patterns
+  if (/^for\s+church\s+use\s+only/i.test(normalized)) return true;
+  if (/^©\s*\d{4}\s+by\s+intellectual\s+reserve/i.test(normalized)) return true;
+  if (/all\s+rights\s+reserved/i.test(normalized)) return true;
+  
+  // Date stamps (e.g., "26 Feb 2026" or "February 20, 2026")
+  if (/^\d{1,2}\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\s+\d{4}$/i.test(normalized)) return true;
+  if (/^(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{1,2},\s+\d{4}$/i.test(normalized)) return true;
+  
+  // Page numbers and markers
+  if (/^\.{3}$/i.test(normalized)) return true; // Just "..."
+  if (/^\d+$/i.test(normalized) && normalized.length <= 3) return true; // Page numbers like "1", "2", "10"
+  if (/^page\s+\d+/i.test(normalized)) return true;
+  
+  // Count/total rows
+  if (/^count\s*:/i.test(normalized)) return true;
+  if (/^total\s*:/i.test(normalized)) return true;
+  if (/^count\s+\d+/i.test(normalized)) return true;
+  
+  return false;
+}
+
 // Parse LCR PDF format: Name Gender Age Birth Date Phone Number E-mail
 function parsePdfMemberLine(line: string): ParsedMember | null {
   const normalized = normalizeWhitespace(line);
   
-  // Skip header and footer lines
-  if (/^name\s+gender\s+age\s+birth\s+date/i.test(normalized)) return null;
-  if (/^member\s+list/i.test(normalized)) return null;
-  if (/^individuals$/i.test(normalized)) return null;
-  if (/^freedom\s+park\s+ward/i.test(normalized)) return null;
-  if (/^las\s+vegas\s+nevada/i.test(normalized)) return null;
-  if (/^for\s+church\s+use\s+only/i.test(normalized)) return null;
-  if (/^\d+\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\s+\d{4}$/i.test(normalized)) return null;
-
+  // Skip header and footer lines using comprehensive check
+  if (isHeaderOrFooterLine(normalized)) return null;
+  
   // Use single space delimiter for PDF text since pdf-parse just outputs plain text with single spaces
   const parts = splitLine(line, 'single_space').map((p) => p.trim()).filter(Boolean);
   
