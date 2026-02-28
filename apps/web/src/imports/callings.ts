@@ -81,10 +81,12 @@ function isHeaderOrFooterLine(line: string): boolean {
   if (/^sustained$/i.test(normalized)) return true;
   if (/^set\s*apart$/i.test(normalized)) return true;
   
-  // Combined header patterns (in case they're on one line)
+  // Combined header patterns (when PDF puts multiple columns on one line)
   if (HEADER_LINE_PATTERN.test(normalized)) return true;
   if (/^name\s+gender\s+age/i.test(normalized)) return true;
   if (/^gender\s+age\s+birth/i.test(normalized)) return true;
+  if (/^gender\s+age$/i.test(normalized)) return true;
+  if (/^age\s+birth\s+date/i.test(normalized)) return true;
   if (/^birth\s+date\s+organization/i.test(normalized)) return true;
   if (/^organization\s+calling\s+sustained/i.test(normalized)) return true;
   if (/^calling\s+sustained\s+set\s+apart/i.test(normalized)) return true;
