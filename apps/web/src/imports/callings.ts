@@ -183,7 +183,120 @@ function findBestOrganizationMatch(text: string): { org: string; remaining: stri
   return null;
 }
 
-// Parse LCR PDF format where calling records span multiple lines:
+// Parse TABLE FORMAT from PDFs where each calling is on one line with space-separated columns:
+// Format: Name Gender Age Birthday Organization Calling [Sustained] [SetApart]
+// Example: Acosta, Frank M 65 26 May 1960 Elders Quorum Elders Quorum Secretary 9 Mar 2025 ✔
+function parsePdfCallingsTableFormat(lines: string[]): ParsedCalling[] {
+  const callings: ParsedCalling[] = [];
+
+  for (const line of lines) {
+    // Skip header/footer lines
+    if (isHeaderOrFooterLine(line)) {
+      continue;
+    }
+
+    const normalized = normalizeWhitespace(line);
+    
+    // Check if line starts with a name (contains comma)
+    if (!looksLikeNameLine(normalized)) {
+      continue;
+    }
+
+    // Parse the line by splitting on multiple spaces (2+)
+    // This preserves multi-word values that are single-space separated
+    const parts = normalized.split(/\s{2,}/);
+    
+    if (parts.length < 5) {
+      // Not enough columns, skip
+      continue;
+    }
+
+    // Extract fixed columns: Name, Gender, Age, Birthday (4 parts of birthday: day month year)
+    let currentIndex = 0;
+    const name = parts[currentIndex++];
+    
+    if (currentIndex >= parts.length) continue;
+    const genderStr = parts[currentIndex++];
+    
+    if (currentIndex >= parts.length) continue;
+    const ageStr = parts[currentIndex++];
+    
+    // Birthday: next 3 tokens are day, month, year
+    if (currentIndex >= parts.length) continue;
+    const birthdayPart = parts[currentIndex++];
+    
+    // Birthday might be in the same column or split across columns
+    // Try to extract "dd Mmm yyyy" pattern
+    const birthdayMatch = birthdayPart.match(/^(\d{1,2})\s+([A-Za-z]{3,})\s+(\d{4})/);
+    let birthday: string;
+    
+    if (birthdayMatch) {
+      birthday = normalizeBirthday(`${birthdayMatch[1]} ${birthdayMatch[2]} ${birthdayMatch[3]}`);
+    } else {
+      // Birthday might be split, try combining with next parts
+      const birthdayStr = [birthdayPart, parts[currentIndex], parts[currentIndex + 1]].join(' ');
+      const match2 = birthdayStr.match(/^(\d{1,2})\s+([A-Za-z]{3,})\s+(\d{4})/);
+      if (match2) {
+        birthday = normalizeBirthday(`${match2[1]} ${match2[2]} ${match2[3]}`);
+        currentIndex += 2; // consumed 2 more parts
+      } else {
+        // Can't parse birthday, skip
+        continue;
+      }
+    }
+
+    // Now we need to find Organization and Calling from remaining parts
+    // Organization is from KNOWN_ORGANIZATIONS list
+    // Everything after organization (until date or checkmark) is the calling
+    
+    const remainingParts = parts.slice(currentIndex);
+    if (remainingParts.length === 0) continue;
+    
+    const remainingText = remainingParts.join(' ');
+    
+    // Find organization
+    const orgMatch = findBestOrganizationMatch(remainingText);
+    if (!orgMatch) continue;
+    
+    const organization = orgMatch.org;
+    let remainingAfterOrg = orgMatch.remaining;
+    
+    // Now parse calling, sustained date, and set apart
+    // Look for sustained date pattern (dd Mmm yyyy) and checkmark at the end
+    let sustained = false;
+    let setApart = false;
+    
+    // Check if last token is checkmark
+    if (remainingAfterOrg.endsWith('✔') || remainingAfterOrg.endsWith('✓')) {
+      setApart = true;
+      remainingAfterOrg = remainingAfterOrg.slice(0, -1).trim();
+    }
+    
+    // Check if there's a sustained date at the end (dd Mmm yyyy)
+    const sustainedMatch = remainingAfterOrg.match(/(.+?)\s+(\d{1,2})\s+([A-Za-z]{3,})\s+(\d{4})\s*$/);
+    if (sustainedMatch) {
+      sustained = true;
+      remainingAfterOrg = sustainedMatch[1].trim();
+    }
+    
+    const callingName = remainingAfterOrg;
+    
+    if (!callingName) continue;
+
+    callings.push({
+      memberName: name,
+      birthday,
+      organization,
+      callingName,
+      sustained,
+      setApart
+    });
+  }
+
+  return callings;
+}
+
+// Parse MULTI-LINE FORMAT where calling records span multiple lines:
 // Line 1: Name (Last, First Middle)
 // Line 2: Gender (M or F)
 // Line 3: Age (number)
@@ -262,11 +375,6 @@ function parsePdfCallingsMultiLine(lines: string[]): ParsedCalling[] {
     i++;
 
     // Now collect organization + calling lines
-    // Keep reading until we hit:
-    // - A sustained date line (dd Mmm yyyy)
-    // - A set apart checkmark (✔)
-    // - A new name line
-    // - End of file
     const orgCallingLines: string[] = [];
     
     while (i < lines.length) {
@@ -278,36 +386,29 @@ function parsePdfCallingsMultiLine(lines: string[]): ParsedCalling[] {
       }
       
       if (looksLikeNameLine(nextLine)) {
-        // Start of next record
         break;
       }
       
       if (looksLikeSustainedDateLine(nextLine)) {
-        // Found sustained date, stop collecting org/calling
         break;
       }
       
       if (looksLikeSetApartLine(nextLine)) {
-        // Found set apart marker, stop collecting org/calling
         break;
       }
       
-      // Add to org/calling text
       orgCallingLines.push(normalizeWhitespace(nextLine));
       i++;
     }
     
     if (orgCallingLines.length === 0) {
-      // No org/calling found, skip this record
       continue;
     }
     
-    // Combine org/calling lines and split into org + calling
     const orgCallingText = orgCallingLines.join(' ');
     const match = findBestOrganizationMatch(orgCallingText);
     
     if (!match) {
-      // Couldn't find organization, skip
       continue;
     }
     
@@ -315,11 +416,10 @@ function parsePdfCallingsMultiLine(lines: string[]): ParsedCalling[] {
     const callingName = match.remaining;
     
     if (!callingName) {
-      // No calling name, skip
       continue;
     }
     
-    // Now check for optional sustained date
+    // Check for optional sustained date
     let sustained = false;
     if (i < lines.length) {
       nextLine = lines[i];
@@ -336,7 +436,7 @@ function parsePdfCallingsMultiLine(lines: string[]): ParsedCalling[] {
       }
     }
     
-    // Now check for optional set apart checkmark
+    // Check for optional set apart checkmark
     let setApart = false;
     if (i < lines.length) {
       nextLine = lines[i];
@@ -353,7 +453,6 @@ function parsePdfCallingsMultiLine(lines: string[]): ParsedCalling[] {
       }
     }
 
-    // We have a complete calling record
     callings.push({
       memberName: name,
       birthday,
@@ -371,37 +470,56 @@ export function parseCallingsPdfText(rawText: string): ParsedCalling[] {
   const normalized = rawText.replace(/\r\n?/g, '\n');
   const lines = normalized.split('\n').map(l => l.trim()).filter(l => l.length > 0);
   
-  // Check if this looks like LCR PDF format (multi-line)
-  // Look for the pattern: name, gender, age, birthday in sequence
-  let isPdfFormat = false;
-  for (let i = 0; i < Math.min(lines.length - 3, 50); i++) {
-    if (looksLikeNameLine(lines[i]) && 
-        i + 1 < lines.length && looksLikeGenderLine(lines[i + 1]) &&
-        i + 2 < lines.length && looksLikeAgeLine(lines[i + 2]) &&
-        i + 3 < lines.length && looksLikeBirthdayLine(lines[i + 3])) {
-      isPdfFormat = true;
+  // Detect format: Table format vs Multi-line format
+  // Table format: Name and other data on same line
+  // Multi-line format: Name on one line, gender on next, etc.
+  
+  let isTableFormat = false;
+  let isMultiLineFormat = false;
+  
+  // Check for table format: lines with comma followed by M/F/gender and age on same line
+  for (let i = 0; i < Math.min(lines.length, 50); i++) {
+    const line = lines[i];
+    if (isHeaderOrFooterLine(line)) continue;
+    
+    // Table format: "Name, M Age Birthday..."
+    if (/,\s*[^,]+\s+[MF]\s+\d{1,3}\s+\d{1,2}\s+[A-Za-z]{3,}/i.test(line)) {
+      isTableFormat = true;
       break;
     }
   }
   
-  if (isPdfFormat) {
-    const callings = parsePdfCallingsMultiLine(lines);
-    
-    // Deduplicate
-    const deduped = new Map<string, ParsedCalling>();
-    for (const calling of callings) {
-      const key = `${calling.memberName.toLowerCase()}::${calling.birthday.toLowerCase()}::${calling.callingName.toLowerCase()}`;
-      if (!deduped.has(key)) {
-        deduped.set(key, calling);
+  // Check for multi-line format: name, gender, age, birthday in sequence
+  if (!isTableFormat) {
+    for (let i = 0; i < Math.min(lines.length - 3, 50); i++) {
+      if (looksLikeNameLine(lines[i]) && 
+          i + 1 < lines.length && looksLikeGenderLine(lines[i + 1]) &&
+          i + 2 < lines.length && looksLikeAgeLine(lines[i + 2]) &&
+          i + 3 < lines.length && looksLikeBirthdayLine(lines[i + 3])) {
+        isMultiLineFormat = true;
+        break;
       }
     }
-    
-    return Array.from(deduped.values());
   }
   
-  // Fall back to legacy parser (not implemented here, would need original logic)
-  // For now, return empty if not PDF format
-  return [];
+  let callings: ParsedCalling[] = [];
+  
+  if (isTableFormat) {
+    callings = parsePdfCallingsTableFormat(lines);
+  } else if (isMultiLineFormat) {
+    callings = parsePdfCallingsMultiLine(lines);
+  }
+  
+  // Deduplicate
+  const deduped = new Map<string, ParsedCalling>();
+  for (const calling of callings) {
+    const key = `${calling.memberName.toLowerCase()}::${calling.birthday.toLowerCase()}::${calling.callingName.toLowerCase()}`;
+    if (!deduped.has(key)) {
+      deduped.set(key, calling);
+    }
+  }
+  
+  return Array.from(deduped.values());
 }
 
 export function makeMemberBirthdayKey(memberName: string, birthday: string): string {
