@@ -86,4 +86,33 @@ describe('calling PDF import parsing', () => {
       }
     ]);
   });
+
+  it('parses compact pdf rows with wrapped calling lines and separate set-apart token', () => {
+    const result = parseCallingsPdfText(`
+      NameGenderAgeBirth DateOrganizationCallingSustainedSet Apart
+      Acosta, FrankM6526 May 1960Elders QuorumElders Quorum Secretary9 Mar 2025
+      ✔
+      Amber, TimM6723 Nov 1958Elders QuorumElders Quorum Activity
+      Committee Member
+    `);
+
+    expect(result).toEqual([
+      {
+        memberName: 'Acosta, Frank',
+        birthday: 'May 26',
+        organization: 'Elders Quorum',
+        callingName: 'Elders Quorum Secretary',
+        sustained: true,
+        setApart: true
+      },
+      {
+        memberName: 'Amber, Tim',
+        birthday: 'Nov 23',
+        organization: 'Elders Quorum',
+        callingName: 'Elders Quorum Activity Committee Member',
+        sustained: false,
+        setApart: false
+      }
+    ]);
+  });
 });

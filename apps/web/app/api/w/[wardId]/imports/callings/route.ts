@@ -34,7 +34,9 @@ function looksLikePotentialCallingRow(line: string): boolean {
   const normalized = line.replace(/\s+/g, ' ').trim();
   if (!normalized) return false;
 
-  return /\b(male|female|m|f)\b/i.test(normalized) && /\b\d{1,2}\b/.test(normalized);
+  if (/\b(male|female|m|f)\b/i.test(normalized) && /\b\d{1,2}\b/.test(normalized)) return true;
+  if (/,\s*[^,]+(?:m|f)\d{1,3}\d{1,2}\s+[A-Za-z]{3,}\s+\d{4}/i.test(normalized)) return true;
+  return false;
 }
 
 function makeCallingKey(memberName: string, birthday: string, callingName: string): string {
