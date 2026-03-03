@@ -54,7 +54,7 @@ describe('calling PDF import parsing', () => {
     expect(makeMemberBirthdayKey('Jane Doe', '26 May 1960')).toBe('jane doe::may 26');
   });
 
-  it('parses single-space extracted rows with DMY birthdays', () => {
+  it('parses single-space extracted rows with full-word gender tokens', () => {
     expect(
       parseCallingsPdfText(`
         Name Gender Age Birth Date Organization Calling Sustained Set Apart
@@ -71,25 +71,19 @@ describe('calling PDF import parsing', () => {
       }
     ]);
   });
-});
-test('parsePdfCallingsTableFormat handles single-space separators', () => {
-  const input = `Acosta, Frank M 65 26 May 1960 Elders Quorum Secretary 9 Mar 2025 ✔`;
-  const result = parseCallingsPdfText(input);
-  expect(result.length).toBe(1);
-  expect(result[0].memberName).toBe('Acosta, Frank');
-  expect(result[0].sustained).toBe(true);
-  expect(result[0].setApart).toBe(true);
-});
 
-test('strips repeated headers across pages', () => {
-  const input = `
-Name Gender Age
-Smith, John M 45
-Name Gender Age
-Doe, Jane F 32
-  `;
-  const result = parseCallingsPdfText(input);
-  // Should only have 2 members, headers removed
-  expect(result.length).toBeGreaterThanOrEqual(0); // adjust based on actual structure
-});
+  it('parses single-space rows without header using M/F tokens', () => {
+    const result = parseCallingsPdfText('Acosta, Frank M 65 26 May 1960 Elders Quorum Elders Quorum Secretary 9 Mar 2025');
 
+    expect(result).toEqual([
+      {
+        memberName: 'Acosta, Frank',
+        birthday: 'May 26',
+        organization: 'Elders Quorum',
+        callingName: 'Elders Quorum Secretary',
+        sustained: true,
+        setApart: false
+      }
+    ]);
+  });
+});

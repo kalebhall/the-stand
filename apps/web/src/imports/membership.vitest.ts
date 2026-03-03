@@ -59,17 +59,17 @@ describe('membership import parsing', () => {
     ]);
   });
 
-
   it('preserves commas inside tab-delimited values', () => {
-    const result = parseMembershipText(`Name	Email	Birthday
-Jane Doe	jane@example.com	February 14, 1990`);
+    const result = parseMembershipText(`Name\tEmail\tBirthday
+Jane Doe\tjane@example.com\tFebruary 14, 1990`);
 
     expect(result).toEqual([
       { fullName: 'Jane Doe', email: 'jane@example.com', phone: null, age: null, birthday: 'February 14, 1990', gender: null }
     ]);
   });
+
   it('handles tab-separated header rows', () => {
-    const result = parseMembershipText("Name\tEmail\tAge\tBirthday\nJane Doe\tjane@example.com\t30\tFeb 14");
+    const result = parseMembershipText('Name\tEmail\tAge\tBirthday\nJane Doe\tjane@example.com\t30\tFeb 14');
 
     expect(result).toEqual([
       { fullName: 'Jane Doe', email: 'jane@example.com', phone: null, age: 30, birthday: 'Feb 14', gender: null }
@@ -117,24 +117,22 @@ Jane Doe	jane@example.com	February 14, 1990`);
       { fullName: 'Jane Doe', email: 'jane@example.com', phone: null, age: 36, birthday: null, gender: null }
     ]);
   });
-});
-test('parsePdfCallingsTableFormat handles single-space separators', () => {
-  const input = `Acosta, Frank M 65 26 May 1960 Elders Quorum Secretary 9 Mar 2025 ✔`;
-  const result = parseCallingsPdfText(input);
-  expect(result.length).toBe(1);
-  expect(result[0].memberName).toBe('Acosta, Frank');
-  expect(result[0].sustained).toBe(true);
-  expect(result[0].setApart).toBe(true);
-});
 
-test('strips repeated headers across pages', () => {
-  const input = `
-Name Gender Age
-Smith, John M 45
-Name Gender Age
-Doe, Jane F 32
-  `;
-  const result = parseCallingsPdfText(input);
-  // Should only have 2 members, headers removed
-  expect(result.length).toBeGreaterThanOrEqual(0); // adjust based on actual structure
+  it('parses single-line PDF table rows (name + gender + age + birthday)', () => {
+    const result = parseMembershipText(`
+      Name Gender Age Birth Date Phone Number E-mail
+      Doe, Jane Female 35 26 May 1990 801-555-0101 jane@example.com
+    `);
+
+    expect(result).toEqual([
+      {
+        fullName: 'Doe, Jane',
+        email: 'jane@example.com',
+        phone: '801-555-0101',
+        age: 35,
+        birthday: 'May 26 1990',
+        gender: 'F'
+      }
+    ]);
+  });
 });

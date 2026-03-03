@@ -94,6 +94,11 @@ function looksLikeSustainedDateLine(line: string): boolean {
   return /^\d{1,2}\s+[a-z]{3,}\s+\d{4}$/i.test(normalized);
 }
 
+function looksLikeSetApartToken(line: string): boolean {
+  const normalized = normalizeWhitespace(line);
+  return /^[✔✓]$/.test(normalized) || /^âœ”$/i.test(normalized) || /^âœ“$/i.test(normalized);
+}
+
 function looksLikeSetApartLine(line: string): boolean {
   const normalized = normalizeWhitespace(line);
   // Just a checkmark
@@ -138,7 +143,7 @@ function parsePdfCallingsTableFormatSingleSpace(line: string): ParsedCalling | n
   // Extract name (everything before first M/F token)
   let nameEndIdx = -1;
   for (let i = 0; i < tokens.length; i++) {
-    if (/^[MF]$/i.test(tokens[i])) {
+    if (/^(m|f|male|female)$/i.test(tokens[i])) {
       nameEndIdx = i;
       break;
     }
@@ -150,7 +155,7 @@ function parsePdfCallingsTableFormatSingleSpace(line: string): ParsedCalling | n
   let idx = nameEndIdx;
   
   // Gender
-  const gender = tokens[idx++];
+  idx++;
   
   // Age
   if (idx >= tokens.length || !/^\d+$/.test(tokens[idx])) return null;
@@ -413,7 +418,7 @@ function parsePdfCallingsMultiLine(lines: string[]): ParsedCalling[] {
         break;
       }
       
-      if (looksLikeSetApartLine(nextLine)) {
+      if (looksLikeSetApartToken(nextLine)) {
         break;
       }
       
@@ -467,7 +472,7 @@ function parsePdfCallingsMultiLine(lines: string[]): ParsedCalling[] {
         nextLine = lines[i];
       }
       
-      if (i < lines.length && looksLikeSetApartLine(nextLine)) {
+      if (i < lines.length && looksLikeSetApartToken(nextLine)) {
         setApart = true;
         i++;
       }
@@ -502,8 +507,14 @@ export function parseCallingsPdfText(rawText: string): ParsedCalling[] {
     const line = lines[i];
     if (isHeaderOrFooterLine(line)) continue;
     
-    // Table format: "Name, M Age Birthday..."
-    if (/,\s*[^,]+\s+[MF]\s+\d{1,3}\s+\d{1,2}\s+[A-Za-z]{3,}/i.test(line)) {
+    // Table format: "Name, ... M/F/Male/Female Age Birthday..."
+    if (/,\s*[^,]+\s+(?:m|f|male|female)\s+\d{1,3}\s+\d{1,2}\s+[A-Za-z]{3,}/i.test(line)) {
+      isTableFormat = true;
+      break;
+    }
+
+    // Fallback: directly test whether a representative row parses.
+    if (parsePdfCallingsTableFormatSingleSpace(line)) {
       isTableFormat = true;
       break;
     }

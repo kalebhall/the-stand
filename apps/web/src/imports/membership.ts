@@ -349,6 +349,83 @@ function parsePdfMembersMultiLine(lines: string[]): ParsedMember[] {
   return members;
 }
 
+function parseBirthdayFromTokens(tokens: string[], startIndex: number): { birthday: string | null; nextIndex: number } | null {
+  if (startIndex + 2 >= tokens.length) return null;
+
+  // dd Mmm yyyy
+  if (/^\d{1,2}$/.test(tokens[startIndex]) && /^[A-Za-z]{3,}$/.test(tokens[startIndex + 1]) && /^\d{4}$/.test(tokens[startIndex + 2])) {
+    return {
+      birthday: normalizeBirthday(`${tokens[startIndex]} ${tokens[startIndex + 1]} ${tokens[startIndex + 2]}`),
+      nextIndex: startIndex + 3
+    };
+  }
+
+  // Mmm dd yyyy
+  if (/^[A-Za-z]{3,}$/.test(tokens[startIndex]) && /^\d{1,2}$/.test(tokens[startIndex + 1]) && /^\d{4}$/.test(tokens[startIndex + 2])) {
+    return {
+      birthday: normalizeBirthday(`${tokens[startIndex]} ${tokens[startIndex + 1]} ${tokens[startIndex + 2]}`),
+      nextIndex: startIndex + 3
+    };
+  }
+
+  return null;
+}
+
+function parsePdfMemberTableLine(line: string): ParsedMember | null {
+  const normalized = normalizeWhitespace(line);
+  if (!looksLikeNameLine(normalized)) return null;
+
+  const tokens = normalized.split(/\s+/);
+  if (tokens.length < 7) return null;
+
+  let genderIndex = -1;
+  for (let i = 0; i < tokens.length; i++) {
+    if (/^(m|f|male|female)$/i.test(tokens[i])) {
+      genderIndex = i;
+      break;
+    }
+  }
+
+  if (genderIndex <= 0) return null;
+
+  const fullName = tokens.slice(0, genderIndex).join(' ');
+  const gender = parseGenderPdf(tokens[genderIndex]);
+
+  let idx = genderIndex + 1;
+  if (idx >= tokens.length || !/^\d{1,3}$/.test(tokens[idx])) return null;
+  const age = parseAge(tokens[idx]);
+  idx++;
+
+  const birthdayResult = parseBirthdayFromTokens(tokens, idx);
+  if (!birthdayResult) return null;
+  const birthday = birthdayResult.birthday;
+  idx = birthdayResult.nextIndex;
+
+  const tail = tokens.slice(idx).join(' ').trim();
+  if (!tail) {
+    return { fullName, email: null, phone: null, age, birthday, gender };
+  }
+
+  const emailMatch = tail.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+  const email = emailMatch ? sanitizeEmail(emailMatch[0]) : null;
+  const phoneSource = emailMatch ? tail.replace(emailMatch[0], '').trim() : tail;
+  const phone = sanitizePhone(phoneSource);
+
+  return { fullName, email, phone, age, birthday, gender };
+}
+
+function parsePdfMembersTableFormat(lines: string[]): ParsedMember[] {
+  const members: ParsedMember[] = [];
+
+  for (const line of lines) {
+    if (isHeaderOrFooterLine(line)) continue;
+    const parsed = parsePdfMemberTableLine(line);
+    if (parsed) members.push(parsed);
+  }
+
+  return members;
+}
+
 function parseMemberLegacy(parts: string[]): ParsedMember | null {
   if (!parts.length) return null;
 
@@ -384,6 +461,7 @@ export function parseMembershipText(rawText: string): ParsedMember[] {
   // Check if this looks like LCR PDF text (multi-line format)
   // Look for the pattern: name line with comma, followed by M/F, followed by age+date
   let isPdfFormat = false;
+  let isPdfTableFormat = false;
   for (let i = 0; i < Math.min(lines.length - 2, 50); i++) {
     if (looksLikeNameLine(lines[i]) && 
         i + 1 < lines.length && looksLikeGenderLine(lines[i + 1]) &&
@@ -393,9 +471,19 @@ export function parseMembershipText(rawText: string): ParsedMember[] {
     }
   }
 
-  if (isPdfFormat) {
-    // Use multi-line PDF parser
-    const members = parsePdfMembersMultiLine(lines);
+  if (!isPdfFormat) {
+    for (let i = 0; i < Math.min(lines.length, 50); i++) {
+      if (isHeaderOrFooterLine(lines[i])) continue;
+      if (parsePdfMemberTableLine(lines[i])) {
+        isPdfTableFormat = true;
+        break;
+      }
+    }
+  }
+
+  if (isPdfFormat || isPdfTableFormat) {
+    // Use PDF parser path for either multi-line or single-line table exports.
+    const members = isPdfFormat ? parsePdfMembersMultiLine(lines) : parsePdfMembersTableFormat(lines);
     
     // Deduplicate by name
     const deduped = new Map<string, ParsedMember>();
