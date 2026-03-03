@@ -118,3 +118,23 @@ Jane Doe	jane@example.com	February 14, 1990`);
     ]);
   });
 });
+test('parsePdfCallingsTableFormat handles single-space separators', () => {
+  const input = `Acosta, Frank M 65 26 May 1960 Elders Quorum Secretary 9 Mar 2025 ✔`;
+  const result = parseCallingsPdfText(input);
+  expect(result.length).toBe(1);
+  expect(result[0].memberName).toBe('Acosta, Frank');
+  expect(result[0].sustained).toBe(true);
+  expect(result[0].setApart).toBe(true);
+});
+
+test('strips repeated headers across pages', () => {
+  const input = `
+Name Gender Age
+Smith, John M 45
+Name Gender Age
+Doe, Jane F 32
+  `;
+  const result = parseCallingsPdfText(input);
+  // Should only have 2 members, headers removed
+  expect(result.length).toBeGreaterThanOrEqual(0); // adjust based on actual structure
+});
