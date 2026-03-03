@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import type { QueryResultRow } from 'pg';
 
 import { auth } from '@/src/auth/auth';
-import { canViewCallings } from '@/src/auth/roles';
+import { canRunImports } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 import { makeMemberBirthdayKey } from '@/src/imports/callings';
@@ -210,7 +210,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
   }
 
   const { wardId } = await context.params;
-  if (!canViewCallings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) {
+  if (!canRunImports({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) {
     return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
   }
 

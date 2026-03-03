@@ -35,7 +35,6 @@ export function canAssignRole(actorRoles: string[] | undefined, targetRoleName: 
   return hasRole(actorRoles, 'STAND_ADMIN') || hasRole(actorRoles, 'SUPPORT_ADMIN');
 }
 
-
 export function canViewMeetings(session: { roles?: string[]; activeWardId?: string | null }, wardId: string): boolean {
   const roles = session.roles ?? [];
 
@@ -103,4 +102,14 @@ export function canManageCallings(session: { roles?: string[]; activeWardId?: st
   }
 
   return hasRole(roles, 'STAND_ADMIN') || hasRole(roles, 'BISHOPRIC_EDITOR') || hasRole(roles, 'CLERK_EDITOR');
+}
+
+export function canRunImports(session: { roles?: string[]; activeWardId?: string | null }, wardId: string): boolean {
+  const roles = session.roles ?? [];
+
+  if (session.activeWardId !== wardId) {
+    return false;
+  }
+
+  return hasRole(roles, 'STAND_ADMIN') || hasRole(roles, 'CLERK_EDITOR');
 }

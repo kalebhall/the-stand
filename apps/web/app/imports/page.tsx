@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 
 import { MembershipImportsClient } from './membership-imports-client';
 import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth/guards';
-import { canViewCallings } from '@/src/auth/roles';
+import { canRunImports } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 import { parseCallingsPdfText } from '@/src/imports/callings';
@@ -40,7 +40,7 @@ export default async function ImportsPage() {
   const session = await requireAuthenticatedSession();
   enforcePasswordRotation(session);
 
-  if (!session.activeWardId || !canViewCallings({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId)) {
+  if (!session.activeWardId || !canRunImports({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId)) {
     redirect('/dashboard');
   }
 
