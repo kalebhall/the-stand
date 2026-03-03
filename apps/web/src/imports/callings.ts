@@ -127,6 +127,79 @@ function findBestOrganizationMatch(text: string): { org: string; remaining: stri
   return null;
 }
 
+function parsePdfCallingsTableFormatSingleSpace(line: string): ParsedCalling | null {
+  const normalized = normalizeWhitespace(line);
+  
+  if (!looksLikeNameLine(normalized)) return null;
+  
+  const tokens = normalized.split(/\s+/);
+  if (tokens.length < 8) return null; // Minimum: name, gender, age, bd-day, bd-month, bd-year, org, calling
+  
+  // Extract name (everything before first M/F token)
+  let nameEndIdx = -1;
+  for (let i = 0; i < tokens.length; i++) {
+    if (/^[MF]$/i.test(tokens[i])) {
+      nameEndIdx = i;
+      break;
+    }
+  }
+  
+  if (nameEndIdx === -1 || nameEndIdx === 0) return null;
+  
+  const name = tokens.slice(0, nameEndIdx).join(' ');
+  let idx = nameEndIdx;
+  
+  // Gender
+  const gender = tokens[idx++];
+  
+  // Age
+  if (idx >= tokens.length || !/^\d+$/.test(tokens[idx])) return null;
+  idx++; // skip age
+  
+  // Birthday: dd Mmm yyyy
+  if (idx + 2 >= tokens.length) return null;
+  const birthdayStr = `${tokens[idx]} ${tokens[idx + 1]} ${tokens[idx + 2]}`;
+  const birthday = normalizeBirthday(birthdayStr);
+  idx += 3;
+  
+  // Find organization
+  const remainingTokens = tokens.slice(idx);
+  const remainingText = remainingTokens.join(' ');
+  
+  const orgMatch = findBestOrganizationMatch(remainingText);
+  if (!orgMatch) return null;
+  
+  const organization = orgMatch.org;
+  let callingAndFlags = orgMatch.remaining;
+  
+  // Check for set apart checkmark at end
+  let setApart = false;
+  if (/[✔✓]$/.test(callingAndFlags)) {
+    setApart = true;
+    callingAndFlags = callingAndFlags.replace(/[✔✓]$/, '').trim();
+  }
+  
+  // Check for sustained date at end (dd Mmm yyyy)
+  let sustained = false;
+  const sustainedMatch = callingAndFlags.match(/^(.+?)\s+\d{1,2}\s+[A-Za-z]{3,}\s+\d{4}\s*$/);
+  if (sustainedMatch) {
+    sustained = true;
+    callingAndFlags = sustainedMatch[1].trim();
+  }
+  
+  const callingName = callingAndFlags;
+  if (!callingName) return null;
+  
+  return {
+    memberName: name,
+    birthday,
+    organization,
+    callingName,
+    sustained,
+    setApart
+  };
+}
+
 // Parse TABLE FORMAT from PDFs where each calling is on one line with space-separated columns:
 // Format: Name Gender Age Birthday Organization Calling [Sustained] [SetApart]
 // Example: Acosta, Frank M 65 26 May 1960 Elders Quorum Elders Quorum Secretary 9 Mar 2025 ✔
@@ -150,91 +223,94 @@ function parsePdfCallingsTableFormat(lines: string[]): ParsedCalling[] {
     // This preserves multi-word values that are single-space separated
     const parts = normalized.split(/\s{2,}/);
     
-    if (parts.length < 5) {
-      // Not enough columns, skip
-      continue;
-    }
-
-    // Extract fixed columns: Name, Gender, Age, Birthday (4 parts of birthday: day month year)
-    let currentIndex = 0;
-    const name = parts[currentIndex++];
-    
-    if (currentIndex >= parts.length) continue;
-    const genderStr = parts[currentIndex++];
-    
-    if (currentIndex >= parts.length) continue;
-    const ageStr = parts[currentIndex++];
-    
-    // Birthday: next 3 tokens are day, month, year
-    if (currentIndex >= parts.length) continue;
-    const birthdayPart = parts[currentIndex++];
-    
-    // Birthday might be in the same column or split across columns
-    // Try to extract "dd Mmm yyyy" pattern
-    const birthdayMatch = birthdayPart.match(/^(\d{1,2})\s+([A-Za-z]{3,})\s+(\d{4})/);
-    let birthday: string;
-    
-    if (birthdayMatch) {
-      birthday = normalizeBirthday(`${birthdayMatch[1]} ${birthdayMatch[2]} ${birthdayMatch[3]}`);
-    } else {
-      // Birthday might be split, try combining with next parts
-      const birthdayStr = [birthdayPart, parts[currentIndex], parts[currentIndex + 1]].join(' ');
-      const match2 = birthdayStr.match(/^(\d{1,2})\s+([A-Za-z]{3,})\s+(\d{4})/);
-      if (match2) {
-        birthday = normalizeBirthday(`${match2[1]} ${match2[2]} ${match2[3]}`);
-        currentIndex += 2; // consumed 2 more parts
+     if (parts.length >= 5) {
+      // Extract fixed columns: Name, Gender, Age, Birthday (4 parts of birthday: day month year)
+      let currentIndex = 0;
+      const name = parts[currentIndex++];
+      
+      if (currentIndex >= parts.length) continue;
+      const genderStr = parts[currentIndex++];
+      
+      if (currentIndex >= parts.length) continue;
+      const ageStr = parts[currentIndex++];
+      
+      // Birthday: next 3 tokens are day, month, year
+      if (currentIndex >= parts.length) continue;
+      const birthdayPart = parts[currentIndex++];
+      
+      // Birthday might be in the same column or split across columns
+      // Try to extract "dd Mmm yyyy" pattern
+      const birthdayMatch = birthdayPart.match(/^(\d{1,2})\s+([A-Za-z]{3,})\s+(\d{4})/);
+      let birthday: string;
+      
+      if (birthdayMatch) {
+        birthday = normalizeBirthday(`${birthdayMatch[1]} ${birthdayMatch[2]} ${birthdayMatch[3]}`);
       } else {
-        // Can't parse birthday, skip
-        continue;
+        // Birthday might be split, try combining with next parts
+        const birthdayStr = [birthdayPart, parts[currentIndex], parts[currentIndex + 1]].join(' ');
+        const match2 = birthdayStr.match(/^(\d{1,2})\s+([A-Za-z]{3,})\s+(\d{4})/);
+        if (match2) {
+          birthday = normalizeBirthday(`${match2[1]} ${match2[2]} ${match2[3]}`);
+          currentIndex += 2; // consumed 2 more parts
+        } else {
+          // Can't parse birthday, skip
+          continue;
+        }
+      }
+  
+      // Now we need to find Organization and Calling from remaining parts
+      // Organization is from KNOWN_ORGANIZATIONS list
+      // Everything after organization (until date or checkmark) is the calling
+      
+      const remainingParts = parts.slice(currentIndex);
+      if (remainingParts.length === 0) continue;
+      
+      const remainingText = remainingParts.join(' ');
+      
+      // Find organization
+      const orgMatch = findBestOrganizationMatch(remainingText);
+      if (!orgMatch) continue;
+      
+      const organization = orgMatch.org;
+      let remainingAfterOrg = orgMatch.remaining;
+      
+      // Now parse calling, sustained date, and set apart
+      // Look for sustained date pattern (dd Mmm yyyy) and checkmark at the end
+      let sustained = false;
+      let setApart = false;
+      
+      // Check if last token is checkmark
+      if (remainingAfterOrg.endsWith('✔') || remainingAfterOrg.endsWith('✓')) {
+        setApart = true;
+        remainingAfterOrg = remainingAfterOrg.slice(0, -1).trim();
+      }
+      
+      // Check if there's a sustained date at the end (dd Mmm yyyy)
+      const sustainedMatch = remainingAfterOrg.match(/(.+?)\s+(\d{1,2})\s+([A-Za-z]{3,})\s+(\d{4})\s*$/);
+      if (sustainedMatch) {
+        sustained = true;
+        remainingAfterOrg = sustainedMatch[1].trim();
+      }
+      
+      const callingName = remainingAfterOrg;
+      
+      if (!callingName) continue;
+  
+      callings.push({
+        memberName: name,
+        birthday,
+        organization,
+        callingName,
+        sustained,
+        setApart
+      });
+     } else {
+      // Fallback: try single-space token parser
+      const parsed = parsePdfCallingsTableFormatSingleSpace(line);
+      if (parsed) {
+        callings.push(parsed);
       }
     }
-
-    // Now we need to find Organization and Calling from remaining parts
-    // Organization is from KNOWN_ORGANIZATIONS list
-    // Everything after organization (until date or checkmark) is the calling
-    
-    const remainingParts = parts.slice(currentIndex);
-    if (remainingParts.length === 0) continue;
-    
-    const remainingText = remainingParts.join(' ');
-    
-    // Find organization
-    const orgMatch = findBestOrganizationMatch(remainingText);
-    if (!orgMatch) continue;
-    
-    const organization = orgMatch.org;
-    let remainingAfterOrg = orgMatch.remaining;
-    
-    // Now parse calling, sustained date, and set apart
-    // Look for sustained date pattern (dd Mmm yyyy) and checkmark at the end
-    let sustained = false;
-    let setApart = false;
-    
-    // Check if last token is checkmark
-    if (remainingAfterOrg.endsWith('✔') || remainingAfterOrg.endsWith('✓')) {
-      setApart = true;
-      remainingAfterOrg = remainingAfterOrg.slice(0, -1).trim();
-    }
-    
-    // Check if there's a sustained date at the end (dd Mmm yyyy)
-    const sustainedMatch = remainingAfterOrg.match(/(.+?)\s+(\d{1,2})\s+([A-Za-z]{3,})\s+(\d{4})\s*$/);
-    if (sustainedMatch) {
-      sustained = true;
-      remainingAfterOrg = sustainedMatch[1].trim();
-    }
-    
-    const callingName = remainingAfterOrg;
-    
-    if (!callingName) continue;
-
-    callings.push({
-      memberName: name,
-      birthday,
-      organization,
-      callingName,
-      sustained,
-      setApart
-    });
   }
 
   return callings;
