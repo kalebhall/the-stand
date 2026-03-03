@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { auth } from '@/src/auth/auth';
-import { canViewCallings } from '@/src/auth/roles';
+import { canRunImports } from '@/src/auth/roles';
 import { getLcrImportJob } from '@/src/imports/lcr-jobs';
 
 export async function GET(_request: Request, context: { params: Promise<{ wardId: string; jobId: string }> }) {
@@ -11,7 +11,7 @@ export async function GET(_request: Request, context: { params: Promise<{ wardId
   }
 
   const { wardId, jobId } = await context.params;
-  if (!canViewCallings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) {
+  if (!canRunImports({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) {
     return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
   }
 

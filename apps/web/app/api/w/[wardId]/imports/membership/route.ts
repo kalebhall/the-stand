@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { auth } from '@/src/auth/auth';
-import { canViewCallings } from '@/src/auth/roles';
+import { canRunImports } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 import { parseMembershipText, toPlainText } from '@/src/imports/membership';
@@ -22,7 +22,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
   }
 
   const { wardId } = await context.params;
-  if (!canViewCallings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) {
+  if (!canRunImports({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) {
     return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
   }
 
@@ -41,11 +41,11 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
   } else if (contentType.includes('multipart/form-data') || contentType === '') {
     // PDF upload (or FormData without explicit content-type)
     const formData = await request.formData().catch(() => null);
-    
+
     if (!formData) {
       return NextResponse.json({ error: 'Invalid request format', code: 'VALIDATION_ERROR' }, { status: 400 });
     }
-    
+
     const commitValue = formData.get('commit');
     commit = commitValue === 'true';
     const file = formData.get('file');
@@ -60,7 +60,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     }
 
     extractedText = await extractPdfText(await file.arrayBuffer());
-    
+
     // DEBUG: Log first 500 chars of extracted text
     logger.debug('PDF extraction result', {
       fileName,
@@ -108,7 +108,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     if (!importRunId) {
       throw new Error('Failed to create import run');
     }
-    
+
     if (parsedMembers.length === 0) {
       await client.query(
         `INSERT INTO audit_log (ward_id, user_id, action, details)
@@ -236,7 +236,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
         error: auditError instanceof Error ? auditError.message : 'unknown error'
       });
     }
-    
+
     logger.error('Membership import request failed', {
       wardId,
       userId: session.user.id,
