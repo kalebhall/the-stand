@@ -80,7 +80,11 @@ function sanitizeEmail(value: string): string | null {
 }
 
 function normalizeBirthday(value: string): string | null {
-  const raw = normalizeWhitespace(value);
+  const direct = normalizeWhitespace(value);
+  if (!direct) return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(direct)) return direct;
+
+  const raw = normalizeWhitespace(direct.replace(/[-/]/g, ' '));
   if (!raw) return null;
 
   // Matches: "26 May 1994" or "26 Mar 1994" (day month year) - LCR format
@@ -103,6 +107,20 @@ function normalizeBirthday(value: string): string | null {
   }
 
   return raw;
+}
+
+function extractPhoneAndEmail(value: string): { phone: string | null; email: string | null } {
+  const normalized = normalizeWhitespace(value);
+  if (!normalized) return { phone: null, email: null };
+
+  const emailMatch = normalized.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+  const email = emailMatch ? sanitizeEmail(emailMatch[0]) : null;
+  const withoutEmail = emailMatch ? normalized.replace(emailMatch[0], ' ').trim() : normalized;
+
+  const phoneMatch = withoutEmail.match(/(?:\+?1[\s.-]?)?(?:\(?\d{3}\)?[\s.-]?)\d{3}[\s.-]?\d{4}/);
+  const phone = phoneMatch ? sanitizePhone(phoneMatch[0]) : null;
+
+  return { phone, email };
 }
 
 type FieldMapping = 'name' | 'email' | 'phone' | 'age' | 'birthday' | 'gender' | 'unknown';
@@ -329,20 +347,21 @@ function parsePdfMembersMultiLine(lines: string[]): ParsedMember[] {
       continue;
     }
 
-    const ageStr = parts[0];
-    const age = parseAge(ageStr);
+    // Age from PDF extraction is often unreliable when columns shift; prefer birthday.
+    const age = null;
     
     // Birthday is next 3 parts: dd Mmm yyyy
     const birthdayStr = `${parts[1]} ${parts[2]} ${parts[3]}`;
     const birthday = normalizeBirthday(birthdayStr);
     
     // Phone is remaining parts (if any)
-    const phone = parts.length > 4 ? sanitizePhone(parts.slice(4).join(' ')) : null;
+    const contact = parts.length > 4 ? extractPhoneAndEmail(parts.slice(4).join(' ')) : { phone: null, email: null };
     
     i++;
 
     // Next line might be email (or might be the next name)
-    let email: string | null = null;
+    let email: string | null = contact.email;
+    let phone: string | null = contact.phone;
     if (i < lines.length) {
       nextLine = lines[i];
       
@@ -354,6 +373,10 @@ function parsePdfMembersMultiLine(lines: string[]): ParsedMember[] {
       
       if (i < lines.length && nextLine.includes('@') && !looksLikeNameLine(nextLine)) {
         email = sanitizeEmail(nextLine);
+        i++;
+      }
+      if (i < lines.length && !phone && /\d{3}[\s().-]?\d{3}[\s.-]?\d{4}/.test(nextLine) && !looksLikeNameLine(nextLine)) {
+        phone = sanitizePhone(nextLine);
         i++;
       }
     }
@@ -392,6 +415,17 @@ function parseBirthdayFromTokens(tokens: string[], startIndex: number): { birthd
   }
 
   return null;
+}
+
+function findBirthdayInText(value: string): { birthday: string | null; start: number; end: number } | null {
+  const normalized = normalizeWhitespace(value);
+  const match = normalized.match(/\d{1,2}(?:\s+|-)[A-Za-z]{3,}(?:\s+|-)\d{4}/);
+  if (!match || match.index == null) return null;
+  return {
+    birthday: normalizeBirthday(match[0]),
+    start: match.index,
+    end: match.index + match[0].length
+  };
 }
 
 function parsePdfMemberTableLine(line: string): ParsedMember | null {
@@ -441,11 +475,11 @@ function parsePdfMemberCompactLine(line: string): ParsedMember | null {
   const normalized = normalizeWhitespace(line);
   if (!looksLikeNameLine(normalized)) return null;
 
-  const birthdayMatch = normalized.match(/(\d{1,2}\s+[A-Za-z]{3,}\s+\d{4})/);
-  if (!birthdayMatch || birthdayMatch.index == null) return null;
+  const birthdayMatch = findBirthdayInText(normalized);
+  if (!birthdayMatch) return null;
 
-  const beforeBirthday = normalized.slice(0, birthdayMatch.index).trim();
-  const afterBirthday = normalized.slice(birthdayMatch.index + birthdayMatch[1].length).trim();
+  const beforeBirthday = normalized.slice(0, birthdayMatch.start).trim();
+  const afterBirthday = normalized.slice(birthdayMatch.end).trim();
   const prefixMatch = beforeBirthday.match(/^(.*?)(male|female|m|f)\s*(\d{1,3})$/i);
   if (!prefixMatch) return null;
 
@@ -453,14 +487,11 @@ function parsePdfMemberCompactLine(line: string): ParsedMember | null {
   if (!looksLikeNameLine(fullName)) return null;
 
   const gender = parseGenderPdf(prefixMatch[2]);
-  const age = parseAge(prefixMatch[3]);
-  const birthday = normalizeBirthday(birthdayMatch[1]);
+  // Age from PDF extraction is often unreliable when columns shift; prefer birthday.
+  const age = null;
+  const birthday = birthdayMatch.birthday;
 
-  const emailMatch = afterBirthday.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
-  const email = emailMatch ? sanitizeEmail(emailMatch[0]) : null;
-  const phoneSource = emailMatch ? afterBirthday.replace(emailMatch[0], ' ').trim() : afterBirthday;
-  const phoneMatch = phoneSource.match(/(?:\+?1[\s.-]?)?(?:\(?\d{3}\)?[\s.-]?)\d{3}[\s.-]?\d{4}/);
-  const phone = sanitizePhone(phoneMatch ? phoneMatch[0] : phoneSource);
+  const { phone, email } = extractPhoneAndEmail(afterBirthday);
 
   return { fullName, email, phone, age, birthday, gender };
 }

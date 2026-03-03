@@ -129,7 +129,7 @@ Jane Doe\tjane@example.com\tFebruary 14, 1990`);
         fullName: 'Doe, Jane',
         email: 'jane@example.com',
         phone: '801-555-0101',
-        age: 35,
+        age: null,
         birthday: 'May 26 1990',
         gender: 'F'
       }
@@ -152,7 +152,7 @@ Jane Doe\tjane@example.com\tFebruary 14, 1990`);
         fullName: 'Doe, Jane',
         email: 'jane@example.com',
         phone: '801-555-0101',
-        age: 35,
+        age: null,
         birthday: 'May 26 1990',
         gender: 'F'
       },
@@ -160,7 +160,7 @@ Jane Doe\tjane@example.com\tFebruary 14, 1990`);
         fullName: 'Smith, John',
         email: 'john@example.com',
         phone: '801-555-4444',
-        age: 42,
+        age: null,
         birthday: 'Feb 20 1983',
         gender: 'M'
       }
@@ -179,7 +179,7 @@ Jane Doe\tjane@example.com\tFebruary 14, 1990`);
         fullName: 'Acosta, Frank',
         email: 'frank@example.com',
         phone: '801-555-0000',
-        age: 65,
+        age: null,
         birthday: 'May 26 1960',
         gender: 'M'
       },
@@ -187,9 +187,27 @@ Jane Doe\tjane@example.com\tFebruary 14, 1990`);
         fullName: 'Amber, Tim',
         email: null,
         phone: null,
-        age: 67,
+        age: null,
         birthday: 'Nov 23 1958',
         gender: 'M'
+      }
+    ]);
+  });
+
+  it('handles dd-Mmm-yyyy birthdays and merged phone+email tails', () => {
+    const result = parseMembershipText(`
+      NameGenderAgeBirth DatePhone NumberE-mail
+      Clark, EmmaF3426-May-1991801-555-1212emma@example.com
+    `);
+
+    expect(result).toEqual([
+      {
+        fullName: 'Clark, Emma',
+        email: 'emma@example.com',
+        phone: '801-555-1212',
+        age: null,
+        birthday: 'May 26 1991',
+        gender: 'F'
       }
     ]);
   });
