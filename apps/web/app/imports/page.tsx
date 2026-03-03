@@ -31,7 +31,7 @@ type CallingRow = {
   birthday: string | null;
   organization: string | null;
   calling_name: string;
-  sustained_date: string | null;
+  sustained_date: string | Date | null;
   set_apart: boolean;
   is_active: boolean;
 };
@@ -105,6 +105,12 @@ export default async function ImportsPage() {
       Array.from(currentActiveSet).filter((key) => !latestImportSet.has(key)).length +
       Array.from(latestImportSet).filter((key) => !currentActiveSet.has(key)).length;
 
+    const normalizedCallingRows = (callingResult.rows as CallingRow[]).map((row) => ({
+      ...row,
+      sustained_date:
+        row.sustained_date instanceof Date ? row.sustained_date.toISOString().slice(0, 10) : (row.sustained_date ?? null)
+    }));
+
     return (
       <main className="mx-auto w-full max-w-6xl space-y-6 p-4 sm:p-6">
         <section className="space-y-2">
@@ -116,7 +122,7 @@ export default async function ImportsPage() {
           wardId={session.activeWardId}
           members={memberResult.rows as MemberRow[]}
           memberNotes={noteResult.rows as MemberNoteRow[]}
-          callingAssignments={callingResult.rows as CallingRow[]}
+          callingAssignments={normalizedCallingRows}
           initialCallingDrift={{
             isStale: driftCount > 0,
             driftCount,

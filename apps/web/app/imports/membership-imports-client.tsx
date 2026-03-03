@@ -27,7 +27,7 @@ type CallingRow = {
   member_name: string;
   organization: string | null;
   calling_name: string;
-  sustained_date: string | null;
+  sustained_date: string | Date | null;
   set_apart: boolean;
   is_active: boolean;
 };
@@ -46,7 +46,7 @@ type PreviewCalling = {
   birthday: string;
   organization: string;
   callingName: string;
-  sustainedDate: string | null;
+  sustainedDate: string | Date | null;
   setApart: boolean;
 };
 
@@ -55,6 +55,12 @@ type CallingDrift = {
   driftCount: number;
   comparedToImportRunId: string | null;
 };
+
+function formatDisplayDate(value: string | Date | null): string {
+  if (!value) return '—';
+  if (value instanceof Date) return value.toISOString().slice(0, 10);
+  return value;
+}
 
 
 
@@ -553,7 +559,7 @@ export function MembershipImportsClient({
                     <td className="px-3 py-2">{item.birthday}</td>
                     <td className="px-3 py-2">{item.organization}</td>
                     <td className="px-3 py-2">{item.callingName}</td>
-                    <td className="px-3 py-2">{item.sustainedDate ?? '—'}</td>
+                    <td className="px-3 py-2">{formatDisplayDate(item.sustainedDate)}</td>
                     <td className="px-3 py-2">{item.setApart ? 'Yes' : 'No'}</td>
                   </tr>
                 ))}
@@ -572,7 +578,7 @@ export function MembershipImportsClient({
                     <span className="font-medium">{assignment.member_name}</span> — {assignment.calling_name}
                     <span className="ml-2 text-xs text-muted-foreground">{assignment.organization ?? '—'}</span>
                     <span className="ml-2 text-xs text-muted-foreground">{assignment.is_active ? 'Active' : 'Released'}</span>
-                    <span className="ml-2 text-xs text-muted-foreground">Sustained: {assignment.sustained_date ?? '—'}</span>
+                    <span className="ml-2 text-xs text-muted-foreground">Sustained: {formatDisplayDate(assignment.sustained_date)}</span>
                     <span className="ml-2 text-xs text-muted-foreground">Set Apart: {assignment.set_apart ? 'Yes' : 'No'}</span>
                   </div>
                   <Button
