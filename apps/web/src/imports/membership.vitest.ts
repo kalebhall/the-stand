@@ -211,4 +211,24 @@ Jane Doe\tjane@example.com\tFebruary 14, 1990`);
       }
     ]);
   });
+
+  it('extracts phone and email when they appear merged on the next line', () => {
+    const result = parseMembershipText(`
+      Doe, Jane
+      Female
+      34 26-May-1991
+      8015551212jane@example.com
+    `);
+
+    expect(result).toEqual([
+      {
+        fullName: 'Doe, Jane',
+        email: 'jane@example.com',
+        phone: '8015551212',
+        age: null,
+        birthday: 'May 26 1991',
+        gender: 'F'
+      }
+    ]);
+  });
 });

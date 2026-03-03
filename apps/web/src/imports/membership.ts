@@ -123,6 +123,19 @@ function extractPhoneAndEmail(value: string): { phone: string | null; email: str
   return { phone, email };
 }
 
+function isAgeConsistentWithBirthYear(age: number | null, birthday: string | null): boolean {
+  if (age == null || !birthday) return true;
+  const yearMatch = birthday.match(/(\d{4})$/);
+  if (!yearMatch) return true;
+
+  const birthYear = Number.parseInt(yearMatch[1], 10);
+  if (Number.isNaN(birthYear)) return true;
+
+  const currentYear = new Date().getFullYear();
+  const roughAge = currentYear - birthYear;
+  return age === roughAge || age === roughAge - 1;
+}
+
 type FieldMapping = 'name' | 'email' | 'phone' | 'age' | 'birthday' | 'gender' | 'unknown';
 
 type Delimiter = 'tab' | 'pipe' | 'comma' | 'multispace' | 'single_space';
@@ -372,7 +385,9 @@ function parsePdfMembersMultiLine(lines: string[]): ParsedMember[] {
       }
       
       if (i < lines.length && nextLine.includes('@') && !looksLikeNameLine(nextLine)) {
-        email = sanitizeEmail(nextLine);
+        const extracted = extractPhoneAndEmail(nextLine);
+        email = extracted.email ?? email;
+        phone = phone ?? extracted.phone;
         i++;
       }
       if (i < lines.length && !phone && /\d{3}[\s().-]?\d{3}[\s.-]?\d{4}/.test(nextLine) && !looksLikeNameLine(nextLine)) {
@@ -396,6 +411,16 @@ function parsePdfMembersMultiLine(lines: string[]): ParsedMember[] {
 }
 
 function parseBirthdayFromTokens(tokens: string[], startIndex: number): { birthday: string | null; nextIndex: number } | null {
+  if (startIndex >= tokens.length) return null;
+
+  // d-Mmm-yyyy as a single token
+  if (/^\d{1,2}-[A-Za-z]{3,}-\d{4}$/.test(tokens[startIndex])) {
+    return {
+      birthday: normalizeBirthday(tokens[startIndex]),
+      nextIndex: startIndex + 1
+    };
+  }
+
   if (startIndex + 2 >= tokens.length) return null;
 
   // dd Mmm yyyy
@@ -450,25 +475,23 @@ function parsePdfMemberTableLine(line: string): ParsedMember | null {
 
   let idx = genderIndex + 1;
   if (idx >= tokens.length || !/^\d{1,3}$/.test(tokens[idx])) return null;
-  const age = parseAge(tokens[idx]);
+  const parsedAge = parseAge(tokens[idx]);
   idx++;
 
   const birthdayResult = parseBirthdayFromTokens(tokens, idx);
   if (!birthdayResult) return null;
   const birthday = birthdayResult.birthday;
+  if (!isAgeConsistentWithBirthYear(parsedAge, birthday)) return null;
   idx = birthdayResult.nextIndex;
 
   const tail = tokens.slice(idx).join(' ').trim();
   if (!tail) {
-    return { fullName, email: null, phone: null, age, birthday, gender };
+    return { fullName, email: null, phone: null, age: null, birthday, gender };
   }
 
-  const emailMatch = tail.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
-  const email = emailMatch ? sanitizeEmail(emailMatch[0]) : null;
-  const phoneSource = emailMatch ? tail.replace(emailMatch[0], '').trim() : tail;
-  const phone = sanitizePhone(phoneSource);
+  const { phone, email } = extractPhoneAndEmail(tail);
 
-  return { fullName, email, phone, age, birthday, gender };
+  return { fullName, email, phone, age: null, birthday, gender };
 }
 
 function parsePdfMemberCompactLine(line: string): ParsedMember | null {
@@ -487,9 +510,11 @@ function parsePdfMemberCompactLine(line: string): ParsedMember | null {
   if (!looksLikeNameLine(fullName)) return null;
 
   const gender = parseGenderPdf(prefixMatch[2]);
+  const parsedAge = parseAge(prefixMatch[3]);
   // Age from PDF extraction is often unreliable when columns shift; prefer birthday.
   const age = null;
   const birthday = birthdayMatch.birthday;
+  if (!isAgeConsistentWithBirthYear(parsedAge, birthday)) return null;
 
   const { phone, email } = extractPhoneAndEmail(afterBirthday);
 
@@ -527,7 +552,9 @@ function parsePdfMembersTableFormat(lines: string[]): ParsedMember[] {
       if (parsePdfMemberTableAnyLine(nextLine) || looksLikeNameLine(nextLine)) break;
 
       if (!parsed.email && nextLine.includes('@')) {
-        parsed.email = sanitizeEmail(nextLine);
+        const extracted = extractPhoneAndEmail(nextLine);
+        parsed.email = extracted.email;
+        if (!parsed.phone) parsed.phone = extracted.phone;
         i++;
         continue;
       }
