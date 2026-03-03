@@ -36,6 +36,8 @@ export function toPlainText(input: string): string {
     .join('\n');
 }
 
+import { normalizeWhitespace, isHeaderOrFooterLine } from './pdf-cleanup';
+
 function sanitizePhone(value: string): string | null {
   const normalized = value.replace(/\s+/g, ' ').trim();
   // Remove common non-phone patterns
@@ -52,10 +54,6 @@ function sanitizeEmail(value: string): string | null {
   }
 
   return normalized.includes('@') ? normalized : null;
-}
-
-function normalizeWhitespace(input: string): string {
-  return input.replace(/\s+/g, ' ').trim();
 }
 
 function normalizeBirthday(value: string): string | null {
@@ -219,57 +217,6 @@ function parseMemberFromMapping(parts: string[], mapping: FieldMapping[]): Parse
   if (!fullName) return null;
 
   return { fullName, email, phone, age, birthday, gender };
-}
-
-function isHeaderOrFooterLine(line: string): boolean {
-  const normalized = normalizeWhitespace(line);
-  
-  // Single-word header lines (LCR PDF splits headers across lines)
-  if (/^name$/i.test(normalized)) return true;
-  if (/^gender$/i.test(normalized)) return true;
-  if (/^age$/i.test(normalized)) return true;
-  if (/^birth\s*date$/i.test(normalized)) return true;
-  if (/^phone\s*number$/i.test(normalized)) return true;
-  if (/^e[\s-]*mail$/i.test(normalized)) return true;
-  
-  // Combined header patterns (when PDF puts multiple columns on one line)
-  if (/^gender\s+age$/i.test(normalized)) return true;
-  if (/^birth\s+date\s+phone\s+number$/i.test(normalized)) return true;
-  if (/^phone\s+number\s+e[\s-]*mail$/i.test(normalized)) return true;
-  if (/^birth\s+date\s+phone$/i.test(normalized)) return true;
-  if (/^phone\s+e[\s-]*mail$/i.test(normalized)) return true;
-  
-  // Full header line (legacy)
-  if (/^name\s+gender\s+age\s+birth\s+date/i.test(normalized)) return true;
-  
-  // Document title/organizational headers
-  if (/^member\s+list/i.test(normalized)) return true;
-  if (/^individuals$/i.test(normalized)) return true;
-  if (/^freedom\s+park\s+ward/i.test(normalized)) return true;
-  if (/^las\s+vegas\s+nevada/i.test(normalized)) return true;
-  if (/ward\s*\(\d+\)/i.test(normalized)) return true;
-  if (/stake\s*\(\d+\)/i.test(normalized)) return true;
-  
-  // Footer patterns
-  if (/^for\s+church\s+use\s+only/i.test(normalized)) return true;
-  if (/^©\s*\d{4}\s+by\s+intellectual\s+reserve/i.test(normalized)) return true;
-  if (/all\s+rights\s+reserved/i.test(normalized)) return true;
-  
-  // Date stamps (e.g., "26 Feb 2026" or "February 20, 2026")
-  if (/^\d{1,2}\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\s+\d{4}$/i.test(normalized)) return true;
-  if (/^(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{1,2},\s+\d{4}$/i.test(normalized)) return true;
-  
-  // Page numbers and markers
-  if (/^\.{3}$/i.test(normalized)) return true; // Just "..."
-  if (/^\d+$/i.test(normalized) && normalized.length <= 3) return true; // Page numbers like "1", "2", "10"
-  if (/^page\s+\d+/i.test(normalized)) return true;
-  
-  // Count/total rows
-  if (/^count\s*:/i.test(normalized)) return true;
-  if (/^total\s*:/i.test(normalized)) return true;
-  if (/^count\s+\d+/i.test(normalized)) return true;
-  
-  return false;
 }
 
 function looksLikeNameLine(line: string): boolean {
