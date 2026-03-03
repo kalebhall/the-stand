@@ -38,6 +38,29 @@ export function toPlainText(input: string): string {
 
 import { normalizeWhitespace, isHeaderOrFooterLine } from './pdf-cleanup';
 
+function isMembershipHeaderFooterLine(line: string): boolean {
+  const normalized = normalizeWhitespace(line);
+  if (!normalized) return true;
+  if (isHeaderOrFooterLine(normalized)) return true;
+
+  const compact = normalized.toLowerCase().replace(/[\s-]+/g, '');
+
+  // Repeated PDF table headers can be extracted without separators.
+  if (
+    compact === 'namegenderagebirthdatephonenumberemail' ||
+    compact.startsWith('namegenderagebirthdatephonenumberemail')
+  ) {
+    return true;
+  }
+
+  if (compact === 'namegenderagebirthdatephonenumbere-mail'.replace('-', '')) return true;
+  if (/^memberlist/.test(compact) || /^individuals/.test(compact)) return true;
+  if (/forchurchuseonly/i.test(compact)) return true;
+  if (/intellectualreserve/i.test(compact) || /allrightsreserved/i.test(compact)) return true;
+
+  return false;
+}
+
 function sanitizePhone(value: string): string | null {
   const normalized = value.replace(/\s+/g, ' ').trim();
   // Remove common non-phone patterns
@@ -249,7 +272,7 @@ function parsePdfMembersMultiLine(lines: string[]): ParsedMember[] {
     const line = lines[i];
     
     // Skip header/footer lines
-    if (isHeaderOrFooterLine(line)) {
+    if (isMembershipHeaderFooterLine(line)) {
       i++;
       continue;
     }
@@ -268,7 +291,7 @@ function parsePdfMembersMultiLine(lines: string[]): ParsedMember[] {
     let nextLine = lines[i];
     
     // Skip any header/footer that snuck in
-    while (i < lines.length && isHeaderOrFooterLine(nextLine)) {
+    while (i < lines.length && isMembershipHeaderFooterLine(nextLine)) {
       i++;
       nextLine = lines[i];
     }
@@ -286,7 +309,7 @@ function parsePdfMembersMultiLine(lines: string[]): ParsedMember[] {
     nextLine = lines[i];
     
     // Skip any header/footer
-    while (i < lines.length && isHeaderOrFooterLine(nextLine)) {
+    while (i < lines.length && isMembershipHeaderFooterLine(nextLine)) {
       i++;
       nextLine = lines[i];
     }
@@ -324,7 +347,7 @@ function parsePdfMembersMultiLine(lines: string[]): ParsedMember[] {
       nextLine = lines[i];
       
       // Skip headers/footers
-      while (i < lines.length && isHeaderOrFooterLine(nextLine)) {
+      while (i < lines.length && isMembershipHeaderFooterLine(nextLine)) {
         i++;
         nextLine = lines[i];
       }
@@ -414,13 +437,79 @@ function parsePdfMemberTableLine(line: string): ParsedMember | null {
   return { fullName, email, phone, age, birthday, gender };
 }
 
+function parsePdfMemberCompactLine(line: string): ParsedMember | null {
+  const normalized = normalizeWhitespace(line);
+  if (!looksLikeNameLine(normalized)) return null;
+
+  const birthdayMatch = normalized.match(/(\d{1,2}\s+[A-Za-z]{3,}\s+\d{4})/);
+  if (!birthdayMatch || birthdayMatch.index == null) return null;
+
+  const beforeBirthday = normalized.slice(0, birthdayMatch.index).trim();
+  const afterBirthday = normalized.slice(birthdayMatch.index + birthdayMatch[1].length).trim();
+  const prefixMatch = beforeBirthday.match(/^(.*?)(male|female|m|f)\s*(\d{1,3})$/i);
+  if (!prefixMatch) return null;
+
+  const fullName = normalizeWhitespace(prefixMatch[1]);
+  if (!looksLikeNameLine(fullName)) return null;
+
+  const gender = parseGenderPdf(prefixMatch[2]);
+  const age = parseAge(prefixMatch[3]);
+  const birthday = normalizeBirthday(birthdayMatch[1]);
+
+  const emailMatch = afterBirthday.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+  const email = emailMatch ? sanitizeEmail(emailMatch[0]) : null;
+  const phoneSource = emailMatch ? afterBirthday.replace(emailMatch[0], ' ').trim() : afterBirthday;
+  const phoneMatch = phoneSource.match(/(?:\+?1[\s.-]?)?(?:\(?\d{3}\)?[\s.-]?)\d{3}[\s.-]?\d{4}/);
+  const phone = sanitizePhone(phoneMatch ? phoneMatch[0] : phoneSource);
+
+  return { fullName, email, phone, age, birthday, gender };
+}
+
+function parsePdfMemberTableAnyLine(line: string): ParsedMember | null {
+  return parsePdfMemberTableLine(line) ?? parsePdfMemberCompactLine(line);
+}
+
 function parsePdfMembersTableFormat(lines: string[]): ParsedMember[] {
   const members: ParsedMember[] = [];
+  let i = 0;
 
-  for (const line of lines) {
-    if (isHeaderOrFooterLine(line)) continue;
-    const parsed = parsePdfMemberTableLine(line);
-    if (parsed) members.push(parsed);
+  while (i < lines.length) {
+    const line = lines[i];
+    if (isMembershipHeaderFooterLine(line)) {
+      i++;
+      continue;
+    }
+
+    const parsed = parsePdfMemberTableAnyLine(line);
+    if (!parsed) {
+      i++;
+      continue;
+    }
+
+    i++;
+    while (i < lines.length) {
+      const nextLine = lines[i];
+      if (isMembershipHeaderFooterLine(nextLine)) {
+        i++;
+        continue;
+      }
+      if (parsePdfMemberTableAnyLine(nextLine) || looksLikeNameLine(nextLine)) break;
+
+      if (!parsed.email && nextLine.includes('@')) {
+        parsed.email = sanitizeEmail(nextLine);
+        i++;
+        continue;
+      }
+      if (!parsed.phone && /\d{3}[\s().-]?\d{3}[\s.-]?\d{4}/.test(nextLine)) {
+        parsed.phone = sanitizePhone(nextLine);
+        i++;
+        continue;
+      }
+
+      break;
+    }
+
+    members.push(parsed);
   }
 
   return members;
@@ -458,23 +547,27 @@ export function parseMembershipText(rawText: string): ParsedMember[] {
     return [];
   }
 
+  const cleanedLines = lines.filter((line) => !isMembershipHeaderFooterLine(line));
+  if (!cleanedLines.length) {
+    return [];
+  }
+
   // Check if this looks like LCR PDF text (multi-line format)
   // Look for the pattern: name line with comma, followed by M/F, followed by age+date
   let isPdfFormat = false;
   let isPdfTableFormat = false;
-  for (let i = 0; i < Math.min(lines.length - 2, 50); i++) {
-    if (looksLikeNameLine(lines[i]) && 
-        i + 1 < lines.length && looksLikeGenderLine(lines[i + 1]) &&
-        i + 2 < lines.length && looksLikeAgeBirthdayLine(lines[i + 2])) {
+  for (let i = 0; i < Math.min(cleanedLines.length - 2, 80); i++) {
+    if (looksLikeNameLine(cleanedLines[i]) && 
+        i + 1 < cleanedLines.length && looksLikeGenderLine(cleanedLines[i + 1]) &&
+        i + 2 < cleanedLines.length && looksLikeAgeBirthdayLine(cleanedLines[i + 2])) {
       isPdfFormat = true;
       break;
     }
   }
 
   if (!isPdfFormat) {
-    for (let i = 0; i < Math.min(lines.length, 50); i++) {
-      if (isHeaderOrFooterLine(lines[i])) continue;
-      if (parsePdfMemberTableLine(lines[i])) {
+    for (let i = 0; i < Math.min(cleanedLines.length, 80); i++) {
+      if (parsePdfMemberTableAnyLine(cleanedLines[i])) {
         isPdfTableFormat = true;
         break;
       }
@@ -483,7 +576,7 @@ export function parseMembershipText(rawText: string): ParsedMember[] {
 
   if (isPdfFormat || isPdfTableFormat) {
     // Use PDF parser path for either multi-line or single-line table exports.
-    const members = isPdfFormat ? parsePdfMembersMultiLine(lines) : parsePdfMembersTableFormat(lines);
+    const members = isPdfFormat ? parsePdfMembersMultiLine(cleanedLines) : parsePdfMembersTableFormat(cleanedLines);
     
     // Deduplicate by name
     const deduped = new Map<string, ParsedMember>();
@@ -507,20 +600,20 @@ export function parseMembershipText(rawText: string): ParsedMember[] {
   } else {
     // Use legacy CSV/TSV parser
     const deduped = new Map<string, ParsedMember>();
-    const delimiter = detectDelimiter(lines[0]);
+    const delimiter = detectDelimiter(cleanedLines[0]);
 
-    const firstLineParts = splitLine(lines[0], delimiter)
+    const firstLineParts = splitLine(cleanedLines[0], delimiter)
       .map((part) => part.trim())
       .filter((part) => part.length > 0);
 
     const headerMapping = detectHeaderMapping(firstLineParts);
     const startIndex = headerMapping ? 1 : 0;
 
-    for (let i = startIndex; i < lines.length; i++) {
+    for (let i = startIndex; i < cleanedLines.length; i++) {
       // When using header mapping, preserve empty fields to maintain column alignment
       const parts = headerMapping
-        ? splitLine(lines[i], delimiter).map((part) => part.trim())
-        : splitLine(lines[i], detectDelimiter(lines[i]))
+        ? splitLine(cleanedLines[i], delimiter).map((part) => part.trim())
+        : splitLine(cleanedLines[i], detectDelimiter(cleanedLines[i]))
             .map((part) => part.trim())
             .filter((part) => part.length > 0);
 

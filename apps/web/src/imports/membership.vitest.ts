@@ -135,4 +135,62 @@ Jane Doe\tjane@example.com\tFebruary 14, 1990`);
       }
     ]);
   });
+
+  it('ignores repeated page headers/footers in membership PDF text', () => {
+    const result = parseMembershipText(`
+      NameGenderAgeBirth DatePhone NumberE-mail
+      Doe, Jane Female 35 26 May 1990 801-555-0101 jane@example.com
+      For Church Use Only
+      © 2025 by Intellectual Reserve, Inc. All rights reserved.
+      NameGenderAgeBirth DatePhone NumberE-mail
+      Smith, John Male 42 20 Feb 1983 801-555-4444 john@example.com
+      Page 2
+    `);
+
+    expect(result).toEqual([
+      {
+        fullName: 'Doe, Jane',
+        email: 'jane@example.com',
+        phone: '801-555-0101',
+        age: 35,
+        birthday: 'May 26 1990',
+        gender: 'F'
+      },
+      {
+        fullName: 'Smith, John',
+        email: 'john@example.com',
+        phone: '801-555-4444',
+        age: 42,
+        birthday: 'Feb 20 1983',
+        gender: 'M'
+      }
+    ]);
+  });
+
+  it('parses compact membership rows with glued columns', () => {
+    const result = parseMembershipText(`
+      NameGenderAgeBirth DatePhone NumberE-mail
+      Acosta, FrankM6526 May 1960801-555-0000frank@example.com
+      Amber, TimM6723 Nov 1958
+    `);
+
+    expect(result).toEqual([
+      {
+        fullName: 'Acosta, Frank',
+        email: 'frank@example.com',
+        phone: '801-555-0000',
+        age: 65,
+        birthday: 'May 26 1960',
+        gender: 'M'
+      },
+      {
+        fullName: 'Amber, Tim',
+        email: null,
+        phone: null,
+        age: 67,
+        birthday: 'Nov 23 1958',
+        gender: 'M'
+      }
+    ]);
+  });
 });
