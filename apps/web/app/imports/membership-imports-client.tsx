@@ -27,7 +27,7 @@ type CallingRow = {
   member_name: string;
   organization: string | null;
   calling_name: string;
-  sustained: boolean;
+  sustained_date: string | null;
   set_apart: boolean;
   is_active: boolean;
 };
@@ -46,7 +46,7 @@ type PreviewCalling = {
   birthday: string;
   organization: string;
   callingName: string;
-  sustained: boolean;
+  sustainedDate: string | null;
   setApart: boolean;
 };
 
@@ -542,7 +542,7 @@ export function MembershipImportsClient({
                   <th className="px-3 py-2 text-left">Birth Date</th>
                   <th className="px-3 py-2 text-left">Organization</th>
                   <th className="px-3 py-2 text-left">Calling</th>
-                  <th className="px-3 py-2 text-left">Sustained</th>
+                  <th className="px-3 py-2 text-left">Sustained Date</th>
                   <th className="px-3 py-2 text-left">Set Apart</th>
                 </tr>
               </thead>
@@ -553,7 +553,7 @@ export function MembershipImportsClient({
                     <td className="px-3 py-2">{item.birthday}</td>
                     <td className="px-3 py-2">{item.organization}</td>
                     <td className="px-3 py-2">{item.callingName}</td>
-                    <td className="px-3 py-2">{item.sustained ? 'Yes' : 'No'}</td>
+                    <td className="px-3 py-2">{item.sustainedDate ?? '—'}</td>
                     <td className="px-3 py-2">{item.setApart ? 'Yes' : 'No'}</td>
                   </tr>
                 ))}
@@ -572,7 +572,7 @@ export function MembershipImportsClient({
                     <span className="font-medium">{assignment.member_name}</span> — {assignment.calling_name}
                     <span className="ml-2 text-xs text-muted-foreground">{assignment.organization ?? '—'}</span>
                     <span className="ml-2 text-xs text-muted-foreground">{assignment.is_active ? 'Active' : 'Released'}</span>
-                    <span className="ml-2 text-xs text-muted-foreground">Sustained: {assignment.sustained ? 'Yes' : 'No'}</span>
+                    <span className="ml-2 text-xs text-muted-foreground">Sustained: {assignment.sustained_date ?? '—'}</span>
                     <span className="ml-2 text-xs text-muted-foreground">Set Apart: {assignment.set_apart ? 'Yes' : 'No'}</span>
                   </div>
                   <Button

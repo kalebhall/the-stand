@@ -30,9 +30,50 @@ function findHeaderIndex(headers: string[], patterns: RegExp[]): number {
   return headers.findIndex((header) => patterns.some((pattern) => pattern.test(header)));
 }
 
-function parseBoolean(value: string): boolean {
+function parseSetApart(value: string): boolean {
   const normalized = normalize(value).toLowerCase();
   return normalized === 'yes' || normalized === 'true' || normalized === 'y' || normalized.includes('✔') || normalized.includes('✓');
+}
+
+function parseDateToIso(value: string): string | null {
+  const normalized = normalize(value);
+  if (!normalized) return null;
+
+  const monthMap: Record<string, string> = {
+    jan: '01',
+    feb: '02',
+    mar: '03',
+    apr: '04',
+    may: '05',
+    jun: '06',
+    jul: '07',
+    aug: '08',
+    sep: '09',
+    oct: '10',
+    nov: '11',
+    dec: '12'
+  };
+
+  const iso = normalized.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
+
+  const dmy = normalized.match(/^(\d{1,2})\s+([A-Za-z]{3,})\s+(\d{4})$/);
+  if (dmy) {
+    const month = monthMap[dmy[2].slice(0, 3).toLowerCase()];
+    if (!month) return null;
+    const day = String(Number(dmy[1])).padStart(2, '0');
+    return `${dmy[3]}-${month}-${day}`;
+  }
+
+  const mdy = normalized.match(/^([A-Za-z]{3,})\s+(\d{1,2})(?:,\s*|\s+)(\d{4})$/);
+  if (mdy) {
+    const month = monthMap[mdy[1].slice(0, 3).toLowerCase()];
+    if (!month) return null;
+    const day = String(Number(mdy[2])).padStart(2, '0');
+    return `${mdy[3]}-${month}-${day}`;
+  }
+
+  return null;
 }
 
 function parseAge(value: string): number | null {
@@ -95,8 +136,8 @@ function parseCallingsFromTable(table: ScrapedTable): ParsedCalling[] {
       birthday,
       organization,
       callingName,
-      sustained: parseBoolean(row[sustainedIndex] ?? ''),
-      setApart: parseBoolean(row[setApartIndex] ?? '')
+      sustainedDate: parseDateToIso(row[sustainedIndex] ?? ''),
+      setApart: parseSetApart(row[setApartIndex] ?? '')
     };
 
     deduped.set(`${memberName.toLowerCase()}::${birthday.toLowerCase()}::${callingName.toLowerCase()}`, parsed);

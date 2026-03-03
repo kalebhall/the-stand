@@ -31,7 +31,7 @@ type CallingRow = {
   birthday: string | null;
   organization: string | null;
   calling_name: string;
-  sustained: boolean;
+  sustained_date: string | null;
   set_apart: boolean;
   is_active: boolean;
 };
@@ -69,7 +69,7 @@ export default async function ImportsPage() {
     );
 
     const callingResult = await client.query(
-      `SELECT id, member_name, birthday, organization, calling_name, sustained, set_apart, is_active
+      `SELECT id, member_name, birthday, organization, calling_name, sustained_date, set_apart, is_active
          FROM calling_assignment
         WHERE ward_id = $1
         ORDER BY member_name ASC`,

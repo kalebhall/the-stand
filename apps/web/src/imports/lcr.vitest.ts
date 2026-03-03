@@ -76,7 +76,7 @@ describe('lcr table parsing', () => {
         birthday: 'Jan 15',
         organization: 'Primary',
         callingName: 'Teacher',
-        sustained: true,
+        sustainedDate: null,
         setApart: false
       },
       {
@@ -84,7 +84,7 @@ describe('lcr table parsing', () => {
         birthday: 'Feb 20',
         organization: 'Bishopric',
         callingName: 'Executive Secretary',
-        sustained: false,
+        sustainedDate: null,
         setApart: true
       }
     ]);
@@ -105,7 +105,7 @@ describe('lcr table parsing', () => {
         birthday: '15 May 1980',
         organization: 'Relief Society',
         callingName: 'Relief Society President',
-        sustained: true,
+        sustainedDate: '2025-02-16',
         setApart: true
       },
       {
@@ -113,7 +113,7 @@ describe('lcr table parsing', () => {
         birthday: '1 Jan 1980',
         organization: 'Bishopric',
         callingName: 'Bishopric First Counselor',
-        sustained: true,
+        sustainedDate: '2024-11-10',
         setApart: true
       }
     ]);

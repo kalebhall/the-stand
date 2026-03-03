@@ -128,7 +128,7 @@ async function runLcrImport(params: {
         }
 
         await client.query(
-          `INSERT INTO calling_assignment (ward_id, member_id, member_name, birthday, organization, calling_name, sustained, set_apart, is_active)
+          `INSERT INTO calling_assignment (ward_id, member_id, member_name, birthday, organization, calling_name, sustained_date, set_apart, is_active)
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, TRUE)`,
           [
             params.wardId,
@@ -137,7 +137,7 @@ async function runLcrImport(params: {
             parsed.birthday,
             parsed.organization,
             parsed.callingName,
-            parsed.sustained,
+            parsed.sustainedDate,
             parsed.setApart
           ]
         );

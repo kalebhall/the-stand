@@ -145,7 +145,7 @@ export const callingAssignment = pgTable('calling_assignment', {
   birthday: text('birthday'),
   organization: text('organization'),
   callingName: text('calling_name').notNull(),
-  sustained: boolean('sustained').notNull().default(false),
+  sustainedDate: date('sustained_date'),
   setApart: boolean('set_apart').notNull().default(false),
   isActive: boolean('is_active').notNull().default(true),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()

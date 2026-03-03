@@ -18,7 +18,7 @@ describe('calling PDF import parsing', () => {
         birthday: 'Jan 15',
         organization: 'Relief Society',
         callingName: 'Relief Society President',
-        sustained: true,
+        sustainedDate: null,
         setApart: false
       },
       {
@@ -26,7 +26,7 @@ describe('calling PDF import parsing', () => {
         birthday: 'Mar 3',
         organization: 'Elders Quorum',
         callingName: 'Elders Quorum President',
-        sustained: true,
+        sustainedDate: null,
         setApart: true
       }
     ]);
@@ -44,7 +44,7 @@ describe('calling PDF import parsing', () => {
         birthday: 'May 26',
         organization: 'Relief Society',
         callingName: 'Relief Society President',
-        sustained: true,
+        sustainedDate: null,
         setApart: false
       }
     ]);
@@ -66,7 +66,7 @@ describe('calling PDF import parsing', () => {
         birthday: 'May 26',
         organization: 'Relief Society',
         callingName: 'Relief Society President',
-        sustained: true,
+        sustainedDate: null,
         setApart: false
       }
     ]);
@@ -81,7 +81,7 @@ describe('calling PDF import parsing', () => {
         birthday: 'May 26',
         organization: 'Elders Quorum',
         callingName: 'Elders Quorum Secretary',
-        sustained: true,
+        sustainedDate: '2025-03-09',
         setApart: false
       }
     ]);
@@ -102,7 +102,7 @@ describe('calling PDF import parsing', () => {
         birthday: 'May 26',
         organization: 'Elders Quorum',
         callingName: 'Elders Quorum Secretary',
-        sustained: true,
+        sustainedDate: '2025-03-09',
         setApart: true
       },
       {
@@ -110,7 +110,7 @@ describe('calling PDF import parsing', () => {
         birthday: 'Nov 23',
         organization: 'Elders Quorum',
         callingName: 'Elders Quorum Activity Committee Member',
-        sustained: false,
+        sustainedDate: null,
         setApart: false
       }
     ]);

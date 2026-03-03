@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { authMock, canViewCallingsMock, setDbContextMock, connectMock, releaseMock, queryMock, extractPdfTextMock, parseCallingsPdfTextMock, makeMemberBirthdayKeyMock } = vi.hoisted(() => ({
+const { authMock, canRunImportsMock, setDbContextMock, connectMock, releaseMock, queryMock, extractPdfTextMock, parseCallingsPdfTextMock, makeMemberBirthdayKeyMock } = vi.hoisted(() => ({
   authMock: vi.fn(),
-  canViewCallingsMock: vi.fn(),
+  canRunImportsMock: vi.fn(),
   setDbContextMock: vi.fn(),
   connectMock: vi.fn(),
   releaseMock: vi.fn(),
@@ -13,7 +13,7 @@ const { authMock, canViewCallingsMock, setDbContextMock, connectMock, releaseMoc
 }));
 
 vi.mock('@/src/auth/auth', () => ({ auth: authMock }));
-vi.mock('@/src/auth/roles', () => ({ canViewCallings: canViewCallingsMock }));
+vi.mock('@/src/auth/roles', () => ({ canRunImports: canRunImportsMock }));
 vi.mock('@/src/db/context', () => ({ setDbContext: setDbContextMock }));
 vi.mock('@/src/imports/pdf', () => ({ extractPdfText: extractPdfTextMock }));
 vi.mock('@/src/imports/callings', () => ({
@@ -52,7 +52,7 @@ describe('POST /api/w/[wardId]/imports/callings', () => {
     vi.clearAllMocks();
 
     authMock.mockResolvedValue({ user: { id: 'user-1', roles: ['CLERK_EDITOR'] }, activeWardId: 'ward-1' });
-    canViewCallingsMock.mockReturnValue(true);
+    canRunImportsMock.mockReturnValue(true);
     extractPdfTextMock.mockResolvedValue(`
 Name  Gender  Age  Birth Date  Organization  Calling  Sustained  Set Apart
 John Doe  Male  42  Jan 15  Bishopric  Bishop  Yes  No
@@ -65,7 +65,7 @@ John Doe  Male  42  Jan 15  Bishopric  Bishop  Yes  No
             birthday: 'Feb 2',
             organization: 'Relief Society',
             callingName: 'Relief Society President',
-            sustained: true,
+            sustainedDate: '2025-02-16',
             setApart: true
           }
         ];
@@ -77,7 +77,7 @@ John Doe  Male  42  Jan 15  Bishopric  Bishop  Yes  No
           birthday: 'Jan 15',
           organization: 'Bishopric',
           callingName: 'Bishop',
-          sustained: true,
+          sustainedDate: '2025-01-15',
           setApart: false
         }
       ];
@@ -225,7 +225,7 @@ John Doe  Male  42  Jan 15  Bishopric  Bishop  Yes  No
       'Jan 15',
       'Bishopric',
       'Bishop',
-      true,
+      '2025-01-15',
       false
     ]);
   });

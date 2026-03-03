@@ -243,7 +243,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
               birthday,
               organization,
               calling_name,
-              sustained,
+              sustained_date,
               set_apart,
               is_active
             )
@@ -255,7 +255,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
             parsed.birthday,
             parsed.organization,
             parsed.callingName,
-            parsed.sustained,
+            parsed.sustainedDate,
             parsed.setApart
           ]
         );
