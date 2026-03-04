@@ -96,7 +96,9 @@ function normalizeBirthday(value: string): string | null {
   // Matches: "26 May 1994" or "26 Mar 1994" (day month year) - LCR format
   const dmy = raw.match(/^(\d{1,2})\s+([A-Za-z]{3,})\s*(\d{4})?$/);
   if (dmy) {
-    const day = String(Number(dmy[1])); // strips leading zero
+    const dayNumber = Number(dmy[1]);
+    if (!Number.isFinite(dayNumber) || dayNumber < 1 || dayNumber > 31) return null;
+    const day = String(dayNumber); // strips leading zero
     const month = dmy[2];
     const year = dmy[3];
     // Store as "May 26 1994" or just "May 26" if no year
@@ -107,7 +109,9 @@ function normalizeBirthday(value: string): string | null {
   const mdy = raw.match(/^([A-Za-z]{3,})\s+(\d{1,2})(?:\s+(\d{4}))?$/);
   if (mdy) {
     const month = mdy[1];
-    const day = String(Number(mdy[2]));
+    const dayNumber = Number(mdy[2]);
+    if (!Number.isFinite(dayNumber) || dayNumber < 1 || dayNumber > 31) return null;
+    const day = String(dayNumber);
     const year = mdy[3];
     return year ? `${month} ${day} ${year}` : `${month} ${day}`;
   }
@@ -445,11 +449,33 @@ function parseBirthdayFromTokens(tokens: string[], startIndex: number): { birthd
   if (startIndex >= tokens.length) return null;
 
   // d-Mmm-yyyy as a single token
-  if (/^\d{1,2}-[A-Za-z]{3,}-\d{4}$/.test(tokens[startIndex])) {
-    return {
-      birthday: normalizeBirthday(tokens[startIndex]),
-      nextIndex: startIndex + 1
-    };
+  if (/^\d{1,3}-[A-Za-z]{3,}-\d{4}$/.test(tokens[startIndex])) {
+    const normalized = normalizeBirthday(tokens[startIndex]);
+    if (normalized) {
+      return {
+        birthday: normalized,
+        nextIndex: startIndex + 1
+      };
+    }
+
+    // Repair for merged age/day values like "99-Dec-1946" -> "9-Dec-1946"
+    const merged = tokens[startIndex].match(/^(\d{2,3})-([A-Za-z]{3,})-(\d{4})$/);
+    if (merged) {
+      const digits = merged[1];
+      const month = merged[2];
+      const year = merged[3];
+      const candidates = [digits.slice(-2), digits.slice(-1)];
+      for (const candidateDay of candidates) {
+        if (!candidateDay) continue;
+        const repaired = normalizeBirthday(`${candidateDay}-${month}-${year}`);
+        if (repaired) {
+          return {
+            birthday: repaired,
+            nextIndex: startIndex + 1
+          };
+        }
+      }
+    }
   }
 
   if (startIndex + 2 >= tokens.length) return null;

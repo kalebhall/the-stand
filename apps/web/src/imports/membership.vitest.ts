@@ -300,4 +300,21 @@ Jane Doe\tjane@example.com\tFebruary 14, 1990`);
       }
     ]);
   });
+
+  it('repairs invalid merged day tokens like 99-Dec-yyyy', () => {
+    const result = parseMembershipText(`
+      Adams, LawrenceM6899-Dec-1946702-373-9875larry.adams6873@gmail.com
+    `);
+
+    expect(result).toEqual([
+      {
+        fullName: 'Adams, Lawrence',
+        email: 'larry.adams6873@gmail.com',
+        phone: '702-373-9875',
+        age: null,
+        birthday: 'Dec 9 1946',
+        gender: 'M'
+      }
+    ]);
+  });
 });
