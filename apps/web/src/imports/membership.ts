@@ -560,10 +560,11 @@ function parsePdfMemberCompactLine(line: string): ParsedMember | null {
     if (!looksLikeNameLine(fullName)) return null;
     const gender = parseGenderPdf(compactCombined[2]);
     const split = splitAgeAndBirthdayChunk(compactCombined[3], compactCombined[4], compactCombined[5]);
-    if (!split) return null;
-    const birthday = normalizeBirthday(split.birthdayToken);
-    const { phone, email } = extractPhoneAndEmail(compactCombined[6] ?? '');
-    return { fullName, email, phone, age: null, birthday, gender };
+    if (split) {
+      const birthday = normalizeBirthday(split.birthdayToken);
+      const { phone, email } = extractPhoneAndEmail(compactCombined[6] ?? '');
+      return { fullName, email, phone, age: null, birthday, gender };
+    }
   }
 
   const compact = normalized.match(/^(.*?)(male|female|m|f)\s*(\d{1,3})\s*(\d{1,2}-[A-Za-z]{3,}-\d{4})(.*)$/i);
@@ -571,7 +572,10 @@ function parsePdfMemberCompactLine(line: string): ParsedMember | null {
     const fullName = normalizeWhitespace(compact[1]);
     if (!looksLikeNameLine(fullName)) return null;
     const gender = parseGenderPdf(compact[2]);
-    const birthday = normalizeBirthday(compact[4]);
+    let birthday = normalizeBirthday(compact[4]);
+    if (!birthday) {
+      birthday = parseBirthdayFromTokens([compact[4]], 0)?.birthday ?? null;
+    }
     const { phone, email } = extractPhoneAndEmail(compact[5] ?? '');
     return { fullName, email, phone, age: null, birthday, gender };
   }
