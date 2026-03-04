@@ -17,6 +17,7 @@ type CallingQueueRow = {
   member_name: string;
   calling_name: string;
   status: string;
+  sustained_date: string | null;
   created_at: string;
 };
 
@@ -26,6 +27,37 @@ const STATUS_LABELS: Record<string, string> = {
   SUSTAINED: 'Sustained',
   SET_APART: 'Set Apart'
 };
+
+function formatCallingTenure(sustainedDate: string | null, createdAt: string): string {
+  const start = sustainedDate ? new Date(`${sustainedDate}T00:00:00.000Z`) : new Date(createdAt);
+  if (Number.isNaN(start.getTime())) {
+    return '0 months';
+  }
+
+  const now = new Date();
+  const nowYear = now.getUTCFullYear();
+  const nowMonth = now.getUTCMonth();
+  const nowDay = now.getUTCDate();
+
+  let months = (nowYear - start.getUTCFullYear()) * 12 + (nowMonth - start.getUTCMonth());
+  if (nowDay < start.getUTCDate()) {
+    months -= 1;
+  }
+
+  const totalMonths = Math.max(0, months);
+  const years = Math.floor(totalMonths / 12);
+  const remainderMonths = totalMonths % 12;
+
+  if (years === 0) {
+    return `${remainderMonths} month${remainderMonths === 1 ? '' : 's'}`;
+  }
+
+  if (remainderMonths === 0) {
+    return `${years} year${years === 1 ? '' : 's'}`;
+  }
+
+  return `${years} year${years === 1 ? '' : 's'} ${remainderMonths} month${remainderMonths === 1 ? '' : 's'}`;
+}
 
 function nextTransition(status: string): { toStatus: CallingStatus; label: string } | null {
   if (status === 'PROPOSED' && canTransitionCallingStatus('PROPOSED', 'EXTENDED')) {
@@ -161,6 +193,7 @@ export default async function CallingsPage() {
               ca.member_name,
               ca.calling_name,
               latest.action_status AS status,
+              ca.sustained_date,
               ca.created_at
          FROM calling_assignment ca
          JOIN LATERAL (
@@ -180,6 +213,7 @@ export default async function CallingsPage() {
       `SELECT ca.id,
               ca.member_name,
               ca.calling_name,
+              ca.sustained_date,
               ca.created_at
          FROM calling_assignment ca
          JOIN LATERAL (
@@ -235,6 +269,9 @@ export default async function CallingsPage() {
                 <li key={item.id} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
                   <span>
                     <span className="font-semibold">{item.member_name}</span> — {item.calling_name}
+                    <span className="ml-2 text-xs text-muted-foreground">
+                      In calling: {formatCallingTenure(item.sustained_date, item.created_at)}
+                    </span>
                   </span>
                   {canManage ? (
                     <form action={transitionCalling}>
@@ -261,6 +298,9 @@ export default async function CallingsPage() {
                   <li key={calling.id} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
                     <span>
                       <span className="font-semibold">{calling.member_name}</span> — {calling.calling_name}
+                      <span className="ml-2 text-xs text-muted-foreground">
+                        In calling: {formatCallingTenure(calling.sustained_date, calling.created_at)}
+                      </span>
                     </span>
                     <div className="flex items-center gap-2">
                       <span className="rounded-full border px-2 py-0.5 text-xs font-medium">
