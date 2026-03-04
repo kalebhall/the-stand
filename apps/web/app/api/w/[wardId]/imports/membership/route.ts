@@ -87,7 +87,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     commitRequested: commit,
     extractedCharCount: extractedText.length,
     parsedCount: parsedMembers.length,
-    parsedPreview: parsedMembers.slice(0, 3)
+    parsedPreview: parsedMembers.slice(0, 5)
   });
 
   const client = await pool.connect();
