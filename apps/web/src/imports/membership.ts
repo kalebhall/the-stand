@@ -501,7 +501,7 @@ function parseBirthdayFromTokens(tokens: string[], startIndex: number): { birthd
 
 function findBirthdayInText(value: string): { birthday: string | null; start: number; end: number } | null {
   const normalized = normalizeWhitespace(value);
-  const match = normalized.match(/\d{1,3}(?:\s+|-)[A-Za-z]{3,}(?:\s+|-)\d{4}/);
+  const match = normalized.match(/\d{1,2}(?:\s+|-)[A-Za-z]{3,}(?:\s+|-)\d{4}/);
   if (!match || match.index == null) return null;
   return {
     birthday: normalizeBirthday(match[0]),
@@ -552,6 +552,20 @@ function parsePdfMemberTableLine(line: string): ParsedMember | null {
 function parsePdfMemberCompactLine(line: string): ParsedMember | null {
   const normalized = normalizeWhitespace(line);
   if (!looksLikeNameLine(normalized)) return null;
+
+  // Handle compact extraction where age+day are glued with space-separated month/year, e.g. "F3126 Mar 1994..."
+  const compactSpaced = normalized.match(/^(.+?)(male|female|m|f)\s*(\d{2,5})\s+([A-Za-z]{3,})\s+(\d{4})(.*)$/i);
+  if (compactSpaced) {
+    const fullName = normalizeWhitespace(compactSpaced[1]);
+    if (!looksLikeNameLine(fullName)) return null;
+    const gender = parseGenderPdf(compactSpaced[2]);
+    const split = splitAgeAndBirthdayChunk(compactSpaced[3], compactSpaced[4], compactSpaced[5]);
+    if (split) {
+      const birthday = normalizeBirthday(split.birthdayToken);
+      const { phone, email } = extractPhoneAndEmail(compactSpaced[6] ?? '');
+      return { fullName, email, phone, age: null, birthday, gender };
+    }
+  }
 
   // Handle compact extraction where age and birthday can be glued together, e.g. "M461-Jan-1980..."
   const compactCombined = normalized.match(/^(.+?)(male|female|m|f)\s*(\d{2,5})-([A-Za-z]{3,})-(\d{4})(.*)$/i);

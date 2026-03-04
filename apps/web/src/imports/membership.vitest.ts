@@ -328,4 +328,39 @@ Jane Doe\tjane@example.com\tFebruary 14, 1990`);
       email: 'larry.adams6873@gmail.com'
     });
   });
+
+  it('parses compact rows where age and day are glued before month/year', () => {
+    const result = parseMembershipText(`
+      Abner, Taliena MarieF3126 Mar 1994208-516-8971Talienaforever@gmail.com
+      Acosta, FrankM6526 May 1960702-236-5833fja2660@gmail.com
+      Aguayo, AdanM2711 Jun 1998
+    `);
+
+    expect(result).toEqual([
+      {
+        fullName: 'Abner, Taliena Marie',
+        email: 'talienaforever@gmail.com',
+        phone: '208-516-8971',
+        age: null,
+        birthday: 'Mar 26 1994',
+        gender: 'F'
+      },
+      {
+        fullName: 'Acosta, Frank',
+        email: 'fja2660@gmail.com',
+        phone: '702-236-5833',
+        age: null,
+        birthday: 'May 26 1960',
+        gender: 'M'
+      },
+      {
+        fullName: 'Aguayo, Adan',
+        email: null,
+        phone: null,
+        age: null,
+        birthday: 'Jun 11 1998',
+        gender: 'M'
+      }
+    ]);
+  });
 });
