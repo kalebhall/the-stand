@@ -121,7 +121,7 @@ function extractPhoneAndEmail(value: string): { phone: string | null; email: str
 
   // Parse phone first so it cannot be absorbed into an email local-part.
   const phoneMatch = normalized.match(
-    /(?:\+?1[\s.-]?)?(?:\(?\d{3}\)?[\s.-]?)\d{3}[\s.-]?\d{4}|(?:\+?1)?\d{10}/
+    /(?:\+?1[\s.-]*)?(?:\(?\d{3}\)?[\s.-]*)\d{3}[\s.-]*\d{4}|(?:\+?1)?\d{10}/
   );
   const phone = phoneMatch ? sanitizePhone(phoneMatch[0]) : null;
   const withoutPhone = phoneMatch ? normalized.replace(phoneMatch[0], ' ').trim() : normalized;
@@ -129,6 +129,42 @@ function extractPhoneAndEmail(value: string): { phone: string | null; email: str
   const email = sanitizeEmail(withoutPhone);
 
   return { phone, email };
+}
+
+function splitAgeAndBirthdayChunk(
+  digitsChunk: string,
+  monthToken: string,
+  yearToken: string
+): { birthdayToken: string } | null {
+  if (!/^\d+$/.test(digitsChunk)) return null;
+  const year = Number.parseInt(yearToken, 10);
+  if (Number.isNaN(year)) return null;
+
+  const currentYear = new Date().getFullYear();
+  let best: { score: number; birthdayToken: string } | null = null;
+
+  // Try using 1-digit or 2-digit day at end of chunk.
+  for (const dayLen of [1, 2]) {
+    if (digitsChunk.length <= dayLen) continue;
+    const dayRaw = digitsChunk.slice(-dayLen);
+    const ageRaw = digitsChunk.slice(0, -dayLen);
+    const day = Number.parseInt(dayRaw, 10);
+    const age = Number.parseInt(ageRaw, 10);
+    if (Number.isNaN(day) || Number.isNaN(age)) continue;
+    if (day < 1 || day > 31) continue;
+    if (age < 0 || age > 130) continue;
+
+    const roughAge = currentYear - year;
+    const ageDelta = Math.min(Math.abs(age - roughAge), Math.abs(age - (roughAge - 1)));
+    const score = ageDelta * 10 + (dayLen === 2 ? 0 : 1); // prefer closer age; slight preference for 2-digit day on tie
+    const candidate = {
+      score,
+      birthdayToken: `${day}-${monthToken}-${yearToken}`
+    };
+    if (!best || candidate.score < best.score) best = candidate;
+  }
+
+  return best ? { birthdayToken: best.birthdayToken } : null;
 }
 
 type FieldMapping = 'name' | 'email' | 'phone' | 'age' | 'birthday' | 'gender' | 'unknown';
@@ -490,6 +526,19 @@ function parsePdfMemberTableLine(line: string): ParsedMember | null {
 function parsePdfMemberCompactLine(line: string): ParsedMember | null {
   const normalized = normalizeWhitespace(line);
   if (!looksLikeNameLine(normalized)) return null;
+
+  // Handle compact extraction where age and birthday can be glued together, e.g. "M461-Jan-1980..."
+  const compactCombined = normalized.match(/^(.+?)(male|female|m|f)\s*(\d{2,5})-([A-Za-z]{3,})-(\d{4})(.*)$/i);
+  if (compactCombined) {
+    const fullName = normalizeWhitespace(compactCombined[1]);
+    if (!looksLikeNameLine(fullName)) return null;
+    const gender = parseGenderPdf(compactCombined[2]);
+    const split = splitAgeAndBirthdayChunk(compactCombined[3], compactCombined[4], compactCombined[5]);
+    if (!split) return null;
+    const birthday = normalizeBirthday(split.birthdayToken);
+    const { phone, email } = extractPhoneAndEmail(compactCombined[6] ?? '');
+    return { fullName, email, phone, age: null, birthday, gender };
+  }
 
   const compact = normalized.match(/^(.*?)(male|female|m|f)\s*(\d{1,3})\s*(\d{1,2}-[A-Za-z]{3,}-\d{4})(.*)$/i);
   if (compact) {

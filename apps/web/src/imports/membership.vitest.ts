@@ -266,4 +266,38 @@ Jane Doe\tjane@example.com\tFebruary 14, 1990`);
       }
     ]);
   });
+
+  it('handles spaced phone immediately followed by email in compact rows', () => {
+    const result = parseMembershipText(`
+      Jones, AliceF341-Jan-1980208 516 8971alice@example.com
+    `);
+
+    expect(result).toEqual([
+      {
+        fullName: 'Jones, Alice',
+        email: 'alice@example.com',
+        phone: '208 516 8971',
+        age: null,
+        birthday: 'Jan 1 1980',
+        gender: 'F'
+      }
+    ]);
+  });
+
+  it('does not turn single-digit birthdays into two-digit merged days', () => {
+    const result = parseMembershipText(`
+      Acosta, FrankM461-Jan-1980702-236-5833fja2660@gmail.com
+    `);
+
+    expect(result).toEqual([
+      {
+        fullName: 'Acosta, Frank',
+        email: 'fja2660@gmail.com',
+        phone: '702-236-5833',
+        age: null,
+        birthday: 'Jan 1 1980',
+        gender: 'M'
+      }
+    ]);
+  });
 });
