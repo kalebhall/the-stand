@@ -501,7 +501,7 @@ function parseBirthdayFromTokens(tokens: string[], startIndex: number): { birthd
 
 function findBirthdayInText(value: string): { birthday: string | null; start: number; end: number } | null {
   const normalized = normalizeWhitespace(value);
-  const match = normalized.match(/\d{1,2}(?:\s+|-)[A-Za-z]{3,}(?:\s+|-)\d{4}/);
+  const match = normalized.match(/\d{1,3}(?:\s+|-)[A-Za-z]{3,}(?:\s+|-)\d{4}/);
   if (!match || match.index == null) return null;
   return {
     birthday: normalizeBirthday(match[0]),
@@ -567,7 +567,7 @@ function parsePdfMemberCompactLine(line: string): ParsedMember | null {
     }
   }
 
-  const compact = normalized.match(/^(.*?)(male|female|m|f)\s*(\d{1,3})\s*(\d{1,2}-[A-Za-z]{3,}-\d{4})(.*)$/i);
+  const compact = normalized.match(/^(.*?)(male|female|m|f)\s*(\d{1,3})\s*(\d{1,3}-[A-Za-z]{3,}-\d{4})(.*)$/i);
   if (compact) {
     const fullName = normalizeWhitespace(compact[1]);
     if (!looksLikeNameLine(fullName)) return null;

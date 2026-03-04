@@ -317,4 +317,15 @@ Jane Doe\tjane@example.com\tFebruary 14, 1990`);
       }
     ]);
   });
+
+  it('keeps repaired birthday when compact parser sees 99-Dec-yyyy directly', () => {
+    const result = parseMembershipText('Adams, LawrenceM6899-Dec-1946702-373-9875larry.adams6873@gmail.com');
+
+    expect(result[0]).toMatchObject({
+      fullName: 'Adams, Lawrence',
+      birthday: 'Dec 9 1946',
+      phone: '702-373-9875',
+      email: 'larry.adams6873@gmail.com'
+    });
+  });
 });
