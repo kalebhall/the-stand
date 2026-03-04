@@ -231,4 +231,39 @@ Jane Doe\tjane@example.com\tFebruary 14, 1990`);
       }
     ]);
   });
+
+  it('splits merged phone prefixes from email addresses (real log samples)', () => {
+    const result = parseMembershipText(`
+      Abner, Taliena MarieF3226-Mar-1994208-516-8971talienaforever@gmail.com
+      Acosta, FrankM6526-May-1960702-236-5833fja2660@gmail.com
+      Acosta, Pamela JeanF71915-Sep-1953+17028815748pea.jay.acosta@gmail.com
+    `);
+
+    expect(result).toEqual([
+      {
+        fullName: 'Abner, Taliena Marie',
+        email: 'talienaforever@gmail.com',
+        phone: '208-516-8971',
+        age: null,
+        birthday: 'Mar 26 1994',
+        gender: 'F'
+      },
+      {
+        fullName: 'Acosta, Frank',
+        email: 'fja2660@gmail.com',
+        phone: '702-236-5833',
+        age: null,
+        birthday: 'May 26 1960',
+        gender: 'M'
+      },
+      {
+        fullName: 'Acosta, Pamela Jean',
+        email: 'pea.jay.acosta@gmail.com',
+        phone: '+17028815748',
+        age: null,
+        birthday: 'Sep 15 1953',
+        gender: 'F'
+      }
+    ]);
+  });
 });

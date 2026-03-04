@@ -119,12 +119,14 @@ function extractPhoneAndEmail(value: string): { phone: string | null; email: str
   const normalized = normalizeWhitespace(value);
   if (!normalized) return { phone: null, email: null };
 
-  const emailMatch = normalized.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
-  const email = emailMatch ? sanitizeEmail(emailMatch[0]) : null;
-  const withoutEmail = emailMatch ? normalized.replace(emailMatch[0], ' ').trim() : normalized;
-
-  const phoneMatch = withoutEmail.match(/(?:\+?1[\s.-]?)?(?:\(?\d{3}\)?[\s.-]?)\d{3}[\s.-]?\d{4}/);
+  // Parse phone first so it cannot be absorbed into an email local-part.
+  const phoneMatch = normalized.match(
+    /(?:\+?1[\s.-]?)?(?:\(?\d{3}\)?[\s.-]?)\d{3}[\s.-]?\d{4}|(?:\+?1)?\d{10}/
+  );
   const phone = phoneMatch ? sanitizePhone(phoneMatch[0]) : null;
+  const withoutPhone = phoneMatch ? normalized.replace(phoneMatch[0], ' ').trim() : normalized;
+
+  const email = sanitizeEmail(withoutPhone);
 
   return { phone, email };
 }
