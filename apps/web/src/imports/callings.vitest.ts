@@ -8,8 +8,8 @@ describe('calling PDF import parsing', () => {
       parseCallingsPdfText(`
         Alpine 1st Ward Alpine Utah North Stake Members with Callings
         Name  Gender  Age  Birth Date  Organization  Calling  Sustained  Set Apart
-        Jane Doe  Female  35  Jan 15  Relief Society  Relief Society President  Yes  No
-        John Smith  Male  42  Mar 3  Elders Quorum  Elders Quorum President  True  True
+        Jane Doe  Female  35  15 Jan 1960  Relief Society  Relief Society President  Yes  No
+        John Smith  Male  42  3 Mar 1982  Elders Quorum  Elders Quorum President  True  True
         Count: 2
       `)
     ).toEqual([

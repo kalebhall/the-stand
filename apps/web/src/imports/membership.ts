@@ -322,7 +322,7 @@ function looksLikeGenderLine(line: string): boolean {
 function looksLikeAgeBirthdayLine(line: string): boolean {
   const normalized = normalizeWhitespace(line);
   // Starts with age (number), followed by date pattern (dd Mmm yyyy or dd Mmm)
-  return /^\d{1,3}\s+\d{1,2}\s+[a-z]{3,}/i.test(normalized);
+  return /^\d{1,3}\s+\d{1,2}\s+[a-z]{3,}\s+\d{4}/i.test(normalized);
 }
 
 // Parse LCR PDF format where records span multiple lines:
@@ -387,10 +387,7 @@ function parsePdfMembersMultiLine(lines: string[]): ParsedMember[] {
 
     const ageBirthdayPhoneLine = normalizeWhitespace(nextLine);
     const parts = ageBirthdayPhoneLine.split(/\s+/);
-    
-    // Parse: age dd Mmm yyyy [phone]
-    // Minimum is 4 parts: age, day, month, year
-    if (parts.length < 4) {
+    if (!parts.length || !/^\d{1,3}$/.test(parts[0])) {
       i++;
       continue;
     }
@@ -398,12 +395,18 @@ function parsePdfMembersMultiLine(lines: string[]): ParsedMember[] {
     // Age from PDF extraction is often unreliable when columns shift; prefer birthday.
     const age = null;
     
-    // Birthday is next 3 parts: dd Mmm yyyy
-    const birthdayStr = `${parts[1]} ${parts[2]} ${parts[3]}`;
-    const birthday = normalizeBirthday(birthdayStr);
-    
+    const birthdayResult = parseBirthdayFromTokens(parts, 1);
+    if (!birthdayResult) {
+      i++;
+      continue;
+    }
+    const birthday = birthdayResult.birthday;
+
     // Phone is remaining parts (if any)
-    const contact = parts.length > 4 ? extractPhoneAndEmail(parts.slice(4).join(' ')) : { phone: null, email: null };
+    const contact =
+      parts.length > birthdayResult.nextIndex
+        ? extractPhoneAndEmail(parts.slice(birthdayResult.nextIndex).join(' '))
+        : { phone: null, email: null };
     
     i++;
 
@@ -446,50 +449,10 @@ function parsePdfMembersMultiLine(lines: string[]): ParsedMember[] {
 }
 
 function parseBirthdayFromTokens(tokens: string[], startIndex: number): { birthday: string | null; nextIndex: number } | null {
-  if (startIndex >= tokens.length) return null;
-
-  // d-Mmm-yyyy as a single token
-  if (/^\d{1,3}-[A-Za-z]{3,}-\d{4}$/.test(tokens[startIndex])) {
-    const normalized = normalizeBirthday(tokens[startIndex]);
-    if (normalized) {
-      return {
-        birthday: normalized,
-        nextIndex: startIndex + 1
-      };
-    }
-
-    // Repair for merged age/day values like "99-Dec-1946" -> "9-Dec-1946"
-    const merged = tokens[startIndex].match(/^(\d{2,3})-([A-Za-z]{3,})-(\d{4})$/);
-    if (merged) {
-      const digits = merged[1];
-      const month = merged[2];
-      const year = merged[3];
-      const candidates = [digits.slice(-2), digits.slice(-1)];
-      for (const candidateDay of candidates) {
-        if (!candidateDay) continue;
-        const repaired = normalizeBirthday(`${candidateDay}-${month}-${year}`);
-        if (repaired) {
-          return {
-            birthday: repaired,
-            nextIndex: startIndex + 1
-          };
-        }
-      }
-    }
-  }
-
   if (startIndex + 2 >= tokens.length) return null;
 
-  // dd Mmm yyyy
+  // Import dates are always d Mmm yyyy
   if (/^\d{1,2}$/.test(tokens[startIndex]) && /^[A-Za-z]{3,}$/.test(tokens[startIndex + 1]) && /^\d{4}$/.test(tokens[startIndex + 2])) {
-    return {
-      birthday: normalizeBirthday(`${tokens[startIndex]} ${tokens[startIndex + 1]} ${tokens[startIndex + 2]}`),
-      nextIndex: startIndex + 3
-    };
-  }
-
-  // Mmm dd yyyy
-  if (/^[A-Za-z]{3,}$/.test(tokens[startIndex]) && /^\d{1,2}$/.test(tokens[startIndex + 1]) && /^\d{4}$/.test(tokens[startIndex + 2])) {
     return {
       birthday: normalizeBirthday(`${tokens[startIndex]} ${tokens[startIndex + 1]} ${tokens[startIndex + 2]}`),
       nextIndex: startIndex + 3
@@ -498,6 +461,7 @@ function parseBirthdayFromTokens(tokens: string[], startIndex: number): { birthd
 
   return null;
 }
+
 
 function findBirthdayInText(value: string): { birthday: string | null; start: number; end: number } | null {
   const normalized = normalizeWhitespace(value);
@@ -667,8 +631,36 @@ function parsePdfMembersTableFormat(lines: string[]): ParsedMember[] {
   return members;
 }
 
-function parseMemberLegacy(parts: string[]): ParsedMember | null {
+function parseMemberLegacy(parts: string[], rawLine: string, delimiter: Delimiter): ParsedMember | null {
   if (!parts.length) return null;
+
+  if (delimiter === 'single_space') {
+    let email: string | null = null;
+    let phone: string | null = null;
+    const nameTokens: string[] = [];
+
+    for (const token of parts) {
+      if (token.includes('@')) {
+        email = sanitizeEmail(token) ?? email;
+        continue;
+      }
+
+      const parsedPhone = sanitizePhone(token);
+      if (parsedPhone && !phone) {
+        phone = parsedPhone;
+        continue;
+      }
+
+      if (!email && !phone) {
+        nameTokens.push(token);
+      }
+    }
+
+    const fullName =
+      nameTokens.length > 0 ? nameTokens.join(' ') : normalizeWhitespace(rawLine);
+    if (!fullName) return null;
+    return { fullName, email, phone, age: null, birthday: null, gender: null };
+  }
 
   const fullName = parts[0];
   let email: string | null = null;
@@ -773,7 +765,9 @@ export function parseMembershipText(rawText: string): ParsedMember[] {
         continue;
       }
 
-      const parsed = headerMapping ? parseMemberFromMapping(parts, headerMapping) : parseMemberLegacy(parts);
+      const parsed = headerMapping
+        ? parseMemberFromMapping(parts, headerMapping)
+        : parseMemberLegacy(parts, cleanedLines[i], detectDelimiter(cleanedLines[i]));
 
       if (!parsed) continue;
 

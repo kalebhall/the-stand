@@ -98,7 +98,10 @@ function normalizeBirthday(input: string): string {
 
 function looksLikeNameLine(line: string): boolean {
   const normalized = normalizeWhitespace(line);
-  return /,/.test(normalized) && /[a-z]/i.test(normalized) && !/^\d/.test(normalized);
+  if (!/[a-z]/i.test(normalized) || /^\d/.test(normalized)) return false;
+  if (/,/.test(normalized)) return true;
+
+  return /^[A-Za-z][A-Za-z'`.-]*(?:\s+[A-Za-z][A-Za-z'`.-]*)+$/.test(normalized);
 }
 
 function looksLikeGenderLine(line: string): boolean {
@@ -180,10 +183,28 @@ function finalizeCallingFields(raw: string): { callingName: string; sustainedDat
   return { callingName: callingText, sustainedDate, setApart };
 }
 
+
+function parseBirthdayTokens(tokens: string[], startIndex: number): { birthday: string; nextIndex: number } | null {
+  if (startIndex + 2 >= tokens.length) return null;
+
+  // Import dates are always d Mmm yyyy
+  if (
+    /^\d{1,2}$/.test(tokens[startIndex]) &&
+    /^[A-Za-z]{3,}$/.test(tokens[startIndex + 1]) &&
+    /^\d{4}$/.test(tokens[startIndex + 2])
+  ) {
+    return {
+      birthday: normalizeBirthday(`${tokens[startIndex]} ${tokens[startIndex + 1]} ${tokens[startIndex + 2]}`),
+      nextIndex: startIndex + 3
+    };
+  }
+
+  return null;
+}
+
+
 function parseSpacedTableLine(line: string): ParsedCalling | null {
   const normalized = normalizeWhitespace(line);
-  if (!looksLikeNameLine(normalized)) return null;
-
   const tokens = normalized.split(/\s+/);
   if (tokens.length < 8) return null;
 
@@ -201,9 +222,10 @@ function parseSpacedTableLine(line: string): ParsedCalling | null {
   if (idx >= tokens.length || !/^\d{1,3}$/.test(tokens[idx])) return null;
   idx++;
 
-  if (idx + 2 >= tokens.length) return null;
-  const birthday = normalizeBirthday(`${tokens[idx]} ${tokens[idx + 1]} ${tokens[idx + 2]}`);
-  idx += 3;
+  const birthdayParsed = parseBirthdayTokens(tokens, idx);
+  if (!birthdayParsed) return null;
+  const birthday = birthdayParsed.birthday;
+  idx = birthdayParsed.nextIndex;
 
   const orgMatch = findBestOrganizationMatch(tokens.slice(idx).join(' '));
   if (!orgMatch) return null;
@@ -292,7 +314,7 @@ function parsePdfCallingsTableFormat(lines: string[]): ParsedCalling[] {
         continue;
       }
 
-      if (parseTableLine(nextLine) || looksLikeNameLine(nextLine)) break;
+      if (parseTableLine(nextLine)) break;
       parsed.callingName = normalizeWhitespace(`${parsed.callingName} ${nextLine}`);
       i++;
     }

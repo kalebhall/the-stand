@@ -216,7 +216,7 @@ Jane Doe\tjane@example.com\tFebruary 14, 1990`);
     const result = parseMembershipText(`
       Doe, Jane
       Female
-      34 26-May-1991
+      34 26 May 1991
       8015551212jane@example.com
     `);
 
