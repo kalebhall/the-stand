@@ -49,6 +49,7 @@ describe('POST /api/w/[wardId]/imports/membership', () => {
     const response = await POST(
       new Request('http://localhost', {
         method: 'POST',
+        headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ rawText: 'Jane Doe, jane@example.com', commit: false })
       }),
       { params: Promise.resolve({ wardId: 'ward-1' }) }
@@ -80,6 +81,7 @@ describe('POST /api/w/[wardId]/imports/membership', () => {
     const response = await POST(
       new Request('http://localhost', {
         method: 'POST',
+        headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ rawText: 'Jane Doe, jane@example.com\nJohn Doe, 801-555-0101', commit: true })
       }),
       { params: Promise.resolve({ wardId: 'ward-1' }) }
@@ -126,6 +128,7 @@ describe('POST /api/w/[wardId]/imports/membership', () => {
     const response = await POST(
       new Request('http://localhost', {
         method: 'POST',
+        headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ rawText: 'Jane Doe, jane@example.com', commit: true })
       }),
       { params: Promise.resolve({ wardId: 'ward-1' }) }
@@ -146,6 +149,7 @@ describe('POST /api/w/[wardId]/imports/membership', () => {
       userId: 'user-1',
       commitRequested: true,
       parsedCount: 1,
+      fileName: 'paste',
       error: 'db-upsert-failed'
     });
   });
