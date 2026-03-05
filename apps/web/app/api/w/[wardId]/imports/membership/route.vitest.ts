@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { authMock, canViewCallingsMock, setDbContextMock, connectMock, releaseMock, queryMock } = vi.hoisted(() => ({
+const { authMock, canRunImportsMock, setDbContextMock, connectMock, releaseMock, queryMock } = vi.hoisted(() => ({
   authMock: vi.fn(),
-  canViewCallingsMock: vi.fn(),
+  canRunImportsMock: vi.fn(),
   setDbContextMock: vi.fn(),
   connectMock: vi.fn(),
   releaseMock: vi.fn(),
@@ -12,7 +12,7 @@ const { authMock, canViewCallingsMock, setDbContextMock, connectMock, releaseMoc
 const loggerErrorMock = vi.hoisted(() => vi.fn());
 
 vi.mock('@/src/auth/auth', () => ({ auth: authMock }));
-vi.mock('@/src/auth/roles', () => ({ canViewCallings: canViewCallingsMock }));
+vi.mock('@/src/auth/roles', () => ({ canRunImports: canRunImportsMock }));
 vi.mock('@/src/db/context', () => ({ setDbContext: setDbContextMock }));
 vi.mock('@/src/db/client', () => ({
   pool: {
@@ -35,7 +35,7 @@ describe('POST /api/w/[wardId]/imports/membership', () => {
     vi.clearAllMocks();
 
     authMock.mockResolvedValue({ user: { id: 'user-1', roles: ['MEMBERSHIP_CLERK'] }, activeWardId: 'ward-1' });
-    canViewCallingsMock.mockReturnValue(true);
+    canRunImportsMock.mockReturnValue(true);
 
     connectMock.mockResolvedValue({
       query: queryMock,
@@ -49,6 +49,7 @@ describe('POST /api/w/[wardId]/imports/membership', () => {
     const response = await POST(
       new Request('http://localhost', {
         method: 'POST',
+        headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ rawText: 'Jane Doe, jane@example.com', commit: false })
       }),
       { params: Promise.resolve({ wardId: 'ward-1' }) }
@@ -80,6 +81,7 @@ describe('POST /api/w/[wardId]/imports/membership', () => {
     const response = await POST(
       new Request('http://localhost', {
         method: 'POST',
+        headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ rawText: 'Jane Doe, jane@example.com\nJohn Doe, 801-555-0101', commit: true })
       }),
       { params: Promise.resolve({ wardId: 'ward-1' }) }
@@ -126,6 +128,7 @@ describe('POST /api/w/[wardId]/imports/membership', () => {
     const response = await POST(
       new Request('http://localhost', {
         method: 'POST',
+        headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ rawText: 'Jane Doe, jane@example.com', commit: true })
       }),
       { params: Promise.resolve({ wardId: 'ward-1' }) }
@@ -146,6 +149,7 @@ describe('POST /api/w/[wardId]/imports/membership', () => {
       userId: 'user-1',
       commitRequested: true,
       parsedCount: 1,
+      fileName: 'paste',
       error: 'db-upsert-failed'
     });
   });
