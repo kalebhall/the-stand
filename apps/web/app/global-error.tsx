@@ -1,12 +1,19 @@
-"use client";
+'use client';
 
-import * as Sentry from "@sentry/nextjs";
-import Error from "next/error";
-import { useEffect } from "react";
+import { useEffect } from 'react';
 
-export default function GlobalError({ error }: { error: Error }) {
+import { isSentryEnabled, loadSentrySdk } from '@/src/lib/sentry';
+
+export default function GlobalError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   useEffect(() => {
-    Sentry.captureException(error);
+    if (!isSentryEnabled()) {
+      return;
+    }
+
+    void (async () => {
+      const sdk = await loadSentrySdk();
+      sdk?.captureException?.(error);
+    })();
   }, [error]);
 
   return (
