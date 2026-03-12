@@ -99,6 +99,28 @@ sudo systemctl start redis-server
 sudo systemctl status redis-server
 ```
 ---------------------------------------------------------------------
+SECTION 4B — OPTIONAL: ENABLE SENTRY ERROR MONITORING
+---------------------------------------------------------------------
+
+From the repository root, install Sentry for the Next.js workspace:
+```
+sudo -u the-stand -H bash -lc "cd /opt/the-stand/app && npm --workspace @the-stand/web install @sentry/nextjs"
+```
+
+Environment variables (add to `/opt/the-stand/app/.env`):
+```
+SENTRY_ENABLED=false
+SENTRY_ORG=kalebhallcom
+SENTRY_PROJECT=javascript-nextjs
+SENTRY_DSN=
+NEXT_PUBLIC_SENTRY_DSN=
+```
+
+Set `SENTRY_ENABLED=true` and provide DSNs when you are ready to send
+telemetry. Leaving it `false` keeps Sentry disabled even when the package
+is installed.
+
+---------------------------------------------------------------------
 SECTION 5 — CREATE APPLICATION USER
 ---------------------------------------------------------------------
 ```
