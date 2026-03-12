@@ -95,7 +95,7 @@ John Doe  Male  42  Jan 15  Bishopric  Bishop  Yes  No
       .mockResolvedValueOnce({ rows: [{ id: 'import-1', created_at: new Date().toISOString() }] })
       .mockResolvedValueOnce({ rows: [{ id: 'member-1', full_name: 'John Doe', birthday: 'Jan 15' }] })
       .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'assign-1', member_name: 'John Doe', birthday: 'Jan 15', calling_name: 'Bishop' }] })
-      .mockResolvedValueOnce({ rows: [{ member_name: 'John Doe', birthday: 'Jan 15', calling_name: 'Bishop' }] })
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ member_name: 'John Doe', birthday: 'Jan 15', calling_name: 'Bishop' }] })
       .mockResolvedValueOnce({
         rowCount: 1,
         rows: [
@@ -154,6 +154,34 @@ John Doe  Male  42  Jan 15  Bishopric  Bishop  Yes  No
       expect.any(Number),
       expect.any(Number)
     ]);
+  });
+
+  it('uses parsed_count fallback drift calculation for very large stale imports', async () => {
+    const hugeText = 'x'.repeat(250_001);
+
+    queryMock
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({ rows: [{ id: 'import-3', created_at: new Date().toISOString() }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'member-1', full_name: 'John Doe', birthday: 'Jan 15' }] })
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'assign-1', member_name: 'John Doe', birthday: 'Jan 15', calling_name: 'Bishop' }] })
+      .mockResolvedValueOnce({ rows: [{ member_name: 'John Doe', birthday: 'Jan 15', calling_name: 'Bishop' }] })
+      .mockResolvedValueOnce({
+        rowCount: 1,
+        rows: [{ id: 'import-huge', raw_text: hugeText, parsed_count: 5 }]
+      })
+      .mockResolvedValueOnce({});
+
+    const response = await POST(buildRequest(false), { params: Promise.resolve({ wardId: 'ward-1' }) });
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({
+      stale: {
+        isStale: true,
+        driftCount: 5,
+        comparedToImportRunId: 'import-huge'
+      }
+    });
+    expect(parseCallingsPdfTextMock).not.toHaveBeenCalledWith(hugeText);
   });
 
   it('accepts rawText JSON body as an alternative to PDF upload', async () => {

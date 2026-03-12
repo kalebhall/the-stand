@@ -36,6 +36,14 @@ type CallingRow = {
   is_active: boolean;
 };
 
+type LatestCallingImportRow = {
+  id: string;
+  raw_text: string;
+  parsed_count: number;
+};
+
+const MAX_DRIFT_COMPARE_RAW_TEXT_CHARS = 250_000;
+
 export default async function ImportsPage() {
   const session = await requireAuthenticatedSession();
   enforcePasswordRotation(session);
@@ -77,7 +85,7 @@ export default async function ImportsPage() {
     );
 
     const latestCallingImportResult = await client.query(
-      `SELECT id, raw_text
+      `SELECT id, raw_text, parsed_count
          FROM import_run
         WHERE ward_id = $1
           AND import_type = 'CALLINGS'
@@ -95,15 +103,24 @@ export default async function ImportsPage() {
         .map((row) => `${row.member_name.toLowerCase()}::${(row.birthday ?? '').toLowerCase()}::${row.calling_name.toLowerCase()}`)
     );
 
-    const latestImportSet = new Set(
-      parseCallingsPdfText((latestCallingImportResult.rows[0]?.raw_text as string | undefined) ?? '').map(
-        (entry) => `${entry.memberName.toLowerCase()}::${entry.birthday.toLowerCase()}::${entry.callingName.toLowerCase()}`
-      )
-    );
+    const latestImport = latestCallingImportResult.rows[0] as LatestCallingImportRow | undefined;
 
-    const driftCount =
-      Array.from(currentActiveSet).filter((key) => !latestImportSet.has(key)).length +
-      Array.from(latestImportSet).filter((key) => !currentActiveSet.has(key)).length;
+    let driftCount = 0;
+    if (latestImport) {
+      if (latestImport.raw_text.length <= MAX_DRIFT_COMPARE_RAW_TEXT_CHARS) {
+        const latestImportSet = new Set(
+          parseCallingsPdfText(latestImport.raw_text).map(
+            (entry) => `${entry.memberName.toLowerCase()}::${entry.birthday.toLowerCase()}::${entry.callingName.toLowerCase()}`
+          )
+        );
+
+        driftCount =
+          Array.from(currentActiveSet).filter((key) => !latestImportSet.has(key)).length +
+          Array.from(latestImportSet).filter((key) => !currentActiveSet.has(key)).length;
+      } else {
+        driftCount = Math.abs(currentActiveSet.size - latestImport.parsed_count);
+      }
+    }
 
     const normalizedCallingRows = (callingResult.rows as CallingRow[]).map((row) => ({
       ...row,
@@ -126,7 +143,7 @@ export default async function ImportsPage() {
           initialCallingDrift={{
             isStale: driftCount > 0,
             driftCount,
-            comparedToImportRunId: (latestCallingImportResult.rows[0]?.id as string | undefined) ?? null
+            comparedToImportRunId: latestImport?.id ?? null
           }}
         />
       </main>

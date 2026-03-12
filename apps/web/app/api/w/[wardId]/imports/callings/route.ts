@@ -28,7 +28,10 @@ type MemberRow = QueryResultRow & {
 type StaleImportRow = QueryResultRow & {
   id: string;
   raw_text: string;
+  parsed_count: number;
 };
+
+const MAX_STALE_COMPARE_RAW_TEXT_CHARS = 250_000;
 
 function looksLikePotentialCallingRow(line: string): boolean {
   const normalized = line.replace(/\s+/g, ' ').trim();
@@ -278,7 +281,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     );
 
     const staleResult = await client.query(
-      `SELECT id, raw_text
+      `SELECT id, raw_text, parsed_count
          FROM import_run
         WHERE ward_id = $1
           AND import_type = 'CALLINGS'
@@ -294,18 +297,23 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
 
     if (staleResult.rowCount && (staleResult.rows[0] as StaleImportRow | undefined)?.raw_text) {
       const staleImport = staleResult.rows[0] as StaleImportRow;
-      const staleParsed = parseCallingsPdfText(staleImport.raw_text);
-      const staleSet = new Set(staleParsed.map((entry) => makeCallingKey(entry.memberName, entry.birthday, entry.callingName)));
-      const currentActiveSet = new Set(
-        (currentActiveResult.rows as ActiveCallingRow[]).map((row) =>
-          makeCallingKey(row.member_name, row.birthday ?? '', row.calling_name)
-        )
-      );
+      if (staleImport.raw_text.length <= MAX_STALE_COMPARE_RAW_TEXT_CHARS) {
+        const staleParsed = parseCallingsPdfText(staleImport.raw_text);
+        const staleSet = new Set(staleParsed.map((entry) => makeCallingKey(entry.memberName, entry.birthday, entry.callingName)));
+        const currentActiveSet = new Set(
+          (currentActiveResult.rows as ActiveCallingRow[]).map((row) =>
+            makeCallingKey(row.member_name, row.birthday ?? '', row.calling_name)
+          )
+        );
 
-      const inImportNotCurrent = Array.from(staleSet).filter((key) => !currentActiveSet.has(key)).length;
-      const inCurrentNotImport = Array.from(currentActiveSet).filter((key) => !staleSet.has(key)).length;
+        const inImportNotCurrent = Array.from(staleSet).filter((key) => !currentActiveSet.has(key)).length;
+        const inCurrentNotImport = Array.from(currentActiveSet).filter((key) => !staleSet.has(key)).length;
 
-      driftCount = inImportNotCurrent + inCurrentNotImport;
+        driftCount = inImportNotCurrent + inCurrentNotImport;
+      } else {
+        const activeCount = currentActiveResult.rowCount ?? 0;
+        driftCount = Math.abs(activeCount - staleImport.parsed_count);
+      }
       isStale = driftCount > 0;
     }
 
