@@ -45,7 +45,7 @@ const MONTH_MAP: Record<string, string> = {
   dec: '12'
 };
 
-const SET_APART_TOKEN_PATTERN = /^(?:[\u2713\u2714]|âœ”|âœ“|yes|true|y)$/i;
+const SET_APART_TOKEN_PATTERN = /^(?:[\u2713\u2714]|\u00e2\u009c\u0093|\u00e2\u009c\u0094|\u00c3\u00a2\u00c5\u201c\u00e2\u0080\u009c|yes|true|y)$/i;
 const NON_SET_APART_TOKEN_PATTERN = /^(?:no|false|n)$/i;
 const SUSTAINED_DATE_PATTERN = /^\d{1,2}\s+[A-Za-z]{3,}\s+\d{4}$/;
 
@@ -96,12 +96,15 @@ function normalizeBirthday(input: string): string {
   return raw;
 }
 
+// Allow ASCII name chars plus Unicode right-single-quote (\u2019) used in names like Ra\u2019sean
+const NAME_WORD_PATTERN = /^[A-Za-z\u2019][A-Za-z'\u2019`.-]*(?:\s+[A-Za-z\u2019][A-Za-z'\u2019`.-]*)+$/;
+
 function looksLikeNameLine(line: string): boolean {
   const normalized = normalizeWhitespace(line);
   if (!/[a-z]/i.test(normalized) || /^\d/.test(normalized)) return false;
   if (/,/.test(normalized)) return true;
 
-  return /^[A-Za-z][A-Za-z'`.-]*(?:\s+[A-Za-z][A-Za-z'`.-]*)+$/.test(normalized);
+  return NAME_WORD_PATTERN.test(normalized);
 }
 
 function looksLikeGenderLine(line: string): boolean {
@@ -296,7 +299,11 @@ function parsePdfCallingsTableFormat(lines: string[]): ParsedCalling[] {
     i++;
     while (i < lines.length) {
       const nextLine = lines[i];
-      if (isHeaderOrFooterLine(nextLine)) {
+
+      // Check sustained-date BEFORE header/footer so a standalone "9 Mar 2025"
+      // line is captured as a sustained date rather than skipped as a footer.
+      if (looksLikeSustainedDateLine(nextLine)) {
+        parsed.sustainedDate = toIsoDate(nextLine);
         i++;
         continue;
       }
@@ -308,8 +315,7 @@ function parsePdfCallingsTableFormat(lines: string[]): ParsedCalling[] {
         continue;
       }
 
-      if (looksLikeSustainedDateLine(nextLine)) {
-        parsed.sustainedDate = toIsoDate(nextLine);
+      if (isHeaderOrFooterLine(nextLine)) {
         i++;
         continue;
       }

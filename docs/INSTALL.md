@@ -292,7 +292,7 @@ the SUPPORT_ADMIN role exists:
 To capture the automatic password, search the service logs:
 
 ```
-sudo journalctl -u the-stand --no-pager | grep "bootstrap password"
+sudo journalctl -u the-stand --no-pager | grep "bootstrap credentials"
 ```
 
 If the password is found, log in at `https://stand.yourdomain.com/login`
@@ -359,7 +359,7 @@ detect that no SUPPORT_ADMIN exists and generate a new password. Capture
 it from the logs immediately:
 
 ```
-sudo journalctl -u the-stand -n 50 --no-pager | grep "bootstrap password"
+sudo journalctl -u the-stand -n 50 --no-pager | grep "bootstrap credentials"
 ```
 
 ---
