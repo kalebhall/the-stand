@@ -1,5 +1,5 @@
-
 # INSTALL.md — The Stand (Complete Installation & Deployment Guide)
+
 Version: Master Deployment Specification
 
 This document provides complete step‑by‑step instructions to install,
@@ -7,6 +7,7 @@ configure, deploy, secure, maintain, and update The Stand on a self‑hosted
 Ubuntu server using a local PostgreSQL database.
 
 Target Environment:
+
 - Ubuntu Server 22.04 LTS or 24.04 LTS
 - Local PostgreSQL
 - Node.js LTS (20+)
@@ -15,21 +16,26 @@ Target Environment:
 - HTTPS via Certbot
 - Optional Redis (for background jobs)
 
----------------------------------------------------------------------
-SECTION 1 — SERVER PREPARATION
----------------------------------------------------------------------
+---
+
+## SECTION 1 — SERVER PREPARATION
 
 1.1 Update System
+
 ```
 sudo apt update
 sudo apt -y upgrade
 sudo reboot
 ```
+
 1.2 Install Base Utilities
+
 ```
 sudo apt install -y git curl ca-certificates build-essential ufw unzip
 ```
+
 1.3 Configure Firewall (UFW)
+
 ```
 sudo ufw allow OpenSSH
 sudo ufw allow 80/tcp
@@ -37,100 +43,165 @@ sudo ufw allow 443/tcp
 sudo ufw enable
 sudo ufw status
 ```
+
 Only ports 22, 80, and 443 should be open.
 
----------------------------------------------------------------------
-SECTION 2 — INSTALL POSTGRESQL (LOCAL DATABASE)
----------------------------------------------------------------------
+---
+
+## SECTION 2 — INSTALL POSTGRESQL (LOCAL DATABASE)
 
 2.1 Install
+
 ```
 sudo apt install -y postgresql postgresql-contrib
 sudo systemctl enable postgresql
 sudo systemctl start postgresql
 ```
+
 2.2 Secure PostgreSQL
 
 Ensure it listens locally only:
+
 ```
 sudo nano /etc/postgresql/*/main/postgresql.conf
 ```
+
 Set:
+
 ```
 listen_addresses = 'localhost'
 ```
+
 Restart:
+
 ```
 sudo systemctl restart postgresql
 ```
+
 2.3 Create Database and User
+
 ```
 sudo -u postgres psql
 ```
+
 ```
 CREATE USER stand_user WITH PASSWORD 'REPLACE_WITH_STRONG_PASSWORD';
 CREATE DATABASE the_stand OWNER stand_user;
 \q
 ```
+
 2.4 Verify Connection
+
 ```
 psql "postgresql://stand_user:REPLACE_WITH_STRONG_PASSWORD@localhost:5432/the_stand" -c "SELECT now();"
 ```
----------------------------------------------------------------------
-SECTION 3 — INSTALL NODE.JS (LTS)
----------------------------------------------------------------------
+
+---
+
+## SECTION 3 — INSTALL NODE.JS (LTS)
+
 ```
 curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 sudo apt install -y nodejs
 node -v
 npm -v
 ```
+
 Optional (if using pnpm):
+
 ```
 sudo corepack enable
 ```
----------------------------------------------------------------------
-SECTION 4 — OPTIONAL: INSTALL REDIS (FOR JOB QUEUES)
----------------------------------------------------------------------
+
+---
+
+## SECTION 4 — OPTIONAL: INSTALL REDIS (FOR JOB QUEUES)
+
 ```
 sudo apt install -y redis-server
 sudo systemctl enable redis-server
 sudo systemctl start redis-server
 sudo systemctl status redis-server
 ```
----------------------------------------------------------------------
-SECTION 5 — CREATE APPLICATION USER
----------------------------------------------------------------------
+
+---
+
+## SECTION 4B — OPTIONAL: ENABLE SENTRY ERROR MONITORING
+
+From the repository root, install Sentry for the Next.js workspace:
+
+```
+sudo -u the-stand -H bash -lc "cd /opt/the-stand/app && npm --workspace @the-stand/web install @sentry/nextjs"
+```
+
+Environment variables (add to `/opt/the-stand/app/.env`):
+
+```
+SENTRY_ENABLED=false
+SENTRY_ORG=kalebhallcom
+SENTRY_PROJECT=javascript-nextjs
+SENTRY_DSN=
+NEXT_PUBLIC_SENTRY_DSN=
+```
+
+Set `SENTRY_ENABLED=true` and provide DSNs when you are ready to send
+telemetry. Leaving it `false` keeps Sentry disabled even when the package
+is installed.
+
+If `@sentry/nextjs` is not installed, the app now uses a built-in no-op
+fallback module so production builds continue to succeed (including repos
+that still contain Sentry wizard example files).
+
+
+If you run the Sentry wizard manually and it adds `sentry-example` routes, either
+remove those files or replace them with project-safe placeholders before
+production build. Some wizard templates reference SDK exports that vary by
+version and can fail strict builds.
+
+---
+
+## SECTION 5 — CREATE APPLICATION USER
+
 ```
 sudo adduser --system --group --home /opt/the-stand the-stand
 sudo mkdir -p /opt/the-stand/app
 sudo chown -R the-stand:the-stand /opt/the-stand
 ```
----------------------------------------------------------------------
-SECTION 6 — DEPLOY APPLICATION
----------------------------------------------------------------------
+
+---
+
+## SECTION 6 — DEPLOY APPLICATION
 
 6.1 Clone Repository
+
 ```
 sudo -u the-stand -H bash -lc "cd /opt/the-stand && git clone https://github.com/kalebhall/the-stand.git app"
 ```
+
 6.2 Install Dependencies
+
 ```
 sudo -u the-stand -H bash -lc "cd /opt/the-stand/app && npm install"
 ```
+
 6.3 Build Production Bundle
+
 ```
 sudo -u the-stand -H bash -lc "cd /opt/the-stand/app && npm --workspace @the-stand/web run build"
 ```
----------------------------------------------------------------------
-SECTION 7 — CONFIGURE ENVIRONMENT VARIABLES
----------------------------------------------------------------------
+
+---
+
+## SECTION 7 — CONFIGURE ENVIRONMENT VARIABLES
 
 Create environment file:
+
 ```
 sudo -u the-stand -H bash -lc "nano /opt/the-stand/app/.env"
 ```
+
 Example configuration:
+
 ```
 NODE_ENV=production
 APP_BASE_URL=https://stand.yourdomain.com
@@ -156,18 +227,22 @@ NOTIFICATION_WEBHOOK_URL=http://127.0.0.1:5678/webhook/the-stand
 # Available: debug | info | warn | error
 LOG_LEVEL=info
 ```
+
 Generate secure secret:
+
 ```
 node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
 ```
+
 Secure the file:
+
 ```
 sudo chown the-stand:the-stand /opt/the-stand/app/.env
 sudo chmod 600 /opt/the-stand/app/.env
 ```
 
-
 Log levels:
+
 - `debug`: Most verbose; includes troubleshooting details for imports and API handlers.
 - `info`: Standard operational events (default).
 - `warn`: Only warnings and errors.
@@ -176,31 +251,37 @@ Log levels:
 Set `LOG_LEVEL` in `/opt/the-stand/app/.env` (or your deployment environment) and restart the app service for changes to take effect.
 
 For this project, the Google OAuth callback route is:
+
 ```
 /api/auth/callback/google
 ```
 
 So the full callback URI should be:
+
 ```
 https://stand.yourdomain.com/api/auth/callback/google
 ```
+
 (replace with your actual APP_BASE_URL).
 
----------------------------------------------------------------------
-SECTION 8 — RUN DATABASE MIGRATIONS
----------------------------------------------------------------------
+---
+
+## SECTION 8 — RUN DATABASE MIGRATIONS
 
 Example (Drizzle):
+
 ```
 sudo -u the-stand -H bash -lc "cd /opt/the-stand/app && npm --workspace @the-stand/web run db:migrate"
 ```
+
 Confirm:
+
 - All tables created
 - RLS enabled on ward tables
 
----------------------------------------------------------------------
-SECTION 9 — SUPPORT ADMIN BOOTSTRAP
----------------------------------------------------------------------
+---
+
+## SECTION 9 — SUPPORT ADMIN BOOTSTRAP
 
 9.1 How the Automatic Bootstrap Works
 
@@ -215,6 +296,7 @@ the SUPPORT_ADMIN role exists:
 - The plaintext password is printed **once** to stdout
 
 To capture the automatic password, search the service logs:
+
 ```
 sudo journalctl -u the-stand --no-pager | grep "bootstrap password"
 ```
@@ -229,6 +311,7 @@ logs rotated, the service was restarted, or you simply missed it), you
 can manually set a new password.
 
 Step 1 — Generate a password hash:
+
 ```
 cd /opt/the-stand/app && node -e "
 const argon2 = require('argon2');
@@ -246,6 +329,7 @@ Replace `YOUR_NEW_PASSWORD_HERE` with a strong password (12+ chars).
 If you omit it, a random password will be generated for you.
 
 Step 2 — Update the database:
+
 ```
 sudo -u postgres psql the_stand -c "
   UPDATE user_account
@@ -279,16 +363,19 @@ sudo systemctl restart the-stand
 Then trigger a new bootstrap by visiting the login page. The app will
 detect that no SUPPORT_ADMIN exists and generate a new password. Capture
 it from the logs immediately:
+
 ```
 sudo journalctl -u the-stand -n 50 --no-pager | grep "bootstrap password"
 ```
 
----------------------------------------------------------------------
-SECTION 10 — CREATE SYSTEMD SERVICE
----------------------------------------------------------------------
+---
+
+## SECTION 10 — CREATE SYSTEMD SERVICE
+
 ```
 sudo nano /etc/systemd/system/the-stand.service
 ```
+
 ```
 [Unit]
 Description=The Stand (Web)
@@ -311,7 +398,9 @@ ProtectHome=true
 [Install]
 WantedBy=multi-user.target
 ```
+
 Enable:
+
 ```
 sudo systemctl daemon-reload
 sudo systemctl enable the-stand
@@ -322,9 +411,11 @@ sudo systemctl status the-stand --no-pager
 10.2 Optional: Background Worker Service (requires Redis)
 
 If using BullMQ for background jobs, create a worker service:
+
 ```
 sudo nano /etc/systemd/system/the-stand-worker.service
 ```
+
 ```
 [Unit]
 Description=The Stand (Worker)
@@ -348,25 +439,32 @@ ProtectHome=true
 [Install]
 WantedBy=multi-user.target
 ```
+
 Enable:
+
 ```
 sudo systemctl daemon-reload
 sudo systemctl enable the-stand-worker
 sudo systemctl start the-stand-worker
 sudo systemctl status the-stand-worker --no-pager
 ```
----------------------------------------------------------------------
-SECTION 11 — NGINX REVERSE PROXY
----------------------------------------------------------------------
+
+---
+
+## SECTION 11 — NGINX REVERSE PROXY
+
 ```
 sudo apt install -y nginx
 sudo systemctl enable nginx
 sudo systemctl start nginx
 ```
+
 Create config:
+
 ```
 sudo nano /etc/nginx/sites-available/the-stand
 ```
+
 ```
 server {
     listen 80;
@@ -384,34 +482,43 @@ server {
     }
 }
 ```
+
 Enable site:
+
 ```
 sudo ln -s /etc/nginx/sites-available/the-stand /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl reload nginx
 ```
----------------------------------------------------------------------
-SECTION 12 — ENABLE HTTPS (CERTBOT)
----------------------------------------------------------------------
+
+---
+
+## SECTION 12 — ENABLE HTTPS (CERTBOT)
+
 ```
 sudo apt install -y certbot python3-certbot-nginx
 sudo certbot --nginx -d stand.yourdomain.com
 sudo certbot renew --dry-run
 ```
----------------------------------------------------------------------
-SECTION 13 — BACKUPS
----------------------------------------------------------------------
+
+---
+
+## SECTION 13 — BACKUPS
 
 Create backup directory:
+
 ```
 sudo mkdir -p /opt/the-stand/backups
 sudo chown postgres:postgres /opt/the-stand/backups
 sudo chmod 700 /opt/the-stand/backups
 ```
+
 Create script:
+
 ```
 sudo nano /usr/local/bin/the-stand-backup.sh
 ```
+
 ```
 #!/usr/bin/env bash
 set -euo pipefail
@@ -419,12 +526,16 @@ ts=$(date +"%Y%m%d_%H%M%S")
 sudo -u postgres pg_dump the_stand | gzip > /opt/the-stand/backups/the_stand_${ts}.sql.gz
 find /opt/the-stand/backups -type f -mtime +14 -delete
 ```
+
 Enable:
+
 ```
 sudo chmod +x /usr/local/bin/the-stand-backup.sh
 sudo crontab -e
 ```
+
 Add:
+
 ```
 15 2 * * * /usr/local/bin/the-stand-backup.sh
 ```
@@ -432,12 +543,15 @@ Add:
 13.2 Restore from Backup
 
 Use the restore script included in the repository (`infra/scripts/restore.sh`):
+
 ```
 sudo -u the-stand -H bash -lc "/opt/the-stand/app/infra/scripts/restore.sh /opt/the-stand/backups/the_stand_YYYYMMDD_HHMMSS.sql.gz"
 ```
----------------------------------------------------------------------
-SECTION 14 — UPDATES
----------------------------------------------------------------------
+
+---
+
+## SECTION 14 — UPDATES
+
 ```
 sudo -u the-stand -H bash -lc "cd /opt/the-stand/app && git pull"
 sudo -u the-stand -H bash -lc "cd /opt/the-stand/app && npm install"
@@ -445,24 +559,29 @@ sudo -u the-stand -H bash -lc "cd /opt/the-stand/app && npm --workspace @the-sta
 sudo -u the-stand -H bash -lc "cd /opt/the-stand/app && npm --workspace @the-stand/web run build"
 sudo systemctl restart the-stand
 ```
----------------------------------------------------------------------
-SECTION 15 — HEALTH CHECK
----------------------------------------------------------------------
+
+---
+
+## SECTION 15 — HEALTH CHECK
 
 Verify:
+
 ```
 curl https://stand.yourdomain.com/health
 ```
+
 Expected:
+
 ```
 {
   "status": "ok",
   "db": "connected"
 }
 ```
----------------------------------------------------------------------
-SECTION 16 — DISASTER RECOVERY TEST
----------------------------------------------------------------------
+
+---
+
+## SECTION 16 — DISASTER RECOVERY TEST
 
 Quarterly:
 
@@ -471,9 +590,9 @@ Quarterly:
 3. Confirm login works.
 4. Confirm meeting history intact.
 
----------------------------------------------------------------------
-SECTION 17 — PRODUCTION HARDENING SUMMARY
----------------------------------------------------------------------
+---
+
+## SECTION 17 — PRODUCTION HARDENING SUMMARY
 
 Required:
 
@@ -486,9 +605,9 @@ Required:
 - Audit logging verified
 - Bootstrap password rotated
 
----------------------------------------------------------------------
-FINAL VALIDATION CHECKLIST
----------------------------------------------------------------------
+---
+
+## FINAL VALIDATION CHECKLIST
 
 [ ] Application starts via systemd
 [ ] HTTPS active
@@ -498,6 +617,6 @@ FINAL VALIDATION CHECKLIST
 [ ] Public QR portal accessible
 [ ] Backups running nightly
 
----------------------------------------------------------------------
-END OF INSTALL.md
----------------------------------------------------------------------
+---
+
+## END OF INSTALL.md
