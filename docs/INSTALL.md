@@ -152,6 +152,12 @@ If `@sentry/nextjs` is not installed, the app now uses a built-in no-op
 fallback module so production builds continue to succeed (including repos
 that still contain Sentry wizard example files).
 
+
+If you run the Sentry wizard manually and it adds `sentry-example` routes, either
+remove those files or replace them with project-safe placeholders before
+production build. Some wizard templates reference SDK exports that vary by
+version and can fail strict builds.
+
 ---
 
 ## SECTION 5 — CREATE APPLICATION USER
