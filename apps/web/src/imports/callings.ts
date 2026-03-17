@@ -40,7 +40,10 @@ const MONTH_MAP: Record<string, string> = {
   jul: '07', aug: '08', sep: '09', oct: '10', nov: '11', dec: '12'
 };
 
-const SET_APART_TOKEN_PATTERN = /^(?:[\u2713\u2714]|\u00e2\u009c\u0093|\u00e2\u009c\u0094|\u00c3\u00a2\u00c5\u201c\u00e2\u0080\u009c|yes|true|y)$/i;
+const MONTHS_ALT = 'Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec';
+
+const SET_APART_TOKEN_PATTERN =
+  /^(?:[\u2713\u2714]|\u00e2\u009c\u0093|\u00e2\u009c\u0094|\u00c3\u00a2\u00c5\u201c\u00e2\u0080\u009c|yes|true|y)$/i;
 const NON_SET_APART_TOKEN_PATTERN = /^(?:no|false|n)$/i;
 const SUSTAINED_DATE_PATTERN = /^\d{1,2}\s+[A-Za-z]{3,}\s+\d{4}$/;
 
@@ -225,23 +228,44 @@ function parseBirthdayTokens(
 // Squished single-line parser
 // ---------------------------------------------------------------------------
 //
-// The LCR PDF frequently produces rows where all columns are concatenated with
-// no whitespace between Name, Gender, Age, and BirthDate, e.g.:
+// The LCR PDF squishes Name, Gender, Age, and BirthDate with no whitespace:
 //
-//   "Leavitt, Curtis LeeM727 Nov 1953Temple and Family History Ward Temple ..."
-//   "Barker, Kristopher Nathaniel M2328 Sep 2002Elders QuorumElders Quorum ..."
+//   "Acosta, FrankM6526 May 1960Elders QuorumElders Quorum Secretary9 Mar 2025"
+//   "Leavitt, Curtis LeeM727 Nov 1953Temple and Family HistoryWard TFH Leader"
 //
-// The pattern is:
-//   <name>[optional space](M|F)<age:1-3 digits><day:1-2 digits> <Mon> <yyyy><org><calling>[<date>][<setApart>]
+// Key insight: the month token is always a 3-letter abbreviation preceded by a
+// space. We anchor on it, then work backwards:
+//   [Name][M|F][age_digits][day_digits] [Mon] [yyyy][OrgCallingDate]
 //
-// The name ends just before the (M|F) gender token, which may or may not be
-// preceded by a space.
+// The digit blob between M/F and the month is age+day concatenated. We split
+// it by trying last-2-digits = day first, then last-1-digit = day, validating
+// that both age (1–120) and day (1–31) are plausible.
 // ---------------------------------------------------------------------------
 
-// Matches the fixed-width portion: [M|F][1-3 digit age][1-2 digit day][space][3+letter month][space][4 digit year]
-// Everything before this is the name; everything after is org+calling.
-const SQUISHED_ROW_RE =
-  /^(.+?[A-Za-z'\u2019.])\s*(M|F)\s*(\d{1,3})\s*(\d{1,2})\s+([A-Za-z]{3,})\s+(\d{4})\s*(.*)$/i;
+// Capture: (name)(gender)(digit_blob) followed by (month) (year)(rest)
+// The digit_blob is 2–5 chars: e.g. "6526" = age 65, day 26.
+const SQUISHED_ROW_RE = new RegExp(
+  `^(.+?[A-Za-z'\\u2019.])\\s*(M|F)\\s*(\\d{2,5})\\s+(${MONTHS_ALT})\\s+(\\d{4})\\s*(.*)$`,
+  'i'
+);
+
+/**
+ * Split a digit blob like "6526" into { age: 65, day: 26 }.
+ * Tries last-2-digits as day first; falls back to last-1-digit.
+ * Returns null if no valid split found.
+ */
+function splitAgeDay(blob: string): { age: number; day: number } | null {
+  for (const dayLen of [2, 1]) {
+    if (blob.length > dayLen) {
+      const age = Number(blob.slice(0, blob.length - dayLen));
+      const day = Number(blob.slice(blob.length - dayLen));
+      if (age >= 1 && age <= 120 && day >= 1 && day <= 31) {
+        return { age, day };
+      }
+    }
+  }
+  return null;
+}
 
 function parseSquishedLine(line: string): ParsedCalling | null {
   const normalized = normalizeWhitespace(line);
@@ -249,31 +273,28 @@ function parseSquishedLine(line: string): ParsedCalling | null {
   if (!m) return null;
 
   const rawName = m[1].trim();
-  const age = Number(m[3]);
-  const day = m[4];
-  const month = MONTH_MAP[m[5].slice(0, 3).toLowerCase()];
-  const year = Number(m[6]);
-  const rest = normalizeWhitespace(m[7]);
+  const gender = m[2].toUpperCase();
+  const digitBlob = m[3];
+  const monthStr = m[4];
+  const yearStr = m[5];
+  const rest = normalizeWhitespace(m[6]);
 
-  // Validate: must look like a member name (contains a comma or multiple words)
   if (!looksLikeNameLine(rawName)) return null;
 
-  // Age must be plausible
-  if (age < 1 || age > 120) return null;
+  const split = splitAgeDay(digitBlob);
+  if (!split) return null;
+  const { day } = split;
 
-  // Month must be valid
+  const month = MONTH_MAP[monthStr.slice(0, 3).toLowerCase()];
   if (!month) return null;
 
-  // Year is birth year — must not look like a sustained year
-  // (birth years are typically 1900–2020; sustained are 1990–2030 — there's
-  //  overlap but we use age as a cross-check)
-  if (year < 1900 || year > 2030) return null;
+  const bdYear = Number(yearStr);
+  if (bdYear < 1900 || bdYear > 2020) return null;
 
-  const birthday = normalizeBirthday(`${day} ${m[5]} ${year}`);
+  const birthday = `${monthStr.slice(0, 3)} ${day}`;
+  // Normalize month to title case ("May 26", "Nov 23", etc.)
+  const birthdayNorm = `${monthStr[0].toUpperCase()}${monthStr.slice(1, 3).toLowerCase()} ${day}`;
 
-  // The remainder is: OrgNameCallingName[SustainedDate][SetApart]
-  // It may look like "Elders QuorumElders Quorum Second Counselor"
-  // or "Temple and Family History Ward Temple and Family History Consultant"
   if (!rest) return null;
 
   const orgMatch = findBestOrganizationMatch(rest);
@@ -284,7 +305,7 @@ function parseSquishedLine(line: string): ParsedCalling | null {
 
   return {
     memberName: rawName,
-    birthday,
+    birthday: birthdayNorm,
     organization: orgMatch.org,
     callingName: finalized.callingName,
     sustainedDate: finalized.sustainedDate,
@@ -292,10 +313,6 @@ function parseSquishedLine(line: string): ParsedCalling | null {
   };
 }
 
-/**
- * Detect squished format: look for lines matching SQUISHED_ROW_RE in the
- * first 80 non-header lines.
- */
 function looksLikeSquishedFormat(lines: string[]): boolean {
   let checked = 0;
   for (const line of lines) {
@@ -306,12 +323,6 @@ function looksLikeSquishedFormat(lines: string[]): boolean {
   return false;
 }
 
-/**
- * Parse every line as a squished row. Lines that don't match SQUISHED_ROW_RE
- * are attempted with parseTableLine (spaced format) as a fallback.
- * Standalone sustained-date and set-apart lines following a matched row
- * are consumed to patch up the previous record.
- */
 function parseSquishedTableFormat(lines: string[]): ParsedCalling[] {
   const callings: ParsedCalling[] = [];
 
@@ -320,35 +331,36 @@ function parseSquishedTableFormat(lines: string[]): ParsedCalling[] {
 
     if (isHeaderOrFooterLine(line)) continue;
 
-    // Try squished format first (most common in this PDF)
     const squished = parseSquishedLine(line);
     if (squished) {
       callings.push(squished);
       continue;
     }
 
-    // Try spaced table format
     const spaced = parseTableLine(line);
     if (spaced) {
       callings.push(spaced);
       continue;
     }
 
-    // Standalone sustained-date line — patch the previous record
-    if (looksLikeSustainedDateLine(line) && looksLikePlausibleSustainedDate(line) && callings.length > 0) {
+    // Standalone sustained-date
+    if (
+      looksLikeSustainedDateLine(line) &&
+      looksLikePlausibleSustainedDate(line) &&
+      callings.length > 0
+    ) {
       callings[callings.length - 1].sustainedDate = toIsoDate(line);
       continue;
     }
 
-    // Standalone set-apart token — patch the previous record
+    // Standalone set-apart token
     if (looksLikeSetApartToken(line) && callings.length > 0) {
       const sa = parseSetApartToken(line);
       if (sa !== null) callings[callings.length - 1].setApart = sa;
       continue;
     }
 
-    // Calling continuation line (e.g. second line of a two-line calling name)
-    // Only append if we have a previous record and the line is plain text
+    // Calling name continuation (second line of a wrapped calling)
     if (
       callings.length > 0 &&
       !/^\d/.test(line) &&
@@ -365,7 +377,7 @@ function parseSquishedTableFormat(lines: string[]): ParsedCalling[] {
 }
 
 // ---------------------------------------------------------------------------
-// Column-dump parser (kept for PDFs that actually use column-dump layout)
+// Column-dump parser (for PDFs that use column-dump layout)
 // ---------------------------------------------------------------------------
 
 const CALLING_CONTEXT_WORDS = new Set([
@@ -388,8 +400,8 @@ function matchOrgFromParts(parts: string[]): string | null {
   const joined = parts.join(' ');
   const reversed = [...parts].reverse().join(' ');
   for (const candidate of [joined, reversed]) {
-    const m = findBestOrganizationMatch(candidate);
-    if (m) return m.org;
+    const mo = findBestOrganizationMatch(candidate);
+    if (mo) return mo.org;
   }
   return null;
 }
@@ -871,13 +883,10 @@ export function parseCallingsPdfText(rawText: string): ParsedCalling[] {
   let callings: ParsedCalling[];
 
   if (looksLikeSquishedFormat(lines)) {
-    // Most common: all fields concatenated on one line per record
     callings = parseSquishedTableFormat(lines);
   } else if (looksLikeColumnDumpFormat(lines)) {
-    // Column-dump: names block, genders block, then interleaved data
     callings = parsePdfCallingsColumnDump(lines);
   } else {
-    // Legacy row-based formats
     let tableLike = false;
     for (let i = 0; i < Math.min(lines.length, 80); i++) {
       if (isHeaderOrFooterLine(lines[i])) continue;
