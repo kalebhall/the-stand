@@ -32,9 +32,18 @@ export function isHeaderOrFooterLine(line: string): boolean {
   // use looksLikeSustainedDateLine() to handle those correctly.
   if (/^(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{1,2},\s+\d{4}$/i.test(normalized)) return true;
 
-  // Page numbers and markers
+  // Page numbers and markers — BUG-FIX: only match 1-2 digit numbers as page
+  // numbers; 3-digit numbers (e.g. 100+ page PDFs are unlikely for ward lists)
+  // but more critically 2-digit numbers like "65" or "76" are member ages and
+  // must NOT be treated as footers.
+  //
+  // OLD (buggy):  /^\d+$/.test(normalized) && normalized.length <= 3
+  // NEW (fixed):  only single-digit standalone numbers are page numbers
+  //
+  // Callers that need to distinguish ages from page numbers use looksLikeAgeLine()
+  // which additionally bounds the value to 1–120.
+  if (/^\d$/.test(normalized)) return true;  // single digit page numbers (p. 1–9)
   if (/^\.{3,}$/.test(normalized)) return true;
-  if (/^\d+$/.test(normalized) && normalized.length <= 3) return true;
   if (/^page\s+\d+/i.test(normalized)) return true;
 
   // Count/total rows
