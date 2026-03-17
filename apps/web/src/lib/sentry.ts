@@ -1,5 +1,3 @@
-const sentryPackageName = '@sentry/nextjs';
-
 const toBoolean = (value: string | undefined) => value?.toLowerCase() === 'true';
 
 export const isSentryEnabled = (): boolean => toBoolean(process.env.SENTRY_ENABLED);
@@ -14,7 +12,7 @@ export const loadSentrySdk = async (): Promise<any | null> => {
   }
 
   try {
-    return await import(sentryPackageName);
+    return await import('@sentry/nextjs');
   } catch {
     return null;
   }
