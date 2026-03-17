@@ -91,7 +91,7 @@ describe('calling PDF import parsing', () => {
     const result = parseCallingsPdfText(`
       NameGenderAgeBirth DateOrganizationCallingSustainedSet Apart
       Acosta, FrankM6526 May 1960Elders QuorumElders Quorum Secretary9 Mar 2025
-      ✔
+      \u2714
       Amber, TimM6723 Nov 1958Elders QuorumElders Quorum Activity
       Committee Member
     `);
@@ -110,6 +110,55 @@ describe('calling PDF import parsing', () => {
         birthday: 'Nov 23',
         organization: 'Elders Quorum',
         callingName: 'Elders Quorum Activity Committee Member',
+        sustainedDate: null,
+        setApart: false
+      }
+    ]);
+  });
+
+  it('parses row with sustained date on a separate line followed by set-apart token', () => {
+    // Simulates the PDF pattern where sustained date wraps to its own line
+    const result = parseCallingsPdfText(
+      'Acosta, Frank M 65 26 May 1960 Elders Quorum Elders Quorum Secretary\n9 Mar 2025\n\u2714'
+    );
+    expect(result).toEqual([
+      {
+        memberName: 'Acosta, Frank',
+        birthday: 'May 26',
+        organization: 'Elders Quorum',
+        callingName: 'Elders Quorum Secretary',
+        sustainedDate: '2025-03-09',
+        setApart: true
+      }
+    ]);
+  });
+
+  it('parses row with no sustained date and no set-apart (both optional/missing)', () => {
+    const result = parseCallingsPdfText(
+      'August, Agnes Alana F 76 9 May 1949 Relief Society Relief Society Activity Coordinator'
+    );
+    expect(result).toEqual([
+      {
+        memberName: 'August, Agnes Alana',
+        birthday: 'May 9',
+        organization: 'Relief Society',
+        callingName: 'Relief Society Activity Coordinator',
+        sustainedDate: null,
+        setApart: false
+      }
+    ]);
+  });
+
+  it('parses row whose name contains a Unicode right-single-quote (Ra\u2019sean)', () => {
+    const result = parseCallingsPdfText(
+      'Capers, Ra\u2019sean Emmanuel M 15 24 Nov 2010 Aaronic Priesthood Quorums Teachers Quorum Secretary'
+    );
+    expect(result).toEqual([
+      {
+        memberName: 'Capers, Ra\u2019sean Emmanuel',
+        birthday: 'Nov 24',
+        organization: 'Aaronic Priesthood Quorums',
+        callingName: 'Teachers Quorum Secretary',
         sustainedDate: null,
         setApart: false
       }
