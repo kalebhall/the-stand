@@ -6,6 +6,7 @@ import { type FormEvent, useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { HymnAutocomplete } from '@/components/HymnAutocomplete';
 import { MemberAutocomplete } from '@/components/ui/member-autocomplete';
+import { toYyyyMmDd } from '@/src/meetings/date';
 import { MEETING_TYPES, type ProgramItemInput } from '@/src/meetings/types';
 import { getDefaultProgramItemsForMeetingType } from '@/src/meetings/default-program';
 
@@ -92,7 +93,7 @@ export function MeetingForm({
   publishedVersionCount = 0
 }: MeetingFormProps) {
   const router = useRouter();
-  const [meetingDate, setMeetingDate] = useState(normalizeDateInput(initialMeetingDate));
+  const [meetingDate, setMeetingDate] = useState(toYyyyMmDd(initialMeetingDate));
   const [meetingType, setMeetingType] = useState(initialMeetingType);
   const [programItems, setProgramItems] = useState<ProgramItemInput[]>(
     initialProgramItems.length ? initialProgramItems : getDefaultProgramItemsForMeetingType(initialMeetingType)
