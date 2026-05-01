@@ -152,7 +152,7 @@ export async function PUT(request: Request, context: { params: Promise<{ wardId:
 
     await client.query(
       `INSERT INTO audit_log (ward_id, user_id, action, details)
-       VALUES ($1, $2, 'MEETING_UPDATED', jsonb_build_object('meetingId', $3, 'programItemCount', $4))`,
+       VALUES ($1, $2, 'MEETING_UPDATED', jsonb_build_object('meetingId', $3::text, 'programItemCount', $4::int))`,
       [wardId, session.user.id, meetingId, programItems.length]
     );
 
@@ -194,7 +194,7 @@ export async function DELETE(_: Request, context: { params: Promise<{ wardId: st
 
     await client.query(
       `INSERT INTO audit_log (ward_id, user_id, action, details)
-       VALUES ($1, $2, 'MEETING_DELETED', jsonb_build_object('meetingId', $3))`,
+       VALUES ($1, $2, 'MEETING_DELETED', jsonb_build_object('meetingId', $3::text))`,
       [wardId, session.user.id, meetingId]
     );
 
