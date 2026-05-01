@@ -28,6 +28,13 @@ const ITEM_TYPE_TO_HYMN_POSITION: Record<string, string> = {
   REST_HYMN: 'REST',
   SPECIAL_HYMN: 'SPECIAL'
 };
+function getItemTitleLabel(itemType: string) {
+  if (HYMN_ITEM_TYPES.has(itemType) || itemType === BUSINESS_ITEM_TYPE) {
+    return 'Title';
+  }
+
+  return 'Name';
+}
 
 type MeetingFormProps = {
   wardId: string;
@@ -279,7 +286,7 @@ export function MeetingForm({
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="space-y-1 text-sm">
-                <span className="font-medium">Name</span>
+                <span className="font-medium">{getItemTitleLabel(item.itemType)}</span>
                 {PERSON_ITEM_TYPES.has(item.itemType) ? (
                   <MemberAutocomplete
                     wardId={wardId}
