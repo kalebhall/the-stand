@@ -16,12 +16,14 @@ const ANNOUNCEMENT_ITEM_TYPE = 'ANNOUNCEMENT';
 const BUSINESS_ITEM_TYPE = 'WARD_AND_STAKE_BUSINESS';
 const HYMN_POSITION_TO_ITEM_TYPE: Record<string, string> = {
   OPENING: 'OPENING_HYMN',
+  SACRAMENT: 'SACRAMENT_HYMN',
   CLOSING: 'CLOSING_HYMN',
   REST: 'REST_HYMN',
   SPECIAL: 'SPECIAL_HYMN'
 };
 const ITEM_TYPE_TO_HYMN_POSITION: Record<string, string> = {
   OPENING_HYMN: 'OPENING',
+  SACRAMENT_HYMN: 'SACRAMENT',
   CLOSING_HYMN: 'CLOSING',
   REST_HYMN: 'REST',
   SPECIAL_HYMN: 'SPECIAL'
@@ -328,6 +330,7 @@ export function MeetingForm({
                         onChange={(event) => updateHymnPosition(index, event.target.value)}
                       >
                         <option value="OPENING">Opening</option>
+                        <option value="SACRAMENT">Sacrament</option>
                         <option value="CLOSING">Closing</option>
                         <option value="REST">Rest</option>
                         <option value="SPECIAL">Special</option>
