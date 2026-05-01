@@ -279,21 +279,6 @@ export function MeetingForm({
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="space-y-1 text-sm">
-                <span className="font-medium">Type</span>
-                <select
-                  className="w-full rounded-md border px-3 py-2"
-                  value={item.itemType}
-                  disabled
-                >
-                  {PROGRAM_ITEM_TYPES.map((value) => (
-                    <option key={value} value={value}>
-                      {value.replaceAll('_', ' ')}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="space-y-1 text-sm">
                 <span className="font-medium">Name</span>
                 {PERSON_ITEM_TYPES.has(item.itemType) ? (
                   <MemberAutocomplete
