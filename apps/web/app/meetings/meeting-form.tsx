@@ -254,7 +254,7 @@ export function MeetingForm({
           <h2 className="text-lg font-semibold">Program items</h2>
           <div className="flex items-center gap-2">
             <label className="space-y-1 text-sm">
-              <span className="font-medium">Add item type</span>
+              <span className="font-medium"></span>
               <select className="rounded-md border px-3 py-2" value={newItemType} onChange={(event) => setNewItemType(event.target.value)}>
                 {PROGRAM_ITEM_TYPES.map((value) => (
                   <option key={value} value={value}>
