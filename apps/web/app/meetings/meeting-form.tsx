@@ -53,6 +53,13 @@ const PROGRAM_ITEM_TYPES = [
   'BENEDICTION'
 ];
 
+const DEFAULT_PROGRAM_ITEM: Omit<ProgramItemInput, 'itemType'> = {
+  title: '',
+  notes: '',
+  hymnNumber: '',
+  hymnTitle: ''
+};
+
 export function MeetingForm({
   wardId,
   mode,
@@ -73,6 +80,7 @@ export function MeetingForm({
   const [publishing, setPublishing] = useState(false);
   const [publishedCount, setPublishedCount] = useState(publishedVersionCount);
   const [announcements, setAnnouncements] = useState<Array<{ id: string; title: string }>>([]);
+  const [newItemType, setNewItemType] = useState('SPEAKER');
 
   const canSave = useMemo(() => Boolean(meetingDate && meetingType), [meetingDate, meetingType]);
   useEffect(() => {
@@ -103,16 +111,13 @@ export function MeetingForm({
     setProgramItems((current) => current.map((item, itemIndex) => (itemIndex === index ? { ...item, itemType: mappedType } : item)));
   }
 
-  function moveItem(index: number, direction: -1 | 1) {
-    const nextIndex = index + direction;
-    if (nextIndex < 0 || nextIndex >= programItems.length) {
-      return;
-    }
+  function moveItemToIndex(fromIndex: number, toIndex: number) {
+    if (toIndex < 0 || toIndex >= programItems.length || fromIndex === toIndex) return;
 
     setProgramItems((current) => {
       const next = [...current];
-      const [moved] = next.splice(index, 1);
-      next.splice(nextIndex, 0, moved);
+      const [moved] = next.splice(fromIndex, 1);
+      next.splice(toIndex, 0, moved);
       return next;
     });
   }
@@ -217,28 +222,66 @@ export function MeetingForm({
       </section>
 
       <section className="space-y-3 rounded-lg border bg-card p-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-end justify-between gap-3">
           <h2 className="text-lg font-semibold">Program items</h2>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() =>
-              setProgramItems((current) => [...current, { itemType: 'SPEAKER', title: '', notes: '', hymnNumber: '', hymnTitle: '' }])
-            }
-          >
-            Add item
-          </Button>
+          <div className="flex items-center gap-2">
+            <label className="space-y-1 text-sm">
+              <span className="font-medium">Add item type</span>
+              <select className="rounded-md border px-3 py-2" value={newItemType} onChange={(event) => setNewItemType(event.target.value)}>
+                {PROGRAM_ITEM_TYPES.map((value) => (
+                  <option key={value} value={value}>
+                    {value.replaceAll('_', ' ')}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <Button type="button" variant="outline" onClick={() => setProgramItems((current) => [...current, { itemType: newItemType, ...DEFAULT_PROGRAM_ITEM }])}>
+              Add item
+            </Button>
+          </div>
         </div>
 
         {programItems.map((item, index) => (
-          <article key={`${item.id ?? 'new'}-${index}`} className="space-y-3 rounded-md border p-3">
+          <article
+            key={`${item.id ?? 'new'}-${index}`}
+            className="space-y-3 rounded-md border p-3"
+            draggable
+            onDragStart={(event) => {
+              event.dataTransfer.setData('text/program-item-index', String(index));
+              event.dataTransfer.effectAllowed = 'move';
+            }}
+            onDragOver={(event) => event.preventDefault()}
+            onDrop={(event) => {
+              event.preventDefault();
+              const rawIndex = event.dataTransfer.getData('text/program-item-index');
+              const fromIndex = Number(rawIndex);
+              if (!Number.isNaN(fromIndex)) moveItemToIndex(fromIndex, index);
+            }}
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold">{item.itemType.replaceAll('_', ' ')}</h3>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-7 w-7 p-0"
+                onClick={() => {
+                  if (window.confirm('Delete this program section?')) {
+                    setProgramItems((current) => current.filter((_, itemIndex) => itemIndex !== index));
+                  }
+                }}
+                aria-label="Delete program section"
+              >
+                ×
+              </Button>
+            </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="space-y-1 text-sm">
                 <span className="font-medium">Type</span>
                 <select
                   className="w-full rounded-md border px-3 py-2"
                   value={item.itemType}
-                  onChange={(event) => updateProgramItem(index, 'itemType', event.target.value)}
+                  disabled
                 >
                   {PROGRAM_ITEM_TYPES.map((value) => (
                     <option key={value} value={value}>
@@ -249,7 +292,7 @@ export function MeetingForm({
               </label>
 
               <label className="space-y-1 text-sm">
-                <span className="font-medium">Title</span>
+                <span className="font-medium">Name</span>
                 {PERSON_ITEM_TYPES.has(item.itemType) ? (
                   <MemberAutocomplete
                     wardId={wardId}
@@ -321,17 +364,6 @@ export function MeetingForm({
               </div>
             ) : null}
 
-            <div className="flex flex-wrap gap-2">
-              <Button type="button" variant="outline" size="sm" onClick={() => moveItem(index, -1)} disabled={index === 0}>
-                Move up
-              </Button>
-              <Button type="button" variant="outline" size="sm" onClick={() => moveItem(index, 1)} disabled={index === programItems.length - 1}>
-                Move down
-              </Button>
-              <Button type="button" variant="destructive" size="sm" onClick={() => setProgramItems((current) => current.filter((_, itemIndex) => itemIndex !== index))}>
-                Remove
-              </Button>
-            </div>
           </article>
         ))}
       </section>
