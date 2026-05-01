@@ -259,7 +259,7 @@ export function MeetingForm({
             }}
           >
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold">Program section {index + 1}</h3>
+              <h3 className="text-sm font-semibold">{item.itemType.replaceAll('_', ' ')}</h3>
               <Button
                 type="button"
                 variant="ghost"
@@ -292,7 +292,7 @@ export function MeetingForm({
               </label>
 
               <label className="space-y-1 text-sm">
-                <span className="font-medium">Title</span>
+                <span className="font-medium">Name</span>
                 {PERSON_ITEM_TYPES.has(item.itemType) ? (
                   <MemberAutocomplete
                     wardId={wardId}
