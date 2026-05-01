@@ -46,6 +46,19 @@ type MeetingFormProps = {
   publishedVersionCount?: number;
 };
 
+function normalizeDateInput(value: string) {
+  if (!value) return '';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return '';
+
+  const year = parsed.getFullYear();
+  const month = String(parsed.getMonth() + 1).padStart(2, '0');
+  const day = String(parsed.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 const PROGRAM_ITEM_TYPES = [
   'PRESIDING',
   'CONDUCTING',
@@ -79,7 +92,7 @@ export function MeetingForm({
   publishedVersionCount = 0
 }: MeetingFormProps) {
   const router = useRouter();
-  const [meetingDate, setMeetingDate] = useState(initialMeetingDate);
+  const [meetingDate, setMeetingDate] = useState(normalizeDateInput(initialMeetingDate));
   const [meetingType, setMeetingType] = useState(initialMeetingType);
   const [programItems, setProgramItems] = useState<ProgramItemInput[]>(
     initialProgramItems.length ? initialProgramItems : getDefaultProgramItemsForMeetingType(initialMeetingType)
