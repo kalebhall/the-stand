@@ -376,7 +376,7 @@ export function MeetingForm({
               ) : (
                 <button
                   type="button"
-                  className="text-xs text-muted-foreground underline underline-offset-2"
+                  className="text-xs text-muted-foreground flex"
                   onClick={() => setActiveNotesEditor((current) => ({ ...current, [itemKey(item, index)]: true }))}
                 >
                   No notes
