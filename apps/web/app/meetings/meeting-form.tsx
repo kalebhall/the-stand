@@ -104,6 +104,7 @@ export function MeetingForm({
   const [publishedCount, setPublishedCount] = useState(publishedVersionCount);
   const [announcements, setAnnouncements] = useState<Array<{ id: string; title: string }>>([]);
   const [newItemType, setNewItemType] = useState('SPEAKER');
+  const [activeNotesEditor, setActiveNotesEditor] = useState<Record<string, boolean>>({});
 
   const canSave = useMemo(() => Boolean(meetingDate && meetingType), [meetingDate, meetingType]);
   useEffect(() => {
@@ -143,6 +144,10 @@ export function MeetingForm({
       next.splice(toIndex, 0, moved);
       return next;
     });
+  }
+
+  function itemKey(item: ProgramItemInput, index: number) {
+    return `${item.id ?? 'new'}-${index}`;
   }
 
   function onMeetingTypeChange(nextMeetingType: string) {
@@ -299,31 +304,33 @@ export function MeetingForm({
               </Button>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
-              <label className="space-y-1 text-sm">
-                <span className="font-medium">{getItemTitleLabel(item.itemType)}</span>
-                {PERSON_ITEM_TYPES.has(item.itemType) ? (
-                  <MemberAutocomplete
-                    wardId={wardId}
-                    value={item.title}
-                    onChange={(value) => updateProgramItem(index, 'title', value)}
-                    className="w-full rounded-md border px-3 py-2"
-                    placeholder="Name"
-                  />
-                ) : item.itemType === ANNOUNCEMENT_ITEM_TYPE ? (
-                  <select className="w-full rounded-md border px-3 py-2" value={item.title} onChange={(event) => updateProgramItem(index, 'title', event.target.value)}>
-                    <option value="">Select an announcement</option>
-                    {announcements.map((announcement) => (
-                      <option key={announcement.id} value={announcement.title}>
-                        {announcement.title}
-                      </option>
-                    ))}
-                  </select>
-                ) : PLACEHOLDER_ITEM_TYPES.has(item.itemType) ? (
-                  <input className="w-full rounded-md border px-3 py-2 bg-muted" value={item.itemType === 'SACRAMENT' ? 'Sacrament (placeholder)' : 'Testimonies (placeholder)'} readOnly />
-                ) : (
-                  <input className="w-full rounded-md border px-3 py-2" value={item.title} onChange={(event) => updateProgramItem(index, 'title', event.target.value)} />
-                )}
-              </label>
+              {!HYMN_ITEM_TYPES.has(item.itemType) && item.itemType !== BUSINESS_ITEM_TYPE ? (
+                <label className="space-y-1 text-sm">
+                  <span className="font-medium">{getItemTitleLabel(item.itemType)}</span>
+                  {PERSON_ITEM_TYPES.has(item.itemType) ? (
+                    <MemberAutocomplete
+                      wardId={wardId}
+                      value={item.title}
+                      onChange={(value) => updateProgramItem(index, 'title', value)}
+                      className="w-full rounded-md border px-3 py-2"
+                      placeholder="Name"
+                    />
+                  ) : item.itemType === ANNOUNCEMENT_ITEM_TYPE ? (
+                    <select className="w-full rounded-md border px-3 py-2" value={item.title} onChange={(event) => updateProgramItem(index, 'title', event.target.value)}>
+                      <option value="">Select an announcement</option>
+                      {announcements.map((announcement) => (
+                        <option key={announcement.id} value={announcement.title}>
+                          {announcement.title}
+                        </option>
+                      ))}
+                    </select>
+                  ) : PLACEHOLDER_ITEM_TYPES.has(item.itemType) ? (
+                    <input className="w-full rounded-md border px-3 py-2 bg-muted" value={item.itemType === 'SACRAMENT' ? 'Sacrament (placeholder)' : 'Testimonies (placeholder)'} readOnly />
+                  ) : (
+                    <input className="w-full rounded-md border px-3 py-2" value={item.title} onChange={(event) => updateProgramItem(index, 'title', event.target.value)} />
+                  )}
+                </label>
+              ) : null}
 
               {HYMN_ITEM_TYPES.has(item.itemType) ? (
                 <div className="space-y-1 text-sm sm:col-span-2">
@@ -348,19 +355,37 @@ export function MeetingForm({
               ) : null}
             </div>
 
-            <label className="space-y-1 text-sm">
+            <div className="space-y-1 text-sm">
               <span className="font-medium">Notes</span>
-              {item.itemType === ANNOUNCEMENT_ITEM_TYPE ? (
-                <textarea className="min-h-20 w-full rounded-md border px-3 py-2 bg-muted" value="Announcements are managed in the Announcements section." readOnly />
+              {activeNotesEditor[itemKey(item, index)] ? (
+                <textarea
+                  className="min-h-20 w-full rounded-md border px-3 py-2"
+                  value={item.notes}
+                  onChange={(event) => updateProgramItem(index, 'notes', event.target.value)}
+                  onBlur={() => setActiveNotesEditor((current) => ({ ...current, [itemKey(item, index)]: false }))}
+                  autoFocus
+                />
+              ) : item.notes.trim() ? (
+                <button
+                  type="button"
+                  className="w-full rounded-md border bg-muted/30 px-3 py-2 text-left text-sm whitespace-pre-wrap"
+                  onClick={() => setActiveNotesEditor((current) => ({ ...current, [itemKey(item, index)]: true }))}
+                >
+                  {item.notes}
+                </button>
               ) : (
-                <textarea className="min-h-20 w-full rounded-md border px-3 py-2" value={item.notes} onChange={(event) => updateProgramItem(index, 'notes', event.target.value)} />
+                <button
+                  type="button"
+                  className="text-xs text-muted-foreground underline underline-offset-2"
+                  onClick={() => setActiveNotesEditor((current) => ({ ...current, [itemKey(item, index)]: true }))}
+                >
+                  No notes
+                </button>
               )}
-            </label>
+            </div>
             {item.itemType === BUSINESS_ITEM_TYPE ? (
-              <div className="grid gap-2 sm:grid-cols-2">
-                <input className="rounded-md border px-3 py-2" placeholder="Releasing info" value={item.title} onChange={(event) => updateProgramItem(index, 'title', event.target.value)} />
-                <input className="rounded-md border px-3 py-2" placeholder="Calling info" value={item.notes} onChange={(event) => updateProgramItem(index, 'notes', event.target.value)} />
-                <label className="flex items-center gap-2 text-sm sm:col-span-2">
+              <div className="grid gap-2">
+                <label className="flex items-center gap-2 text-sm">
                   <input
                     type="checkbox"
                     checked={item.notes.includes('[STAKE_BUSINESS]')}
