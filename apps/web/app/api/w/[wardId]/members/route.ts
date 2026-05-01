@@ -10,7 +10,7 @@ type MemberRow = {
   full_name: string;
 };
 
-export async function GET(_: Request, context: { params: Promise<{ wardId: string }> }) {
+export async function GET(request: Request, context: { params: Promise<{ wardId: string }> }) {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, { status: 401 });
@@ -24,12 +24,31 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
   const client = await pool.connect();
 
   try {
-    await client.query('BEGIN');
+    const searchParams = new URL(request.url).searchParams;
+    const q = searchParams.get('q')?.trim() ?? '';
+    const limitRaw = Number(searchParams.get('limit') ?? '50');
+    const limit = Number.isFinite(limitRaw) ? Math.min(Math.max(limitRaw, 1), 100) : 50;
+
     await setDbContext(client, { userId: session.user.id, wardId });
 
-    const result = await client.query(`SELECT id, full_name FROM member WHERE ward_id = $1 ORDER BY full_name ASC`, [wardId]);
-
-    await client.query('COMMIT');
+    const result = q
+      ? await client.query(
+          `SELECT id, full_name
+             FROM member
+            WHERE ward_id = $1
+              AND full_name ILIKE $2
+            ORDER BY full_name ASC
+            LIMIT $3`,
+          [wardId, `%${q}%`, limit]
+        )
+      : await client.query(
+          `SELECT id, full_name
+             FROM member
+            WHERE ward_id = $1
+            ORDER BY full_name ASC
+            LIMIT $2`,
+          [wardId, limit]
+        );
 
     return NextResponse.json({
       members: (result.rows as MemberRow[]).map((row) => ({
@@ -38,7 +57,6 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
       }))
     });
   } catch {
-    await client.query('ROLLBACK');
     return NextResponse.json({ error: 'Failed to load members', code: 'INTERNAL_ERROR' }, { status: 500 });
   } finally {
     client.release();
