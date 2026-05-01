@@ -19,27 +19,31 @@ export function MemberAutocomplete({ wardId, value, onChange, placeholder, class
   const [members, setMembers] = useState<Member[]>([]);
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
-  const [fetched, setFetched] = useState(false);
+  const [loading, setLoading] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
 
   const filtered = members.filter((m) => value.trim() === '' || m.fullName.toLowerCase().includes(value.toLowerCase()));
 
-  async function fetchMembers() {
-    if (fetched) return;
+  async function fetchMembers(query: string) {
+    setLoading(true);
     try {
-      const res = await fetch(`/api/w/${wardId}/members`);
+      const search = query.trim();
+      const params = new URLSearchParams({ limit: '50' });
+      if (search) params.set('q', search);
+      const res = await fetch(`/api/w/${wardId}/members?${params.toString()}`);
       if (!res.ok) return;
       const data = (await res.json()) as { members: Member[] };
       setMembers(data.members);
-      setFetched(true);
     } catch {
       // silently ignore fetch errors
+    } finally {
+      setLoading(false);
     }
   }
 
   function handleFocus() {
-    void fetchMembers();
+    void fetchMembers(value);
     setOpen(true);
     setActiveIndex(-1);
   }
@@ -71,6 +75,15 @@ export function MemberAutocomplete({ wardId, value, onChange, placeholder, class
       setActiveIndex(-1);
     }
   }
+
+  useEffect(() => {
+    if (!open) return;
+    const timeout = setTimeout(() => {
+      void fetchMembers(value);
+    }, 200);
+
+    return () => clearTimeout(timeout);
+  }, [value, wardId, open]);
 
   useEffect(() => {
     if (activeIndex >= 0 && listRef.current) {
@@ -120,6 +133,7 @@ export function MemberAutocomplete({ wardId, value, onChange, placeholder, class
           ))}
         </ul>
       ) : null}
+      {open && loading ? <p className="mt-1 text-xs text-muted-foreground">Loading members…</p> : null}
     </div>
   );
 }
