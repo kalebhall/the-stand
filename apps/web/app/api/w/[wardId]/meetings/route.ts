@@ -143,8 +143,9 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     await client.query('COMMIT');
 
     return NextResponse.json({ id: inserted.rows[0].id }, { status: 201 });
-  } catch {
+  } catch (error) {
     await client.query('ROLLBACK');
+    console.error('meeting_create_failed', { wardId, userId: session.user.id, error });
     return NextResponse.json({ error: 'Failed to create meeting', code: 'INTERNAL_ERROR' }, { status: 500 });
   } finally {
     client.release();

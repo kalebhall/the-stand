@@ -159,8 +159,9 @@ export async function PUT(request: Request, context: { params: Promise<{ wardId:
     await client.query('COMMIT');
 
     return NextResponse.json({ success: true });
-  } catch {
+  } catch (error) {
     await client.query('ROLLBACK');
+    console.error('meeting_update_failed', { wardId, meetingId, userId: session.user.id, error });
     return NextResponse.json({ error: 'Failed to update meeting', code: 'INTERNAL_ERROR' }, { status: 500 });
   } finally {
     client.release();
