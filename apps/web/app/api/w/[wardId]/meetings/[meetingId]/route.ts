@@ -6,6 +6,10 @@ import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 import { isMeetingType, type ProgramItemInput } from '@/src/meetings/types';
 
+function toTrimmedString(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
 type ProgramItemRow = {
   id: string;
   item_type: string;
@@ -95,8 +99,8 @@ export async function PUT(request: Request, context: { params: Promise<{ wardId:
     programItems?: ProgramItemInput[];
   } | null;
 
-  const meetingDate = body?.meetingDate?.trim() ?? '';
-  const meetingType = body?.meetingType?.trim() ?? '';
+  const meetingDate = toTrimmedString(body?.meetingDate);
+  const meetingType = toTrimmedString(body?.meetingType);
   const programItems = Array.isArray(body?.programItems) ? body.programItems : [];
 
   if (!meetingDate || !isMeetingType(meetingType)) {
@@ -127,7 +131,7 @@ export async function PUT(request: Request, context: { params: Promise<{ wardId:
     await client.query('DELETE FROM meeting_program_item WHERE meeting_id = $1 AND ward_id = $2', [meetingId, wardId]);
 
     for (const [index, item] of programItems.entries()) {
-      const itemType = item.itemType?.trim() ?? '';
+      const itemType = toTrimmedString(item?.itemType);
       if (!itemType) continue;
 
       await client.query(
@@ -138,25 +142,26 @@ export async function PUT(request: Request, context: { params: Promise<{ wardId:
           meetingId,
           index + 1,
           itemType,
-          item.title?.trim() ?? '',
-          item.notes?.trim() ?? '',
-          item.hymnNumber?.trim() ?? '',
-          item.hymnTitle?.trim() ?? ''
+          toTrimmedString(item?.title),
+          toTrimmedString(item?.notes),
+          toTrimmedString(item?.hymnNumber),
+          toTrimmedString(item?.hymnTitle)
         ]
       );
     }
 
     await client.query(
       `INSERT INTO audit_log (ward_id, user_id, action, details)
-       VALUES ($1, $2, 'MEETING_UPDATED', jsonb_build_object('meetingId', $3, 'programItemCount', $4))`,
+       VALUES ($1, $2, 'MEETING_UPDATED', jsonb_build_object('meetingId', $3::text, 'programItemCount', $4::int))`,
       [wardId, session.user.id, meetingId, programItems.length]
     );
 
     await client.query('COMMIT');
 
     return NextResponse.json({ success: true });
-  } catch {
+  } catch (error) {
     await client.query('ROLLBACK');
+    console.error('meeting_update_failed', { wardId, meetingId, userId: session.user.id, error });
     return NextResponse.json({ error: 'Failed to update meeting', code: 'INTERNAL_ERROR' }, { status: 500 });
   } finally {
     client.release();
@@ -189,7 +194,7 @@ export async function DELETE(_: Request, context: { params: Promise<{ wardId: st
 
     await client.query(
       `INSERT INTO audit_log (ward_id, user_id, action, details)
-       VALUES ($1, $2, 'MEETING_DELETED', jsonb_build_object('meetingId', $3))`,
+       VALUES ($1, $2, 'MEETING_DELETED', jsonb_build_object('meetingId', $3::text))`,
       [wardId, session.user.id, meetingId]
     );
 
