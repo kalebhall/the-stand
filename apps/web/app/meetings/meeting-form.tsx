@@ -274,9 +274,9 @@ export function MeetingForm({
                 )}
               </label>
 
-              <div className="space-y-1 text-sm sm:col-span-2">
-                <span className="font-medium">Hymn</span>
-                {HYMN_ITEM_TYPES.has(item.itemType) ? (
+              {HYMN_ITEM_TYPES.has(item.itemType) ? (
+                <div className="space-y-1 text-sm sm:col-span-2">
+                  <span className="font-medium">Hymn</span>
                   <div className="space-y-2">
                     {ITEM_TYPE_TO_HYMN_POSITION[item.itemType] ? (
                       <select
@@ -292,10 +292,8 @@ export function MeetingForm({
                     ) : null}
                     <HymnAutocomplete hymnNumber={item.hymnNumber} hymnTitle={item.hymnTitle} onChange={(num, title) => updateHymn(index, num, title)} />
                   </div>
-                ) : (
-                  <input className="w-full rounded-md border px-3 py-2 bg-muted" value="No hymn input needed" readOnly />
-                )}
-              </div>
+                </div>
+              ) : null}
             </div>
 
             <label className="space-y-1 text-sm">
