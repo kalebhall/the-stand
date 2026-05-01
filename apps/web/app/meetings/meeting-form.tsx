@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { type FormEvent, useMemo, useState } from 'react';
+import { type FormEvent, useEffect, useMemo, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { HymnAutocomplete } from '@/components/HymnAutocomplete';
@@ -10,6 +10,22 @@ import { MEETING_TYPES, type ProgramItemInput } from '@/src/meetings/types';
 import { getDefaultProgramItemsForMeetingType } from '@/src/meetings/default-program';
 
 const PERSON_ITEM_TYPES = new Set(['PRESIDING', 'CONDUCTING', 'INVOCATION', 'SPEAKER', 'BENEDICTION']);
+const HYMN_ITEM_TYPES = new Set(['OPENING_HYMN', 'REST_HYMN', 'CLOSING_HYMN', 'SPECIAL_HYMN', 'SACRAMENT_HYMN']);
+const PLACEHOLDER_ITEM_TYPES = new Set(['SACRAMENT', 'TESTIMONIES']);
+const ANNOUNCEMENT_ITEM_TYPE = 'ANNOUNCEMENT';
+const BUSINESS_ITEM_TYPE = 'WARD_AND_STAKE_BUSINESS';
+const HYMN_POSITION_TO_ITEM_TYPE: Record<string, string> = {
+  OPENING: 'OPENING_HYMN',
+  CLOSING: 'CLOSING_HYMN',
+  REST: 'REST_HYMN',
+  SPECIAL: 'SPECIAL_HYMN'
+};
+const ITEM_TYPE_TO_HYMN_POSITION: Record<string, string> = {
+  OPENING_HYMN: 'OPENING',
+  CLOSING_HYMN: 'CLOSING',
+  REST_HYMN: 'REST',
+  SPECIAL_HYMN: 'SPECIAL'
+};
 
 type MeetingFormProps = {
   wardId: string;
@@ -56,8 +72,22 @@ export function MeetingForm({
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [publishedCount, setPublishedCount] = useState(publishedVersionCount);
+  const [announcements, setAnnouncements] = useState<Array<{ id: string; title: string }>>([]);
 
   const canSave = useMemo(() => Boolean(meetingDate && meetingType), [meetingDate, meetingType]);
+  useEffect(() => {
+    let mounted = true;
+    fetch(`/api/w/${wardId}/announcements`)
+      .then((response) => (response.ok ? response.json() : null))
+      .then((payload) => {
+        if (!mounted || !payload?.announcements) return;
+        setAnnouncements(payload.announcements.map((item: { id: string; title: string }) => ({ id: item.id, title: item.title })));
+      })
+      .catch(() => undefined);
+    return () => {
+      mounted = false;
+    };
+  }, [wardId]);
 
   function updateProgramItem(index: number, field: keyof ProgramItemInput, value: string) {
     setProgramItems((current) => current.map((item, itemIndex) => (itemIndex === index ? { ...item, [field]: value } : item)));
@@ -67,6 +97,10 @@ export function MeetingForm({
     setProgramItems((current) =>
       current.map((item, itemIndex) => (itemIndex === index ? { ...item, hymnNumber, hymnTitle } : item))
     );
+  }
+  function updateHymnPosition(index: number, position: string) {
+    const mappedType = HYMN_POSITION_TO_ITEM_TYPE[position] ?? 'OPENING_HYMN';
+    setProgramItems((current) => current.map((item, itemIndex) => (itemIndex === index ? { ...item, itemType: mappedType } : item)));
   }
 
   function moveItem(index: number, direction: -1 | 1) {
@@ -224,6 +258,17 @@ export function MeetingForm({
                     className="w-full rounded-md border px-3 py-2"
                     placeholder="Name"
                   />
+                ) : item.itemType === ANNOUNCEMENT_ITEM_TYPE ? (
+                  <select className="w-full rounded-md border px-3 py-2" value={item.title} onChange={(event) => updateProgramItem(index, 'title', event.target.value)}>
+                    <option value="">Select an announcement</option>
+                    {announcements.map((announcement) => (
+                      <option key={announcement.id} value={announcement.title}>
+                        {announcement.title}
+                      </option>
+                    ))}
+                  </select>
+                ) : PLACEHOLDER_ITEM_TYPES.has(item.itemType) ? (
+                  <input className="w-full rounded-md border px-3 py-2 bg-muted" value={item.itemType === 'SACRAMENT' ? 'Sacrament (placeholder)' : 'Testimonies (placeholder)'} readOnly />
                 ) : (
                   <input className="w-full rounded-md border px-3 py-2" value={item.title} onChange={(event) => updateProgramItem(index, 'title', event.target.value)} />
                 )}
@@ -231,18 +276,52 @@ export function MeetingForm({
 
               <div className="space-y-1 text-sm sm:col-span-2">
                 <span className="font-medium">Hymn</span>
-                <HymnAutocomplete
-                  hymnNumber={item.hymnNumber}
-                  hymnTitle={item.hymnTitle}
-                  onChange={(num, title) => updateHymn(index, num, title)}
-                />
+                {HYMN_ITEM_TYPES.has(item.itemType) ? (
+                  <div className="space-y-2">
+                    {ITEM_TYPE_TO_HYMN_POSITION[item.itemType] ? (
+                      <select
+                        className="w-full rounded-md border px-3 py-2"
+                        value={ITEM_TYPE_TO_HYMN_POSITION[item.itemType]}
+                        onChange={(event) => updateHymnPosition(index, event.target.value)}
+                      >
+                        <option value="OPENING">Opening</option>
+                        <option value="CLOSING">Closing</option>
+                        <option value="REST">Rest</option>
+                        <option value="SPECIAL">Special</option>
+                      </select>
+                    ) : null}
+                    <HymnAutocomplete hymnNumber={item.hymnNumber} hymnTitle={item.hymnTitle} onChange={(num, title) => updateHymn(index, num, title)} />
+                  </div>
+                ) : (
+                  <input className="w-full rounded-md border px-3 py-2 bg-muted" value="No hymn input needed" readOnly />
+                )}
               </div>
             </div>
 
             <label className="space-y-1 text-sm">
               <span className="font-medium">Notes</span>
-              <textarea className="min-h-20 w-full rounded-md border px-3 py-2" value={item.notes} onChange={(event) => updateProgramItem(index, 'notes', event.target.value)} />
+              {item.itemType === ANNOUNCEMENT_ITEM_TYPE ? (
+                <textarea className="min-h-20 w-full rounded-md border px-3 py-2 bg-muted" value="Announcements are managed in the Announcements section." readOnly />
+              ) : (
+                <textarea className="min-h-20 w-full rounded-md border px-3 py-2" value={item.notes} onChange={(event) => updateProgramItem(index, 'notes', event.target.value)} />
+              )}
             </label>
+            {item.itemType === BUSINESS_ITEM_TYPE ? (
+              <div className="grid gap-2 sm:grid-cols-2">
+                <input className="rounded-md border px-3 py-2" placeholder="Releasing info" value={item.title} onChange={(event) => updateProgramItem(index, 'title', event.target.value)} />
+                <input className="rounded-md border px-3 py-2" placeholder="Calling info" value={item.notes} onChange={(event) => updateProgramItem(index, 'notes', event.target.value)} />
+                <label className="flex items-center gap-2 text-sm sm:col-span-2">
+                  <input
+                    type="checkbox"
+                    checked={item.notes.includes('[STAKE_BUSINESS]')}
+                    onChange={(event) =>
+                      updateProgramItem(index, 'notes', event.target.checked ? `${item.notes}\n[STAKE_BUSINESS]`.trim() : item.notes.replace('\n[STAKE_BUSINESS]', '').replace('[STAKE_BUSINESS]', '').trim())
+                    }
+                  />
+                  Includes stake business
+                </label>
+              </div>
+            ) : null}
 
             <div className="flex flex-wrap gap-2">
               <Button type="button" variant="outline" size="sm" onClick={() => moveItem(index, -1)} disabled={index === 0}>
