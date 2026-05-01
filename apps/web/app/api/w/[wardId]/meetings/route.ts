@@ -6,6 +6,10 @@ import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 import { isMeetingType, type ProgramItemInput } from '@/src/meetings/types';
 
+function toTrimmedString(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
 type MeetingListItem = {
   id: string;
   meeting_date: string;
@@ -21,7 +25,7 @@ async function insertProgramItems(
   programItems: ProgramItemInput[]
 ) {
   for (const [index, item] of programItems.entries()) {
-    const itemType = item.itemType?.trim() ?? '';
+    const itemType = toTrimmedString(item?.itemType);
     if (!itemType) continue;
 
     await client.query(
@@ -32,10 +36,10 @@ async function insertProgramItems(
         meetingId,
         index + 1,
         itemType,
-        item.title?.trim() ?? '',
-        item.notes?.trim() ?? '',
-        item.hymnNumber?.trim() ?? '',
-        item.hymnTitle?.trim() ?? ''
+        toTrimmedString(item?.title),
+        toTrimmedString(item?.notes),
+        toTrimmedString(item?.hymnNumber),
+        toTrimmedString(item?.hymnTitle)
       ]
     );
   }
@@ -107,8 +111,8 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     meetingType?: string;
     programItems?: ProgramItemInput[];
   } | null;
-  const meetingDate = body?.meetingDate?.trim() ?? '';
-  const meetingType = body?.meetingType?.trim() ?? '';
+  const meetingDate = toTrimmedString(body?.meetingDate);
+  const meetingType = toTrimmedString(body?.meetingType);
   const programItems = Array.isArray(body?.programItems) ? body.programItems : [];
 
   if (!meetingDate || !isMeetingType(meetingType)) {
