@@ -356,18 +356,7 @@ export function MeetingForm({
             </div>
 
             <div className="space-y-1 text-sm">
-              <div className="flex items-center justify-between">
-                <span className="font-medium">Notes</span>
-                {!activeNotesEditor[itemKey(item, index)] ? (
-                  <button
-                    type="button"
-                    className="text-xs text-blue-700 underline underline-offset-2"
-                    onClick={() => setActiveNotesEditor((current) => ({ ...current, [itemKey(item, index)]: true }))}
-                  >
-                    {item.notes.trim() ? 'Edit note' : 'Add note'}
-                  </button>
-                ) : null}
-              </div>
+              <span className="font-medium">Notes</span>
               {activeNotesEditor[itemKey(item, index)] ? (
                 <textarea
                   className="min-h-20 w-full rounded-md border px-3 py-2"
@@ -377,9 +366,21 @@ export function MeetingForm({
                   autoFocus
                 />
               ) : item.notes.trim() ? (
-                <p className="rounded-md border bg-muted/30 px-3 py-2 text-sm whitespace-pre-wrap">{item.notes}</p>
+                <button
+                  type="button"
+                  className="w-full rounded-md border bg-muted/30 px-3 py-2 text-left text-sm whitespace-pre-wrap"
+                  onClick={() => setActiveNotesEditor((current) => ({ ...current, [itemKey(item, index)]: true }))}
+                >
+                  {item.notes}
+                </button>
               ) : (
-                <p className="text-xs text-muted-foreground">No notes</p>
+                <button
+                  type="button"
+                  className="text-xs text-muted-foreground underline underline-offset-2"
+                  onClick={() => setActiveNotesEditor((current) => ({ ...current, [itemKey(item, index)]: true }))}
+                >
+                  No notes
+                </button>
               )}
             </div>
             {item.itemType === BUSINESS_ITEM_TYPE ? (
