@@ -7,6 +7,7 @@ import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth
 import { hasRole } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
+import { formatMeetingDateForDisplay } from '@/src/meetings/date';
 
 type PortalRow = {
   id: string;
@@ -18,7 +19,7 @@ type ShareRow = {
   id: string;
   meeting_id: string;
   token: string;
-  meeting_date: string;
+  meeting_date: unknown;
   meeting_type: string;
   created_at: string;
 };
@@ -185,7 +186,7 @@ export default async function PublicPortalSettingsPage() {
               {shares.map((share) => (
                 <li key={share.id} className="rounded-md border p-3 text-sm">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <p className="font-semibold">{share.meeting_date} — {share.meeting_type.replaceAll('_', ' ')}</p>
+                    <p className="font-semibold">{formatMeetingDateForDisplay(share.meeting_date)} — {share.meeting_type.replaceAll('_', ' ')}</p>
                   </div>
                   <p className="mt-1 break-all font-mono text-xs text-muted-foreground">
                     {baseUrl}/p/{share.token}

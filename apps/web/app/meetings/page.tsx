@@ -7,10 +7,11 @@ import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth
 import { canManageMeetings, canViewMeetings } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
+import { formatMeetingDateForDisplay } from '@/src/meetings/date';
 
 type MeetingRow = {
   id: string;
-  meeting_date: string;
+  meeting_date: unknown;
   meeting_type: string;
   status: string;
 };
@@ -58,7 +59,7 @@ export default async function MeetingsPage() {
             {meetings.map((meeting) => (
               <article key={meeting.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-card p-4">
                 <div>
-                  <p className="text-base font-semibold">{meeting.meeting_date}</p>
+                  <p className="text-base font-semibold">{formatMeetingDateForDisplay(meeting.meeting_date)}</p>
                   <p className="text-sm text-muted-foreground">{meeting.meeting_type.replaceAll('_', ' ')}</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
