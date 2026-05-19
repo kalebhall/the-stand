@@ -8,8 +8,9 @@ describe('canManageWardUsers', () => {
     expect(canManageWardUsers({ roles: ['STAND_ADMIN'], activeWardId: 'ward-a' }, 'ward-b')).toBe(false);
   });
 
-  it('allows SUPPORT_ADMIN across wards', () => {
-    expect(canManageWardUsers({ roles: ['SUPPORT_ADMIN'], activeWardId: null }, 'ward-a')).toBe(true);
+  it('does not allow SUPPORT_ADMIN without a delegated ward role in the active ward', () => {
+    expect(canManageWardUsers({ roles: ['SUPPORT_ADMIN'], activeWardId: null }, 'ward-a')).toBe(false);
+    expect(canManageWardUsers({ roles: ['SUPPORT_ADMIN', 'STAND_ADMIN'], activeWardId: 'ward-a' }, 'ward-a')).toBe(true);
   });
 });
 
@@ -24,11 +25,17 @@ describe('canAssignRole', () => {
   });
 });
 
-
 describe('meeting permissions', () => {
   it('allows meeting read roles in active ward', () => {
     expect(canViewMeetings({ roles: ['CONDUCTOR_VIEW'], activeWardId: 'ward-a' }, 'ward-a')).toBe(true);
     expect(canViewMeetings({ roles: ['CONDUCTOR_VIEW'], activeWardId: 'ward-a' }, 'ward-b')).toBe(false);
+  });
+
+  it('requires an active delegated ward role even for support admins', () => {
+    expect(canViewMeetings({ roles: ['SUPPORT_ADMIN'], activeWardId: 'ward-a' }, 'ward-a')).toBe(false);
+    expect(canManageMeetings({ roles: ['SUPPORT_ADMIN'], activeWardId: 'ward-a' }, 'ward-a')).toBe(false);
+    expect(canViewMeetings({ roles: ['SUPPORT_ADMIN', 'STAND_ADMIN'], activeWardId: 'ward-a' }, 'ward-a')).toBe(true);
+    expect(canManageMeetings({ roles: ['SUPPORT_ADMIN', 'STAND_ADMIN'], activeWardId: 'ward-a' }, 'ward-a')).toBe(true);
   });
 
   it('restricts meeting management to editor/admin roles', () => {

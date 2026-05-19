@@ -2,11 +2,12 @@ import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import Google from 'next-auth/providers/google';
 
-import { pool } from '@/src/db/client';
-import { ensureSupportAdminBootstrap } from '@/src/db/bootstrap-support-admin';
+import { chooseActiveWardId, type WardAccessAssignment } from '@/src/auth/support-access';
 import { verifyPassword } from '@/src/auth/password';
-import { enforceRateLimit } from '@/src/lib/rate-limit';
 import { refreshCalendarFeedsForWard } from '@/src/calendar/service';
+import { ensureSupportAdminBootstrap } from '@/src/db/bootstrap-support-admin';
+import { pool } from '@/src/db/client';
+import { enforceRateLimit } from '@/src/lib/rate-limit';
 
 type SessionUserDetails = {
   id: string;
@@ -16,6 +17,14 @@ type SessionUserDetails = {
   hasPassword: boolean;
   roles: string[];
   activeWardId: string | null;
+};
+
+type WardAssignmentRow = {
+  ward_id: string;
+  is_support_assignment: boolean;
+  expires_at: string | null;
+  revoked_at: string | null;
+  created_at: string;
 };
 
 async function loadSessionUserByEmail(email: string): Promise<SessionUserDetails | null> {
@@ -29,11 +38,6 @@ async function loadSessionUserByEmail(email: string): Promise<SessionUserDetails
   const user = userResult.rows[0];
   if (!user.is_active) return null;
 
-  // Use a dedicated client inside an explicit transaction so we can
-  // set app.user_id for the RLS self-lookup policy on ward_user_role.
-  // set_config with is_local=true is transaction-scoped, so without
-  // BEGIN the setting vanishes after the auto-committed statement and
-  // the subsequent queries still see no context.
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -48,20 +52,35 @@ async function loadSessionUserByEmail(email: string): Promise<SessionUserDetails
        SELECT r.name
          FROM role r
          INNER JOIN ward_user_role wur ON wur.role_id = r.id
-        WHERE wur.user_id = $1`,
+        WHERE wur.user_id = $1
+          AND wur.revoked_at IS NULL
+          AND (wur.expires_at IS NULL OR wur.expires_at > now())`,
       [user.id]
     );
 
     const wardResult = await client.query(
-      `SELECT ward_id
+      `SELECT ward_id,
+              is_support_assignment,
+              expires_at,
+              revoked_at,
+              created_at
          FROM ward_user_role
         WHERE user_id = $1
-        ORDER BY created_at ASC
-        LIMIT 1`,
+          AND revoked_at IS NULL
+          AND (expires_at IS NULL OR expires_at > now())
+        ORDER BY created_at ASC`,
       [user.id]
     );
 
     await client.query('COMMIT');
+
+    const assignments: WardAccessAssignment[] = (wardResult.rows as WardAssignmentRow[]).map((row) => ({
+      wardId: row.ward_id,
+      isSupportAssignment: Boolean(row.is_support_assignment),
+      expiresAt: row.expires_at,
+      revokedAt: row.revoked_at,
+      createdAt: row.created_at
+    }));
 
     return {
       id: user.id,
@@ -70,7 +89,10 @@ async function loadSessionUserByEmail(email: string): Promise<SessionUserDetails
       mustChangePassword: user.must_change_password,
       hasPassword: user.has_password,
       roles: roleResult.rows.map((row) => row.name as string),
-      activeWardId: wardResult.rowCount ? (wardResult.rows[0].ward_id as string) : null
+      activeWardId: chooseActiveWardId({
+        isSupportAdmin: roleResult.rows.some((row) => (row.name as string) === 'SUPPORT_ADMIN'),
+        assignments
+      })
     };
   } finally {
     client.release();
@@ -84,7 +106,6 @@ async function loadSessionUserById(id: string): Promise<SessionUserDetails | nul
 
     return loadSessionUserByEmail(userResult.rows[0].email as string);
   } catch {
-    // id may not be a valid UUID (e.g. OAuth provider sub claim) — treat as not found
     return null;
   }
 }
@@ -186,9 +207,6 @@ export const { auth, handlers } = NextAuth({
     jwt: async ({ token, user, account }) => {
       if (user) {
         if (account?.provider !== 'credentials') {
-          // OAuth providers (e.g. Google) set user.id to the provider's sub
-          // claim, not our database UUID. Look up the database user by email
-          // so token.sub is our UUID and roles/activeWardId are populated.
           const email = (user.email ?? '').toLowerCase().trim();
           if (email) {
             const sessionUser = await loadSessionUserByEmail(email);

@@ -21,8 +21,9 @@ CORE AUTHORIZATION PRINCIPLES
 
 3. Ward Isolation:
    - No user may access data from a ward in which they do not have a role.
-   - Even SUPPORT_ADMIN does not bypass ward RLS for ward data queries.
-   - Support Admin actions operate through provisioning APIs, not direct ward data access.
+   - SUPPORT_ADMIN does not bypass ward RLS for ward data queries.
+   - SUPPORT_ADMIN may receive temporary ward-scoped support access only through an explicit grant with expiration and audit logging.
+   - Support Admin provisioning actions operate through administrative workflows, not unrestricted ward data access.
 
 4. Audit Everything:
    - All permission changes must insert into audit_log.
@@ -70,7 +71,8 @@ Capabilities:
 
 Restrictions:
 - Cannot bypass ward RLS.
-- Cannot view ward meeting content unless explicitly assigned ward role.
+- Cannot view ward meeting content unless explicitly assigned ward role or granted temporary ward-scoped support access.
+- Temporary support access must be explicitly approved, time-bounded, and auditable.
 - Cannot impersonate users.
 
 --------------------------------------------------
@@ -220,20 +222,22 @@ Restrictions:
 PERMISSION MATRIX (SUMMARY)
 ====================================================================
 
-Capability                          | Support | Ward Admin | Bishopric | Clerk Editor | Clerk | Conductor
------------------------------------------------------------------------------------------------------------
-Create Stake/Ward                   |   Yes   |    No      |    No     |     No       | No    | No
-Assign Ward Roles                   |   Yes*  |    Yes     |    No     |     No       | No    | No
-Create/Edit Meeting                 |   No    |    Yes     |    Yes    |     No       | No    | No
-Publish Meeting                     |   No    |    Yes     |    Yes    |     No       | No    | No
-Complete Meeting                    |   No    |    Yes     |    Yes    |     No       | No    | No
-Callings Lifecycle                  |   No    |    Yes     |    Yes    |     Limited  | View  | No
-Announcements CRUD                  |   No    |    Yes     |    Yes    |     Yes      | No    | No
-Imports                             |   No    |    Yes     |    Limited|     Yes      | No    | No
-Access Stand View                   |   No    |    Yes     |    Yes    |     Yes      | Yes   | Yes
-Rotate Public Portal Token          |   No    |    Yes     |    No     |     No       | No    | No
+| Capability                          | Support | Ward Admin | Bishopric | Clerk Editor | Clerk | Conductor
+|-----------------------------------------------------------------------------------------------------------
+| Create Stake/Ward                   |   Yes   |    No      |    No     |     No       | No    | No
+| Assign Ward Roles                   |   Yes*  |    Yes     |    No     |     No       | No    | No
+| Grant Temporary Support Access      |   Yes** |    No      |    No     |     No       | No    | No
+| Create/Edit Meeting                 |   No    |    Yes     |    Yes    |     No       | No    | No
+| Publish Meeting                     |   No    |    Yes     |    Yes    |     No       | No    | No
+| Complete Meeting                    |   No    |    Yes     |    Yes    |     No       | No    | No
+| Callings Lifecycle                  |   No    |    Yes     |    Yes    |     Limited  | View  | No
+| Announcements CRUD                  |   No    |    Yes     |    Yes    |     Yes      | No    | No
+| Imports                             |   No    |    Yes     |    Limited|     Yes      | No    | No
+| Access Stand View                   |   No    |    Yes     |    Yes    |     Yes      | Yes   | Yes
+| Rotate Public Portal Token          |   No    |    Yes     |    No     |     No       | No    | No
 
-*Support Admin assigns STAND_ADMIN only; further roles handled at ward level.
+*Support Admin assigns STAND_ADMIN only for normal ward bootstrap; further permanent ward roles handled at ward level.
+**Temporary support access may only be granted to a SUPPORT_ADMIN, must target a ward role, must include a reason, and must expire automatically.
 
 ====================================================================
 ENFORCEMENT STRATEGY
@@ -271,6 +275,12 @@ ROLE ASSIGNMENT RULES
 
 - Only STAND_ADMIN may assign ward roles.
 - Only SUPPORT_ADMIN may assign STAND_ADMIN.
+- Only SUPPORT_ADMIN may grant temporary support access, and only to another SUPPORT_ADMIN.
+- Temporary support access must:
+  - target a ward-scoped role
+  - include a reason
+  - expire automatically
+  - be revocable without affecting permanent ward assignments
 - No user may assign a role equal to or higher than their own scope.
 - Role changes must write to audit_log.
 
@@ -292,6 +302,8 @@ AUDIT REQUIREMENTS
 Must log:
 - Role assignment
 - Role revocation
+- Temporary support grant creation
+- Temporary support grant revocation
 - Ward creation
 - Stake creation
 - OAuth config change
