@@ -36,11 +36,22 @@ export default async function SupportUsersPage() {
               ua.password_hash IS NOT NULL AS has_password,
               ua.created_at,
               ARRAY_REMOVE(ARRAY_AGG(DISTINCT gr.name), NULL) AS global_roles,
-              ARRAY_REMOVE(ARRAY_AGG(DISTINCT wr.name || ' @ ' || w.name), NULL) AS ward_roles
+              ARRAY_REMOVE(
+                ARRAY_AGG(
+                  DISTINCT CASE
+                    WHEN wur.id IS NULL THEN NULL
+                    WHEN wur.is_support_assignment THEN wr.name || ' @ ' || w.name || ' (support grant)'
+                    ELSE wr.name || ' @ ' || w.name
+                  END
+                ),
+                NULL
+              ) AS ward_roles
          FROM user_account ua
          LEFT JOIN user_global_role ugr ON ugr.user_id = ua.id
          LEFT JOIN role gr ON gr.id = ugr.role_id
          LEFT JOIN ward_user_role wur ON wur.user_id = ua.id
+          AND wur.revoked_at IS NULL
+          AND (wur.expires_at IS NULL OR wur.expires_at > now())
          LEFT JOIN role wr ON wr.id = wur.role_id
          LEFT JOIN ward w ON w.id = wur.ward_id
         GROUP BY ua.id, ua.email, ua.display_name, ua.is_active, ua.password_hash, ua.created_at
@@ -52,10 +63,16 @@ export default async function SupportUsersPage() {
               wur.ward_id,
               w.name AS ward_name,
               wur.role_id,
-              r.name AS role_name
+              r.name AS role_name,
+              wur.is_support_assignment,
+              wur.grant_reason,
+              wur.expires_at,
+              wur.created_at
          FROM ward_user_role wur
          JOIN ward w ON w.id = wur.ward_id
          JOIN role r ON r.id = wur.role_id
+        WHERE wur.revoked_at IS NULL
+          AND (wur.expires_at IS NULL OR wur.expires_at > now())
         ORDER BY w.name ASC, r.name ASC`
     );
 

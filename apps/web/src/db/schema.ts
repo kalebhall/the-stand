@@ -52,6 +52,12 @@ export const wardUserRole = pgTable(
     wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
     userId: uuid('user_id').notNull().references(() => userAccount.id, { onDelete: 'cascade' }),
     roleId: uuid('role_id').notNull().references(() => role.id, { onDelete: 'cascade' }),
+    isSupportAssignment: boolean('is_support_assignment').notNull().default(false),
+    grantedByUserId: uuid('granted_by_user_id').references(() => userAccount.id, { onDelete: 'set null' }),
+    grantReason: text('grant_reason'),
+    expiresAt: timestamp('expires_at', { withTimezone: true }),
+    revokedAt: timestamp('revoked_at', { withTimezone: true }),
+    revokedByUserId: uuid('revoked_by_user_id').references(() => userAccount.id, { onDelete: 'set null' }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
   },
   (table) => ({

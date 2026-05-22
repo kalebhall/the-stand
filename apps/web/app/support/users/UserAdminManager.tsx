@@ -12,8 +12,11 @@ import {
   assignGlobalRole,
   revokeGlobalRole,
   assignWardRole,
-  revokeWardRole
+  revokeWardRole,
+  grantSupportAccess,
+  revokeSupportAccess
 } from './actions';
+import { getSupportAccessState } from './support-grants';
 
 export type UserRow = {
   id: string;
@@ -43,6 +46,10 @@ export type WardAssignment = {
   ward_name: string;
   role_id: string;
   role_name: string;
+  is_support_assignment?: boolean;
+  grant_reason?: string | null;
+  expires_at?: string | null;
+  created_at?: string;
 };
 
 export type GlobalAssignment = {
@@ -270,6 +277,10 @@ export default function UserAdminManager({
           const isEditing = editingId === user.id;
           const userWardAssignments = wardAssignmentsByUser.get(user.id) ?? [];
           const userGlobalAssignments = globalAssignmentsByUser.get(user.id) ?? [];
+          const { canGrantSupportAccess, standardAssignments, supportAssignments } = getSupportAccessState({
+            user,
+            assignments: userWardAssignments
+          });
           const isSelf = user.id === currentUserId;
 
           return (
@@ -308,9 +319,10 @@ export default function UserAdminManager({
                     {userWardAssignments.map((a) => (
                       <span
                         key={`${a.ward_id}:${a.role_id}`}
-                        className="inline-block rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-800"
+                        className={`inline-block rounded px-1.5 py-0.5 text-xs ${a.is_support_assignment ? 'bg-amber-100 text-amber-900' : 'bg-slate-100 text-slate-800'}`}
                       >
                         {a.role_name} @ {a.ward_name}
+                        {a.is_support_assignment ? ' (support)' : ''}
                       </span>
                     ))}
                     {userGlobalAssignments.length === 0 && userWardAssignments.length === 0 && (
@@ -444,9 +456,9 @@ export default function UserAdminManager({
                   {/* Ward Roles */}
                   <div>
                     <h3 className="text-sm font-semibold">Ward Roles</h3>
-                    {userWardAssignments.length > 0 ? (
+                    {standardAssignments.length > 0 ? (
                       <ul className="mt-2 space-y-1">
-                        {userWardAssignments.map((a) => (
+                        {standardAssignments.map((a) => (
                           <li
                             key={`${a.ward_id}:${a.role_id}`}
                             className="flex items-center justify-between rounded-md border px-3 py-2 text-sm"
@@ -467,7 +479,7 @@ export default function UserAdminManager({
                         ))}
                       </ul>
                     ) : (
-                      <p className="mt-1 text-xs text-muted-foreground">No ward roles assigned.</p>
+                      <p className="mt-1 text-xs text-muted-foreground">No permanent ward roles assigned.</p>
                     )}
                     <form action={assignWardRole} className="mt-2 grid gap-2 md:grid-cols-[1fr_1fr_auto] md:items-end">
                       <input type="hidden" name="userId" value={user.id} />
@@ -506,6 +518,110 @@ export default function UserAdminManager({
                       </Button>
                     </form>
                   </div>
+
+                  {(canGrantSupportAccess || supportAssignments.length > 0) && (
+                    <div>
+                      <h3 className="text-sm font-semibold">Temporary Support Access</h3>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Use this only for explicit, time-boxed cross-ward troubleshooting approval.
+                      </p>
+                      {supportAssignments.length > 0 ? (
+                        <ul className="mt-2 space-y-1">
+                          {supportAssignments.map((a) => (
+                            <li
+                              key={`support:${a.ward_id}:${a.role_id}`}
+                              className="flex flex-col gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm md:flex-row md:items-center md:justify-between"
+                            >
+                              <div>
+                                <p>
+                                  <span className="font-medium">{a.role_name}</span>
+                                  <span className="text-muted-foreground"> @ {a.ward_name}</span>
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  Expires: {a.expires_at ? new Date(a.expires_at).toLocaleString() : 'No expiration set'}
+                                </p>
+                                {a.grant_reason && (
+                                  <p className="text-xs text-muted-foreground">Reason: {a.grant_reason}</p>
+                                )}
+                              </div>
+                              <form action={revokeSupportAccess}>
+                                <input type="hidden" name="userId" value={user.id} />
+                                <input type="hidden" name="wardId" value={a.ward_id} />
+                                <input type="hidden" name="roleId" value={a.role_id} />
+                                <Button variant="ghost" size="sm" type="submit">
+                                  Revoke grant
+                                </Button>
+                              </form>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="mt-2 text-xs text-muted-foreground">No active temporary support grants.</p>
+                      )}
+
+                      {canGrantSupportAccess && (
+                        <form
+                          action={grantSupportAccess}
+                          className="mt-3 grid gap-2 md:grid-cols-[1fr_1fr_160px_1.5fr_auto] md:items-end"
+                        >
+                          <input type="hidden" name="userId" value={user.id} />
+                          <label className="text-xs text-muted-foreground">
+                            Ward
+                            <select
+                              name="wardId"
+                              required
+                              className="mt-1 w-full rounded-md border px-3 py-2 text-sm text-foreground"
+                            >
+                              <option value="">Select ward</option>
+                              {wards.map((w) => (
+                                <option key={w.id} value={w.id}>
+                                  {w.name}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                          <label className="text-xs text-muted-foreground">
+                            Role
+                            <select
+                              name="roleId"
+                              required
+                              className="mt-1 w-full rounded-md border px-3 py-2 text-sm text-foreground"
+                            >
+                              <option value="">Select role</option>
+                              {wardRoles.map((role) => (
+                                <option key={role.id} value={role.id}>
+                                  {role.name}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                          <label className="text-xs text-muted-foreground">
+                            Hours
+                            <input
+                              name="durationHours"
+                              required
+                              min={1}
+                              defaultValue={24}
+                              type="number"
+                              className="mt-1 w-full rounded-md border px-3 py-2 text-sm text-foreground"
+                            />
+                          </label>
+                          <label className="text-xs text-muted-foreground">
+                            Approval / reason
+                            <input
+                              name="grantReason"
+                              required
+                              placeholder="Who approved and why"
+                              className="mt-1 w-full rounded-md border px-3 py-2 text-sm text-foreground"
+                            />
+                          </label>
+                          <Button variant="outline" size="sm" type="submit">
+                            Grant access
+                          </Button>
+                        </form>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </article>

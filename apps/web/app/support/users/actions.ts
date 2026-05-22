@@ -275,3 +275,142 @@ export async function revokeWardRole(formData: FormData) {
 
   revalidatePath('/support/users');
 }
+
+export async function grantSupportAccess(formData: FormData) {
+  const actingSession = await requireSupportAdmin();
+  const userId = String(formData.get('userId') ?? '');
+  const wardId = String(formData.get('wardId') ?? '');
+  const roleId = String(formData.get('roleId') ?? '');
+  const durationHours = Math.max(1, Number(formData.get('durationHours') ?? 24));
+  const grantReason = String(formData.get('grantReason') ?? '').trim();
+
+  if (!userId || !wardId || !roleId || !grantReason) {
+    return;
+  }
+
+  const [roleResult, supportAdminResult] = await Promise.all([
+    pool.query(`SELECT name, scope FROM role WHERE id = $1 LIMIT 1`, [roleId]),
+    pool.query(
+      `SELECT 1
+         FROM user_global_role ugr
+         JOIN role r ON r.id = ugr.role_id
+        WHERE ugr.user_id = $1 AND r.name = 'SUPPORT_ADMIN'
+        LIMIT 1`,
+      [userId]
+    )
+  ]);
+
+  if (!roleResult.rowCount || roleResult.rows[0].scope !== 'WARD' || !supportAdminResult.rowCount) {
+    return;
+  }
+
+  const expiresAt = new Date(Date.now() + durationHours * 60 * 60 * 1000).toISOString();
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query('SELECT set_config($1, $2, true)', ['app.user_id', actingSession.user.id]);
+
+    const existing = await client.query(
+      `SELECT is_support_assignment
+         FROM ward_user_role
+        WHERE ward_id = $1 AND user_id = $2 AND role_id = $3
+        LIMIT 1`,
+      [wardId, userId, roleId]
+    );
+
+    if (existing.rowCount && existing.rows[0].is_support_assignment !== true) {
+      await client.query('ROLLBACK');
+      return;
+    }
+
+    await client.query(
+      `INSERT INTO ward_user_role (
+         ward_id,
+         user_id,
+         role_id,
+         is_support_assignment,
+         granted_by_user_id,
+         grant_reason,
+         expires_at,
+         revoked_at,
+         revoked_by_user_id,
+         created_at
+       ) VALUES ($1, $2, $3, true, $4, $5, $6::timestamptz, NULL, NULL, now())
+       ON CONFLICT (ward_id, user_id, role_id)
+       DO UPDATE SET
+         is_support_assignment = EXCLUDED.is_support_assignment,
+         granted_by_user_id = EXCLUDED.granted_by_user_id,
+         grant_reason = EXCLUDED.grant_reason,
+         expires_at = EXCLUDED.expires_at,
+         revoked_at = NULL,
+         revoked_by_user_id = NULL,
+         created_at = now()`,
+      [wardId, userId, roleId, actingSession.user.id, grantReason, expiresAt]
+    );
+
+    await client.query(
+      `INSERT INTO audit_log (ward_id, user_id, action, details)
+       VALUES ($1, $2, 'SUPPORT_ACCESS_GRANTED', jsonb_build_object('targetUserId', $3::text, 'roleName', $4::text, 'grantReason', $5::text, 'expiresAt', $6::text))`,
+      [wardId, actingSession.user.id, userId, roleResult.rows[0].name as string, grantReason, expiresAt]
+    );
+
+    await client.query('COMMIT');
+  } catch {
+    await client.query('ROLLBACK');
+    throw new Error('Failed to grant temporary support access');
+  } finally {
+    client.release();
+  }
+
+  revalidatePath('/support/users');
+}
+
+export async function revokeSupportAccess(formData: FormData) {
+  const actingSession = await requireSupportAdmin();
+  const userId = String(formData.get('userId') ?? '');
+  const wardId = String(formData.get('wardId') ?? '');
+  const roleId = String(formData.get('roleId') ?? '');
+
+  if (!userId || !wardId || !roleId) {
+    return;
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query('SELECT set_config($1, $2, true)', ['app.user_id', actingSession.user.id]);
+
+    const revoked = await client.query(
+      `UPDATE ward_user_role
+          SET revoked_at = now(),
+              revoked_by_user_id = $4
+        WHERE user_id = $1
+          AND ward_id = $2
+          AND role_id = $3
+          AND is_support_assignment = true
+          AND revoked_at IS NULL
+        RETURNING id`,
+      [userId, wardId, roleId, actingSession.user.id]
+    );
+
+    if (!revoked.rowCount) {
+      await client.query('ROLLBACK');
+      return;
+    }
+
+    await client.query(
+      `INSERT INTO audit_log (ward_id, user_id, action, details)
+       VALUES ($1, $2, 'SUPPORT_ACCESS_REVOKED', jsonb_build_object('targetUserId', $3::text, 'roleId', $4::text))`,
+      [wardId, actingSession.user.id, userId, roleId]
+    );
+
+    await client.query('COMMIT');
+  } catch {
+    await client.query('ROLLBACK');
+    throw new Error('Failed to revoke temporary support access');
+  } finally {
+    client.release();
+  }
+
+  revalidatePath('/support/users');
+}

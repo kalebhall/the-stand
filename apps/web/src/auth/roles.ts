@@ -18,13 +18,7 @@ export function hasRole(roles: string[] | undefined, role: string): boolean {
 }
 
 export function canManageWardUsers(session: { roles?: string[]; activeWardId?: string | null }, wardId: string): boolean {
-  const roles = session.roles ?? [];
-
-  if (hasRole(roles, 'SUPPORT_ADMIN')) {
-    return true;
-  }
-
-  return hasRole(roles, 'STAND_ADMIN') && session.activeWardId === wardId;
+  return hasRole(session.roles, 'STAND_ADMIN') && session.activeWardId === wardId;
 }
 
 export function canAssignRole(actorRoles: string[] | undefined, targetRoleName: string): boolean {
@@ -37,10 +31,6 @@ export function canAssignRole(actorRoles: string[] | undefined, targetRoleName: 
 
 export function canViewMeetings(session: { roles?: string[]; activeWardId?: string | null }, wardId: string): boolean {
   const roles = session.roles ?? [];
-
-  if (hasRole(roles, 'SUPPORT_ADMIN')) {
-    return true;
-  }
 
   if (session.activeWardId !== wardId) {
     return false;
@@ -59,10 +49,6 @@ export function canViewMeetings(session: { roles?: string[]; activeWardId?: stri
 export function canManageMeetings(session: { roles?: string[]; activeWardId?: string | null }, wardId: string): boolean {
   const roles = session.roles ?? [];
 
-  if (hasRole(roles, 'SUPPORT_ADMIN')) {
-    return true;
-  }
-
   if (session.activeWardId !== wardId) {
     return false;
   }
@@ -72,10 +58,6 @@ export function canManageMeetings(session: { roles?: string[]; activeWardId?: st
 
 export function canViewCallings(session: { roles?: string[]; activeWardId?: string | null }, wardId: string): boolean {
   const roles = session.roles ?? [];
-
-  if (hasRole(roles, 'SUPPORT_ADMIN')) {
-    return true;
-  }
 
   if (session.activeWardId !== wardId) {
     return false;
@@ -92,10 +74,6 @@ export function canViewCallings(session: { roles?: string[]; activeWardId?: stri
 
 export function canManageCallings(session: { roles?: string[]; activeWardId?: string | null }, wardId: string): boolean {
   const roles = session.roles ?? [];
-
-  if (hasRole(roles, 'SUPPORT_ADMIN')) {
-    return true;
-  }
 
   if (session.activeWardId !== wardId) {
     return false;
