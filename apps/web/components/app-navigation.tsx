@@ -23,7 +23,9 @@ export function AppNavigation({ session }: { session: Session | null }) {
           ))}
         </nav>
         <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-          <span className="hidden sm:inline">{session.user.email}</span>
+          <Link href="/account" className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }))}>
+            {session.user.email}
+          </Link>
           <Link href="/account/preferences" className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }))}>
             Preferences
           </Link>
