@@ -15,7 +15,7 @@ flowchart LR
   A3["root:tooling<br/>6 files"]
   A4["web:announcements<br/>2 files"]
   A5["web:api<br/>47 files"]
-  A6["web:app<br/>68 files"]
+  A6["web:app<br/>69 files"]
   A7["web:auth<br/>11 files"]
   A8["web:bootstrap.mjs<br/>1 files"]
   A9["web:calendar<br/>3 files"]
@@ -35,8 +35,8 @@ flowchart LR
   A23["web:version.mjs<br/>1 files"]
   A5 -->|69| A7
   A5 -->|59| A12
-  A6 -->|52| A7
-  A6 -->|45| A22
+  A6 -->|53| A7
+  A6 -->|47| A22
   A6 -->|34| A12
   A5 -->|8| A15
   A5 -->|7| A10
@@ -78,7 +78,7 @@ flowchart LR
 | `root:tooling` | 6 |
 | `web:announcements` | 2 |
 | `web:api` | 47 |
-| `web:app` | 68 |
+| `web:app` | 69 |
 | `web:auth` | 11 |
 | `web:bootstrap.mjs` | 1 |
 | `web:calendar` | 3 |
@@ -103,10 +103,10 @@ flowchart LR
 | --- | --- | ---: |
 | `web:api` | `web:auth` | 69 |
 | `web:api` | `web:db` | 59 |
-| `web:app` | `web:auth` | 52 |
-| `web:app` | `web:ui` | 45 |
+| `web:app` | `web:auth` | 53 |
+| `web:app` | `web:ui` | 47 |
 | `web:app` | `web:db` | 34 |
-| `web:app` | `web:app` | 23 |
+| `web:app` | `web:app` | 25 |
 | `web:api` | `web:api` | 8 |
 | `web:api` | `web:imports` | 8 |
 | `web:auth` | `web:auth` | 8 |
@@ -154,7 +154,7 @@ flowchart LR
 
 | Importing area | Package/runtime | Imports |
 | --- | --- | ---: |
-| `web:app` | `next` | 49 |
+| `web:app` | `next` | 51 |
 | `web:api` | `next` | 38 |
 | `web:app` | `react` | 13 |
 | `root:tooling` | `Node.js` | 12 |
@@ -222,6 +222,7 @@ flowchart LR
 | --- | --- | ---: | ---: |
 | `apps/web/app/account/change-password/change-password-form.tsx` | `web:app` | 0 | 1 |
 | `apps/web/app/account/change-password/page.tsx` | `web:app` | 2 | 1 |
+| `apps/web/app/account/page.tsx` | `web:app` | 5 | 2 |
 | `apps/web/app/account/preferences/page.tsx` | `web:app` | 3 | 1 |
 | `apps/web/app/account/preferences/theme-toggle.tsx` | `web:app` | 1 | 2 |
 | `apps/web/app/announcements/error.tsx` | `web:app` | 0 | 0 |
