@@ -7,6 +7,7 @@ This repository contains full build, architecture, security,
 deployment, and operational documentation.
 
 Core Principles:
+
 - Ward isolation enforced at DB (RLS) and API layer
 - Supplements (never replaces) official Church systems
 - Public program pages are read-only published snapshots
@@ -14,6 +15,7 @@ Core Principles:
 - Production-ready deployment guidance included
 
 See:
+
 - SRS.md
 - ARCHITECTURE.md
 - SCHEMA.md
@@ -24,5 +26,6 @@ See:
 - PLANS.md
 - INSTALL.md
 - HARDENING.md
+- [Generated code dependency graph](./DEPENDENCY_GRAPH.md)
 
 - [Support Admin Login Debug Playbook](./DEBUG_SUPPORT_ADMIN_LOGIN.md)
