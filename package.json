@@ -12,6 +12,8 @@
     "test": "node scripts/vitest.mjs",
     "build": "node scripts/next-build.mjs",
     "test:e2e": "npm --workspace @the-stand/web run test:e2e",
+    "docs:dependencies": "node scripts/dependency-graph.mjs",
+    "docs:dependencies:check": "node scripts/dependency-graph.mjs --check",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
