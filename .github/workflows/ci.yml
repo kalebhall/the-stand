@@ -30,6 +30,9 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      - name: Check dependency graph
+        run: npm run docs:dependencies:check
+
       - name: Unit tests
         run: npm run test
 
