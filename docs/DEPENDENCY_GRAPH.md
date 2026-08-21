@@ -157,7 +157,7 @@ flowchart LR
 | `web:app` | `next` | 49 |
 | `web:api` | `next` | 38 |
 | `web:app` | `react` | 13 |
-| `root:tooling` | `Node.js` | 10 |
+| `root:tooling` | `Node.js` | 12 |
 | `web:api` | `vitest` | 8 |
 | `web:ui` | `react` | 7 |
 | `web:auth` | `next-auth` | 6 |
@@ -170,8 +170,8 @@ flowchart LR
 | `package:shared` | `vitest` | 2 |
 | `root:other` | `Node.js` | 2 |
 | `web:api` | `@the-stand/shared` | 2 |
-| `web:api` | `pg` | 2 |
 | `web:api` | `Node.js` | 2 |
+| `web:api` | `pg` | 2 |
 | `web:app` | `next-auth` | 2 |
 | `web:config` | `@playwright/test` | 2 |
 | `web:config` | `Node.js` | 2 |
@@ -180,40 +180,40 @@ flowchart LR
 | `web:hardening` | `Node.js` | 2 |
 | `web:lib` | `vitest` | 2 |
 | `web:meetings` | `vitest` | 2 |
-| `web:notifications` | `pg` | 2 |
 | `web:notifications` | `bullmq` | 2 |
+| `web:notifications` | `pg` | 2 |
 | `web:tooling` | `pg` | 2 |
 | `package:shared` | `zod` | 1 |
 | `web:announcements` | `vitest` | 1 |
 | `web:api` | `zod` | 1 |
-| `web:app` | `next-themes` | 1 |
 | `web:app` | `Node.js` | 1 |
-| `web:auth` | `next` | 1 |
+| `web:app` | `next-themes` | 1 |
 | `web:auth` | `argon2` | 1 |
+| `web:auth` | `next` | 1 |
 | `web:bootstrap.mjs` | `Node.js` | 1 |
-| `web:calendar` | `vitest` | 1 |
 | `web:calendar` | `pg` | 1 |
-| `web:callings` | `vitest` | 1 |
+| `web:calendar` | `vitest` | 1 |
 | `web:callings` | `pg` | 1 |
+| `web:callings` | `vitest` | 1 |
 | `web:config` | `drizzle-kit` | 1 |
-| `web:config` | `typescript-eslint` | 1 |
 | `web:config` | `fs` | 1 |
-| `web:config` | `path` | 1 |
 | `web:config` | `next` | 1 |
+| `web:config` | `path` | 1 |
+| `web:config` | `typescript-eslint` | 1 |
 | `web:config` | `vitest` | 1 |
 | `web:db` | `pg` | 1 |
 | `web:hardening` | `vitest` | 1 |
-| `web:imports` | `Node.js` | 1 |
-| `web:imports` | `playwright` | 1 |
 | `web:imports` | `@playwright/test` | 1 |
+| `web:imports` | `Node.js` | 1 |
 | `web:imports` | `pdf-parse` | 1 |
+| `web:imports` | `playwright` | 1 |
 | `web:lib` | `@sentry/nextjs` | 1 |
 | `web:notifications` | `vitest` | 1 |
 | `web:stand` | `vitest` | 1 |
-| `web:ui` | `next-auth` | 1 |
-| `web:ui` | `next-themes` | 1 |
 | `web:ui` | `class-variance-authority` | 1 |
 | `web:ui` | `clsx` | 1 |
+| `web:ui` | `next-auth` | 1 |
+| `web:ui` | `next-themes` | 1 |
 | `web:ui` | `tailwind-merge` | 1 |
 
 ## File index
@@ -428,7 +428,7 @@ flowchart LR
 | `packages/shared/src/index.vitest.ts` | `package:shared` | 1 | 1 |
 | `packages/shared/vitest.config.ts` | `package:shared` | 0 | 1 |
 | `scripts/build.mjs` | `root:tooling` | 0 | 1 |
-| `scripts/dependency-graph.mjs` | `root:tooling` | 0 | 3 |
+| `scripts/dependency-graph.mjs` | `root:tooling` | 0 | 5 |
 | `scripts/lint.mjs` | `root:tooling` | 0 | 1 |
 | `scripts/next-build.mjs` | `root:tooling` | 0 | 2 |
 | `scripts/typecheck.mjs` | `root:tooling` | 0 | 0 |

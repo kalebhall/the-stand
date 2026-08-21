@@ -1,22 +1,32 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 
 const root = path.resolve(import.meta.dirname, '..');
 const outputPath = path.join(root, 'docs', 'DEPENDENCY_GRAPH.md');
 const sourceExtensions = new Set(['.js', '.mjs', '.ts', '.tsx']);
-const ignoredDirectories = new Set(['.git', '.next', 'coverage', 'node_modules', 'playwright-report', 'test-results']);
+const execFileAsync = promisify(execFile);
 
-async function walk(directory) {
-  const entries = await fs.readdir(directory, { withFileTypes: true });
-  const files = [];
-  for (const entry of entries) {
-    if (entry.isDirectory() && ignoredDirectories.has(entry.name)) continue;
-    const absolute = path.join(directory, entry.name);
-    if (entry.isDirectory()) files.push(...(await walk(absolute)));
-    else if (sourceExtensions.has(path.extname(entry.name))) files.push(absolute);
-  }
-  return files;
+function compareText(left, right) {
+  return left < right ? -1 : left > right ? 1 : 0;
+}
+
+async function sourceFiles() {
+  // Using Git's index makes generation independent of npm install artifacts and
+  // other ignored files that differ between developer machines and CI runners.
+  const { stdout } = await execFileAsync('git', ['ls-files', '-z', '--cached', '--others', '--exclude-standard'], {
+    cwd: root,
+    encoding: 'buffer',
+    maxBuffer: 10 * 1024 * 1024
+  });
+  return stdout
+    .toString('utf8')
+    .split('\0')
+    .filter((file) => file && sourceExtensions.has(path.extname(file)))
+    .map((file) => path.join(root, file))
+    .sort(compareText);
 }
 
 function importsFrom(source) {
@@ -70,7 +80,7 @@ function markdownEscape(value) {
 }
 
 async function generate() {
-  const absoluteFiles = (await walk(root)).sort();
+  const absoluteFiles = await sourceFiles();
   const fileSet = new Set(absoluteFiles);
   const fileData = [];
   const areaFiles = new Map();
@@ -99,14 +109,14 @@ async function generate() {
     fileData.push({ relative, sourceArea, internalCount, externalCount });
   }
 
-  const areas = [...areaFiles].sort(([a], [b]) => a.localeCompare(b));
+  const areas = [...areaFiles].sort(([a], [b]) => compareText(a, b));
   const ids = new Map(areas.map(([name], index) => [name, `A${index + 1}`]));
   const internalRows = [...internalEdges]
     .map(([key, count]) => [...key.split('\0'), count])
-    .sort((a, b) => b[2] - a[2] || a[0].localeCompare(b[0]) || a[1].localeCompare(b[1]));
+    .sort((a, b) => b[2] - a[2] || compareText(a[0], b[0]) || compareText(a[1], b[1]));
   const externalRows = [...externalEdges]
     .map(([key, count]) => [...key.split('\0'), count])
-    .sort((a, b) => b[2] - a[2] || a[0].localeCompare(b[0]));
+    .sort((a, b) => b[2] - a[2] || compareText(a[0], b[0]) || compareText(a[1], b[1]));
   const lines = [
     '# Code Dependency Graph',
     '',
