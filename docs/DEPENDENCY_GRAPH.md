@@ -31,10 +31,10 @@ flowchart LR
   A19["web:stand<br/>2 files"]
   A20["web:tooling<br/>2 files"]
   A21["web:types<br/>2 files"]
-  A22["web:ui<br/>11 files"]
+  A22["web:ui<br/>13 files"]
   A23["web:version.mjs<br/>1 files"]
   A5 -->|69| A7
-  A6 -->|61| A22
+  A6 -->|62| A22
   A5 -->|59| A12
   A6 -->|59| A7
   A6 -->|36| A12
@@ -95,7 +95,7 @@ flowchart LR
 | `web:stand` | 2 |
 | `web:tooling` | 2 |
 | `web:types` | 2 |
-| `web:ui` | 11 |
+| `web:ui` | 13 |
 | `web:version.mjs` | 1 |
 
 ## Internal dependencies
@@ -103,12 +103,12 @@ flowchart LR
 | Importing area | Imported area | Imports |
 | --- | --- | ---: |
 | `web:api` | `web:auth` | 69 |
-| `web:app` | `web:ui` | 61 |
+| `web:app` | `web:ui` | 62 |
 | `web:api` | `web:db` | 59 |
 | `web:app` | `web:auth` | 59 |
 | `web:app` | `web:db` | 36 |
 | `web:app` | `web:app` | 27 |
-| `web:ui` | `web:ui` | 9 |
+| `web:ui` | `web:ui` | 11 |
 | `web:api` | `web:api` | 8 |
 | `web:api` | `web:imports` | 8 |
 | `web:auth` | `web:auth` | 8 |
@@ -160,15 +160,15 @@ flowchart LR
 | `web:api` | `next` | 38 |
 | `web:app` | `react` | 15 |
 | `root:tooling` | `Node.js` | 12 |
+| `web:ui` | `react` | 10 |
 | `web:api` | `vitest` | 8 |
-| `web:ui` | `react` | 8 |
 | `web:auth` | `next-auth` | 6 |
 | `web:app` | `vitest` | 4 |
 | `web:auth` | `vitest` | 4 |
 | `web:tooling` | `Node.js` | 4 |
+| `web:ui` | `next` | 4 |
 | `web:db` | `vitest` | 3 |
 | `web:imports` | `vitest` | 3 |
-| `web:ui` | `next` | 3 |
 | `package:shared` | `vitest` | 2 |
 | `root:other` | `Node.js` | 2 |
 | `web:api` | `@the-stand/shared` | 2 |
@@ -295,7 +295,7 @@ flowchart LR
 | `apps/web/app/imports/members/page.tsx` | `web:app` | 5 | 2 |
 | `apps/web/app/imports/membership-imports-client.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/imports/page.tsx` | `web:app` | 4 | 2 |
-| `apps/web/app/layout.tsx` | `web:app` | 4 | 1 |
+| `apps/web/app/layout.tsx` | `web:app` | 5 | 1 |
 | `apps/web/app/login/login-form.tsx` | `web:app` | 2 | 2 |
 | `apps/web/app/login/page.tsx` | `web:app` | 2 | 1 |
 | `apps/web/app/logout/logout-form.tsx` | `web:app` | 2 | 2 |
@@ -348,7 +348,9 @@ flowchart LR
 | `apps/web/components/AddCallingSection.tsx` | `web:ui` | 1 | 1 |
 | `apps/web/components/HymnAutocomplete.tsx` | `web:ui` | 0 | 1 |
 | `apps/web/components/StandardCallingsManager.tsx` | `web:ui` | 1 | 2 |
-| `apps/web/components/app-navigation.tsx` | `web:ui` | 3 | 2 |
+| `apps/web/components/app-navigation.tsx` | `web:ui` | 1 | 0 |
+| `apps/web/components/app-shell.tsx` | `web:ui` | 4 | 4 |
+| `apps/web/components/conducting-mode-context.tsx` | `web:ui` | 0 | 1 |
 | `apps/web/components/lcr-extractor-instructions.tsx` | `web:ui` | 2 | 1 |
 | `apps/web/components/theme-provider.tsx` | `web:ui` | 0 | 2 |
 | `apps/web/components/ui/button.tsx` | `web:ui` | 1 | 2 |
