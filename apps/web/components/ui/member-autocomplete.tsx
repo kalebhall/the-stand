@@ -23,7 +23,13 @@ export function MemberAutocomplete({ wardId, value, onChange, placeholder, class
   const containerRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
 
-  const filtered = members.filter((m) => value.trim() === '' || m.fullName.toLowerCase().includes(value.toLowerCase()));
+  const filtered = members.filter((m) => {
+    const q = value.trim().toLowerCase();
+    if (q === '') return true;
+    const tokens = q.split(/\s+/).filter(Boolean);
+    const target = m.fullName.toLowerCase();
+    return tokens.every((token) => target.includes(token));
+  });
 
   async function fetchMembers(query: string) {
     setLoading(true);
