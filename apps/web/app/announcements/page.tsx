@@ -1,13 +1,13 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
-import { Button } from '@/components/ui/button';
+import { AnnouncementsWorkspaceClient } from './announcements-workspace-client';
 import { copyCalendarEventToAnnouncement, refreshCalendarFeedsForWard } from '@/src/calendar/service';
-import { isAnnouncementActiveForDate, isAnnouncementPlacement } from '@/src/announcements/types';
 import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth/guards';
 import { canManageMeetings, canViewMeetings } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
+import { getNextSunday, toYyyyMmDd } from '@/src/meetings/date';
 
 type AnnouncementRow = {
   id: string;
@@ -17,6 +17,8 @@ type AnnouncementRow = {
   end_date: string | null;
   is_permanent: boolean;
   placement: 'PROGRAM_TOP' | 'PROGRAM_BOTTOM';
+  include_in_program: boolean;
+  include_in_stand: boolean;
   created_at: string;
 };
 
@@ -35,31 +37,16 @@ type CalendarEventRow = {
   title: string;
   description: string | null;
   starts_at: string;
+  ends_at: string | null;
   tags: string[];
   copied_to_announcement_at: string | null;
 };
 
-function formatWindow(startDate: string | null, endDate: string | null, isPermanent: boolean): string {
-  if (isPermanent) {
-    return 'Permanent';
-  }
-
-  if (startDate && endDate) {
-    return `${startDate} → ${endDate}`;
-  }
-
-  if (startDate) {
-    return `Starts ${startDate}`;
-  }
-
-  if (endDate) {
-    return `Ends ${endDate}`;
-  }
-
-  return 'No date window';
-}
-
-export default async function AnnouncementsPage() {
+export default async function AnnouncementsPage({
+  searchParams
+}: {
+  searchParams: Promise<{ sunday?: string }>;
+}) {
   const session = await requireAuthenticatedSession();
   enforcePasswordRotation(session);
 
@@ -69,6 +56,12 @@ export default async function AnnouncementsPage() {
 
   const canManage = canManageMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId);
 
+  const queryParams = await searchParams;
+  const targetSunday = queryParams.sunday && /^\d{4}-\d{2}-\d{2}$/.test(queryParams.sunday)
+    ? queryParams.sunday
+    : getNextSunday();
+
+  // Server action: Create Announcement manually
   async function createAnnouncement(formData: FormData) {
     'use server';
 
@@ -88,12 +81,14 @@ export default async function AnnouncementsPage() {
     const endDateInput = String(formData.get('endDate') ?? '').trim();
     const placement = String(formData.get('placement') ?? 'PROGRAM_TOP').trim();
     const isPermanent = formData.get('isPermanent') === 'on';
+    const includeInProgram = formData.get('includeInProgram') !== 'off' && formData.get('includeInProgram') !== 'false';
+    const includeInStand = formData.get('includeInStand') === 'on' || formData.get('includeInStand') === 'true';
 
     const startDate = startDateInput.length ? startDateInput : null;
     const endDate = endDateInput.length ? endDateInput : null;
 
-    if (!title || !isAnnouncementPlacement(placement) || (startDate && endDate && startDate > endDate)) {
-      redirect('/announcements');
+    if (!title || (startDate && endDate && startDate > endDate)) {
+      redirect(`/announcements?sunday=${targetSunday}`);
     }
 
     const client = await pool.connect();
@@ -103,16 +98,16 @@ export default async function AnnouncementsPage() {
       await setDbContext(client, { userId: actionSession.user.id, wardId: actionSession.activeWardId });
 
       const inserted = await client.query(
-        `INSERT INTO announcement (ward_id, title, body, start_date, end_date, is_permanent, placement)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
+        `INSERT INTO announcement (ward_id, title, body, start_date, end_date, is_permanent, placement, include_in_program, include_in_stand)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
          RETURNING id`,
-        [actionSession.activeWardId, title, body || null, startDate, endDate, isPermanent, placement]
+        [actionSession.activeWardId, title, body || null, startDate, endDate, isPermanent, placement, includeInProgram, includeInStand]
       );
 
       await client.query(
         `INSERT INTO audit_log (ward_id, user_id, action, details)
-         VALUES ($1, $2, 'ANNOUNCEMENT_CREATED', jsonb_build_object('announcementId', $3, 'title', $4, 'placement', $5, 'isPermanent', $6))`,
-        [actionSession.activeWardId, actionSession.user.id, inserted.rows[0].id, title, placement, isPermanent]
+         VALUES ($1, $2, 'ANNOUNCEMENT_CREATED', jsonb_build_object('announcementId', $3, 'title', $4, 'placement', $5, 'isPermanent', $6, 'includeInProgram', $7, 'includeInStand', $8))`,
+        [actionSession.activeWardId, actionSession.user.id, inserted.rows[0].id, title, placement, isPermanent, includeInProgram, includeInStand]
       );
 
       await client.query('COMMIT');
@@ -126,6 +121,75 @@ export default async function AnnouncementsPage() {
     revalidatePath('/announcements');
   }
 
+  // Server action: Update Announcement
+  async function updateAnnouncement(formData: FormData) {
+    'use server';
+
+    const actionSession = await requireAuthenticatedSession();
+    enforcePasswordRotation(actionSession);
+
+    if (
+      !actionSession.activeWardId ||
+      !canManageMeetings({ roles: actionSession.user.roles, activeWardId: actionSession.activeWardId }, actionSession.activeWardId)
+    ) {
+      redirect('/announcements');
+    }
+
+    const announcementId = String(formData.get('announcementId') ?? '').trim();
+    const title = String(formData.get('title') ?? '').trim();
+    const body = String(formData.get('body') ?? '').trim();
+    const startDateInput = String(formData.get('startDate') ?? '').trim();
+    const endDateInput = String(formData.get('endDate') ?? '').trim();
+    const placement = String(formData.get('placement') ?? 'PROGRAM_TOP').trim();
+    const isPermanent = formData.get('isPermanent') === 'on';
+    const includeInProgram = formData.get('includeInProgram') !== 'off' && formData.get('includeInProgram') !== 'false';
+    const includeInStand = formData.get('includeInStand') === 'on' || formData.get('includeInStand') === 'true';
+
+    const startDate = startDateInput.length ? startDateInput : null;
+    const endDate = endDateInput.length ? endDateInput : null;
+
+    if (!announcementId || !title || (startDate && endDate && startDate > endDate)) {
+      redirect(`/announcements?sunday=${targetSunday}`);
+    }
+
+    const client = await pool.connect();
+
+    try {
+      await client.query('BEGIN');
+      await setDbContext(client, { userId: actionSession.user.id, wardId: actionSession.activeWardId });
+
+      await client.query(
+        `UPDATE announcement
+            SET title = $1,
+                body = $2,
+                start_date = $3,
+                end_date = $4,
+                is_permanent = $5,
+                placement = $6,
+                include_in_program = $7,
+                include_in_stand = $8
+          WHERE id = $9 AND ward_id = $10`,
+        [title, body || null, startDate, endDate, isPermanent, placement, includeInProgram, includeInStand, announcementId, actionSession.activeWardId]
+      );
+
+      await client.query(
+        `INSERT INTO audit_log (ward_id, user_id, action, details)
+         VALUES ($1, $2, 'ANNOUNCEMENT_UPDATED', jsonb_build_object('announcementId', $3, 'title', $4, 'placement', $5, 'isPermanent', $6, 'includeInProgram', $7, 'includeInStand', $8))`,
+        [actionSession.activeWardId, actionSession.user.id, announcementId, title, placement, isPermanent, includeInProgram, includeInStand]
+      );
+
+      await client.query('COMMIT');
+    } catch {
+      await client.query('ROLLBACK');
+      throw new Error('Failed to update announcement');
+    } finally {
+      client.release();
+    }
+
+    revalidatePath('/announcements');
+  }
+
+  // Server action: Delete Announcement
   async function deleteAnnouncement(formData: FormData) {
     'use server';
 
@@ -141,7 +205,7 @@ export default async function AnnouncementsPage() {
 
     const announcementId = String(formData.get('announcementId') ?? '').trim();
     if (!announcementId) {
-      redirect('/announcements');
+      redirect(`/announcements?sunday=${targetSunday}`);
     }
 
     const client = await pool.connect();
@@ -174,6 +238,35 @@ export default async function AnnouncementsPage() {
     revalidatePath('/announcements');
   }
 
+  // Server action: Copy calendar event to announcement
+  async function copyCalendarEvent(formData: FormData) {
+    'use server';
+
+    const actionSession = await requireAuthenticatedSession();
+    enforcePasswordRotation(actionSession);
+
+    if (
+      !actionSession.activeWardId ||
+      !canManageMeetings({ roles: actionSession.user.roles, activeWardId: actionSession.activeWardId }, actionSession.activeWardId)
+    ) {
+      redirect('/announcements');
+    }
+
+    const calendarEventCacheId = String(formData.get('calendarEventCacheId') ?? '').trim();
+    if (!calendarEventCacheId) {
+      redirect(`/announcements?sunday=${targetSunday}`);
+    }
+
+    await copyCalendarEventToAnnouncement({
+      wardId: actionSession.activeWardId,
+      userId: actionSession.user.id,
+      calendarEventCacheId
+    });
+
+    revalidatePath('/announcements');
+  }
+
+  // Server action: Refresh calendar feeds
   async function refreshCalendar() {
     'use server';
 
@@ -191,64 +284,7 @@ export default async function AnnouncementsPage() {
     revalidatePath('/announcements');
   }
 
-  async function updateAnnouncement(formData: FormData) {
-    'use server';
-
-    const actionSession = await requireAuthenticatedSession();
-    enforcePasswordRotation(actionSession);
-
-    if (
-      !actionSession.activeWardId ||
-      !canManageMeetings({ roles: actionSession.user.roles, activeWardId: actionSession.activeWardId }, actionSession.activeWardId)
-    ) {
-      redirect('/announcements');
-    }
-
-    const announcementId = String(formData.get('announcementId') ?? '').trim();
-    const title = String(formData.get('title') ?? '').trim();
-    const body = String(formData.get('body') ?? '').trim();
-    const startDateInput = String(formData.get('startDate') ?? '').trim();
-    const endDateInput = String(formData.get('endDate') ?? '').trim();
-    const placement = String(formData.get('placement') ?? 'PROGRAM_TOP').trim();
-    const isPermanent = formData.get('isPermanent') === 'on';
-
-    const startDate = startDateInput.length ? startDateInput : null;
-    const endDate = endDateInput.length ? endDateInput : null;
-
-    if (!announcementId || !title || !isAnnouncementPlacement(placement) || (startDate && endDate && startDate > endDate)) {
-      redirect('/announcements');
-    }
-
-    const client = await pool.connect();
-
-    try {
-      await client.query('BEGIN');
-      await setDbContext(client, { userId: actionSession.user.id, wardId: actionSession.activeWardId });
-
-      await client.query(
-        `UPDATE announcement
-            SET title = $1, body = $2, start_date = $3, end_date = $4, is_permanent = $5, placement = $6
-          WHERE id = $7 AND ward_id = $8`,
-        [title, body || null, startDate, endDate, isPermanent, placement, announcementId, actionSession.activeWardId]
-      );
-
-      await client.query(
-        `INSERT INTO audit_log (ward_id, user_id, action, details)
-         VALUES ($1, $2, 'ANNOUNCEMENT_UPDATED', jsonb_build_object('announcementId', $3, 'title', $4, 'placement', $5, 'isPermanent', $6))`,
-        [actionSession.activeWardId, actionSession.user.id, announcementId, title, placement, isPermanent]
-      );
-
-      await client.query('COMMIT');
-    } catch {
-      await client.query('ROLLBACK');
-      throw new Error('Failed to update announcement');
-    } finally {
-      client.release();
-    }
-
-    revalidatePath('/announcements');
-  }
-
+  // Server action: Create calendar feed
   async function createCalendarFeed(formData: FormData) {
     'use server';
 
@@ -267,7 +303,7 @@ export default async function AnnouncementsPage() {
     const feedScope = String(formData.get('feedScope') ?? 'WARD').trim();
 
     if (!displayName || !feedUrl || !['WARD', 'STAKE', 'CHURCH'].includes(feedScope)) {
-      redirect('/announcements');
+      redirect(`/announcements?sunday=${targetSunday}`);
     }
 
     const client = await pool.connect();
@@ -333,33 +369,9 @@ export default async function AnnouncementsPage() {
       );
 
       await client.query('COMMIT');
-    } catch (error) {
+    } catch {
       await client.query('ROLLBACK');
-
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      const errorCode =
-        typeof error === 'object' && error !== null && 'code' in error && typeof (error as { code?: unknown }).code === 'string'
-          ? (error as { code: string }).code
-          : null;
-
-      try {
-        await client.query('BEGIN');
-        await setDbContext(client, { userId: actionSession.user.id, wardId: actionSession.activeWardId });
-        await client.query(
-          `INSERT INTO audit_log (ward_id, user_id, action, details)
-           VALUES ($1, $2, 'CALENDAR_FEED_CREATE_FAILED', $3::jsonb)`,
-          [
-            actionSession.activeWardId,
-            actionSession.user.id,
-            JSON.stringify({ displayName, feedScope, feedUrl, errorMessage, errorCode })
-          ]
-        );
-        await client.query('COMMIT');
-      } catch {
-        await client.query('ROLLBACK');
-      }
-
-      throw new Error('Failed to create calendar feed', { cause: error });
+      throw new Error('Failed to create calendar feed');
     } finally {
       client.release();
     }
@@ -367,6 +379,7 @@ export default async function AnnouncementsPage() {
     revalidatePath('/announcements');
   }
 
+  // Server action: Delete calendar feed
   async function deleteCalendarFeed(formData: FormData) {
     'use server';
 
@@ -382,7 +395,7 @@ export default async function AnnouncementsPage() {
 
     const feedId = String(formData.get('feedId') ?? '').trim();
     if (!feedId) {
-      redirect('/announcements');
+      redirect(`/announcements?sunday=${targetSunday}`);
     }
 
     const client = await pool.connect();
@@ -415,33 +428,6 @@ export default async function AnnouncementsPage() {
     revalidatePath('/announcements');
   }
 
-  async function copyCalendarEvent(formData: FormData) {
-    'use server';
-
-    const actionSession = await requireAuthenticatedSession();
-    enforcePasswordRotation(actionSession);
-
-    if (
-      !actionSession.activeWardId ||
-      !canManageMeetings({ roles: actionSession.user.roles, activeWardId: actionSession.activeWardId }, actionSession.activeWardId)
-    ) {
-      redirect('/announcements');
-    }
-
-    const calendarEventCacheId = String(formData.get('calendarEventCacheId') ?? '').trim();
-    if (!calendarEventCacheId) {
-      redirect('/announcements');
-    }
-
-    await copyCalendarEventToAnnouncement({
-      wardId: actionSession.activeWardId,
-      userId: actionSession.user.id,
-      calendarEventCacheId
-    });
-
-    revalidatePath('/announcements');
-  }
-
   const client = await pool.connect();
 
   try {
@@ -449,7 +435,7 @@ export default async function AnnouncementsPage() {
     await setDbContext(client, { userId: session.user.id, wardId: session.activeWardId });
 
     const announcementResult = await client.query(
-      `SELECT id, title, body, start_date, end_date, is_permanent, placement, created_at
+      `SELECT id, title, body, start_date, end_date, is_permanent, placement, include_in_program, include_in_stand, created_at
          FROM announcement
         WHERE ward_id = $1
         ORDER BY created_at DESC`,
@@ -465,234 +451,42 @@ export default async function AnnouncementsPage() {
     );
 
     const calendarEventsResult = await client.query(
-      `SELECT id, calendar_feed_id, title, description, starts_at, tags, copied_to_announcement_at
+      `SELECT id, calendar_feed_id, title, description, starts_at, ends_at, tags, copied_to_announcement_at
          FROM calendar_event_cache
         WHERE ward_id = $1
-        ORDER BY starts_at DESC
-        LIMIT 50`,
+        ORDER BY starts_at ASC
+        LIMIT 100`,
       [session.activeWardId]
     );
 
     await client.query('COMMIT');
 
-    const today = new Date().toISOString().slice(0, 10);
-    const announcements = announcementResult.rows as AnnouncementRow[];
+    const announcements = (announcementResult.rows as AnnouncementRow[]).map((r) => ({
+      ...r,
+      start_date: toYyyyMmDd(r.start_date) || null,
+      end_date: toYyyyMmDd(r.end_date) || null
+    }));
     const calendarFeeds = calendarFeedsResult.rows as CalendarFeedRow[];
     const calendarEvents = calendarEventsResult.rows as CalendarEventRow[];
-    const active = announcements.filter((item) => isAnnouncementActiveForDate({
-      startDate: item.start_date,
-      endDate: item.end_date,
-      isPermanent: item.is_permanent
-    }, today));
-    const upcoming = announcements.filter((item) => !item.is_permanent && !!item.start_date && item.start_date > today);
-    const expired = announcements.filter((item) => !item.is_permanent && !!item.end_date && item.end_date < today);
 
     return (
-      <main className="mx-auto w-full max-w-6xl space-y-6 p-4 sm:p-6">
-        <section className="space-y-2">
-          <h1 className="text-2xl font-semibold tracking-tight">Announcements</h1>
-          <p className="text-sm text-muted-foreground">Manage date-window and permanent announcements used in meeting render output.</p>
-        </section>
-
-        {canManage ? (
-          <section className="rounded-lg border bg-card p-4">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <h2 className="text-lg font-semibold">Calendar refresh</h2>
-                <p className="text-sm text-muted-foreground">Refresh ward, stake, and church ICS feeds, then copy entries into announcements.</p>
-              </div>
-              <form action={refreshCalendar}>
-                <Button type="submit" variant="outline">Refresh calendar feeds</Button>
-              </form>
-            </div>
-            <ul className="mt-4 space-y-2 text-sm">
-              {calendarFeeds.length ? (
-                calendarFeeds.map((feed) => (
-                  <li key={feed.id} className="rounded-md border p-2">
-                    <div className="flex items-center justify-between gap-2">
-                      <div>
-                        <p className="font-medium">{feed.display_name} <span className="text-xs text-muted-foreground">({feed.feed_scope})</span></p>
-                        <p className="text-xs text-muted-foreground">
-                          Last refresh: {feed.last_refreshed_at ?? 'Never'} · Status: {feed.last_refresh_status ?? 'Not run'}
-                        </p>
-                        {feed.last_refresh_error ? <p className="text-xs text-destructive">{feed.last_refresh_error}</p> : null}
-                      </div>
-                      <form action={deleteCalendarFeed}>
-                        <input type="hidden" name="feedId" value={feed.id} />
-                        <Button type="submit" variant="outline" size="sm">Remove</Button>
-                      </form>
-                    </div>
-                  </li>
-                ))
-              ) : (
-                <li className="text-muted-foreground">No calendar feeds configured.</li>
-              )}
-            </ul>
-            <details className="mt-4">
-              <summary className="cursor-pointer text-sm font-medium text-muted-foreground">Add calendar feed</summary>
-              <form action={createCalendarFeed} className="mt-3 grid gap-3 sm:grid-cols-3">
-                <label className="grid gap-1 text-sm font-medium">
-                  Display name
-                  <input name="displayName" required className="rounded-md border bg-background px-3 py-2 text-sm" />
-                </label>
-                <label className="grid gap-1 text-sm font-medium">
-                  Feed URL (ICS)
-                  <input name="feedUrl" required type="url" className="rounded-md border bg-background px-3 py-2 text-sm" />
-                </label>
-                <label className="grid gap-1 text-sm font-medium">
-                  Scope
-                  <select name="feedScope" defaultValue="WARD" className="rounded-md border bg-background px-3 py-2 text-sm">
-                    <option value="WARD">Ward</option>
-                    <option value="STAKE">Stake</option>
-                    <option value="CHURCH">Church</option>
-                  </select>
-                </label>
-                <div className="sm:col-span-3">
-                  <Button type="submit" size="sm">Add feed</Button>
-                </div>
-              </form>
-            </details>
-          </section>
-        ) : null}
-
-        {canManage ? (
-          <section className="rounded-lg border bg-card p-4">
-            <h2 className="text-lg font-semibold">Calendar cache</h2>
-            <p className="text-sm text-muted-foreground">Copy imported calendar entries into announcement records using feed tag maps.</p>
-            <ul className="mt-4 space-y-2">
-              {calendarEvents.length ? (
-                calendarEvents.map((event) => (
-                  <li key={event.id} className="rounded-md border p-3 text-sm">
-                    <p className="font-medium">{event.title}</p>
-                    <p className="text-xs text-muted-foreground">{event.starts_at}</p>
-                    {event.description ? <p className="mt-1 text-muted-foreground">{event.description}</p> : null}
-                    {event.tags.length ? <p className="mt-1 text-xs text-muted-foreground">Tags: {event.tags.join(', ')}</p> : null}
-                    <div className="mt-2">
-                      <form action={copyCalendarEvent}>
-                        <input type="hidden" name="calendarEventCacheId" value={event.id} />
-                        <Button type="submit" size="sm" variant="secondary">Copy to announcement</Button>
-                      </form>
-                    </div>
-                    {event.copied_to_announcement_at ? (
-                      <p className="mt-1 text-xs text-muted-foreground">Last copied: {event.copied_to_announcement_at}</p>
-                    ) : null}
-                  </li>
-                ))
-              ) : (
-                <li className="text-sm text-muted-foreground">No cached calendar events yet.</li>
-              )}
-            </ul>
-          </section>
-        ) : null}
-
-        {canManage ? (
-          <section className="rounded-lg border bg-card p-4">
-            <h2 className="text-lg font-semibold">New announcement</h2>
-            <form action={createAnnouncement} className="mt-4 grid gap-3 sm:grid-cols-2">
-              <label className="grid gap-1 text-sm font-medium sm:col-span-2">
-                Title
-                <input name="title" required className="rounded-md border bg-background px-3 py-2 text-sm" />
-              </label>
-              <label className="grid gap-1 text-sm font-medium sm:col-span-2">
-                Body
-                <textarea name="body" rows={3} className="rounded-md border bg-background px-3 py-2 text-sm" />
-              </label>
-              <label className="grid gap-1 text-sm font-medium">
-                Start date
-                <input name="startDate" type="date" className="rounded-md border bg-background px-3 py-2 text-sm" />
-              </label>
-              <label className="grid gap-1 text-sm font-medium">
-                End date
-                <input name="endDate" type="date" className="rounded-md border bg-background px-3 py-2 text-sm" />
-              </label>
-              <label className="grid gap-1 text-sm font-medium">
-                Placement
-                <select name="placement" defaultValue="PROGRAM_TOP" className="rounded-md border bg-background px-3 py-2 text-sm">
-                  <option value="PROGRAM_TOP">Program top</option>
-                  <option value="PROGRAM_BOTTOM">Program bottom</option>
-                </select>
-              </label>
-              <label className="mt-7 inline-flex items-center gap-2 text-sm font-medium">
-                <input name="isPermanent" type="checkbox" className="h-4 w-4 rounded border" />
-                Permanent announcement
-              </label>
-              <div className="sm:col-span-2">
-                <Button type="submit">Create announcement</Button>
-              </div>
-            </form>
-          </section>
-        ) : null}
-
-        {[
-          { title: 'Active', items: active },
-          { title: 'Upcoming', items: upcoming },
-          { title: 'Expired', items: expired }
-        ].map((group) => (
-          <section key={group.title} className="rounded-lg border bg-card p-4">
-            <h2 className="text-lg font-semibold">{group.title}</h2>
-            {group.items.length ? (
-              <ul className="mt-3 space-y-2">
-                {group.items.map((item) => (
-                  <li key={item.id} className="rounded-md border p-3 text-sm">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <p className="font-semibold">{item.title}</p>
-                      <span className="rounded-full border px-2 py-0.5 text-xs font-medium">{item.placement === 'PROGRAM_TOP' ? 'Program top' : 'Program bottom'}</span>
-                    </div>
-                    {item.body ? <p className="mt-1 text-muted-foreground">{item.body}</p> : null}
-                    <p className="mt-2 text-xs text-muted-foreground">{formatWindow(item.start_date, item.end_date, item.is_permanent)}</p>
-                    {canManage ? (
-                      <div className="mt-2 flex gap-2">
-                        <form action={deleteAnnouncement}>
-                          <input type="hidden" name="announcementId" value={item.id} />
-                          <Button type="submit" variant="outline" size="sm">Delete</Button>
-                        </form>
-                        <details className="flex-1">
-                          <summary className="cursor-pointer text-sm font-medium text-muted-foreground">Edit</summary>
-                          <form action={updateAnnouncement} className="mt-2 grid gap-2 sm:grid-cols-2">
-                            <input type="hidden" name="announcementId" value={item.id} />
-                            <label className="grid gap-1 text-sm font-medium sm:col-span-2">
-                              Title
-                              <input name="title" defaultValue={item.title} required className="rounded-md border bg-background px-3 py-2 text-sm" />
-                            </label>
-                            <label className="grid gap-1 text-sm font-medium sm:col-span-2">
-                              Body
-                              <textarea name="body" defaultValue={item.body ?? ''} rows={2} className="rounded-md border bg-background px-3 py-2 text-sm" />
-                            </label>
-                            <label className="grid gap-1 text-sm font-medium">
-                              Start date
-                              <input name="startDate" type="date" defaultValue={item.start_date ?? ''} className="rounded-md border bg-background px-3 py-2 text-sm" />
-                            </label>
-                            <label className="grid gap-1 text-sm font-medium">
-                              End date
-                              <input name="endDate" type="date" defaultValue={item.end_date ?? ''} className="rounded-md border bg-background px-3 py-2 text-sm" />
-                            </label>
-                            <label className="grid gap-1 text-sm font-medium">
-                              Placement
-                              <select name="placement" defaultValue={item.placement} className="rounded-md border bg-background px-3 py-2 text-sm">
-                                <option value="PROGRAM_TOP">Program top</option>
-                                <option value="PROGRAM_BOTTOM">Program bottom</option>
-                              </select>
-                            </label>
-                            <label className="mt-7 inline-flex items-center gap-2 text-sm font-medium">
-                              <input name="isPermanent" type="checkbox" defaultChecked={item.is_permanent} className="h-4 w-4 rounded border" />
-                              Permanent
-                            </label>
-                            <div className="sm:col-span-2">
-                              <Button type="submit" size="sm">Save changes</Button>
-                            </div>
-                          </form>
-                        </details>
-                      </div>
-                    ) : null}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="mt-2 text-sm text-muted-foreground">No {group.title.toLowerCase()} announcements.</p>
-            )}
-          </section>
-        ))}
-      </main>
+      <AnnouncementsWorkspaceClient
+        wardId={session.activeWardId}
+        targetSunday={targetSunday}
+        canManage={canManage}
+        announcements={announcements}
+        calendarFeeds={calendarFeeds}
+        calendarEvents={calendarEvents}
+        actions={{
+          createAnnouncement,
+          updateAnnouncement,
+          deleteAnnouncement,
+          copyCalendarEvent,
+          refreshCalendar,
+          createCalendarFeed,
+          deleteCalendarFeed
+        }}
+      />
     );
   } catch {
     await client.query('ROLLBACK');

@@ -62,4 +62,32 @@ describe('buildStandRows', () => {
       expect(rows[2].segments.filter((segment) => segment.bold).map((segment) => segment.text)).toEqual(['John Doe', 'Elders Quorum President']);
     }
   });
+
+  it('includes stand announcements in standard rows', () => {
+    const rows = buildStandRows(
+      [
+        {
+          itemType: 'OPENING_HYMN',
+          title: '',
+          notes: '',
+          hymnNumber: '1',
+          hymnTitle: 'The Morning Breaks'
+        }
+      ],
+      {},
+      [
+        {
+          title: 'Stake Conference',
+          body: 'Saturday and Sunday sessions',
+          includeInStand: true
+        }
+      ]
+    );
+
+    expect(rows).toEqual([
+      { kind: 'welcome', text: 'Welcome to The Church of Jesus Christ of Latter-day Saints.' },
+      { kind: 'standard', label: 'Announcement', details: 'Stake Conference: Saturday and Sunday sessions' },
+      { kind: 'standard', label: 'Opening Hymn', details: '1 — The Morning Breaks' }
+    ]);
+  });
 });

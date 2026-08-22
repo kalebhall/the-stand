@@ -13,6 +13,8 @@ type AnnouncementPayload = {
   endDate?: string | null;
   isPermanent?: boolean;
   placement?: string;
+  includeInProgram?: boolean;
+  includeInStand?: boolean;
 };
 
 function normalizeDate(value: string | null | undefined): string | null {
@@ -37,6 +39,8 @@ export async function PUT(request: Request, context: { params: Promise<{ wardId:
   const startDate = normalizeDate(body?.startDate);
   const endDate = normalizeDate(body?.endDate);
   const isPermanent = Boolean(body?.isPermanent);
+  const includeInProgram = body?.includeInProgram !== false;
+  const includeInStand = Boolean(body?.includeInStand);
   const details = body?.body?.trim() ?? '';
 
   if (!title || !isAnnouncementPlacement(placement) || (startDate && endDate && startDate > endDate)) {
@@ -56,10 +60,12 @@ export async function PUT(request: Request, context: { params: Promise<{ wardId:
               start_date = $3,
               end_date = $4,
               is_permanent = $5,
-              placement = $6
-        WHERE id = $7 AND ward_id = $8
+              placement = $6,
+              include_in_program = $7,
+              include_in_stand = $8
+        WHERE id = $9 AND ward_id = $10
         RETURNING id`,
-      [title, details || null, startDate, endDate, isPermanent, placement, announcementId, wardId]
+      [title, details || null, startDate, endDate, isPermanent, placement, includeInProgram, includeInStand, announcementId, wardId]
     );
 
     if (!updated.rowCount) {
@@ -69,8 +75,8 @@ export async function PUT(request: Request, context: { params: Promise<{ wardId:
 
     await client.query(
       `INSERT INTO audit_log (ward_id, user_id, action, details)
-       VALUES ($1, $2, 'ANNOUNCEMENT_UPDATED', jsonb_build_object('announcementId', $3, 'title', $4, 'placement', $5, 'isPermanent', $6))`,
-      [wardId, session.user.id, announcementId, title, placement, isPermanent]
+       VALUES ($1, $2, 'ANNOUNCEMENT_UPDATED', jsonb_build_object('announcementId', $3, 'title', $4, 'placement', $5, 'isPermanent', $6, 'includeInProgram', $7, 'includeInStand', $8))`,
+      [wardId, session.user.id, announcementId, title, placement, isPermanent, includeInProgram, includeInStand]
     );
 
     await client.query('COMMIT');

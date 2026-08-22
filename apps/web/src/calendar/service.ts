@@ -243,8 +243,8 @@ export async function copyCalendarEventToAnnouncement(args: { wardId: string; us
     const isPermanent = Boolean(rule.isPermanent);
 
     const inserted = await client.query(
-      `INSERT INTO announcement (ward_id, title, body, start_date, end_date, is_permanent, placement)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `INSERT INTO announcement (ward_id, title, body, start_date, end_date, is_permanent, placement, include_in_program, include_in_stand)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        RETURNING id`,
       [
         args.wardId,
@@ -253,7 +253,9 @@ export async function copyCalendarEventToAnnouncement(args: { wardId: string; us
         isPermanent ? null : toDateOnly(event.starts_at),
         isPermanent ? null : toDateOnly(event.ends_at) ?? toDateOnly(event.starts_at),
         isPermanent,
-        placement
+        placement,
+        true,
+        false
       ]
     );
 

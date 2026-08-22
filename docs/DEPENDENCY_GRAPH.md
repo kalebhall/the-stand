@@ -14,8 +14,8 @@ flowchart LR
   A2["root:other<br/>1 files"]
   A3["root:tooling<br/>6 files"]
   A4["web:announcements<br/>2 files"]
-  A5["web:api<br/>47 files"]
-  A6["web:app<br/>75 files"]
+  A5["web:api<br/>48 files"]
+  A6["web:app<br/>76 files"]
   A7["web:auth<br/>11 files"]
   A8["web:bootstrap.mjs<br/>1 files"]
   A9["web:calendar<br/>3 files"]
@@ -26,7 +26,7 @@ flowchart LR
   A14["web:health.mjs<br/>1 files"]
   A15["web:imports<br/>11 files"]
   A16["web:lib<br/>7 files"]
-  A17["web:meetings<br/>6 files"]
+  A17["web:meetings<br/>7 files"]
   A18["web:notifications<br/>5 files"]
   A19["web:stand<br/>2 files"]
   A20["web:tooling<br/>2 files"]
@@ -40,12 +40,13 @@ flowchart LR
   A6 -->|36| A12
   A5 -->|8| A15
   A5 -->|7| A10
+  A6 -->|7| A17
   A5 -->|6| A16
-  A6 -->|6| A17
   A5 -->|4| A18
   A5 -->|3| A17
   A6 -->|3| A10
   A5 -->|2| A4
+  A6 -->|2| A4
   A7 -->|2| A12
   A9 -->|2| A12
   A11 -->|2| A16
@@ -53,7 +54,6 @@ flowchart LR
   A18 -->|2| A12
   A2 -->|1| A14
   A5 -->|1| A9
-  A6 -->|1| A4
   A6 -->|1| A9
   A6 -->|1| A15
   A6 -->|1| A16
@@ -78,8 +78,8 @@ flowchart LR
 | `root:other` | 1 |
 | `root:tooling` | 6 |
 | `web:announcements` | 2 |
-| `web:api` | 47 |
-| `web:app` | 75 |
+| `web:api` | 48 |
+| `web:app` | 76 |
 | `web:auth` | 11 |
 | `web:bootstrap.mjs` | 1 |
 | `web:calendar` | 3 |
@@ -90,7 +90,7 @@ flowchart LR
 | `web:health.mjs` | 1 |
 | `web:imports` | 11 |
 | `web:lib` | 7 |
-| `web:meetings` | 6 |
+| `web:meetings` | 7 |
 | `web:notifications` | 5 |
 | `web:stand` | 2 |
 | `web:tooling` | 2 |
@@ -107,23 +107,24 @@ flowchart LR
 | `web:api` | `web:db` | 59 |
 | `web:app` | `web:auth` | 59 |
 | `web:app` | `web:db` | 36 |
-| `web:app` | `web:app` | 27 |
+| `web:app` | `web:app` | 28 |
 | `web:ui` | `web:ui` | 11 |
-| `web:api` | `web:api` | 8 |
+| `web:api` | `web:api` | 9 |
 | `web:api` | `web:imports` | 8 |
 | `web:auth` | `web:auth` | 8 |
 | `web:api` | `web:callings` | 7 |
+| `web:app` | `web:meetings` | 7 |
 | `web:imports` | `web:imports` | 7 |
 | `web:api` | `web:lib` | 6 |
-| `web:app` | `web:meetings` | 6 |
 | `web:api` | `web:notifications` | 4 |
 | `web:db` | `web:db` | 4 |
+| `web:meetings` | `web:meetings` | 4 |
 | `web:api` | `web:meetings` | 3 |
 | `web:app` | `web:callings` | 3 |
-| `web:meetings` | `web:meetings` | 3 |
 | `web:notifications` | `web:notifications` | 3 |
 | `package:shared` | `package:shared` | 2 |
 | `web:api` | `web:announcements` | 2 |
+| `web:app` | `web:announcements` | 2 |
 | `web:auth` | `web:db` | 2 |
 | `web:calendar` | `web:calendar` | 2 |
 | `web:calendar` | `web:db` | 2 |
@@ -135,7 +136,6 @@ flowchart LR
 | `root:other` | `web:health.mjs` | 1 |
 | `web:announcements` | `web:announcements` | 1 |
 | `web:api` | `web:calendar` | 1 |
-| `web:app` | `web:announcements` | 1 |
 | `web:app` | `web:calendar` | 1 |
 | `web:app` | `web:imports` | 1 |
 | `web:app` | `web:lib` | 1 |
@@ -156,12 +156,12 @@ flowchart LR
 
 | Importing area | Package/runtime | Imports |
 | --- | --- | ---: |
-| `web:app` | `next` | 59 |
+| `web:app` | `next` | 60 |
 | `web:api` | `next` | 38 |
-| `web:app` | `react` | 15 |
+| `web:app` | `react` | 16 |
 | `root:tooling` | `Node.js` | 12 |
 | `web:ui` | `react` | 10 |
-| `web:api` | `vitest` | 8 |
+| `web:api` | `vitest` | 9 |
 | `web:auth` | `next-auth` | 6 |
 | `web:app` | `vitest` | 4 |
 | `web:auth` | `vitest` | 4 |
@@ -169,6 +169,7 @@ flowchart LR
 | `web:ui` | `next` | 4 |
 | `web:db` | `vitest` | 3 |
 | `web:imports` | `vitest` | 3 |
+| `web:meetings` | `vitest` | 3 |
 | `package:shared` | `vitest` | 2 |
 | `root:other` | `Node.js` | 2 |
 | `web:api` | `@the-stand/shared` | 2 |
@@ -181,7 +182,6 @@ flowchart LR
 | `web:db` | `drizzle-orm` | 2 |
 | `web:hardening` | `Node.js` | 2 |
 | `web:lib` | `vitest` | 2 |
-| `web:meetings` | `vitest` | 2 |
 | `web:notifications` | `bullmq` | 2 |
 | `web:notifications` | `pg` | 2 |
 | `web:tooling` | `pg` | 2 |
@@ -227,6 +227,7 @@ flowchart LR
 | `apps/web/app/account/page.tsx` | `web:app` | 5 | 2 |
 | `apps/web/app/account/preferences/page.tsx` | `web:app` | 3 | 1 |
 | `apps/web/app/account/preferences/theme-toggle.tsx` | `web:app` | 1 | 2 |
+| `apps/web/app/announcements/announcements-workspace-client.tsx` | `web:app` | 2 | 2 |
 | `apps/web/app/announcements/error.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/announcements/loading.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/announcements/page.tsx` | `web:app` | 7 | 2 |
@@ -246,6 +247,7 @@ flowchart LR
 | `apps/web/app/api/support/hymns/route.ts` | `web:api` | 3 | 1 |
 | `apps/web/app/api/w/[wardId]/announcements/[announcementId]/route.ts` | `web:api` | 5 | 1 |
 | `apps/web/app/api/w/[wardId]/announcements/route.ts` | `web:api` | 5 | 1 |
+| `apps/web/app/api/w/[wardId]/announcements/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/calendar/refresh/route.ts` | `web:api` | 3 | 1 |
 | `apps/web/app/api/w/[wardId]/calendar/route.ts` | `web:api` | 4 | 1 |
 | `apps/web/app/api/w/[wardId]/callings/[callingId]/extend/route.ts` | `web:api` | 6 | 1 |
@@ -330,7 +332,7 @@ flowchart LR
 | `apps/web/app/settings/users/loading.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/settings/users/page.tsx` | `web:app` | 3 | 1 |
 | `apps/web/app/settings/users/ward-users-manager.tsx` | `web:app` | 2 | 1 |
-| `apps/web/app/stand/[meetingId]/page.tsx` | `web:app` | 7 | 2 |
+| `apps/web/app/stand/[meetingId]/page.tsx` | `web:app` | 8 | 2 |
 | `apps/web/app/support/access-requests/page.tsx` | `web:app` | 5 | 3 |
 | `apps/web/app/support/audit-log/AuditLogViewer.tsx` | `web:app` | 1 | 1 |
 | `apps/web/app/support/audit-log/page.tsx` | `web:app` | 7 | 2 |
@@ -418,6 +420,7 @@ flowchart LR
 | `apps/web/src/lib/version.ts` | `web:lib` | 0 | 0 |
 | `apps/web/src/lib/version.vitest.ts` | `web:lib` | 1 | 1 |
 | `apps/web/src/meetings/date.ts` | `web:meetings` | 0 | 0 |
+| `apps/web/src/meetings/date.vitest.ts` | `web:meetings` | 1 | 1 |
 | `apps/web/src/meetings/default-program.ts` | `web:meetings` | 1 | 0 |
 | `apps/web/src/meetings/default-program.vitest.ts` | `web:meetings` | 1 | 1 |
 | `apps/web/src/meetings/render.ts` | `web:meetings` | 1 | 0 |

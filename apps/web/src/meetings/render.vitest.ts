@@ -66,4 +66,35 @@ describe('buildMeetingRenderHtml', () => {
     expect(html).toContain('&lt;b&gt;Elder&lt;/b&gt;');
     expect(html).toContain('Use &lt;unsafe&gt;');
   });
+
+  it('filters out announcements with includeInProgram = false', () => {
+    const html = buildMeetingRenderHtml({
+      meetingDate: '2026-01-04',
+      meetingType: 'SACRAMENT',
+      programItems: [],
+      announcements: [
+        {
+          title: 'Visible Announcement',
+          body: 'On program',
+          startDate: null,
+          endDate: null,
+          isPermanent: true,
+          placement: 'PROGRAM_TOP',
+          includeInProgram: true
+        },
+        {
+          title: 'Stand Only Announcement',
+          body: 'Not on program',
+          startDate: null,
+          endDate: null,
+          isPermanent: true,
+          placement: 'PROGRAM_TOP',
+          includeInProgram: false
+        }
+      ]
+    });
+
+    expect(html).toContain('Visible Announcement');
+    expect(html).not.toContain('Stand Only Announcement');
+  });
 });

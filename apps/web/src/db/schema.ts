@@ -188,6 +188,8 @@ export const announcement = pgTable('announcement', {
   endDate: date('end_date'),
   isPermanent: boolean('is_permanent').notNull().default(false),
   placement: text('placement').notNull().default('PROGRAM_TOP'),
+  includeInProgram: boolean('include_in_program').notNull().default(true),
+  includeInStand: boolean('include_in_stand').notNull().default(false),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 });
 
