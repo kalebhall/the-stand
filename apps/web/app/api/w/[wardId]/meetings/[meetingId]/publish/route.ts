@@ -75,7 +75,7 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
     );
 
     const announcementResult = await client.query(
-      `SELECT title, body, start_date, end_date, is_permanent, placement
+      `SELECT title, body, start_date, end_date, is_permanent, placement, include_in_program
          FROM announcement
         WHERE ward_id = $1
         ORDER BY created_at DESC`,
@@ -98,13 +98,14 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
       meetingDate: meeting.meeting_date,
       meetingType: meeting.meeting_type,
       programItems,
-      announcements: (announcementResult.rows as AnnouncementRow[]).map((item) => ({
+      announcements: (announcementResult.rows as (AnnouncementRow & { include_in_program: boolean })[]).map((item) => ({
         title: item.title,
         body: item.body,
         startDate: item.start_date,
         endDate: item.end_date,
         isPermanent: item.is_permanent,
-        placement: item.placement
+        placement: item.placement,
+        includeInProgram: item.include_in_program
       }))
     });
 

@@ -7,6 +7,7 @@ import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth
 import { canViewMeetings } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
+import { isAnnouncementActiveForDate } from '@/src/announcements/types';
 import { buildStandRows } from '@/src/stand/render';
 
 type ProgramItemRow = {
@@ -47,12 +48,14 @@ export default async function StandViewPage({
     await client.query('BEGIN');
     await setDbContext(client, { userId: session.user.id, wardId: session.activeWardId });
 
-    const meetingResult = await client.query('SELECT id FROM meeting WHERE id = $1 AND ward_id = $2 LIMIT 1', [meetingId, session.activeWardId]);
+    const meetingResult = await client.query('SELECT id, meeting_date FROM meeting WHERE id = $1 AND ward_id = $2 LIMIT 1', [meetingId, session.activeWardId]);
 
     if (!meetingResult.rowCount) {
       await client.query('ROLLBACK');
       notFound();
     }
+
+    const meetingDate = meetingResult.rows[0].meeting_date as string;
 
     const programResult = await client.query(
       `SELECT item_type, title, notes, hymn_number, hymn_title
@@ -67,7 +70,39 @@ export default async function StandViewPage({
       [session.activeWardId]
     );
 
+    const announcementResult = await client.query(
+      `SELECT title, body, start_date, end_date, is_permanent, include_in_stand
+         FROM announcement
+        WHERE ward_id = $1
+          AND include_in_stand = TRUE`,
+      [session.activeWardId]
+    );
+
     await client.query('COMMIT');
+
+    const activeStandAnnouncements = (announcementResult.rows as Array<{
+      title: string;
+      body: string | null;
+      start_date: string | null;
+      end_date: string | null;
+      is_permanent: boolean;
+      include_in_stand: boolean;
+    }>)
+      .filter((a) =>
+        isAnnouncementActiveForDate(
+          {
+            startDate: a.start_date,
+            endDate: a.end_date,
+            isPermanent: a.is_permanent
+          },
+          meetingDate
+        )
+      )
+      .map((a) => ({
+        title: a.title,
+        body: a.body,
+        includeInStand: a.include_in_stand
+      }));
 
     const template = templateResult.rows[0] as TemplateRow | undefined;
     const standRows = buildStandRows(
@@ -82,7 +117,8 @@ export default async function StandViewPage({
         welcomeText: template?.welcome_text,
         sustainTemplate: template?.sustain_template,
         releaseTemplate: template?.release_template
-      }
+      },
+      activeStandAnnouncements
     );
 
     return (

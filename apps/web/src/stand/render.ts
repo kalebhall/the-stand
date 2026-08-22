@@ -68,7 +68,17 @@ function renderTemplateLine(template: string, values: { memberName: string; call
   };
 }
 
-export function buildStandRows(items: StandProgramItem[], templateOverrides?: Partial<StandTemplate>): StandRow[] {
+export type StandAnnouncementItem = {
+  title: string;
+  body: string | null;
+  includeInStand?: boolean;
+};
+
+export function buildStandRows(
+  items: StandProgramItem[],
+  templateOverrides?: Partial<StandTemplate>,
+  announcements?: StandAnnouncementItem[]
+): StandRow[] {
   const template: StandTemplate = {
     welcomeText: templateOverrides?.welcomeText ?? DEFAULT_TEMPLATE.welcomeText,
     sustainTemplate: templateOverrides?.sustainTemplate ?? DEFAULT_TEMPLATE.sustainTemplate,
@@ -76,6 +86,18 @@ export function buildStandRows(items: StandProgramItem[], templateOverrides?: Pa
   };
 
   const rows: StandRow[] = [{ kind: 'welcome', text: template.welcomeText }];
+
+  const standAnnouncements = announcements?.filter((a) => a.includeInStand !== false) ?? [];
+  if (standAnnouncements.length > 0) {
+    for (const ann of standAnnouncements) {
+      const details = ann.body?.trim() ? `${ann.title}: ${ann.body}` : ann.title;
+      rows.push({
+        kind: 'standard',
+        label: 'Announcement',
+        details
+      });
+    }
+  }
 
   for (const item of items) {
     const normalizedType = item.itemType.toUpperCase();

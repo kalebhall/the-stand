@@ -14,6 +14,8 @@ type AnnouncementRow = {
   end_date: string | null;
   is_permanent: boolean;
   placement: string;
+  include_in_program: boolean;
+  include_in_stand: boolean;
   created_at: string;
 };
 
@@ -24,6 +26,8 @@ type AnnouncementPayload = {
   endDate?: string | null;
   isPermanent?: boolean;
   placement?: string;
+  includeInProgram?: boolean;
+  includeInStand?: boolean;
 };
 
 function normalizeDate(value: string | null | undefined): string | null {
@@ -49,7 +53,7 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
     await setDbContext(client, { userId: session.user.id, wardId });
 
     const result = await client.query(
-      `SELECT id, title, body, start_date, end_date, is_permanent, placement, created_at
+      `SELECT id, title, body, start_date, end_date, is_permanent, placement, include_in_program, include_in_stand, created_at
          FROM announcement
         WHERE ward_id = $1
         ORDER BY created_at DESC`,
@@ -67,6 +71,8 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
         endDate: row.end_date,
         isPermanent: row.is_permanent,
         placement: row.placement,
+        includeInProgram: row.include_in_program,
+        includeInStand: row.include_in_stand,
         createdAt: row.created_at
       }))
     });
@@ -95,6 +101,8 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
   const startDate = normalizeDate(body?.startDate);
   const endDate = normalizeDate(body?.endDate);
   const isPermanent = Boolean(body?.isPermanent);
+  const includeInProgram = body?.includeInProgram !== false;
+  const includeInStand = Boolean(body?.includeInStand);
   const details = body?.body?.trim() ?? '';
 
   if (!title || !isAnnouncementPlacement(placement) || (startDate && endDate && startDate > endDate)) {
@@ -108,16 +116,16 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     await setDbContext(client, { userId: session.user.id, wardId });
 
     const inserted = await client.query(
-      `INSERT INTO announcement (ward_id, title, body, start_date, end_date, is_permanent, placement)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `INSERT INTO announcement (ward_id, title, body, start_date, end_date, is_permanent, placement, include_in_program, include_in_stand)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        RETURNING id`,
-      [wardId, title, details || null, startDate, endDate, isPermanent, placement]
+      [wardId, title, details || null, startDate, endDate, isPermanent, placement, includeInProgram, includeInStand]
     );
 
     await client.query(
       `INSERT INTO audit_log (ward_id, user_id, action, details)
-       VALUES ($1, $2, 'ANNOUNCEMENT_CREATED', jsonb_build_object('announcementId', $3, 'title', $4, 'placement', $5, 'isPermanent', $6))`,
-      [wardId, session.user.id, inserted.rows[0].id, title, placement, isPermanent]
+       VALUES ($1, $2, 'ANNOUNCEMENT_CREATED', jsonb_build_object('announcementId', $3, 'title', $4, 'placement', $5, 'isPermanent', $6, 'includeInProgram', $7, 'includeInStand', $8))`,
+      [wardId, session.user.id, inserted.rows[0].id, title, placement, isPermanent, includeInProgram, includeInStand]
     );
 
     await client.query('COMMIT');

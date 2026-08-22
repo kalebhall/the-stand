@@ -54,7 +54,9 @@ export function buildMeetingRenderHtml({ meetingDate, meetingType, programItems,
   const escapedDate = escapeHtml(meetingDate);
   const escapedType = escapeHtml(meetingType.replaceAll('_', ' '));
 
-  const activeAnnouncements = announcements.filter((item) => isAnnouncementActiveForDate(item, meetingDate));
+  const activeAnnouncements = announcements
+    .filter((item) => item.includeInProgram !== false)
+    .filter((item) => isAnnouncementActiveForDate(item, meetingDate));
   const topAnnouncements = activeAnnouncements.filter((item) => item.placement === 'PROGRAM_TOP');
   const bottomAnnouncements = activeAnnouncements.filter((item) => item.placement === 'PROGRAM_BOTTOM');
 

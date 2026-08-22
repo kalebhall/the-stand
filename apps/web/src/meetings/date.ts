@@ -23,6 +23,15 @@ export function toYyyyMmDd(value: unknown): string {
   return '';
 }
 
+export function getNextSunday(fromDate: Date = new Date()): string {
+  const d = new Date(fromDate);
+  const day = d.getDay();
+  // 0 is Sunday
+  const diff = day === 0 ? 0 : 7 - day;
+  d.setDate(d.getDate() + diff);
+  return toYyyyMmDd(d);
+}
+
 export function formatMeetingDateForDisplay(value: unknown): string {
   if (typeof value === 'string') {
     return value;
