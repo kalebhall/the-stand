@@ -1,50 +1,12 @@
 import { redirect } from 'next/navigation';
+import Link from 'next/link';
 
-import { MembershipImportsClient } from './membership-imports-client';
 import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth/guards';
 import { canRunImports } from '@/src/auth/roles';
-import { pool } from '@/src/db/client';
-import { setDbContext } from '@/src/db/context';
-import { parseCallingsPdfText } from '@/src/imports/callings';
+import { buttonVariants } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
-type MemberRow = {
-  id: string;
-  full_name: string;
-  email: string | null;
-  phone: string | null;
-  age: number | null;
-  birthday: string | null;
-  gender: string | null;
-};
-
-type MemberNoteRow = {
-  id: string;
-  member_id: string;
-  note_text: string;
-  created_at: string;
-  created_by_email: string | null;
-};
-
-type CallingRow = {
-  id: string;
-  member_name: string;
-  birthday: string | null;
-  organization: string | null;
-  calling_name: string;
-  sustained_date: string | Date | null;
-  set_apart: boolean;
-  is_active: boolean;
-};
-
-type LatestCallingImportRow = {
-  id: string;
-  raw_text: string;
-  parsed_count: number;
-};
-
-const MAX_DRIFT_COMPARE_RAW_TEXT_CHARS = 250_000;
-
-export default async function ImportsPage() {
+export default async function ImportsHubPage() {
   const session = await requireAuthenticatedSession();
   enforcePasswordRotation(session);
 
@@ -52,106 +14,54 @@ export default async function ImportsPage() {
     redirect('/dashboard');
   }
 
-  const client = await pool.connect();
+  return (
+    <main className="mx-auto w-full max-w-4xl space-y-6 p-4 sm:p-6">
+      <div className="space-y-1">
+        <h1 className="text-2xl font-semibold tracking-tight">Imports & Sync</h1>
+        <p className="text-sm text-muted-foreground">
+          Import ward directory and calling records from LCR into The Stand using official file exports or the browser DOM extractor.
+        </p>
+      </div>
 
-  try {
-    await client.query('BEGIN');
-    await setDbContext(client, { userId: session.user.id, wardId: session.activeWardId });
-
-    const memberResult = await client.query(
-      `SELECT id, full_name, email, phone, age, birthday, gender
-         FROM member
-        WHERE ward_id = $1
-        ORDER BY full_name ASC`,
-      [session.activeWardId]
-    );
-
-    const noteResult = await client.query(
-      `SELECT mn.id, mn.member_id, mn.note_text, mn.created_at, ua.email AS created_by_email
-         FROM member_note mn
-         LEFT JOIN user_account ua ON ua.id = mn.created_by_user_id
-        WHERE mn.ward_id = $1
-        ORDER BY mn.created_at DESC
-        LIMIT 100`,
-      [session.activeWardId]
-    );
-
-    const callingResult = await client.query(
-      `SELECT id, member_name, birthday, organization, calling_name, sustained_date, set_apart, is_active
-         FROM calling_assignment
-        WHERE ward_id = $1
-        ORDER BY member_name ASC`,
-      [session.activeWardId]
-    );
-
-    const latestCallingImportResult = await client.query(
-      `SELECT id, raw_text, parsed_count
-         FROM import_run
-        WHERE ward_id = $1
-          AND import_type = 'CALLINGS'
-          AND committed = TRUE
-        ORDER BY created_at DESC
-        LIMIT 1`,
-      [session.activeWardId]
-    );
-
-    await client.query('COMMIT');
-
-    const currentActiveSet = new Set(
-      (callingResult.rows as CallingRow[])
-        .filter((row) => row.is_active)
-        .map((row) => `${row.member_name.toLowerCase()}::${(row.birthday ?? '').toLowerCase()}::${row.calling_name.toLowerCase()}`)
-    );
-
-    const latestImport = latestCallingImportResult.rows[0] as LatestCallingImportRow | undefined;
-
-    let driftCount = 0;
-    if (latestImport) {
-      if (latestImport.raw_text.length <= MAX_DRIFT_COMPARE_RAW_TEXT_CHARS) {
-        const latestImportSet = new Set(
-          parseCallingsPdfText(latestImport.raw_text).map(
-            (entry) => `${entry.memberName.toLowerCase()}::${entry.birthday.toLowerCase()}::${entry.callingName.toLowerCase()}`
-          )
-        );
-
-        driftCount =
-          Array.from(currentActiveSet).filter((key) => !latestImportSet.has(key)).length +
-          Array.from(latestImportSet).filter((key) => !currentActiveSet.has(key)).length;
-      } else {
-        driftCount = Math.abs(currentActiveSet.size - latestImport.parsed_count);
-      }
-    }
-
-    const normalizedCallingRows = (callingResult.rows as CallingRow[]).map((row) => ({
-      ...row,
-      sustained_date:
-        row.sustained_date instanceof Date ? row.sustained_date.toISOString().slice(0, 10) : (row.sustained_date ?? null)
-    }));
-
-    return (
-      <main className="mx-auto w-full max-w-6xl space-y-6 p-4 sm:p-6">
-        <section className="space-y-2">
-          <h1 className="text-2xl font-semibold tracking-tight">Imports</h1>
-          <p className="text-sm text-muted-foreground">Paste member and calling data exported from your ward administration tools, then maintain restricted member notes.</p>
+      <div className="grid gap-6 md:grid-cols-2">
+        <section className="flex flex-col justify-between rounded-lg border bg-card p-6 shadow-sm space-y-4">
+          <div className="space-y-2">
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <span>👤</span> Import Members
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Import the ward Member List from LCR (names, emails, phones, birthdays, ages).
+            </p>
+          </div>
+          <div className="pt-2 flex flex-wrap gap-2">
+            <Link href="/imports/members" className={cn(buttonVariants({ size: 'sm' }))}>
+              Open Member Importer →
+            </Link>
+            <Link href="/members" className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}>
+              View Members & Notes
+            </Link>
+          </div>
         </section>
 
-        <MembershipImportsClient
-          wardId={session.activeWardId}
-          members={memberResult.rows as MemberRow[]}
-          memberNotes={noteResult.rows as MemberNoteRow[]}
-          callingAssignments={normalizedCallingRows}
-          initialCallingDrift={{
-            isStale: driftCount > 0,
-            driftCount,
-            comparedToImportRunId: latestImport?.id ?? null
-          }}
-        />
-      </main>
-    );
-  } catch {
-    await client.query('ROLLBACK');
-    throw new Error('Failed to load imports');
-  } finally {
-    client.release();
-  }
+        <section className="flex flex-col justify-between rounded-lg border bg-card p-6 shadow-sm space-y-4">
+          <div className="space-y-2">
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <span>📋</span> Import Callings
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Import the Members with Callings report from LCR (organizations, callings, sustain dates, set apart statuses).
+            </p>
+          </div>
+          <div className="pt-2 flex flex-wrap gap-2">
+            <Link href="/imports/callings" className={cn(buttonVariants({ size: 'sm' }))}>
+              Open Callings Importer →
+            </Link>
+            <Link href="/callings" className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}>
+              View Callings
+            </Link>
+          </div>
+        </section>
+      </div>
+    </main>
+  );
 }

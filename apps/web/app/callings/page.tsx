@@ -3,7 +3,8 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
 import { AddCallingSection } from '@/components/AddCallingSection';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth/guards';
 import { canManageCallings, canViewCallings } from '@/src/auth/roles';
 import { canTransitionCallingStatus, type CallingStatus } from '@/src/callings/lifecycle';
@@ -243,11 +244,18 @@ export default async function CallingsPage() {
             <h1 className="text-2xl font-semibold tracking-tight">Callings</h1>
             <p className="text-sm text-muted-foreground">Track proposed → extended → sustained → set apart lifecycle.</p>
           </div>
-          {canManage ? (
-            <Link href="/callings/standard" className="shrink-0 text-sm text-muted-foreground underline-offset-4 hover:underline">
-              Manage Standard Callings
-            </Link>
-          ) : null}
+          <div className="flex items-center gap-2">
+            {canManage ? (
+              <Link href="/imports/callings" className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}>
+                Import Callings
+              </Link>
+            ) : null}
+            {canManage ? (
+              <Link href="/callings/standard" className="shrink-0 text-sm text-muted-foreground underline-offset-4 hover:underline">
+                Manage Standard Callings
+              </Link>
+            ) : null}
+          </div>
         </section>
 
         {canManage ? (
