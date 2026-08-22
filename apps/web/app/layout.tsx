@@ -2,7 +2,8 @@ import './globals.css';
 
 import type { ReactNode } from 'react';
 
-import { AppNavigation } from '@/components/app-navigation';
+import { AppShell } from '@/components/app-shell';
+import { ConductingModeProvider } from '@/components/conducting-mode-context';
 import { ThemeProvider } from '@/components/theme-provider';
 import { auth } from '@/src/auth/auth';
 import { ensureSupportAdminBootstrap } from '@/src/db/bootstrap-support-admin';
@@ -22,8 +23,13 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
           enableSystem
           disableTransitionOnChange
         >
-          {shouldShowNavigation ? <AppNavigation session={session} /> : null}
-          {children}
+          <ConductingModeProvider>
+            {shouldShowNavigation ? (
+              <AppShell session={session}>{children}</AppShell>
+            ) : (
+              children
+            )}
+          </ConductingModeProvider>
         </ThemeProvider>
       </body>
     </html>
