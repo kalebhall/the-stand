@@ -219,7 +219,7 @@ export default async function DashboardPage() {
             title="Last import summary"
             value={importSummaryValue}
             detail={importSummaryDetail}
-            actions={[{ href: '/imports', label: 'Import members' }, { href: '/imports', label: 'Import callings' }]}
+            actions={[{ href: '/imports/members', label: 'Import members' }, { href: '/imports/callings', label: 'Import callings' }]}
           />
         ) : null}
 
