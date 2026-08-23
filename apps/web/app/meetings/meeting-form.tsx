@@ -201,7 +201,12 @@ export function MeetingForm({
 
     if (!response.ok) {
       setPublishing(false);
-      setError('Unable to publish meeting.');
+      try {
+        const errBody = (await response.json()) as { error?: string; detail?: string };
+        setError(errBody.detail ?? errBody.error ?? 'Unable to publish meeting.');
+      } catch {
+        setError('Unable to publish meeting.');
+      }
       return;
     }
 
