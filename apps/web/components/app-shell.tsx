@@ -27,8 +27,8 @@ export function AppShell({
 
   const navItems = getNavigationItems(session.user.roles);
 
-  // Essential items for mobile bottom bar (max 4 + conducting trigger)
-  const mobileEssentialHrefs = ['/dashboard', '/meetings', '/callings', '/members'];
+  // Essential items for mobile bottom bar (max 5 + conducting trigger)
+  const mobileEssentialHrefs = ['/dashboard', '/meetings', '/announcements', '/callings', '/members'];
   const mobileNavItems = navItems.filter((item) => mobileEssentialHrefs.includes(item.href));
 
   // If conducting mode is active: hide persistent chrome, show floating FAB button
@@ -208,7 +208,7 @@ export function AppShell({
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  'flex flex-col items-center justify-center gap-1 rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
+                  'flex flex-col items-center justify-center gap-1 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors',
                   isActive
                     ? 'text-primary font-semibold'
                     : 'text-muted-foreground hover:text-foreground'
@@ -218,17 +218,6 @@ export function AppShell({
               </Link>
             );
           })}
-          <Link
-            href="/imports"
-            className={cn(
-              'flex flex-col items-center justify-center gap-1 rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
-              pathname?.startsWith('/imports')
-                ? 'text-primary font-semibold'
-                : 'text-muted-foreground hover:text-foreground'
-            )}
-          >
-            <span>Imports</span>
-          </Link>
         </nav>
       </div>
     </div>
