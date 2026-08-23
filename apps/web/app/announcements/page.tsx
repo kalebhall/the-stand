@@ -464,6 +464,7 @@ export default async function AnnouncementsPage({
       `SELECT id, calendar_feed_id, title, description, starts_at, ends_at, tags, copied_to_announcement_at
          FROM calendar_event_cache
         WHERE ward_id = $1::uuid
+          AND starts_at >= now()
         ORDER BY starts_at ASC
         LIMIT 100`,
       [session.activeWardId]
