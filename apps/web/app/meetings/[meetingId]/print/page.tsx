@@ -8,7 +8,7 @@ import { toYyyyMmDd } from '@/src/meetings/date';
 import { buildMeetingRenderHtml } from '@/src/meetings/render';
 
 type MeetingRow = {
-  meeting_date: string | Date;
+  meeting_date: string;
   meeting_type: string;
   status: string;
 };
@@ -24,8 +24,8 @@ type ProgramItemRow = {
 type AnnouncementRow = {
   title: string;
   body: string | null;
-  start_date: string | Date | null;
-  end_date: string | Date | null;
+  start_date: string | null;
+  end_date: string | null;
   is_permanent: boolean;
   placement: 'PROGRAM_TOP' | 'PROGRAM_BOTTOM';
   include_in_program: boolean;
