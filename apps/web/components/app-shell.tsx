@@ -128,7 +128,10 @@ export function AppShell({
                   href={item.href}
                   className={cn(
                     buttonVariants({ variant: isActive ? 'secondary' : 'ghost', size: 'sm' }),
-                    'w-full justify-start text-sm font-medium gap-2.5 px-3 py-2'
+                    'w-full justify-start text-sm font-medium gap-2.5 px-3 py-2',
+                    isActive
+                      ? 'bg-secondary text-secondary-foreground font-semibold'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
                   )}
                 >
                   {item.label}
