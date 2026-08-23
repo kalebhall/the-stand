@@ -204,6 +204,7 @@ flowchart LR
 | `web:config` | `path` | 1 |
 | `web:config` | `typescript-eslint` | 1 |
 | `web:config` | `vitest` | 1 |
+| `web:db` | `module` | 1 |
 | `web:db` | `pg` | 1 |
 | `web:hardening` | `vitest` | 1 |
 | `web:imports` | `@playwright/test` | 1 |
@@ -397,7 +398,7 @@ flowchart LR
 | `apps/web/src/callings/transition.ts` | `web:callings` | 1 | 1 |
 | `apps/web/src/db/bootstrap-support-admin.ts` | `web:db` | 3 | 1 |
 | `apps/web/src/db/bootstrap-support-admin.vitest.ts` | `web:db` | 1 | 1 |
-| `apps/web/src/db/client.ts` | `web:db` | 1 | 2 |
+| `apps/web/src/db/client.ts` | `web:db` | 1 | 3 |
 | `apps/web/src/db/context.ts` | `web:db` | 0 | 0 |
 | `apps/web/src/db/context.vitest.ts` | `web:db` | 1 | 1 |
 | `apps/web/src/db/schema.ts` | `web:db` | 0 | 1 |
