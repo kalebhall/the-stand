@@ -67,8 +67,7 @@ function toDateOnly(isoTimestamp: string | null): string | null {
 export async function pruneCalendarEventCache(client: PoolClient): Promise<number> {
   const pruned = await client.query(
     `DELETE FROM calendar_event_cache
-      WHERE ward_id = app.current_ward_id()
-        AND starts_at < now() - interval '7 days'`
+      WHERE starts_at < now() - interval '7 days'`
   );
 
   return pruned.rowCount ?? 0;
@@ -94,9 +93,14 @@ export async function refreshCalendarFeedsForWard(args: { wardId: string; userId
 
     for (const feed of feedsResult.rows as CalendarFeedRow[]) {
       try {
-        const response = await fetch(feed.feed_url, { cache: 'no-store' });
+        const response = await fetch(feed.feed_url, {
+          cache: 'no-store',
+          headers: {
+            'User-Agent': 'TheStand/1.0 (Church Calendar Feed Sync)'
+          }
+        });
         if (!response.ok) {
-          throw new Error(`Feed responded with ${response.status}`);
+          throw new Error(`Feed responded with HTTP ${response.status}`);
         }
 
         const icsBody = await response.text();
@@ -120,6 +124,7 @@ export async function refreshCalendarFeedsForWard(args: { wardId: string; userId
 
         summaries.push({ feedId: feed.id, imported });
       } catch (error) {
+        console.error('[Calendar Refresh Error]', feed.feed_url, error);
         await client.query(
           `UPDATE calendar_feed
               SET last_refreshed_at = now(),
@@ -144,9 +149,10 @@ export async function refreshCalendarFeedsForWard(args: { wardId: string; userId
 
     await client.query('COMMIT');
     return summaries;
-  } catch {
+  } catch (error) {
     await client.query('ROLLBACK');
-    throw new Error('Failed to refresh calendar feeds');
+    console.error('[Fatal Calendar Refresh Failure]', error);
+    throw new Error('Failed to refresh calendar feeds', { cause: error });
   } finally {
     client.release();
   }
