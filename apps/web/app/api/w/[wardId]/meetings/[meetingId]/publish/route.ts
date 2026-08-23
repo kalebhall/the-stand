@@ -158,7 +158,10 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
 
     await client.query('COMMIT');
 
-    await enqueueOutboxNotificationJob({ wardId, eventOutboxId });
+    // Fire-and-forget: enqueue notification without blocking the response
+    Promise.resolve(enqueueOutboxNotificationJob({ wardId, eventOutboxId })).catch((err) => {
+      console.error('[publish] Failed to enqueue notification job', err);
+    });
 
     return NextResponse.json({ success: true, meetingId, version: nextVersion, status: 'PUBLISHED' });
   } catch {

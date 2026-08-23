@@ -79,7 +79,9 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
 
     await client.query('COMMIT');
 
-    await enqueueOutboxNotificationJob({ wardId, eventOutboxId });
+    Promise.resolve(enqueueOutboxNotificationJob({ wardId, eventOutboxId })).catch((err) => {
+      console.error('[set-apart] Failed to enqueue notification job', err);
+    });
 
     return NextResponse.json({ id: callingId, status: CALLING_STATUS.SET_APART });
   } catch {

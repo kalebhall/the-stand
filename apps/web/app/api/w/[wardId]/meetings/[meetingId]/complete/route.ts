@@ -119,7 +119,9 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
     await client.query('COMMIT');
 
     for (const queuedEventOutboxId of notificationEventOutboxIds) {
-      await enqueueOutboxNotificationJob({ wardId, eventOutboxId: queuedEventOutboxId });
+      Promise.resolve(enqueueOutboxNotificationJob({ wardId, eventOutboxId: queuedEventOutboxId })).catch((err) => {
+        console.error('[complete] Failed to enqueue notification job', err);
+      });
     }
 
     return NextResponse.json({ success: true, meetingId, eventOutboxId, announcedBusinessLineCount: announcedBusinessLines.length });
