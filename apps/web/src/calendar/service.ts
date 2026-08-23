@@ -270,9 +270,10 @@ export async function copyCalendarEventToAnnouncement(args: { wardId: string; us
     await client.query('COMMIT');
 
     return inserted.rows[0].id as string;
-  } catch {
+  } catch (error) {
     await client.query('ROLLBACK');
-    throw new Error('Failed to copy calendar event to announcement');
+    console.error('[Fatal Copy Calendar Event Error]', error);
+    throw new Error('Failed to copy calendar event to announcement', { cause: error });
   } finally {
     client.release();
   }
