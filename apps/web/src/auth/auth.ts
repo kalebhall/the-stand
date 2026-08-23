@@ -4,7 +4,6 @@ import Google from 'next-auth/providers/google';
 
 import { chooseActiveWardId, type WardAccessAssignment } from '@/src/auth/support-access';
 import { verifyPassword } from '@/src/auth/password';
-import { refreshCalendarFeedsForWard } from '@/src/calendar/service';
 import { ensureSupportAdminBootstrap } from '@/src/db/bootstrap-support-admin';
 import { pool } from '@/src/db/client';
 import { enforceRateLimit } from '@/src/lib/rate-limit';
@@ -192,16 +191,6 @@ export const { auth, handlers } = NextAuth({
         await ensureUserAccountForGoogleLogin(email.toLowerCase(), displayName);
       }
 
-      const email = (user?.email ?? profile?.email ?? '').toLowerCase().trim();
-      if (email) {
-        const sessionUser = await loadSessionUserByEmail(email);
-        if (sessionUser?.activeWardId) {
-          await refreshCalendarFeedsForWard({ wardId: sessionUser.activeWardId, userId: sessionUser.id, reason: 'login' }).catch(() => {
-            return null;
-          });
-        }
-      }
-
       return true;
     },
     jwt: async ({ token, user, account }) => {
@@ -229,17 +218,8 @@ export const { auth, handlers } = NextAuth({
         return token;
       }
 
-      if (token.sub) {
-        const sessionUser = await loadSessionUserById(token.sub);
-        if (sessionUser) {
-          token.sub = sessionUser.id;
-          token.roles = sessionUser.roles;
-          token.mustChangePassword = sessionUser.mustChangePassword;
-          token.hasPassword = sessionUser.hasPassword;
-          token.activeWardId = sessionUser.activeWardId;
-        }
-      }
-
+      // Token already has roles baked in — no DB re-query on every request.
+      // Roles are refreshed on next sign-in.
       return token;
     },
     session: async ({ session, token }) => {
