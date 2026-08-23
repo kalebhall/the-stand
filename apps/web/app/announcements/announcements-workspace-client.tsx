@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { isAnnouncementActiveForDate } from '@/src/announcements/types';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 type Announcement = {
   id: string;
@@ -152,18 +153,22 @@ export function AnnouncementsWorkspaceClient({
               <div className="flex items-center gap-2">
                 {canManage && (
                   <form action={actions.refreshCalendar}>
-                    <Button type="submit" variant="outline" size="sm">
+                    <Button type="submit" variant="outline" size="sm" className="gap-1">
                       ↻ Sync
                     </Button>
                   </form>
                 )}
                 <Button
                   type="button"
-                  variant="ghost"
+                  variant="outline"
                   size="sm"
                   onClick={() => setFeedDrawerOpen(!feedDrawerOpen)}
+                  className={cn(
+                    'transition-colors',
+                    feedDrawerOpen ? 'bg-secondary text-secondary-foreground font-semibold' : ''
+                  )}
                 >
-                  {feedDrawerOpen ? 'Close Feeds' : 'Feeds (' + calendarFeeds.length + ')'}
+                  {feedDrawerOpen ? 'Close Feeds' : `Feeds (${calendarFeeds.length})`}
                 </Button>
               </div>
             </div>
