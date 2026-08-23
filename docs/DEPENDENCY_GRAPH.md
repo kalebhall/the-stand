@@ -59,7 +59,6 @@ flowchart LR
   A6 -->|1| A16
   A6 -->|1| A18
   A6 -->|1| A19
-  A7 -->|1| A9
   A7 -->|1| A16
   A11 -->|1| A8
   A11 -->|1| A14
@@ -141,7 +140,6 @@ flowchart LR
 | `web:app` | `web:lib` | 1 |
 | `web:app` | `web:notifications` | 1 |
 | `web:app` | `web:stand` | 1 |
-| `web:auth` | `web:calendar` | 1 |
 | `web:auth` | `web:lib` | 1 |
 | `web:config` | `web:bootstrap.mjs` | 1 |
 | `web:config` | `web:health.mjs` | 1 |
@@ -377,7 +375,7 @@ flowchart LR
 | `apps/web/server.mjs` | `web:config` | 2 | 1 |
 | `apps/web/src/announcements/types.ts` | `web:announcements` | 0 | 0 |
 | `apps/web/src/announcements/types.vitest.ts` | `web:announcements` | 1 | 1 |
-| `apps/web/src/auth/auth.ts` | `web:auth` | 6 | 3 |
+| `apps/web/src/auth/auth.ts` | `web:auth` | 5 | 3 |
 | `apps/web/src/auth/guards.ts` | `web:auth` | 1 | 2 |
 | `apps/web/src/auth/navigation.ts` | `web:auth` | 1 | 0 |
 | `apps/web/src/auth/navigation.vitest.ts` | `web:auth` | 1 | 1 |
