@@ -38,7 +38,8 @@ function parseIcsDate(value: string): { iso: string; allDay: boolean } | null {
     return { iso: date.toISOString(), allDay: true };
   }
 
-  if (/^\d{8}T\d{6}Z$/.test(trimmed)) {
+  // YYYYMMDDTHHMMSSZ (UTC format)
+  if (/^\d{8}T\d{6}Z$/i.test(trimmed)) {
     const yyyy = Number(trimmed.slice(0, 4));
     const mm = Number(trimmed.slice(4, 6));
     const dd = Number(trimmed.slice(6, 8));
@@ -46,6 +47,19 @@ function parseIcsDate(value: string): { iso: string; allDay: boolean } | null {
     const min = Number(trimmed.slice(11, 13));
     const sec = Number(trimmed.slice(13, 15));
     const date = new Date(Date.UTC(yyyy, mm - 1, dd, hh, min, sec));
+    return { iso: date.toISOString(), allDay: false };
+  }
+
+  // YYYYMMDDTHHMMSS (Local / floating time format common in Church ICS feeds)
+  // Treat as local wall-clock time — do NOT use Date.UTC here.
+  if (/^\d{8}T\d{6}$/i.test(trimmed)) {
+    const yyyy = Number(trimmed.slice(0, 4));
+    const mm = Number(trimmed.slice(4, 6));
+    const dd = Number(trimmed.slice(6, 8));
+    const hh = Number(trimmed.slice(9, 11));
+    const min = Number(trimmed.slice(11, 13));
+    const sec = Number(trimmed.slice(13, 15));
+    const date = new Date(yyyy, mm - 1, dd, hh, min, sec);
     return { iso: date.toISOString(), allDay: false };
   }
 
