@@ -4,10 +4,11 @@ import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth
 import { canViewMeetings } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
+import { toYyyyMmDd } from '@/src/meetings/date';
 import { buildMeetingRenderHtml } from '@/src/meetings/render';
 
 type MeetingRow = {
-  meeting_date: string;
+  meeting_date: string | Date;
   meeting_type: string;
   status: string;
 };
@@ -23,10 +24,11 @@ type ProgramItemRow = {
 type AnnouncementRow = {
   title: string;
   body: string | null;
-  start_date: string | null;
-  end_date: string | null;
+  start_date: string | Date | null;
+  end_date: string | Date | null;
   is_permanent: boolean;
   placement: 'PROGRAM_TOP' | 'PROGRAM_BOTTOM';
+  include_in_program: boolean;
 };
 
 type RenderRow = {
@@ -58,10 +60,10 @@ export default async function PrintMeetingPage({
     await client.query('BEGIN');
     await setDbContext(client, { userId: session.user.id, wardId: session.activeWardId });
 
-    const meetingResult = await client.query('SELECT meeting_date, meeting_type, status FROM meeting WHERE id = $1 AND ward_id = $2 LIMIT 1', [
-      meetingId,
-      session.activeWardId
-    ]);
+    const meetingResult = await client.query(
+      'SELECT meeting_date, meeting_type, status FROM meeting WHERE id = $1::uuid AND ward_id = $2::uuid LIMIT 1',
+      [meetingId, session.activeWardId]
+    );
 
     if (!meetingResult.rowCount) {
       await client.query('ROLLBACK');
@@ -69,13 +71,12 @@ export default async function PrintMeetingPage({
     }
 
     const renderResult = requestedVersion
-      ? await client.query('SELECT render_html, version FROM meeting_program_render WHERE meeting_id = $1 AND ward_id = $2 AND version = $3 LIMIT 1', [
-          meetingId,
-          session.activeWardId,
-          requestedVersion
-        ])
+      ? await client.query(
+          'SELECT render_html, version FROM meeting_program_render WHERE meeting_id = $1::uuid AND ward_id = $2::uuid AND version = $3::int LIMIT 1',
+          [meetingId, session.activeWardId, requestedVersion]
+        )
       : await client.query(
-          'SELECT render_html, version FROM meeting_program_render WHERE meeting_id = $1 AND ward_id = $2 ORDER BY version DESC LIMIT 1',
+          'SELECT render_html, version FROM meeting_program_render WHERE meeting_id = $1::uuid AND ward_id = $2::uuid ORDER BY version DESC LIMIT 1',
           [meetingId, session.activeWardId]
         );
 
@@ -91,11 +92,13 @@ export default async function PrintMeetingPage({
     }
 
     const meeting = meetingResult.rows[0] as MeetingRow;
+    // pg returns `date` columns as JS Date objects — normalise to YYYY-MM-DD string
+    const meetingDate = toYyyyMmDd(meeting.meeting_date);
 
     const programResult = await client.query(
       `SELECT item_type, title, notes, hymn_number, hymn_title
          FROM meeting_program_item
-        WHERE meeting_id = $1 AND ward_id = $2
+        WHERE meeting_id = $1::uuid AND ward_id = $2::uuid
         ORDER BY sequence ASC`,
       [meetingId, session.activeWardId]
     );
@@ -103,13 +106,13 @@ export default async function PrintMeetingPage({
     const announcementResult = await client.query(
       `SELECT title, body, start_date, end_date, is_permanent, placement, include_in_program
          FROM announcement
-        WHERE ward_id = $1
+        WHERE ward_id = $1::uuid
         ORDER BY created_at DESC`,
       [session.activeWardId]
     );
 
     const renderHtml = buildMeetingRenderHtml({
-      meetingDate: meeting.meeting_date,
+      meetingDate,
       meetingType: meeting.meeting_type,
       programItems: (programResult.rows as ProgramItemRow[]).map((item) => ({
         itemType: item.item_type,
@@ -118,11 +121,11 @@ export default async function PrintMeetingPage({
         hymnNumber: item.hymn_number,
         hymnTitle: item.hymn_title
       })),
-      announcements: (announcementResult.rows as (AnnouncementRow & { include_in_program: boolean })[]).map((item) => ({
+      announcements: (announcementResult.rows as AnnouncementRow[]).map((item) => ({
         title: item.title,
         body: item.body,
-        startDate: item.start_date,
-        endDate: item.end_date,
+        startDate: toYyyyMmDd(item.start_date) || null,
+        endDate: toYyyyMmDd(item.end_date) || null,
         isPermanent: item.is_permanent,
         placement: item.placement,
         includeInProgram: item.include_in_program
@@ -139,9 +142,10 @@ export default async function PrintMeetingPage({
         ) : null}
       </>
     );
-  } catch {
+  } catch (error) {
     await client.query('ROLLBACK');
-    throw new Error('Failed to load print view');
+    console.error('[Fatal Print View Error]', error);
+    throw new Error('Failed to load print view', { cause: error });
   } finally {
     client.release();
   }

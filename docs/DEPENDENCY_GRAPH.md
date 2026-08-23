@@ -39,8 +39,8 @@ flowchart LR
   A6 -->|59| A7
   A6 -->|36| A12
   A5 -->|8| A15
+  A6 -->|8| A17
   A5 -->|7| A10
-  A6 -->|7| A17
   A5 -->|6| A16
   A5 -->|4| A18
   A5 -->|3| A17
@@ -111,9 +111,9 @@ flowchart LR
 | `web:ui` | `web:ui` | 12 |
 | `web:api` | `web:api` | 10 |
 | `web:api` | `web:imports` | 8 |
+| `web:app` | `web:meetings` | 8 |
 | `web:auth` | `web:auth` | 8 |
 | `web:api` | `web:callings` | 7 |
-| `web:app` | `web:meetings` | 7 |
 | `web:imports` | `web:imports` | 7 |
 | `web:api` | `web:lib` | 6 |
 | `web:api` | `web:notifications` | 4 |
@@ -305,7 +305,7 @@ flowchart LR
 | `apps/web/app/logout/logout-form.tsx` | `web:app` | 2 | 2 |
 | `apps/web/app/logout/page.tsx` | `web:app` | 2 | 0 |
 | `apps/web/app/meetings/[meetingId]/edit/page.tsx` | `web:app` | 7 | 2 |
-| `apps/web/app/meetings/[meetingId]/print/page.tsx` | `web:app` | 5 | 1 |
+| `apps/web/app/meetings/[meetingId]/print/page.tsx` | `web:app` | 6 | 1 |
 | `apps/web/app/meetings/error.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/meetings/loading.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/meetings/meeting-form.tsx` | `web:app` | 6 | 2 |
