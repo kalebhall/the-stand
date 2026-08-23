@@ -12,7 +12,14 @@ function getPool(): Pool {
     if (!connectionString) {
       throw new Error('DATABASE_URL is required');
     }
-    _pool = new Pool({ connectionString });
+    _pool = new Pool({
+      connectionString,
+      // Fail fast if the pool is exhausted instead of hanging the server
+      connectionTimeoutMillis: 5000,
+      // Release idle connections after 30s
+      idleTimeoutMillis: 30000,
+      max: 10
+    });
   }
   return _pool;
 }

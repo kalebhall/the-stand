@@ -9,6 +9,7 @@ import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { getNavigationItems } from '@/src/auth/navigation';
 import { useConductingMode } from '@/components/conducting-mode-context';
+import { DeploymentWatcher } from '@/components/deployment-watcher';
 
 export function AppShell({
   session,
@@ -141,6 +142,9 @@ export function AppShell({
           </nav>
 
           <div className="space-y-3 pt-4 border-t">
+            {/* Deployment update watcher */}
+            <DeploymentWatcher />
+
             {/* Stand Conducting Mode Trigger Button */}
             <button
               type="button"

@@ -1,18 +1,15 @@
 import { NextResponse } from 'next/server';
 
-import { healthResponseSchema } from '@the-stand/shared';
-
 import { pool } from '@/src/db/client';
 import { APP_VERSION } from '@/src/lib/version';
 
 export async function GET() {
   await pool.query('SELECT 1');
 
-  const body = healthResponseSchema.parse({
+  return NextResponse.json({
     status: 'ok',
     db: 'connected',
-    version: APP_VERSION
+    version: APP_VERSION,
+    buildId: process.env.NEXT_PUBLIC_BUILD_ID ?? 'unknown'
   });
-
-  return NextResponse.json(body);
 }
