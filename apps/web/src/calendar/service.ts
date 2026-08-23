@@ -56,9 +56,13 @@ function resolveTagRule(feed: CalendarFeedRow, eventTags: string[]): TagMapRule 
   return {};
 }
 
-function toDateOnly(isoTimestamp: string | null): string | null {
+function toDateOnly(isoTimestamp: string | Date | null): string | null {
   if (!isoTimestamp) {
     return null;
+  }
+
+  if (isoTimestamp instanceof Date) {
+    return isoTimestamp.toISOString().slice(0, 10);
   }
 
   return isoTimestamp.slice(0, 10);
