@@ -30,7 +30,6 @@ function parseIcsDate(value: string): { iso: string; allDay: boolean } | null {
   const trimmed = value.trim();
   if (!trimmed) return null;
 
-  // YYYYMMDD (all day date format)
   if (/^\d{8}$/.test(trimmed)) {
     const yyyy = Number(trimmed.slice(0, 4));
     const mm = Number(trimmed.slice(4, 6));
