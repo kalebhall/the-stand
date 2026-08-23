@@ -83,7 +83,7 @@ export async function refreshCalendarFeedsForWard(args: { wardId: string; userId
     const feedsResult = await client.query(
       `SELECT id, ward_id, display_name, feed_scope, feed_url, tag_map
          FROM calendar_feed
-        WHERE ward_id = $1
+        WHERE ward_id = $1::uuid
           AND is_active = true
         ORDER BY created_at ASC`,
       [args.wardId]
@@ -117,8 +117,8 @@ export async function refreshCalendarFeedsForWard(args: { wardId: string; userId
               SET last_refreshed_at = now(),
                   last_refresh_status = 'SUCCESS',
                   last_refresh_error = NULL
-            WHERE id = $1
-              AND ward_id = $2`,
+            WHERE id = $1::uuid
+              AND ward_id = $2::uuid`,
           [feed.id, args.wardId]
         );
 
@@ -129,9 +129,9 @@ export async function refreshCalendarFeedsForWard(args: { wardId: string; userId
           `UPDATE calendar_feed
               SET last_refreshed_at = now(),
                   last_refresh_status = 'ERROR',
-                  last_refresh_error = $3
-            WHERE id = $1
-              AND ward_id = $2`,
+                  last_refresh_error = $3::text
+            WHERE id = $1::uuid
+              AND ward_id = $2::uuid`,
           [feed.id, args.wardId, error instanceof Error ? error.message.slice(0, 500) : 'Unknown refresh error']
         );
       }
@@ -142,7 +142,7 @@ export async function refreshCalendarFeedsForWard(args: { wardId: string; userId
     if (args.reason === 'manual') {
       await client.query(
         `INSERT INTO audit_log (ward_id, user_id, action, details)
-         VALUES ($1, $2, 'CALENDAR_REFRESH_MANUAL', jsonb_build_object('feedsProcessed', $3))`,
+         VALUES ($1::uuid, $2::uuid, 'CALENDAR_REFRESH_MANUAL', jsonb_build_object('feedsProcessed', $3::int))`,
         [args.wardId, args.userId, summaries.length]
       );
     }
@@ -177,7 +177,7 @@ async function upsertCachedEvent(
        source_updated_at,
        imported_at
      )
-     VALUES ($1, $2, $3, $4, $5, $6, $7::timestamptz, $8::timestamptz, $9, $10::text[], $11::timestamptz, now())
+     VALUES ($1::uuid, $2::uuid, $3::text, $4::text, $5::text, $6::text, $7::timestamptz, $8::timestamptz, $9::boolean, $10::text[], $11::timestamptz, now())
      ON CONFLICT (ward_id, calendar_feed_id, external_uid, starts_at)
      DO UPDATE SET
        title = EXCLUDED.title,
@@ -222,8 +222,8 @@ export async function copyCalendarEventToAnnouncement(args: { wardId: string; us
               cf.tag_map
          FROM calendar_event_cache ec
          INNER JOIN calendar_feed cf ON cf.id = ec.calendar_feed_id
-        WHERE ec.id = $1
-          AND ec.ward_id = $2
+        WHERE ec.id = $1::uuid
+          AND ec.ward_id = $2::uuid
         LIMIT 1`,
       [args.calendarEventCacheId, args.wardId]
     );
@@ -250,7 +250,7 @@ export async function copyCalendarEventToAnnouncement(args: { wardId: string; us
 
     const inserted = await client.query(
       `INSERT INTO announcement (ward_id, title, body, start_date, end_date, is_permanent, placement, include_in_program, include_in_stand)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       VALUES ($1::uuid, $2::text, $3::text, $4::date, $5::date, $6::boolean, $7::text, $8::boolean, $9::boolean)
        RETURNING id`,
       [
         args.wardId,
@@ -265,11 +265,11 @@ export async function copyCalendarEventToAnnouncement(args: { wardId: string; us
       ]
     );
 
-    await client.query('UPDATE calendar_event_cache SET copied_to_announcement_at = now() WHERE id = $1 AND ward_id = $2', [event.id, args.wardId]);
+    await client.query('UPDATE calendar_event_cache SET copied_to_announcement_at = now() WHERE id = $1::uuid AND ward_id = $2::uuid', [event.id, args.wardId]);
 
     await client.query(
       `INSERT INTO audit_log (ward_id, user_id, action, details)
-       VALUES ($1, $2, 'CALENDAR_EVENT_COPIED_TO_ANNOUNCEMENT', jsonb_build_object('calendarEventCacheId', $3, 'announcementId', $4))`,
+       VALUES ($1::uuid, $2::uuid, 'CALENDAR_EVENT_COPIED_TO_ANNOUNCEMENT', jsonb_build_object('calendarEventCacheId', $3::text, 'announcementId', $4::text))`,
       [args.wardId, args.userId, event.id, inserted.rows[0].id]
     );
 
