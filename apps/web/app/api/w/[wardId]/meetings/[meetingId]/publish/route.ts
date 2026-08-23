@@ -55,7 +55,7 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
     const meetingResult = await client.query(
       `SELECT id, meeting_date, meeting_type
          FROM meeting
-        WHERE id = $1 AND ward_id = $2
+        WHERE id = $1::uuid AND ward_id = $2::uuid
         LIMIT 1
         FOR UPDATE`,
       [meetingId, wardId]
@@ -69,7 +69,7 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
     const programResult = await client.query(
       `SELECT item_type, title, notes, hymn_number, hymn_title
          FROM meeting_program_item
-        WHERE meeting_id = $1 AND ward_id = $2
+        WHERE meeting_id = $1::uuid AND ward_id = $2::uuid
         ORDER BY sequence ASC`,
       [meetingId, wardId]
     );
@@ -77,12 +77,12 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
     const announcementResult = await client.query(
       `SELECT title, body, start_date, end_date, is_permanent, placement, include_in_program
          FROM announcement
-        WHERE ward_id = $1
+        WHERE ward_id = $1::uuid
         ORDER BY created_at DESC`,
       [wardId]
     );
 
-    const versionResult = await client.query('SELECT COALESCE(MAX(version), 0)::int AS latest_version FROM meeting_program_render WHERE meeting_id = $1', [meetingId]);
+    const versionResult = await client.query('SELECT COALESCE(MAX(version), 0)::int AS latest_version FROM meeting_program_render WHERE meeting_id = $1::uuid', [meetingId]);
 
     const nextVersion = Number(versionResult.rows[0].latest_version) + 1;
     const meeting = meetingResult.rows[0] as MeetingRow;
@@ -111,7 +111,7 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
 
     await client.query(
       `INSERT INTO meeting_program_render (ward_id, meeting_id, version, render_html)
-       VALUES ($1, $2, $3, $4)`,
+       VALUES ($1::uuid, $2::uuid, $3::int, $4::text)`,
       [wardId, meetingId, nextVersion, renderHtml]
     );
 
@@ -119,20 +119,20 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
       `UPDATE meeting
           SET status = 'PUBLISHED',
               updated_at = now()
-        WHERE id = $1 AND ward_id = $2`,
+        WHERE id = $1::uuid AND ward_id = $2::uuid`,
       [meetingId, wardId]
     );
 
     await client.query(
       `INSERT INTO public_program_share (ward_id, meeting_id, token)
-       VALUES ($1, $2, $3)
+       VALUES ($1::uuid, $2::uuid, $3::text)
        ON CONFLICT (meeting_id) DO NOTHING`,
       [wardId, meetingId, generatePublicToken()]
     );
 
     await client.query(
       `INSERT INTO public_program_portal (ward_id, token)
-       VALUES ($1, $2)
+       VALUES ($1::uuid, $2::text)
        ON CONFLICT (ward_id) DO NOTHING`,
       [wardId, generatePublicToken()]
     );
@@ -141,13 +141,13 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
 
     await client.query(
       `INSERT INTO audit_log (ward_id, user_id, action, details)
-       VALUES ($1, $2, $3, jsonb_build_object('meetingId', $4, 'version', $5))`,
+       VALUES ($1::uuid, $2::uuid, $3::text, jsonb_build_object('meetingId', $4::text, 'version', $5::int))`,
       [wardId, session.user.id, eventType, meetingId, nextVersion]
     );
 
     const outboxResult = await client.query(
       `INSERT INTO event_outbox (ward_id, aggregate_type, aggregate_id, event_type, payload)
-       VALUES ($1, 'meeting', $2, $3, $4::jsonb)
+       VALUES ($1::uuid, 'meeting', $2::uuid, $3::text, $4::jsonb)
        ON CONFLICT (ward_id, event_type, aggregate_id)
        DO UPDATE SET payload = EXCLUDED.payload, updated_at = now(), status = 'pending'
        RETURNING id`,
@@ -164,9 +164,11 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
     });
 
     return NextResponse.json({ success: true, meetingId, version: nextVersion, status: 'PUBLISHED' });
-  } catch {
+  } catch (error) {
     await client.query('ROLLBACK');
-    return NextResponse.json({ error: 'Failed to publish meeting', code: 'INTERNAL_ERROR' }, { status: 500 });
+    console.error('[publish] Failed to publish meeting', error);
+    const message = error instanceof Error ? error.message : String(error);
+    return NextResponse.json({ error: 'Failed to publish meeting', code: 'INTERNAL_ERROR', detail: message }, { status: 500 });
   } finally {
     client.release();
   }
