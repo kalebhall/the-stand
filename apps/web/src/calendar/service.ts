@@ -254,7 +254,9 @@ export async function copyCalendarEventToAnnouncement(args: { wardId: string; us
         args.wardId,
         event.title,
         event.description,
-        isPermanent ? null : toDateOnly(event.starts_at),
+        // start_date is null so the announcement is active immediately.
+        // end_date is the event date so it expires after the event passes.
+        null,
         isPermanent ? null : toDateOnly(event.ends_at) ?? toDateOnly(event.starts_at),
         isPermanent,
         placement,
