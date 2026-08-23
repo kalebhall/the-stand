@@ -31,7 +31,7 @@ flowchart LR
   A19["web:stand<br/>2 files"]
   A20["web:tooling<br/>2 files"]
   A21["web:types<br/>2 files"]
-  A22["web:ui<br/>13 files"]
+  A22["web:ui<br/>14 files"]
   A23["web:version.mjs<br/>1 files"]
   A5 -->|69| A7
   A6 -->|63| A22
@@ -95,7 +95,7 @@ flowchart LR
 | `web:stand` | 2 |
 | `web:tooling` | 2 |
 | `web:types` | 2 |
-| `web:ui` | 13 |
+| `web:ui` | 14 |
 | `web:version.mjs` | 1 |
 
 ## Internal dependencies
@@ -108,7 +108,7 @@ flowchart LR
 | `web:app` | `web:auth` | 59 |
 | `web:app` | `web:db` | 36 |
 | `web:app` | `web:app` | 28 |
-| `web:ui` | `web:ui` | 11 |
+| `web:ui` | `web:ui` | 12 |
 | `web:api` | `web:api` | 10 |
 | `web:api` | `web:imports` | 8 |
 | `web:auth` | `web:auth` | 8 |
@@ -160,8 +160,8 @@ flowchart LR
 | `web:api` | `next` | 38 |
 | `web:app` | `react` | 16 |
 | `root:tooling` | `Node.js` | 12 |
+| `web:ui` | `react` | 11 |
 | `web:api` | `vitest` | 10 |
-| `web:ui` | `react` | 10 |
 | `web:auth` | `next-auth` | 6 |
 | `web:app` | `vitest` | 4 |
 | `web:auth` | `vitest` | 4 |
@@ -172,7 +172,6 @@ flowchart LR
 | `web:meetings` | `vitest` | 3 |
 | `package:shared` | `vitest` | 2 |
 | `root:other` | `Node.js` | 2 |
-| `web:api` | `@the-stand/shared` | 2 |
 | `web:api` | `Node.js` | 2 |
 | `web:api` | `pg` | 2 |
 | `web:app` | `next-auth` | 2 |
@@ -187,6 +186,7 @@ flowchart LR
 | `web:tooling` | `pg` | 2 |
 | `package:shared` | `zod` | 1 |
 | `web:announcements` | `vitest` | 1 |
+| `web:api` | `@the-stand/shared` | 1 |
 | `web:api` | `zod` | 1 |
 | `web:app` | `Node.js` | 1 |
 | `web:app` | `next-themes` | 1 |
@@ -197,6 +197,7 @@ flowchart LR
 | `web:calendar` | `vitest` | 1 |
 | `web:callings` | `pg` | 1 |
 | `web:callings` | `vitest` | 1 |
+| `web:config` | `child_process` | 1 |
 | `web:config` | `drizzle-kit` | 1 |
 | `web:config` | `fs` | 1 |
 | `web:config` | `next` | 1 |
@@ -233,7 +234,7 @@ flowchart LR
 | `apps/web/app/announcements/page.tsx` | `web:app` | 7 | 2 |
 | `apps/web/app/api/account/change-password/route.ts` | `web:api` | 4 | 1 |
 | `apps/web/app/api/auth/[...nextauth]/route.ts` | `web:api` | 1 | 0 |
-| `apps/web/app/api/health/route.ts` | `web:api` | 2 | 2 |
+| `apps/web/app/api/health/route.ts` | `web:api` | 2 | 1 |
 | `apps/web/app/api/hymns/route.ts` | `web:api` | 2 | 1 |
 | `apps/web/app/api/me/route.ts` | `web:api` | 2 | 2 |
 | `apps/web/app/api/public/access-requests/route.ts` | `web:api` | 2 | 2 |
@@ -352,8 +353,9 @@ flowchart LR
 | `apps/web/components/HymnAutocomplete.tsx` | `web:ui` | 0 | 1 |
 | `apps/web/components/StandardCallingsManager.tsx` | `web:ui` | 1 | 2 |
 | `apps/web/components/app-navigation.tsx` | `web:ui` | 1 | 0 |
-| `apps/web/components/app-shell.tsx` | `web:ui` | 4 | 4 |
+| `apps/web/components/app-shell.tsx` | `web:ui` | 5 | 4 |
 | `apps/web/components/conducting-mode-context.tsx` | `web:ui` | 0 | 1 |
+| `apps/web/components/deployment-watcher.tsx` | `web:ui` | 0 | 1 |
 | `apps/web/components/lcr-extractor-instructions.tsx` | `web:ui` | 2 | 1 |
 | `apps/web/components/theme-provider.tsx` | `web:ui` | 0 | 2 |
 | `apps/web/components/ui/button.tsx` | `web:ui` | 1 | 2 |
@@ -366,7 +368,7 @@ flowchart LR
 | `apps/web/instrumentation.ts` | `web:config` | 1 | 0 |
 | `apps/web/lib/utils.ts` | `web:ui` | 0 | 2 |
 | `apps/web/next-env.d.ts` | `web:config` | 0 | 0 |
-| `apps/web/next.config.ts` | `web:config` | 0 | 3 |
+| `apps/web/next.config.ts` | `web:config` | 0 | 4 |
 | `apps/web/playwright.config.ts` | `web:config` | 0 | 1 |
 | `apps/web/postcss.config.mjs` | `web:config` | 0 | 0 |
 | `apps/web/scripts/migrate.mjs` | `web:tooling` | 0 | 3 |
