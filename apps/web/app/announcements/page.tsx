@@ -99,14 +99,14 @@ export default async function AnnouncementsPage({
 
       const inserted = await client.query(
         `INSERT INTO announcement (ward_id, title, body, start_date, end_date, is_permanent, placement, include_in_program, include_in_stand)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+         VALUES ($1::uuid, $2::text, $3::text, $4::date, $5::date, $6::boolean, $7::text, $8::boolean, $9::boolean)
          RETURNING id`,
         [actionSession.activeWardId, title, body || null, startDate, endDate, isPermanent, placement, includeInProgram, includeInStand]
       );
 
       await client.query(
         `INSERT INTO audit_log (ward_id, user_id, action, details)
-         VALUES ($1, $2, 'ANNOUNCEMENT_CREATED', jsonb_build_object('announcementId', $3, 'title', $4, 'placement', $5, 'isPermanent', $6, 'includeInProgram', $7, 'includeInStand', $8))`,
+         VALUES ($1::uuid, $2::uuid, 'ANNOUNCEMENT_CREATED', jsonb_build_object('announcementId', $3::text, 'title', $4::text, 'placement', $5::text, 'isPermanent', $6::boolean, 'includeInProgram', $7::boolean, 'includeInStand', $8::boolean))`,
         [actionSession.activeWardId, actionSession.user.id, inserted.rows[0].id, title, placement, isPermanent, includeInProgram, includeInStand]
       );
 
@@ -160,21 +160,21 @@ export default async function AnnouncementsPage({
 
       await client.query(
         `UPDATE announcement
-            SET title = $1,
-                body = $2,
-                start_date = $3,
-                end_date = $4,
-                is_permanent = $5,
-                placement = $6,
-                include_in_program = $7,
-                include_in_stand = $8
-          WHERE id = $9 AND ward_id = $10`,
+            SET title = $1::text,
+                body = $2::text,
+                start_date = $3::date,
+                end_date = $4::date,
+                is_permanent = $5::boolean,
+                placement = $6::text,
+                include_in_program = $7::boolean,
+                include_in_stand = $8::boolean
+          WHERE id = $9::uuid AND ward_id = $10::uuid`,
         [title, body || null, startDate, endDate, isPermanent, placement, includeInProgram, includeInStand, announcementId, actionSession.activeWardId]
       );
 
       await client.query(
         `INSERT INTO audit_log (ward_id, user_id, action, details)
-         VALUES ($1, $2, 'ANNOUNCEMENT_UPDATED', jsonb_build_object('announcementId', $3, 'title', $4, 'placement', $5, 'isPermanent', $6, 'includeInProgram', $7, 'includeInStand', $8))`,
+         VALUES ($1::uuid, $2::uuid, 'ANNOUNCEMENT_UPDATED', jsonb_build_object('announcementId', $3::text, 'title', $4::text, 'placement', $5::text, 'isPermanent', $6::boolean, 'includeInProgram', $7::boolean, 'includeInStand', $8::boolean))`,
         [actionSession.activeWardId, actionSession.user.id, announcementId, title, placement, isPermanent, includeInProgram, includeInStand]
       );
 
@@ -214,7 +214,7 @@ export default async function AnnouncementsPage({
       await client.query('BEGIN');
       await setDbContext(client, { userId: actionSession.user.id, wardId: actionSession.activeWardId });
 
-      const deleted = await client.query('DELETE FROM announcement WHERE id = $1 AND ward_id = $2 RETURNING id, title', [
+      const deleted = await client.query('DELETE FROM announcement WHERE id = $1::uuid AND ward_id = $2::uuid RETURNING id, title', [
         announcementId,
         actionSession.activeWardId
       ]);
@@ -222,7 +222,7 @@ export default async function AnnouncementsPage({
       if (deleted.rowCount) {
         await client.query(
           `INSERT INTO audit_log (ward_id, user_id, action, details)
-           VALUES ($1, $2, 'ANNOUNCEMENT_DELETED', jsonb_build_object('announcementId', $3, 'title', $4))`,
+           VALUES ($1::uuid, $2::uuid, 'ANNOUNCEMENT_DELETED', jsonb_build_object('announcementId', $3::text, 'title', $4::text))`,
           [actionSession.activeWardId, actionSession.user.id, announcementId, deleted.rows[0].title]
         );
       }
@@ -257,11 +257,16 @@ export default async function AnnouncementsPage({
       redirect(`/announcements?sunday=${targetSunday}`);
     }
 
-    await copyCalendarEventToAnnouncement({
-      wardId: actionSession.activeWardId,
-      userId: actionSession.user.id,
-      calendarEventCacheId
-    });
+    try {
+      await copyCalendarEventToAnnouncement({
+        wardId: actionSession.activeWardId,
+        userId: actionSession.user.id,
+        calendarEventCacheId
+      });
+    } catch (error) {
+      console.error('[Action copyCalendarEvent Error]', error);
+      throw new Error('Failed to copy calendar event to announcement');
+    }
 
     revalidatePath('/announcements');
   }
@@ -280,7 +285,12 @@ export default async function AnnouncementsPage({
       redirect('/announcements');
     }
 
-    await refreshCalendarFeedsForWard({ wardId: actionSession.activeWardId, userId: actionSession.user.id, reason: 'manual' });
+    try {
+      await refreshCalendarFeedsForWard({ wardId: actionSession.activeWardId, userId: actionSession.user.id, reason: 'manual' });
+    } catch (error) {
+      console.error('[Action refreshCalendar Error]', error);
+      throw new Error('Failed to refresh calendar feeds');
+    }
     revalidatePath('/announcements');
   }
 
@@ -359,7 +369,7 @@ export default async function AnnouncementsPage({
 
       await client.query(
         `INSERT INTO audit_log (ward_id, user_id, action, details)
-         VALUES ($1, $2, $3, $4::jsonb)`,
+         VALUES ($1::uuid, $2::uuid, $3::text, $4::jsonb)`,
         [
           actionSession.activeWardId,
           actionSession.user.id,
@@ -405,14 +415,14 @@ export default async function AnnouncementsPage({
       await setDbContext(client, { userId: actionSession.user.id, wardId: actionSession.activeWardId });
 
       const deleted = await client.query(
-        'DELETE FROM calendar_feed WHERE id = $1 AND ward_id = $2 RETURNING display_name',
+        'DELETE FROM calendar_feed WHERE id = $1::uuid AND ward_id = $2::uuid RETURNING display_name',
         [feedId, actionSession.activeWardId]
       );
 
       if (deleted.rowCount) {
         await client.query(
           `INSERT INTO audit_log (ward_id, user_id, action, details)
-           VALUES ($1, $2, 'CALENDAR_FEED_DELETED', jsonb_build_object('feedId', $3, 'displayName', $4))`,
+           VALUES ($1::uuid, $2::uuid, 'CALENDAR_FEED_DELETED', jsonb_build_object('feedId', $3::text, 'displayName', $4::text))`,
           [actionSession.activeWardId, actionSession.user.id, feedId, deleted.rows[0].display_name]
         );
       }
@@ -437,7 +447,7 @@ export default async function AnnouncementsPage({
     const announcementResult = await client.query(
       `SELECT id, title, body, start_date, end_date, is_permanent, placement, include_in_program, include_in_stand, created_at
          FROM announcement
-        WHERE ward_id = $1
+        WHERE ward_id = $1::uuid
         ORDER BY created_at DESC`,
       [session.activeWardId]
     );
@@ -445,7 +455,7 @@ export default async function AnnouncementsPage({
     const calendarFeedsResult = await client.query(
       `SELECT id, display_name, feed_scope, last_refreshed_at, last_refresh_status, last_refresh_error
          FROM calendar_feed
-        WHERE ward_id = $1
+        WHERE ward_id = $1::uuid
         ORDER BY created_at ASC`,
       [session.activeWardId]
     );
@@ -453,7 +463,7 @@ export default async function AnnouncementsPage({
     const calendarEventsResult = await client.query(
       `SELECT id, calendar_feed_id, title, description, starts_at, ends_at, tags, copied_to_announcement_at
          FROM calendar_event_cache
-        WHERE ward_id = $1
+        WHERE ward_id = $1::uuid
         ORDER BY starts_at ASC
         LIMIT 100`,
       [session.activeWardId]
