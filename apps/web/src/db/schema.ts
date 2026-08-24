@@ -314,6 +314,8 @@ export const member = pgTable(
     id: uuid('id').defaultRandom().primaryKey(),
     wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
     fullName: text('full_name').notNull(),
+    firstName: text('first_name'),
+    lastName: text('last_name'),
     email: text('email'),
     phone: text('phone'),
     age: integer('age'),

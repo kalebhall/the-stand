@@ -180,10 +180,12 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
       // - New member: insert fresh.
       for (const parsed of parsedMembers) {
         const upsertResult = await client.query(
-          `INSERT INTO member (ward_id, full_name, email, phone, age, birthday, gender, archived_at)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, NULL)
+          `INSERT INTO member (ward_id, full_name, first_name, last_name, email, phone, age, birthday, gender, archived_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NULL)
            ON CONFLICT (ward_id, full_name)
            DO UPDATE SET
+             first_name  = COALESCE(EXCLUDED.first_name, member.first_name),
+             last_name   = COALESCE(EXCLUDED.last_name, member.last_name),
              email       = COALESCE(EXCLUDED.email, member.email),
              phone       = COALESCE(EXCLUDED.phone, member.phone),
              age         = COALESCE(EXCLUDED.age, member.age),
@@ -192,7 +194,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
              archived_at = NULL,
              updated_at  = now()
            RETURNING (xmax = 0) AS inserted`,
-          [wardId, parsed.fullName, parsed.email, parsed.phone, parsed.age, parsed.birthday, parsed.gender]
+          [wardId, parsed.fullName, parsed.firstName, parsed.lastName, parsed.email, parsed.phone, parsed.age, parsed.birthday, parsed.gender]
         );
 
         if (upsertResult.rows[0]?.inserted) {

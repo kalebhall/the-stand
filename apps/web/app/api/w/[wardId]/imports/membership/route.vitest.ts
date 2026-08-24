@@ -67,7 +67,7 @@ describe('POST /api/w/[wardId]/imports/membership', () => {
       inserted: 0,
       updated: 0,
       archived: 0,
-      preview: [{ fullName: 'Jane Doe', email: 'jane@example.com', phone: null, age: null, birthday: null, gender: null }]
+      preview: [{ fullName: 'Jane Doe', firstName: 'Jane Doe', lastName: null, email: 'jane@example.com', phone: null, age: null, birthday: null, gender: null }]
     });
 
     // No UPDATE (archive) or INSERT INTO member calls during dry run
@@ -116,6 +116,8 @@ describe('POST /api/w/[wardId]/imports/membership', () => {
     expect(queryMock).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO member'), [
       'ward-1',
       'Jane Doe',
+      'Jane Doe', // firstName (no comma → whole name becomes firstName)
+      null,       // lastName
       'jane@example.com',
       null,
       null,
