@@ -108,7 +108,7 @@ async function runLcrImport(params: {
         }
       }
 
-      const membersResult = await client.query(`SELECT id, full_name, birthday FROM member WHERE ward_id = $1`, [params.wardId]);
+      const membersResult = await client.query(`SELECT id, full_name, birthday FROM member WHERE ward_id = $1 AND archived_at IS NULL`, [params.wardId]);
       const memberByKey = new Map<string, string>(
         (membersResult.rows as MemberRow[])
           .filter((row) => row.birthday)

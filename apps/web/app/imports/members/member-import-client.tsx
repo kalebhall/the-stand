@@ -18,7 +18,7 @@ export function MemberImportClient({ wardId }: { wardId: string }) {
   const [memberPdfFile, setMemberPdfFile] = useState<File | null>(null);
   const [rawText, setRawText] = useState('');
   const [preview, setPreview] = useState<PreviewMember[]>([]);
-  const [summary, setSummary] = useState<{ parsedCount: number; inserted: number; updated: number; commit: boolean } | null>(null);
+  const [summary, setSummary] = useState<{ parsedCount: number; inserted: number; updated: number; archived: number; commit: boolean } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [headerCopied, setHeaderCopied] = useState(false);
@@ -65,7 +65,7 @@ export function MemberImportClient({ wardId }: { wardId: string }) {
       }
 
       const payload = (await response.json()) as
-        | { preview: PreviewMember[]; parsedCount: number; inserted: number; updated: number; commit: boolean }
+        | { preview: PreviewMember[]; parsedCount: number; inserted: number; updated: number; archived: number; commit: boolean }
         | { error?: string };
 
       if (!response.ok || !('preview' in payload)) {
@@ -78,6 +78,7 @@ export function MemberImportClient({ wardId }: { wardId: string }) {
         parsedCount: payload.parsedCount,
         inserted: payload.inserted,
         updated: payload.updated,
+        archived: payload.archived,
         commit: payload.commit
       });
 
@@ -160,7 +161,9 @@ export function MemberImportClient({ wardId }: { wardId: string }) {
         {summary ? (
           <p className="text-sm text-muted-foreground">
             {summary.commit ? 'Commit complete. Redirecting to Members page...' : 'Preview complete.'} Parsed {summary.parsedCount} members
-            {summary.commit ? ` (${summary.inserted} inserted, ${summary.updated} updated).` : '.'}
+            {summary.commit
+              ? ` (${summary.inserted} inserted, ${summary.updated} updated, ${summary.archived} archived — moved out of ward).`
+              : '.'}
           </p>
         ) : null}
 

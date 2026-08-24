@@ -204,7 +204,8 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     const membersResult = await client.query(
       `SELECT id, full_name, birthday
          FROM member
-        WHERE ward_id = $1`,
+        WHERE ward_id = $1
+          AND archived_at IS NULL`,
       [wardId]
     );
 

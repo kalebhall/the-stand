@@ -43,8 +43,12 @@ describe('POST /api/w/[wardId]/imports/membership', () => {
     });
   });
 
-  it('returns dry run preview without member upserts', async () => {
-    queryMock.mockResolvedValueOnce({}).mockResolvedValueOnce({ rows: [{ id: 'import-1' }] }).mockResolvedValueOnce({});
+  it('returns dry run preview without archiving or upserting', async () => {
+    // BEGIN, INSERT import_run, COMMIT
+    queryMock
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({ rows: [{ id: 'import-1' }] })
+      .mockResolvedValueOnce({});
 
     const response = await POST(
       new Request('http://localhost', {
@@ -62,21 +66,26 @@ describe('POST /api/w/[wardId]/imports/membership', () => {
       parsedCount: 1,
       inserted: 0,
       updated: 0,
+      archived: 0,
       preview: [{ fullName: 'Jane Doe', email: 'jane@example.com', phone: null, age: null, birthday: null, gender: null }]
     });
 
+    // No UPDATE (archive) or INSERT INTO member calls during dry run
     expect(queryMock).toHaveBeenCalledTimes(3);
     expect(releaseMock).toHaveBeenCalled();
   });
 
-  it('commits parsed members into member table', async () => {
+  it('archives all active members then upserts parsed members on commit', async () => {
+    // BEGIN, INSERT import_run, UPDATE archive-all, upsert Jane, upsert John, SELECT COUNT still-archived, INSERT audit_log, COMMIT
     queryMock
-      .mockResolvedValueOnce({})
-      .mockResolvedValueOnce({ rows: [{ id: 'import-2' }] })
-      .mockResolvedValueOnce({ rows: [{ inserted: true }] })
-      .mockResolvedValueOnce({ rows: [{ inserted: false }] })
-      .mockResolvedValueOnce({})
-      .mockResolvedValueOnce({});
+      .mockResolvedValueOnce({})                               // BEGIN
+      .mockResolvedValueOnce({ rows: [{ id: 'import-2' }] })  // INSERT import_run
+      .mockResolvedValueOnce({ rowCount: 2 })                  // UPDATE archived_at = now()
+      .mockResolvedValueOnce({ rows: [{ inserted: true }] })   // upsert Jane → new
+      .mockResolvedValueOnce({ rows: [{ inserted: false }] })  // upsert John → existing
+      .mockResolvedValueOnce({ rows: [{ cnt: 0 }] })           // SELECT COUNT still-archived
+      .mockResolvedValueOnce({})                               // INSERT audit_log
+      .mockResolvedValueOnce({});                              // COMMIT
 
     const response = await POST(
       new Request('http://localhost', {
@@ -93,9 +102,17 @@ describe('POST /api/w/[wardId]/imports/membership', () => {
       commit: true,
       parsedCount: 2,
       inserted: 1,
-      updated: 1
+      updated: 1,
+      archived: 0
     });
 
+    // Archive step: UPDATE member SET archived_at = now() WHERE ward_id = $1 AND archived_at IS NULL
+    expect(queryMock).toHaveBeenCalledWith(
+      expect.stringContaining('UPDATE member'),
+      ['ward-1']
+    );
+
+    // Upsert includes archived_at = NULL to unarchive returning members
     expect(queryMock).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO member'), [
       'ward-1',
       'Jane Doe',
@@ -105,25 +122,29 @@ describe('POST /api/w/[wardId]/imports/membership', () => {
       null,
       null
     ]);
-    expect(queryMock).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO audit_log'), [
+
+    // Audit log includes archived count
+    expect(queryMock).toHaveBeenCalledWith(expect.stringContaining("'MEMBERSHIP_IMPORT_COMMITTED'"), [
       'ward-1',
       'user-1',
       'import-2',
       1,
       1,
+      0,
       2
     ]);
   });
 
   it('writes failure details to audit log when import processing fails', async () => {
     queryMock
-      .mockResolvedValueOnce({})
-      .mockResolvedValueOnce({ rows: [{ id: 'import-3' }] })
-      .mockRejectedValueOnce(new Error('db-upsert-failed'))
-      .mockResolvedValueOnce({})
-      .mockResolvedValueOnce({})
-      .mockResolvedValueOnce({})
-      .mockResolvedValueOnce({});
+      .mockResolvedValueOnce({})                               // BEGIN
+      .mockResolvedValueOnce({ rows: [{ id: 'import-3' }] })  // INSERT import_run
+      .mockRejectedValueOnce(new Error('db-archive-failed'))   // UPDATE archive step fails
+      .mockResolvedValueOnce({})                               // ROLLBACK
+      .mockResolvedValueOnce({})                               // BEGIN (audit fallback)
+      .mockResolvedValueOnce({})                               // setDbContext noop
+      .mockResolvedValueOnce({})                               // INSERT audit_log
+      .mockResolvedValueOnce({});                              // COMMIT (audit fallback)
 
     const response = await POST(
       new Request('http://localhost', {
@@ -142,7 +163,7 @@ describe('POST /api/w/[wardId]/imports/membership', () => {
       'user-1',
       true,
       1,
-      'db-upsert-failed'
+      'db-archive-failed'
     ]);
     expect(loggerErrorMock).toHaveBeenCalledWith('Membership import request failed', {
       wardId: 'ward-1',
@@ -150,7 +171,7 @@ describe('POST /api/w/[wardId]/imports/membership', () => {
       commitRequested: true,
       parsedCount: 1,
       fileName: 'paste',
-      error: 'db-upsert-failed'
+      error: 'db-archive-failed'
     });
   });
 });

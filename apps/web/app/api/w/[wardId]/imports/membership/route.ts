@@ -32,14 +32,12 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
   let commit = false;
 
   if (contentType.includes('application/json')) {
-    // Plain text paste (legacy format)
     const body = (await request.json().catch(() => ({}))) as MembershipImportBody;
     const rawText = typeof body.rawText === 'string' ? body.rawText : '';
     commit = body.commit === true;
     extractedText = toPlainText(rawText);
     fileName = 'paste';
   } else if (contentType.includes('multipart/form-data') || contentType === '') {
-    // PDF upload (or FormData without explicit content-type)
     const formData = await request.formData().catch(() => null);
 
     if (!formData) {
@@ -61,7 +59,6 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
 
     extractedText = await extractPdfText(await file.arrayBuffer());
 
-    // DEBUG: Log first 500 chars of extracted text
     logger.debug('PDF extraction result', {
       fileName,
       extractedLength: extractedText.length,
@@ -149,6 +146,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
         parsedCount: 0,
         inserted: 0,
         updated: 0,
+        archived: 0,
         issues: ['PARSE_ZERO_ROWS'],
         preview: [],
         debug: {
@@ -160,20 +158,39 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
 
     let inserted = 0;
     let updated = 0;
+    let archived = 0;
 
     if (commit) {
+      // Step 1: Archive all currently-active members for this ward.
+      // Members in the new import will be unarchived in the upsert below.
+      // Members not in the import remain archived (they moved out of the ward).
+      const archiveResult = await client.query(
+        `UPDATE member
+            SET archived_at = now()
+          WHERE ward_id = $1
+            AND archived_at IS NULL`,
+        [wardId]
+      );
+      archived = archiveResult.rowCount ?? 0;
+
+      // Step 2: Upsert each parsed member.
+      // ON CONFLICT matches by (ward_id, full_name).
+      // - Existing active member: update contact fields, clear archived_at.
+      // - Previously archived member (moved back): unarchive + update.
+      // - New member: insert fresh.
       for (const parsed of parsedMembers) {
         const upsertResult = await client.query(
-          `INSERT INTO member (ward_id, full_name, email, phone, age, birthday, gender)
-           VALUES ($1, $2, $3, $4, $5, $6, $7)
+          `INSERT INTO member (ward_id, full_name, email, phone, age, birthday, gender, archived_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, NULL)
            ON CONFLICT (ward_id, full_name)
            DO UPDATE SET
-             email = COALESCE(EXCLUDED.email, member.email),
-             phone = COALESCE(EXCLUDED.phone, member.phone),
-             age = COALESCE(EXCLUDED.age, member.age),
-             birthday = COALESCE(EXCLUDED.birthday, member.birthday),
-             gender = COALESCE(EXCLUDED.gender, member.gender),
-             updated_at = now()
+             email       = COALESCE(EXCLUDED.email, member.email),
+             phone       = COALESCE(EXCLUDED.phone, member.phone),
+             age         = COALESCE(EXCLUDED.age, member.age),
+             birthday    = COALESCE(EXCLUDED.birthday, member.birthday),
+             gender      = COALESCE(EXCLUDED.gender, member.gender),
+             archived_at = NULL,
+             updated_at  = now()
            RETURNING (xmax = 0) AS inserted`,
           [wardId, parsed.fullName, parsed.email, parsed.phone, parsed.age, parsed.birthday, parsed.gender]
         );
@@ -185,10 +202,18 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
         }
       }
 
+      // archived count is how many ended up still archived after the upsert
+      // (i.e., those not in the new import). Recalculate accurately.
+      const stillArchivedResult = await client.query(
+        `SELECT COUNT(*)::int AS cnt FROM member WHERE ward_id = $1 AND archived_at IS NOT NULL`,
+        [wardId]
+      );
+      archived = (stillArchivedResult.rows[0] as { cnt: number } | undefined)?.cnt ?? 0;
+
       await client.query(
         `INSERT INTO audit_log (ward_id, user_id, action, details)
-         VALUES ($1, $2, 'MEMBERSHIP_IMPORT_COMMITTED', jsonb_build_object('importRunId', $3::text, 'inserted', $4::int, 'updated', $5::int, 'parsedCount', $6::int))`,
-        [wardId, session.user.id, importRunId, inserted, updated, parsedMembers.length]
+         VALUES ($1, $2, 'MEMBERSHIP_IMPORT_COMMITTED', jsonb_build_object('importRunId', $3::text, 'inserted', $4::int, 'updated', $5::int, 'archived', $6::int, 'parsedCount', $7::int))`,
+        [wardId, session.user.id, importRunId, inserted, updated, archived, parsedMembers.length]
       );
     }
 
@@ -202,6 +227,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
       parsedCount: parsedMembers.length,
       inserted,
       updated,
+      archived,
       fileName
     });
 
@@ -211,6 +237,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
       parsedCount: parsedMembers.length,
       inserted,
       updated,
+      archived,
       preview: parsedMembers
     });
   } catch (error) {
