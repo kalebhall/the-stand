@@ -363,4 +363,16 @@ Jane Doe\tjane@example.com\tFebruary 14, 1990`);
       }
     ]);
   });
+
+  it('strips LCR status suffixes (Out-of-Unit, Not Baptized) from names in TSV format', () => {
+    const result = parseMembershipText(
+      'Name\tGender\tAge\tBirth Date\tPhone Number\tE-mail\n' +
+      'Allen, SueOut-of-Unit\tF\t66\t26 May 1960\t(801) 362-5806\tsueallen968@gmail.com\n' +
+      'Anderson, Amelia JaneNot Baptized\tF\t8\t16 Mar 2018\t\t\n' +
+      'Bowen, William ThomasNot Baptized\tM\t55\t9 Nov 1970\t(702) 409-6077\t'
+    );
+    expect(result[0]?.fullName).toBe('Allen, Sue');
+    expect(result[1]?.fullName).toBe('Anderson, Amelia Jane');
+    expect(result[2]?.fullName).toBe('Bowen, William Thomas');
+  });
 });
