@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { getLcrBookmarkletHref, LCR_DOM_EXTRACTOR_SCRIPT } from '@/src/imports/bookmarklet';
 
@@ -10,19 +10,37 @@ export function LcrExtractorInstructions({
   targetType: 'members' | 'callings';
 }) {
   const [copiedScript, setCopiedScript] = useState(false);
-  const bookmarkletHref = getLcrBookmarkletHref();
+  const [copyError, setCopyError] = useState(false);
+
+  // React 19 blocks javascript: URLs set as href props. Set the attribute
+  // directly on the DOM node after mount to bypass the security check while
+  // still allowing the anchor to be dragged to the bookmarks bar.
+  const bookmarkletRef = useRef<HTMLAnchorElement>(null);
+  useEffect(() => {
+    const el = bookmarkletRef.current;
+    if (el) {
+      el.setAttribute('href', getLcrBookmarkletHref());
+    }
+  }, []);
 
   const lcrUrl =
     targetType === 'members'
-      ? 'https://lcr.churchofjesuschrist.org/records/member-list?lang=eng'
+      ? 'https://lcr.churchofjesuschrist.org/mlt/records/member-list?lang=eng'
       : 'https://lcr.churchofjesuschrist.org/mlt/report/member-callings?lang=eng';
 
   const lcrPageName = targetType === 'members' ? 'Member List' : 'Members with Callings Report';
 
   function copyScript() {
-    void navigator.clipboard.writeText(LCR_DOM_EXTRACTOR_SCRIPT).then(() => {
+    setCopyError(false);
+    if (!navigator.clipboard?.writeText) {
+      setCopyError(true);
+      return;
+    }
+    navigator.clipboard.writeText(LCR_DOM_EXTRACTOR_SCRIPT).then(() => {
       setCopiedScript(true);
       setTimeout(() => setCopiedScript(false), 2000);
+    }).catch(() => {
+      setCopyError(true);
     });
   }
 
@@ -44,15 +62,13 @@ export function LcrExtractorInstructions({
         <li>
           Drag this bookmarklet to your browser bookmarks bar:
           <span className="ml-2 inline-block">
+            {/* href is set imperatively via ref — React 19 blocks javascript: URLs as props */}
             <a
-              href={bookmarkletHref}
+              ref={bookmarkletRef}
               className="inline-flex items-center gap-1 rounded bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground shadow hover:bg-primary/90 cursor-grab"
               onClick={(e) => {
-                // Prevent navigating if clicked directly
-                if (!e.defaultPrevented) {
-                  e.preventDefault();
-                  alert('Drag this button to your browser bookmarks bar! Then open LCR and click it in your bookmarks.');
-                }
+                e.preventDefault();
+                alert('Drag this button to your browser bookmarks bar! Then open LCR and click it in your bookmarks.');
               }}
             >
               ⭐ The Stand: Extract LCR
@@ -75,7 +91,7 @@ export function LcrExtractorInstructions({
         <li>Return here, click <strong>Paste text</strong>, and paste the clipboard contents into the box.</li>
       </ol>
 
-      <div className="pt-1 flex items-center gap-2">
+      <div className="pt-1 flex items-center gap-2 flex-wrap">
         <Button
           type="button"
           variant="outline"
@@ -88,6 +104,11 @@ export function LcrExtractorInstructions({
         <span className="text-[11px] text-muted-foreground">
           (If bookmarklets are blocked in your browser, paste this into DevTools Console)
         </span>
+        {copyError && (
+          <span className="text-[11px] text-destructive">
+            Clipboard unavailable — open DevTools Console and paste manually.
+          </span>
+        )}
       </div>
     </div>
   );
