@@ -48,6 +48,7 @@ export async function GET(request: Request, context: { params: Promise<{ wardId:
         `SELECT id, full_name
            FROM member
           WHERE ward_id = $1
+            AND archived_at IS NULL
             AND ${conditions}
           ORDER BY full_name ASC
           LIMIT $${limitParamIndex}`,
@@ -58,6 +59,7 @@ export async function GET(request: Request, context: { params: Promise<{ wardId:
         `SELECT id, full_name
            FROM member
           WHERE ward_id = $1
+            AND archived_at IS NULL
           ORDER BY full_name ASC
           LIMIT $2`,
         [wardId, limit]
