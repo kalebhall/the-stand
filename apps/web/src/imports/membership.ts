@@ -1,5 +1,7 @@
 export type ParsedMember = {
   fullName: string;
+  firstName: string | null;
+  lastName: string | null;
   email: string | null;
   phone: string | null;
   age: number | null;
@@ -14,6 +16,41 @@ const LCR_NAME_SUFFIXES = /(?:Out-of-Unit|Not Baptized|Deceased)$/i;
 
 export function cleanLcrName(name: string): string {
   return normalizeWhitespace(name.replace(LCR_NAME_SUFFIXES, ''));
+}
+
+/**
+ * Split an LCR-format name "Last, First Middle" into parts.
+ * Returns null values when the name doesn't contain a comma.
+ */
+export function splitLcrName(fullName: string): { firstName: string | null; lastName: string | null } {
+  const commaIdx = fullName.indexOf(',');
+  if (commaIdx === -1) {
+    return { firstName: fullName.trim() || null, lastName: null };
+  }
+  const lastName = fullName.slice(0, commaIdx).trim() || null;
+  const firstName = fullName.slice(commaIdx + 1).trim() || null;
+  return { firstName, lastName };
+}
+
+function makeParsedMember(
+  fullName: string,
+  opts: { email: string | null; phone: string | null; age: number | null; birthday: string | null; gender: string | null }
+): ParsedMember {
+  const { firstName, lastName } = splitLcrName(fullName);
+  return { fullName, firstName, lastName, ...opts };
+}
+
+function mergeMembers(existing: ParsedMember, incoming: ParsedMember): ParsedMember {
+  return {
+    fullName: incoming.fullName,
+    firstName: incoming.firstName ?? existing.firstName,
+    lastName: incoming.lastName ?? existing.lastName,
+    email: incoming.email ?? existing.email,
+    phone: incoming.phone ?? existing.phone,
+    age: incoming.age ?? existing.age,
+    birthday: incoming.birthday ?? existing.birthday,
+    gender: incoming.gender ?? existing.gender
+  };
 }
 
 const HTML_ENTITY_MAP: Record<string, string> = {
@@ -314,7 +351,7 @@ function parseMemberFromMapping(parts: string[], mapping: FieldMapping[]): Parse
 
   if (!fullName) return null;
 
-  return { fullName, email, phone, age, birthday, gender };
+  return makeParsedMember(fullName, { email, phone, age, birthday, gender });
 }
 
 function looksLikeNameLine(line: string): boolean {
@@ -345,7 +382,7 @@ function parsePdfMembersMultiLine(lines: string[]): ParsedMember[] {
 
   while (i < lines.length) {
     const line = lines[i];
-    
+
     // Skip header/footer lines
     if (isMembershipHeaderFooterLine(line)) {
       i++;
@@ -364,13 +401,13 @@ function parsePdfMembersMultiLine(lines: string[]): ParsedMember[] {
     // Next line should be gender
     if (i >= lines.length) break;
     let nextLine = lines[i];
-    
+
     // Skip any header/footer that snuck in
     while (i < lines.length && isMembershipHeaderFooterLine(nextLine)) {
       i++;
       nextLine = lines[i];
     }
-    
+
     if (i >= lines.length || !looksLikeGenderLine(nextLine)) {
       // Not a valid record, continue
       continue;
@@ -382,13 +419,13 @@ function parsePdfMembersMultiLine(lines: string[]): ParsedMember[] {
     // Next line should be age + birthday + optional phone
     if (i >= lines.length) break;
     nextLine = lines[i];
-    
+
     // Skip any header/footer
     while (i < lines.length && isMembershipHeaderFooterLine(nextLine)) {
       i++;
       nextLine = lines[i];
     }
-    
+
     if (i >= lines.length || !looksLikeAgeBirthdayLine(nextLine)) {
       // Not a valid record
       continue;
@@ -403,7 +440,7 @@ function parsePdfMembersMultiLine(lines: string[]): ParsedMember[] {
 
     // Age from PDF extraction is often unreliable when columns shift; prefer birthday.
     const age = null;
-    
+
     const birthdayResult = parseBirthdayFromTokens(parts, 1);
     if (!birthdayResult) {
       i++;
@@ -416,7 +453,7 @@ function parsePdfMembersMultiLine(lines: string[]): ParsedMember[] {
       parts.length > birthdayResult.nextIndex
         ? extractPhoneAndEmail(parts.slice(birthdayResult.nextIndex).join(' '))
         : { phone: null, email: null };
-    
+
     i++;
 
     // Next line might be email (or might be the next name)
@@ -424,13 +461,13 @@ function parsePdfMembersMultiLine(lines: string[]): ParsedMember[] {
     let phone: string | null = contact.phone;
     if (i < lines.length) {
       nextLine = lines[i];
-      
+
       // Skip headers/footers
       while (i < lines.length && isMembershipHeaderFooterLine(nextLine)) {
         i++;
         nextLine = lines[i];
       }
-      
+
       if (i < lines.length && nextLine.includes('@') && !looksLikeNameLine(nextLine)) {
         const extracted = extractPhoneAndEmail(nextLine);
         email = extracted.email ?? email;
@@ -443,15 +480,7 @@ function parsePdfMembersMultiLine(lines: string[]): ParsedMember[] {
       }
     }
 
-    // We have a complete member record
-    members.push({
-      fullName: name,
-      gender,
-      age,
-      birthday,
-      phone,
-      email
-    });
+    members.push(makeParsedMember(name, { gender, age, birthday, phone, email }));
   }
 
   return members;
@@ -514,12 +543,12 @@ function parsePdfMemberTableLine(line: string): ParsedMember | null {
 
   const tail = tokens.slice(idx).join(' ').trim();
   if (!tail) {
-    return { fullName, email: null, phone: null, age: null, birthday, gender };
+    return makeParsedMember(fullName, { email: null, phone: null, age: null, birthday, gender });
   }
 
   const { phone, email } = extractPhoneAndEmail(tail);
 
-  return { fullName, email, phone, age: null, birthday, gender };
+  return makeParsedMember(fullName, { email, phone, age: null, birthday, gender });
 }
 
 function parsePdfMemberCompactLine(line: string): ParsedMember | null {
@@ -536,7 +565,7 @@ function parsePdfMemberCompactLine(line: string): ParsedMember | null {
     if (split) {
       const birthday = normalizeBirthday(split.birthdayToken);
       const { phone, email } = extractPhoneAndEmail(compactSpaced[6] ?? '');
-      return { fullName, email, phone, age: null, birthday, gender };
+      return makeParsedMember(fullName, { email, phone, age: null, birthday, gender });
     }
   }
 
@@ -550,7 +579,7 @@ function parsePdfMemberCompactLine(line: string): ParsedMember | null {
     if (split) {
       const birthday = normalizeBirthday(split.birthdayToken);
       const { phone, email } = extractPhoneAndEmail(compactCombined[6] ?? '');
-      return { fullName, email, phone, age: null, birthday, gender };
+      return makeParsedMember(fullName, { email, phone, age: null, birthday, gender });
     }
   }
 
@@ -564,7 +593,7 @@ function parsePdfMemberCompactLine(line: string): ParsedMember | null {
       birthday = parseBirthdayFromTokens([compact[4]], 0)?.birthday ?? null;
     }
     const { phone, email } = extractPhoneAndEmail(compact[5] ?? '');
-    return { fullName, email, phone, age: null, birthday, gender };
+    return makeParsedMember(fullName, { email, phone, age: null, birthday, gender });
   }
 
   const birthdayMatch = findBirthdayInText(normalized);
@@ -585,7 +614,7 @@ function parsePdfMemberCompactLine(line: string): ParsedMember | null {
 
   const { phone, email } = extractPhoneAndEmail(afterBirthday);
 
-  return { fullName, email, phone, age, birthday, gender };
+  return makeParsedMember(fullName, { email, phone, age, birthday, gender });
 }
 
 function parsePdfMemberTableAnyLine(line: string): ParsedMember | null {
@@ -668,7 +697,7 @@ function parseMemberLegacy(parts: string[], rawLine: string, delimiter: Delimite
     const fullName =
       nameTokens.length > 0 ? nameTokens.join(' ') : normalizeWhitespace(rawLine);
     if (!fullName) return null;
-    return { fullName, email, phone, age: null, birthday: null, gender: null };
+    return makeParsedMember(fullName, { email, phone, age: null, birthday: null, gender: null });
   }
 
   const fullName = parts[0];
@@ -686,7 +715,7 @@ function parseMemberLegacy(parts: string[], rawLine: string, delimiter: Delimite
     }
   }
 
-  return { fullName, email, phone, age: null, birthday: null, gender: null };
+  return makeParsedMember(fullName, { email, phone, age: null, birthday: null, gender: null });
 }
 
 export function parseMembershipText(rawText: string): ParsedMember[] {
@@ -705,97 +734,112 @@ export function parseMembershipText(rawText: string): ParsedMember[] {
     return [];
   }
 
-  // Check if this looks like LCR PDF text (multi-line format)
-  // Look for the pattern: name line with comma, followed by M/F, followed by age+date
-  let isPdfFormat = false;
-  let isPdfTableFormat = false;
-  for (let i = 0; i < Math.min(cleanedLines.length - 2, 80); i++) {
-    if (looksLikeNameLine(cleanedLines[i]) && 
-        i + 1 < cleanedLines.length && looksLikeGenderLine(cleanedLines[i + 1]) &&
-        i + 2 < cleanedLines.length && looksLikeAgeBirthdayLine(cleanedLines[i + 2])) {
-      isPdfFormat = true;
-      break;
-    }
-  }
+  // If ANY line in the first 10 contains a tab, the whole input is TSV — go straight
+  // to the TSV path without PDF format detection. Tab-delimited data can fool the PDF
+  // detector because "Last, First\tM\t66\t..." has a comma-name followed by M/F tokens.
+  const hasTabs = cleanedLines.slice(0, 10).some((line) => line.includes('\t'));
 
-  if (!isPdfFormat) {
-    for (let i = 0; i < Math.min(cleanedLines.length, 80); i++) {
-      if (parsePdfMemberTableAnyLine(cleanedLines[i])) {
-        isPdfTableFormat = true;
+  if (!hasTabs) {
+    // Check if this looks like LCR PDF text (multi-line format)
+    // Look for the pattern: name line with comma, followed by M/F, followed by age+date
+    let isPdfFormat = false;
+    let isPdfTableFormat = false;
+    for (let i = 0; i < Math.min(cleanedLines.length - 2, 80); i++) {
+      if (looksLikeNameLine(cleanedLines[i]) &&
+          i + 1 < cleanedLines.length && looksLikeGenderLine(cleanedLines[i + 1]) &&
+          i + 2 < cleanedLines.length && looksLikeAgeBirthdayLine(cleanedLines[i + 2])) {
+        isPdfFormat = true;
         break;
       }
     }
-  }
 
-  if (isPdfFormat || isPdfTableFormat) {
-    // Use PDF parser path for either multi-line or single-line table exports.
-    const members = isPdfFormat ? parsePdfMembersMultiLine(cleanedLines) : parsePdfMembersTableFormat(cleanedLines);
-    
-    // Deduplicate by name
-    const deduped = new Map<string, ParsedMember>();
-    for (const member of members) {
-      const existing = deduped.get(member.fullName.toLowerCase());
-      if (existing) {
-        deduped.set(member.fullName.toLowerCase(), {
-          fullName: member.fullName,
-          email: member.email ?? existing.email,
-          phone: member.phone ?? existing.phone,
-          age: member.age ?? existing.age,
-          birthday: member.birthday ?? existing.birthday,
-          gender: member.gender ?? existing.gender
-        });
-      } else {
-        deduped.set(member.fullName.toLowerCase(), member);
+    if (!isPdfFormat) {
+      for (let i = 0; i < Math.min(cleanedLines.length, 80); i++) {
+        if (parsePdfMemberTableAnyLine(cleanedLines[i])) {
+          isPdfTableFormat = true;
+          break;
+        }
       }
     }
-    
-    return Array.from(deduped.values());
-  } else {
-    // Use legacy CSV/TSV parser
-    const deduped = new Map<string, ParsedMember>();
-    const delimiter = detectDelimiter(cleanedLines[0]);
 
+    if (isPdfFormat || isPdfTableFormat) {
+      // Use PDF parser path for either multi-line or single-line table exports.
+      const members = isPdfFormat ? parsePdfMembersMultiLine(cleanedLines) : parsePdfMembersTableFormat(cleanedLines);
+
+      // Deduplicate by name
+      const deduped = new Map<string, ParsedMember>();
+      for (const member of members) {
+        const existing = deduped.get(member.fullName.toLowerCase());
+        if (existing) {
+          deduped.set(member.fullName.toLowerCase(), mergeMembers(existing, member));
+        } else {
+          deduped.set(member.fullName.toLowerCase(), member);
+        }
+      }
+
+      return Array.from(deduped.values());
+    }
+  }
+
+  // TSV / CSV / legacy path
+  const deduped = new Map<string, ParsedMember>();
+
+  // For TSV with headers: the header row gets filtered by isMembershipHeaderFooterLine.
+  // Re-detect it from the raw lines before filtering so we can use it for column mapping.
+  const rawFirstLine = lines[0] ?? '';
+  const rawFirstParts = splitLine(rawFirstLine, detectDelimiter(rawFirstLine))
+    .map((part) => part.trim())
+    .filter((part) => part.length > 0);
+  const rawHeaderMapping = detectHeaderMapping(rawFirstParts);
+
+  // If we detected a header in the raw first line, use it and start from line 1 in cleanedLines.
+  // Otherwise use cleanedLines[0] as normal.
+  let headerMapping: FieldMapping[] | null;
+  let delimiter: Delimiter;
+  let startIndex: number;
+
+  if (rawHeaderMapping) {
+    headerMapping = rawHeaderMapping;
+    delimiter = detectDelimiter(rawFirstLine);
+    // If the header row survived the footer filter (wasn't recognized as a header/footer),
+    // cleanedLines[0] == lines[0] and we must skip it. If it was filtered, cleanedLines[0]
+    // is already the first data row and startIndex stays 0.
+    startIndex = (cleanedLines[0] && cleanedLines[0].trim() === rawFirstLine.trim()) ? 1 : 0;
+  } else {
+    delimiter = detectDelimiter(cleanedLines[0]);
     const firstLineParts = splitLine(cleanedLines[0], delimiter)
       .map((part) => part.trim())
       .filter((part) => part.length > 0);
-
-    const headerMapping = detectHeaderMapping(firstLineParts);
-    const startIndex = headerMapping ? 1 : 0;
-
-    for (let i = startIndex; i < cleanedLines.length; i++) {
-      // When using header mapping, preserve empty fields to maintain column alignment
-      const parts = headerMapping
-        ? splitLine(cleanedLines[i], delimiter).map((part) => part.trim())
-        : splitLine(cleanedLines[i], detectDelimiter(cleanedLines[i]))
-            .map((part) => part.trim())
-            .filter((part) => part.length > 0);
-
-      if (!parts.length || (headerMapping && parts.every((p) => !p))) {
-        continue;
-      }
-
-      const parsed = headerMapping
-        ? parseMemberFromMapping(parts, headerMapping)
-        : parseMemberLegacy(parts, cleanedLines[i], detectDelimiter(cleanedLines[i]));
-
-      if (!parsed) continue;
-
-      const existing = deduped.get(parsed.fullName.toLowerCase());
-      if (existing) {
-        deduped.set(parsed.fullName.toLowerCase(), {
-          fullName: parsed.fullName,
-          email: parsed.email ?? existing.email,
-          phone: parsed.phone ?? existing.phone,
-          age: parsed.age ?? existing.age,
-          birthday: parsed.birthday ?? existing.birthday,
-          gender: parsed.gender ?? existing.gender
-        });
-        continue;
-      }
-
-      deduped.set(parsed.fullName.toLowerCase(), parsed);
-    }
-    
-    return Array.from(deduped.values());
+    headerMapping = detectHeaderMapping(firstLineParts);
+    startIndex = headerMapping ? 1 : 0;
   }
+
+  for (let i = startIndex; i < cleanedLines.length; i++) {
+    // When using header mapping, preserve empty fields to maintain column alignment
+    const parts = headerMapping
+      ? splitLine(cleanedLines[i], delimiter).map((part) => part.trim())
+      : splitLine(cleanedLines[i], detectDelimiter(cleanedLines[i]))
+          .map((part) => part.trim())
+          .filter((part) => part.length > 0);
+
+    if (!parts.length || (headerMapping && parts.every((p) => !p))) {
+      continue;
+    }
+
+    const parsed = headerMapping
+      ? parseMemberFromMapping(parts, headerMapping)
+      : parseMemberLegacy(parts, cleanedLines[i], detectDelimiter(cleanedLines[i]));
+
+    if (!parsed) continue;
+
+    const existing = deduped.get(parsed.fullName.toLowerCase());
+    if (existing) {
+      deduped.set(parsed.fullName.toLowerCase(), mergeMembers(existing, parsed));
+      continue;
+    }
+
+    deduped.set(parsed.fullName.toLowerCase(), parsed);
+  }
+
+  return Array.from(deduped.values());
 }

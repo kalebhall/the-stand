@@ -12,6 +12,8 @@ import { cn } from '@/lib/utils';
 type MemberRow = {
   id: string;
   full_name: string;
+  first_name: string | null;
+  last_name: string | null;
   email: string | null;
   phone: string | null;
   age: number | null;
@@ -42,10 +44,11 @@ export default async function MembersPage() {
     await setDbContext(client, { userId: session.user.id, wardId: session.activeWardId });
 
     const memberResult = await client.query(
-      `SELECT id, full_name, email, phone, age, birthday, gender
+      `SELECT id, full_name, first_name, last_name, email, phone, age, birthday, gender
          FROM member
         WHERE ward_id = $1
-        ORDER BY full_name ASC`,
+          AND archived_at IS NULL
+        ORDER BY last_name ASC, first_name ASC, full_name ASC`,
       [session.activeWardId]
     );
 
