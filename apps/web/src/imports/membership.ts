@@ -7,6 +7,15 @@ export type ParsedMember = {
   gender: string | null;
 };
 
+// LCR appends status/note labels directly onto names with no separator, e.g.
+// "Allen, SueOut-of-Unit" or "Anderson, Amelia JaneNot Baptized".
+// Strip them before storing the name.
+const LCR_NAME_SUFFIXES = /(?:Out-of-Unit|Not Baptized|Deceased)$/i;
+
+export function cleanLcrName(name: string): string {
+  return normalizeWhitespace(name.replace(LCR_NAME_SUFFIXES, ''));
+}
+
 const HTML_ENTITY_MAP: Record<string, string> = {
   '&nbsp;': ' ',
   '&amp;': '&',
@@ -273,7 +282,7 @@ function parseMemberFromMapping(parts: string[], mapping: FieldMapping[]): Parse
 
     switch (field) {
       case 'name':
-        if (value) fullName = value;
+        if (value) fullName = cleanLcrName(value);
         break;
       case 'email':
         email = sanitizeEmail(value);
@@ -349,7 +358,7 @@ function parsePdfMembersMultiLine(lines: string[]): ParsedMember[] {
       continue;
     }
 
-    const name = normalizeWhitespace(line);
+    const name = cleanLcrName(normalizeWhitespace(line));
     i++;
 
     // Next line should be gender
@@ -491,7 +500,7 @@ function parsePdfMemberTableLine(line: string): ParsedMember | null {
 
   if (genderIndex <= 0) return null;
 
-  const fullName = tokens.slice(0, genderIndex).join(' ');
+  const fullName = cleanLcrName(tokens.slice(0, genderIndex).join(' '));
   const gender = parseGenderPdf(tokens[genderIndex]);
 
   let idx = genderIndex + 1;
@@ -520,7 +529,7 @@ function parsePdfMemberCompactLine(line: string): ParsedMember | null {
   // Handle compact extraction where age+day are glued with space-separated month/year, e.g. "F3126 Mar 1994..."
   const compactSpaced = normalized.match(/^(.+?)(male|female|m|f)\s*(\d{2,5})\s+([A-Za-z]{3,})\s+(\d{4})(.*)$/i);
   if (compactSpaced) {
-    const fullName = normalizeWhitespace(compactSpaced[1]);
+    const fullName = cleanLcrName(normalizeWhitespace(compactSpaced[1]));
     if (!looksLikeNameLine(fullName)) return null;
     const gender = parseGenderPdf(compactSpaced[2]);
     const split = splitAgeAndBirthdayChunk(compactSpaced[3], compactSpaced[4], compactSpaced[5]);
@@ -534,7 +543,7 @@ function parsePdfMemberCompactLine(line: string): ParsedMember | null {
   // Handle compact extraction where age and birthday can be glued together, e.g. "M461-Jan-1980..."
   const compactCombined = normalized.match(/^(.+?)(male|female|m|f)\s*(\d{2,5})-([A-Za-z]{3,})-(\d{4})(.*)$/i);
   if (compactCombined) {
-    const fullName = normalizeWhitespace(compactCombined[1]);
+    const fullName = cleanLcrName(normalizeWhitespace(compactCombined[1]));
     if (!looksLikeNameLine(fullName)) return null;
     const gender = parseGenderPdf(compactCombined[2]);
     const split = splitAgeAndBirthdayChunk(compactCombined[3], compactCombined[4], compactCombined[5]);
@@ -547,7 +556,7 @@ function parsePdfMemberCompactLine(line: string): ParsedMember | null {
 
   const compact = normalized.match(/^(.*?)(male|female|m|f)\s*(\d{1,3})\s*(\d{1,3}-[A-Za-z]{3,}-\d{4})(.*)$/i);
   if (compact) {
-    const fullName = normalizeWhitespace(compact[1]);
+    const fullName = cleanLcrName(normalizeWhitespace(compact[1]));
     if (!looksLikeNameLine(fullName)) return null;
     const gender = parseGenderPdf(compact[2]);
     let birthday = normalizeBirthday(compact[4]);
@@ -566,7 +575,7 @@ function parsePdfMemberCompactLine(line: string): ParsedMember | null {
   const prefixMatch = beforeBirthday.match(/^(.*?)(male|female|m|f)\s*(\d{1,3})$/i);
   if (!prefixMatch) return null;
 
-  const fullName = normalizeWhitespace(prefixMatch[1]);
+  const fullName = cleanLcrName(normalizeWhitespace(prefixMatch[1]));
   if (!looksLikeNameLine(fullName)) return null;
 
   const gender = parseGenderPdf(prefixMatch[2]);
