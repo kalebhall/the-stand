@@ -456,7 +456,13 @@ export function AnnouncementsWorkspaceClient({
                       <div className="flex items-center justify-between font-medium">
                         <span>{item.title}</span>
                         <span className="text-muted-foreground">
-                          {item.start_date ? `Expired (${item.start_date})` : 'Inactive'}
+                          {item.is_permanent
+                            ? 'Permanent'
+                            : item.end_date && item.end_date < selectedSunday
+                            ? `Expired (${item.end_date})`
+                            : item.start_date && item.start_date > selectedSunday
+                            ? `Upcoming (${item.start_date})`
+                            : 'Inactive'}
                         </span>
                       </div>
                       {item.body && <p className="mt-1 text-muted-foreground line-clamp-1">{item.body}</p>}
