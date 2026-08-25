@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
+export const dynamic = 'force-dynamic';
+
 import { AddCallingSection } from '@/components/AddCallingSection';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';

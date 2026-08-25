@@ -15,6 +15,8 @@ describe('lcr table parsing', () => {
     expect(members).toEqual([
       {
         fullName: 'Jane Doe',
+        firstName: 'Jane Doe',
+        lastName: null,
         email: 'jane@example.com',
         phone: '801-555-0101',
         age: 35,
@@ -23,6 +25,8 @@ describe('lcr table parsing', () => {
       },
       {
         fullName: 'John Doe',
+        firstName: 'John Doe',
+        lastName: null,
         email: null,
         phone: null,
         age: null,
@@ -44,6 +48,8 @@ describe('lcr table parsing', () => {
     expect(members).toEqual([
       {
         fullName: 'Doe, Jane Marie',
+        firstName: 'Jane Marie',
+        lastName: 'Doe',
         email: 'jane@example.com',
         phone: '801-555-0101',
         age: 35,
@@ -52,6 +58,8 @@ describe('lcr table parsing', () => {
       },
       {
         fullName: 'Smith, John David',
+        firstName: 'John David',
+        lastName: 'Smith',
         email: null,
         phone: null,
         age: 42,

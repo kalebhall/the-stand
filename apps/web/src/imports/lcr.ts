@@ -1,5 +1,5 @@
 import type { ParsedCalling } from '@/src/imports/callings';
-import type { ParsedMember } from '@/src/imports/membership';
+import { splitLcrName, type ParsedMember } from '@/src/imports/membership';
 
 const MEMBER_LIST_URL = 'https://lcr.churchofjesuschrist.org/records/member-list?lang=eng';
 const CALLING_LIST_URL = 'https://lcr.churchofjesuschrist.org/mlt/report/member-callings?lang=eng';
@@ -100,6 +100,7 @@ function parseMembersFromTable(table: ScrapedTable): ParsedMember[] {
 
     const member: ParsedMember = {
       fullName,
+      ...splitLcrName(fullName),
       email: normalize(row[emailIndex] ?? '') || null,
       phone: normalize(row[phoneIndex] ?? '') || null,
       age: parseAge(row[ageIndex] ?? ''),
