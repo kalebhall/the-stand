@@ -5,8 +5,9 @@ import { canManageCallings } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { createLogger } from '@/src/lib/logger';
 
+import { setDbContext } from '@/src/db/context'
+
 const logger = createLogger('callings');
-import { setDbContext } from '@/src/db/context';
 
 export async function DELETE(_request: Request, context: { params: Promise<{ wardId: string; callingId: string }> }) {
   const session = await auth();

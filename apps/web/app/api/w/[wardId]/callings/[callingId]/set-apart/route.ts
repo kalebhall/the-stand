@@ -7,8 +7,9 @@ import { appendCallingStatus, fetchCurrentCallingStatus } from '@/src/callings/t
 import { pool } from '@/src/db/client';
 import { createLogger } from '@/src/lib/logger';
 
+import { setDbContext } from '@/src/db/context'
+
 const logger = createLogger('callings');
-import { setDbContext } from '@/src/db/context';
 import { enqueueOutboxNotificationJob } from '@/src/notifications/queue';
 
 export async function POST(_: Request, context: { params: Promise<{ wardId: string; callingId: string }> }) {
