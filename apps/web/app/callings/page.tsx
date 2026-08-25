@@ -155,13 +155,14 @@ export default async function CallingsPage() {
 
       await client.query(
         `INSERT INTO audit_log (ward_id, user_id, action, details)
-         VALUES ($1, $2, $3, jsonb_build_object('callingAssignmentId', $4, 'toStatus', $5))`,
+         VALUES ($1::uuid, $2::uuid, $3::text, jsonb_build_object('callingAssignmentId', $4::text, 'toStatus', $5::text))`,
         [actionSession.activeWardId, actionSession.user.id, `CALLING_${toStatus}`, callingId, toStatus]
       );
 
       await client.query('COMMIT');
-    } catch {
+    } catch (err) {
       await client.query('ROLLBACK');
+      console.error('[callings transitionCalling]', err instanceof Error ? err.message : String(err));
       throw new Error('Failed to transition calling');
     } finally {
       client.release();
