@@ -5,6 +5,9 @@ import { canManageCallings } from '@/src/auth/roles';
 import { CALLING_STATUS } from '@/src/callings/lifecycle';
 import { appendCallingStatus, fetchCurrentCallingStatus } from '@/src/callings/transition';
 import { pool } from '@/src/db/client';
+import { createLogger } from '@/src/lib/logger';
+
+const logger = createLogger('callings');
 import { setDbContext } from '@/src/db/context';
 import { enqueueOutboxNotificationJob } from '@/src/notifications/queue';
 
@@ -84,8 +87,9 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
     });
 
     return NextResponse.json({ id: callingId, status: CALLING_STATUS.SET_APART });
-  } catch {
+  } catch (err) {
     await client.query('ROLLBACK');
+    logger.error('Failed to mark set apart', { wardId, callingId, error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: 'Failed to mark set apart', code: 'INTERNAL_ERROR' }, { status: 500 });
   } finally {
     client.release();

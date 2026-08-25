@@ -4,6 +4,9 @@ import { auth } from '@/src/auth/auth';
 import { canManageCallings, canViewCallings } from '@/src/auth/roles';
 import { CALLING_STATUS } from '@/src/callings/lifecycle';
 import { pool } from '@/src/db/client';
+import { createLogger } from '@/src/lib/logger';
+
+const logger = createLogger('callings');
 import { setDbContext } from '@/src/db/context';
 
 type CallingRow = {
@@ -63,8 +66,9 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
         createdAt: row.created_at
       }))
     });
-  } catch {
+  } catch (err) {
     await client.query('ROLLBACK');
+    logger.error('Failed to load callings', { wardId, error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: 'Failed to load callings', code: 'INTERNAL_ERROR' }, { status: 500 });
   } finally {
     client.release();

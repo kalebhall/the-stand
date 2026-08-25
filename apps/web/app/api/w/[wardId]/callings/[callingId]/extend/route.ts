@@ -5,6 +5,9 @@ import { CALLING_STATUS } from '@/src/callings/lifecycle';
 import { appendCallingStatus, fetchCurrentCallingStatus } from '@/src/callings/transition';
 import { canManageCallings } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
+import { createLogger } from '@/src/lib/logger';
+
+const logger = createLogger('callings');
 import { setDbContext } from '@/src/db/context';
 
 export async function POST(_: Request, context: { params: Promise<{ wardId: string; callingId: string }> }) {
@@ -51,8 +54,9 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
     await client.query('COMMIT');
 
     return NextResponse.json({ id: callingId, status: CALLING_STATUS.EXTENDED });
-  } catch {
+  } catch (err) {
     await client.query('ROLLBACK');
+    logger.error('Failed to extend calling', { wardId, callingId, error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: 'Failed to extend calling', code: 'INTERNAL_ERROR' }, { status: 500 });
   } finally {
     client.release();

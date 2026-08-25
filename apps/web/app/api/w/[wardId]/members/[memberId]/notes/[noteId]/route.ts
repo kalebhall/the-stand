@@ -3,7 +3,10 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/src/auth/auth';
 import { canViewCallings } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
+import { createLogger } from '@/src/lib/logger';
 import { setDbContext } from '@/src/db/context';
+
+const logger = createLogger('member-notes');
 
 type NoteBody = {
   noteText?: unknown;
@@ -55,15 +58,16 @@ export async function PATCH(request: Request, context: { params: Promise<{ wardI
 
     await client.query(
       `INSERT INTO audit_log (ward_id, user_id, action, details)
-       VALUES ($1, $2, 'MEMBER_NOTE_EDITED', jsonb_build_object('memberId', $3, 'memberName', $4, 'memberNoteId', $5))`,
+       VALUES ($1::uuid, $2::uuid, 'MEMBER_NOTE_EDITED', jsonb_build_object('memberId', $3::text, 'memberName', $4::text, 'memberNoteId', $5::text))`,
       [wardId, session.user.id, memberId, noteResult.rows[0].full_name, noteId]
     );
 
     await client.query('COMMIT');
 
     return NextResponse.json({ success: true });
-  } catch {
+  } catch (err) {
     await client.query('ROLLBACK');
+    logger.error('Failed to edit note', { wardId, memberId, noteId, error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: 'Failed to edit note', code: 'INTERNAL_ERROR' }, { status: 500 });
   } finally {
     client.release();
@@ -109,15 +113,16 @@ export async function DELETE(_request: Request, context: { params: Promise<{ war
 
     await client.query(
       `INSERT INTO audit_log (ward_id, user_id, action, details)
-       VALUES ($1, $2, 'MEMBER_NOTE_DELETED', jsonb_build_object('memberId', $3, 'memberName', $4, 'memberNoteId', $5))`,
+       VALUES ($1::uuid, $2::uuid, 'MEMBER_NOTE_DELETED', jsonb_build_object('memberId', $3::text, 'memberName', $4::text, 'memberNoteId', $5::text))`,
       [wardId, session.user.id, memberId, noteResult.rows[0].full_name, noteId]
     );
 
     await client.query('COMMIT');
 
     return NextResponse.json({ success: true });
-  } catch {
+  } catch (err) {
     await client.query('ROLLBACK');
+    logger.error('Failed to delete note', { wardId, memberId, noteId, error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: 'Failed to delete note', code: 'INTERNAL_ERROR' }, { status: 500 });
   } finally {
     client.release();
