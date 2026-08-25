@@ -111,15 +111,17 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
 
     await client.query(
       `INSERT INTO audit_log (ward_id, user_id, action, details)
-       VALUES ($1, $2, 'CALLING_PROPOSED', jsonb_build_object('callingAssignmentId', $3))`,
+       VALUES ($1::uuid, $2::uuid, 'CALLING_PROPOSED', jsonb_build_object('callingAssignmentId', $3::text))`,
       [wardId, session.user.id, assignmentId]
     );
 
     await client.query('COMMIT');
 
     return NextResponse.json({ id: assignmentId, status: CALLING_STATUS.PROPOSED }, { status: 201 });
-  } catch {
+  } catch (err) {
     await client.query('ROLLBACK');
+    const message = err instanceof Error ? err.message : String(err);
+    console.error('[callings POST] Failed to create calling:', message);
     return NextResponse.json({ error: 'Failed to create calling', code: 'INTERNAL_ERROR' }, { status: 500 });
   } finally {
     client.release();

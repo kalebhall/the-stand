@@ -44,7 +44,7 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
 
     await client.query(
       `INSERT INTO audit_log (ward_id, user_id, action, details)
-       VALUES ($1, $2, 'CALLING_EXTENDED', jsonb_build_object('callingAssignmentId', $3))`,
+       VALUES ($1::uuid, $2::uuid, 'CALLING_EXTENDED', jsonb_build_object('callingAssignmentId', $3::text))`,
       [wardId, session.user.id, callingId]
     );
 
