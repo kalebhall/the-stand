@@ -29,11 +29,14 @@ function getPool(): Pool {
     }
     _pool = new Pool({
       connectionString,
-      // Fail fast if the pool is exhausted instead of hanging the server
-      connectionTimeoutMillis: 5000,
-      // Release idle connections after 30s
-      idleTimeoutMillis: 30000,
-      max: 10
+      // Allow up to 20 concurrent connections.
+      // Each request can need 1 client for its lifetime (BEGIN→COMMIT).
+      max: 20,
+      // Wait up to 15s for a connection before failing.
+      // 5s was too short under moderate load bursts.
+      connectionTimeoutMillis: 15000,
+      // Release idle connections after 60s.
+      idleTimeoutMillis: 60000
     });
   }
   return _pool;
@@ -44,6 +47,28 @@ export const pool: Pool = new Proxy({} as Pool, {
     return Reflect.get(getPool(), prop, receiver);
   },
 });
+
+/**
+ * Acquire a pool client, run the callback, and guarantee release even on throw.
+ * Prefer this over manual pool.connect() + try/finally in every handler.
+ *
+ * Usage:
+ *   const result = await withDbClient(async (client) => {
+ *     await client.query('BEGIN');
+ *     await setDbContext(client, { userId, wardId });
+ *     // ... queries ...
+ *     await client.query('COMMIT');
+ *     return data;
+ *   });
+ */
+export async function withDbClient<T>(fn: (client: import('pg').PoolClient) => Promise<T>): Promise<T> {
+  const client = await getPool().connect();
+  try {
+    return await fn(client);
+  } finally {
+    client.release();
+  }
+}
 
 export const db: NodePgDatabase<typeof schema> = new Proxy(
   {} as NodePgDatabase<typeof schema>,
