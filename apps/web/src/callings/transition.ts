@@ -46,7 +46,7 @@ export async function appendCallingStatus(
     [wardId, callingId, toStatus]
   );
 
-  if (toStatus === 'SET_APART') {
+  if (toStatus === 'SET_APART' || toStatus === 'TO_BE_RELEASED') {
     await client.query('UPDATE calling_assignment SET is_active = FALSE WHERE id = $1 AND ward_id = $2', [callingId, wardId]);
   }
 

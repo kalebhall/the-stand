@@ -7,6 +7,7 @@ export const dynamic = 'force-dynamic';
 import { AddCallingSection } from '@/components/AddCallingSection';
 import { CallingAssignButton } from '@/components/CallingAssignButton';
 import { CallingDeleteButton } from '@/components/CallingDeleteButton';
+import { CallingReleaseButton } from '@/components/CallingReleaseButton';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth/guards';
@@ -31,7 +32,8 @@ const STATUS_LABELS: Record<string, string> = {
   PROPOSED: 'Proposed',
   EXTENDED: 'Extended',
   SUSTAINED: 'Sustained',
-  SET_APART: 'Set Apart'
+  SET_APART: 'Set Apart',
+  TO_BE_RELEASED: 'To Be Released'
 };
 
 function formatCallingTenure(sustainedDate: string | null, createdAt: string): string {
@@ -240,8 +242,66 @@ export default async function CallingsPage() {
 
     await client.query('COMMIT');
 
-    const callings = callingResult.rows as CallingQueueRow[];
+    const allCallings = callingResult.rows as CallingQueueRow[];
     const setApartQueue = setApartQueueResult.rows as Omit<CallingQueueRow, 'status'>[];
+
+    // Split callings into sections
+    const proposedCallings = allCallings.filter((c) => c.status === 'PROPOSED');
+    const extendedCallings = allCallings.filter((c) => c.status === 'EXTENDED');
+    const toBeReleasedCallings = allCallings.filter((c) => c.status === 'TO_BE_RELEASED');
+    const activeCallings = allCallings.filter(
+      (c) => c.status !== 'PROPOSED' && c.status !== 'EXTENDED' && c.status !== 'TO_BE_RELEASED'
+    );
+
+    function CallingRow({ calling, showRelease = true }: { calling: CallingQueueRow; showRelease?: boolean }) {
+      const transition = canManage ? nextTransition(calling.status) : null;
+      return (
+        <li className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
+          <span>
+            <span className="font-semibold">{calling.member_name}</span> — {calling.calling_name}
+            <span className="ml-2 text-xs text-muted-foreground">
+              In calling: {formatCallingTenure(calling.sustained_date, calling.created_at)}
+            </span>
+          </span>
+          <div className="flex items-center gap-2">
+            <span className="rounded-full border px-2 py-0.5 text-xs font-medium">
+              {STATUS_LABELS[calling.status] ?? calling.status}
+            </span>
+            {transition ? (
+              <form action={transitionCalling}>
+                <input type="hidden" name="callingId" value={calling.id} />
+                <input type="hidden" name="toStatus" value={transition.toStatus} />
+                <Button type="submit" size="sm" variant="outline">{transition.label}</Button>
+              </form>
+            ) : null}
+            {canManage && calling.status !== 'ASSIGNED' && calling.status !== 'SET_APART' && calling.status !== 'TO_BE_RELEASED' ? (
+              <CallingAssignButton
+                wardId={wardId}
+                callingId={calling.id}
+                memberName={calling.member_name}
+                callingName={calling.calling_name}
+              />
+            ) : null}
+            {canManage && showRelease && calling.status !== 'TO_BE_RELEASED' ? (
+              <CallingReleaseButton
+                wardId={wardId}
+                callingId={calling.id}
+                memberName={calling.member_name}
+                callingName={calling.calling_name}
+              />
+            ) : null}
+            {canManage && calling.status === 'TO_BE_RELEASED' ? (
+              <CallingDeleteButton
+                wardId={wardId}
+                callingId={calling.id}
+                memberName={calling.member_name}
+                callingName={calling.calling_name}
+              />
+            ) : null}
+          </div>
+        </li>
+      );
+    }
 
     return (
       <main className="mx-auto w-full max-w-6xl space-y-6 p-4 sm:p-6">
@@ -274,6 +334,52 @@ export default async function CallingsPage() {
           </section>
         ) : null}
 
+        {/* Proposed section */}
+        <section className="rounded-lg border bg-card p-4">
+          <h2 className="text-lg font-semibold">Proposed</h2>
+          <p className="mb-3 text-sm text-muted-foreground">Callings that have been proposed but not yet extended.</p>
+          {proposedCallings.length ? (
+            <ul className="space-y-2">
+              {proposedCallings.map((calling) => (
+                <CallingRow key={calling.id} calling={calling} />
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-muted-foreground">No proposed callings.</p>
+          )}
+        </section>
+
+        {/* Extended section */}
+        <section className="rounded-lg border bg-card p-4">
+          <h2 className="text-lg font-semibold">Extended</h2>
+          <p className="mb-3 text-sm text-muted-foreground">Callings that have been extended — will appear on sacrament meeting ward business for sustaining.</p>
+          {extendedCallings.length ? (
+            <ul className="space-y-2">
+              {extendedCallings.map((calling) => (
+                <CallingRow key={calling.id} calling={calling} />
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-muted-foreground">No extended callings.</p>
+          )}
+        </section>
+
+        {/* To Be Released section */}
+        <section className="rounded-lg border bg-card p-4">
+          <h2 className="text-lg font-semibold">To Be Released</h2>
+          <p className="mb-3 text-sm text-muted-foreground">Callings queued for release — will appear on sacrament meeting ward business. Delete permanently removes the record.</p>
+          {toBeReleasedCallings.length ? (
+            <ul className="space-y-2">
+              {toBeReleasedCallings.map((calling) => (
+                <CallingRow key={calling.id} calling={calling} showRelease={false} />
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-muted-foreground">No callings queued for release.</p>
+          )}
+        </section>
+
+        {/* Set Apart Queue */}
         <section className="rounded-lg border bg-card p-4">
           <h2 className="text-lg font-semibold">Set Apart Queue</h2>
           <p className="mb-3 text-sm text-muted-foreground">Sustained callings awaiting set apart action.</p>
@@ -302,51 +408,14 @@ export default async function CallingsPage() {
           )}
         </section>
 
+        {/* All Calling Assignments (excluding proposed, extended, to be released) */}
         <section className="rounded-lg border bg-card p-4">
           <h2 className="text-lg font-semibold">Calling Assignments</h2>
-          {callings.length ? (
+          {activeCallings.length ? (
             <ul className="mt-3 space-y-2">
-              {callings.map((calling) => {
-                const transition = canManage ? nextTransition(calling.status) : null;
-                return (
-                  <li key={calling.id} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
-                    <span>
-                      <span className="font-semibold">{calling.member_name}</span> — {calling.calling_name}
-                      <span className="ml-2 text-xs text-muted-foreground">
-                        In calling: {formatCallingTenure(calling.sustained_date, calling.created_at)}
-                      </span>
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <span className="rounded-full border px-2 py-0.5 text-xs font-medium">
-                        {STATUS_LABELS[calling.status] ?? calling.status}
-                      </span>
-                      {transition ? (
-                        <form action={transitionCalling}>
-                          <input type="hidden" name="callingId" value={calling.id} />
-                          <input type="hidden" name="toStatus" value={transition.toStatus} />
-                          <Button type="submit" size="sm" variant="outline">{transition.label}</Button>
-                        </form>
-                      ) : null}
-                      {canManage && calling.status !== 'ASSIGNED' && calling.status !== 'SET_APART' ? (
-                        <CallingAssignButton
-                          wardId={wardId}
-                          callingId={calling.id}
-                          memberName={calling.member_name}
-                          callingName={calling.calling_name}
-                        />
-                      ) : null}
-                      {canManage ? (
-                        <CallingDeleteButton
-                          wardId={wardId}
-                          callingId={calling.id}
-                          memberName={calling.member_name}
-                          callingName={calling.calling_name}
-                        />
-                      ) : null}
-                    </div>
-                  </li>
-                );
-              })}
+              {activeCallings.map((calling) => (
+                <CallingRow key={calling.id} calling={calling} />
+              ))}
             </ul>
           ) : (
             <p className="mt-3 text-sm text-muted-foreground">No calling assignments yet.</p>
