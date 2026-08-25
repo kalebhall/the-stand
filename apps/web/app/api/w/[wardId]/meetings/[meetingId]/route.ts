@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 
 import { auth } from '@/src/auth/auth';
 import { canManageMeetings, canViewMeetings } from '@/src/auth/roles';
+import { isConferenceMeetingType, migrateBusinessLinesOffConference } from '@/src/callings/meeting-business';
 import { pool } from '@/src/db/client';
 import { createLogger } from '@/src/lib/logger';
 import { setDbContext } from '@/src/db/context';
@@ -130,6 +131,13 @@ export async function PUT(request: Request, context: { params: Promise<{ wardId:
     if (!updated.rowCount) {
       await client.query('ROLLBACK');
       return NextResponse.json({ error: 'Meeting not found', code: 'NOT_FOUND' }, { status: 404 });
+    }
+
+    // If the meeting was changed to a conference type, migrate any pending
+    // ward-business lines (sustain/release) off this meeting to the next
+    // eligible ward meeting.
+    if (isConferenceMeetingType(meetingType)) {
+      await migrateBusinessLinesOffConference(client, { wardId, meetingId, newMeetingDate: meetingDate });
     }
 
     await client.query('DELETE FROM meeting_program_item WHERE meeting_id = $1 AND ward_id = $2', [meetingId, wardId]);
