@@ -6,8 +6,9 @@ import { CALLING_STATUS } from '@/src/callings/lifecycle';
 import { pool } from '@/src/db/client';
 import { createLogger } from '@/src/lib/logger';
 
+import { setDbContext } from '@/src/db/context'
+
 const logger = createLogger('callings');
-import { setDbContext } from '@/src/db/context';
 
 type CallingRow = {
   id: string;

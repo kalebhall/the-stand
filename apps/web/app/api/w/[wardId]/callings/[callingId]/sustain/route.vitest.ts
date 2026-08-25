@@ -32,30 +32,29 @@ describe('POST /api/w/[wardId]/callings/[callingId]/sustain', () => {
       release: releaseMock
     });
 
+    // setDbContext is mocked at module level (no-op).
+    // sequence: BEGIN, fetchCurrentCallingStatus (FOR UPDATE query), appendCallingStatus (INSERT calling_action), audit_log INSERT, COMMIT
     queryMock
-      .mockResolvedValueOnce({})
-      .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'calling-1', action_status: 'EXTENDED' }] })
-      .mockResolvedValueOnce({})
-      .mockResolvedValueOnce({ rowCount: 1, rows: [{ member_name: 'Jane Doe', calling_name: 'Primary President' }] })
-      .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'meeting-1' }] })
-      .mockResolvedValueOnce({})
-      .mockResolvedValueOnce({})
-      .mockResolvedValueOnce({});
+      .mockResolvedValueOnce({}) // BEGIN
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'calling-1', action_status: 'EXTENDED' }] }) // fetchCurrentCallingStatus
+      .mockResolvedValueOnce({}) // appendCallingStatus INSERT calling_action
+      .mockResolvedValueOnce({}) // audit_log INSERT
+      .mockResolvedValueOnce({}); // COMMIT
   });
 
-  it('adds sustained action and creates business line in upcoming meeting', async () => {
+  it('records sustained status without creating a duplicate business line', async () => {
     const response = await POST(new Request('http://localhost'), {
       params: Promise.resolve({ wardId: 'ward-1', callingId: 'calling-1' })
     });
 
     expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ id: 'calling-1', status: 'SUSTAINED', meetingId: 'meeting-1' });
-    expect(queryMock).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO meeting_business_line'), [
-      'ward-1',
-      'meeting-1',
-      'Jane Doe',
-      'Primary President'
-    ]);
+    expect(await response.json()).toEqual({ id: 'calling-1', status: 'SUSTAINED' });
+
+    // Business line was already created when the calling was extended — not on sustain.
+    const allCalls = queryMock.mock.calls.map((c: unknown[]) => c[0] as string);
+    const businessLineCall = allCalls.find((q) => q.includes('meeting_business_line'));
+    expect(businessLineCall).toBeUndefined();
+
     expect(releaseMock).toHaveBeenCalled();
   });
 });
