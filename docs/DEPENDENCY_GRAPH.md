@@ -28,7 +28,7 @@ flowchart LR
   A16["web:lib<br/>7 files"]
   A17["web:meetings<br/>7 files"]
   A18["web:notifications<br/>5 files"]
-  A19["web:stand<br/>2 files"]
+  A19["web:stand<br/>3 files"]
   A20["web:tooling<br/>2 files"]
   A21["web:types<br/>2 files"]
   A22["web:ui<br/>18 files"]
@@ -47,6 +47,7 @@ flowchart LR
   A5 -->|3| A17
   A5 -->|2| A4
   A6 -->|2| A4
+  A6 -->|2| A19
   A7 -->|2| A12
   A9 -->|2| A12
   A11 -->|2| A16
@@ -58,7 +59,6 @@ flowchart LR
   A6 -->|1| A15
   A6 -->|1| A16
   A6 -->|1| A18
-  A6 -->|1| A19
   A7 -->|1| A16
   A11 -->|1| A8
   A11 -->|1| A14
@@ -67,6 +67,7 @@ flowchart LR
   A17 -->|1| A4
   A22 -->|1| A7
   A22 -->|1| A15
+  A22 -->|1| A19
 ```
 
 ## Area inventory
@@ -91,7 +92,7 @@ flowchart LR
 | `web:lib` | 7 |
 | `web:meetings` | 7 |
 | `web:notifications` | 5 |
-| `web:stand` | 2 |
+| `web:stand` | 3 |
 | `web:tooling` | 2 |
 | `web:types` | 2 |
 | `web:ui` | 18 |
@@ -124,6 +125,7 @@ flowchart LR
 | `package:shared` | `package:shared` | 2 |
 | `web:api` | `web:announcements` | 2 |
 | `web:app` | `web:announcements` | 2 |
+| `web:app` | `web:stand` | 2 |
 | `web:auth` | `web:db` | 2 |
 | `web:calendar` | `web:calendar` | 2 |
 | `web:calendar` | `web:db` | 2 |
@@ -132,6 +134,7 @@ flowchart LR
 | `web:db` | `web:auth` | 2 |
 | `web:lib` | `web:lib` | 2 |
 | `web:notifications` | `web:db` | 2 |
+| `web:stand` | `web:stand` | 2 |
 | `root:other` | `web:health.mjs` | 1 |
 | `web:announcements` | `web:announcements` | 1 |
 | `web:api` | `web:calendar` | 1 |
@@ -139,16 +142,15 @@ flowchart LR
 | `web:app` | `web:imports` | 1 |
 | `web:app` | `web:lib` | 1 |
 | `web:app` | `web:notifications` | 1 |
-| `web:app` | `web:stand` | 1 |
 | `web:auth` | `web:lib` | 1 |
 | `web:config` | `web:bootstrap.mjs` | 1 |
 | `web:config` | `web:health.mjs` | 1 |
 | `web:health.mjs` | `web:version.mjs` | 1 |
 | `web:imports` | `web:db` | 1 |
 | `web:meetings` | `web:announcements` | 1 |
-| `web:stand` | `web:stand` | 1 |
 | `web:ui` | `web:auth` | 1 |
 | `web:ui` | `web:imports` | 1 |
+| `web:ui` | `web:stand` | 1 |
 
 ## External dependencies
 
@@ -337,7 +339,7 @@ flowchart LR
 | `apps/web/app/settings/public-portal/page.tsx` | `web:app` | 6 | 3 |
 | `apps/web/app/settings/stand-script/error.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/settings/stand-script/loading.tsx` | `web:app` | 0 | 0 |
-| `apps/web/app/settings/stand-script/page.tsx` | `web:app` | 5 | 2 |
+| `apps/web/app/settings/stand-script/page.tsx` | `web:app` | 6 | 2 |
 | `apps/web/app/settings/users/error.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/settings/users/loading.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/settings/users/page.tsx` | `web:app` | 3 | 2 |
@@ -363,7 +365,7 @@ flowchart LR
 | `apps/web/components/CallingReleaseButton.tsx` | `web:ui` | 1 | 2 |
 | `apps/web/components/HymnAutocomplete.tsx` | `web:ui` | 0 | 1 |
 | `apps/web/components/StandardCallingsManager.tsx` | `web:ui` | 1 | 2 |
-| `apps/web/components/WardBusinessSection.tsx` | `web:ui` | 1 | 2 |
+| `apps/web/components/WardBusinessSection.tsx` | `web:ui` | 2 | 2 |
 | `apps/web/components/app-navigation.tsx` | `web:ui` | 1 | 0 |
 | `apps/web/components/app-shell.tsx` | `web:ui` | 5 | 4 |
 | `apps/web/components/conducting-mode-context.tsx` | `web:ui` | 0 | 1 |
@@ -447,7 +449,8 @@ flowchart LR
 | `apps/web/src/notifications/runner.ts` | `web:notifications` | 0 | 1 |
 | `apps/web/src/notifications/runner.vitest.ts` | `web:notifications` | 1 | 1 |
 | `apps/web/src/notifications/worker-entry.ts` | `web:notifications` | 4 | 1 |
-| `apps/web/src/stand/render.ts` | `web:stand` | 0 | 0 |
+| `apps/web/src/stand/default-template.ts` | `web:stand` | 0 | 0 |
+| `apps/web/src/stand/render.ts` | `web:stand` | 1 | 0 |
 | `apps/web/src/stand/render.vitest.ts` | `web:stand` | 1 | 1 |
 | `apps/web/src/types/external-modules.d.ts` | `web:types` | 0 | 0 |
 | `apps/web/src/types/pg.d.ts` | `web:types` | 0 | 0 |
