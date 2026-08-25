@@ -15,6 +15,10 @@ export const LCR_DOM_EXTRACTOR_SCRIPT = `(function() {
   // Eden table format used by current LCR pages.
   // Each <td> has a <span class="eden-table-card-view__cloned-column-header"> label
   // followed by the actual cell value. Checkbox/action cells have no label span.
+  //
+  // Special case: the "Set Apart" column uses an SVG checkmark icon — its textContent
+  // is always empty regardless of set-apart status. We detect the SVG explicitly and
+  // emit "yes" or "no" so the server-side parser can read it correctly.
   function extractEdenTable() {
     var table = document.querySelector('table');
     if (!table) return null;
@@ -29,14 +33,26 @@ export const LCR_DOM_EXTRACTOR_SCRIPT = `(function() {
       });
     }
 
+    // Find which column index (0-based within data columns) is "Set Apart"
+    var setApartIdx = headers.findIndex(function(h) { return /set apart/i.test(h); });
+
     var dataRows = Array.from(table.querySelectorAll('tbody tr')).map(function(r) {
+      var colIdx = 0;
       return Array.from(r.querySelectorAll('td')).reduce(function(acc, td) {
         var labelSpan = td.querySelector('.eden-table-card-view__cloned-column-header');
         if (!labelSpan) return acc; // skip checkbox / action cells
-        var clone = td.cloneNode(true);
-        var spanEl = clone.querySelector('.eden-table-card-view__cloned-column-header');
-        if (spanEl && spanEl.parentNode) spanEl.parentNode.removeChild(spanEl);
-        acc.push(normalize(clone.textContent));
+        if (colIdx === setApartIdx) {
+          // Checkmark icon = set apart. Info icon (not managed by unit) is also set apart.
+          // Absence of any SVG = not set apart.
+          var svgEl = td.querySelector('svg.eden-icon');
+          acc.push(svgEl ? 'yes' : 'no');
+        } else {
+          var clone = td.cloneNode(true);
+          var spanEl = clone.querySelector('.eden-table-card-view__cloned-column-header');
+          if (spanEl && spanEl.parentNode) spanEl.parentNode.removeChild(spanEl);
+          acc.push(normalize(clone.textContent));
+        }
+        colIdx++;
         return acc;
       }, []);
     }).filter(function(r) { return r.length > 0; });
@@ -111,3 +127,4 @@ export const LCR_DOM_EXTRACTOR_SCRIPT = `(function() {
 export function getLcrBookmarkletHref(): string {
   return `javascript:${encodeURIComponent(LCR_DOM_EXTRACTOR_SCRIPT)}`;
 }
+
