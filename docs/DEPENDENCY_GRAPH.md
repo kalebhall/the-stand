@@ -14,7 +14,7 @@ flowchart LR
   A2["root:other<br/>1 files"]
   A3["root:tooling<br/>6 files"]
   A4["web:announcements<br/>2 files"]
-  A5["web:api<br/>55 files"]
+  A5["web:api<br/>56 files"]
   A6["web:app<br/>78 files"]
   A7["web:auth<br/>11 files"]
   A8["web:bootstrap.mjs<br/>1 files"]
@@ -31,14 +31,14 @@ flowchart LR
   A19["web:stand<br/>2 files"]
   A20["web:tooling<br/>2 files"]
   A21["web:types<br/>2 files"]
-  A22["web:ui<br/>17 files"]
+  A22["web:ui<br/>18 files"]
   A23["web:version.mjs<br/>1 files"]
-  A5 -->|75| A7
-  A6 -->|69| A22
-  A5 -->|65| A12
+  A5 -->|77| A7
+  A6 -->|71| A22
+  A5 -->|67| A12
   A6 -->|62| A7
   A6 -->|38| A12
-  A5 -->|24| A16
+  A5 -->|25| A16
   A5 -->|15| A10
   A5 -->|8| A15
   A6 -->|8| A17
@@ -77,7 +77,7 @@ flowchart LR
 | `root:other` | 1 |
 | `root:tooling` | 6 |
 | `web:announcements` | 2 |
-| `web:api` | 55 |
+| `web:api` | 56 |
 | `web:app` | 78 |
 | `web:auth` | 11 |
 | `web:bootstrap.mjs` | 1 |
@@ -94,22 +94,22 @@ flowchart LR
 | `web:stand` | 2 |
 | `web:tooling` | 2 |
 | `web:types` | 2 |
-| `web:ui` | 17 |
+| `web:ui` | 18 |
 | `web:version.mjs` | 1 |
 
 ## Internal dependencies
 
 | Importing area | Imported area | Imports |
 | --- | --- | ---: |
-| `web:api` | `web:auth` | 75 |
-| `web:app` | `web:ui` | 69 |
-| `web:api` | `web:db` | 65 |
+| `web:api` | `web:auth` | 77 |
+| `web:app` | `web:ui` | 71 |
+| `web:api` | `web:db` | 67 |
 | `web:app` | `web:auth` | 62 |
 | `web:app` | `web:db` | 38 |
 | `web:app` | `web:app` | 29 |
-| `web:api` | `web:lib` | 24 |
+| `web:api` | `web:lib` | 25 |
+| `web:ui` | `web:ui` | 16 |
 | `web:api` | `web:callings` | 15 |
-| `web:ui` | `web:ui` | 15 |
 | `web:api` | `web:api` | 13 |
 | `web:api` | `web:imports` | 8 |
 | `web:app` | `web:meetings` | 8 |
@@ -155,12 +155,12 @@ flowchart LR
 | Importing area | Package/runtime | Imports |
 | --- | --- | ---: |
 | `web:app` | `next` | 63 |
-| `web:api` | `next` | 41 |
+| `web:api` | `next` | 42 |
 | `web:app` | `react` | 17 |
-| `web:ui` | `react` | 14 |
+| `web:ui` | `react` | 15 |
 | `web:api` | `vitest` | 13 |
 | `root:tooling` | `Node.js` | 12 |
-| `web:ui` | `next` | 7 |
+| `web:ui` | `next` | 8 |
 | `web:auth` | `next-auth` | 6 |
 | `web:app` | `vitest` | 4 |
 | `web:auth` | `vitest` | 4 |
@@ -269,6 +269,7 @@ flowchart LR
 | `apps/web/app/api/w/[wardId]/imports/lcr/route.ts` | `web:api` | 8 | 2 |
 | `apps/web/app/api/w/[wardId]/imports/membership/route.ts` | `web:api` | 7 | 1 |
 | `apps/web/app/api/w/[wardId]/imports/membership/route.vitest.ts` | `web:api` | 1 | 1 |
+| `apps/web/app/api/w/[wardId]/meetings/[meetingId]/business/[lineId]/route.ts` | `web:api` | 5 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/complete/route.ts` | `web:api` | 6 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/complete/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/publish/route.ts` | `web:api` | 6 | 2 |
@@ -309,7 +310,7 @@ flowchart LR
 | `apps/web/app/login/page.tsx` | `web:app` | 2 | 1 |
 | `apps/web/app/logout/logout-form.tsx` | `web:app` | 2 | 2 |
 | `apps/web/app/logout/page.tsx` | `web:app` | 2 | 0 |
-| `apps/web/app/meetings/[meetingId]/edit/page.tsx` | `web:app` | 7 | 2 |
+| `apps/web/app/meetings/[meetingId]/edit/page.tsx` | `web:app` | 8 | 2 |
 | `apps/web/app/meetings/[meetingId]/print/page.tsx` | `web:app` | 6 | 1 |
 | `apps/web/app/meetings/error.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/meetings/loading.tsx` | `web:app` | 0 | 0 |
@@ -341,7 +342,7 @@ flowchart LR
 | `apps/web/app/settings/users/loading.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/settings/users/page.tsx` | `web:app` | 3 | 2 |
 | `apps/web/app/settings/users/ward-users-manager.tsx` | `web:app` | 2 | 1 |
-| `apps/web/app/stand/[meetingId]/page.tsx` | `web:app` | 8 | 2 |
+| `apps/web/app/stand/[meetingId]/page.tsx` | `web:app` | 9 | 2 |
 | `apps/web/app/support/access-requests/page.tsx` | `web:app` | 5 | 3 |
 | `apps/web/app/support/audit-log/AuditLogViewer.tsx` | `web:app` | 1 | 1 |
 | `apps/web/app/support/audit-log/page.tsx` | `web:app` | 7 | 2 |
@@ -362,6 +363,7 @@ flowchart LR
 | `apps/web/components/CallingReleaseButton.tsx` | `web:ui` | 1 | 2 |
 | `apps/web/components/HymnAutocomplete.tsx` | `web:ui` | 0 | 1 |
 | `apps/web/components/StandardCallingsManager.tsx` | `web:ui` | 1 | 2 |
+| `apps/web/components/WardBusinessSection.tsx` | `web:ui` | 1 | 2 |
 | `apps/web/components/app-navigation.tsx` | `web:ui` | 1 | 0 |
 | `apps/web/components/app-shell.tsx` | `web:ui` | 5 | 4 |
 | `apps/web/components/conducting-mode-context.tsx` | `web:ui` | 0 | 1 |

@@ -2,9 +2,10 @@ import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 
 import { buttonVariants } from '@/components/ui/button';
+import { WardBusinessSection, type BusinessLine } from '@/components/WardBusinessSection';
 import { cn } from '@/lib/utils';
 import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth/guards';
-import { canViewMeetings } from '@/src/auth/roles';
+import { canManageCallings, canViewMeetings } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 import { isAnnouncementActiveForDate } from '@/src/announcements/types';
@@ -78,6 +79,14 @@ export default async function StandViewPage({
       [session.activeWardId]
     );
 
+    const businessLinesResult = await client.query(
+      `SELECT id, member_name, calling_name, action_type, status
+         FROM meeting_business_line
+        WHERE meeting_id = $1::uuid AND ward_id = $2::uuid
+        ORDER BY created_at ASC`,
+      [meetingId, session.activeWardId]
+    );
+
     await client.query('COMMIT');
 
     const activeStandAnnouncements = (announcementResult.rows as Array<{
@@ -105,6 +114,8 @@ export default async function StandViewPage({
       }));
 
     const template = templateResult.rows[0] as TemplateRow | undefined;
+    const businessLines = businessLinesResult.rows as BusinessLine[];
+    const canManage = canManageCallings({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId);
     const standRows = buildStandRows(
       (programResult.rows as ProgramItemRow[]).map((item) => ({
         itemType: item.item_type,
@@ -140,6 +151,14 @@ export default async function StandViewPage({
             </Link>
           </div>
         </section>
+
+        <WardBusinessSection
+          wardId={session.activeWardId}
+          meetingId={meetingId}
+          lines={businessLines}
+          canManage={canManage}
+          showAnnounce={true}
+        />
 
         <section className="grid gap-3">
           {selectedMode === 'formal'
