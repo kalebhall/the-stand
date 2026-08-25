@@ -50,5 +50,9 @@ export async function appendCallingStatus(
     await client.query('UPDATE calling_assignment SET is_active = FALSE WHERE id = $1 AND ward_id = $2', [callingId, wardId]);
   }
 
+  if (toStatus === 'ASSIGNED') {
+    await client.query('UPDATE calling_assignment SET is_active = TRUE WHERE id = $1 AND ward_id = $2', [callingId, wardId]);
+  }
+
   return { ok: true };
 }

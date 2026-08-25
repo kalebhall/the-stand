@@ -87,7 +87,11 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
   }
 
-  const body = (await request.json().catch(() => null)) as { memberName?: string; callingName?: string } | null;
+  const body = (await request.json().catch(() => null)) as {
+    memberName?: string;
+    callingName?: string;
+    isAssignmentOnly?: boolean;
+  } | null;
 
   if (!body?.memberName?.trim() || !body.callingName?.trim()) {
     return NextResponse.json({ error: 'Invalid payload', code: 'VALIDATION_ERROR' }, { status: 400 });
@@ -107,22 +111,24 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     );
 
     const assignmentId = assignmentResult.rows[0].id as string;
+    const initialStatus = body.isAssignmentOnly === true ? CALLING_STATUS.ASSIGNED : CALLING_STATUS.PROPOSED;
+    const auditAction = body.isAssignmentOnly === true ? 'CALLING_ASSIGNED' : 'CALLING_PROPOSED';
 
     await client.query(
       `INSERT INTO calling_action (ward_id, calling_assignment_id, action_status)
        VALUES ($1, $2, $3)`,
-      [wardId, assignmentId, CALLING_STATUS.PROPOSED]
+      [wardId, assignmentId, initialStatus]
     );
 
     await client.query(
       `INSERT INTO audit_log (ward_id, user_id, action, details)
-       VALUES ($1::uuid, $2::uuid, 'CALLING_PROPOSED', jsonb_build_object('callingAssignmentId', $3::text))`,
-      [wardId, session.user.id, assignmentId]
+       VALUES ($1::uuid, $2::uuid, $3::text, jsonb_build_object('callingAssignmentId', $4::text))`,
+      [wardId, session.user.id, auditAction, assignmentId]
     );
 
     await client.query('COMMIT');
 
-    return NextResponse.json({ id: assignmentId, status: CALLING_STATUS.PROPOSED }, { status: 201 });
+    return NextResponse.json({ id: assignmentId, status: initialStatus }, { status: 201 });
   } catch (err) {
     await client.query('ROLLBACK');
     const message = err instanceof Error ? err.message : String(err);
