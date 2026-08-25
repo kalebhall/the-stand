@@ -46,12 +46,12 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
     await client.query(
       `INSERT INTO audit_log (ward_id, user_id, action, details)
        VALUES (
-         $1,
-         $2,
+         $1::uuid,
+         $2::uuid,
          'CALLING_SET_APART',
          jsonb_build_object(
            'callingAssignmentId',
-           $3,
+           $3::text,
            'lcrReminder',
            'Please record this set apart action in LCR.'
          )

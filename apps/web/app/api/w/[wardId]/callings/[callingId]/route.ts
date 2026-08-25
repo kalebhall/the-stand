@@ -35,7 +35,7 @@ export async function DELETE(_request: Request, context: { params: Promise<{ war
 
     await client.query(
       `INSERT INTO audit_log (ward_id, user_id, action, details)
-       VALUES ($1, $2, 'CALLING_DELETED', jsonb_build_object('callingAssignmentId', $3, 'memberName', $4, 'callingName', $5))`,
+       VALUES ($1::uuid, $2::uuid, 'CALLING_DELETED', jsonb_build_object('callingAssignmentId', $3::text, 'memberName', $4::text, 'callingName', $5::text))`,
       [wardId, session.user.id, callingId, callingResult.rows[0].member_name, callingResult.rows[0].calling_name]
     );
 
