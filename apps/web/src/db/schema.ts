@@ -131,10 +131,14 @@ export const wardStandTemplate = pgTable(
     welcomeText: text('welcome_text').notNull().default('Welcome to The Church of Jesus Christ of Latter-day Saints.'),
     sustainTemplate: text('sustain_template')
       .notNull()
-      .default('Those in favor of sustaining **{memberName}** as **{callingName}**, please manifest it.'),
+      .default(
+        '**{memberName}** has been called as **{callingName}**. Those in favor of sustaining [him or her] may show it by the uplifted hand. [Pause briefly.] Those opposed, if any, may also show it. [Pause briefly.]'
+      ),
     releaseTemplate: text('release_template')
       .notNull()
-      .default('Those who wish to express appreciation for the service of **{memberName}** as **{callingName}**, please do so.'),
+      .default(
+        '**{memberName}** has been released as  **{callingName}**. Those who would like to express thanks for [his or her] service may show it by the uplifted hand.'
+      ),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
   },

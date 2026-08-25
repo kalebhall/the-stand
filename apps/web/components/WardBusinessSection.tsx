@@ -5,6 +5,11 @@ import { useRouter } from 'next/navigation';
 
 import { Button } from '@/components/ui/button';
 
+import {
+  DEFAULT_STAND_RELEASE_TEMPLATE,
+  DEFAULT_STAND_SUSTAIN_TEMPLATE
+} from '@/src/stand/default-template';
+
 export type BusinessLine = {
   id: string;
   member_name: string;
@@ -229,8 +234,8 @@ export function WardBusinessSection({
   canManage,
   showAnnounce = false,
   showScript = false,
-  sustainTemplate = 'Those in favor of sustaining **{memberName}** as **{callingName}**, please manifest it.',
-  releaseTemplate = 'Those who wish to express appreciation for the service of **{memberName}** as **{callingName}**, please do so.'
+  sustainTemplate = DEFAULT_STAND_SUSTAIN_TEMPLATE,
+  releaseTemplate = DEFAULT_STAND_RELEASE_TEMPLATE
 }: WardBusinessSectionProps) {
   const router = useRouter();
 

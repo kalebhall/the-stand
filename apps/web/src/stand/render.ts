@@ -1,3 +1,9 @@
+import {
+  DEFAULT_STAND_RELEASE_TEMPLATE,
+  DEFAULT_STAND_SUSTAIN_TEMPLATE,
+  DEFAULT_STAND_WELCOME_TEXT
+} from './default-template';
+
 export type StandProgramItem = {
   itemType: string;
   title: string | null;
@@ -30,9 +36,9 @@ export type StandRow =
   | { kind: 'ward_business' };
 
 const DEFAULT_TEMPLATE: StandTemplate = {
-  welcomeText: 'Welcome to The Church of Jesus Christ of Latter-day Saints.',
-  sustainTemplate: 'Those in favor of sustaining **{memberName}** as **{callingName}**, please manifest it.',
-  releaseTemplate: 'Those who wish to express appreciation for the service of **{memberName}** as **{callingName}**, please do so.'
+  welcomeText: DEFAULT_STAND_WELCOME_TEXT,
+  sustainTemplate: DEFAULT_STAND_SUSTAIN_TEMPLATE,
+  releaseTemplate: DEFAULT_STAND_RELEASE_TEMPLATE
 };
 
 function toDisplayLabel(itemType: string): string {

@@ -14,8 +14,13 @@ type TemplateRow = {
 };
 
 const DEFAULT_WELCOME = 'Welcome to The Church of Jesus Christ of Latter-day Saints.';
-const DEFAULT_SUSTAIN = 'Those in favor of sustaining **{memberName}** as **{callingName}**, please manifest it.';
-const DEFAULT_RELEASE = 'Those who wish to express appreciation for the service of **{memberName}** as **{callingName}**, please do so.';
+import {
+  DEFAULT_STAND_RELEASE_TEMPLATE,
+  DEFAULT_STAND_SUSTAIN_TEMPLATE
+} from '@/src/stand/default-template';
+
+const DEFAULT_SUSTAIN = DEFAULT_STAND_SUSTAIN_TEMPLATE;
+const DEFAULT_RELEASE = DEFAULT_STAND_RELEASE_TEMPLATE;
 
 export default async function StandScriptSettingsPage() {
   const session = await requireAuthenticatedSession();
