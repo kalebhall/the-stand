@@ -39,9 +39,9 @@ flowchart LR
   A5 -->|61| A12
   A6 -->|38| A12
   A5 -->|22| A16
+  A5 -->|8| A10
   A5 -->|8| A15
   A6 -->|8| A17
-  A5 -->|7| A10
   A5 -->|4| A18
   A5 -->|3| A17
   A6 -->|3| A10
@@ -110,10 +110,10 @@ flowchart LR
 | `web:api` | `web:lib` | 22 |
 | `web:ui` | `web:ui` | 12 |
 | `web:api` | `web:api` | 10 |
+| `web:api` | `web:callings` | 8 |
 | `web:api` | `web:imports` | 8 |
 | `web:app` | `web:meetings` | 8 |
 | `web:auth` | `web:auth` | 8 |
-| `web:api` | `web:callings` | 7 |
 | `web:imports` | `web:imports` | 7 |
 | `web:api` | `web:notifications` | 4 |
 | `web:db` | `web:db` | 4 |
@@ -258,7 +258,7 @@ flowchart LR
 | `apps/web/app/api/w/[wardId]/callings/[callingId]/sustain/route.ts` | `web:api` | 7 | 1 |
 | `apps/web/app/api/w/[wardId]/callings/[callingId]/sustain/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/callings/route.ts` | `web:api` | 6 | 1 |
-| `apps/web/app/api/w/[wardId]/imports/callings/route.ts` | `web:api` | 7 | 2 |
+| `apps/web/app/api/w/[wardId]/imports/callings/route.ts` | `web:api` | 8 | 2 |
 | `apps/web/app/api/w/[wardId]/imports/callings/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/imports/lcr/[jobId]/route.ts` | `web:api` | 3 | 1 |
 | `apps/web/app/api/w/[wardId]/imports/lcr/route.ts` | `web:api` | 8 | 2 |

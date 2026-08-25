@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import type { QueryResultRow } from 'pg';
 import { auth } from '@/src/auth/auth';
 import { canRunImports } from '@/src/auth/roles';
+import { CALLING_STATUS } from '@/src/callings/lifecycle';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 import { makeMemberBirthdayKey, parseCallingsPdfText } from '@/src/imports/callings';
@@ -238,7 +239,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
           unmatchedMembers += 1;
         }
 
-        await client.query(
+        const assignmentResult = await client.query(
           `INSERT INTO calling_assignment (
               ward_id,
               member_id,
@@ -250,7 +251,8 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
               set_apart,
               is_active
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, TRUE)`,
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, TRUE)
+            RETURNING id`,
           [
             wardId,
             memberId,
@@ -262,6 +264,19 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
             parsed.setApart
           ]
         );
+        const assignmentId = assignmentResult.rows[0].id as string;
+
+        // Insert a calling_action row so the callings list (which requires at
+        // least one action via JOIN LATERAL) can see this calling.
+        // LCR callings are already active: set-apart members get SET_APART,
+        // everyone else gets SUSTAINED.
+        const importedStatus = parsed.setApart ? CALLING_STATUS.SET_APART : CALLING_STATUS.SUSTAINED;
+        await client.query(
+          `INSERT INTO calling_action (ward_id, calling_assignment_id, action_status)
+           VALUES ($1::uuid, $2::uuid, $3::text)`,
+          [wardId, assignmentId, importedStatus]
+        );
+
         inserted += 1;
       }
 
