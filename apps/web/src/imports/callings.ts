@@ -870,10 +870,99 @@ function parsePdfCallingsMultiLine(lines: string[]): ParsedCalling[] {
 }
 
 // ---------------------------------------------------------------------------
+// TSV parser — LCR "Members with Callings" copy-paste
+// ---------------------------------------------------------------------------
+//
+// LCR exports a tab-separated table with these columns (as of 2026):
+//   Name  Gender  Age  Birth Date  Phone Number  Organizations  Calling  Sustained  Set Apart
+//
+// "Phone Number" is not in ParsedCalling and must be skipped. Column order is
+// derived from the header row so it is resilient to future LCR column changes.
+// ---------------------------------------------------------------------------
+
+export function parseCallingsTsvText(rawText: string): ParsedCalling[] {
+  const lines = rawText
+    .replace(/\r\n?/g, '\n')
+    .split('\n')
+    .filter(Boolean);
+
+  if (lines.length === 0) return [];
+
+  // Locate header row — first row whose first tab-column is "Name" (case-insensitive)
+  const headerIdx = lines.findIndex((line) => /^name\t/i.test(line.trim()));
+
+  let nameCol = 0;
+  let birthDateCol = 3;
+  let orgCol = 5;
+  let callingCol = 6;
+  let sustainedCol = 7;
+  let setApartCol = 8;
+  let dataStartIdx = 0;
+
+  if (headerIdx >= 0) {
+    const headers = lines[headerIdx].trim().split('\t').map((h) => h.trim().toLowerCase());
+    nameCol = headers.indexOf('name');
+    birthDateCol = headers.findIndex((h) => h === 'birth date');
+    orgCol = headers.findIndex((h) => h === 'organizations');
+    callingCol = headers.indexOf('calling');
+    sustainedCol = headers.indexOf('sustained');
+    setApartCol = headers.findIndex((h) => h === 'set apart');
+    dataStartIdx = headerIdx + 1;
+  }
+
+  const results: ParsedCalling[] = [];
+
+  for (let i = dataStartIdx; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    if (/^count:/i.test(line)) continue;
+    if (!line.includes('\t')) continue;
+
+    const cols = line.split('\t').map((c) => c.trim());
+
+    const memberName = nameCol >= 0 ? (cols[nameCol] ?? '') : '';
+    if (!memberName) continue;
+
+    const rawBirthday = birthDateCol >= 0 ? (cols[birthDateCol] ?? '') : '';
+    if (!rawBirthday) continue;
+    const birthday = normalizeBirthday(rawBirthday);
+    if (!birthday) continue;
+
+    const organization = orgCol >= 0 ? (cols[orgCol] ?? '') : '';
+    if (!organization) continue;
+
+    const callingName = callingCol >= 0 ? (cols[callingCol] ?? '') : '';
+    if (!callingName) continue;
+
+    const rawSustained = sustainedCol >= 0 ? (cols[sustainedCol] ?? '') : '';
+    const sustainedDate = rawSustained ? toIsoDate(rawSustained) : null;
+
+    const rawSetApart = setApartCol >= 0 ? (cols[setApartCol] ?? '') : '';
+    const setApart = parseSetApartToken(rawSetApart) ?? false;
+
+    results.push({ memberName, birthday, organization, callingName, sustainedDate, setApart });
+  }
+
+  const deduped = new Map<string, ParsedCalling>();
+  for (const calling of results) {
+    const key = `${calling.memberName.toLowerCase()}::${calling.birthday.toLowerCase()}::${calling.callingName.toLowerCase()}`;
+    if (!deduped.has(key)) deduped.set(key, calling);
+  }
+
+  return Array.from(deduped.values());
+}
+
+// ---------------------------------------------------------------------------
 // Entry point
 // ---------------------------------------------------------------------------
 
 export function parseCallingsPdfText(rawText: string): ParsedCalling[] {
+  // Detect TSV format — LCR copy-paste from the web UI includes tabs.
+  // Route it to the dedicated TSV parser before any whitespace normalization.
+  if (rawText.includes('\t')) {
+    return parseCallingsTsvText(rawText);
+  }
+
   const lines = rawText
     .replace(/\r\n?/g, '\n')
     .split('\n')

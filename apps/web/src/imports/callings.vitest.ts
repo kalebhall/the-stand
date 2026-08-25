@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { makeMemberBirthdayKey, parseCallingsPdfText } from './callings';
+import { makeMemberBirthdayKey, parseCallingsPdfText, parseCallingsTsvText } from './callings';
 
 describe('calling PDF import parsing', () => {
   it('parses rows and skips report headers', () => {
@@ -160,6 +160,97 @@ describe('calling PDF import parsing', () => {
         organization: 'Aaronic Priesthood Quorums',
         callingName: 'Teachers Quorum Secretary',
         sustainedDate: null,
+        setApart: false
+      }
+    ]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TSV parser tests — LCR "Members with Callings" copy-paste format
+// ---------------------------------------------------------------------------
+
+describe('parseCallingsTsvText — LCR TSV format', () => {
+  const TSV_HEADER =
+    'Name\tGender\tAge\tBirth Date\tPhone Number\tOrganizations\tCalling\tSustained\tSet Apart';
+
+  it('parses a single TSV row with a sustained date and no set-apart', () => {
+    const input = [
+      TSV_HEADER,
+      'Acosta, Frank\tM\t66\t26 May 1960\t(702) 236-5833\tElders Quorum\tElders Quorum Secretary\t23 Feb 2025\t'
+    ].join('\n');
+
+    expect(parseCallingsTsvText(input)).toEqual([
+      {
+        memberName: 'Acosta, Frank',
+        birthday: 'May 26',
+        organization: 'Elders Quorum',
+        callingName: 'Elders Quorum Secretary',
+        sustainedDate: '2025-02-23',
+        setApart: false
+      }
+    ]);
+  });
+
+  it('deduplicates members with multiple callings (keeps all unique rows)', () => {
+    const input = [
+      TSV_HEADER,
+      'August, Agnes Alana\tF\t77\t9 May 1949\t(702) 272-9433\tOther Callings\tMusic Leader\t2 Mar 2025\t',
+      'August, Agnes Alana\tF\t77\t9 May 1949\t(702) 272-9433\tRelief Society\tRelief Society Activity Coordinator\t8 Feb 2026\t',
+      'August, Agnes Alana\tF\t77\t9 May 1949\t(702) 272-9433\tTemple Workers\tTemple Worker\t17 Jun 2026\t'
+    ].join('\n');
+
+    const result = parseCallingsTsvText(input);
+    expect(result).toHaveLength(3);
+    expect(result.map((r) => r.callingName)).toEqual([
+      'Music Leader',
+      'Relief Society Activity Coordinator',
+      'Temple Worker'
+    ]);
+  });
+
+  it('routes to TSV parser via parseCallingsPdfText when input contains tabs', () => {
+    const input = [
+      TSV_HEADER,
+      'Hall, Kaleb\tM\t46\t1 Jan 1980\t(702) 249-0875\tBishopric\tBishopric First Counselor\t3 Nov 2024\t'
+    ].join('\n');
+
+    const result = parseCallingsPdfText(input);
+    expect(result).toEqual([
+      {
+        memberName: 'Hall, Kaleb',
+        birthday: 'Jan 1',
+        organization: 'Bishopric',
+        callingName: 'Bishopric First Counselor',
+        sustainedDate: '2024-11-03',
+        setApart: false
+      }
+    ]);
+  });
+
+  it('skips rows with no tab and Count: footer lines', () => {
+    const input = [
+      TSV_HEADER,
+      'Acosta, Frank\tM\t66\t26 May 1960\t(702) 236-5833\tElders Quorum\tElders Quorum Secretary\t23 Feb 2025\t',
+      'Count: 1'
+    ].join('\n');
+
+    expect(parseCallingsTsvText(input)).toHaveLength(1);
+  });
+
+  it('handles empty phone number column', () => {
+    const input = [
+      TSV_HEADER,
+      'Bartholomew, Aria Rosalie\tF\t13\t26 Jun 2013\t\tYoung Women\tBuilders of Faith Class President\t11 Jan 2026\t'
+    ].join('\n');
+
+    expect(parseCallingsTsvText(input)).toEqual([
+      {
+        memberName: 'Bartholomew, Aria Rosalie',
+        birthday: 'Jun 26',
+        organization: 'Young Women',
+        callingName: 'Builders of Faith Class President',
+        sustainedDate: '2026-01-11',
         setApart: false
       }
     ]);
