@@ -152,14 +152,6 @@ export default async function StandViewPage({
           </div>
         </section>
 
-        <WardBusinessSection
-          wardId={session.activeWardId}
-          meetingId={meetingId}
-          lines={businessLines}
-          canManage={canManage}
-          showAnnounce={true}
-        />
-
         <section className="grid gap-3">
           {selectedMode === 'formal'
             ? standRows.map((row, index) => {
@@ -177,6 +169,22 @@ export default async function StandViewPage({
                       <p className="text-sm uppercase tracking-wide text-muted-foreground">{row.label}</p>
                       <p className="text-lg font-medium sm:text-xl">{row.details}</p>
                     </article>
+                  );
+                }
+
+                if (row.kind === 'ward_business') {
+                  return (
+                    <WardBusinessSection
+                      key={`row-${index}`}
+                      wardId={session.activeWardId}
+                      meetingId={meetingId}
+                      lines={businessLines}
+                      canManage={canManage}
+                      showAnnounce={true}
+                      showScript={true}
+                      sustainTemplate={template?.sustain_template ?? undefined}
+                      releaseTemplate={template?.release_template ?? undefined}
+                    />
                   );
                 }
 
@@ -203,6 +211,22 @@ export default async function StandViewPage({
                       <p className="text-sm uppercase tracking-wide text-muted-foreground">{row.label}</p>
                       <p className="text-base font-medium sm:text-lg">{row.details}</p>
                     </article>
+                  );
+                }
+
+                if (row.kind === 'ward_business') {
+                  return (
+                    <WardBusinessSection
+                      key={`compact-${index}`}
+                      wardId={session.activeWardId}
+                      meetingId={meetingId}
+                      lines={businessLines}
+                      canManage={canManage}
+                      showAnnounce={true}
+                      showScript={false}
+                      sustainTemplate={template?.sustain_template ?? undefined}
+                      releaseTemplate={template?.release_template ?? undefined}
+                    />
                   );
                 }
 
