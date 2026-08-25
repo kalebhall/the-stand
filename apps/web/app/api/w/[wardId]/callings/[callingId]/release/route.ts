@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 
 import { auth } from '@/src/auth/auth';
 import { CALLING_STATUS } from '@/src/callings/lifecycle';
+import { queueCallingBusinessLine } from '@/src/callings/meeting-business';
 import { appendCallingStatus, fetchCurrentCallingStatus } from '@/src/callings/transition';
 import { canManageCallings } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
@@ -9,11 +10,6 @@ import { createLogger } from '@/src/lib/logger';
 import { setDbContext } from '@/src/db/context';
 
 const logger = createLogger('callings');
-
-type CallingAssignmentRow = {
-  member_name: string;
-  calling_name: string;
-};
 
 export async function POST(_: Request, context: { params: Promise<{ wardId: string; callingId: string }> }) {
   const session = await auth();
@@ -50,27 +46,9 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
       return NextResponse.json({ error: 'Invalid transition', code: transition.reason }, { status: 409 });
     }
 
-    // Queue a release line in the next upcoming sacrament meeting.
-    const assignmentResult = await client.query(
-      'SELECT member_name, calling_name FROM calling_assignment WHERE id = $1 AND ward_id = $2 LIMIT 1',
-      [callingId, wardId]
-    );
-    const assignment = assignmentResult.rows[0] as CallingAssignmentRow | undefined;
-
-    const meetingResult = await client.query(
-      `SELECT id FROM meeting WHERE ward_id = $1 AND meeting_date >= CURRENT_DATE ORDER BY meeting_date ASC LIMIT 1`,
-      [wardId]
-    );
-
-    let meetingId: string | null = null;
-    if (meetingResult.rowCount && assignment) {
-      meetingId = meetingResult.rows[0].id as string;
-      await client.query(
-        `INSERT INTO meeting_business_line (ward_id, meeting_id, member_name, calling_name, action_type, status)
-         VALUES ($1, $2, $3, $4, 'RELEASE', 'pending')`,
-        [wardId, meetingId, assignment.member_name, assignment.calling_name]
-      );
-    }
+    // Queue a RELEASE ward business line on the next upcoming sacrament meeting.
+    // If no future meeting exists, a DRAFT SACRAMENT meeting is auto-created for the next Sunday.
+    const meetingId = await queueCallingBusinessLine(client, { wardId, callingId, actionType: 'RELEASE' });
 
     await client.query(
       `INSERT INTO audit_log (ward_id, user_id, action, details)
