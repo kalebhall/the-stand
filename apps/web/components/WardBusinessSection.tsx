@@ -20,6 +20,10 @@ type WardBusinessSectionProps = {
   canManage: boolean;
   /** When true, shows "Mark Announced" button for pending lines (stand-view mode). */
   showAnnounce?: boolean;
+  /** When true, renders full scripted phrasing using the templates below. */
+  showScript?: boolean;
+  sustainTemplate?: string;
+  releaseTemplate?: string;
 };
 
 const ACTION_LABELS: Record<string, string> = {
@@ -32,12 +36,34 @@ const STATUS_LABELS: Record<string, string> = {
   announced: 'Announced'
 };
 
+function parseBoldSegments(text: string): Array<{ text: string; bold: boolean }> {
+  return text
+    .split(/(\*\*[^*]+\*\*)/g)
+    .filter(Boolean)
+    .map((segment) => {
+      if (segment.startsWith('**') && segment.endsWith('**')) {
+        return { text: segment.slice(2, -2), bold: true };
+      }
+      return { text: segment, bold: false };
+    });
+}
+
+function renderScript(template: string, memberName: string, callingName: string): Array<{ text: string; bold: boolean }> {
+  const text = template
+    .replaceAll('{memberName}', memberName)
+    .replaceAll('{callingName}', callingName);
+  return parseBoldSegments(text);
+}
+
 function BusinessLineRow({
   line,
   wardId,
   meetingId,
   canManage,
   showAnnounce,
+  showScript,
+  sustainTemplate,
+  releaseTemplate,
   onRefresh
 }: {
   line: BusinessLine;
@@ -45,6 +71,9 @@ function BusinessLineRow({
   meetingId: string;
   canManage: boolean;
   showAnnounce: boolean;
+  showScript: boolean;
+  sustainTemplate: string;
+  releaseTemplate: string;
   onRefresh: () => void;
 }) {
   const [announcing, setAnnouncing] = useState(false);
@@ -92,50 +121,103 @@ function BusinessLineRow({
     }
   }
 
+  const scriptSegments =
+    showScript
+      ? renderScript(
+          line.action_type === 'SUSTAIN' ? sustainTemplate : releaseTemplate,
+          line.member_name,
+          line.calling_name
+        )
+      : null;
+
   return (
-    <li className="flex flex-wrap items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm">
-      <div className="flex flex-col gap-0.5">
-        <span>
-          <span className="font-semibold">{line.member_name}</span>
-          {' — '}
-          {line.calling_name}
-        </span>
-        <div className="flex items-center gap-2">
-          <span className="rounded-full border px-2 py-0.5 text-xs font-medium">
+    <li className="rounded-md border">
+      {scriptSegments ? (
+        /* Scripted (formal) mode: full phrasing with bold segments + actions below */
+        <div className="flex flex-col gap-3 p-4">
+          <p className="text-sm uppercase tracking-wide text-muted-foreground">
             {ACTION_LABELS[line.action_type] ?? line.action_type}
-          </span>
-          <span className="text-xs text-muted-foreground">
-            {STATUS_LABELS[line.status] ?? line.status}
-          </span>
+          </p>
+          <p className="text-lg leading-relaxed sm:text-xl">
+            {scriptSegments.map((seg, i) =>
+              seg.bold ? <strong key={i}>{seg.text}</strong> : <span key={i}>{seg.text}</span>
+            )}
+          </p>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="text-xs text-muted-foreground">
+              {STATUS_LABELS[line.status] ?? line.status}
+            </span>
+            <div className="flex items-center gap-2">
+              {error ? <span className="text-xs text-destructive">{error}</span> : null}
+              {canManage && showAnnounce && line.status === 'pending' ? (
+                <Button size="sm" variant="outline" disabled={announcing} onClick={() => void announce()}>
+                  {announcing ? 'Marking…' : 'Mark Announced'}
+                </Button>
+              ) : null}
+              {canManage ? (
+                confirmRemove ? (
+                  <>
+                    <Button size="sm" variant="destructive" disabled={removing} onClick={() => void remove()}>
+                      {removing ? 'Removing…' : 'Confirm remove'}
+                    </Button>
+                    <Button size="sm" variant="ghost" disabled={removing} onClick={() => setConfirmRemove(false)}>
+                      Cancel
+                    </Button>
+                  </>
+                ) : (
+                  <Button size="sm" variant="ghost" onClick={() => setConfirmRemove(true)}>
+                    Remove
+                  </Button>
+                )
+              ) : null}
+            </div>
+          </div>
         </div>
-      </div>
+      ) : (
+        /* Compact / edit mode: name — calling badge row */
+        <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-sm">
+          <div className="flex flex-col gap-0.5">
+            <span>
+              <span className="font-semibold">{line.member_name}</span>
+              {' — '}
+              {line.calling_name}
+            </span>
+            <div className="flex items-center gap-2">
+              <span className="rounded-full border px-2 py-0.5 text-xs font-medium">
+                {ACTION_LABELS[line.action_type] ?? line.action_type}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {STATUS_LABELS[line.status] ?? line.status}
+              </span>
+            </div>
+          </div>
 
-      <div className="flex items-center gap-2">
-        {error ? <span className="text-xs text-destructive">{error}</span> : null}
-
-        {canManage && showAnnounce && line.status === 'pending' ? (
-          <Button size="sm" variant="outline" disabled={announcing} onClick={() => void announce()}>
-            {announcing ? 'Marking…' : 'Mark Announced'}
-          </Button>
-        ) : null}
-
-        {canManage ? (
-          confirmRemove ? (
-            <>
-              <Button size="sm" variant="destructive" disabled={removing} onClick={() => void remove()}>
-                {removing ? 'Removing…' : 'Confirm remove'}
+          <div className="flex items-center gap-2">
+            {error ? <span className="text-xs text-destructive">{error}</span> : null}
+            {canManage && showAnnounce && line.status === 'pending' ? (
+              <Button size="sm" variant="outline" disabled={announcing} onClick={() => void announce()}>
+                {announcing ? 'Marking…' : 'Mark Announced'}
               </Button>
-              <Button size="sm" variant="ghost" disabled={removing} onClick={() => setConfirmRemove(false)}>
-                Cancel
-              </Button>
-            </>
-          ) : (
-            <Button size="sm" variant="ghost" onClick={() => setConfirmRemove(true)}>
-              Remove
-            </Button>
-          )
-        ) : null}
-      </div>
+            ) : null}
+            {canManage ? (
+              confirmRemove ? (
+                <>
+                  <Button size="sm" variant="destructive" disabled={removing} onClick={() => void remove()}>
+                    {removing ? 'Removing…' : 'Confirm remove'}
+                  </Button>
+                  <Button size="sm" variant="ghost" disabled={removing} onClick={() => setConfirmRemove(false)}>
+                    Cancel
+                  </Button>
+                </>
+              ) : (
+                <Button size="sm" variant="ghost" onClick={() => setConfirmRemove(true)}>
+                  Remove
+                </Button>
+              )
+            ) : null}
+          </div>
+        </div>
+      )}
     </li>
   );
 }
@@ -145,14 +227,17 @@ export function WardBusinessSection({
   meetingId,
   lines,
   canManage,
-  showAnnounce = false
+  showAnnounce = false,
+  showScript = false,
+  sustainTemplate = 'Those in favor of sustaining **{memberName}** as **{callingName}**, please manifest it.',
+  releaseTemplate = 'Those who wish to express appreciation for the service of **{memberName}** as **{callingName}**, please do so.'
 }: WardBusinessSectionProps) {
   const router = useRouter();
 
   if (!lines.length) {
     return (
       <section className="rounded-lg border bg-card p-4">
-        <h2 className="text-lg font-semibold">Ward Business</h2>
+        <h2 className="text-lg font-semibold">Ward and Stake Business</h2>
         <p className="mt-2 text-sm text-muted-foreground">No callings or releases queued for this meeting.</p>
       </section>
     );
@@ -160,7 +245,7 @@ export function WardBusinessSection({
 
   return (
     <section className="rounded-lg border bg-card p-4">
-      <h2 className="mb-3 text-lg font-semibold">Ward Business</h2>
+      <h2 className="mb-3 text-lg font-semibold">Ward and Stake Business</h2>
       <ul className="space-y-2">
         {lines.map((line) => (
           <BusinessLineRow
@@ -170,6 +255,9 @@ export function WardBusinessSection({
             meetingId={meetingId}
             canManage={canManage}
             showAnnounce={showAnnounce}
+            showScript={showScript}
+            sustainTemplate={sustainTemplate}
+            releaseTemplate={releaseTemplate}
             onRefresh={() => router.refresh()}
           />
         ))}

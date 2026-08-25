@@ -26,7 +26,8 @@ export type StandRow =
       kind: 'sustain' | 'release';
       segments: Array<{ text: string; bold: boolean }>;
       summary: string;
-    };
+    }
+  | { kind: 'ward_business' };
 
 const DEFAULT_TEMPLATE: StandTemplate = {
   welcomeText: 'Welcome to The Church of Jesus Christ of Latter-day Saints.',
@@ -118,6 +119,11 @@ export function buildStandRows(
         kind: 'release',
         ...renderTemplateLine(template.releaseTemplate, values)
       });
+      continue;
+    }
+
+    if (normalizedType === 'WARD_AND_STAKE_BUSINESS') {
+      rows.push({ kind: 'ward_business' });
       continue;
     }
 
