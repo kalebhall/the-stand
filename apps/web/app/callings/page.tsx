@@ -212,7 +212,7 @@ export default async function CallingsPage() {
              LIMIT 1
          ) latest ON TRUE
         WHERE ca.ward_id = $1
-        ORDER BY ca.created_at DESC`,
+        ORDER BY ca.member_name ASC`,
       [wardId]
     );
 
