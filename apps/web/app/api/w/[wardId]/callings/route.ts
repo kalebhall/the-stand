@@ -118,9 +118,11 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     await client.query('COMMIT');
 
     return NextResponse.json({ id: assignmentId, status: CALLING_STATUS.PROPOSED }, { status: 201 });
-  } catch {
+  } catch (err) {
     await client.query('ROLLBACK');
-    return NextResponse.json({ error: 'Failed to create calling', code: 'INTERNAL_ERROR' }, { status: 500 });
+    const message = err instanceof Error ? err.message : String(err);
+    console.error('[callings POST] Failed to create calling:', message);
+    return NextResponse.json({ error: `Failed to create calling: ${message}`, code: 'INTERNAL_ERROR' }, { status: 500 });
   } finally {
     client.release();
   }
