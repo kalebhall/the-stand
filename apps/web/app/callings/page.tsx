@@ -327,7 +327,7 @@ export default async function CallingsPage() {
                           <Button type="submit" size="sm" variant="outline">{transition.label}</Button>
                         </form>
                       ) : null}
-                      {canManage && calling.status !== 'ASSIGNED' ? (
+                      {canManage && calling.status !== 'ASSIGNED' && calling.status !== 'SET_APART' ? (
                         <CallingAssignButton
                           wardId={wardId}
                           callingId={calling.id}
