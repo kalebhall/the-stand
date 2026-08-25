@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 
 import { buttonVariants } from '@/components/ui/button';
+import { WardBusinessSection, type BusinessLine } from '@/components/WardBusinessSection';
 import { cn } from '@/lib/utils';
 import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth/guards';
 import { canManageMeetings } from '@/src/auth/roles';
@@ -71,6 +72,14 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ me
       [meetingId, session.activeWardId]
     );
 
+    const businessLinesResult = await client.query(
+      `SELECT id, member_name, calling_name, action_type, status
+         FROM meeting_business_line
+        WHERE meeting_id = $1::uuid AND ward_id = $2::uuid
+        ORDER BY created_at ASC`,
+      [meetingId, session.activeWardId]
+    );
+
     await client.query('COMMIT');
 
     const meeting = meetingResult.rows[0] as MeetingRow;
@@ -83,6 +92,7 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ me
       hymnTitle: item.hymn_title ?? ''
     }));
     const versions = versionsResult.rows as MeetingRenderVersionRow[];
+    const businessLines = businessLinesResult.rows as BusinessLine[];
 
     return (
       <main className="mx-auto w-full max-w-4xl space-y-6 p-4 sm:p-6">
@@ -95,6 +105,14 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ me
             Open print view
           </Link>
         </section>
+
+        <WardBusinessSection
+          wardId={session.activeWardId}
+          meetingId={meetingId}
+          lines={businessLines}
+          canManage={true}
+          showAnnounce={false}
+        />
 
         <section className="rounded-lg border bg-card p-4">
           <h2 className="text-base font-semibold">Published versions</h2>
