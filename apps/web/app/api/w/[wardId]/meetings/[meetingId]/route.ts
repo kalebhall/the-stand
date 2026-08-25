@@ -3,7 +3,10 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/src/auth/auth';
 import { canManageMeetings, canViewMeetings } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
+import { createLogger } from '@/src/lib/logger';
 import { setDbContext } from '@/src/db/context';
+
+const logger = createLogger('meetings');
 import { isMeetingType, type ProgramItemInput } from '@/src/meetings/types';
 
 function toTrimmedString(value: unknown): string {
@@ -74,8 +77,9 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
         }))
       }
     });
-  } catch {
+  } catch (err) {
     await client.query('ROLLBACK');
+    logger.error('Failed to load meeting', { wardId, meetingId, error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: 'Failed to load meeting', code: 'INTERNAL_ERROR' }, { status: 500 });
   } finally {
     client.release();
@@ -201,8 +205,9 @@ export async function DELETE(_: Request, context: { params: Promise<{ wardId: st
     await client.query('COMMIT');
 
     return NextResponse.json({ success: true });
-  } catch {
+  } catch (err) {
     await client.query('ROLLBACK');
+    logger.error('Failed to delete meeting', { wardId, meetingId, error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: 'Failed to delete meeting', code: 'INTERNAL_ERROR' }, { status: 500 });
   } finally {
     client.release();

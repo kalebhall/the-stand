@@ -3,7 +3,10 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/src/auth/auth';
 import { WARD_ROLES, canAssignRole, canManageWardUsers } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
+import { createLogger } from '@/src/lib/logger';
 import { setDbContext } from '@/src/db/context';
+
+const logger = createLogger('ward-users');
 
 export async function POST(request: Request, context: { params: Promise<{ wardId: string; userId: string }> }) {
   const session = await auth();
@@ -50,14 +53,15 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
 
     await client.query(
       `INSERT INTO audit_log (ward_id, user_id, action, details)
-       VALUES ($1, $2, 'WARD_ROLE_ASSIGNED', jsonb_build_object('targetUserId', $3, 'roleName', $4))`,
+       VALUES ($1::uuid, $2::uuid, 'WARD_ROLE_ASSIGNED', jsonb_build_object('targetUserId', $3::text, 'roleName', $4::text))`,
       [wardId, session.user.id, userId, roleName]
     );
 
     await client.query('COMMIT');
     return NextResponse.json({ success: true });
-  } catch {
+  } catch (err) {
     await client.query('ROLLBACK');
+    logger.error('Failed to assign role', { wardId, userId, error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: 'Failed to assign role', code: 'INTERNAL_ERROR' }, { status: 500 });
   } finally {
     client.release();

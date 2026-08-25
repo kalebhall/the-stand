@@ -3,6 +3,9 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/src/auth/auth';
 import { canManageCallings } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
+import { createLogger } from '@/src/lib/logger';
+
+const logger = createLogger('members');
 import { setDbContext } from '@/src/db/context';
 
 type MemberPatchBody = {
@@ -56,8 +59,9 @@ export async function DELETE(_request: Request, context: { params: Promise<{ war
     await client.query('COMMIT');
 
     return NextResponse.json({ success: true });
-  } catch {
+  } catch (err) {
     await client.query('ROLLBACK');
+    logger.error('Failed to archive member', { wardId, memberId, error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: 'Failed to archive member', code: 'INTERNAL_ERROR' }, { status: 500 });
   } finally {
     client.release();
@@ -144,8 +148,9 @@ export async function PATCH(request: Request, context: { params: Promise<{ wardI
     await client.query('COMMIT');
 
     return NextResponse.json({ success: true });
-  } catch {
+  } catch (err) {
     await client.query('ROLLBACK');
+    logger.error('Failed to update member', { wardId, memberId, error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: 'Failed to update member', code: 'INTERNAL_ERROR' }, { status: 500 });
   } finally {
     client.release();

@@ -3,7 +3,10 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/src/auth/auth';
 import { canViewMeetings } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
+import { createLogger } from '@/src/lib/logger';
 import { setDbContext } from '@/src/db/context';
+
+const logger = createLogger('members');
 
 type MemberRow = {
   id: string;
@@ -74,8 +77,9 @@ export async function GET(request: Request, context: { params: Promise<{ wardId:
         fullName: row.full_name
       }))
     });
-  } catch {
+  } catch (err) {
     await client.query('ROLLBACK').catch(() => {});
+    logger.error('Failed to get members', { wardId, error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: 'Failed to load members', code: 'INTERNAL_ERROR' }, { status: 500 });
   } finally {
     client.release();

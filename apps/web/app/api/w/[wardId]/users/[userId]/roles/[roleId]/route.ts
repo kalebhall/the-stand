@@ -3,7 +3,10 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/src/auth/auth';
 import { canAssignRole, canManageWardUsers } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
+import { createLogger } from '@/src/lib/logger';
 import { setDbContext } from '@/src/db/context';
+
+const logger = createLogger('ward-users');
 
 export async function DELETE(
   _: Request,
@@ -49,14 +52,15 @@ export async function DELETE(
 
     await client.query(
       `INSERT INTO audit_log (ward_id, user_id, action, details)
-       VALUES ($1, $2, 'WARD_ROLE_REVOKED', jsonb_build_object('targetUserId', $3, 'roleId', $4, 'roleName', $5))`,
+       VALUES ($1::uuid, $2::uuid, 'WARD_ROLE_REVOKED', jsonb_build_object('targetUserId', $3::text, 'roleId', $4::text, 'roleName', $5::text))`,
       [wardId, session.user.id, userId, roleId, roleName]
     );
 
     await client.query('COMMIT');
     return NextResponse.json({ success: true });
-  } catch {
+  } catch (err) {
     await client.query('ROLLBACK');
+    logger.error('Failed to revoke role', { wardId, userId, roleId, error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: 'Failed to revoke role', code: 'INTERNAL_ERROR' }, { status: 500 });
   } finally {
     client.release();

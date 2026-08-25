@@ -3,7 +3,10 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/src/auth/auth';
 import { canViewCallings } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
+import { createLogger } from '@/src/lib/logger';
 import { setDbContext } from '@/src/db/context';
+
+const logger = createLogger('member-notes');
 
 type NoteBody = {
   noteText?: unknown;
@@ -49,7 +52,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
 
     await client.query(
       `INSERT INTO audit_log (ward_id, user_id, action, details)
-       VALUES ($1, $2, 'MEMBER_NOTE_ADDED', jsonb_build_object('memberId', $3, 'memberName', $4, 'memberNoteId', $5))`,
+       VALUES ($1::uuid, $2::uuid, 'MEMBER_NOTE_ADDED', jsonb_build_object('memberId', $3::text, 'memberName', $4::text, 'memberNoteId', $5::text))`,
       [wardId, session.user.id, memberId, memberResult.rows[0].full_name, inserted.rows[0].id]
     );
 
@@ -60,8 +63,9 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
       noteId: inserted.rows[0].id as string,
       createdAt: inserted.rows[0].created_at as string
     });
-  } catch {
+  } catch (err) {
     await client.query('ROLLBACK');
+    logger.error('Failed to add note', { wardId, memberId, error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: 'Failed to add note', code: 'INTERNAL_ERROR' }, { status: 500 });
   } finally {
     client.release();

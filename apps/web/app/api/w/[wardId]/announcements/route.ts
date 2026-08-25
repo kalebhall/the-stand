@@ -4,7 +4,10 @@ import { isAnnouncementPlacement } from '@/src/announcements/types';
 import { auth } from '@/src/auth/auth';
 import { canManageMeetings, canViewMeetings } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
+import { createLogger } from '@/src/lib/logger';
 import { setDbContext } from '@/src/db/context';
+
+const logger = createLogger('announcements');
 
 type AnnouncementRow = {
   id: string;
@@ -76,8 +79,9 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
         createdAt: row.created_at
       }))
     });
-  } catch {
+  } catch (err) {
     await client.query('ROLLBACK');
+    logger.error('Failed to list announcements', { wardId, error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: 'Failed to list announcements', code: 'INTERNAL_ERROR' }, { status: 500 });
   } finally {
     client.release();
@@ -124,15 +128,16 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
 
     await client.query(
       `INSERT INTO audit_log (ward_id, user_id, action, details)
-       VALUES ($1, $2, 'ANNOUNCEMENT_CREATED', jsonb_build_object('announcementId', $3, 'title', $4, 'placement', $5, 'isPermanent', $6, 'includeInProgram', $7, 'includeInStand', $8))`,
+       VALUES ($1::uuid, $2::uuid, 'ANNOUNCEMENT_CREATED', jsonb_build_object('announcementId', $3::text, 'title', $4::text, 'placement', $5::text, 'isPermanent', $6::boolean, 'includeInProgram', $7::boolean, 'includeInStand', $8::boolean))`,
       [wardId, session.user.id, inserted.rows[0].id, title, placement, isPermanent, includeInProgram, includeInStand]
     );
 
     await client.query('COMMIT');
 
     return NextResponse.json({ id: inserted.rows[0].id }, { status: 201 });
-  } catch {
+  } catch (err) {
     await client.query('ROLLBACK');
+    logger.error('Failed to create announcement', { wardId, error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: 'Failed to create announcement', code: 'INTERNAL_ERROR' }, { status: 500 });
   } finally {
     client.release();

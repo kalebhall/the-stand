@@ -3,7 +3,10 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/src/auth/auth';
 import { canManageMeetings } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
+import { createLogger } from '@/src/lib/logger';
 import { setDbContext } from '@/src/db/context';
+
+const logger = createLogger('meetings');
 import { enqueueOutboxNotificationJob } from '@/src/notifications/queue';
 
 type AnnouncedBusinessLineRow = {
@@ -108,10 +111,10 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
     await client.query(
       `INSERT INTO audit_log (ward_id, user_id, action, details)
        VALUES (
-         $1,
-         $2,
+         $1::uuid,
+         $2::uuid,
          'MEETING_COMPLETED',
-         jsonb_build_object('meetingId', $3, 'eventOutboxId', $4, 'announcedBusinessLineCount', $5)
+         jsonb_build_object('meetingId', $3::text, 'eventOutboxId', $4::text, 'announcedBusinessLineCount', $5::int)
        )`,
       [wardId, session.user.id, meetingId, eventOutboxId, announcedBusinessLines.length]
     );
@@ -125,8 +128,9 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
     }
 
     return NextResponse.json({ success: true, meetingId, eventOutboxId, announcedBusinessLineCount: announcedBusinessLines.length });
-  } catch {
+  } catch (err) {
     await client.query('ROLLBACK');
+    logger.error('Failed to complete meeting', { wardId, meetingId, error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: 'Failed to complete meeting', code: 'INTERNAL_ERROR' }, { status: 500 });
   } finally {
     client.release();

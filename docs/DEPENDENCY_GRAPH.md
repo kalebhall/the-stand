@@ -14,8 +14,8 @@ flowchart LR
   A2["root:other<br/>1 files"]
   A3["root:tooling<br/>6 files"]
   A4["web:announcements<br/>2 files"]
-  A5["web:api<br/>49 files"]
-  A6["web:app<br/>76 files"]
+  A5["web:api<br/>50 files"]
+  A6["web:app<br/>78 files"]
   A7["web:auth<br/>11 files"]
   A8["web:bootstrap.mjs<br/>1 files"]
   A9["web:calendar<br/>3 files"]
@@ -33,15 +33,15 @@ flowchart LR
   A21["web:types<br/>2 files"]
   A22["web:ui<br/>14 files"]
   A23["web:version.mjs<br/>1 files"]
-  A5 -->|69| A7
-  A6 -->|63| A22
-  A5 -->|59| A12
-  A6 -->|59| A7
-  A6 -->|36| A12
+  A5 -->|71| A7
+  A6 -->|66| A22
+  A6 -->|62| A7
+  A5 -->|61| A12
+  A6 -->|38| A12
+  A5 -->|22| A16
   A5 -->|8| A15
   A6 -->|8| A17
   A5 -->|7| A10
-  A5 -->|6| A16
   A5 -->|4| A18
   A5 -->|3| A17
   A6 -->|3| A10
@@ -77,8 +77,8 @@ flowchart LR
 | `root:other` | 1 |
 | `root:tooling` | 6 |
 | `web:announcements` | 2 |
-| `web:api` | 49 |
-| `web:app` | 76 |
+| `web:api` | 50 |
+| `web:app` | 78 |
 | `web:auth` | 11 |
 | `web:bootstrap.mjs` | 1 |
 | `web:calendar` | 3 |
@@ -101,12 +101,13 @@ flowchart LR
 
 | Importing area | Imported area | Imports |
 | --- | --- | ---: |
-| `web:api` | `web:auth` | 69 |
-| `web:app` | `web:ui` | 63 |
-| `web:api` | `web:db` | 59 |
-| `web:app` | `web:auth` | 59 |
-| `web:app` | `web:db` | 36 |
-| `web:app` | `web:app` | 28 |
+| `web:api` | `web:auth` | 71 |
+| `web:app` | `web:ui` | 66 |
+| `web:app` | `web:auth` | 62 |
+| `web:api` | `web:db` | 61 |
+| `web:app` | `web:db` | 38 |
+| `web:app` | `web:app` | 29 |
+| `web:api` | `web:lib` | 22 |
 | `web:ui` | `web:ui` | 12 |
 | `web:api` | `web:api` | 10 |
 | `web:api` | `web:imports` | 8 |
@@ -114,7 +115,6 @@ flowchart LR
 | `web:auth` | `web:auth` | 8 |
 | `web:api` | `web:callings` | 7 |
 | `web:imports` | `web:imports` | 7 |
-| `web:api` | `web:lib` | 6 |
 | `web:api` | `web:notifications` | 4 |
 | `web:db` | `web:db` | 4 |
 | `web:meetings` | `web:meetings` | 4 |
@@ -154,9 +154,9 @@ flowchart LR
 
 | Importing area | Package/runtime | Imports |
 | --- | --- | ---: |
-| `web:app` | `next` | 60 |
-| `web:api` | `next` | 38 |
-| `web:app` | `react` | 16 |
+| `web:app` | `next` | 63 |
+| `web:api` | `next` | 39 |
+| `web:app` | `react` | 17 |
 | `root:tooling` | `Node.js` | 12 |
 | `web:ui` | `react` | 11 |
 | `web:api` | `vitest` | 10 |
@@ -245,40 +245,41 @@ flowchart LR
 | `apps/web/app/api/support/audit-log/route.ts` | `web:api` | 3 | 1 |
 | `apps/web/app/api/support/hymns/[id]/route.ts` | `web:api` | 3 | 1 |
 | `apps/web/app/api/support/hymns/route.ts` | `web:api` | 3 | 1 |
-| `apps/web/app/api/w/[wardId]/announcements/[announcementId]/route.ts` | `web:api` | 5 | 1 |
-| `apps/web/app/api/w/[wardId]/announcements/route.ts` | `web:api` | 5 | 1 |
+| `apps/web/app/api/w/[wardId]/announcements/[announcementId]/route.ts` | `web:api` | 6 | 1 |
+| `apps/web/app/api/w/[wardId]/announcements/route.ts` | `web:api` | 6 | 1 |
 | `apps/web/app/api/w/[wardId]/announcements/route.vitest.ts` | `web:api` | 1 | 1 |
+| `apps/web/app/api/w/[wardId]/audit-log/route.ts` | `web:api` | 5 | 1 |
 | `apps/web/app/api/w/[wardId]/calendar/refresh/route.ts` | `web:api` | 3 | 1 |
 | `apps/web/app/api/w/[wardId]/calendar/route.ts` | `web:api` | 4 | 1 |
-| `apps/web/app/api/w/[wardId]/callings/[callingId]/extend/route.ts` | `web:api` | 6 | 1 |
-| `apps/web/app/api/w/[wardId]/callings/[callingId]/route.ts` | `web:api` | 4 | 1 |
-| `apps/web/app/api/w/[wardId]/callings/[callingId]/set-apart/route.ts` | `web:api` | 7 | 1 |
+| `apps/web/app/api/w/[wardId]/callings/[callingId]/extend/route.ts` | `web:api` | 7 | 1 |
+| `apps/web/app/api/w/[wardId]/callings/[callingId]/route.ts` | `web:api` | 5 | 1 |
+| `apps/web/app/api/w/[wardId]/callings/[callingId]/set-apart/route.ts` | `web:api` | 8 | 1 |
 | `apps/web/app/api/w/[wardId]/callings/[callingId]/set-apart/route.vitest.ts` | `web:api` | 1 | 1 |
-| `apps/web/app/api/w/[wardId]/callings/[callingId]/sustain/route.ts` | `web:api` | 6 | 1 |
+| `apps/web/app/api/w/[wardId]/callings/[callingId]/sustain/route.ts` | `web:api` | 7 | 1 |
 | `apps/web/app/api/w/[wardId]/callings/[callingId]/sustain/route.vitest.ts` | `web:api` | 1 | 1 |
-| `apps/web/app/api/w/[wardId]/callings/route.ts` | `web:api` | 5 | 1 |
+| `apps/web/app/api/w/[wardId]/callings/route.ts` | `web:api` | 6 | 1 |
 | `apps/web/app/api/w/[wardId]/imports/callings/route.ts` | `web:api` | 7 | 2 |
 | `apps/web/app/api/w/[wardId]/imports/callings/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/imports/lcr/[jobId]/route.ts` | `web:api` | 3 | 1 |
 | `apps/web/app/api/w/[wardId]/imports/lcr/route.ts` | `web:api` | 8 | 2 |
 | `apps/web/app/api/w/[wardId]/imports/membership/route.ts` | `web:api` | 7 | 1 |
 | `apps/web/app/api/w/[wardId]/imports/membership/route.vitest.ts` | `web:api` | 1 | 1 |
-| `apps/web/app/api/w/[wardId]/meetings/[meetingId]/complete/route.ts` | `web:api` | 5 | 1 |
+| `apps/web/app/api/w/[wardId]/meetings/[meetingId]/complete/route.ts` | `web:api` | 6 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/complete/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/publish/route.ts` | `web:api` | 6 | 2 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/publish/route.vitest.ts` | `web:api` | 1 | 1 |
-| `apps/web/app/api/w/[wardId]/meetings/[meetingId]/route.ts` | `web:api` | 5 | 1 |
+| `apps/web/app/api/w/[wardId]/meetings/[meetingId]/route.ts` | `web:api` | 6 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/route.ts` | `web:api` | 5 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/route.vitest.ts` | `web:api` | 1 | 1 |
-| `apps/web/app/api/w/[wardId]/members/[memberId]/notes/[noteId]/route.ts` | `web:api` | 4 | 1 |
-| `apps/web/app/api/w/[wardId]/members/[memberId]/notes/route.ts` | `web:api` | 4 | 1 |
-| `apps/web/app/api/w/[wardId]/members/[memberId]/route.ts` | `web:api` | 4 | 1 |
-| `apps/web/app/api/w/[wardId]/members/route.ts` | `web:api` | 4 | 1 |
+| `apps/web/app/api/w/[wardId]/members/[memberId]/notes/[noteId]/route.ts` | `web:api` | 5 | 1 |
+| `apps/web/app/api/w/[wardId]/members/[memberId]/notes/route.ts` | `web:api` | 5 | 1 |
+| `apps/web/app/api/w/[wardId]/members/[memberId]/route.ts` | `web:api` | 5 | 1 |
+| `apps/web/app/api/w/[wardId]/members/route.ts` | `web:api` | 5 | 1 |
 | `apps/web/app/api/w/[wardId]/members/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/notifications/diagnostics/route.ts` | `web:api` | 5 | 1 |
 | `apps/web/app/api/w/[wardId]/portal/route.ts` | `web:api` | 4 | 2 |
-| `apps/web/app/api/w/[wardId]/users/[userId]/roles/[roleId]/route.ts` | `web:api` | 4 | 1 |
-| `apps/web/app/api/w/[wardId]/users/[userId]/roles/route.ts` | `web:api` | 4 | 1 |
+| `apps/web/app/api/w/[wardId]/users/[userId]/roles/[roleId]/route.ts` | `web:api` | 5 | 1 |
+| `apps/web/app/api/w/[wardId]/users/[userId]/roles/route.ts` | `web:api` | 5 | 1 |
 | `apps/web/app/api/w/[wardId]/users/route.ts` | `web:api` | 4 | 1 |
 | `apps/web/app/callings/error.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/callings/loading.tsx` | `web:app` | 0 | 0 |
@@ -323,6 +324,8 @@ flowchart LR
 | `apps/web/app/request-access/page.tsx` | `web:app` | 1 | 0 |
 | `apps/web/app/request-access/request-access-form.tsx` | `web:app` | 2 | 1 |
 | `apps/web/app/sentry-example-page/page.tsx` | `web:app` | 0 | 0 |
+| `apps/web/app/settings/audit-log/WardAuditLogClient.tsx` | `web:app` | 1 | 1 |
+| `apps/web/app/settings/audit-log/page.tsx` | `web:app` | 8 | 2 |
 | `apps/web/app/settings/public-portal/error.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/settings/public-portal/loading.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/settings/public-portal/page.tsx` | `web:app` | 6 | 3 |
@@ -331,7 +334,7 @@ flowchart LR
 | `apps/web/app/settings/stand-script/page.tsx` | `web:app` | 5 | 2 |
 | `apps/web/app/settings/users/error.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/settings/users/loading.tsx` | `web:app` | 0 | 0 |
-| `apps/web/app/settings/users/page.tsx` | `web:app` | 3 | 1 |
+| `apps/web/app/settings/users/page.tsx` | `web:app` | 3 | 2 |
 | `apps/web/app/settings/users/ward-users-manager.tsx` | `web:app` | 2 | 1 |
 | `apps/web/app/stand/[meetingId]/page.tsx` | `web:app` | 8 | 2 |
 | `apps/web/app/support/access-requests/page.tsx` | `web:app` | 5 | 3 |
