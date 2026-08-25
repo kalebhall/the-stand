@@ -71,8 +71,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
       return NextResponse.json({ error: 'rawText is required', code: 'VALIDATION_ERROR' }, { status: 400 });
     }
     commit = body.commit === true;
-    // Normalize tabs to double-spaces so the multi-column parser path fires correctly
-    extractedText = body.rawText.replace(/\t/g, '  ');
+    extractedText = body.rawText;
     fileName = 'paste';
   } else {
     const formData = await request.formData().catch(() => null);
