@@ -50,8 +50,15 @@ describe('calling PDF import parsing', () => {
     ]);
   });
 
-  it('normalizes member+birthday key when birthday includes year', () => {
+  it('normalizes member+birthday key when birthday includes year (day-month-year format)', () => {
     expect(makeMemberBirthdayKey('Jane Doe', '26 May 1960')).toBe('jane doe::may 26');
+  });
+
+  it('normalizes member+birthday key when birthday is PostgreSQL Mon DD YYYY display format', () => {
+    // PostgreSQL returns dates as "Mar 26 1994" — must strip year so it matches
+    // the year-less calling PDF birthday ("Mar 26").
+    expect(makeMemberBirthdayKey('Abner, Taliena Marie', 'Mar 26 1994')).toBe('abner, taliena marie::mar 26');
+    expect(makeMemberBirthdayKey('Smith, John', 'Nov 1 2005')).toBe('smith, john::nov 1');
   });
 
   it('parses single-space extracted rows with full-word gender tokens', () => {

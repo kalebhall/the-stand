@@ -92,7 +92,9 @@ function normalizeBirthday(input: string): string {
   const dmy = raw.match(/^(\d{1,2})\s+([A-Za-z]{3,})\s*(\d{4})?$/);
   if (dmy) return `${dmy[2]} ${String(Number(dmy[1]))}`;
 
-  const mdy = raw.match(/^([A-Za-z]{3,})\s+(\d{1,2})$/);
+  // Also handles "Mar 26 1994" (PostgreSQL date display format with full year) —
+  // strip the year so the key matches the year-less calling PDF birthday.
+  const mdy = raw.match(/^([A-Za-z]{3,})\s+(\d{1,2})(?:\s+\d{4})?$/);
   if (mdy) return `${mdy[1]} ${String(Number(mdy[2]))}`;
 
   return raw;
