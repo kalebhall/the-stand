@@ -19,7 +19,7 @@ flowchart LR
   A7["web:auth<br/>11 files"]
   A8["web:bootstrap.mjs<br/>1 files"]
   A9["web:calendar<br/>3 files"]
-  A10["web:callings<br/>4 files"]
+  A10["web:callings<br/>5 files"]
   A11["web:config<br/>11 files"]
   A12["web:db<br/>7 files"]
   A13["web:hardening<br/>1 files"]
@@ -39,12 +39,12 @@ flowchart LR
   A6 -->|62| A7
   A6 -->|38| A12
   A5 -->|24| A16
-  A5 -->|12| A10
+  A5 -->|15| A10
   A5 -->|8| A15
   A6 -->|8| A17
   A5 -->|4| A18
+  A6 -->|4| A10
   A5 -->|3| A17
-  A6 -->|3| A10
   A5 -->|2| A4
   A6 -->|2| A4
   A7 -->|2| A12
@@ -82,7 +82,7 @@ flowchart LR
 | `web:auth` | 11 |
 | `web:bootstrap.mjs` | 1 |
 | `web:calendar` | 3 |
-| `web:callings` | 4 |
+| `web:callings` | 5 |
 | `web:config` | 11 |
 | `web:db` | 7 |
 | `web:hardening` | 1 |
@@ -108,18 +108,18 @@ flowchart LR
 | `web:app` | `web:db` | 38 |
 | `web:app` | `web:app` | 29 |
 | `web:api` | `web:lib` | 24 |
+| `web:api` | `web:callings` | 15 |
 | `web:ui` | `web:ui` | 15 |
 | `web:api` | `web:api` | 13 |
-| `web:api` | `web:callings` | 12 |
 | `web:api` | `web:imports` | 8 |
 | `web:app` | `web:meetings` | 8 |
 | `web:auth` | `web:auth` | 8 |
 | `web:imports` | `web:imports` | 7 |
 | `web:api` | `web:notifications` | 4 |
+| `web:app` | `web:callings` | 4 |
 | `web:db` | `web:db` | 4 |
 | `web:meetings` | `web:meetings` | 4 |
 | `web:api` | `web:meetings` | 3 |
-| `web:app` | `web:callings` | 3 |
 | `web:notifications` | `web:notifications` | 3 |
 | `package:shared` | `package:shared` | 2 |
 | `web:api` | `web:announcements` | 2 |
@@ -173,6 +173,7 @@ flowchart LR
 | `web:api` | `Node.js` | 2 |
 | `web:api` | `pg` | 2 |
 | `web:app` | `next-auth` | 2 |
+| `web:callings` | `pg` | 2 |
 | `web:config` | `@playwright/test` | 2 |
 | `web:config` | `Node.js` | 2 |
 | `web:db` | `Node.js` | 2 |
@@ -194,7 +195,6 @@ flowchart LR
 | `web:bootstrap.mjs` | `Node.js` | 1 |
 | `web:calendar` | `pg` | 1 |
 | `web:calendar` | `vitest` | 1 |
-| `web:callings` | `pg` | 1 |
 | `web:callings` | `vitest` | 1 |
 | `web:config` | `child_process` | 1 |
 | `web:config` | `drizzle-kit` | 1 |
@@ -253,8 +253,8 @@ flowchart LR
 | `apps/web/app/api/w/[wardId]/calendar/route.ts` | `web:api` | 4 | 1 |
 | `apps/web/app/api/w/[wardId]/callings/[callingId]/assign/route.ts` | `web:api` | 7 | 1 |
 | `apps/web/app/api/w/[wardId]/callings/[callingId]/assign/route.vitest.ts` | `web:api` | 1 | 1 |
-| `apps/web/app/api/w/[wardId]/callings/[callingId]/extend/route.ts` | `web:api` | 7 | 1 |
-| `apps/web/app/api/w/[wardId]/callings/[callingId]/release/route.ts` | `web:api` | 7 | 1 |
+| `apps/web/app/api/w/[wardId]/callings/[callingId]/extend/route.ts` | `web:api` | 8 | 1 |
+| `apps/web/app/api/w/[wardId]/callings/[callingId]/release/route.ts` | `web:api` | 8 | 1 |
 | `apps/web/app/api/w/[wardId]/callings/[callingId]/route.ts` | `web:api` | 5 | 1 |
 | `apps/web/app/api/w/[wardId]/callings/[callingId]/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/callings/[callingId]/set-apart/route.ts` | `web:api` | 8 | 1 |
@@ -273,7 +273,7 @@ flowchart LR
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/complete/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/publish/route.ts` | `web:api` | 6 | 2 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/publish/route.vitest.ts` | `web:api` | 1 | 1 |
-| `apps/web/app/api/w/[wardId]/meetings/[meetingId]/route.ts` | `web:api` | 6 | 1 |
+| `apps/web/app/api/w/[wardId]/meetings/[meetingId]/route.ts` | `web:api` | 7 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/route.ts` | `web:api` | 5 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/members/[memberId]/notes/[noteId]/route.ts` | `web:api` | 5 | 1 |
@@ -288,7 +288,7 @@ flowchart LR
 | `apps/web/app/api/w/[wardId]/users/route.ts` | `web:api` | 4 | 1 |
 | `apps/web/app/callings/error.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/callings/loading.tsx` | `web:app` | 0 | 0 |
-| `apps/web/app/callings/page.tsx` | `web:app` | 13 | 3 |
+| `apps/web/app/callings/page.tsx` | `web:app` | 14 | 3 |
 | `apps/web/app/callings/standard/page.tsx` | `web:app` | 4 | 2 |
 | `apps/web/app/dashboard/error.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/dashboard/loading.tsx` | `web:app` | 0 | 0 |
@@ -403,6 +403,7 @@ flowchart LR
 | `apps/web/src/calendar/service.ts` | `web:calendar` | 3 | 1 |
 | `apps/web/src/callings/lifecycle.ts` | `web:callings` | 0 | 0 |
 | `apps/web/src/callings/lifecycle.vitest.ts` | `web:callings` | 1 | 1 |
+| `apps/web/src/callings/meeting-business.ts` | `web:callings` | 0 | 1 |
 | `apps/web/src/callings/standard-callings.ts` | `web:callings` | 0 | 0 |
 | `apps/web/src/callings/transition.ts` | `web:callings` | 1 | 1 |
 | `apps/web/src/db/bootstrap-support-admin.ts` | `web:db` | 3 | 1 |

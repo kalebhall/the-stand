@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils';
 import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth/guards';
 import { canManageCallings, canViewCallings } from '@/src/auth/roles';
 import { canTransitionCallingStatus, type CallingStatus } from '@/src/callings/lifecycle';
+import { queueCallingBusinessLine } from '@/src/callings/meeting-business';
 import { STANDARD_CALLINGS } from '@/src/callings/standard-callings';
 import { appendCallingStatus, fetchCurrentCallingStatus } from '@/src/callings/transition';
 import { pool } from '@/src/db/client';
@@ -140,24 +141,13 @@ export default async function CallingsPage() {
       }
 
       if (toStatus === 'SUSTAINED') {
-        const assignmentResult = await client.query(
-          'SELECT member_name, calling_name FROM calling_assignment WHERE id = $1 AND ward_id = $2 LIMIT 1',
-          [callingId, actionSession.activeWardId]
-        );
-        const assignment = assignmentResult.rows[0] as { member_name: string; calling_name: string } | undefined;
-
-        const meetingResult = await client.query(
-          `SELECT id FROM meeting WHERE ward_id = $1 AND meeting_date >= CURRENT_DATE ORDER BY meeting_date ASC LIMIT 1 FOR UPDATE`,
-          [actionSession.activeWardId]
-        );
-
-        if (meetingResult.rowCount && assignment) {
-          await client.query(
-            `INSERT INTO meeting_business_line (ward_id, meeting_id, member_name, calling_name, action_type, status)
-             VALUES ($1, $2, $3, $4, 'SUSTAIN', 'pending')`,
-            [actionSession.activeWardId, meetingResult.rows[0].id, assignment.member_name, assignment.calling_name]
-          );
-        }
+        // Queue a SUSTAIN ward business line. If no future meeting exists, a DRAFT
+        // SACRAMENT meeting is auto-created for the next Sunday.
+        await queueCallingBusinessLine(client, {
+          wardId: actionSession.activeWardId,
+          callingId,
+          actionType: 'SUSTAIN'
+        });
       }
 
       await client.query(
