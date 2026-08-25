@@ -25,6 +25,60 @@ function formatDisplayDate(value: string | Date | null): string {
   return value;
 }
 
+/**
+ * When the user pastes the LCR Members with Callings table, the browser clipboard
+ * contains both text/plain (TSV with empty set-apart column) and text/html (with
+ * the checkmark SVG intact). This function reads text/html, parses the table via
+ * DOMParser, and rebuilds a corrected TSV where the set-apart column contains
+ * "yes" or "no" based on SVG presence — so the server-side parser can read it.
+ *
+ * Returns null if the clipboard doesn't look like an LCR callings table (fall
+ * back to default paste behaviour).
+ */
+function extractTsvFromLcrHtml(html: string): string | null {
+  let doc: Document;
+  try {
+    doc = new DOMParser().parseFromString(html, 'text/html');
+  } catch {
+    return null;
+  }
+
+  // Must be an LCR eden-table
+  const table = doc.querySelector('table.eden-table-table');
+  if (!table) return null;
+
+  // Build header from <th> text content (excluding the select-all checkbox cell)
+  const headerCells = Array.from(table.querySelectorAll('thead th')).slice(1);
+  const headers = headerCells.map((th) => th.textContent?.trim().replace(/\s+/g, ' ') ?? '');
+  if (!headers.includes('Name')) return null;
+
+  const setApartIdx = headers.findIndex((h) => /set apart/i.test(h));
+
+  const rows: string[] = [headers.join('\t')];
+
+  const bodyRows = table.querySelectorAll('tbody tr');
+  bodyRows.forEach((tr) => {
+    // Skip the select-checkbox cell (first td)
+    const cells = Array.from(tr.querySelectorAll('td')).slice(1);
+    const cols = cells.map((td, idx) => {
+      if (idx === setApartIdx) {
+        // Checkmark icon (eden-icon without info-icon class) = set apart
+        const hasCheckmark = td.querySelector('svg.eden-icon:not(.member-callings__info-icon)') !== null;
+        return hasCheckmark ? 'yes' : 'no';
+      }
+      // For other cells: strip the card-view cloned header span, return remaining text
+      const cloned = td.querySelector('.eden-headings-h6');
+      if (cloned) cloned.remove();
+      return td.textContent?.trim().replace(/\s+/g, ' ') ?? '';
+    });
+    const line = cols.join('\t');
+    if (line.trim()) rows.push(line);
+  });
+
+  return rows.join('\n');
+}
+
+
 export function CallingImportClient({
   wardId,
   initialCallingDrift
@@ -178,6 +232,16 @@ export function CallingImportClient({
             <textarea
               value={callingRawText}
               onChange={(event) => setCallingRawText(event.target.value)}
+              onPaste={(event) => {
+                const html = event.clipboardData.getData('text/html');
+                if (html) {
+                  const corrected = extractTsvFromLcrHtml(html);
+                  if (corrected) {
+                    event.preventDefault();
+                    setCallingRawText(corrected);
+                  }
+                }
+              }}
               className="min-h-48 w-full rounded-md border bg-background p-3 font-mono text-sm"
               placeholder={
                 'Name\tGender\tAge\tBirth Date\tOrganization\tCalling\tSustained\tSet Apart\nJane Doe\tFemale\t35\tJan 15\tRelief Society\tRelief Society President\t15 Jan 2024\tYes'
