@@ -221,16 +221,17 @@ John Doe  Male  42  Jan 15  Bishopric  Bishop  Yes  No
 
   it('commits and replaces existing calling assignments', async () => {
     queryMock
-      .mockResolvedValueOnce({})
-      .mockResolvedValueOnce({ rows: [{ id: 'import-2', created_at: new Date().toISOString() }] })
-      .mockResolvedValueOnce({ rows: [{ id: 'member-1', full_name: 'John Doe', birthday: 'Jan 15' }] })
-      .mockResolvedValueOnce({ rowCount: 2, rows: [{}, {}] })
-      .mockResolvedValueOnce({})
-      .mockResolvedValueOnce({})
-      .mockResolvedValueOnce({})
-      .mockResolvedValueOnce({ rows: [{ member_name: 'John Doe', birthday: 'Jan 15', calling_name: 'Bishop' }] })
-      .mockResolvedValueOnce({ rowCount: 0, rows: [] })
-      .mockResolvedValueOnce({});
+      .mockResolvedValueOnce({})  // BEGIN
+      .mockResolvedValueOnce({ rows: [{ id: 'import-2', created_at: new Date().toISOString() }] })  // INSERT import_run
+      .mockResolvedValueOnce({ rows: [{ id: 'member-1', full_name: 'John Doe', birthday: 'Jan 15' }] })  // SELECT members
+      .mockResolvedValueOnce({ rowCount: 2, rows: [{}, {}] })  // SELECT existing calling_assignment
+      .mockResolvedValueOnce({})  // DELETE calling_assignment
+      .mockResolvedValueOnce({ rows: [{ id: 'assignment-1' }] })  // INSERT calling_assignment RETURNING id
+      .mockResolvedValueOnce({})  // INSERT calling_action
+      .mockResolvedValueOnce({})  // INSERT audit_log
+      .mockResolvedValueOnce({ rows: [{ member_name: 'John Doe', birthday: 'Jan 15', calling_name: 'Bishop' }] })  // SELECT current active
+      .mockResolvedValueOnce({ rowCount: 0, rows: [] })  // SELECT stale import_run
+      .mockResolvedValueOnce({});  // COMMIT
 
     const response = await POST(buildRequest(true), { params: Promise.resolve({ wardId: 'ward-1' }) });
 
