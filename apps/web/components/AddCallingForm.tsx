@@ -15,6 +15,7 @@ type AddCallingFormProps = {
 export function AddCallingForm({ wardId, standardCallings, onSuccess }: AddCallingFormProps) {
   const [memberName, setMemberName] = useState('');
   const [callingName, setCallingName] = useState('');
+  const [isAssignmentOnly, setIsAssignmentOnly] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -31,7 +32,7 @@ export function AddCallingForm({ wardId, standardCallings, onSuccess }: AddCalli
       const res = await fetch(`/api/w/${wardId}/callings`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ memberName: member, callingName: calling }),
+        body: JSON.stringify({ memberName: member, callingName: calling, isAssignmentOnly }),
       });
 
       if (!res.ok) {
@@ -42,6 +43,7 @@ export function AddCallingForm({ wardId, standardCallings, onSuccess }: AddCalli
 
       setMemberName('');
       setCallingName('');
+      setIsAssignmentOnly(false);
       onSuccess();
     } catch {
       setError('Network error. Please try again.');
@@ -81,6 +83,15 @@ export function AddCallingForm({ wardId, standardCallings, onSuccess }: AddCalli
           />
         </div>
       </div>
+      <label className="flex items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          checked={isAssignmentOnly}
+          onChange={(event) => setIsAssignmentOnly(event.target.checked)}
+          className="h-4 w-4 rounded border-input"
+        />
+        <span>Assignment only. Skip propose, sustain, and set apart workflow.</span>
+      </label>
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
       <Button type="submit" size="sm" disabled={submitting || !memberName.trim() || !callingName.trim()}>
         {submitting ? 'Adding…' : 'Add Calling'}

@@ -14,7 +14,7 @@ flowchart LR
   A2["root:other<br/>1 files"]
   A3["root:tooling<br/>6 files"]
   A4["web:announcements<br/>2 files"]
-  A5["web:api<br/>50 files"]
+  A5["web:api<br/>54 files"]
   A6["web:app<br/>78 files"]
   A7["web:auth<br/>11 files"]
   A8["web:bootstrap.mjs<br/>1 files"]
@@ -31,15 +31,15 @@ flowchart LR
   A19["web:stand<br/>2 files"]
   A20["web:tooling<br/>2 files"]
   A21["web:types<br/>2 files"]
-  A22["web:ui<br/>14 files"]
+  A22["web:ui<br/>16 files"]
   A23["web:version.mjs<br/>1 files"]
-  A5 -->|71| A7
-  A6 -->|66| A22
+  A5 -->|73| A7
+  A6 -->|68| A22
+  A5 -->|63| A12
   A6 -->|62| A7
-  A5 -->|61| A12
   A6 -->|38| A12
-  A5 -->|22| A16
-  A5 -->|8| A10
+  A5 -->|23| A16
+  A5 -->|10| A10
   A5 -->|8| A15
   A6 -->|8| A17
   A5 -->|4| A18
@@ -77,7 +77,7 @@ flowchart LR
 | `root:other` | 1 |
 | `root:tooling` | 6 |
 | `web:announcements` | 2 |
-| `web:api` | 50 |
+| `web:api` | 54 |
 | `web:app` | 78 |
 | `web:auth` | 11 |
 | `web:bootstrap.mjs` | 1 |
@@ -94,23 +94,23 @@ flowchart LR
 | `web:stand` | 2 |
 | `web:tooling` | 2 |
 | `web:types` | 2 |
-| `web:ui` | 14 |
+| `web:ui` | 16 |
 | `web:version.mjs` | 1 |
 
 ## Internal dependencies
 
 | Importing area | Imported area | Imports |
 | --- | --- | ---: |
-| `web:api` | `web:auth` | 71 |
-| `web:app` | `web:ui` | 66 |
+| `web:api` | `web:auth` | 73 |
+| `web:app` | `web:ui` | 68 |
+| `web:api` | `web:db` | 63 |
 | `web:app` | `web:auth` | 62 |
-| `web:api` | `web:db` | 61 |
 | `web:app` | `web:db` | 38 |
 | `web:app` | `web:app` | 29 |
-| `web:api` | `web:lib` | 22 |
-| `web:ui` | `web:ui` | 12 |
-| `web:api` | `web:api` | 10 |
-| `web:api` | `web:callings` | 8 |
+| `web:api` | `web:lib` | 23 |
+| `web:ui` | `web:ui` | 14 |
+| `web:api` | `web:api` | 13 |
+| `web:api` | `web:callings` | 10 |
 | `web:api` | `web:imports` | 8 |
 | `web:app` | `web:meetings` | 8 |
 | `web:auth` | `web:auth` | 8 |
@@ -155,16 +155,16 @@ flowchart LR
 | Importing area | Package/runtime | Imports |
 | --- | --- | ---: |
 | `web:app` | `next` | 63 |
-| `web:api` | `next` | 39 |
+| `web:api` | `next` | 40 |
 | `web:app` | `react` | 17 |
+| `web:api` | `vitest` | 13 |
+| `web:ui` | `react` | 13 |
 | `root:tooling` | `Node.js` | 12 |
-| `web:ui` | `react` | 11 |
-| `web:api` | `vitest` | 10 |
 | `web:auth` | `next-auth` | 6 |
+| `web:ui` | `next` | 6 |
 | `web:app` | `vitest` | 4 |
 | `web:auth` | `vitest` | 4 |
 | `web:tooling` | `Node.js` | 4 |
-| `web:ui` | `next` | 4 |
 | `web:db` | `vitest` | 3 |
 | `web:imports` | `vitest` | 3 |
 | `web:meetings` | `vitest` | 3 |
@@ -251,13 +251,17 @@ flowchart LR
 | `apps/web/app/api/w/[wardId]/audit-log/route.ts` | `web:api` | 5 | 1 |
 | `apps/web/app/api/w/[wardId]/calendar/refresh/route.ts` | `web:api` | 3 | 1 |
 | `apps/web/app/api/w/[wardId]/calendar/route.ts` | `web:api` | 4 | 1 |
+| `apps/web/app/api/w/[wardId]/callings/[callingId]/assign/route.ts` | `web:api` | 7 | 1 |
+| `apps/web/app/api/w/[wardId]/callings/[callingId]/assign/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/callings/[callingId]/extend/route.ts` | `web:api` | 7 | 1 |
 | `apps/web/app/api/w/[wardId]/callings/[callingId]/route.ts` | `web:api` | 5 | 1 |
+| `apps/web/app/api/w/[wardId]/callings/[callingId]/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/callings/[callingId]/set-apart/route.ts` | `web:api` | 8 | 1 |
 | `apps/web/app/api/w/[wardId]/callings/[callingId]/set-apart/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/callings/[callingId]/sustain/route.ts` | `web:api` | 7 | 1 |
 | `apps/web/app/api/w/[wardId]/callings/[callingId]/sustain/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/callings/route.ts` | `web:api` | 6 | 1 |
+| `apps/web/app/api/w/[wardId]/callings/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/imports/callings/route.ts` | `web:api` | 8 | 2 |
 | `apps/web/app/api/w/[wardId]/imports/callings/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/imports/lcr/[jobId]/route.ts` | `web:api` | 3 | 1 |
@@ -283,7 +287,7 @@ flowchart LR
 | `apps/web/app/api/w/[wardId]/users/route.ts` | `web:api` | 4 | 1 |
 | `apps/web/app/callings/error.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/callings/loading.tsx` | `web:app` | 0 | 0 |
-| `apps/web/app/callings/page.tsx` | `web:app` | 10 | 3 |
+| `apps/web/app/callings/page.tsx` | `web:app` | 12 | 3 |
 | `apps/web/app/callings/standard/page.tsx` | `web:app` | 4 | 2 |
 | `apps/web/app/dashboard/error.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/dashboard/loading.tsx` | `web:app` | 0 | 0 |
@@ -352,6 +356,8 @@ flowchart LR
 | `apps/web/app/support/users/support-grants.vitest.ts` | `web:app` | 1 | 1 |
 | `apps/web/components/AddCallingForm.tsx` | `web:ui` | 3 | 1 |
 | `apps/web/components/AddCallingSection.tsx` | `web:ui` | 1 | 1 |
+| `apps/web/components/CallingAssignButton.tsx` | `web:ui` | 1 | 2 |
+| `apps/web/components/CallingDeleteButton.tsx` | `web:ui` | 1 | 2 |
 | `apps/web/components/HymnAutocomplete.tsx` | `web:ui` | 0 | 1 |
 | `apps/web/components/StandardCallingsManager.tsx` | `web:ui` | 1 | 2 |
 | `apps/web/components/app-navigation.tsx` | `web:ui` | 1 | 0 |

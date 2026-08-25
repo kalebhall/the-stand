@@ -5,6 +5,8 @@ import { redirect } from 'next/navigation';
 export const dynamic = 'force-dynamic';
 
 import { AddCallingSection } from '@/components/AddCallingSection';
+import { CallingAssignButton } from '@/components/CallingAssignButton';
+import { CallingDeleteButton } from '@/components/CallingDeleteButton';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth/guards';
@@ -25,6 +27,7 @@ type CallingQueueRow = {
 };
 
 const STATUS_LABELS: Record<string, string> = {
+  ASSIGNED: 'Assigned',
   PROPOSED: 'Proposed',
   EXTENDED: 'Extended',
   SUSTAINED: 'Sustained',
@@ -265,7 +268,7 @@ export default async function CallingsPage() {
           <section className="rounded-lg border bg-card p-4">
             <h2 className="text-lg font-semibold">Add Calling</h2>
             <p className="mb-3 text-sm text-muted-foreground">
-              Select from standard callings or type a custom calling name.
+              Select from standard callings or type a custom calling name. Use Assignment only for responsibilities that do not require propose, sustain, or set apart workflow.
             </p>
             <AddCallingSection wardId={wardId} standardCallings={standardCallings} />
           </section>
@@ -323,6 +326,22 @@ export default async function CallingsPage() {
                           <input type="hidden" name="toStatus" value={transition.toStatus} />
                           <Button type="submit" size="sm" variant="outline">{transition.label}</Button>
                         </form>
+                      ) : null}
+                      {canManage && calling.status !== 'ASSIGNED' ? (
+                        <CallingAssignButton
+                          wardId={wardId}
+                          callingId={calling.id}
+                          memberName={calling.member_name}
+                          callingName={calling.calling_name}
+                        />
+                      ) : null}
+                      {canManage ? (
+                        <CallingDeleteButton
+                          wardId={wardId}
+                          callingId={calling.id}
+                          memberName={calling.member_name}
+                          callingName={calling.calling_name}
+                        />
                       ) : null}
                     </div>
                   </li>

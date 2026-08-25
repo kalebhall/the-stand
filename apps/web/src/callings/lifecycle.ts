@@ -1,4 +1,5 @@
 export const CALLING_STATUS = {
+  ASSIGNED: 'ASSIGNED',
   PROPOSED: 'PROPOSED',
   EXTENDED: 'EXTENDED',
   SUSTAINED: 'SUSTAINED',
@@ -8,10 +9,11 @@ export const CALLING_STATUS = {
 export type CallingStatus = (typeof CALLING_STATUS)[keyof typeof CALLING_STATUS];
 
 const ALLOWED_TRANSITIONS: Record<CallingStatus, CallingStatus[]> = {
-  PROPOSED: ['EXTENDED'],
-  EXTENDED: ['SUSTAINED'],
-  SUSTAINED: ['SET_APART'],
-  SET_APART: []
+  ASSIGNED: [],
+  PROPOSED: ['EXTENDED', 'ASSIGNED'],
+  EXTENDED: ['SUSTAINED', 'ASSIGNED'],
+  SUSTAINED: ['SET_APART', 'ASSIGNED'],
+  SET_APART: ['ASSIGNED']
 };
 
 export function canTransitionCallingStatus(fromStatus: CallingStatus, toStatus: CallingStatus): boolean {
