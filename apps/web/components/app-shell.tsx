@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 import { getNavigationItems } from '@/src/auth/navigation';
 import { useConductingMode } from '@/components/conducting-mode-context';
 import { DeploymentWatcher } from '@/components/deployment-watcher';
+import { SiteLogo } from '@/components/site-logo';
 
 export function AppShell({
   session,
@@ -113,10 +114,7 @@ export function AppShell({
       {/* Desktop Left Navigation Sidebar (hidden on mobile) */}
       <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 z-30 border-r bg-card/60 backdrop-blur">
         <div className="flex h-16 shrink-0 items-center justify-between border-b px-6">
-          <Link href="/dashboard" className="flex items-center gap-2 font-bold text-lg tracking-tight">
-            <span>🏛️</span>
-            <span>The Stand</span>
-          </Link>
+          <SiteLogo className="text-lg" />
         </div>
 
         <div className="flex flex-1 flex-col justify-between overflow-y-auto px-4 py-4">
@@ -183,10 +181,7 @@ export function AppShell({
       <div className="flex flex-1 flex-col md:pl-64">
         {/* Mobile Top Bar with Conducting Mode Trigger */}
         <header className="md:hidden sticky top-0 z-20 flex h-14 items-center justify-between border-b bg-background/95 px-4 backdrop-blur">
-          <Link href="/dashboard" className="flex items-center gap-1.5 font-bold text-base tracking-tight">
-            <span>🏛️</span>
-            <span>The Stand</span>
-          </Link>
+          <SiteLogo className="text-base" iconClassName="h-6 w-6" />
 
           <button
             type="button"

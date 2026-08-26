@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { buttonVariants } from '@/components/ui/button';
 import { auth } from '@/src/auth/auth';
 import { cn } from '@/lib/utils';
+import { SiteLogo } from '@/components/site-logo';
 
 const features = [
   {
@@ -25,7 +26,7 @@ export default async function Home() {
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-10 p-6 md:p-10">
       <section className="space-y-4">
-        <h1 className="text-4xl font-semibold tracking-tight">The Stand</h1>
+        <SiteLogo className="text-4xl" iconClassName="h-10 w-10" />
         <p className="max-w-3xl text-muted-foreground">
           A ward-scoped planning and conducting workspace for sacrament meetings and related leadership workflows.
         </p>
