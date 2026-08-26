@@ -32,10 +32,10 @@ flowchart LR
   A20["web:stand<br/>3 files"]
   A21["web:tooling<br/>2 files"]
   A22["web:types<br/>2 files"]
-  A23["web:ui<br/>19 files"]
+  A23["web:ui<br/>20 files"]
   A24["web:version.mjs<br/>1 files"]
   A5 -->|77| A8
-  A6 -->|72| A23
+  A6 -->|73| A23
   A5 -->|67| A13
   A6 -->|62| A8
   A6 -->|38| A13
@@ -98,7 +98,7 @@ flowchart LR
 | `web:stand` | 3 |
 | `web:tooling` | 2 |
 | `web:types` | 2 |
-| `web:ui` | 19 |
+| `web:ui` | 20 |
 | `web:version.mjs` | 1 |
 
 ## Internal dependencies
@@ -106,13 +106,13 @@ flowchart LR
 | Importing area | Imported area | Imports |
 | --- | --- | ---: |
 | `web:api` | `web:auth` | 77 |
-| `web:app` | `web:ui` | 72 |
+| `web:app` | `web:ui` | 73 |
 | `web:api` | `web:db` | 67 |
 | `web:app` | `web:auth` | 62 |
 | `web:app` | `web:db` | 38 |
 | `web:app` | `web:app` | 29 |
 | `web:api` | `web:lib` | 25 |
-| `web:ui` | `web:ui` | 17 |
+| `web:ui` | `web:ui` | 18 |
 | `web:api` | `web:callings` | 15 |
 | `web:api` | `web:api` | 13 |
 | `web:api` | `web:audit` | 11 |
@@ -164,10 +164,10 @@ flowchart LR
 | `web:app` | `next` | 63 |
 | `web:api` | `next` | 42 |
 | `web:app` | `react` | 17 |
-| `web:ui` | `react` | 16 |
+| `web:ui` | `react` | 17 |
 | `web:api` | `vitest` | 13 |
 | `root:tooling` | `Node.js` | 12 |
-| `web:ui` | `next` | 8 |
+| `web:ui` | `next` | 9 |
 | `web:auth` | `next-auth` | 6 |
 | `web:app` | `vitest` | 4 |
 | `web:auth` | `vitest` | 4 |
@@ -337,7 +337,7 @@ flowchart LR
 | `apps/web/app/p/[meetingToken]/route.vitest.ts` | `web:app` | 1 | 1 |
 | `apps/web/app/p/ward/[portalToken]/route.ts` | `web:app` | 1 | 1 |
 | `apps/web/app/p/ward/[portalToken]/route.vitest.ts` | `web:app` | 1 | 1 |
-| `apps/web/app/page.tsx` | `web:app` | 3 | 1 |
+| `apps/web/app/page.tsx` | `web:app` | 4 | 1 |
 | `apps/web/app/request-access/page.tsx` | `web:app` | 1 | 0 |
 | `apps/web/app/request-access/request-access-form.tsx` | `web:app` | 2 | 1 |
 | `apps/web/app/sentry-example-page/page.tsx` | `web:app` | 0 | 0 |
@@ -376,11 +376,12 @@ flowchart LR
 | `apps/web/components/StandardCallingsManager.tsx` | `web:ui` | 1 | 2 |
 | `apps/web/components/WardBusinessSection.tsx` | `web:ui` | 2 | 2 |
 | `apps/web/components/app-navigation.tsx` | `web:ui` | 1 | 0 |
-| `apps/web/components/app-shell.tsx` | `web:ui` | 5 | 4 |
+| `apps/web/components/app-shell.tsx` | `web:ui` | 6 | 4 |
 | `apps/web/components/conducting-mode-context.tsx` | `web:ui` | 0 | 1 |
 | `apps/web/components/deployment-watcher.tsx` | `web:ui` | 0 | 1 |
 | `apps/web/components/lcr-extractor-instructions.tsx` | `web:ui` | 2 | 1 |
 | `apps/web/components/public-portal/PublicLinkQrCard.tsx` | `web:ui` | 2 | 1 |
+| `apps/web/components/site-logo.tsx` | `web:ui` | 0 | 2 |
 | `apps/web/components/theme-provider.tsx` | `web:ui` | 0 | 2 |
 | `apps/web/components/ui/button.tsx` | `web:ui` | 1 | 2 |
 | `apps/web/components/ui/calling-autocomplete.tsx` | `web:ui` | 0 | 1 |
