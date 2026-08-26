@@ -173,7 +173,6 @@ export const callingAssignment = pgTable('calling_assignment', {
   wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
   memberId: uuid('member_id').references(() => member.id, { onDelete: 'set null' }),
   memberName: text('member_name').notNull(),
-  birthday: text('birthday'),
   organization: text('organization'),
   callingName: text('calling_name').notNull(),
   sustainedDate: date('sustained_date'),
@@ -344,14 +343,15 @@ export const member = pgTable(
     email: text('email'),
     phone: text('phone'),
     age: integer('age'),
-    birthday: text('birthday'),
+    identityKey: text('identity_key'),
     gender: text('gender'),
     archivedAt: timestamp('archived_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
   },
   (table) => ({
-    memberWardNameUnique: unique().on(table.wardId, table.fullName)
+    memberWardNameUnique: unique().on(table.wardId, table.fullName),
+    memberWardIdentityKeyUnique: unique().on(table.wardId, table.identityKey)
   })
 );
 

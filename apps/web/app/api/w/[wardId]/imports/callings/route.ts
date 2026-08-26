@@ -7,8 +7,9 @@ import { canRunImports } from '@/src/auth/roles';
 import { CALLING_STATUS } from '@/src/callings/lifecycle';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
-import { makeMemberBirthdayKey, parseCallingsPdfText } from '@/src/imports/callings';
+import { parseCallingsPdfText } from '@/src/imports/callings';
 import { extractPdfText } from '@/src/imports/pdf';
+import { getMemberIdentitySecret, makeMemberIdentityKey, makeSafeImportSnapshot } from '@/src/imports/member-identity';
 import { createLogger } from '@/src/lib/logger';
 
 type ImportRunRow = QueryResultRow & {
@@ -18,14 +19,12 @@ type ImportRunRow = QueryResultRow & {
 
 type ActiveCallingRow = QueryResultRow & {
   member_name: string;
-  birthday: string | null;
   calling_name: string;
 };
 
 type MemberRow = QueryResultRow & {
   id: string;
-  full_name: string;
-  birthday: string | null;
+  identity_key: string | null;
 };
 
 type StaleImportRow = QueryResultRow & {
@@ -45,8 +44,8 @@ function looksLikePotentialCallingRow(line: string): boolean {
   return false;
 }
 
-function makeCallingKey(memberName: string, birthday: string, callingName: string): string {
-  return `${memberName.toLowerCase()}::${birthday.toLowerCase()}::${callingName.toLowerCase()}`;
+function makeCallingKey(memberName: string, callingName: string): string {
+  return `${memberName.toLowerCase()}::${callingName.toLowerCase()}`;
 }
 
 export async function POST(request: Request, context: { params: Promise<{ wardId: string }> }) {
@@ -132,7 +131,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
       `INSERT INTO import_run (ward_id, import_type, raw_text, parsed_count, committed, created_by_user_id)
        VALUES ($1, 'CALLINGS', $2, $3, $4, $5)
        RETURNING id, created_at`,
-      [wardId, extractedText, parsedCallings.length, commit, session.user.id]
+      [wardId, makeSafeImportSnapshot(parsedCallings.map(({ birthday: _birthday, ...calling }) => calling)), parsedCallings.length, commit, session.user.id]
     );
 
     const importRun = importRunResult.rows[0] as ImportRunRow | undefined;
@@ -208,7 +207,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     }
 
     const membersResult = await client.query(
-      `SELECT id, full_name, birthday
+      `SELECT id, identity_key
          FROM member
         WHERE ward_id = $1
           AND archived_at IS NULL`,
@@ -217,12 +216,12 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
 
     const memberByKey = new Map<string, string>(
       (membersResult.rows as MemberRow[])
-        .filter((row) => row.birthday)
-        .map((row) => [makeMemberBirthdayKey(row.full_name, row.birthday ?? ''), row.id] as const)
+        .filter((row) => row.identity_key)
+        .map((row) => [row.identity_key as string, row.id] as const)
     );
 
     const existingResult = await client.query(
-      `SELECT id, member_name, birthday, calling_name
+      `SELECT id, member_name, calling_name
          FROM calling_assignment
         WHERE ward_id = $1`,
       [wardId]
@@ -238,7 +237,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
       await client.query('DELETE FROM calling_assignment WHERE ward_id = $1', [wardId]);
 
       for (const parsed of parsedCallings) {
-        const memberId = memberByKey.get(makeMemberBirthdayKey(parsed.memberName, parsed.birthday)) ?? null;
+        const memberId = memberByKey.get(makeMemberIdentityKey({ fullName: parsed.memberName, birthday: parsed.birthday, secret: getMemberIdentitySecret() }) ?? '') ?? null;
         if (memberId) {
           matchedMembers += 1;
         } else {
@@ -250,7 +249,6 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
               ward_id,
               member_id,
               member_name,
-              birthday,
               organization,
               calling_name,
               sustained_date,
@@ -263,7 +261,6 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
             wardId,
             memberId,
             parsed.memberName,
-            parsed.birthday,
             parsed.organization,
             parsed.callingName,
             parsed.sustainedDate,
@@ -311,7 +308,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     }
 
     const currentActiveResult = await client.query(
-      `SELECT member_name, birthday, calling_name
+      `SELECT member_name, calling_name
          FROM calling_assignment
         WHERE ward_id = $1
           AND is_active = TRUE`,
@@ -336,18 +333,18 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     if (staleResult.rowCount && (staleResult.rows[0] as StaleImportRow | undefined)?.raw_text) {
       const staleImport = staleResult.rows[0] as StaleImportRow;
       if (staleImport.raw_text.length <= MAX_STALE_COMPARE_RAW_TEXT_CHARS) {
-        const staleParsed = parseCallingsPdfText(staleImport.raw_text);
-        const staleSet = new Set(staleParsed.map((entry) => makeCallingKey(entry.memberName, entry.birthday, entry.callingName)));
-        const currentActiveSet = new Set(
-          (currentActiveResult.rows as ActiveCallingRow[]).map((row) =>
-            makeCallingKey(row.member_name, row.birthday ?? '', row.calling_name)
-          )
-        );
-
-        const inImportNotCurrent = Array.from(staleSet).filter((key) => !currentActiveSet.has(key)).length;
-        const inCurrentNotImport = Array.from(currentActiveSet).filter((key) => !staleSet.has(key)).length;
-
-        driftCount = inImportNotCurrent + inCurrentNotImport;
+        try {
+          const staleParsed = JSON.parse(staleImport.raw_text) as Array<{ memberName: string; callingName: string }>;
+          const staleSet = new Set(staleParsed.map((entry) => makeCallingKey(entry.memberName, entry.callingName)));
+          const currentActiveSet = new Set(
+            (currentActiveResult.rows as ActiveCallingRow[]).map((row) => makeCallingKey(row.member_name, row.calling_name))
+          );
+          const inImportNotCurrent = Array.from(staleSet).filter((key) => !currentActiveSet.has(key)).length;
+          const inCurrentNotImport = Array.from(currentActiveSet).filter((key) => !staleSet.has(key)).length;
+          driftCount = inImportNotCurrent + inCurrentNotImport;
+        } catch {
+          driftCount = Math.abs((currentActiveResult.rowCount ?? 0) - staleImport.parsed_count);
+        }
       } else {
         const activeCount = currentActiveResult.rowCount ?? 0;
         driftCount = Math.abs(activeCount - staleImport.parsed_count);
@@ -387,7 +384,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
         driftCount,
         comparedToImportRunId: (staleResult.rows[0] as StaleImportRow | undefined)?.id ?? null
       },
-      preview: parsedCallings
+      preview: parsedCallings.map(({ birthday: _birthday, ...calling }) => calling)
     });
   } catch (err) {
     await client.query('ROLLBACK');

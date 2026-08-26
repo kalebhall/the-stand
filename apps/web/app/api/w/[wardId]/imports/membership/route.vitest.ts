@@ -33,6 +33,7 @@ import { POST } from './route';
 describe('POST /api/w/[wardId]/imports/membership', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.stubEnv('MEMBER_IDENTITY_SECRET', 'test-member-identity-secret-32-characters');
 
     authMock.mockResolvedValue({ user: { id: 'user-1', roles: ['MEMBERSHIP_CLERK'] }, activeWardId: 'ward-1' });
     canRunImportsMock.mockReturnValue(true);
@@ -67,7 +68,7 @@ describe('POST /api/w/[wardId]/imports/membership', () => {
       inserted: 0,
       updated: 0,
       archived: 0,
-      preview: [{ fullName: 'Jane Doe', firstName: 'Jane Doe', lastName: null, email: 'jane@example.com', phone: null, age: null, birthday: null, gender: null }]
+      preview: [{ fullName: 'Jane Doe', firstName: 'Jane Doe', lastName: null, email: 'jane@example.com', phone: null, age: null, gender: null }]
     });
 
     // No UPDATE (archive) or INSERT INTO member calls during dry run

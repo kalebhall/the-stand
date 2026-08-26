@@ -7,6 +7,7 @@ import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 import { parseMembershipText, toPlainText } from '@/src/imports/membership';
 import { extractPdfText } from '@/src/imports/pdf';
+import { getMemberIdentitySecret, makeMemberIdentityKey, makeSafeImportSnapshot } from '@/src/imports/member-identity';
 import { createLogger } from '@/src/lib/logger';
 
 type MembershipImportBody = {
@@ -94,11 +95,12 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     await client.query('BEGIN');
     await setDbContext(client, { userId: session.user.id, wardId });
 
+    const safeSnapshot = makeSafeImportSnapshot(parsedMembers.map(({ birthday: _birthday, ...member }) => member));
     const importRunResult = await client.query(
       `INSERT INTO import_run (ward_id, import_type, raw_text, parsed_count, committed, created_by_user_id)
        VALUES ($1, 'MEMBERSHIP', $2, $3, $4, $5)
        RETURNING id`,
-      [wardId, extractedText, parsedMembers.length, commit, session.user.id]
+      [wardId, safeSnapshot, parsedMembers.length, commit, session.user.id]
     );
 
     const importRunId = importRunResult.rows[0]?.id as string | undefined;
@@ -193,21 +195,21 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
       // - New member: insert fresh.
       for (const parsed of parsedMembers) {
         const upsertResult = await client.query(
-          `INSERT INTO member (ward_id, full_name, first_name, last_name, email, phone, age, birthday, gender, archived_at)
+          `INSERT INTO member (ward_id, full_name, first_name, last_name, email, phone, age, identity_key, gender, archived_at)
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NULL)
-           ON CONFLICT (ward_id, full_name)
+           ON CONFLICT
            DO UPDATE SET
              first_name  = COALESCE(EXCLUDED.first_name, member.first_name),
              last_name   = COALESCE(EXCLUDED.last_name, member.last_name),
              email       = COALESCE(EXCLUDED.email, member.email),
              phone       = COALESCE(EXCLUDED.phone, member.phone),
              age         = COALESCE(EXCLUDED.age, member.age),
-             birthday    = COALESCE(EXCLUDED.birthday, member.birthday),
+             identity_key = COALESCE(EXCLUDED.identity_key, member.identity_key),
              gender      = COALESCE(EXCLUDED.gender, member.gender),
              archived_at = NULL,
              updated_at  = now()
            RETURNING (xmax = 0) AS inserted`,
-          [wardId, parsed.fullName, parsed.firstName, parsed.lastName, parsed.email, parsed.phone, parsed.age, parsed.birthday, parsed.gender]
+          [wardId, parsed.fullName, parsed.firstName, parsed.lastName, parsed.email, parsed.phone, parsed.age, makeMemberIdentityKey({ fullName: parsed.fullName, birthday: parsed.birthday ?? '', secret: getMemberIdentitySecret() }), parsed.gender]
         );
 
         if (upsertResult.rows[0]?.inserted) {
@@ -270,7 +272,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
       inserted,
       updated,
       archived,
-      preview: parsedMembers
+      preview: parsedMembers.map(({ birthday: _birthday, ...member }) => member)
     });
   } catch (error) {
     await client.query('ROLLBACK');

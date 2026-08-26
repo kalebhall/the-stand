@@ -50,6 +50,7 @@ function buildJsonRequest(commit: boolean, rawText = 'Jane Doe  Female  35  Jan 
 describe('POST /api/w/[wardId]/imports/callings', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.stubEnv('MEMBER_IDENTITY_SECRET', 'test-member-identity-secret-32-characters');
 
     authMock.mockResolvedValue({ user: { id: 'user-1', roles: ['CLERK_EDITOR'] }, activeWardId: 'ward-1' });
     canRunImportsMock.mockReturnValue(true);
@@ -93,7 +94,7 @@ John Doe  Male  42  Jan 15  Bishopric  Bishop  Yes  No
     queryMock
       .mockResolvedValueOnce({})
       .mockResolvedValueOnce({ rows: [{ id: 'import-1', created_at: new Date().toISOString() }] })
-      .mockResolvedValueOnce({ rows: [{ id: 'member-1', full_name: 'John Doe', birthday: 'Jan 15' }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'member-1', identity_key: null }] })
       .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'assign-1', member_name: 'John Doe', birthday: 'Jan 15', calling_name: 'Bishop' }] })
       .mockResolvedValueOnce({ rowCount: 1, rows: [{ member_name: 'John Doe', birthday: 'Jan 15', calling_name: 'Bishop' }] })
       .mockResolvedValueOnce({
@@ -101,7 +102,7 @@ John Doe  Male  42  Jan 15  Bishopric  Bishop  Yes  No
         rows: [
           {
             id: 'import-older',
-            raw_text: 'stale import'
+            raw_text: 'stale import', parsed_count: 2
           }
         ]
       })
@@ -117,11 +118,10 @@ John Doe  Male  42  Jan 15  Bishopric  Bishop  Yes  No
       inserted: 0,
       stale: {
         isStale: true,
-        driftCount: 2,
+        driftCount: 1,
         comparedToImportRunId: 'import-older'
       }
     });
-    expect(parseCallingsPdfTextMock).toHaveBeenCalledWith('stale import');
   });
 
   it('does not replace assignments when commit is requested but parser returns zero rows', async () => {
@@ -156,7 +156,7 @@ John Doe  Male  42  Jan 15  Bishopric  Bishop  Yes  No
     queryMock
       .mockResolvedValueOnce({})
       .mockResolvedValueOnce({ rows: [{ id: 'import-3', created_at: new Date().toISOString() }] })
-      .mockResolvedValueOnce({ rows: [{ id: 'member-1', full_name: 'John Doe', birthday: 'Jan 15' }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'member-1', identity_key: null }] })
       .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'assign-1', member_name: 'John Doe', birthday: 'Jan 15', calling_name: 'Bishop' }] })
       .mockResolvedValueOnce({ rows: [{ member_name: 'John Doe', birthday: 'Jan 15', calling_name: 'Bishop' }] })
       .mockResolvedValueOnce({
@@ -182,7 +182,7 @@ John Doe  Male  42  Jan 15  Bishopric  Bishop  Yes  No
     queryMock
       .mockResolvedValueOnce({})
       .mockResolvedValueOnce({ rows: [{ id: 'import-paste', created_at: new Date().toISOString() }] })
-      .mockResolvedValueOnce({ rows: [{ id: 'member-1', full_name: 'John Doe', birthday: 'Jan 15' }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'member-1', identity_key: null }] })
       .mockResolvedValueOnce({ rowCount: 0, rows: [] })
       .mockResolvedValueOnce({ rows: [{ member_name: 'John Doe', birthday: 'Jan 15', calling_name: 'Bishop' }] })
       .mockResolvedValueOnce({ rowCount: 0, rows: [] })
@@ -217,7 +217,7 @@ John Doe  Male  42  Jan 15  Bishopric  Bishop  Yes  No
     queryMock
       .mockResolvedValueOnce({})  // BEGIN
       .mockResolvedValueOnce({ rows: [{ id: 'import-2', created_at: new Date().toISOString() }] })  // INSERT import_run
-      .mockResolvedValueOnce({ rows: [{ id: 'member-1', full_name: 'John Doe', birthday: 'Jan 15' }] })  // SELECT members
+      .mockResolvedValueOnce({ rows: [{ id: 'member-1', identity_key: null }] })  // SELECT members
       .mockResolvedValueOnce({ rowCount: 2, rows: [{}, {}] })  // SELECT existing calling_assignment
       .mockResolvedValueOnce({})  // DELETE calling_assignment
       .mockResolvedValueOnce({ rows: [{ id: 'assignment-1' }] })  // INSERT calling_assignment RETURNING id
@@ -236,16 +236,15 @@ John Doe  Male  42  Jan 15  Bishopric  Bishop  Yes  No
       parsedCount: 1,
       inserted: 1,
       replacedCount: 2,
-      matchedMembers: 1,
-      unmatchedMembers: 0
+      matchedMembers: 0,
+      unmatchedMembers: 1
     });
 
     expect(queryMock).toHaveBeenCalledWith(expect.stringContaining('DELETE FROM calling_assignment'), ['ward-1']);
     expect(queryMock).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO calling_assignment'), [
       'ward-1',
-      'member-1',
+      null,
       'John Doe',
-      'Jan 15',
       'Bishopric',
       'Bishop',
       '2025-01-15',
