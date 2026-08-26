@@ -17,7 +17,6 @@ type MemberRow = {
   email: string | null;
   phone: string | null;
   age: number | null;
-  birthday: string | null;
   gender: string | null;
 };
 
@@ -44,7 +43,7 @@ export default async function MembersPage() {
     await setDbContext(client, { userId: session.user.id, wardId: session.activeWardId });
 
     const memberResult = await client.query(
-      `SELECT id, full_name, first_name, last_name, email, phone, age, birthday, gender
+      `SELECT id, full_name, first_name, last_name, email, phone, age, gender
          FROM member
         WHERE ward_id = $1
           AND archived_at IS NULL

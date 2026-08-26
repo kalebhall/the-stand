@@ -25,7 +25,7 @@ flowchart LR
   A13["web:db<br/>7 files"]
   A14["web:hardening<br/>1 files"]
   A15["web:health.mjs<br/>1 files"]
-  A16["web:imports<br/>11 files"]
+  A16["web:imports<br/>13 files"]
   A17["web:lib<br/>9 files"]
   A18["web:meetings<br/>7 files"]
   A19["web:notifications<br/>5 files"]
@@ -42,7 +42,7 @@ flowchart LR
   A5 -->|25| A17
   A5 -->|15| A11
   A5 -->|11| A7
-  A5 -->|8| A16
+  A5 -->|10| A16
   A6 -->|8| A18
   A5 -->|4| A19
   A6 -->|4| A11
@@ -58,7 +58,6 @@ flowchart LR
   A2 -->|1| A15
   A5 -->|1| A10
   A6 -->|1| A10
-  A6 -->|1| A16
   A6 -->|1| A17
   A6 -->|1| A19
   A8 -->|1| A17
@@ -92,7 +91,7 @@ flowchart LR
 | `web:db` | 7 |
 | `web:hardening` | 1 |
 | `web:health.mjs` | 1 |
-| `web:imports` | 11 |
+| `web:imports` | 13 |
 | `web:lib` | 9 |
 | `web:meetings` | 7 |
 | `web:notifications` | 5 |
@@ -117,10 +116,10 @@ flowchart LR
 | `web:api` | `web:callings` | 15 |
 | `web:api` | `web:api` | 13 |
 | `web:api` | `web:audit` | 11 |
-| `web:api` | `web:imports` | 8 |
+| `web:api` | `web:imports` | 10 |
 | `web:app` | `web:meetings` | 8 |
 | `web:auth` | `web:auth` | 8 |
-| `web:imports` | `web:imports` | 7 |
+| `web:imports` | `web:imports` | 8 |
 | `web:api` | `web:notifications` | 4 |
 | `web:app` | `web:callings` | 4 |
 | `web:db` | `web:db` | 4 |
@@ -144,7 +143,6 @@ flowchart LR
 | `web:announcements` | `web:announcements` | 1 |
 | `web:api` | `web:calendar` | 1 |
 | `web:app` | `web:calendar` | 1 |
-| `web:app` | `web:imports` | 1 |
 | `web:app` | `web:lib` | 1 |
 | `web:app` | `web:notifications` | 1 |
 | `web:audit` | `web:audit` | 1 |
@@ -173,9 +171,9 @@ flowchart LR
 | `web:auth` | `next-auth` | 6 |
 | `web:app` | `vitest` | 4 |
 | `web:auth` | `vitest` | 4 |
+| `web:imports` | `vitest` | 4 |
 | `web:tooling` | `Node.js` | 4 |
 | `web:db` | `vitest` | 3 |
-| `web:imports` | `vitest` | 3 |
 | `web:lib` | `vitest` | 3 |
 | `web:meetings` | `vitest` | 3 |
 | `package:shared` | `vitest` | 2 |
@@ -190,6 +188,7 @@ flowchart LR
 | `web:db` | `drizzle-orm` | 2 |
 | `web:db` | `pg` | 2 |
 | `web:hardening` | `Node.js` | 2 |
+| `web:imports` | `Node.js` | 2 |
 | `web:notifications` | `bullmq` | 2 |
 | `web:notifications` | `pg` | 2 |
 | `web:tooling` | `pg` | 2 |
@@ -217,7 +216,6 @@ flowchart LR
 | `web:db` | `module` | 1 |
 | `web:hardening` | `vitest` | 1 |
 | `web:imports` | `@playwright/test` | 1 |
-| `web:imports` | `Node.js` | 1 |
 | `web:imports` | `pdf-parse` | 1 |
 | `web:imports` | `playwright` | 1 |
 | `web:lib` | `@sentry/nextjs` | 1 |
@@ -276,11 +274,11 @@ flowchart LR
 | `apps/web/app/api/w/[wardId]/callings/[callingId]/sustain/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/callings/route.ts` | `web:api` | 7 | 1 |
 | `apps/web/app/api/w/[wardId]/callings/route.vitest.ts` | `web:api` | 1 | 1 |
-| `apps/web/app/api/w/[wardId]/imports/callings/route.ts` | `web:api` | 9 | 2 |
+| `apps/web/app/api/w/[wardId]/imports/callings/route.ts` | `web:api` | 10 | 2 |
 | `apps/web/app/api/w/[wardId]/imports/callings/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/imports/lcr/[jobId]/route.ts` | `web:api` | 3 | 1 |
 | `apps/web/app/api/w/[wardId]/imports/lcr/route.ts` | `web:api` | 8 | 2 |
-| `apps/web/app/api/w/[wardId]/imports/membership/route.ts` | `web:api` | 8 | 1 |
+| `apps/web/app/api/w/[wardId]/imports/membership/route.ts` | `web:api` | 9 | 1 |
 | `apps/web/app/api/w/[wardId]/imports/membership/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/business/[lineId]/route.ts` | `web:api` | 5 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/complete/route.ts` | `web:api` | 7 | 1 |
@@ -311,7 +309,7 @@ flowchart LR
 | `apps/web/app/health/route.ts` | `web:app` | 1 | 1 |
 | `apps/web/app/health/route.vitest.ts` | `web:app` | 1 | 1 |
 | `apps/web/app/imports/callings/calling-import-client.tsx` | `web:app` | 2 | 1 |
-| `apps/web/app/imports/callings/page.tsx` | `web:app` | 8 | 2 |
+| `apps/web/app/imports/callings/page.tsx` | `web:app` | 7 | 2 |
 | `apps/web/app/imports/error.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/imports/loading.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/imports/members/member-import-client.tsx` | `web:app` | 2 | 1 |
@@ -439,6 +437,8 @@ flowchart LR
 | `apps/web/src/imports/lcr-jobs.ts` | `web:imports` | 0 | 1 |
 | `apps/web/src/imports/lcr.ts` | `web:imports` | 2 | 2 |
 | `apps/web/src/imports/lcr.vitest.ts` | `web:imports` | 1 | 1 |
+| `apps/web/src/imports/member-identity.ts` | `web:imports` | 0 | 1 |
+| `apps/web/src/imports/member-identity.vitest.ts` | `web:imports` | 1 | 1 |
 | `apps/web/src/imports/membership.ts` | `web:imports` | 1 | 0 |
 | `apps/web/src/imports/membership.vitest.ts` | `web:imports` | 1 | 1 |
 | `apps/web/src/imports/pdf-cleanup.ts` | `web:imports` | 0 | 0 |

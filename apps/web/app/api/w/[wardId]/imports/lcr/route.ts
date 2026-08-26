@@ -5,9 +5,9 @@ import { auth } from '@/src/auth/auth';
 import { canRunImports } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
-import { makeMemberBirthdayKey } from '@/src/imports/callings';
 import { enqueueLcrImportJob } from '@/src/imports/lcr-jobs';
 import { importFromLcr } from '@/src/imports/lcr';
+import { getMemberIdentitySecret, makeMemberIdentityKey, makeSafeImportSnapshot } from '@/src/imports/member-identity';
 import { createLogger } from '@/src/lib/logger';
 
 export const runtime = 'nodejs';
@@ -20,7 +20,7 @@ type LcrImportBody = {
 };
 
 type ImportRunRow = QueryResultRow & { id: string };
-type MemberRow = QueryResultRow & { id: string; full_name: string; birthday: string | null };
+type MemberRow = QueryResultRow & { id: string; identity_key: string | null };
 
 type LcrJobResult = {
   commit: boolean;
@@ -67,14 +67,14 @@ async function runLcrImport(params: {
       `INSERT INTO import_run (ward_id, import_type, raw_text, parsed_count, committed, created_by_user_id)
        VALUES ($1, 'MEMBERSHIP', $2, $3, $4, $5)
        RETURNING id`,
-      [params.wardId, imported.memberRawText, imported.members.length, params.commit, params.userId]
+      [params.wardId, makeSafeImportSnapshot(imported.members.map(({ birthday: _birthday, ...member }) => member)), imported.members.length, params.commit, params.userId]
     );
 
     const callingsRun = await client.query(
       `INSERT INTO import_run (ward_id, import_type, raw_text, parsed_count, committed, created_by_user_id)
        VALUES ($1, 'CALLINGS', $2, $3, $4, $5)
        RETURNING id`,
-      [params.wardId, imported.callingRawText, imported.callings.length, params.commit, params.userId]
+      [params.wardId, makeSafeImportSnapshot(imported.callings.map(({ birthday: _birthday, ...calling }) => calling)), imported.callings.length, params.commit, params.userId]
     );
 
     let memberInserted = 0;
@@ -87,18 +87,18 @@ async function runLcrImport(params: {
     if (params.commit) {
       for (const parsed of imported.members) {
         const upsertResult = await client.query(
-          `INSERT INTO member (ward_id, full_name, email, phone, age, birthday, gender)
+          `INSERT INTO member (ward_id, full_name, email, phone, age, identity_key, gender)
            VALUES ($1, $2, $3, $4, $5, $6, $7)
-           ON CONFLICT (ward_id, full_name)
+           ON CONFLICT
            DO UPDATE SET
              email = COALESCE(EXCLUDED.email, member.email),
              phone = COALESCE(EXCLUDED.phone, member.phone),
              age = COALESCE(EXCLUDED.age, member.age),
-             birthday = COALESCE(EXCLUDED.birthday, member.birthday),
+             identity_key = COALESCE(EXCLUDED.identity_key, member.identity_key),
              gender = COALESCE(EXCLUDED.gender, member.gender),
              updated_at = now()
            RETURNING (xmax = 0) AS inserted`,
-          [params.wardId, parsed.fullName, parsed.email, parsed.phone, parsed.age, parsed.birthday, parsed.gender]
+          [params.wardId, parsed.fullName, parsed.email, parsed.phone, parsed.age, makeMemberIdentityKey({ fullName: parsed.fullName, birthday: parsed.birthday ?? '', secret: getMemberIdentitySecret() }), parsed.gender]
         );
 
         if (upsertResult.rows[0]?.inserted) {
@@ -108,11 +108,11 @@ async function runLcrImport(params: {
         }
       }
 
-      const membersResult = await client.query(`SELECT id, full_name, birthday FROM member WHERE ward_id = $1 AND archived_at IS NULL`, [params.wardId]);
+      const membersResult = await client.query(`SELECT id, identity_key FROM member WHERE ward_id = $1 AND archived_at IS NULL`, [params.wardId]);
       const memberByKey = new Map<string, string>(
         (membersResult.rows as MemberRow[])
-          .filter((row) => row.birthday)
-          .map((row) => [makeMemberBirthdayKey(row.full_name, row.birthday ?? ''), row.id] as const)
+          .filter((row) => row.identity_key)
+          .map((row) => [row.identity_key as string, row.id] as const)
       );
 
       const existingResult = await client.query(`SELECT id FROM calling_assignment WHERE ward_id = $1`, [params.wardId]);
@@ -120,7 +120,7 @@ async function runLcrImport(params: {
       await client.query('DELETE FROM calling_assignment WHERE ward_id = $1', [params.wardId]);
 
       for (const parsed of imported.callings) {
-        const memberId = memberByKey.get(makeMemberBirthdayKey(parsed.memberName, parsed.birthday)) ?? null;
+        const memberId = memberByKey.get(makeMemberIdentityKey({ fullName: parsed.memberName, birthday: parsed.birthday, secret: getMemberIdentitySecret() }) ?? '') ?? null;
         if (memberId) {
           matchedMembers += 1;
         } else {
@@ -128,13 +128,12 @@ async function runLcrImport(params: {
         }
 
         await client.query(
-          `INSERT INTO calling_assignment (ward_id, member_id, member_name, birthday, organization, calling_name, sustained_date, set_apart, is_active)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, TRUE)`,
+          `INSERT INTO calling_assignment (ward_id, member_id, member_name, organization, calling_name, sustained_date, set_apart, is_active)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, TRUE)`,
           [
             params.wardId,
             memberId,
             parsed.memberName,
-            parsed.birthday,
             parsed.organization,
             parsed.callingName,
             parsed.sustainedDate,
@@ -173,7 +172,7 @@ async function runLcrImport(params: {
         parsedCount: imported.members.length,
         inserted: memberInserted,
         updated: memberUpdated,
-        preview: imported.members
+        preview: imported.members.map(({ birthday: _birthday, ...member }) => member)
       },
       callings: {
         importRunId: (callingsRun.rows[0] as ImportRunRow).id,
@@ -182,7 +181,7 @@ async function runLcrImport(params: {
         replacedCount,
         matchedMembers,
         unmatchedMembers,
-        preview: imported.callings
+        preview: imported.callings.map(({ birthday: _birthday, ...calling }) => calling)
       }
     };
   } catch (error) {

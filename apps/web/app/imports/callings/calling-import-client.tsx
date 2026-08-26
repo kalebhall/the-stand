@@ -6,7 +6,6 @@ import { LcrExtractorInstructions } from '@/components/lcr-extractor-instruction
 
 type PreviewCalling = {
   memberName: string;
-  birthday: string;
   organization: string;
   callingName: string;
   sustainedDate: string | Date | null;
@@ -279,7 +278,6 @@ export function CallingImportClient({
                 <thead>
                   <tr className="border-b bg-muted/50 sticky top-0">
                     <th className="px-3 py-2 text-left">Member</th>
-                    <th className="px-3 py-2 text-left">Birth Date</th>
                     <th className="px-3 py-2 text-left">Organization</th>
                     <th className="px-3 py-2 text-left">Calling</th>
                     <th className="px-3 py-2 text-left">Sustained Date</th>
@@ -289,11 +287,11 @@ export function CallingImportClient({
                 <tbody>
                   {callingPreview.map((item) => (
                     <tr
-                      key={`${item.memberName}-${item.birthday}-${item.callingName}`}
+                      key={`${item.memberName}-${item.callingName}`}
                       className="border-b last:border-b-0"
                     >
                       <td className="px-3 py-2 font-medium">{item.memberName}</td>
-                      <td className="px-3 py-2">{item.birthday}</td>
+
                       <td className="px-3 py-2">{item.organization}</td>
                       <td className="px-3 py-2">{item.callingName}</td>
                       <td className="px-3 py-2">{formatDisplayDate(item.sustainedDate)}</td>

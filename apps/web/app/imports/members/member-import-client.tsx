@@ -9,7 +9,6 @@ type PreviewMember = {
   email: string | null;
   phone: string | null;
   age: number | null;
-  birthday: string | null;
   gender: string | null;
 };
 
@@ -178,7 +177,6 @@ export function MemberImportClient({ wardId }: { wardId: string }) {
                     <th className="px-3 py-2 text-left">Email</th>
                     <th className="px-3 py-2 text-left">Phone</th>
                     <th className="px-3 py-2 text-left">Age</th>
-                    <th className="px-3 py-2 text-left">Birthday</th>
                     <th className="px-3 py-2 text-left">Gender</th>
                   </tr>
                 </thead>
@@ -189,7 +187,6 @@ export function MemberImportClient({ wardId }: { wardId: string }) {
                       <td className="px-3 py-2">{item.email ?? '—'}</td>
                       <td className="px-3 py-2">{item.phone ?? '—'}</td>
                       <td className="px-3 py-2">{item.age ?? '—'}</td>
-                      <td className="px-3 py-2">{item.birthday ?? '—'}</td>
                       <td className="px-3 py-2">{item.gender ?? '—'}</td>
                     </tr>
                   ))}

@@ -6,14 +6,12 @@ import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth
 import { canRunImports } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
-import { parseCallingsPdfText } from '@/src/imports/callings';
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 type CallingRow = {
   id: string;
   member_name: string;
-  birthday: string | null;
   organization: string | null;
   calling_name: string;
   sustained_date: string | Date | null;
@@ -44,7 +42,7 @@ export default async function ImportCallingsPage() {
     await setDbContext(client, { userId: session.user.id, wardId: session.activeWardId });
 
     const callingResult = await client.query(
-      `SELECT id, member_name, birthday, organization, calling_name, sustained_date, set_apart, is_active
+      `SELECT id, member_name, organization, calling_name, sustained_date, set_apart, is_active
          FROM calling_assignment
         WHERE ward_id = $1
         ORDER BY member_name ASC`,
@@ -67,17 +65,17 @@ export default async function ImportCallingsPage() {
     const currentActiveSet = new Set(
       (callingResult.rows as CallingRow[])
         .filter((row) => row.is_active)
-        .map((row) => `${row.member_name.toLowerCase()}::${(row.birthday ?? '').toLowerCase()}::${row.calling_name.toLowerCase()}`)
+        .map((row) => `${row.member_name.toLowerCase()}::${row.calling_name.toLowerCase()}`)
     );
 
     const latestImport = latestCallingImportResult.rows[0] as LatestCallingImportRow | undefined;
 
     let driftCount = 0;
     if (latestImport) {
-      if (latestImport.raw_text.length <= MAX_DRIFT_COMPARE_RAW_TEXT_CHARS) {
+      if (latestImport.raw_text.startsWith('[') && latestImport.raw_text.length <= MAX_DRIFT_COMPARE_RAW_TEXT_CHARS) {
         const latestImportSet = new Set(
-          parseCallingsPdfText(latestImport.raw_text).map(
-            (entry) => `${entry.memberName.toLowerCase()}::${entry.birthday.toLowerCase()}::${entry.callingName.toLowerCase()}`
+          (JSON.parse(latestImport.raw_text) as Array<{ memberName: string; callingName: string }>).map(
+            (entry) => `${entry.memberName.toLowerCase()}::${entry.callingName.toLowerCase()}`
           )
         );
 

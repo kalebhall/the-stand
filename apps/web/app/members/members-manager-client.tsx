@@ -13,7 +13,6 @@ type MemberRow = {
   email: string | null;
   phone: string | null;
   age: number | null;
-  birthday: string | null;
   gender: string | null;
 };
 
@@ -245,7 +244,6 @@ export function MembersManagerClient({
                   <p className="text-xs text-muted-foreground mt-0.5">
                     {member.email ?? 'No email'} · {member.phone ?? 'No phone'}
                     {member.age != null ? ` · Age ${member.age}` : ''}
-                    {member.birthday ? ` · Birthday: ${member.birthday}` : ''}
                     {member.gender ? ` · ${member.gender}` : ''}
                   </p>
                 </div>

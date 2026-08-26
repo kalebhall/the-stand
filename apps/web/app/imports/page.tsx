@@ -30,7 +30,7 @@ export default async function ImportsHubPage() {
               <span>👤</span> Import Members
             </h2>
             <p className="text-sm text-muted-foreground">
-              Import the ward Member List from LCR (names, emails, phones, birthdays, ages).
+              Import the ward Member List from LCR (names, emails, phones, ages).
             </p>
           </div>
           <div className="pt-2 flex flex-wrap gap-2">
