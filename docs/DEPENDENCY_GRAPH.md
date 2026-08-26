@@ -26,16 +26,16 @@ flowchart LR
   A14["web:hardening<br/>1 files"]
   A15["web:health.mjs<br/>1 files"]
   A16["web:imports<br/>11 files"]
-  A17["web:lib<br/>7 files"]
+  A17["web:lib<br/>9 files"]
   A18["web:meetings<br/>7 files"]
   A19["web:notifications<br/>5 files"]
   A20["web:stand<br/>3 files"]
   A21["web:tooling<br/>2 files"]
   A22["web:types<br/>2 files"]
-  A23["web:ui<br/>18 files"]
+  A23["web:ui<br/>19 files"]
   A24["web:version.mjs<br/>1 files"]
   A5 -->|77| A8
-  A6 -->|71| A23
+  A6 -->|72| A23
   A5 -->|67| A13
   A6 -->|62| A8
   A6 -->|38| A13
@@ -69,6 +69,7 @@ flowchart LR
   A18 -->|1| A4
   A23 -->|1| A8
   A23 -->|1| A16
+  A23 -->|1| A17
   A23 -->|1| A20
 ```
 
@@ -92,13 +93,13 @@ flowchart LR
 | `web:hardening` | 1 |
 | `web:health.mjs` | 1 |
 | `web:imports` | 11 |
-| `web:lib` | 7 |
+| `web:lib` | 9 |
 | `web:meetings` | 7 |
 | `web:notifications` | 5 |
 | `web:stand` | 3 |
 | `web:tooling` | 2 |
 | `web:types` | 2 |
-| `web:ui` | 18 |
+| `web:ui` | 19 |
 | `web:version.mjs` | 1 |
 
 ## Internal dependencies
@@ -106,13 +107,13 @@ flowchart LR
 | Importing area | Imported area | Imports |
 | --- | --- | ---: |
 | `web:api` | `web:auth` | 77 |
-| `web:app` | `web:ui` | 71 |
+| `web:app` | `web:ui` | 72 |
 | `web:api` | `web:db` | 67 |
 | `web:app` | `web:auth` | 62 |
 | `web:app` | `web:db` | 38 |
 | `web:app` | `web:app` | 29 |
 | `web:api` | `web:lib` | 25 |
-| `web:ui` | `web:ui` | 16 |
+| `web:ui` | `web:ui` | 17 |
 | `web:api` | `web:callings` | 15 |
 | `web:api` | `web:api` | 13 |
 | `web:api` | `web:audit` | 11 |
@@ -125,6 +126,7 @@ flowchart LR
 | `web:db` | `web:db` | 4 |
 | `web:meetings` | `web:meetings` | 4 |
 | `web:api` | `web:meetings` | 3 |
+| `web:lib` | `web:lib` | 3 |
 | `web:notifications` | `web:notifications` | 3 |
 | `package:shared` | `package:shared` | 2 |
 | `web:api` | `web:announcements` | 2 |
@@ -136,7 +138,6 @@ flowchart LR
 | `web:callings` | `web:callings` | 2 |
 | `web:config` | `web:lib` | 2 |
 | `web:db` | `web:auth` | 2 |
-| `web:lib` | `web:lib` | 2 |
 | `web:notifications` | `web:db` | 2 |
 | `web:stand` | `web:stand` | 2 |
 | `root:other` | `web:health.mjs` | 1 |
@@ -155,6 +156,7 @@ flowchart LR
 | `web:meetings` | `web:announcements` | 1 |
 | `web:ui` | `web:auth` | 1 |
 | `web:ui` | `web:imports` | 1 |
+| `web:ui` | `web:lib` | 1 |
 | `web:ui` | `web:stand` | 1 |
 
 ## External dependencies
@@ -164,7 +166,7 @@ flowchart LR
 | `web:app` | `next` | 63 |
 | `web:api` | `next` | 42 |
 | `web:app` | `react` | 17 |
-| `web:ui` | `react` | 15 |
+| `web:ui` | `react` | 16 |
 | `web:api` | `vitest` | 13 |
 | `root:tooling` | `Node.js` | 12 |
 | `web:ui` | `next` | 8 |
@@ -174,6 +176,7 @@ flowchart LR
 | `web:tooling` | `Node.js` | 4 |
 | `web:db` | `vitest` | 3 |
 | `web:imports` | `vitest` | 3 |
+| `web:lib` | `vitest` | 3 |
 | `web:meetings` | `vitest` | 3 |
 | `package:shared` | `vitest` | 2 |
 | `root:other` | `Node.js` | 2 |
@@ -187,7 +190,6 @@ flowchart LR
 | `web:db` | `drizzle-orm` | 2 |
 | `web:db` | `pg` | 2 |
 | `web:hardening` | `Node.js` | 2 |
-| `web:lib` | `vitest` | 2 |
 | `web:notifications` | `bullmq` | 2 |
 | `web:notifications` | `pg` | 2 |
 | `web:tooling` | `pg` | 2 |
@@ -219,6 +221,8 @@ flowchart LR
 | `web:imports` | `pdf-parse` | 1 |
 | `web:imports` | `playwright` | 1 |
 | `web:lib` | `@sentry/nextjs` | 1 |
+| `web:lib` | `jspdf` | 1 |
+| `web:lib` | `qrcode` | 1 |
 | `web:notifications` | `vitest` | 1 |
 | `web:stand` | `vitest` | 1 |
 | `web:ui` | `class-variance-authority` | 1 |
@@ -343,7 +347,7 @@ flowchart LR
 | `apps/web/app/settings/audit-log/page.tsx` | `web:app` | 8 | 2 |
 | `apps/web/app/settings/public-portal/error.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/settings/public-portal/loading.tsx` | `web:app` | 0 | 0 |
-| `apps/web/app/settings/public-portal/page.tsx` | `web:app` | 6 | 3 |
+| `apps/web/app/settings/public-portal/page.tsx` | `web:app` | 7 | 3 |
 | `apps/web/app/settings/stand-script/error.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/settings/stand-script/loading.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/settings/stand-script/page.tsx` | `web:app` | 6 | 2 |
@@ -378,6 +382,7 @@ flowchart LR
 | `apps/web/components/conducting-mode-context.tsx` | `web:ui` | 0 | 1 |
 | `apps/web/components/deployment-watcher.tsx` | `web:ui` | 0 | 1 |
 | `apps/web/components/lcr-extractor-instructions.tsx` | `web:ui` | 2 | 1 |
+| `apps/web/components/public-portal/PublicLinkQrCard.tsx` | `web:ui` | 2 | 1 |
 | `apps/web/components/theme-provider.tsx` | `web:ui` | 0 | 2 |
 | `apps/web/components/ui/button.tsx` | `web:ui` | 1 | 2 |
 | `apps/web/components/ui/calling-autocomplete.tsx` | `web:ui` | 0 | 1 |
@@ -440,6 +445,8 @@ flowchart LR
 | `apps/web/src/imports/pdf.ts` | `web:imports` | 0 | 1 |
 | `apps/web/src/imports/purge.ts` | `web:imports` | 1 | 0 |
 | `apps/web/src/lib/logger.ts` | `web:lib` | 0 | 0 |
+| `apps/web/src/lib/qr-pdf.ts` | `web:lib` | 0 | 2 |
+| `apps/web/src/lib/qr-pdf.vitest.ts` | `web:lib` | 1 | 1 |
 | `apps/web/src/lib/rate-limit.ts` | `web:lib` | 0 | 0 |
 | `apps/web/src/lib/rate-limit.vitest.ts` | `web:lib` | 1 | 1 |
 | `apps/web/src/lib/sentry-nextjs-noop.ts` | `web:lib` | 0 | 0 |
