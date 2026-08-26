@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { randomBytes } from 'node:crypto';
 
 import { Button } from '@/components/ui/button';
+import { PublicLinkQrCard } from '@/components/public-portal/PublicLinkQrCard';
 import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth/guards';
 import { hasRole } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
@@ -117,8 +118,11 @@ export default async function PublicPortalSettingsPage() {
     await client.query('BEGIN');
     await setDbContext(client, { userId: session.user.id, wardId });
 
+    const wardResult = await client.query('SELECT name FROM ward WHERE id = $1::uuid LIMIT 1', [wardId]);
+    const wardName = (wardResult.rows[0] as { name: string } | undefined)?.name ?? 'Ward';
+
     const portalResult = await client.query(
-      'SELECT id, token, created_at FROM public_program_portal WHERE ward_id = $1 LIMIT 1',
+      'SELECT id, token, created_at FROM public_program_portal WHERE ward_id = $1::uuid LIMIT 1',
       [wardId]
     );
 
@@ -126,7 +130,7 @@ export default async function PublicPortalSettingsPage() {
       `SELECT pps.id, pps.meeting_id, pps.token, m.meeting_date, m.meeting_type, pps.created_at
          FROM public_program_share pps
          JOIN meeting m ON m.id = pps.meeting_id
-        WHERE pps.ward_id = $1
+        WHERE pps.ward_id = $1::uuid
         ORDER BY m.meeting_date DESC
         LIMIT 20`,
       [wardId]
@@ -153,14 +157,14 @@ export default async function PublicPortalSettingsPage() {
 
           {portal ? (
             <div className="space-y-3">
-              <div className="rounded-md border bg-muted/50 p-3">
-                <p className="text-sm font-medium">Portal URL</p>
-                <p className="mt-1 break-all font-mono text-xs text-muted-foreground">
-                  {baseUrl}/p/ward/{portal.token}
-                </p>
-              </div>
-              <p className="text-xs text-muted-foreground">Created: {new Date(portal.created_at).toLocaleString()}</p>
-              <div className="flex gap-2">
+              <PublicLinkQrCard
+                wardName={wardName}
+                title="Digital Program"
+                url={`${baseUrl}/p/ward/${portal.token}`}
+                label="Ward Portal URL (Stable Link)"
+                createdDateText={`Created: ${new Date(portal.created_at).toLocaleString()}`}
+              />
+              <div className="flex gap-2 pt-1">
                 <form action={createOrRotatePortalToken}>
                   <Button type="submit" variant="outline" size="sm">Rotate token</Button>
                 </form>
@@ -182,15 +186,16 @@ export default async function PublicPortalSettingsPage() {
             Individual share tokens are created automatically when a meeting is published.
           </p>
           {shares.length ? (
-            <ul className="space-y-2">
+            <ul className="space-y-3">
               {shares.map((share) => (
-                <li key={share.id} className="rounded-md border p-3 text-sm">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <p className="font-semibold">{formatMeetingDateForDisplay(share.meeting_date)} — {share.meeting_type.replaceAll('_', ' ')}</p>
-                  </div>
-                  <p className="mt-1 break-all font-mono text-xs text-muted-foreground">
-                    {baseUrl}/p/{share.token}
-                  </p>
+                <li key={share.id}>
+                  <PublicLinkQrCard
+                    wardName={wardName}
+                    title="Digital Program"
+                    url={`${baseUrl}/p/${share.token}`}
+                    label={`${formatMeetingDateForDisplay(share.meeting_date)} — ${share.meeting_type.replaceAll('_', ' ')}`}
+                    createdDateText={`Created: ${new Date(share.created_at).toLocaleString()}`}
+                  />
                 </li>
               ))}
             </ul>
