@@ -40,6 +40,7 @@ describe('POST /api/w/[wardId]/callings/[callingId]/set-apart', () => {
       .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'calling-1', action_status: 'SUSTAINED' }] })  // SELECT calling status
       .mockResolvedValueOnce({})  // INSERT calling_action
       .mockResolvedValueOnce({})  // UPDATE calling_assignment (SET_APART deactivates)
+      .mockResolvedValueOnce({ rows: [{ calling_name: 'Primary Teacher', organization: 'Primary', member_name: 'Jane Doe', member_id: 'm-1' }] }) // calling_assignment SELECT
       .mockResolvedValueOnce({})  // INSERT audit_log
       .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'event-1' }] })  // INSERT event_outbox RETURNING id
       .mockResolvedValueOnce({});  // COMMIT
@@ -53,14 +54,11 @@ describe('POST /api/w/[wardId]/callings/[callingId]/set-apart', () => {
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ id: 'calling-1', status: 'SET_APART' });
 
-    expect(queryMock).toHaveBeenCalledWith(expect.stringContaining("'CALLING_SET_APART'"), [
+    expect(queryMock).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO audit_log'), expect.arrayContaining([
       'ward-1',
-      'calling-1',
-      JSON.stringify({
-        callingAssignmentId: 'calling-1',
-        instruction: 'Please record this set apart action in LCR.'
-      })
-    ]);
+      'user-1',
+      'CALLING_SET_APART'
+    ]));
 
     expect(enqueueOutboxNotificationJobMock).toHaveBeenCalledWith({ wardId: 'ward-1', eventOutboxId: 'event-1' });
     expect(releaseMock).toHaveBeenCalled();

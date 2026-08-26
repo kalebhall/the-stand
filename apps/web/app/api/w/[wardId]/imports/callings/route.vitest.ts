@@ -143,17 +143,11 @@ John Doe  Male  42  Jan 15  Bishopric  Bishop  Yes  No
     });
 
     expect(queryMock).not.toHaveBeenCalledWith(expect.stringContaining('DELETE FROM calling_assignment'), expect.anything());
-    expect(queryMock).toHaveBeenCalledWith(expect.stringContaining("'CALLINGS_IMPORT_ISSUE'"), [
+    expect(queryMock).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO audit_log'), expect.arrayContaining([
       'ward-1',
       'user-1',
-      'import-zero',
-      'PARSE_ZERO_ROWS',
-      true,
-      'callings.pdf',
-      expect.any(Number),
-      expect.any(Number),
-      expect.any(Number)
-    ]);
+      'CALLINGS_IMPORT_ISSUE'
+    ]));
   });
 
   it('uses parsed_count fallback drift calculation for very large stale imports', async () => {

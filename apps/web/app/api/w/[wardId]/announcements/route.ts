@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { isAnnouncementPlacement } from '@/src/announcements/types';
+import { recordAuditEvent } from '@/src/audit/service';
 import { auth } from '@/src/auth/auth';
 import { canManageMeetings, canViewMeetings } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
@@ -126,11 +127,33 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
       [wardId, title, details || null, startDate, endDate, isPermanent, placement, includeInProgram, includeInStand]
     );
 
-    await client.query(
-      `INSERT INTO audit_log (ward_id, user_id, action, details)
-       VALUES ($1::uuid, $2::uuid, 'ANNOUNCEMENT_CREATED', jsonb_build_object('announcementId', $3::text, 'title', $4::text, 'placement', $5::text, 'isPermanent', $6::boolean, 'includeInProgram', $7::boolean, 'includeInStand', $8::boolean))`,
-      [wardId, session.user.id, inserted.rows[0].id, title, placement, isPermanent, includeInProgram, includeInStand]
-    );
+    await recordAuditEvent(client, {
+      wardId,
+      userId: session.user.id,
+      actorName: session.user.name || session.user.email || null,
+      action: 'ANNOUNCEMENT_CREATED',
+      entityType: 'announcement',
+      entityId: inserted.rows[0].id,
+      changes: {
+        title: { old: null, new: title },
+        placement: { old: null, new: placement },
+        startDate: { old: null, new: startDate },
+        endDate: { old: null, new: endDate },
+        isPermanent: { old: null, new: isPermanent },
+        includeInProgram: { old: null, new: includeInProgram },
+        includeInStand: { old: null, new: includeInStand }
+      },
+      details: {
+        announcementId: inserted.rows[0].id,
+        title,
+        placement,
+        isPermanent,
+        includeInProgram,
+        includeInStand
+      },
+      source: 'manual_ui',
+      severity: 'info'
+    });
 
     await client.query('COMMIT');
 

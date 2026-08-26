@@ -1,16 +1,16 @@
 import { NextResponse } from 'next/server';
 
+import { recordAuditEvent } from '@/src/audit/service';
 import { auth } from '@/src/auth/auth';
 import { canManageCallings } from '@/src/auth/roles';
 import { CALLING_STATUS } from '@/src/callings/lifecycle';
 import { appendCallingStatus, fetchCurrentCallingStatus } from '@/src/callings/transition';
 import { pool } from '@/src/db/client';
 import { createLogger } from '@/src/lib/logger';
-
-import { setDbContext } from '@/src/db/context'
+import { setDbContext } from '@/src/db/context';
+import { enqueueOutboxNotificationJob } from '@/src/notifications/queue';
 
 const logger = createLogger('callings');
-import { enqueueOutboxNotificationJob } from '@/src/notifications/queue';
 
 export async function POST(_: Request, context: { params: Promise<{ wardId: string; callingId: string }> }) {
   const session = await auth();
@@ -47,21 +47,34 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
       return NextResponse.json({ error: 'Invalid transition', code: transition.reason }, { status: 409 });
     }
 
-    await client.query(
-      `INSERT INTO audit_log (ward_id, user_id, action, details)
-       VALUES (
-         $1::uuid,
-         $2::uuid,
-         'CALLING_SET_APART',
-         jsonb_build_object(
-           'callingAssignmentId',
-           $3::text,
-           'lcrReminder',
-           'Please record this set apart action in LCR.'
-         )
-       )`,
-      [wardId, session.user.id, callingId]
+    const callingInfo = await client.query(
+      'SELECT ca.calling_name, ca.organization, ca.member_name, ca.member_id FROM calling_assignment ca WHERE ca.id = $1 AND ca.ward_id = $2',
+      [callingId, wardId]
     );
+    const callingRow = callingInfo?.rows?.[0];
+
+    await recordAuditEvent(client, {
+      wardId,
+      userId: session.user.id,
+      actorName: session.user.name || session.user.email || null,
+      action: 'CALLING_SET_APART',
+      targetMemberId: callingRow?.member_id || null,
+      targetMemberName: callingRow?.member_name || null,
+      entityType: 'calling',
+      entityId: callingId,
+      callingName: callingRow?.calling_name || null,
+      organization: callingRow?.organization || null,
+      callingStatus: CALLING_STATUS.SET_APART,
+      changes: {
+        status: { old: currentStatus, new: CALLING_STATUS.SET_APART }
+      },
+      details: {
+        callingAssignmentId: callingId,
+        lcrReminder: 'Please record this set apart action in LCR.'
+      },
+      source: 'manual_ui',
+      severity: 'notice'
+    });
 
     const outboxResult = await client.query(
       `INSERT INTO event_outbox (ward_id, aggregate_type, aggregate_id, event_type, payload)

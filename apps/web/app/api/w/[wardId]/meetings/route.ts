@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 
+import { recordAuditEvent } from '@/src/audit/service';
 import { auth } from '@/src/auth/auth';
 import { canManageMeetings, canViewMeetings } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
@@ -134,11 +135,28 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
 
     await insertProgramItems(client, wardId, inserted.rows[0].id, programItems);
 
-    await client.query(
-      `INSERT INTO audit_log (ward_id, user_id, action, details)
-       VALUES ($1, $2, 'MEETING_CREATED', jsonb_build_object('meetingId', $3::text, 'meetingDate', $4::text, 'meetingType', $5::text, 'programItemCount', $6::int))`,
-      [wardId, session.user.id, inserted.rows[0].id, meetingDate, meetingType, programItems.length]
-    );
+    await recordAuditEvent(client, {
+      wardId,
+      userId: session.user.id,
+      actorName: session.user.name || session.user.email || null,
+      action: 'MEETING_CREATED',
+      entityType: 'meeting',
+      entityId: inserted.rows[0].id,
+      meetingDate,
+      changes: {
+        meetingDate: { old: null, new: meetingDate },
+        meetingType: { old: null, new: meetingType },
+        programItemCount: { old: 0, new: programItems.length }
+      },
+      details: {
+        meetingId: inserted.rows[0].id,
+        meetingDate,
+        meetingType,
+        programItemCount: programItems.length
+      },
+      source: 'manual_ui',
+      severity: 'info'
+    });
 
     await client.query('COMMIT');
 

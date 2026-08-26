@@ -58,7 +58,7 @@ describe('POST /api/w/[wardId]/callings', () => {
     expect(response.status).toBe(201);
     expect(await response.json()).toEqual({ id: 'calling-1', status: 'PROPOSED' });
     expect(queryMock.mock.calls[2]?.[1]).toEqual(['ward-1', 'calling-1', 'PROPOSED']);
-    expect(queryMock.mock.calls[3]?.[1]).toEqual(['ward-1', 'user-1', 'CALLING_PROPOSED', 'calling-1']);
+    expect(queryMock.mock.calls[3]?.[1]).toEqual(expect.arrayContaining(['ward-1', 'user-1', 'CALLING_PROPOSED', 'calling-1']));
   });
 
   it('creates an assignment-only calling with assigned status', async () => {
@@ -81,7 +81,7 @@ describe('POST /api/w/[wardId]/callings', () => {
     expect(response.status).toBe(201);
     expect(await response.json()).toEqual({ id: 'calling-2', status: 'ASSIGNED' });
     expect(queryMock.mock.calls[2]?.[1]).toEqual(['ward-1', 'calling-2', 'ASSIGNED']);
-    expect(queryMock.mock.calls[3]?.[1]).toEqual(['ward-1', 'user-1', 'CALLING_ASSIGNED', 'calling-2']);
+    expect(queryMock.mock.calls[3]?.[1]).toEqual(expect.arrayContaining(['ward-1', 'user-1', 'CALLING_ASSIGNED', 'calling-2']));
     expect(releaseMock).toHaveBeenCalled();
   });
 });

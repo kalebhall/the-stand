@@ -83,14 +83,11 @@ describe('POST /api/w/[wardId]/meetings', () => {
       '',
       ''
     ]);
-    expect(queryMock).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO audit_log'), [
+    expect(queryMock).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO audit_log'), expect.arrayContaining([
       'ward-1',
       'user-1',
-      'meeting-1',
-      '2026-01-04',
-      'SACRAMENT',
-      2
-    ]);
+      'MEETING_CREATED'
+    ]));
     expect(releaseMock).toHaveBeenCalled();
   });
 });

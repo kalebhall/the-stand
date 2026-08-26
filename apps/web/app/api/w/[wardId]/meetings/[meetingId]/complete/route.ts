@@ -1,13 +1,14 @@
 import { NextResponse } from 'next/server';
 
+import { recordAuditEvent } from '@/src/audit/service';
 import { auth } from '@/src/auth/auth';
 import { canManageMeetings } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { createLogger } from '@/src/lib/logger';
 import { setDbContext } from '@/src/db/context';
+import { enqueueOutboxNotificationJob } from '@/src/notifications/queue';
 
 const logger = createLogger('meetings');
-import { enqueueOutboxNotificationJob } from '@/src/notifications/queue';
 
 type AnnouncedBusinessLineRow = {
   id: string;
@@ -108,16 +109,25 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
     }
 
 
-    await client.query(
-      `INSERT INTO audit_log (ward_id, user_id, action, details)
-       VALUES (
-         $1::uuid,
-         $2::uuid,
-         'MEETING_COMPLETED',
-         jsonb_build_object('meetingId', $3::text, 'eventOutboxId', $4::text, 'announcedBusinessLineCount', $5::int)
-       )`,
-      [wardId, session.user.id, meetingId, eventOutboxId, announcedBusinessLines.length]
-    );
+    await recordAuditEvent(client, {
+      wardId,
+      userId: session.user.id,
+      actorName: session.user.name || session.user.email || null,
+      action: 'MEETING_COMPLETED',
+      entityType: 'meeting',
+      entityId: meetingId,
+      changes: {
+        status: { old: 'PUBLISHED', new: 'COMPLETED' },
+        announcedBusinessLineCount: { old: 0, new: announcedBusinessLines.length }
+      },
+      details: {
+        meetingId,
+        eventOutboxId,
+        announcedBusinessLineCount: announcedBusinessLines.length
+      },
+      source: 'manual_ui',
+      severity: 'notice'
+    });
 
     await client.query('COMMIT');
 
