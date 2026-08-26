@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { randomBytes } from 'node:crypto';
 
+import { recordAuditEvent } from '@/src/audit/service';
 import { auth } from '@/src/auth/auth';
 import { canManageMeetings } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
@@ -139,11 +140,27 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
 
     const eventType = nextVersion > 1 ? 'MEETING_REPUBLISHED' : 'MEETING_PUBLISHED';
 
-    await client.query(
-      `INSERT INTO audit_log (ward_id, user_id, action, details)
-       VALUES ($1::uuid, $2::uuid, $3::text, jsonb_build_object('meetingId', $4::text, 'version', $5::int))`,
-      [wardId, session.user.id, eventType, meetingId, nextVersion]
-    );
+    await recordAuditEvent(client, {
+      wardId,
+      userId: session.user.id,
+      actorName: session.user.name || session.user.email || null,
+      action: eventType,
+      entityType: 'meeting',
+      entityId: meetingId,
+      meetingDate: meeting.meeting_date,
+      changes: {
+        status: { old: 'DRAFT', new: 'PUBLISHED' },
+        version: { old: nextVersion - 1, new: nextVersion }
+      },
+      details: {
+        meetingId,
+        version: nextVersion,
+        meetingDate: meeting.meeting_date,
+        meetingType: meeting.meeting_type
+      },
+      source: 'manual_ui',
+      severity: 'notice'
+    });
 
     const outboxResult = await client.query(
       `INSERT INTO event_outbox (ward_id, aggregate_type, aggregate_id, event_type, payload)

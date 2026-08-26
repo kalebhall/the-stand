@@ -39,8 +39,25 @@ export default async function SupportAuditLogPage() {
         `SELECT al.id,
                 al.ward_id,
                 al.user_id,
+                al.actor_name,
+                al.actor_role,
                 al.action,
+                al.target_member_id,
+                al.target_member_name,
+                al.entity_type,
+                al.entity_id,
+                al.changes,
+                al.previous_state,
                 al.details,
+                al.source,
+                al.severity,
+                al.is_cross_ward_support,
+                al.calling_name,
+                al.organization,
+                al.calling_status,
+                al.meeting_date,
+                al.item_type,
+                al.item_title,
                 al.created_at,
                 ua.email AS user_email,
                 ua.display_name AS user_display_name,
@@ -56,12 +73,6 @@ export default async function SupportAuditLogPage() {
       client.query('SELECT DISTINCT action FROM audit_log ORDER BY action ASC')
     ]);
 
-    await client.query(
-      `INSERT INTO audit_log (ward_id, user_id, action, details)
-       VALUES (NULL, $1, 'SUPPORT_AUDIT_LOG_VIEWED', jsonb_build_object('count', $2::int))`,
-      [session.user.id, countResult.rows[0]?.total ?? 0]
-    );
-
     await client.query('COMMIT');
 
     total = parseInt(String(countResult.rows[0]?.total ?? '0'), 10);
@@ -70,8 +81,25 @@ export default async function SupportAuditLogPage() {
       id: string;
       ward_id: string | null;
       user_id: string | null;
+      actor_name: string | null;
+      actor_role: string | null;
       action: string;
+      target_member_id: string | null;
+      target_member_name: string | null;
+      entity_type: string | null;
+      entity_id: string | null;
+      changes: Record<string, { old: unknown; new: unknown }> | null;
+      previous_state: Record<string, unknown> | null;
       details: Record<string, unknown> | null;
+      source: string | null;
+      severity: string | null;
+      is_cross_ward_support: boolean | null;
+      calling_name: string | null;
+      organization: string | null;
+      calling_status: string | null;
+      meeting_date: string | null;
+      item_type: string | null;
+      item_title: string | null;
       created_at: string;
       user_email: string | null;
       user_display_name: string | null;
@@ -80,8 +108,25 @@ export default async function SupportAuditLogPage() {
       id: row.id,
       wardId: row.ward_id,
       userId: row.user_id,
+      actorName: row.actor_name,
+      actorRole: row.actor_role,
       action: row.action,
+      targetMemberId: row.target_member_id,
+      targetMemberName: row.target_member_name,
+      entityType: row.entity_type,
+      entityId: row.entity_id,
+      changes: row.changes,
+      previousState: row.previous_state,
       details: row.details,
+      source: row.source,
+      severity: row.severity,
+      isCrossWardSupport: Boolean(row.is_cross_ward_support),
+      callingName: row.calling_name,
+      organization: row.organization,
+      callingStatus: row.calling_status,
+      meetingDate: row.meeting_date,
+      itemType: row.item_type,
+      itemTitle: row.item_title,
       createdAt: row.created_at,
       userEmail: row.user_email,
       userDisplayName: row.user_display_name,

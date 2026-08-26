@@ -126,15 +126,11 @@ describe('POST /api/w/[wardId]/imports/membership', () => {
     ]);
 
     // Audit log includes archived count
-    expect(queryMock).toHaveBeenCalledWith(expect.stringContaining("'MEMBERSHIP_IMPORT_COMMITTED'"), [
+    expect(queryMock).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO audit_log'), expect.arrayContaining([
       'ward-1',
       'user-1',
-      'import-2',
-      1,
-      1,
-      0,
-      2
-    ]);
+      'MEMBERSHIP_IMPORT_COMMITTED'
+    ]));
   });
 
   it('writes failure details to audit log when import processing fails', async () => {

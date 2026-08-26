@@ -52,7 +52,8 @@ describe('DELETE /api/w/[wardId]/callings/[callingId]', () => {
     expect(await response.json()).toEqual({ success: true });
     expect(setDbContextMock).toHaveBeenCalledWith(expect.anything(), { userId: 'user-1', wardId: 'ward-1' });
     expect(queryMock.mock.calls[2]?.[0]).toContain('DELETE FROM calling_assignment');
-    expect(queryMock.mock.calls[3]?.[0]).toContain('CALLING_DELETED');
+    expect(queryMock.mock.calls[3]?.[0]).toContain('INSERT INTO audit_log');
+    expect(queryMock.mock.calls[3]?.[1]).toContain('CALLING_DELETED');
     expect(releaseMock).toHaveBeenCalled();
   });
 

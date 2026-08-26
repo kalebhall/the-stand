@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 
+import { recordAuditEvent } from '@/src/audit/service';
 import { auth } from '@/src/auth/auth';
 import { canManageCallings } from '@/src/auth/roles';
 import { CALLING_STATUS } from '@/src/callings/lifecycle';
@@ -50,11 +51,35 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
       return NextResponse.json({ error: 'Invalid transition', code: transition.reason }, { status: 409 });
     }
 
-    await client.query(
-      `INSERT INTO audit_log (ward_id, user_id, action, details)
-       VALUES ($1::uuid, $2::uuid, 'CALLING_ASSIGNED', jsonb_build_object('callingAssignmentId', $3::text, 'fromStatus', $4::text, 'toStatus', $5::text))`,
-      [wardId, session.user.id, callingId, currentStatus, CALLING_STATUS.ASSIGNED]
+    const callingInfo = await client.query(
+      'SELECT ca.calling_name, ca.organization, ca.member_name, ca.member_id FROM calling_assignment ca WHERE ca.id = $1 AND ca.ward_id = $2',
+      [callingId, wardId]
     );
+    const callingRow = callingInfo?.rows?.[0];
+
+    await recordAuditEvent(client, {
+      wardId,
+      userId: session.user.id,
+      actorName: session.user.name || session.user.email || null,
+      action: 'CALLING_ASSIGNED',
+      targetMemberId: callingRow?.member_id || null,
+      targetMemberName: callingRow?.member_name || null,
+      entityType: 'calling',
+      entityId: callingId,
+      callingName: callingRow?.calling_name || null,
+      organization: callingRow?.organization || null,
+      callingStatus: CALLING_STATUS.ASSIGNED,
+      changes: {
+        status: { old: currentStatus, new: CALLING_STATUS.ASSIGNED }
+      },
+      details: {
+        callingAssignmentId: callingId,
+        fromStatus: currentStatus,
+        toStatus: CALLING_STATUS.ASSIGNED
+      },
+      source: 'manual_ui',
+      severity: 'notice'
+    });
 
     await client.query('COMMIT');
 

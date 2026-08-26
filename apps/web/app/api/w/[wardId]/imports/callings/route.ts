@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { QueryResultRow } from 'pg';
+
+import { recordAuditEvent } from '@/src/audit/service';
 import { auth } from '@/src/auth/auth';
 import { canRunImports } from '@/src/auth/roles';
 import { CALLING_STATUS } from '@/src/callings/lifecycle';
@@ -140,21 +142,25 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     }
 
     if (parsedCallings.length === 0) {
-      await client.query(
-        `INSERT INTO audit_log (ward_id, user_id, action, details)
-         VALUES ($1, $2, 'CALLINGS_IMPORT_ISSUE', jsonb_build_object('importRunId', $3::text, 'issue', $4::text, 'commitRequested', $5::boolean, 'fileName', $6::text, 'extractedCharCount', $7::int, 'extractedLineCount', $8::int, 'potentialRowLineCount', $9::int))`,
-        [
-          wardId,
-          session.user.id,
-          importRun.id,
-          'PARSE_ZERO_ROWS',
-          commit,
+      await recordAuditEvent(client, {
+        wardId,
+        userId: session.user.id,
+        actorName: session.user.name || session.user.email || null,
+        action: 'CALLINGS_IMPORT_ISSUE',
+        entityType: 'import',
+        entityId: importRun.id,
+        source: 'lcr_import',
+        severity: 'notice',
+        details: {
+          importRunId: importRun.id,
+          issue: 'PARSE_ZERO_ROWS',
+          commitRequested: commit,
           fileName,
-          extractedText.length,
-          extractedLines.length,
-          potentialRowLines.length
-        ]
-      );
+          extractedCharCount: extractedText.length,
+          extractedLineCount: extractedLines.length,
+          potentialRowLineCount: potentialRowLines.length
+        }
+      });
 
       await client.query('COMMIT');
 
@@ -280,11 +286,28 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
         inserted += 1;
       }
 
-      await client.query(
-        `INSERT INTO audit_log (ward_id, user_id, action, details)
-         VALUES ($1, $2, 'CALLINGS_IMPORT_COMMITTED', jsonb_build_object('importRunId', $3::text, 'inserted', $4::int, 'replacedCount', $5::int, 'matchedMembers', $6::int, 'unmatchedMembers', $7::int, 'parsedCount', $8::int))`,
-        [wardId, session.user.id, importRun.id, inserted, replacedCount, matchedMembers, unmatchedMembers, parsedCallings.length]
-      );
+      await recordAuditEvent(client, {
+        wardId,
+        userId: session.user.id,
+        actorName: session.user.name || session.user.email || null,
+        action: 'CALLINGS_IMPORT_COMMITTED',
+        entityType: 'import',
+        entityId: importRun.id,
+        source: 'lcr_import',
+        severity: 'notice',
+        changes: {
+          inserted: { old: 0, new: inserted },
+          replacedCount: { old: 0, new: replacedCount }
+        },
+        details: {
+          importRunId: importRun.id,
+          inserted,
+          replacedCount,
+          matchedMembers,
+          unmatchedMembers,
+          parsedCount: parsedCallings.length
+        }
+      });
     }
 
     const currentActiveResult = await client.query(

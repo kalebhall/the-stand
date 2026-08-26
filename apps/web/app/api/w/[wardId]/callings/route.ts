@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 
+import { recordAuditEvent } from '@/src/audit/service';
 import { auth } from '@/src/auth/auth';
 import { canManageCallings, canViewCallings } from '@/src/auth/roles';
 import { CALLING_STATUS } from '@/src/callings/lifecycle';
 import { pool } from '@/src/db/client';
 import { createLogger } from '@/src/lib/logger';
-
-import { setDbContext } from '@/src/db/context'
+import { setDbContext } from '@/src/db/context';
 
 const logger = createLogger('callings');
 
@@ -120,11 +120,30 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
       [wardId, assignmentId, initialStatus]
     );
 
-    await client.query(
-      `INSERT INTO audit_log (ward_id, user_id, action, details)
-       VALUES ($1::uuid, $2::uuid, $3::text, jsonb_build_object('callingAssignmentId', $4::text))`,
-      [wardId, session.user.id, auditAction, assignmentId]
-    );
+    await recordAuditEvent(client, {
+      wardId,
+      userId: session.user.id,
+      actorName: session.user.name || session.user.email || null,
+      action: auditAction,
+      targetMemberName: body.memberName.trim(),
+      entityType: 'calling',
+      entityId: assignmentId,
+      callingName: body.callingName.trim(),
+      callingStatus: initialStatus,
+      changes: {
+        status: { old: null, new: initialStatus },
+        memberName: { old: null, new: body.memberName.trim() },
+        callingName: { old: null, new: body.callingName.trim() }
+      },
+      details: {
+        callingAssignmentId: assignmentId,
+        memberName: body.memberName.trim(),
+        callingName: body.callingName.trim(),
+        isAssignmentOnly: body.isAssignmentOnly === true
+      },
+      source: 'manual_ui',
+      severity: 'notice'
+    });
 
     await client.query('COMMIT');
 

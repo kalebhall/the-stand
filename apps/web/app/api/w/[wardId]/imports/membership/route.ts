@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 
+import { recordAuditEvent } from '@/src/audit/service';
 import { auth } from '@/src/auth/auth';
 import { canRunImports } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
@@ -107,11 +108,23 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     }
 
     if (parsedMembers.length === 0) {
-      await client.query(
-        `INSERT INTO audit_log (ward_id, user_id, action, details)
-         VALUES ($1, $2, 'MEMBERSHIP_IMPORT_ISSUE', jsonb_build_object('importRunId', $3::text, 'issue', $4::text, 'commitRequested', $5::boolean, 'fileName', $6::text, 'extractedTextPreview', $7::text))`,
-        [wardId, session.user.id, importRunId, 'PARSE_ZERO_ROWS', commit, fileName, extractedText.substring(0, 1000)]
-      );
+      await recordAuditEvent(client, {
+        wardId,
+        userId: session.user.id,
+        actorName: session.user.name || session.user.email || null,
+        action: 'MEMBERSHIP_IMPORT_ISSUE',
+        entityType: 'import',
+        entityId: importRunId,
+        source: 'lcr_import',
+        severity: 'notice',
+        details: {
+          importRunId,
+          issue: 'PARSE_ZERO_ROWS',
+          commitRequested: commit,
+          fileName,
+          extractedTextPreview: extractedText.substring(0, 1000)
+        }
+      });
 
       await client.query('COMMIT');
 
@@ -212,11 +225,28 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
       );
       archived = (stillArchivedResult.rows[0] as { cnt: number } | undefined)?.cnt ?? 0;
 
-      await client.query(
-        `INSERT INTO audit_log (ward_id, user_id, action, details)
-         VALUES ($1, $2, 'MEMBERSHIP_IMPORT_COMMITTED', jsonb_build_object('importRunId', $3::text, 'inserted', $4::int, 'updated', $5::int, 'archived', $6::int, 'parsedCount', $7::int))`,
-        [wardId, session.user.id, importRunId, inserted, updated, archived, parsedMembers.length]
-      );
+      await recordAuditEvent(client, {
+        wardId,
+        userId: session.user.id,
+        actorName: session.user.name || session.user.email || null,
+        action: 'MEMBERSHIP_IMPORT_COMMITTED',
+        entityType: 'import',
+        entityId: importRunId,
+        source: 'lcr_import',
+        severity: 'notice',
+        changes: {
+          inserted: { old: 0, new: inserted },
+          updated: { old: 0, new: updated },
+          archived: { old: 0, new: archived }
+        },
+        details: {
+          importRunId,
+          inserted,
+          updated,
+          archived,
+          parsedCount: parsedMembers.length
+        }
+      });
     }
 
     await client.query('COMMIT');

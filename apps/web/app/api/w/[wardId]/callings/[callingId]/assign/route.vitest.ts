@@ -54,7 +54,9 @@ describe('POST /api/w/[wardId]/callings/[callingId]/assign', () => {
     expect(await response.json()).toEqual({ id: 'calling-1', status: 'ASSIGNED', previousStatus: 'SUSTAINED' });
     expect(queryMock.mock.calls[2]?.[1]).toEqual(['ward-1', 'calling-1', 'ASSIGNED']);
     expect(queryMock.mock.calls[3]?.[0]).toContain('UPDATE calling_assignment SET is_active = TRUE');
-    expect(queryMock.mock.calls[4]?.[0]).toContain('CALLING_ASSIGNED');
+    expect(queryMock.mock.calls[4]?.[0]).toContain('SELECT ca.calling_name');
+    expect(queryMock.mock.calls[5]?.[0]).toContain('INSERT INTO audit_log');
+    expect(queryMock.mock.calls[5]?.[1]).toContain('CALLING_ASSIGNED');
     expect(releaseMock).toHaveBeenCalled();
   });
 

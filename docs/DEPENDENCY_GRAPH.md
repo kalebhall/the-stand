@@ -16,58 +16,60 @@ flowchart LR
   A4["web:announcements<br/>2 files"]
   A5["web:api<br/>56 files"]
   A6["web:app<br/>78 files"]
-  A7["web:auth<br/>11 files"]
-  A8["web:bootstrap.mjs<br/>1 files"]
-  A9["web:calendar<br/>3 files"]
-  A10["web:callings<br/>5 files"]
-  A11["web:config<br/>11 files"]
-  A12["web:db<br/>7 files"]
-  A13["web:hardening<br/>1 files"]
-  A14["web:health.mjs<br/>1 files"]
-  A15["web:imports<br/>11 files"]
-  A16["web:lib<br/>7 files"]
-  A17["web:meetings<br/>7 files"]
-  A18["web:notifications<br/>5 files"]
-  A19["web:stand<br/>3 files"]
-  A20["web:tooling<br/>2 files"]
-  A21["web:types<br/>2 files"]
-  A22["web:ui<br/>18 files"]
-  A23["web:version.mjs<br/>1 files"]
-  A5 -->|77| A7
-  A6 -->|71| A22
-  A5 -->|67| A12
-  A6 -->|62| A7
-  A6 -->|38| A12
-  A5 -->|25| A16
-  A5 -->|15| A10
-  A5 -->|8| A15
-  A6 -->|8| A17
-  A5 -->|4| A18
-  A6 -->|4| A10
-  A5 -->|3| A17
+  A7["web:audit<br/>2 files"]
+  A8["web:auth<br/>11 files"]
+  A9["web:bootstrap.mjs<br/>1 files"]
+  A10["web:calendar<br/>3 files"]
+  A11["web:callings<br/>5 files"]
+  A12["web:config<br/>11 files"]
+  A13["web:db<br/>7 files"]
+  A14["web:hardening<br/>1 files"]
+  A15["web:health.mjs<br/>1 files"]
+  A16["web:imports<br/>11 files"]
+  A17["web:lib<br/>7 files"]
+  A18["web:meetings<br/>7 files"]
+  A19["web:notifications<br/>5 files"]
+  A20["web:stand<br/>3 files"]
+  A21["web:tooling<br/>2 files"]
+  A22["web:types<br/>2 files"]
+  A23["web:ui<br/>18 files"]
+  A24["web:version.mjs<br/>1 files"]
+  A5 -->|77| A8
+  A6 -->|71| A23
+  A5 -->|67| A13
+  A6 -->|62| A8
+  A6 -->|38| A13
+  A5 -->|25| A17
+  A5 -->|15| A11
+  A5 -->|11| A7
+  A5 -->|8| A16
+  A6 -->|8| A18
+  A5 -->|4| A19
+  A6 -->|4| A11
+  A5 -->|3| A18
   A5 -->|2| A4
   A6 -->|2| A4
-  A6 -->|2| A19
-  A7 -->|2| A12
-  A9 -->|2| A12
-  A11 -->|2| A16
-  A12 -->|2| A7
-  A18 -->|2| A12
-  A2 -->|1| A14
-  A5 -->|1| A9
-  A6 -->|1| A9
-  A6 -->|1| A15
+  A6 -->|2| A20
+  A8 -->|2| A13
+  A10 -->|2| A13
+  A12 -->|2| A17
+  A13 -->|2| A8
+  A19 -->|2| A13
+  A2 -->|1| A15
+  A5 -->|1| A10
+  A6 -->|1| A10
   A6 -->|1| A16
-  A6 -->|1| A18
-  A7 -->|1| A16
-  A11 -->|1| A8
-  A11 -->|1| A14
-  A14 -->|1| A23
-  A15 -->|1| A12
-  A17 -->|1| A4
-  A22 -->|1| A7
-  A22 -->|1| A15
-  A22 -->|1| A19
+  A6 -->|1| A17
+  A6 -->|1| A19
+  A8 -->|1| A17
+  A12 -->|1| A9
+  A12 -->|1| A15
+  A15 -->|1| A24
+  A16 -->|1| A13
+  A18 -->|1| A4
+  A23 -->|1| A8
+  A23 -->|1| A16
+  A23 -->|1| A20
 ```
 
 ## Area inventory
@@ -80,6 +82,7 @@ flowchart LR
 | `web:announcements` | 2 |
 | `web:api` | 56 |
 | `web:app` | 78 |
+| `web:audit` | 2 |
 | `web:auth` | 11 |
 | `web:bootstrap.mjs` | 1 |
 | `web:calendar` | 3 |
@@ -112,6 +115,7 @@ flowchart LR
 | `web:ui` | `web:ui` | 16 |
 | `web:api` | `web:callings` | 15 |
 | `web:api` | `web:api` | 13 |
+| `web:api` | `web:audit` | 11 |
 | `web:api` | `web:imports` | 8 |
 | `web:app` | `web:meetings` | 8 |
 | `web:auth` | `web:auth` | 8 |
@@ -142,6 +146,7 @@ flowchart LR
 | `web:app` | `web:imports` | 1 |
 | `web:app` | `web:lib` | 1 |
 | `web:app` | `web:notifications` | 1 |
+| `web:audit` | `web:audit` | 1 |
 | `web:auth` | `web:lib` | 1 |
 | `web:config` | `web:bootstrap.mjs` | 1 |
 | `web:config` | `web:health.mjs` | 1 |
@@ -192,6 +197,8 @@ flowchart LR
 | `web:api` | `zod` | 1 |
 | `web:app` | `Node.js` | 1 |
 | `web:app` | `next-themes` | 1 |
+| `web:audit` | `pg` | 1 |
+| `web:audit` | `vitest` | 1 |
 | `web:auth` | `argon2` | 1 |
 | `web:auth` | `next` | 1 |
 | `web:bootstrap.mjs` | `Node.js` | 1 |
@@ -248,36 +255,36 @@ flowchart LR
 | `apps/web/app/api/support/hymns/[id]/route.ts` | `web:api` | 3 | 1 |
 | `apps/web/app/api/support/hymns/route.ts` | `web:api` | 3 | 1 |
 | `apps/web/app/api/w/[wardId]/announcements/[announcementId]/route.ts` | `web:api` | 6 | 1 |
-| `apps/web/app/api/w/[wardId]/announcements/route.ts` | `web:api` | 6 | 1 |
+| `apps/web/app/api/w/[wardId]/announcements/route.ts` | `web:api` | 7 | 1 |
 | `apps/web/app/api/w/[wardId]/announcements/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/audit-log/route.ts` | `web:api` | 5 | 1 |
 | `apps/web/app/api/w/[wardId]/calendar/refresh/route.ts` | `web:api` | 3 | 1 |
 | `apps/web/app/api/w/[wardId]/calendar/route.ts` | `web:api` | 4 | 1 |
-| `apps/web/app/api/w/[wardId]/callings/[callingId]/assign/route.ts` | `web:api` | 7 | 1 |
+| `apps/web/app/api/w/[wardId]/callings/[callingId]/assign/route.ts` | `web:api` | 8 | 1 |
 | `apps/web/app/api/w/[wardId]/callings/[callingId]/assign/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/callings/[callingId]/extend/route.ts` | `web:api` | 8 | 1 |
 | `apps/web/app/api/w/[wardId]/callings/[callingId]/release/route.ts` | `web:api` | 8 | 1 |
-| `apps/web/app/api/w/[wardId]/callings/[callingId]/route.ts` | `web:api` | 5 | 1 |
+| `apps/web/app/api/w/[wardId]/callings/[callingId]/route.ts` | `web:api` | 6 | 1 |
 | `apps/web/app/api/w/[wardId]/callings/[callingId]/route.vitest.ts` | `web:api` | 1 | 1 |
-| `apps/web/app/api/w/[wardId]/callings/[callingId]/set-apart/route.ts` | `web:api` | 8 | 1 |
+| `apps/web/app/api/w/[wardId]/callings/[callingId]/set-apart/route.ts` | `web:api` | 9 | 1 |
 | `apps/web/app/api/w/[wardId]/callings/[callingId]/set-apart/route.vitest.ts` | `web:api` | 1 | 1 |
-| `apps/web/app/api/w/[wardId]/callings/[callingId]/sustain/route.ts` | `web:api` | 7 | 1 |
+| `apps/web/app/api/w/[wardId]/callings/[callingId]/sustain/route.ts` | `web:api` | 8 | 1 |
 | `apps/web/app/api/w/[wardId]/callings/[callingId]/sustain/route.vitest.ts` | `web:api` | 1 | 1 |
-| `apps/web/app/api/w/[wardId]/callings/route.ts` | `web:api` | 6 | 1 |
+| `apps/web/app/api/w/[wardId]/callings/route.ts` | `web:api` | 7 | 1 |
 | `apps/web/app/api/w/[wardId]/callings/route.vitest.ts` | `web:api` | 1 | 1 |
-| `apps/web/app/api/w/[wardId]/imports/callings/route.ts` | `web:api` | 8 | 2 |
+| `apps/web/app/api/w/[wardId]/imports/callings/route.ts` | `web:api` | 9 | 2 |
 | `apps/web/app/api/w/[wardId]/imports/callings/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/imports/lcr/[jobId]/route.ts` | `web:api` | 3 | 1 |
 | `apps/web/app/api/w/[wardId]/imports/lcr/route.ts` | `web:api` | 8 | 2 |
-| `apps/web/app/api/w/[wardId]/imports/membership/route.ts` | `web:api` | 7 | 1 |
+| `apps/web/app/api/w/[wardId]/imports/membership/route.ts` | `web:api` | 8 | 1 |
 | `apps/web/app/api/w/[wardId]/imports/membership/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/business/[lineId]/route.ts` | `web:api` | 5 | 1 |
-| `apps/web/app/api/w/[wardId]/meetings/[meetingId]/complete/route.ts` | `web:api` | 6 | 1 |
+| `apps/web/app/api/w/[wardId]/meetings/[meetingId]/complete/route.ts` | `web:api` | 7 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/complete/route.vitest.ts` | `web:api` | 1 | 1 |
-| `apps/web/app/api/w/[wardId]/meetings/[meetingId]/publish/route.ts` | `web:api` | 6 | 2 |
+| `apps/web/app/api/w/[wardId]/meetings/[meetingId]/publish/route.ts` | `web:api` | 7 | 2 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/publish/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/route.ts` | `web:api` | 7 | 1 |
-| `apps/web/app/api/w/[wardId]/meetings/route.ts` | `web:api` | 5 | 1 |
+| `apps/web/app/api/w/[wardId]/meetings/route.ts` | `web:api` | 6 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/members/[memberId]/notes/[noteId]/route.ts` | `web:api` | 5 | 1 |
 | `apps/web/app/api/w/[wardId]/members/[memberId]/notes/route.ts` | `web:api` | 5 | 1 |
@@ -390,6 +397,8 @@ flowchart LR
 | `apps/web/server.mjs` | `web:config` | 2 | 1 |
 | `apps/web/src/announcements/types.ts` | `web:announcements` | 0 | 0 |
 | `apps/web/src/announcements/types.vitest.ts` | `web:announcements` | 1 | 1 |
+| `apps/web/src/audit/service.ts` | `web:audit` | 0 | 1 |
+| `apps/web/src/audit/service.vitest.ts` | `web:audit` | 1 | 1 |
 | `apps/web/src/auth/auth.ts` | `web:auth` | 5 | 3 |
 | `apps/web/src/auth/guards.ts` | `web:auth` | 1 | 2 |
 | `apps/web/src/auth/navigation.ts` | `web:auth` | 1 | 0 |
