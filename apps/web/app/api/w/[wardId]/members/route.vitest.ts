@@ -60,7 +60,7 @@ describe('GET /api/w/[wardId]/members', () => {
     queryMock
       .mockResolvedValueOnce({}) // BEGIN
       .mockResolvedValueOnce({
-        rows: [{ id: 'm-1', full_name: 'Doe, John' }]
+        rows: [{ id: 'm-1', full_name: 'Doe, John', age: 42 }]
       })
       .mockResolvedValueOnce({}); // COMMIT
 
@@ -70,7 +70,7 @@ describe('GET /api/w/[wardId]/members', () => {
 
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({
-      members: [{ id: 'm-1', fullName: 'Doe, John' }]
+      members: [{ id: 'm-1', fullName: 'Doe, John', age: 42 }]
     });
 
     expect(queryMock).toHaveBeenNthCalledWith(1, 'BEGIN');
