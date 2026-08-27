@@ -357,13 +357,17 @@ export const member = pgTable(
   })
 );
 
-export const memberNote = pgTable('member_note', {
+export const internalNote = pgTable('internal_note', {
   id: uuid('id').defaultRandom().primaryKey(),
   wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
-  memberId: uuid('member_id').notNull().references(() => member.id, { onDelete: 'cascade' }),
+  memberId: uuid('member_id').references(() => member.id, { onDelete: 'cascade' }),
+  meetingId: uuid('meeting_id').references(() => meeting.id, { onDelete: 'cascade' }),
+  programItemId: uuid('program_item_id').references(() => meetingProgramItem.id, { onDelete: 'cascade' }),
+  visibility: text('visibility').notNull(),
   noteText: text('note_text').notNull(),
-  createdByUserId: uuid('created_by_user_id').references(() => userAccount.id, { onDelete: 'set null' }),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+  createdByUserId: uuid('created_by_user_id').notNull().references(() => userAccount.id, { onDelete: 'restrict' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
 });
 
 export const importRun = pgTable('import_run', {

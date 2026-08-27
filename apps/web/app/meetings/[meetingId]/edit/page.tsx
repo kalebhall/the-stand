@@ -3,6 +3,7 @@ import { notFound, redirect } from 'next/navigation';
 
 import { buttonVariants } from '@/components/ui/button';
 import { WardBusinessSection, type BusinessLine } from '@/components/WardBusinessSection';
+import { InternalNotesPanel, type InternalNoteRow } from '@/components/InternalNotesPanel';
 import { cn } from '@/lib/utils';
 import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth/guards';
 import { canManageMeetings } from '@/src/auth/roles';
@@ -80,6 +81,17 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ me
       [meetingId, session.activeWardId]
     );
 
+    const notesResult = await client.query(
+      `SELECT note.id, note.visibility, note.note_text, note.created_at, ua.email AS created_by_email
+         FROM internal_note note
+         LEFT JOIN user_account ua ON ua.id = note.created_by_user_id
+        WHERE note.ward_id = $1::uuid
+          AND note.meeting_id = $2::uuid
+          AND (note.visibility = 'LEADERSHIP' OR note.created_by_user_id = $3::uuid)
+        ORDER BY note.created_at DESC`,
+      [session.activeWardId, meetingId, session.user.id]
+    );
+
     await client.query('COMMIT');
 
     const meeting = meetingResult.rows[0] as MeetingRow;
@@ -93,6 +105,7 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ me
     }));
     const versions = versionsResult.rows as MeetingRenderVersionRow[];
     const businessLines = businessLinesResult.rows as BusinessLine[];
+    const notes = notesResult.rows as InternalNoteRow[];
 
     return (
       <main className="mx-auto w-full max-w-4xl space-y-6 p-4 sm:p-6">
@@ -101,9 +114,14 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ me
             <h1 className="text-2xl font-semibold tracking-tight">Edit meeting</h1>
             <p className="text-sm text-muted-foreground">Update meeting details, hymns, and program order.</p>
           </div>
-          <Link href={`/meetings/${meeting.id}/print`} className={cn(buttonVariants({ variant: 'outline' }))}>
-            Open print view
-          </Link>
+          <div className="flex gap-2">
+            <Link href={`/stand/${meeting.id}`} className={cn(buttonVariants({ variant: 'outline' }))}>
+              At the Stand
+            </Link>
+            <Link href={`/meetings/${meeting.id}/print`} className={cn(buttonVariants({ variant: 'outline' }))}>
+              Open print view
+            </Link>
+          </div>
         </section>
 
         <WardBusinessSection
@@ -112,6 +130,13 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ me
           lines={businessLines}
           canManage={true}
           showAnnounce={false}
+        />
+
+        <InternalNotesPanel
+          wardId={session.activeWardId}
+          target={{ type: 'MEETING', meetingId }}
+          notes={notes}
+          title="Meeting notes"
         />
 
         <section className="rounded-lg border bg-card p-4">

@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Button, buttonVariants } from '@/components/ui/button';
+import { InternalNotesPanel, type InternalNoteRow } from '@/components/InternalNotesPanel';
 import { cn } from '@/lib/utils';
 
 type MemberRow = {
@@ -16,12 +17,8 @@ type MemberRow = {
   gender: string | null;
 };
 
-type MemberNoteRow = {
-  id: string;
+type MemberNoteRow = InternalNoteRow & {
   member_id: string;
-  note_text: string;
-  created_at: string;
-  created_by_email: string | null;
 };
 
 type EditDraft = {
@@ -43,37 +40,20 @@ function displayName(member: MemberRow): string {
 export function MembersManagerClient({
   wardId,
   members,
-  memberNotes
+  memberNotes,
+  canManageMembers
 }: {
   wardId: string;
   members: MemberRow[];
   memberNotes: MemberNoteRow[];
+  canManageMembers: boolean;
 }) {
   const [search, setSearch] = useState('');
   const [actionError, setActionError] = useState<string | null>(null);
-  const [isSavingMemberNoteId, setIsSavingMemberNoteId] = useState<string | null>(null);
-  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
   const [isSavingEditId, setIsSavingEditId] = useState<string | null>(null);
   const [isArchivingMemberId, setIsArchivingMemberId] = useState<string | null>(null);
   const [editDrafts, setEditDrafts] = useState<Record<string, EditDraft>>({});
-
-  const primaryNoteByMemberId = useMemo(() => {
-    return memberNotes.reduce<Record<string, MemberNoteRow>>((accumulator, note) => {
-      if (!accumulator[note.member_id]) {
-        accumulator[note.member_id] = note;
-      }
-      return accumulator;
-    }, {});
-  }, [memberNotes]);
-
-  const [memberNoteDrafts, setMemberNoteDrafts] = useState<Record<string, string>>(() => {
-    return members.reduce<Record<string, string>>((accumulator, member) => {
-      const existingNote = memberNotes.find((note) => note.member_id === member.id);
-      accumulator[member.id] = existingNote?.note_text ?? '';
-      return accumulator;
-    }, {});
-  });
 
   const filteredMembers = useMemo(() => {
     if (!search.trim()) return members;
@@ -87,61 +67,6 @@ export function MembersManagerClient({
         (m.phone && m.phone.includes(q))
     );
   }, [members, search]);
-
-  async function saveMemberNote(memberId: string) {
-    const currentDraft = (memberNoteDrafts[memberId] ?? '').trim();
-    const existingNote = primaryNoteByMemberId[memberId];
-    const existingText = existingNote?.note_text ?? '';
-
-    if (currentDraft === existingText) {
-      return;
-    }
-
-    setIsSavingMemberNoteId(memberId);
-    setActionError(null);
-
-    try {
-      if (!currentDraft) {
-        if (existingNote) {
-          const response = await fetch(`/api/w/${wardId}/members/${memberId}/notes/${existingNote.id}`, {
-            method: 'DELETE'
-          });
-
-          if (!response.ok) {
-            const payload = (await response.json()) as { error?: string };
-            setActionError(payload.error ?? 'Failed to delete note.');
-            return;
-          }
-        }
-
-        window.location.reload();
-        return;
-      }
-
-      const response = await fetch(
-        existingNote ? `/api/w/${wardId}/members/${memberId}/notes/${existingNote.id}` : `/api/w/${wardId}/members/${memberId}/notes`,
-        {
-          method: existingNote ? 'PATCH' : 'POST',
-          headers: {
-            'content-type': 'application/json'
-          },
-          body: JSON.stringify({ noteText: currentDraft })
-        }
-      );
-
-      if (!response.ok) {
-        const payload = (await response.json()) as { error?: string };
-        setActionError(payload.error ?? 'Failed to save note.');
-        return;
-      }
-
-      window.location.reload();
-    } catch {
-      setActionError('Failed to save note.');
-    } finally {
-      setIsSavingMemberNoteId(null);
-    }
-  }
 
   function startEdit(member: MemberRow) {
     setEditDrafts((prev) => ({
@@ -247,7 +172,7 @@ export function MembersManagerClient({
                     {member.gender ? ` · ${member.gender}` : ''}
                   </p>
                 </div>
-                <div className="flex items-center gap-2">
+                {canManageMembers ? <div className="flex items-center gap-2">
                   <Button
                     type="button"
                     variant="outline"
@@ -268,10 +193,8 @@ export function MembersManagerClient({
                   >
                     {isArchivingMemberId === member.id ? 'Archiving…' : 'Archive'}
                   </Button>
-                </div>
+                </div> : null}
               </div>
-
-              {/* Inline edit form */}
               {editingMemberId === member.id && (
                 <div className="mt-3 rounded-md border bg-muted/20 p-3 space-y-3">
                   <p className="text-xs font-medium text-muted-foreground">Edit Member Info</p>
@@ -360,41 +283,13 @@ export function MembersManagerClient({
                 </div>
               )}
 
-              {/* Note editor */}
-              <div className="mt-3 space-y-1.5">
-                <p className="text-xs font-medium text-muted-foreground">Bishopric / Clerk Note</p>
-                {editingNoteId === member.id ? (
-                  <textarea
-                    id={`member-note-${member.id}`}
-                    value={memberNoteDrafts[member.id] ?? ''}
-                    onChange={(event) =>
-                      setMemberNoteDrafts((current) => ({
-                        ...current,
-                        [member.id]: event.target.value
-                      }))
-                    }
-                    onBlur={() => {
-                      setEditingNoteId(null);
-                      void saveMemberNote(member.id);
-                    }}
-                    className="min-h-20 w-full rounded-md border bg-background p-2.5 text-sm font-sans"
-                    placeholder="Add a restricted member note (saved on blur)"
-                    autoFocus
-                  />
-                ) : (
-                  <div
-                    className="min-h-14 cursor-text rounded-md border bg-muted/20 px-3 py-2 text-sm transition-colors hover:bg-muted/40"
-                    onDoubleClick={() => setEditingNoteId(member.id)}
-                    title="Double-click to edit note"
-                  >
-                    {(memberNoteDrafts[member.id] ?? '').trim() || (
-                      <span className="text-muted-foreground italic text-xs">No note. Double-click to add.</span>
-                    )}
-                  </div>
-                )}
-                <p className="text-[11px] text-muted-foreground">
-                  {isSavingMemberNoteId === member.id ? 'Saving…' : 'Double-click to edit.'}
-                </p>
+              <div className="mt-3">
+                <InternalNotesPanel
+                  wardId={wardId}
+                  target={{ type: 'MEMBER', memberId: member.id }}
+                  notes={memberNotes.filter((note) => note.member_id === member.id)}
+                  title="Member notes"
+                />
               </div>
             </article>
           ))

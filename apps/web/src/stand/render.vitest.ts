@@ -6,6 +6,7 @@ describe('buildStandRows', () => {
   it('uses default welcome text and bold placeholders for sustain phrasing', () => {
     const rows = buildStandRows([
       {
+        id: 'item-sustain',
         itemType: 'SUSTAINING',
         title: 'Jane Smith',
         notes: 'Relief Society President',
@@ -34,6 +35,7 @@ describe('buildStandRows', () => {
     const rows = buildStandRows(
       [
         {
+          id: 'item-opening',
           itemType: 'OPENING_HYMN',
           title: '',
           notes: '',
@@ -41,6 +43,7 @@ describe('buildStandRows', () => {
           hymnTitle: 'The Morning Breaks'
         },
         {
+          id: 'item-release',
           itemType: 'RELEASE',
           title: 'John Doe',
           notes: 'Elders Quorum President',
@@ -55,7 +58,7 @@ describe('buildStandRows', () => {
     );
 
     expect(rows[0]).toEqual({ kind: 'welcome', text: 'Welcome friends.' });
-    expect(rows[1]).toEqual({ kind: 'standard', label: 'Opening Hymn', details: '1 — The Morning Breaks' });
+    expect(rows[1]).toEqual({ kind: 'standard', programItemId: 'item-opening', label: 'Opening Hymn', details: '1 — The Morning Breaks' });
 
     expect(rows[2]).toMatchObject({ kind: 'release', summary: 'John Doe — Elders Quorum President' });
     if (rows[2].kind === 'release') {
@@ -67,6 +70,7 @@ describe('buildStandRows', () => {
     const rows = buildStandRows(
       [
         {
+          id: 'item-opening',
           itemType: 'OPENING_HYMN',
           title: '',
           notes: '',
@@ -87,7 +91,7 @@ describe('buildStandRows', () => {
     expect(rows).toEqual([
       { kind: 'welcome', text: 'Welcome to The Church of Jesus Christ of Latter-day Saints.' },
       { kind: 'standard', label: 'Announcement', details: 'Stake Conference: Saturday and Sunday sessions' },
-      { kind: 'standard', label: 'Opening Hymn', details: '1 — The Morning Breaks' }
+      { kind: 'standard', programItemId: 'item-opening', label: 'Opening Hymn', details: '1 — The Morning Breaks' }
     ]);
   });
 });

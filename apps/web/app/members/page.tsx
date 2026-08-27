@@ -3,7 +3,7 @@ import Link from 'next/link';
 
 import { MembersManagerClient } from './members-manager-client';
 import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth/guards';
-import { canRunImports } from '@/src/auth/roles';
+import { canRunImports, canUseInternalNotes } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 import { buttonVariants } from '@/components/ui/button';
@@ -24,6 +24,7 @@ type MemberNoteRow = {
   id: string;
   member_id: string;
   note_text: string;
+  visibility: 'LEADERSHIP' | 'PRIVATE';
   created_at: string;
   created_by_email: string | null;
 };
@@ -32,9 +33,12 @@ export default async function MembersPage() {
   const session = await requireAuthenticatedSession();
   enforcePasswordRotation(session);
 
-  if (!session.activeWardId || !canRunImports({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId)) {
+  if (!session.activeWardId || !canUseInternalNotes({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId)) {
     redirect('/dashboard');
   }
+
+  const activeWardId = session.activeWardId;
+  const canImportMembers = canRunImports({ roles: session.user.roles, activeWardId }, activeWardId);
 
   const client = await pool.connect();
 
@@ -52,13 +56,15 @@ export default async function MembersPage() {
     );
 
     const noteResult = await client.query(
-      `SELECT mn.id, mn.member_id, mn.note_text, mn.created_at, ua.email AS created_by_email
-         FROM member_note mn
-         LEFT JOIN user_account ua ON ua.id = mn.created_by_user_id
-        WHERE mn.ward_id = $1
-        ORDER BY mn.created_at DESC
+      `SELECT note.id, note.member_id, note.visibility, note.note_text, note.created_at, ua.email AS created_by_email
+         FROM internal_note note
+         LEFT JOIN user_account ua ON ua.id = note.created_by_user_id
+        WHERE note.ward_id = $1::uuid
+          AND note.member_id IS NOT NULL
+          AND (note.visibility = 'LEADERSHIP' OR note.created_by_user_id = $2::uuid)
+        ORDER BY note.created_at DESC
         LIMIT 200`,
-      [session.activeWardId]
+      [session.activeWardId, session.user.id]
     );
 
     await client.query('COMMIT');
@@ -72,17 +78,20 @@ export default async function MembersPage() {
               Directory of ward members and restricted leadership follow-up notes.
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <Link href="/imports/members" className={cn(buttonVariants({ size: 'sm' }))}>
-              Import Members
-            </Link>
-          </div>
+          {canImportMembers ? (
+            <div className="flex items-center gap-2">
+              <Link href="/imports/members" className={cn(buttonVariants({ size: 'sm' }))}>
+                Import Members
+              </Link>
+            </div>
+          ) : null}
         </div>
 
         <MembersManagerClient
           wardId={session.activeWardId}
           members={memberResult.rows as MemberRow[]}
           memberNotes={noteResult.rows as MemberNoteRow[]}
+          canManageMembers={canImportMembers}
         />
       </main>
     );
