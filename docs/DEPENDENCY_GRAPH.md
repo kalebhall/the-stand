@@ -36,7 +36,7 @@ flowchart LR
   A24["web:ui<br/>21 files"]
   A25["web:version.mjs<br/>1 files"]
   A5 -->|77| A8
-  A6 -->|76| A24
+  A6 -->|77| A24
   A5 -->|67| A13
   A6 -->|64| A8
   A6 -->|40| A13
@@ -110,7 +110,7 @@ flowchart LR
 | Importing area | Imported area | Imports |
 | --- | --- | ---: |
 | `web:api` | `web:auth` | 77 |
-| `web:app` | `web:ui` | 76 |
+| `web:app` | `web:ui` | 77 |
 | `web:api` | `web:db` | 67 |
 | `web:app` | `web:auth` | 64 |
 | `web:app` | `web:db` | 40 |
@@ -331,7 +331,7 @@ flowchart LR
 | `apps/web/app/meetings/[meetingId]/print/page.tsx` | `web:app` | 6 | 1 |
 | `apps/web/app/meetings/error.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/meetings/loading.tsx` | `web:app` | 0 | 0 |
-| `apps/web/app/meetings/meeting-form.tsx` | `web:app` | 6 | 2 |
+| `apps/web/app/meetings/meeting-form.tsx` | `web:app` | 7 | 2 |
 | `apps/web/app/meetings/new/page.tsx` | `web:app` | 3 | 1 |
 | `apps/web/app/meetings/page.tsx` | `web:app` | 7 | 2 |
 | `apps/web/app/members/members-manager-client.tsx` | `web:app` | 3 | 2 |

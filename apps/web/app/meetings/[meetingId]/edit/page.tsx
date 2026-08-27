@@ -135,22 +135,6 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ me
           showAnnounce={false}
         />
 
-        <InternalNotesPanel
-          wardId={session.activeWardId}
-          target={{ type: 'MEETING', meetingId }}
-          notes={notes}
-          title="Meeting notes"
-        />
-
-        {canUseNotes ? programItems.map((item) => (
-          <InternalNotesPanel
-            key={`item-notes-${item.id}`}
-            wardId={session.activeWardId}
-            target={{ type: 'PROGRAM_ITEM', programItemId: item.id! }}
-            notes={notes.filter((note) => note.program_item_id === item.id)}
-            title={`${item.itemType.replaceAll('_', ' ')} notes`}
-          />
-        )) : null}
 
         <section className="rounded-lg border bg-card p-4">
           <h2 className="text-base font-semibold">Published versions</h2>
@@ -181,6 +165,15 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ me
           initialMeetingType={meeting.meeting_type}
           initialProgramItems={programItems}
           publishedVersionCount={versions.length}
+          internalNotes={notes}
+          canUseInternalNotes={canUseNotes}
+        />
+
+        <InternalNotesPanel
+          wardId={session.activeWardId}
+          target={{ type: 'MEETING', meetingId }}
+          notes={notes.filter((note) => !note.program_item_id)}
+          title="Meeting notes"
         />
       </main>
     );
