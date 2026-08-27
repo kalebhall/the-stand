@@ -190,7 +190,7 @@ export default async function StandViewPage({
                   return (
                     <article key={`row-${index}`} className="rounded-lg border bg-card p-4 sm:p-5">
                       <p className="text-sm uppercase tracking-wide text-muted-foreground">{row.label}</p>
-                      <p className="text-lg font-medium sm:text-xl">{row.details}</p>
+                      <p className="whitespace-pre-wrap text-lg font-medium sm:text-xl">{row.details}</p>
                       {row.programNotes?.trim() ? <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">{row.programNotes}</p> : null}
                       {canUseNotes && row.programItemId ? (
                         <div className="mt-3">
@@ -255,7 +255,7 @@ export default async function StandViewPage({
                   return (
                     <article key={`compact-${index}`} className="rounded-lg border bg-card p-4 sm:p-5">
                       <p className="text-sm uppercase tracking-wide text-muted-foreground">{row.label}</p>
-                      <p className="text-base font-medium sm:text-lg">{row.details}</p>
+                      <p className="whitespace-pre-wrap text-base font-medium sm:text-lg">{row.details}</p>
                       {row.programNotes?.trim() ? <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">{row.programNotes}</p> : null}
                       {canUseNotes && row.programItemId ? (
                         <div className="mt-3">

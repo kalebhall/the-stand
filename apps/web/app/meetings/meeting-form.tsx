@@ -102,26 +102,13 @@ export function MeetingForm({
   const [publishing, setPublishing] = useState(false);
   const [publishedCount, setPublishedCount] = useState(publishedVersionCount);
   const [autosaveStatus, setAutosaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
-  const [announcements, setAnnouncements] = useState<Array<{ id: string; title: string }>>([]);
+
   const [newItemType, setNewItemType] = useState('SPEAKER');
   const autosaveSnapshot = useRef(JSON.stringify({ meetingDate: toYyyyMmDd(initialMeetingDate), meetingType: initialMeetingType, programItems: initialProgramItems.length ? initialProgramItems : getDefaultProgramItemsForMeetingType(initialMeetingType) }));
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 
   const canSave = useMemo(() => Boolean(meetingDate && meetingType), [meetingDate, meetingType]);
-  useEffect(() => {
-    let mounted = true;
-    fetch(`/api/w/${wardId}/announcements`)
-      .then((response) => (response.ok ? response.json() : null))
-      .then((payload) => {
-        if (!mounted || !payload?.announcements) return;
-        setAnnouncements(payload.announcements.map((item: { id: string; title: string }) => ({ id: item.id, title: item.title })));
-      })
-      .catch(() => undefined);
-    return () => {
-      mounted = false;
-    };
-  }, [wardId]);
 
   useEffect(() => {
     if (mode !== 'edit' || !meetingId) return;
@@ -355,14 +342,7 @@ export function MeetingForm({
                       placeholder="Name"
                     />
                   ) : item.itemType === ANNOUNCEMENT_ITEM_TYPE ? (
-                    <select className="w-full rounded-md border px-3 py-2" value={item.title} onChange={(event) => updateProgramItem(index, 'title', event.target.value)}>
-                      <option value="">Select an announcement</option>
-                      {announcements.map((announcement) => (
-                        <option key={announcement.id} value={announcement.title}>
-                          {announcement.title}
-                        </option>
-                      ))}
-                    </select>
+                    <p className="rounded-md border bg-muted px-3 py-2 text-sm text-muted-foreground">Announcements marked “Include in At the Stand” appear here automatically.</p>
                   ) : PLACEHOLDER_ITEM_TYPES.has(item.itemType) ? (
                     <input className="w-full rounded-md border px-3 py-2 bg-muted" value={item.itemType === 'SACRAMENT' ? 'Sacrament (placeholder)' : 'Testimonies (placeholder)'} readOnly />
                   ) : (
