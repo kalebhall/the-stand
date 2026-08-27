@@ -24,6 +24,7 @@ export function getNavigationItems(roles: string[] | undefined): AppNavItem[] {
     items.push({ href: '/callings', label: 'Callings' });
     items.push({ href: '/notifications', label: 'Notifications' });
     items.push({ href: '/announcements', label: 'Announcements' });
+    items.push({ href: '/reports', label: 'Reports' });
     items.push({ href: '/imports', label: 'Imports' });
   }
 

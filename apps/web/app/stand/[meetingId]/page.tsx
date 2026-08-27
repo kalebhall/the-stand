@@ -3,15 +3,17 @@ import { notFound, redirect } from 'next/navigation';
 
 import { buttonVariants } from '@/components/ui/button';
 import { WardBusinessSection, type BusinessLine } from '@/components/WardBusinessSection';
+import { InternalNotesPanel, type InternalNoteRow } from '@/components/InternalNotesPanel';
 import { cn } from '@/lib/utils';
 import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth/guards';
-import { canManageCallings, canViewMeetings } from '@/src/auth/roles';
+import { canManageCallings, canUseInternalNotes, canViewMeetings } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 import { isAnnouncementActiveForDate } from '@/src/announcements/types';
 import { buildStandRows } from '@/src/stand/render';
 
 type ProgramItemRow = {
+  id: string;
   item_type: string;
   title: string | null;
   notes: string | null;
@@ -39,6 +41,8 @@ export default async function StandViewPage({
     redirect('/dashboard');
   }
 
+  const activeWardId = session.activeWardId;
+
   const { meetingId } = await params;
   const { mode } = await searchParams;
   const selectedMode = mode === 'compact' ? 'compact' : 'formal';
@@ -59,7 +63,7 @@ export default async function StandViewPage({
     const meetingDate = meetingResult.rows[0].meeting_date as string;
 
     const programResult = await client.query(
-      `SELECT item_type, title, notes, hymn_number, hymn_title
+      `SELECT id, item_type, title, notes, hymn_number, hymn_title
          FROM meeting_program_item
         WHERE meeting_id = $1 AND ward_id = $2
         ORDER BY sequence ASC`,
@@ -85,6 +89,20 @@ export default async function StandViewPage({
         WHERE meeting_id = $1::uuid AND ward_id = $2::uuid
         ORDER BY created_at ASC`,
       [meetingId, session.activeWardId]
+    );
+
+    const notesResult = await client.query(
+      `SELECT note.id, note.program_item_id, note.visibility, note.note_text, note.created_at, ua.email AS created_by_email
+         FROM internal_note note
+         LEFT JOIN user_account ua ON ua.id = note.created_by_user_id
+        WHERE note.ward_id = $1::uuid
+          AND note.meeting_id IS NULL
+          AND note.program_item_id IN (
+            SELECT id FROM meeting_program_item WHERE meeting_id = $2::uuid AND ward_id = $1::uuid
+          )
+          AND (note.visibility = 'LEADERSHIP' OR note.created_by_user_id = $3::uuid)
+        ORDER BY note.created_at DESC`,
+      [session.activeWardId, meetingId, session.user.id]
     );
 
     await client.query('COMMIT');
@@ -115,9 +133,12 @@ export default async function StandViewPage({
 
     const template = templateResult.rows[0] as TemplateRow | undefined;
     const businessLines = businessLinesResult.rows as BusinessLine[];
+    const notes = notesResult.rows as Array<InternalNoteRow & { program_item_id: string }>;
+    const canUseNotes = canUseInternalNotes({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId);
     const canManage = canManageCallings({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId);
     const standRows = buildStandRows(
       (programResult.rows as ProgramItemRow[]).map((item) => ({
+        id: item.id,
         itemType: item.item_type,
         title: item.title,
         notes: item.notes,
@@ -168,6 +189,16 @@ export default async function StandViewPage({
                     <article key={`row-${index}`} className="rounded-lg border bg-card p-4 sm:p-5">
                       <p className="text-sm uppercase tracking-wide text-muted-foreground">{row.label}</p>
                       <p className="text-lg font-medium sm:text-xl">{row.details}</p>
+                      {canUseNotes && row.programItemId ? (
+                        <div className="mt-3">
+                          <InternalNotesPanel
+                            wardId={activeWardId}
+                            target={{ type: 'PROGRAM_ITEM', programItemId: row.programItemId }}
+                            notes={notes.filter((note) => note.program_item_id === row.programItemId)}
+                            title="Item notes"
+                          />
+                        </div>
+                      ) : null}
                     </article>
                   );
                 }
@@ -176,7 +207,7 @@ export default async function StandViewPage({
                   return (
                     <WardBusinessSection
                       key={`row-${index}`}
-                      wardId={session.activeWardId}
+                      wardId={activeWardId}
                       meetingId={meetingId}
                       lines={businessLines}
                       canManage={canManage}
@@ -193,6 +224,16 @@ export default async function StandViewPage({
                     {row.segments.map((segment, segmentIndex) =>
                       segment.bold ? <strong key={`segment-${segmentIndex}`}>{segment.text}</strong> : <span key={`segment-${segmentIndex}`}>{segment.text}</span>
                     )}
+                    {canUseNotes ? (
+                      <div className="mt-3">
+                        <InternalNotesPanel
+                          wardId={activeWardId}
+                          target={{ type: 'PROGRAM_ITEM', programItemId: row.programItemId }}
+                          notes={notes.filter((note) => note.program_item_id === row.programItemId)}
+                          title="Item notes"
+                        />
+                      </div>
+                    ) : null}
                   </article>
                 );
               })
@@ -210,6 +251,16 @@ export default async function StandViewPage({
                     <article key={`compact-${index}`} className="rounded-lg border bg-card p-4 sm:p-5">
                       <p className="text-sm uppercase tracking-wide text-muted-foreground">{row.label}</p>
                       <p className="text-base font-medium sm:text-lg">{row.details}</p>
+                      {canUseNotes && row.programItemId ? (
+                        <div className="mt-3">
+                          <InternalNotesPanel
+                            wardId={activeWardId}
+                            target={{ type: 'PROGRAM_ITEM', programItemId: row.programItemId }}
+                            notes={notes.filter((note) => note.program_item_id === row.programItemId)}
+                            title="Item notes"
+                          />
+                        </div>
+                      ) : null}
                     </article>
                   );
                 }
@@ -218,7 +269,7 @@ export default async function StandViewPage({
                   return (
                     <WardBusinessSection
                       key={`compact-${index}`}
-                      wardId={session.activeWardId}
+                      wardId={activeWardId}
                       meetingId={meetingId}
                       lines={businessLines}
                       canManage={canManage}
@@ -234,6 +285,16 @@ export default async function StandViewPage({
                   <article key={`compact-${index}`} className="rounded-lg border bg-card p-4 sm:p-5">
                     <p className="text-sm uppercase tracking-wide text-muted-foreground">{row.kind === 'sustain' ? 'Sustain' : 'Release'}</p>
                     <p className="text-base font-medium sm:text-lg">{row.summary}</p>
+                    {canUseNotes ? (
+                      <div className="mt-3">
+                        <InternalNotesPanel
+                          wardId={activeWardId}
+                          target={{ type: 'PROGRAM_ITEM', programItemId: row.programItemId }}
+                          notes={notes.filter((note) => note.program_item_id === row.programItemId)}
+                          title="Item notes"
+                        />
+                      </div>
+                    ) : null}
                   </article>
                 );
               })}

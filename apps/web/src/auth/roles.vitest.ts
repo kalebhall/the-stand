@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { canAssignRole, canManageMeetings, canManageWardUsers, canViewCallings, canViewMeetings, hasRole } from './roles';
+import { canAssignRole, canManageMeetings, canManageWardUsers, canUseInternalNotes, canViewCallings, canViewMeetings, hasRole } from './roles';
 
 describe('canManageWardUsers', () => {
   it('allows ward STAND_ADMIN only within their active ward', () => {
@@ -41,6 +41,16 @@ describe('meeting permissions', () => {
   it('restricts meeting management to editor/admin roles', () => {
     expect(canManageMeetings({ roles: ['BISHOPRIC_EDITOR'], activeWardId: 'ward-a' }, 'ward-a')).toBe(true);
     expect(canManageMeetings({ roles: ['CONDUCTOR_VIEW'], activeWardId: 'ward-a' }, 'ward-a')).toBe(false);
+  });
+});
+
+describe('internal note permissions', () => {
+  it('allows specified ward leadership roles only in active ward', () => {
+    for (const role of ['STAND_ADMIN', 'BISHOPRIC_EDITOR', 'CLERK_EDITOR', 'WARD_CLERK', 'MEMBERSHIP_CLERK']) {
+      expect(canUseInternalNotes({ roles: [role], activeWardId: 'ward-a' }, 'ward-a')).toBe(true);
+    }
+    expect(canUseInternalNotes({ roles: ['CONDUCTOR_VIEW'], activeWardId: 'ward-a' }, 'ward-a')).toBe(false);
+    expect(canUseInternalNotes({ roles: ['STAND_ADMIN'], activeWardId: 'ward-a' }, 'ward-b')).toBe(false);
   });
 });
 

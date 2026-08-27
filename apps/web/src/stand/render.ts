@@ -5,6 +5,7 @@ import {
 } from './default-template';
 
 export type StandProgramItem = {
+  id: string;
   itemType: string;
   title: string | null;
   notes: string | null;
@@ -25,11 +26,13 @@ export type StandRow =
     }
   | {
       kind: 'standard';
+      programItemId?: string;
       label: string;
       details: string;
     }
   | {
       kind: 'sustain' | 'release';
+      programItemId: string;
       segments: Array<{ text: string; bold: boolean }>;
       summary: string;
     }
@@ -114,6 +117,7 @@ export function buildStandRows(
       const values = getMemberAndCalling(item);
       rows.push({
         kind: 'sustain',
+        programItemId: item.id,
         ...renderTemplateLine(template.sustainTemplate, values)
       });
       continue;
@@ -123,6 +127,7 @@ export function buildStandRows(
       const values = getMemberAndCalling(item);
       rows.push({
         kind: 'release',
+        programItemId: item.id,
         ...renderTemplateLine(template.releaseTemplate, values)
       });
       continue;
@@ -136,7 +141,7 @@ export function buildStandRows(
     const hymnBits = [item.hymnNumber?.trim(), item.hymnTitle?.trim()].filter(Boolean).join(' — ');
     const details = item.title?.trim() || item.notes?.trim() || hymnBits || label;
 
-    rows.push({ kind: 'standard', label, details });
+    rows.push({ kind: 'standard', programItemId: item.id, label, details });
   }
 
   return rows;
