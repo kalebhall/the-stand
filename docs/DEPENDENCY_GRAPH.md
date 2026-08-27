@@ -48,8 +48,8 @@ flowchart LR
   A5 -->|4| A20
   A6 -->|4| A11
   A5 -->|3| A18
+  A6 -->|3| A4
   A5 -->|2| A4
-  A6 -->|2| A4
   A6 -->|2| A21
   A8 -->|2| A13
   A10 -->|2| A13
@@ -129,11 +129,11 @@ flowchart LR
 | `web:db` | `web:db` | 4 |
 | `web:meetings` | `web:meetings` | 4 |
 | `web:api` | `web:meetings` | 3 |
+| `web:app` | `web:announcements` | 3 |
 | `web:lib` | `web:lib` | 3 |
 | `web:notifications` | `web:notifications` | 3 |
 | `package:shared` | `package:shared` | 2 |
 | `web:api` | `web:announcements` | 2 |
-| `web:app` | `web:announcements` | 2 |
 | `web:app` | `web:stand` | 2 |
 | `web:auth` | `web:db` | 2 |
 | `web:calendar` | `web:calendar` | 2 |
@@ -327,7 +327,7 @@ flowchart LR
 | `apps/web/app/login/page.tsx` | `web:app` | 2 | 1 |
 | `apps/web/app/logout/logout-form.tsx` | `web:app` | 2 | 2 |
 | `apps/web/app/logout/page.tsx` | `web:app` | 2 | 0 |
-| `apps/web/app/meetings/[meetingId]/edit/page.tsx` | `web:app` | 9 | 2 |
+| `apps/web/app/meetings/[meetingId]/edit/page.tsx` | `web:app` | 10 | 2 |
 | `apps/web/app/meetings/[meetingId]/print/page.tsx` | `web:app` | 6 | 1 |
 | `apps/web/app/meetings/error.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/meetings/loading.tsx` | `web:app` | 0 | 0 |
