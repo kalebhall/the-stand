@@ -255,7 +255,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
               set_apart,
               is_active
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, TRUE)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, TRUE)
             RETURNING id`,
           [
             wardId,
