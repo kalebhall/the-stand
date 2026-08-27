@@ -189,7 +189,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
       archived = archiveResult.rowCount ?? 0;
 
       // Step 2: Upsert each parsed member.
-      // ON CONFLICT matches by (ward_id, full_name).
+      // ON CONFLICT matches by (ward_id, identity_key).
       // - Existing active member: update contact fields, clear archived_at.
       // - Previously archived member (moved back): unarchive + update.
       // - New member: insert fresh.
@@ -197,7 +197,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
         const upsertResult = await client.query(
           `INSERT INTO member (ward_id, full_name, first_name, last_name, email, phone, age, identity_key, gender, archived_at)
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NULL)
-           ON CONFLICT
+           ON CONFLICT (ward_id, identity_key) WHERE identity_key IS NOT NULL
            DO UPDATE SET
              first_name  = COALESCE(EXCLUDED.first_name, member.first_name),
              last_name   = COALESCE(EXCLUDED.last_name, member.last_name),

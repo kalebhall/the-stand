@@ -113,8 +113,8 @@ describe('POST /api/w/[wardId]/imports/membership', () => {
       ['ward-1']
     );
 
-    // Upsert includes archived_at = NULL to unarchive returning members
-    expect(queryMock).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO member'), [
+    // Upsert resolves same-name members by stable birthday-derived identity.
+    expect(queryMock).toHaveBeenCalledWith(expect.stringContaining('ON CONFLICT (ward_id, identity_key) WHERE identity_key IS NOT NULL'), [
       'ward-1',
       'Jane Doe',
       'Jane Doe', // firstName (no comma → whole name becomes firstName)
