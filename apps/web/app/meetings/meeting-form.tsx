@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { type FormEvent, useEffect, useMemo, useState } from 'react';
+import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { HymnAutocomplete } from '@/components/HymnAutocomplete';
@@ -96,8 +96,11 @@ export function MeetingForm({
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [publishedCount, setPublishedCount] = useState(publishedVersionCount);
+  const [autosaveStatus, setAutosaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [announcements, setAnnouncements] = useState<Array<{ id: string; title: string }>>([]);
   const [newItemType, setNewItemType] = useState('SPEAKER');
+  const autosaveSnapshot = useRef(JSON.stringify({ meetingDate: toYyyyMmDd(initialMeetingDate), meetingType: initialMeetingType, programItems: initialProgramItems.length ? initialProgramItems : getDefaultProgramItemsForMeetingType(initialMeetingType) }));
+  const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 
   const canSave = useMemo(() => Boolean(meetingDate && meetingType), [meetingDate, meetingType]);
@@ -114,6 +117,40 @@ export function MeetingForm({
       mounted = false;
     };
   }, [wardId]);
+
+  useEffect(() => {
+    if (mode !== 'edit' || !meetingId) return;
+    if (!canSave) return;
+    const snapshot = JSON.stringify({ meetingDate, meetingType, programItems });
+    if (autosaveSnapshot.current === snapshot) return;
+    autosaveSnapshot.current = snapshot;
+    if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
+    autosaveTimer.current = setTimeout(() => {
+      void (async () => {
+        setAutosaveStatus('saving');
+        setError(null);
+        try {
+          const response = await fetch(`/api/w/${wardId}/meetings/${meetingId}`, {
+            method: 'PUT',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ meetingDate, meetingType, programItems })
+          });
+          if (!response.ok) {
+            setAutosaveStatus('error');
+            setError('Unable to save meeting changes.');
+            return;
+          }
+          setAutosaveStatus('saved');
+        } catch {
+          setAutosaveStatus('error');
+          setError('Unable to save meeting changes.');
+        }
+      })();
+    }, 600);
+    return () => {
+      if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
+    };
+  }, [canSave, meetingDate, meetingId, meetingType, mode, programItems, wardId]);
 
   function updateProgramItem(index: number, field: keyof ProgramItemInput, value: string) {
     setProgramItems((current) => current.map((item, itemIndex) => (itemIndex === index ? { ...item, [field]: value } : item)));
@@ -151,6 +188,7 @@ export function MeetingForm({
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (mode === 'edit') return;
     if (!canSave) {
       setError('Meeting date and meeting type are required.');
       return;
@@ -391,9 +429,11 @@ export function MeetingForm({
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
 
       <div className="flex flex-wrap gap-2">
-        <Button type="submit" disabled={saving || !canSave}>
-          {saving ? 'Saving...' : mode === 'create' ? 'Create meeting' : 'Save changes'}
-        </Button>
+        {mode === 'create' ? <Button type="submit" disabled={saving || !canSave}>Create meeting</Button> : (
+          <span className="self-center text-sm text-muted-foreground" role="status" aria-live="polite">
+            {autosaveStatus === 'saving' ? 'Saving changes...' : autosaveStatus === 'saved' ? 'Changes saved' : autosaveStatus === 'error' ? 'Changes not saved' : 'Changes save automatically'}
+          </span>
+        )}
         {mode === 'edit' ? (
           <Button type="button" variant="outline" onClick={onPublish} disabled={publishing || !meetingId}>
             {publishing ? 'Publishing...' : publishedCount ? 'Republish' : 'Publish'}
