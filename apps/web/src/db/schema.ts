@@ -1,4 +1,5 @@
-import { boolean, date, integer, jsonb, pgTable, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
+import { boolean, date, integer, jsonb, pgTable, text, timestamp, unique, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 
 export const stake = pgTable('stake', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -350,8 +351,9 @@ export const member = pgTable(
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
   },
   (table) => ({
-    memberWardNameUnique: unique().on(table.wardId, table.fullName),
-    memberWardIdentityKeyUnique: unique().on(table.wardId, table.identityKey)
+    memberWardIdentityKeyUnique: uniqueIndex('member_ward_identity_key_unique')
+      .on(table.wardId, table.identityKey)
+      .where(sql`${table.identityKey} IS NOT NULL`)
   })
 );
 

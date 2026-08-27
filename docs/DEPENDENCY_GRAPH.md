@@ -173,6 +173,7 @@ flowchart LR
 | `web:auth` | `vitest` | 4 |
 | `web:imports` | `vitest` | 4 |
 | `web:tooling` | `Node.js` | 4 |
+| `web:db` | `drizzle-orm` | 3 |
 | `web:db` | `vitest` | 3 |
 | `web:lib` | `vitest` | 3 |
 | `web:meetings` | `vitest` | 3 |
@@ -185,7 +186,6 @@ flowchart LR
 | `web:config` | `@playwright/test` | 2 |
 | `web:config` | `Node.js` | 2 |
 | `web:db` | `Node.js` | 2 |
-| `web:db` | `drizzle-orm` | 2 |
 | `web:db` | `pg` | 2 |
 | `web:hardening` | `Node.js` | 2 |
 | `web:imports` | `Node.js` | 2 |
@@ -428,7 +428,7 @@ flowchart LR
 | `apps/web/src/db/client.ts` | `web:db` | 1 | 4 |
 | `apps/web/src/db/context.ts` | `web:db` | 0 | 0 |
 | `apps/web/src/db/context.vitest.ts` | `web:db` | 1 | 1 |
-| `apps/web/src/db/schema.ts` | `web:db` | 0 | 1 |
+| `apps/web/src/db/schema.ts` | `web:db` | 0 | 2 |
 | `apps/web/src/db/ward-user-role-rls.vitest.ts` | `web:db` | 0 | 2 |
 | `apps/web/src/hardening/production-readiness.vitest.ts` | `web:hardening` | 0 | 3 |
 | `apps/web/src/health.mjs` | `web:health.mjs` | 1 | 0 |
