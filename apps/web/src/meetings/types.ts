@@ -7,6 +7,7 @@ export type ProgramItemInput = {
   itemType: string;
   title: string;
   notes: string;
+  programNotes?: string;
   hymnNumber: string;
   hymnTitle: string;
 };

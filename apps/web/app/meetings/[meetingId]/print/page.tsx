@@ -17,6 +17,7 @@ type ProgramItemRow = {
   item_type: string;
   title: string | null;
   notes: string | null;
+  program_notes: string | null;
   hymn_number: string | null;
   hymn_title: string | null;
 };
@@ -96,7 +97,7 @@ export default async function PrintMeetingPage({
     const meetingDate = toYyyyMmDd(meeting.meeting_date);
 
     const programResult = await client.query(
-      `SELECT item_type, title, notes, hymn_number, hymn_title
+      `SELECT item_type, title, notes, program_notes, hymn_number, hymn_title
          FROM meeting_program_item
         WHERE meeting_id = $1::uuid AND ward_id = $2::uuid
         ORDER BY sequence ASC`,
@@ -118,6 +119,7 @@ export default async function PrintMeetingPage({
         itemType: item.item_type,
         title: item.title,
         notes: item.notes,
+        programNotes: item.program_notes,
         hymnNumber: item.hymn_number,
         hymnTitle: item.hymn_title
       })),

@@ -67,6 +67,7 @@ const PROGRAM_ITEM_TYPES = [
 const DEFAULT_PROGRAM_ITEM: Omit<ProgramItemInput, 'itemType'> = {
   title: '',
   notes: '',
+  programNotes: '',
   hymnNumber: '',
   hymnTitle: ''
 };
@@ -375,6 +376,16 @@ export function MeetingForm({
                   No notes
                 </button>
               )}
+            </div>
+            <div className="space-y-1 text-sm">
+              <span className="font-medium">Program notes</span>
+              <p className="text-xs text-muted-foreground">Anything entered here will appear on this item in the public program.</p>
+              <textarea
+                className="min-h-20 w-full rounded-md border px-3 py-2"
+                value={item.programNotes ?? ''}
+                onChange={(event) => updateProgramItem(index, 'programNotes', event.target.value)}
+                placeholder="Optional public note"
+              />
             </div>
             {item.itemType === BUSINESS_ITEM_TYPE ? (
               <div className="grid gap-2">

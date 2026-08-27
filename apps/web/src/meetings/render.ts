@@ -4,6 +4,7 @@ export type MeetingRenderItem = {
   itemType: string;
   title: string | null;
   notes: string | null;
+  programNotes?: string | null;
   hymnNumber: string | null;
   hymnTitle: string | null;
 };
@@ -64,7 +65,7 @@ export function buildMeetingRenderHtml({ meetingDate, meetingType, programItems,
     .map((item) => {
       const label = escapeHtml(item.itemType.replaceAll('_', ' '));
       const value = escapeHtml(displayHymn(item) || '—');
-      const notes = item.notes ? `<p class="text-xs text-muted-foreground">${escapeHtml(item.notes)}</p>` : '';
+      const notes = (item.programNotes ?? item.notes) ? `<p class="text-xs text-muted-foreground">${escapeHtml(item.programNotes ?? item.notes ?? '')}</p>` : '';
 
       return `<article class="grid grid-cols-[10rem_1fr] gap-3 border-b py-2"><p class="text-sm font-medium">${label}</p><div class="space-y-1"><p class="text-sm">${value}</p>${notes}</div></article>`;
     })

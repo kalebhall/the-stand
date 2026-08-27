@@ -6,7 +6,7 @@ import { WardBusinessSection, type BusinessLine } from '@/components/WardBusines
 import { InternalNotesPanel, type InternalNoteRow } from '@/components/InternalNotesPanel';
 import { cn } from '@/lib/utils';
 import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth/guards';
-import { canManageMeetings } from '@/src/auth/roles';
+import { canManageMeetings, canUseInternalNotes } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 
@@ -23,6 +23,7 @@ type ProgramItemRow = {
   item_type: string;
   title: string | null;
   notes: string | null;
+  program_notes: string | null;
   hymn_number: string | null;
   hymn_title: string | null;
 };
@@ -58,7 +59,7 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ me
     }
 
     const programItemsResult = await client.query(
-      `SELECT id, item_type, title, notes, hymn_number, hymn_title
+      `SELECT id, item_type, title, notes, program_notes, hymn_number, hymn_title
          FROM meeting_program_item
         WHERE meeting_id = $1 AND ward_id = $2
         ORDER BY sequence ASC`,
@@ -82,7 +83,7 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ me
     );
 
     const notesResult = await client.query(
-      `SELECT note.id, note.visibility, note.note_text, note.created_at, ua.email AS created_by_email
+      `SELECT note.id, note.program_item_id, note.visibility, note.note_text, note.created_at, ua.email AS created_by_email
          FROM internal_note note
          LEFT JOIN user_account ua ON ua.id = note.created_by_user_id
         WHERE note.ward_id = $1::uuid
@@ -100,12 +101,14 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ me
       itemType: item.item_type,
       title: item.title ?? '',
       notes: item.notes ?? '',
+      programNotes: item.program_notes ?? '',
       hymnNumber: item.hymn_number ?? '',
       hymnTitle: item.hymn_title ?? ''
     }));
     const versions = versionsResult.rows as MeetingRenderVersionRow[];
     const businessLines = businessLinesResult.rows as BusinessLine[];
     const notes = notesResult.rows as InternalNoteRow[];
+    const canUseNotes = canUseInternalNotes({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId);
 
     return (
       <main className="mx-auto w-full max-w-4xl space-y-6 p-4 sm:p-6">
@@ -138,6 +141,16 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ me
           notes={notes}
           title="Meeting notes"
         />
+
+        {canUseNotes ? programItems.map((item) => (
+          <InternalNotesPanel
+            key={`item-notes-${item.id}`}
+            wardId={session.activeWardId}
+            target={{ type: 'PROGRAM_ITEM', programItemId: item.id! }}
+            notes={notes.filter((note) => note.program_item_id === item.id)}
+            title={`${item.itemType.replaceAll('_', ' ')} notes`}
+          />
+        )) : null}
 
         <section className="rounded-lg border bg-card p-4">
           <h2 className="text-base font-semibold">Published versions</h2>

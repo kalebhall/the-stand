@@ -14,7 +14,7 @@ flowchart LR
   A2["root:other<br/>1 files"]
   A3["root:tooling<br/>6 files"]
   A4["web:announcements<br/>2 files"]
-  A5["web:api<br/>55 files"]
+  A5["web:api<br/>56 files"]
   A6["web:app<br/>79 files"]
   A7["web:audit<br/>2 files"]
   A8["web:auth<br/>11 files"]
@@ -35,14 +35,14 @@ flowchart LR
   A23["web:types<br/>2 files"]
   A24["web:ui<br/>21 files"]
   A25["web:version.mjs<br/>1 files"]
+  A5 -->|77| A8
   A6 -->|76| A24
-  A5 -->|75| A8
-  A5 -->|65| A13
+  A5 -->|67| A13
   A6 -->|64| A8
   A6 -->|40| A13
   A5 -->|23| A17
   A5 -->|15| A11
-  A5 -->|12| A7
+  A5 -->|13| A7
   A5 -->|10| A16
   A6 -->|8| A18
   A5 -->|4| A20
@@ -83,7 +83,7 @@ flowchart LR
 | `root:other` | 1 |
 | `root:tooling` | 6 |
 | `web:announcements` | 2 |
-| `web:api` | 55 |
+| `web:api` | 56 |
 | `web:app` | 79 |
 | `web:audit` | 2 |
 | `web:auth` | 11 |
@@ -109,9 +109,9 @@ flowchart LR
 
 | Importing area | Imported area | Imports |
 | --- | --- | ---: |
+| `web:api` | `web:auth` | 77 |
 | `web:app` | `web:ui` | 76 |
-| `web:api` | `web:auth` | 75 |
-| `web:api` | `web:db` | 65 |
+| `web:api` | `web:db` | 67 |
 | `web:app` | `web:auth` | 64 |
 | `web:app` | `web:db` | 40 |
 | `web:app` | `web:app` | 29 |
@@ -119,7 +119,7 @@ flowchart LR
 | `web:ui` | `web:ui` | 19 |
 | `web:api` | `web:callings` | 15 |
 | `web:api` | `web:api` | 13 |
-| `web:api` | `web:audit` | 12 |
+| `web:api` | `web:audit` | 13 |
 | `web:api` | `web:imports` | 10 |
 | `web:app` | `web:meetings` | 8 |
 | `web:auth` | `web:auth` | 8 |
@@ -168,7 +168,7 @@ flowchart LR
 | Importing area | Package/runtime | Imports |
 | --- | --- | ---: |
 | `web:app` | `next` | 64 |
-| `web:api` | `next` | 41 |
+| `web:api` | `next` | 42 |
 | `web:ui` | `react` | 18 |
 | `web:app` | `react` | 17 |
 | `web:api` | `vitest` | 13 |
@@ -179,6 +179,7 @@ flowchart LR
 | `web:auth` | `vitest` | 4 |
 | `web:imports` | `vitest` | 4 |
 | `web:tooling` | `Node.js` | 4 |
+| `web:api` | `zod` | 3 |
 | `web:db` | `drizzle-orm` | 3 |
 | `web:db` | `vitest` | 3 |
 | `web:lib` | `vitest` | 3 |
@@ -187,7 +188,6 @@ flowchart LR
 | `root:other` | `Node.js` | 2 |
 | `web:api` | `Node.js` | 2 |
 | `web:api` | `pg` | 2 |
-| `web:api` | `zod` | 2 |
 | `web:app` | `next-auth` | 2 |
 | `web:callings` | `pg` | 2 |
 | `web:config` | `@playwright/test` | 2 |
@@ -297,6 +297,7 @@ flowchart LR
 | `apps/web/app/api/w/[wardId]/members/[memberId]/route.ts` | `web:api` | 5 | 1 |
 | `apps/web/app/api/w/[wardId]/members/route.ts` | `web:api` | 5 | 1 |
 | `apps/web/app/api/w/[wardId]/members/route.vitest.ts` | `web:api` | 1 | 1 |
+| `apps/web/app/api/w/[wardId]/notes/[noteId]/route.ts` | `web:api` | 5 | 2 |
 | `apps/web/app/api/w/[wardId]/notes/route.ts` | `web:api` | 6 | 2 |
 | `apps/web/app/api/w/[wardId]/notifications/diagnostics/route.ts` | `web:api` | 5 | 1 |
 | `apps/web/app/api/w/[wardId]/portal/route.ts` | `web:api` | 4 | 2 |
