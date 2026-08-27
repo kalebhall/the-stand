@@ -2,8 +2,8 @@ import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 
 import { buttonVariants } from '@/components/ui/button';
-import { WardBusinessSection, type BusinessLine } from '@/components/WardBusinessSection';
 import { InternalNotesPanel, type InternalNoteRow } from '@/components/InternalNotesPanel';
+import type { BusinessLine } from '@/components/WardBusinessSection';
 import { cn } from '@/lib/utils';
 import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth/guards';
 import { canManageMeetings, canUseInternalNotes } from '@/src/auth/roles';
@@ -127,15 +127,6 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ me
           </div>
         </section>
 
-        <WardBusinessSection
-          wardId={session.activeWardId}
-          meetingId={meetingId}
-          lines={businessLines}
-          canManage={true}
-          showAnnounce={false}
-        />
-
-
         <section className="rounded-lg border bg-card p-4">
           <h2 className="text-base font-semibold">Published versions</h2>
           {versions.length ? (
@@ -167,6 +158,8 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ me
           publishedVersionCount={versions.length}
           internalNotes={notes}
           canUseInternalNotes={canUseNotes}
+          businessLines={businessLines}
+          canManageBusiness={true}
         />
 
         <InternalNotesPanel
