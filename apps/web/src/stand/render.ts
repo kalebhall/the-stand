@@ -101,16 +101,6 @@ export function buildStandRows(
   const rows: StandRow[] = [{ kind: 'welcome', text: template.welcomeText }];
 
   const standAnnouncements = announcements?.filter((a) => a.includeInStand !== false) ?? [];
-  if (standAnnouncements.length > 0) {
-    for (const ann of standAnnouncements) {
-      const details = ann.body?.trim() ? `${ann.title}: ${ann.body}` : ann.title;
-      rows.push({
-        kind: 'standard',
-        label: 'Announcement',
-        details
-      });
-    }
-  }
 
   for (const item of items) {
     const normalizedType = item.itemType.toUpperCase();
@@ -140,6 +130,14 @@ export function buildStandRows(
 
     if (normalizedType === 'WARD_AND_STAKE_BUSINESS') {
       rows.push({ kind: 'ward_business', programItemId: item.id, ...(item.programNotes?.trim() ? { programNotes: item.programNotes } : {}) });
+      continue;
+    }
+
+    if (normalizedType === 'ANNOUNCEMENT') {
+      const details = standAnnouncements.length
+        ? standAnnouncements.map((ann) => (ann.body?.trim() ? `${ann.title}: ${ann.body}` : ann.title)).join('\n')
+        : 'No announcements marked for At the Stand.';
+      rows.push({ kind: 'standard', programItemId: item.id, label, details, ...(item.programNotes?.trim() ? { programNotes: item.programNotes } : {}) });
       continue;
     }
 

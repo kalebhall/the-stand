@@ -70,6 +70,14 @@ describe('buildStandRows', () => {
     const rows = buildStandRows(
       [
         {
+          id: 'item-announcement',
+          itemType: 'ANNOUNCEMENT',
+          title: '',
+          notes: '',
+          hymnNumber: null,
+          hymnTitle: null
+        },
+        {
           id: 'item-opening',
           itemType: 'OPENING_HYMN',
           title: '',
@@ -90,7 +98,7 @@ describe('buildStandRows', () => {
 
     expect(rows).toEqual([
       { kind: 'welcome', text: 'Welcome to The Church of Jesus Christ of Latter-day Saints.' },
-      { kind: 'standard', label: 'Announcement', details: 'Stake Conference: Saturday and Sunday sessions' },
+      { kind: 'standard', programItemId: 'item-announcement', label: 'Announcement', details: 'Stake Conference: Saturday and Sunday sessions' },
       { kind: 'standard', programItemId: 'item-opening', label: 'Opening Hymn', details: '1 — The Morning Breaks' }
     ]);
   });
