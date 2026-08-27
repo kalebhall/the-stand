@@ -9,6 +9,7 @@ export type StandProgramItem = {
   itemType: string;
   title: string | null;
   notes: string | null;
+  programNotes?: string | null;
   hymnNumber: string | null;
   hymnTitle: string | null;
 };
@@ -27,16 +28,18 @@ export type StandRow =
   | {
       kind: 'standard';
       programItemId?: string;
+      programNotes?: string | null;
       label: string;
       details: string;
     }
   | {
       kind: 'sustain' | 'release';
       programItemId: string;
+      programNotes?: string | null;
       segments: Array<{ text: string; bold: boolean }>;
       summary: string;
     }
-  | { kind: 'ward_business' };
+  | { kind: 'ward_business'; programItemId: string; programNotes?: string | null };
 
 const DEFAULT_TEMPLATE: StandTemplate = {
   welcomeText: DEFAULT_STAND_WELCOME_TEXT,
@@ -118,6 +121,7 @@ export function buildStandRows(
       rows.push({
         kind: 'sustain',
         programItemId: item.id,
+        ...(item.programNotes?.trim() ? { programNotes: item.programNotes } : {}),
         ...renderTemplateLine(template.sustainTemplate, values)
       });
       continue;
@@ -128,20 +132,21 @@ export function buildStandRows(
       rows.push({
         kind: 'release',
         programItemId: item.id,
+        ...(item.programNotes?.trim() ? { programNotes: item.programNotes } : {}),
         ...renderTemplateLine(template.releaseTemplate, values)
       });
       continue;
     }
 
     if (normalizedType === 'WARD_AND_STAKE_BUSINESS') {
-      rows.push({ kind: 'ward_business' });
+      rows.push({ kind: 'ward_business', programItemId: item.id, ...(item.programNotes?.trim() ? { programNotes: item.programNotes } : {}) });
       continue;
     }
 
     const hymnBits = [item.hymnNumber?.trim(), item.hymnTitle?.trim()].filter(Boolean).join(' — ');
     const details = item.title?.trim() || item.notes?.trim() || hymnBits || label;
 
-    rows.push({ kind: 'standard', programItemId: item.id, label, details });
+    rows.push({ kind: 'standard', programItemId: item.id, label, details, ...(item.programNotes?.trim() ? { programNotes: item.programNotes } : {}) });
   }
 
   return rows;

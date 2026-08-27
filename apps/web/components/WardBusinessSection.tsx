@@ -29,6 +29,7 @@ type WardBusinessSectionProps = {
   showScript?: boolean;
   sustainTemplate?: string;
   releaseTemplate?: string;
+  programNotes?: string | null;
 };
 
 const ACTION_LABELS: Record<string, string> = {
@@ -235,7 +236,8 @@ export function WardBusinessSection({
   showAnnounce = false,
   showScript = false,
   sustainTemplate = DEFAULT_STAND_SUSTAIN_TEMPLATE,
-  releaseTemplate = DEFAULT_STAND_RELEASE_TEMPLATE
+  releaseTemplate = DEFAULT_STAND_RELEASE_TEMPLATE,
+  programNotes = null
 }: WardBusinessSectionProps) {
   const router = useRouter();
 
@@ -251,6 +253,7 @@ export function WardBusinessSection({
   return (
     <section className="rounded-lg border bg-card p-4">
       <h2 className="mb-3 text-lg font-semibold">Ward and Stake Business</h2>
+      {programNotes?.trim() ? <p className="mb-3 whitespace-pre-wrap text-sm text-muted-foreground">{programNotes}</p> : null}
       <ul className="space-y-2">
         {lines.map((line) => (
           <BusinessLineRow
