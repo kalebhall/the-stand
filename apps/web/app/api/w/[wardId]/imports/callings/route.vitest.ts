@@ -241,7 +241,7 @@ John Doe  Male  42  Jan 15  Bishopric  Bishop  Yes  No
     });
 
     expect(queryMock).toHaveBeenCalledWith(expect.stringContaining('DELETE FROM calling_assignment'), ['ward-1']);
-    expect(queryMock).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO calling_assignment'), [
+    expect(queryMock).toHaveBeenCalledWith(expect.stringContaining('VALUES ($1, $2, $3, $4, $5, $6, $7, TRUE)'), [
       'ward-1',
       null,
       'John Doe',
