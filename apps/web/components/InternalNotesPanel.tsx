@@ -11,6 +11,7 @@ export type InternalNoteRow = {
   note_text: string;
   created_at: string;
   created_by_email: string | null;
+  program_item_id?: string;
 };
 
 type InternalNotesPanelProps = {
@@ -25,6 +26,8 @@ export function InternalNotesPanel({ wardId, target, notes, title = 'Notes' }: I
   const [noteText, setNoteText] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [editingText, setEditingText] = useState('');
 
   async function saveNote() {
     const text = noteText.trim();
@@ -46,6 +49,26 @@ export function InternalNotesPanel({ wardId, target, notes, title = 'Notes' }: I
       window.location.reload();
     } catch {
       setError('Failed to save note.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function updateNote(noteId: string) {
+    const text = editingText.trim();
+    if (!text) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const response = await fetch(`/api/w/${wardId}/notes/${noteId}`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ noteText: text }) });
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+        setError(payload?.error ?? 'Failed to update note.');
+        return;
+      }
+      window.location.reload();
+    } catch {
+      setError('Failed to update note.');
     } finally {
       setSaving(false);
     }
@@ -97,7 +120,20 @@ export function InternalNotesPanel({ wardId, target, notes, title = 'Notes' }: I
                 <span>{note.visibility === 'PRIVATE' ? 'Private' : 'Bishopric / Clerk'}</span>
                 <span>{note.created_by_email ?? 'Unknown author'} · {new Date(note.created_at).toLocaleString()}</span>
               </div>
-              <p className="whitespace-pre-wrap">{note.note_text}</p>
+              {editingNoteId === note.id ? (
+                <div className="space-y-2">
+                  <textarea value={editingText} onChange={(event) => setEditingText(event.target.value)} className="min-h-20 w-full rounded-md border bg-background p-2 text-sm" autoFocus />
+                  <div className="flex gap-2">
+                    <Button type="button" size="sm" onClick={() => void updateNote(note.id)} disabled={saving || !editingText.trim()}>Save</Button>
+                    <Button type="button" size="sm" variant="ghost" onClick={() => setEditingNoteId(null)} disabled={saving}>Cancel</Button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <p className="whitespace-pre-wrap">{note.note_text}</p>
+                  <Button type="button" size="sm" variant="ghost" className="mt-2 h-7 px-2" onClick={() => { setEditingNoteId(note.id); setEditingText(note.note_text); }}>Edit</Button>
+                </>
+              )}
             </li>
           ))}
         </ul>
