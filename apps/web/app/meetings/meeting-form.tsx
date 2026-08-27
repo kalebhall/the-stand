@@ -51,6 +51,7 @@ type MeetingFormProps = {
   canUseInternalNotes?: boolean;
   businessLines?: BusinessLine[];
   canManageBusiness?: boolean;
+  standAnnouncements?: Array<{ title: string; body: string | null }>;
 };
 
 
@@ -89,7 +90,8 @@ export function MeetingForm({
   internalNotes = [],
   canUseInternalNotes = false,
   businessLines = [],
-  canManageBusiness = false
+  canManageBusiness = false,
+  standAnnouncements = []
 }: MeetingFormProps) {
   const router = useRouter();
   const [meetingDate, setMeetingDate] = useState(toYyyyMmDd(initialMeetingDate));
@@ -342,7 +344,19 @@ export function MeetingForm({
                       placeholder="Name"
                     />
                   ) : item.itemType === ANNOUNCEMENT_ITEM_TYPE ? (
-                    <p className="rounded-md border bg-muted px-3 py-2 text-sm text-muted-foreground">Announcements marked “Include in At the Stand” appear here automatically.</p>
+                    <div className="rounded-md border bg-muted p-3 text-sm">
+                      <p className="mb-2 text-muted-foreground">Announcements marked “Include in At the Stand” appear here automatically.</p>
+                      {standAnnouncements.length ? (
+                        <ul className="space-y-2">
+                          {standAnnouncements.map((announcement) => (
+                            <li key={`${announcement.title}-${announcement.body ?? ''}`} className="rounded border bg-background p-2">
+                              <p className="font-medium">{announcement.title}</p>
+                              {announcement.body ? <p className="mt-1 whitespace-pre-wrap text-muted-foreground">{announcement.body}</p> : null}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : <p className="text-muted-foreground">No active announcements marked for At the Stand.</p>}
+                    </div>
                   ) : PLACEHOLDER_ITEM_TYPES.has(item.itemType) ? (
                     <input className="w-full rounded-md border px-3 py-2 bg-muted" value={item.itemType === 'SACRAMENT' ? 'Sacrament (placeholder)' : 'Testimonies (placeholder)'} readOnly />
                   ) : (

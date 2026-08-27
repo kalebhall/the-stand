@@ -7,6 +7,7 @@ import type { BusinessLine } from '@/components/WardBusinessSection';
 import { cn } from '@/lib/utils';
 import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth/guards';
 import { canManageMeetings, canUseInternalNotes } from '@/src/auth/roles';
+import { isAnnouncementActiveForDate } from '@/src/announcements/types';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 
@@ -31,6 +32,15 @@ type ProgramItemRow = {
 type MeetingRenderVersionRow = {
   version: number;
   created_at: string;
+};
+
+type AnnouncementRow = {
+  title: string;
+  body: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  is_permanent: boolean;
+  include_in_stand: boolean;
 };
 
 export default async function EditMeetingPage({ params }: { params: Promise<{ meetingId: string }> }) {
@@ -82,6 +92,14 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ me
       [meetingId, session.activeWardId]
     );
 
+    const announcementsResult = await client.query(
+      `SELECT title, body, start_date, end_date, is_permanent, include_in_stand
+         FROM announcement
+        WHERE ward_id = $1::uuid AND include_in_stand = TRUE
+        ORDER BY created_at DESC`,
+      [session.activeWardId]
+    );
+
     const notesResult = await client.query(
       `SELECT note.id, note.program_item_id, note.visibility, note.note_text, note.created_at, ua.email AS created_by_email
          FROM internal_note note
@@ -109,6 +127,9 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ me
     const businessLines = businessLinesResult.rows as BusinessLine[];
     const notes = notesResult.rows as InternalNoteRow[];
     const canUseNotes = canUseInternalNotes({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId);
+    const standAnnouncements = (announcementsResult.rows as AnnouncementRow[])
+      .filter((announcement) => isAnnouncementActiveForDate({ startDate: announcement.start_date, endDate: announcement.end_date, isPermanent: announcement.is_permanent }, meeting.meeting_date))
+      .map(({ title, body }) => ({ title, body }));
 
     return (
       <main className="mx-auto w-full max-w-4xl space-y-6 p-4 sm:p-6">
@@ -160,6 +181,7 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ me
           canUseInternalNotes={canUseNotes}
           businessLines={businessLines}
           canManageBusiness={true}
+          standAnnouncements={standAnnouncements}
         />
 
         <InternalNotesPanel
