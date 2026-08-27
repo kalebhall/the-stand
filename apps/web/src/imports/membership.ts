@@ -53,6 +53,27 @@ function mergeMembers(existing: ParsedMember, incoming: ParsedMember): ParsedMem
   };
 }
 
+function sameMemberIdentity(first: ParsedMember, second: ParsedMember): boolean {
+  if (first.fullName.toLowerCase() !== second.fullName.toLowerCase()) return false;
+  if (!first.birthday || !second.birthday) return true;
+  return normalizeWhitespace(first.birthday).toLowerCase() === normalizeWhitespace(second.birthday).toLowerCase();
+}
+
+function deduplicateMembers(members: ParsedMember[]): ParsedMember[] {
+  const deduped: ParsedMember[] = [];
+
+  for (const member of members) {
+    const existingIndex = deduped.findIndex((existing) => sameMemberIdentity(existing, member));
+    if (existingIndex === -1) {
+      deduped.push(member);
+    } else {
+      deduped[existingIndex] = mergeMembers(deduped[existingIndex], member);
+    }
+  }
+
+  return deduped;
+}
+
 const HTML_ENTITY_MAP: Record<string, string> = {
   '&nbsp;': ' ',
   '&amp;': '&',
@@ -766,23 +787,12 @@ export function parseMembershipText(rawText: string): ParsedMember[] {
       // Use PDF parser path for either multi-line or single-line table exports.
       const members = isPdfFormat ? parsePdfMembersMultiLine(cleanedLines) : parsePdfMembersTableFormat(cleanedLines);
 
-      // Deduplicate by name
-      const deduped = new Map<string, ParsedMember>();
-      for (const member of members) {
-        const existing = deduped.get(member.fullName.toLowerCase());
-        if (existing) {
-          deduped.set(member.fullName.toLowerCase(), mergeMembers(existing, member));
-        } else {
-          deduped.set(member.fullName.toLowerCase(), member);
-        }
-      }
-
-      return Array.from(deduped.values());
+      return deduplicateMembers(members);
     }
   }
 
   // TSV / CSV / legacy path
-  const deduped = new Map<string, ParsedMember>();
+  const parsedMembers: ParsedMember[] = [];
 
   // For TSV with headers: the header row gets filtered by isMembershipHeaderFooterLine.
   // Re-detect it from the raw lines before filtering so we can use it for column mapping.
@@ -832,14 +842,8 @@ export function parseMembershipText(rawText: string): ParsedMember[] {
 
     if (!parsed) continue;
 
-    const existing = deduped.get(parsed.fullName.toLowerCase());
-    if (existing) {
-      deduped.set(parsed.fullName.toLowerCase(), mergeMembers(existing, parsed));
-      continue;
-    }
-
-    deduped.set(parsed.fullName.toLowerCase(), parsed);
+    parsedMembers.push(parsed);
   }
 
-  return Array.from(deduped.values());
+  return deduplicateMembers(parsedMembers);
 }
