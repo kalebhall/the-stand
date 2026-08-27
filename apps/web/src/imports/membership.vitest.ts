@@ -75,6 +75,17 @@ describe('membership import parsing', () => {
     ]);
   });
 
+  it('keeps same-name members when birthdays differ', () => {
+    const result = parseMembershipText(
+      'Name\tGender\tAge\tBirth Date\n' +
+      'Smith, Alex\tM\t44\t1 May 1981\n' +
+      'Smith, Alex\tM\t19\t22 October 2006'
+    );
+
+    expect(result).toHaveLength(2);
+    expect(result.map((member) => member.birthday)).toEqual(['May 1 1981', 'October 22 2006']);
+  });
+
   it('handles pipe-separated header rows', () => {
     const result = parseMembershipText('Name | Phone | Gender\nJane Doe | 801-555-0101 | Female');
 
