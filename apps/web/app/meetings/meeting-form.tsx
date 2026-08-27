@@ -6,6 +6,7 @@ import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { HymnAutocomplete } from '@/components/HymnAutocomplete';
 import { InternalNotesPanel, type InternalNoteRow } from '@/components/InternalNotesPanel';
+import { WardBusinessSection, type BusinessLine } from '@/components/WardBusinessSection';
 import { MemberAutocomplete } from '@/components/ui/member-autocomplete';
 import { toYyyyMmDd } from '@/src/meetings/date';
 import { MEETING_TYPES, type ProgramItemInput } from '@/src/meetings/types';
@@ -48,6 +49,8 @@ type MeetingFormProps = {
   publishedVersionCount?: number;
   internalNotes?: InternalNoteRow[];
   canUseInternalNotes?: boolean;
+  businessLines?: BusinessLine[];
+  canManageBusiness?: boolean;
 };
 
 
@@ -84,7 +87,9 @@ export function MeetingForm({
   initialProgramItems = [],
   publishedVersionCount = 0,
   internalNotes = [],
-  canUseInternalNotes = false
+  canUseInternalNotes = false,
+  businessLines = [],
+  canManageBusiness = false
 }: MeetingFormProps) {
   const router = useRouter();
   const [meetingDate, setMeetingDate] = useState(toYyyyMmDd(initialMeetingDate));
@@ -408,7 +413,15 @@ export function MeetingForm({
               />
             ) : null}
             {item.itemType === BUSINESS_ITEM_TYPE ? (
-              <div className="grid gap-2">
+              <div className="grid gap-3">
+                <WardBusinessSection
+                  wardId={wardId}
+                  meetingId={meetingId ?? ''}
+                  lines={businessLines}
+                  canManage={canManageBusiness}
+                  showAnnounce={false}
+                  showScript={false}
+                />
                 <label className="flex items-center gap-2 text-sm">
                   <input
                     type="checkbox"
