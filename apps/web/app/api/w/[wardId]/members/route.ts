@@ -11,6 +11,7 @@ const logger = createLogger('members');
 type MemberRow = {
   id: string;
   full_name: string;
+  age: number | null;
 };
 
 export async function GET(request: Request, context: { params: Promise<{ wardId: string }> }) {
@@ -48,7 +49,7 @@ export async function GET(request: Request, context: { params: Promise<{ wardId:
       const limitParamIndex = tokens.length + 2;
 
       result = await client.query(
-        `SELECT id, full_name
+        `SELECT id, full_name, age
            FROM member
           WHERE ward_id = $1
             AND archived_at IS NULL
@@ -59,7 +60,7 @@ export async function GET(request: Request, context: { params: Promise<{ wardId:
       );
     } else {
       result = await client.query(
-        `SELECT id, full_name
+        `SELECT id, full_name, age
            FROM member
           WHERE ward_id = $1
             AND archived_at IS NULL
@@ -74,7 +75,8 @@ export async function GET(request: Request, context: { params: Promise<{ wardId:
     return NextResponse.json({
       members: (result.rows as MemberRow[]).map((row) => ({
         id: row.id,
-        fullName: row.full_name
+        fullName: row.full_name,
+        age: row.age
       }))
     });
   } catch (err) {

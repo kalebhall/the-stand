@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 type Member = {
   id: string;
   fullName: string;
+  age: number | null;
 };
 
 type MemberAutocompleteProps = {
@@ -134,7 +135,7 @@ export function MemberAutocomplete({ wardId, value, onChange, placeholder, class
                 setActiveIndex(-1);
               }}
             >
-              {member.fullName}
+              {member.fullName} ({member.age ?? 'Age unknown'})
             </li>
           ))}
         </ul>
