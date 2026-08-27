@@ -5,6 +5,7 @@ import { type FormEvent, useEffect, useMemo, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { HymnAutocomplete } from '@/components/HymnAutocomplete';
+import { InternalNotesPanel, type InternalNoteRow } from '@/components/InternalNotesPanel';
 import { MemberAutocomplete } from '@/components/ui/member-autocomplete';
 import { toYyyyMmDd } from '@/src/meetings/date';
 import { MEETING_TYPES, type ProgramItemInput } from '@/src/meetings/types';
@@ -45,6 +46,8 @@ type MeetingFormProps = {
   initialMeetingType?: string;
   initialProgramItems?: ProgramItemInput[];
   publishedVersionCount?: number;
+  internalNotes?: InternalNoteRow[];
+  canUseInternalNotes?: boolean;
 };
 
 
@@ -79,7 +82,9 @@ export function MeetingForm({
   initialMeetingDate = '',
   initialMeetingType = 'SACRAMENT',
   initialProgramItems = [],
-  publishedVersionCount = 0
+  publishedVersionCount = 0,
+  internalNotes = [],
+  canUseInternalNotes = false
 }: MeetingFormProps) {
   const router = useRouter();
   const [meetingDate, setMeetingDate] = useState(toYyyyMmDd(initialMeetingDate));
@@ -93,7 +98,7 @@ export function MeetingForm({
   const [publishedCount, setPublishedCount] = useState(publishedVersionCount);
   const [announcements, setAnnouncements] = useState<Array<{ id: string; title: string }>>([]);
   const [newItemType, setNewItemType] = useState('SPEAKER');
-  const [activeNotesEditor, setActiveNotesEditor] = useState<Record<string, boolean>>({});
+
 
   const canSave = useMemo(() => Boolean(meetingDate && meetingType), [meetingDate, meetingType]);
   useEffect(() => {
@@ -135,9 +140,6 @@ export function MeetingForm({
     });
   }
 
-  function itemKey(item: ProgramItemInput, index: number) {
-    return `${item.id ?? 'new'}-${index}`;
-  }
 
   function onMeetingTypeChange(nextMeetingType: string) {
     setMeetingType(nextMeetingType);
@@ -350,34 +352,6 @@ export function MeetingForm({
             </div>
 
             <div className="space-y-1 text-sm">
-              <span className="font-medium">Notes</span>
-              {activeNotesEditor[itemKey(item, index)] ? (
-                <textarea
-                  className="min-h-20 w-full rounded-md border px-3 py-2"
-                  value={item.notes}
-                  onChange={(event) => updateProgramItem(index, 'notes', event.target.value)}
-                  onBlur={() => setActiveNotesEditor((current) => ({ ...current, [itemKey(item, index)]: false }))}
-                  autoFocus
-                />
-              ) : item.notes.trim() ? (
-                <button
-                  type="button"
-                  className="w-full rounded-md border bg-muted/30 px-3 py-2 text-left text-sm whitespace-pre-wrap"
-                  onClick={() => setActiveNotesEditor((current) => ({ ...current, [itemKey(item, index)]: true }))}
-                >
-                  {item.notes}
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  className="text-xs text-muted-foreground flex"
-                  onClick={() => setActiveNotesEditor((current) => ({ ...current, [itemKey(item, index)]: true }))}
-                >
-                  No notes
-                </button>
-              )}
-            </div>
-            <div className="space-y-1 text-sm">
               <span className="font-medium">Program notes</span>
               <p className="text-xs text-muted-foreground">Anything entered here will appear on this item in the public program.</p>
               <textarea
@@ -387,6 +361,14 @@ export function MeetingForm({
                 placeholder="Optional public note"
               />
             </div>
+            {canUseInternalNotes && item.id ? (
+              <InternalNotesPanel
+                wardId={wardId}
+                target={{ type: 'PROGRAM_ITEM', programItemId: item.id }}
+                notes={internalNotes.filter((note) => note.program_item_id === item.id)}
+                title="Internal notes"
+              />
+            ) : null}
             {item.itemType === BUSINESS_ITEM_TYPE ? (
               <div className="grid gap-2">
                 <label className="flex items-center gap-2 text-sm">
