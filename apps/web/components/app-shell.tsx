@@ -167,8 +167,8 @@ export function AppShell({
                 {session.user.email}
               </Link>
               <div className="flex items-center justify-between px-2 pt-1">
-                <Link href="/account/preferences" className="hover:text-foreground text-[11px] underline-offset-2 hover:underline">
-                  Preferences
+                <Link href="/settings" className="hover:text-foreground text-[11px] underline-offset-2 hover:underline">
+                  Settings
                 </Link>
                 <Link href="/logout" className="hover:text-foreground text-[11px] underline-offset-2 hover:underline">
                   Log out
