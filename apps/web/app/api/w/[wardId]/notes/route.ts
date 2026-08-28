@@ -5,6 +5,8 @@ import { recordAuditEvent } from '@/src/audit/service';
 import { auth } from '@/src/auth/auth';
 import { canUseInternalNotes } from '@/src/auth/roles';
 import { setDbContext } from '@/src/db/context';
+import { enqueueOutboxNotificationJob } from '@/src/notifications/queue';
+import { enqueueNotificationOutboxEvent, insertNotificationOutboxEvent } from '@/src/notifications/outbox';
 import { pool } from '@/src/db/client';
 import type { NoteTarget } from '@/src/notes/types';
 
@@ -95,7 +97,17 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
       source: 'manual_ui'
     });
 
+    const eventOutboxId = await insertNotificationOutboxEvent(client, {
+      wardId,
+      aggregateType: 'internal_note',
+      aggregateId: inserted.rows[0].id,
+      eventType: 'NOTE_CREATED',
+      payload: { noteId: inserted.rows[0].id }
+    });
+
     await client.query('COMMIT');
+
+    enqueueNotificationOutboxEvent(enqueueOutboxNotificationJob, wardId, eventOutboxId);
     return NextResponse.json({ id: inserted.rows[0].id, createdAt: inserted.rows[0].created_at }, { status: 201 });
   } catch (error) {
     await client.query('ROLLBACK');

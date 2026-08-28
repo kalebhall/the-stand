@@ -223,6 +223,7 @@ John Doe  Male  42  Jan 15  Bishopric  Bishop  Yes  No
       .mockResolvedValueOnce({ rows: [{ id: 'assignment-1' }] })  // INSERT calling_assignment RETURNING id
       .mockResolvedValueOnce({})  // INSERT calling_action
       .mockResolvedValueOnce({})  // INSERT audit_log
+      .mockResolvedValueOnce({ rows: [{ id: 'event-2' }] })  // INSERT event_outbox RETURNING id
       .mockResolvedValueOnce({ rows: [{ member_name: 'John Doe', birthday: 'Jan 15', calling_name: 'Bishop' }] })  // SELECT current active
       .mockResolvedValueOnce({ rowCount: 0, rows: [] })  // SELECT stale import_run
       .mockResolvedValueOnce({});  // COMMIT

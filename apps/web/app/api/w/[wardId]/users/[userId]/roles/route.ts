@@ -5,6 +5,8 @@ import { WARD_ROLES, canAssignRole, canManageWardUsers } from '@/src/auth/roles'
 import { pool } from '@/src/db/client';
 import { createLogger } from '@/src/lib/logger';
 import { setDbContext } from '@/src/db/context';
+import { enqueueOutboxNotificationJob } from '@/src/notifications/queue';
+import { enqueueNotificationOutboxEvent, insertNotificationOutboxEvent } from '@/src/notifications/outbox';
 
 const logger = createLogger('ward-users');
 
@@ -57,7 +59,16 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
       [wardId, session.user.id, userId, roleName]
     );
 
+    const eventOutboxId = await insertNotificationOutboxEvent(client, {
+      wardId,
+      aggregateType: 'ward_user_role',
+      aggregateId: userId,
+      eventType: 'WARD_ACCESS_CHANGED',
+      payload: { targetUserId: userId, roleName }
+    });
+
     await client.query('COMMIT');
+    enqueueNotificationOutboxEvent(enqueueOutboxNotificationJob, wardId, eventOutboxId);
     return NextResponse.json({ success: true });
   } catch (err) {
     await client.query('ROLLBACK');

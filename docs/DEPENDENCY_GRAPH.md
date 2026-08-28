@@ -29,7 +29,7 @@ flowchart LR
   A17["web:lib<br/>9 files"]
   A18["web:meetings<br/>7 files"]
   A19["web:notes<br/>1 files"]
-  A20["web:notifications<br/>17 files"]
+  A20["web:notifications<br/>18 files"]
   A21["web:stand<br/>5 files"]
   A22["web:tooling<br/>2 files"]
   A23["web:types<br/>2 files"]
@@ -40,10 +40,10 @@ flowchart LR
   A5 -->|75| A13
   A6 -->|65| A8
   A6 -->|38| A13
+  A5 -->|37| A20
   A5 -->|23| A17
   A5 -->|15| A11
   A5 -->|13| A7
-  A5 -->|11| A20
   A5 -->|10| A16
   A6 -->|8| A18
   A6 -->|4| A11
@@ -100,7 +100,7 @@ flowchart LR
 | `web:lib` | 9 |
 | `web:meetings` | 7 |
 | `web:notes` | 1 |
-| `web:notifications` | 17 |
+| `web:notifications` | 18 |
 | `web:stand` | 5 |
 | `web:tooling` | 2 |
 | `web:types` | 2 |
@@ -116,14 +116,14 @@ flowchart LR
 | `web:api` | `web:db` | 75 |
 | `web:app` | `web:auth` | 65 |
 | `web:app` | `web:db` | 38 |
+| `web:api` | `web:notifications` | 37 |
 | `web:app` | `web:app` | 33 |
 | `web:api` | `web:lib` | 23 |
 | `web:ui` | `web:ui` | 22 |
 | `web:api` | `web:api` | 19 |
-| `web:notifications` | `web:notifications` | 18 |
+| `web:notifications` | `web:notifications` | 19 |
 | `web:api` | `web:callings` | 15 |
 | `web:api` | `web:audit` | 13 |
-| `web:api` | `web:notifications` | 11 |
 | `web:api` | `web:imports` | 10 |
 | `web:imports` | `web:imports` | 9 |
 | `web:app` | `web:meetings` | 8 |
@@ -182,8 +182,8 @@ flowchart LR
 | `web:api` | `zod` | 6 |
 | `web:app` | `vitest` | 6 |
 | `web:auth` | `next-auth` | 6 |
+| `web:notifications` | `pg` | 6 |
 | `web:imports` | `vitest` | 5 |
-| `web:notifications` | `pg` | 5 |
 | `web:auth` | `vitest` | 4 |
 | `web:tooling` | `Node.js` | 4 |
 | `web:callings` | `vitest` | 3 |
@@ -272,42 +272,42 @@ flowchart LR
 | `apps/web/app/api/support/hymns/[id]/route.ts` | `web:api` | 3 | 1 |
 | `apps/web/app/api/support/hymns/route.ts` | `web:api` | 3 | 1 |
 | `apps/web/app/api/w/[wardId]/announcements/[announcementId]/route.ts` | `web:api` | 6 | 1 |
-| `apps/web/app/api/w/[wardId]/announcements/route.ts` | `web:api` | 7 | 1 |
+| `apps/web/app/api/w/[wardId]/announcements/route.ts` | `web:api` | 9 | 1 |
 | `apps/web/app/api/w/[wardId]/announcements/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/audit-log/route.ts` | `web:api` | 5 | 1 |
 | `apps/web/app/api/w/[wardId]/calendar/refresh/route.ts` | `web:api` | 3 | 1 |
 | `apps/web/app/api/w/[wardId]/calendar/route.ts` | `web:api` | 4 | 1 |
-| `apps/web/app/api/w/[wardId]/callings/[callingId]/assign/route.ts` | `web:api` | 8 | 1 |
+| `apps/web/app/api/w/[wardId]/callings/[callingId]/assign/route.ts` | `web:api` | 10 | 1 |
 | `apps/web/app/api/w/[wardId]/callings/[callingId]/assign/route.vitest.ts` | `web:api` | 1 | 1 |
-| `apps/web/app/api/w/[wardId]/callings/[callingId]/extend/route.ts` | `web:api` | 8 | 1 |
-| `apps/web/app/api/w/[wardId]/callings/[callingId]/release/route.ts` | `web:api` | 8 | 1 |
+| `apps/web/app/api/w/[wardId]/callings/[callingId]/extend/route.ts` | `web:api` | 10 | 1 |
+| `apps/web/app/api/w/[wardId]/callings/[callingId]/release/route.ts` | `web:api` | 10 | 1 |
 | `apps/web/app/api/w/[wardId]/callings/[callingId]/route.ts` | `web:api` | 6 | 1 |
 | `apps/web/app/api/w/[wardId]/callings/[callingId]/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/callings/[callingId]/set-apart/route.ts` | `web:api` | 9 | 1 |
 | `apps/web/app/api/w/[wardId]/callings/[callingId]/set-apart/route.vitest.ts` | `web:api` | 1 | 1 |
-| `apps/web/app/api/w/[wardId]/callings/[callingId]/sustain/route.ts` | `web:api` | 8 | 1 |
+| `apps/web/app/api/w/[wardId]/callings/[callingId]/sustain/route.ts` | `web:api` | 10 | 1 |
 | `apps/web/app/api/w/[wardId]/callings/[callingId]/sustain/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/callings/route.ts` | `web:api` | 8 | 1 |
 | `apps/web/app/api/w/[wardId]/callings/route.vitest.ts` | `web:api` | 1 | 1 |
-| `apps/web/app/api/w/[wardId]/imports/callings/route.ts` | `web:api` | 10 | 2 |
+| `apps/web/app/api/w/[wardId]/imports/callings/route.ts` | `web:api` | 12 | 2 |
 | `apps/web/app/api/w/[wardId]/imports/callings/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/imports/lcr/[jobId]/route.ts` | `web:api` | 3 | 1 |
 | `apps/web/app/api/w/[wardId]/imports/lcr/route.ts` | `web:api` | 8 | 2 |
-| `apps/web/app/api/w/[wardId]/imports/membership/route.ts` | `web:api` | 9 | 1 |
+| `apps/web/app/api/w/[wardId]/imports/membership/route.ts` | `web:api` | 11 | 1 |
 | `apps/web/app/api/w/[wardId]/imports/membership/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/business/[lineId]/route.ts` | `web:api` | 5 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/complete/route.ts` | `web:api` | 7 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/complete/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/publish/route.ts` | `web:api` | 7 | 2 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/publish/route.vitest.ts` | `web:api` | 1 | 1 |
-| `apps/web/app/api/w/[wardId]/meetings/[meetingId]/route.ts` | `web:api` | 7 | 1 |
-| `apps/web/app/api/w/[wardId]/meetings/route.ts` | `web:api` | 6 | 1 |
+| `apps/web/app/api/w/[wardId]/meetings/[meetingId]/route.ts` | `web:api` | 9 | 1 |
+| `apps/web/app/api/w/[wardId]/meetings/route.ts` | `web:api` | 8 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/members/[memberId]/route.ts` | `web:api` | 5 | 1 |
 | `apps/web/app/api/w/[wardId]/members/route.ts` | `web:api` | 5 | 1 |
 | `apps/web/app/api/w/[wardId]/members/route.vitest.ts` | `web:api` | 1 | 1 |
-| `apps/web/app/api/w/[wardId]/notes/[noteId]/route.ts` | `web:api` | 5 | 2 |
-| `apps/web/app/api/w/[wardId]/notes/route.ts` | `web:api` | 6 | 2 |
+| `apps/web/app/api/w/[wardId]/notes/[noteId]/route.ts` | `web:api` | 7 | 2 |
+| `apps/web/app/api/w/[wardId]/notes/route.ts` | `web:api` | 8 | 2 |
 | `apps/web/app/api/w/[wardId]/notes/route.vitest.ts` | `web:api` | 2 | 1 |
 | `apps/web/app/api/w/[wardId]/notification-subscriptions/route.ts` | `web:api` | 6 | 2 |
 | `apps/web/app/api/w/[wardId]/notification-subscriptions/route.vitest.ts` | `web:api` | 1 | 1 |
@@ -319,8 +319,8 @@ flowchart LR
 | `apps/web/app/api/w/[wardId]/notifications/route.ts` | `web:api` | 6 | 2 |
 | `apps/web/app/api/w/[wardId]/notifications/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/portal/route.ts` | `web:api` | 4 | 2 |
-| `apps/web/app/api/w/[wardId]/users/[userId]/roles/[roleId]/route.ts` | `web:api` | 5 | 1 |
-| `apps/web/app/api/w/[wardId]/users/[userId]/roles/route.ts` | `web:api` | 5 | 1 |
+| `apps/web/app/api/w/[wardId]/users/[userId]/roles/[roleId]/route.ts` | `web:api` | 7 | 1 |
+| `apps/web/app/api/w/[wardId]/users/[userId]/roles/route.ts` | `web:api` | 7 | 1 |
 | `apps/web/app/api/w/[wardId]/users/route.ts` | `web:api` | 4 | 1 |
 | `apps/web/app/callings/error.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/callings/loading.tsx` | `web:app` | 0 | 0 |
@@ -505,6 +505,7 @@ flowchart LR
 | `apps/web/src/notifications/events.vitest.ts` | `web:notifications` | 1 | 1 |
 | `apps/web/src/notifications/format.ts` | `web:notifications` | 2 | 0 |
 | `apps/web/src/notifications/format.vitest.ts` | `web:notifications` | 1 | 1 |
+| `apps/web/src/notifications/outbox.ts` | `web:notifications` | 1 | 1 |
 | `apps/web/src/notifications/queue.ts` | `web:notifications` | 0 | 1 |
 | `apps/web/src/notifications/recipients.ts` | `web:notifications` | 2 | 1 |
 | `apps/web/src/notifications/recipients.vitest.ts` | `web:notifications` | 1 | 1 |

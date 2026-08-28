@@ -8,6 +8,8 @@ import { canManageCallings } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { createLogger } from '@/src/lib/logger';
 import { setDbContext } from '@/src/db/context';
+import { enqueueOutboxNotificationJob } from '@/src/notifications/queue';
+import { enqueueNotificationOutboxEvent, insertNotificationOutboxEvent } from '@/src/notifications/outbox';
 
 const logger = createLogger('callings');
 
@@ -56,7 +58,16 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
       [wardId, session.user.id, callingId, meetingId]
     );
 
+    const eventOutboxId = await insertNotificationOutboxEvent(client, {
+      wardId,
+      aggregateType: 'calling_assignment',
+      aggregateId: callingId,
+      eventType: 'CALLING_EXTENDED',
+      payload: { callingAssignmentId: callingId, status: CALLING_STATUS.EXTENDED, meetingId }
+    });
+
     await client.query('COMMIT');
+    enqueueNotificationOutboxEvent(enqueueOutboxNotificationJob, wardId, eventOutboxId);
 
     return NextResponse.json({ id: callingId, status: CALLING_STATUS.EXTENDED, meetingId });
   } catch (err) {

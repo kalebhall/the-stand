@@ -11,6 +11,8 @@ import { parseCallingsPdfText } from '@/src/imports/callings';
 import { extractPdfText } from '@/src/imports/pdf';
 import { getMemberIdentitySecret, makeMemberIdentityKey, makeSafeImportSnapshot } from '@/src/imports/member-identity';
 import { createLogger } from '@/src/lib/logger';
+import { enqueueOutboxNotificationJob } from '@/src/notifications/queue';
+import { enqueueNotificationOutboxEvent, insertNotificationOutboxEvent } from '@/src/notifications/outbox';
 
 type ImportRunRow = QueryResultRow & {
   id: string;
@@ -231,6 +233,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     let matchedMembers = 0;
     let unmatchedMembers = 0;
     let replacedCount = 0;
+    let eventOutboxId: string | null = null;
 
     if (commit) {
       replacedCount = existingResult.rowCount ?? 0;
@@ -305,8 +308,15 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
           parsedCount: parsedCallings.length
         }
       });
-    }
 
+      eventOutboxId = await insertNotificationOutboxEvent(client, {
+        wardId,
+        aggregateType: 'import_run',
+        aggregateId: importRun.id,
+        eventType: 'CALLING_IMPORT_COMPLETED',
+        payload: { importRunId: importRun.id, inserted, replacedCount, parsedCount: parsedCallings.length }
+      });
+    }
     const currentActiveResult = await client.query(
       `SELECT member_name, calling_name
          FROM calling_assignment
@@ -353,6 +363,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     }
 
     await client.query('COMMIT');
+    enqueueNotificationOutboxEvent(enqueueOutboxNotificationJob, wardId, eventOutboxId);
 
     logger.info('Callings import completed', {
       wardId,

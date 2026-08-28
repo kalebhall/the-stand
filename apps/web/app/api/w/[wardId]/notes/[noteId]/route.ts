@@ -6,6 +6,8 @@ import { auth } from '@/src/auth/auth';
 import { canUseInternalNotes } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
+import { enqueueOutboxNotificationJob } from '@/src/notifications/queue';
+import { enqueueNotificationOutboxEvent, insertNotificationOutboxEvent } from '@/src/notifications/outbox';
 
 const updateNoteSchema = z.object({ noteText: z.string().trim().min(1).max(10000) });
 
@@ -36,7 +38,15 @@ export async function PUT(request: Request, context: { params: Promise<{ wardId:
     }
     await client.query('UPDATE internal_note SET note_text = $1::text, updated_at = now() WHERE id = $2::uuid AND ward_id = $3::uuid', [parsed.data.noteText, noteId, wardId]);
     await recordAuditEvent(client, { wardId, userId: session.user.id, actorName: session.user.name ?? session.user.email ?? null, action: 'INTERNAL_NOTE_UPDATED', entityType: 'internal_note', entityId: noteId, details: {}, source: 'manual_ui' });
+    const eventOutboxId = await insertNotificationOutboxEvent(client, {
+      wardId,
+      aggregateType: 'internal_note',
+      aggregateId: noteId,
+      eventType: 'NOTE_UPDATED',
+      payload: { noteId }
+    });
     await client.query('COMMIT');
+    enqueueNotificationOutboxEvent(enqueueOutboxNotificationJob, wardId, eventOutboxId);
     return NextResponse.json({ success: true });
   } catch {
     await client.query('ROLLBACK');

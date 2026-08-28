@@ -6,6 +6,8 @@ import { canManageMeetings, canViewMeetings } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 import { isMeetingType, type ProgramItemInput } from '@/src/meetings/types';
+import { enqueueOutboxNotificationJob } from '@/src/notifications/queue';
+import { enqueueNotificationOutboxEvent, insertNotificationOutboxEvent } from '@/src/notifications/outbox';
 
 function toTrimmedString(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
@@ -161,7 +163,17 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
       severity: 'info'
     });
 
+    const eventOutboxId = await insertNotificationOutboxEvent(client, {
+      wardId,
+      aggregateType: 'meeting',
+      aggregateId: inserted.rows[0].id,
+      eventType: 'MEETING_CREATED',
+      payload: { meetingId: inserted.rows[0].id, meetingDate, meetingType }
+    });
+
     await client.query('COMMIT');
+
+    enqueueNotificationOutboxEvent(enqueueOutboxNotificationJob, wardId, eventOutboxId);
 
     return NextResponse.json({ id: inserted.rows[0].id }, { status: 201 });
   } catch (error) {

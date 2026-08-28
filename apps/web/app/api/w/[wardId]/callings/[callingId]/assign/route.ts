@@ -8,6 +8,8 @@ import { appendCallingStatus, fetchCurrentCallingStatus } from '@/src/callings/t
 import { pool } from '@/src/db/client';
 import { createLogger } from '@/src/lib/logger';
 import { setDbContext } from '@/src/db/context';
+import { enqueueOutboxNotificationJob } from '@/src/notifications/queue';
+import { enqueueNotificationOutboxEvent, insertNotificationOutboxEvent } from '@/src/notifications/outbox';
 
 const logger = createLogger('callings');
 
@@ -81,7 +83,17 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
       severity: 'notice'
     });
 
+    const eventOutboxId = await insertNotificationOutboxEvent(client, {
+      wardId,
+      aggregateType: 'calling_assignment',
+      aggregateId: callingId,
+      eventType: 'CALLING_ASSIGNMENT_CHANGED',
+      payload: { callingAssignmentId: callingId, status: CALLING_STATUS.ASSIGNED }
+    });
+
     await client.query('COMMIT');
+
+    enqueueNotificationOutboxEvent(enqueueOutboxNotificationJob, wardId, eventOutboxId);
 
     return NextResponse.json({ id: callingId, status: CALLING_STATUS.ASSIGNED, previousStatus: currentStatus });
   } catch (err) {
