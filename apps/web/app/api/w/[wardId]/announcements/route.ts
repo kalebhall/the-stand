@@ -7,6 +7,8 @@ import { canManageMeetings, canViewMeetings } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { createLogger } from '@/src/lib/logger';
 import { setDbContext } from '@/src/db/context';
+import { enqueueOutboxNotificationJob } from '@/src/notifications/queue';
+import { enqueueNotificationOutboxEvent, insertNotificationOutboxEvent } from '@/src/notifications/outbox';
 
 const logger = createLogger('announcements');
 
@@ -155,7 +157,17 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
       severity: 'info'
     });
 
+    const eventOutboxId = await insertNotificationOutboxEvent(client, {
+      wardId,
+      aggregateType: 'announcement',
+      aggregateId: inserted.rows[0].id,
+      eventType: 'ANNOUNCEMENT_CREATED',
+      payload: { announcementId: inserted.rows[0].id }
+    });
+
     await client.query('COMMIT');
+
+    enqueueNotificationOutboxEvent(enqueueOutboxNotificationJob, wardId, eventOutboxId);
 
     return NextResponse.json({ id: inserted.rows[0].id }, { status: 201 });
   } catch (err) {

@@ -11,6 +11,7 @@ import { getNavigationItems } from '@/src/auth/navigation';
 import { useConductingMode } from '@/components/conducting-mode-context';
 import { DeploymentWatcher } from '@/components/deployment-watcher';
 import { SiteLogo } from '@/components/site-logo';
+import { NotificationBell } from '@/components/notification-bell';
 
 export function AppShell({
   session,
@@ -115,6 +116,7 @@ export function AppShell({
       <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 z-30 border-r bg-card/60 backdrop-blur">
         <div className="flex h-16 shrink-0 items-center justify-between border-b px-6">
           <SiteLogo className="text-lg" />
+          <NotificationBell wardId={session.activeWardId} />
         </div>
 
         <div className="flex flex-1 flex-col justify-between overflow-y-auto px-4 py-4">
@@ -183,14 +185,17 @@ export function AppShell({
         <header className="md:hidden sticky top-0 z-20 flex h-14 items-center justify-between border-b bg-background/95 px-4 backdrop-blur">
           <SiteLogo className="text-base" iconClassName="h-6 w-6" />
 
-          <button
-            type="button"
-            onClick={toggleConductingMode}
-            className="flex items-center gap-1.5 rounded-full border border-amber-500/40 bg-amber-500/10 px-3 py-1 text-xs font-semibold text-amber-700 dark:text-amber-300 active:scale-95 transition-transform"
-          >
-            <span>🎙️</span>
-            <span>Stand Mode</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <NotificationBell wardId={session.activeWardId} />
+            <button
+              type="button"
+              onClick={toggleConductingMode}
+              className="flex items-center gap-1.5 rounded-full border border-amber-500/40 bg-amber-500/10 px-3 py-1 text-xs font-semibold text-amber-700 dark:text-amber-300 active:scale-95 transition-transform"
+            >
+              <span>🎙️</span>
+              <span>Stand Mode</span>
+            </button>
+          </div>
         </header>
 
         {/* Page Content with bottom padding on mobile for permanent nav bar */}

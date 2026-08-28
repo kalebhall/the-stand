@@ -9,6 +9,8 @@ import { parseMembershipText, toPlainText } from '@/src/imports/membership';
 import { extractPdfText } from '@/src/imports/pdf';
 import { getMemberIdentitySecret, makeMemberIdentityKey, makeSafeImportSnapshot } from '@/src/imports/member-identity';
 import { createLogger } from '@/src/lib/logger';
+import { enqueueOutboxNotificationJob } from '@/src/notifications/queue';
+import { enqueueNotificationOutboxEvent, insertNotificationOutboxEvent } from '@/src/notifications/outbox';
 
 type MembershipImportBody = {
   rawText?: unknown;
@@ -174,6 +176,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     let inserted = 0;
     let updated = 0;
     let archived = 0;
+    let eventOutboxId: string | null = null;
 
     if (commit) {
       // Step 1: Archive all currently-active members for this ward.
@@ -249,9 +252,18 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
           parsedCount: parsedMembers.length
         }
       });
+
+      eventOutboxId = await insertNotificationOutboxEvent(client, {
+        wardId,
+        aggregateType: 'import_run',
+        aggregateId: importRunId,
+        eventType: 'MEMBERSHIP_IMPORT_COMPLETED',
+        payload: { importRunId, inserted, updated, archived, parsedCount: parsedMembers.length }
+      });
     }
 
     await client.query('COMMIT');
+    enqueueNotificationOutboxEvent(enqueueOutboxNotificationJob, wardId, eventOutboxId);
 
     logger.info('Membership import completed', {
       wardId,

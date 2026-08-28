@@ -6,6 +6,8 @@ import { isConferenceMeetingType, migrateBusinessLinesOffConference } from '@/sr
 import { pool } from '@/src/db/client';
 import { createLogger } from '@/src/lib/logger';
 import { setDbContext } from '@/src/db/context';
+import { enqueueOutboxNotificationJob } from '@/src/notifications/queue';
+import { enqueueNotificationOutboxEvent, insertNotificationOutboxEvent } from '@/src/notifications/outbox';
 
 const logger = createLogger('meetings');
 import { isMeetingType, type ProgramItemInput } from '@/src/meetings/types';
@@ -162,7 +164,16 @@ export async function PUT(request: Request, context: { params: Promise<{ wardId:
       [wardId, session.user.id, meetingId, programItems.length]
     );
 
+    const eventOutboxId = await insertNotificationOutboxEvent(client, {
+      wardId,
+      aggregateType: 'meeting',
+      aggregateId: meetingId,
+      eventType: 'MEETING_UPDATED',
+      payload: { meetingId, meetingDate, meetingType, programItemCount: programItems.length }
+    });
+
     await client.query('COMMIT');
+    enqueueNotificationOutboxEvent(enqueueOutboxNotificationJob, wardId, eventOutboxId);
 
     return NextResponse.json({ success: true });
   } catch (error) {

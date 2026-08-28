@@ -1,5 +1,11 @@
 import type { PoolClient } from 'pg';
 
+import { formatUserNotification } from './format';
+import { deliverNotificationEmail, formatNotificationEmail } from './email';
+import { getSubscribedRecipientIds, isKnownNotificationEvent, resolveNotificationRecipients } from './recipients';
+import { ensureDefaultNotificationSubscriptions } from './subscriptions';
+import { createUserNotification } from './user-notifications';
+
 type DbClient = Pick<PoolClient, 'query'>;
 
 const DEFAULT_NOTIFICATION_WEBHOOK_URL = 'http://127.0.0.1:5678/webhook/the-stand';
@@ -13,6 +19,111 @@ type OutboxEvent = {
   payload: unknown;
   attempts: number;
 };
+
+type SafeEventPayload = Record<string, unknown>;
+
+function asSafeEventPayload(payload: unknown): SafeEventPayload {
+  return payload && typeof payload === 'object' && !Array.isArray(payload)
+    ? payload as SafeEventPayload
+    : {};
+}
+
+async function createRecipientNotifications(client: DbClient, event: OutboxEvent, wardId: string): Promise<void> {
+  if (!isKnownNotificationEvent(event.event_type)) {
+    return;
+  }
+
+  const payload = asSafeEventPayload(event.payload);
+  const explicitUserIds = Array.isArray(payload.mentionedUserIds)
+    ? payload.mentionedUserIds.filter((value): value is string => typeof value === 'string')
+    : [];
+  const recipientIds = await resolveNotificationRecipients(client, {
+    wardId,
+    eventType: event.event_type,
+    actorUserId: typeof payload.actorUserId === 'string' ? payload.actorUserId : undefined,
+    explicitUserIds
+  });
+
+  for (const recipientUserId of recipientIds) {
+    await ensureDefaultNotificationSubscriptions(client, { wardId, userId: recipientUserId });
+  }
+
+  const subscribedRecipientIds = await getSubscribedRecipientIds(client, {
+    wardId,
+    eventType: event.event_type,
+    channel: 'IN_APP',
+    userIds: recipientIds
+  });
+
+  for (const recipientUserId of subscribedRecipientIds) {
+    await createUserNotification(client, formatUserNotification({
+      wardId,
+      sourceEventId: event.id,
+      eventType: event.event_type,
+      aggregateType: event.aggregate_type,
+      aggregateId: event.aggregate_id,
+      payload: event.payload,
+      recipientUserId
+    }));
+  }
+
+  const emailRecipientIds = await getSubscribedRecipientIds(client, {
+    wardId,
+    eventType: event.event_type,
+    channel: 'EMAIL',
+    userIds: recipientIds
+  });
+  if (emailRecipientIds.length) {
+    const usersResult = await client.query(
+      `SELECT id, email FROM user_account WHERE id = ANY($1::uuid[])`,
+      [emailRecipientIds]
+    );
+    for (const user of (usersResult?.rows ?? []) as Array<{ id: string; email: string | null }>) {
+      const notification = formatUserNotification({
+        wardId,
+        sourceEventId: event.id,
+        eventType: event.event_type,
+        aggregateType: event.aggregate_type,
+        aggregateId: event.aggregate_id,
+        payload: event.payload,
+        recipientUserId: user.id
+      });
+      const message = formatNotificationEmail({
+        eventType: event.event_type,
+        recipientEmail: user.email,
+        title: notification.title,
+        summary: notification.summary,
+        targetUrl: notification.targetUrl ?? null,
+        severity: notification.severity
+      });
+      if (!message) continue;
+      const deliveryResult = await client.query(
+        `INSERT INTO notification_delivery (ward_id, event_outbox_id, recipient_user_id, channel, delivery_status, attempted_at)
+         VALUES ($1::uuid, $2::uuid, $3::uuid, 'EMAIL', 'pending', now())
+         ON CONFLICT (event_outbox_id, channel, recipient_user_id)
+         DO UPDATE SET attempted_at = now(), updated_at = now()
+         RETURNING id`,
+        [wardId, event.id, user.id]
+      );
+      const deliveryId = deliveryResult.rows[0].id as string;
+      try {
+        const delivery = await deliverNotificationEmail(message);
+        await client.query(
+          `UPDATE notification_delivery
+              SET delivery_status = 'success', external_id = $3::text, error_message = NULL, attempted_at = now(), updated_at = now()
+            WHERE id = $1::uuid AND ward_id = $2::uuid`,
+          [deliveryId, wardId, delivery.externalId ?? null]
+        );
+      } catch (error) {
+        await client.query(
+          `UPDATE notification_delivery SET delivery_status = 'failure', error_message = $3::text, attempted_at = now(), updated_at = now()
+           WHERE id = $1::uuid AND ward_id = $2::uuid`,
+          [deliveryId, wardId, error instanceof Error ? error.message : 'Unknown email delivery error']
+        );
+      }
+    }
+  }
+}
 
 function getNotificationWebhookUrl(): string {
   return process.env.NOTIFICATION_WEBHOOK_URL ?? DEFAULT_NOTIFICATION_WEBHOOK_URL;
@@ -85,10 +196,12 @@ export async function processOutboxEvent(client: DbClient, params: { wardId: str
     [event.id, params.wardId]
   );
 
+  await createRecipientNotifications(client, event, params.wardId);
+
   const deliveryResult = await client.query(
     `INSERT INTO notification_delivery (ward_id, event_outbox_id, channel, delivery_status, attempted_at)
      VALUES ($1, $2, 'webhook', 'pending', now())
-     ON CONFLICT (event_outbox_id, channel)
+     ON CONFLICT (event_outbox_id, channel) WHERE channel = 'webhook'
      DO UPDATE SET attempted_at = now(), updated_at = now()
      RETURNING id`,
     [params.wardId, event.id]

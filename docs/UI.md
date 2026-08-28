@@ -390,6 +390,16 @@ ACCESSIBILITY
 - Responsive layout
 
 ====================================================================
+NOTIFICATIONS
+====================================================================
+
+`/notifications` displays current-ward notifications with All/Unread and category filters, unread count, category, title, summary, relative time, expandable safe details, read/dismiss actions, and approved related-item links.
+
+`/settings/notifications` groups event preferences by category. Each event has independent In-app and Email controls. Users can apply section bulk actions, restore defaults, and save one batch. Loading, unsaved, saving, saved, retry, and email-unavailable states are visible and keyboard/screen-reader accessible.
+
+Authenticated navigation shows a non-blocking notification bell with a badge only when unread count is greater than zero. Conducting mode omits the bell so it does not obstruct the stand view.
+
+====================================================================
 FAILURE RULE
 ====================================================================
 

@@ -2,6 +2,7 @@ import type { PoolClient } from 'pg';
 
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
+import { insertNotificationOutboxEvent } from '@/src/notifications/outbox';
 
 import { parseIcsEvents, type ParsedCalendarEvent } from './ics';
 
@@ -104,7 +105,16 @@ export async function refreshCalendarFeedsForWard(args: { wardId: string; userId
 
         let imported = 0;
         for (const event of events) {
-          await upsertCachedEvent(client, { wardId: args.wardId, feed, event });
+          const calendarEventId = await upsertCachedEvent(client, { wardId: args.wardId, feed, event });
+          if (calendarEventId) {
+            await insertNotificationOutboxEvent(client, {
+              wardId: args.wardId,
+              aggregateType: 'calendar_event',
+              aggregateId: calendarEventId,
+              eventType: 'CALENDAR_EVENT_IMPORTED',
+              payload: { calendarEventId, calendarFeedId: feed.id, externalUid: event.uid }
+            });
+          }
           imported += 1;
         }
 
@@ -155,8 +165,8 @@ export async function refreshCalendarFeedsForWard(args: { wardId: string; userId
 async function upsertCachedEvent(
   client: PoolClient,
   args: { wardId: string; feed: CalendarFeedRow; event: ParsedCalendarEvent }
-): Promise<void> {
-  await client.query(
+): Promise<string | null> {
+  const result = await client.query(
     `INSERT INTO calendar_event_cache (
        ward_id,
        calendar_feed_id,
@@ -181,7 +191,8 @@ async function upsertCachedEvent(
        all_day = EXCLUDED.all_day,
        tags = EXCLUDED.tags,
        source_updated_at = EXCLUDED.source_updated_at,
-       imported_at = now()`,
+       imported_at = now()
+     RETURNING id`,
     [
       args.wardId,
       args.feed.id,
@@ -196,6 +207,7 @@ async function upsertCachedEvent(
       args.event.sourceUpdatedAt
     ]
   );
+  return result?.rows?.[0]?.id ?? null;
 }
 
 export async function copyCalendarEventToAnnouncement(args: { wardId: string; userId: string; calendarEventCacheId: string }): Promise<string> {

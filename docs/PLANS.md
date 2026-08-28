@@ -250,13 +250,14 @@ Tasks:
 - Implement dedupe constraint.
 - Add BullMQ worker (or DB poller).
 - Add webhook (n8n) integration.
-- Optional SMTP integration.
+- Asynchronous email delivery with per-recipient status and deterministic provider failure.
 - Add diagnostics UI.
 
 Acceptance Gate:
 - Notifications retry on failure.
 - No duplicate sends.
 - Diagnostics visible.
+- Email content remains privacy-safe and email delivery is independently tracked.
 
 ============================================================
 PHASE 12 — HARDENING & VALIDATION

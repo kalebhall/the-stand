@@ -7,6 +7,7 @@ import { CALLING_STATUS } from '@/src/callings/lifecycle';
 import { pool } from '@/src/db/client';
 import { createLogger } from '@/src/lib/logger';
 import { setDbContext } from '@/src/db/context';
+import { enqueueOutboxNotificationJob } from '@/src/notifications/queue';
 
 const logger = createLogger('callings');
 
@@ -145,7 +146,22 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
       severity: 'notice'
     });
 
+    const eventType = body.isAssignmentOnly === true ? 'CALLING_ASSIGNMENT_CHANGED' : 'CALLING_SUGGESTED';
+    const outboxResult = await client.query(
+      `INSERT INTO event_outbox (ward_id, aggregate_type, aggregate_id, event_type, payload)
+       VALUES ($1::uuid, 'calling', $2::uuid, $3::text, $4::jsonb)
+       ON CONFLICT (ward_id, event_type, aggregate_id)
+       DO UPDATE SET payload = EXCLUDED.payload, updated_at = now(), status = 'pending'
+       RETURNING id`,
+      [wardId, assignmentId, eventType, JSON.stringify({ actorUserId: session.user.id, subject: body.callingName.trim() })]
+    );
+    const eventOutboxId = outboxResult.rows[0].id as string;
+
     await client.query('COMMIT');
+
+    Promise.resolve(enqueueOutboxNotificationJob({ wardId, eventOutboxId })).catch((error) => {
+      console.error('[callings POST] Failed to enqueue notification job', error);
+    });
 
     return NextResponse.json({ id: assignmentId, status: initialStatus }, { status: 201 });
   } catch (err) {
