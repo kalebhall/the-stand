@@ -29,7 +29,7 @@ flowchart LR
   A17["web:lib<br/>9 files"]
   A18["web:meetings<br/>7 files"]
   A19["web:notes<br/>1 files"]
-  A20["web:notifications<br/>11 files"]
+  A20["web:notifications<br/>15 files"]
   A21["web:stand<br/>5 files"]
   A22["web:tooling<br/>2 files"]
   A23["web:types<br/>2 files"]
@@ -68,6 +68,8 @@ flowchart LR
   A15 -->|1| A25
   A16 -->|1| A13
   A18 -->|1| A4
+  A20 -->|1| A8
+  A20 -->|1| A19
   A24 -->|1| A8
   A24 -->|1| A16
   A24 -->|1| A17
@@ -98,7 +100,7 @@ flowchart LR
 | `web:lib` | 9 |
 | `web:meetings` | 7 |
 | `web:notes` | 1 |
-| `web:notifications` | 11 |
+| `web:notifications` | 15 |
 | `web:stand` | 5 |
 | `web:tooling` | 2 |
 | `web:types` | 2 |
@@ -120,11 +122,11 @@ flowchart LR
 | `web:api` | `web:api` | 15 |
 | `web:api` | `web:callings` | 15 |
 | `web:api` | `web:audit` | 13 |
+| `web:notifications` | `web:notifications` | 11 |
 | `web:api` | `web:imports` | 10 |
 | `web:imports` | `web:imports` | 9 |
 | `web:app` | `web:meetings` | 8 |
 | `web:auth` | `web:auth` | 8 |
-| `web:notifications` | `web:notifications` | 8 |
 | `web:api` | `web:notifications` | 4 |
 | `web:app` | `web:callings` | 4 |
 | `web:callings` | `web:callings` | 4 |
@@ -157,6 +159,8 @@ flowchart LR
 | `web:health.mjs` | `web:version.mjs` | 1 |
 | `web:imports` | `web:db` | 1 |
 | `web:meetings` | `web:announcements` | 1 |
+| `web:notifications` | `web:auth` | 1 |
+| `web:notifications` | `web:notes` | 1 |
 | `web:ui` | `web:auth` | 1 |
 | `web:ui` | `web:imports` | 1 |
 | `web:ui` | `web:lib` | 1 |
@@ -175,11 +179,11 @@ flowchart LR
 | `root:tooling` | `Node.js` | 12 |
 | `web:ui` | `next` | 9 |
 | `web:auth` | `next-auth` | 6 |
+| `web:notifications` | `vitest` | 6 |
 | `web:imports` | `vitest` | 5 |
+| `web:notifications` | `pg` | 5 |
 | `web:app` | `vitest` | 4 |
 | `web:auth` | `vitest` | 4 |
-| `web:notifications` | `pg` | 4 |
-| `web:notifications` | `vitest` | 4 |
 | `web:tooling` | `Node.js` | 4 |
 | `web:api` | `zod` | 3 |
 | `web:callings` | `vitest` | 3 |
@@ -483,12 +487,16 @@ flowchart LR
 | `apps/web/src/notifications/events.ts` | `web:notifications` | 0 | 0 |
 | `apps/web/src/notifications/events.vitest.ts` | `web:notifications` | 1 | 1 |
 | `apps/web/src/notifications/queue.ts` | `web:notifications` | 0 | 1 |
+| `apps/web/src/notifications/recipients.ts` | `web:notifications` | 2 | 1 |
+| `apps/web/src/notifications/recipients.vitest.ts` | `web:notifications` | 1 | 1 |
 | `apps/web/src/notifications/runner.ts` | `web:notifications` | 0 | 1 |
 | `apps/web/src/notifications/runner.vitest.ts` | `web:notifications` | 1 | 1 |
 | `apps/web/src/notifications/subscriptions.ts` | `web:notifications` | 1 | 1 |
 | `apps/web/src/notifications/subscriptions.vitest.ts` | `web:notifications` | 1 | 1 |
 | `apps/web/src/notifications/user-notifications.ts` | `web:notifications` | 1 | 1 |
 | `apps/web/src/notifications/user-notifications.vitest.ts` | `web:notifications` | 1 | 1 |
+| `apps/web/src/notifications/visibility.ts` | `web:notifications` | 1 | 0 |
+| `apps/web/src/notifications/visibility.vitest.ts` | `web:notifications` | 1 | 1 |
 | `apps/web/src/notifications/worker-entry.ts` | `web:notifications` | 4 | 1 |
 | `apps/web/src/stand/default-template.ts` | `web:stand` | 0 | 0 |
 | `apps/web/src/stand/member-display.ts` | `web:stand` | 0 | 0 |
