@@ -130,7 +130,13 @@ export function parseIcsEvents(ics: string): ParsedCalendarEvent[] {
     const rawKey = line.slice(0, separator).toUpperCase();
     const value = line.slice(separator + 1);
 
-    const key = rawKey.startsWith('DTSTART') ? 'DTSTART' : rawKey.startsWith('DTEND') ? 'DTEND' : rawKey;
+    const key = rawKey.startsWith('DTSTART')
+      ? 'DTSTART'
+      : rawKey.startsWith('DTEND')
+        ? 'DTEND'
+        : rawKey === 'LAST-MODIFIED'
+          ? 'LAST_MODIFIED'
+          : rawKey;
     current[key] = [...(current[key] ?? []), value];
   }
 
