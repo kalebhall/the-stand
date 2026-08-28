@@ -12,6 +12,8 @@ import { toYyyyMmDd } from '@/src/meetings/date';
 import { MEETING_TYPES, type ProgramItemInput } from '@/src/meetings/types';
 import { getDefaultProgramItemsForMeetingType } from '@/src/meetings/default-program';
 
+import { DeleteMeetingButton } from './delete-meeting-button';
+
 const PERSON_ITEM_TYPES = new Set(['PRESIDING', 'CONDUCTING', 'INVOCATION', 'SPEAKER', 'BENEDICTION']);
 const HYMN_ITEM_TYPES = new Set(['OPENING_HYMN', 'REST_HYMN', 'CLOSING_HYMN', 'SPECIAL_HYMN', 'SACRAMENT_HYMN']);
 const PLACEHOLDER_ITEM_TYPES = new Set(['SACRAMENT', 'TESTIMONIES']);
@@ -254,30 +256,46 @@ export function MeetingForm({
   return (
     <form className="space-y-6" onSubmit={onSubmit}>
       <section className="grid gap-4 rounded-lg border bg-card p-4 sm:grid-cols-2">
-        <label className="space-y-2 text-sm">
-          <span className="font-medium">Meeting date</span>
-          <input
-            type="date"
-            className="w-full rounded-md border px-3 py-2"
-            value={meetingDate}
-            onChange={(event) => setMeetingDate(event.target.value)}
-            required
-          />
-        </label>
+        {mode === 'create' ? (
+          <label className="space-y-2 text-sm">
+            <span className="font-medium">Meeting date</span>
+            <input
+              type="date"
+              className="w-full rounded-md border px-3 py-2"
+              value={meetingDate}
+              onChange={(event) => setMeetingDate(event.target.value)}
+              required
+            />
+          </label>
+        ) : (
+          <div className="space-y-1 text-sm">
+            <span className="font-medium">Meeting date</span>
+            <p className="rounded-md border bg-muted px-3 py-2" aria-label="Meeting date, cannot be changed">{meetingDate}</p>
+            <p className="text-xs text-muted-foreground">Date cannot be changed after creation.</p>
+          </div>
+        )}
 
-        <label className="space-y-2 text-sm">
-          <span className="font-medium">Meeting type</span>
-          <select className="w-full rounded-md border px-3 py-2" value={meetingType} onChange={(event) => onMeetingTypeChange(event.target.value)} required>
-            {MEETING_TYPES.map((value) => (
-              <option key={value} value={value}>
-                {value.replaceAll('_', ' ')}
-              </option>
-            ))}
-          </select>
-        </label>
+        {mode === 'create' ? (
+          <label className="space-y-2 text-sm">
+            <span className="font-medium">Meeting type</span>
+            <select className="w-full rounded-md border px-3 py-2" value={meetingType} onChange={(event) => onMeetingTypeChange(event.target.value)} required>
+              {MEETING_TYPES.map((value) => (
+                <option key={value} value={value}>
+                  {value.replaceAll('_', ' ')}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : (
+          <div className="space-y-1 text-sm">
+            <span className="font-medium">Meeting type</span>
+            <p className="rounded-md border bg-muted px-3 py-2" aria-label="Meeting type, cannot be changed">{meetingType.replaceAll('_', ' ')}</p>
+            <p className="text-xs text-muted-foreground">Type cannot be changed after creation.</p>
+          </div>
+        )}
       </section>
 
-      <section className="space-y-3 rounded-lg border bg-card p-4">
+      <section key={mode === 'create' ? meetingType : 'edit'} className="space-y-3 rounded-lg border bg-card p-4">
         <div className="flex items-end justify-between gap-3">
           <h2 className="text-lg font-semibold">Program items</h2>
           <div className="flex items-center gap-2">
@@ -448,6 +466,7 @@ export function MeetingForm({
             {publishing ? 'Publishing...' : publishedCount ? 'Republish' : 'Publish'}
           </Button>
         ) : null}
+        {mode === 'edit' && meetingId ? <DeleteMeetingButton wardId={wardId} meetingId={meetingId} /> : null}
       </div>
     </form>
   );

@@ -15,7 +15,7 @@ flowchart LR
   A3["root:tooling<br/>6 files"]
   A4["web:announcements<br/>2 files"]
   A5["web:api<br/>65 files"]
-  A6["web:app<br/>85 files"]
+  A6["web:app<br/>86 files"]
   A7["web:audit<br/>2 files"]
   A8["web:auth<br/>11 files"]
   A9["web:bootstrap.mjs<br/>1 files"]
@@ -36,7 +36,7 @@ flowchart LR
   A24["web:ui<br/>24 files"]
   A25["web:version.mjs<br/>1 files"]
   A5 -->|85| A8
-  A6 -->|78| A24
+  A6 -->|79| A24
   A5 -->|75| A13
   A6 -->|67| A8
   A6 -->|38| A13
@@ -87,7 +87,7 @@ flowchart LR
 | `root:tooling` | 6 |
 | `web:announcements` | 2 |
 | `web:api` | 65 |
-| `web:app` | 85 |
+| `web:app` | 86 |
 | `web:audit` | 2 |
 | `web:auth` | 11 |
 | `web:bootstrap.mjs` | 1 |
@@ -113,12 +113,12 @@ flowchart LR
 | Importing area | Imported area | Imports |
 | --- | --- | ---: |
 | `web:api` | `web:auth` | 85 |
-| `web:app` | `web:ui` | 78 |
+| `web:app` | `web:ui` | 79 |
 | `web:api` | `web:db` | 75 |
 | `web:app` | `web:auth` | 67 |
 | `web:app` | `web:db` | 38 |
 | `web:api` | `web:notifications` | 37 |
-| `web:app` | `web:app` | 33 |
+| `web:app` | `web:app` | 35 |
 | `web:api` | `web:lib` | 23 |
 | `web:notifications` | `web:notifications` | 23 |
 | `web:ui` | `web:ui` | 22 |
@@ -173,9 +173,9 @@ flowchart LR
 
 | Importing area | Package/runtime | Imports |
 | --- | --- | ---: |
-| `web:app` | `next` | 66 |
+| `web:app` | `next` | 67 |
 | `web:api` | `next` | 46 |
-| `web:app` | `react` | 21 |
+| `web:app` | `react` | 22 |
 | `web:ui` | `react` | 21 |
 | `web:api` | `vitest` | 18 |
 | `root:tooling` | `Node.js` | 12 |
@@ -350,11 +350,12 @@ flowchart LR
 | `apps/web/app/logout/page.tsx` | `web:app` | 2 | 0 |
 | `apps/web/app/meetings/[meetingId]/edit/page.tsx` | `web:app` | 10 | 2 |
 | `apps/web/app/meetings/[meetingId]/print/page.tsx` | `web:app` | 6 | 1 |
+| `apps/web/app/meetings/delete-meeting-button.tsx` | `web:app` | 1 | 2 |
 | `apps/web/app/meetings/error.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/meetings/loading.tsx` | `web:app` | 0 | 0 |
-| `apps/web/app/meetings/meeting-form.tsx` | `web:app` | 8 | 2 |
+| `apps/web/app/meetings/meeting-form.tsx` | `web:app` | 9 | 2 |
 | `apps/web/app/meetings/new/page.tsx` | `web:app` | 3 | 1 |
-| `apps/web/app/meetings/page.tsx` | `web:app` | 7 | 2 |
+| `apps/web/app/meetings/page.tsx` | `web:app` | 8 | 2 |
 | `apps/web/app/members/members-manager-client.tsx` | `web:app` | 3 | 2 |
 | `apps/web/app/members/page.tsx` | `web:app` | 7 | 2 |
 | `apps/web/app/notifications/error.tsx` | `web:app` | 0 | 0 |

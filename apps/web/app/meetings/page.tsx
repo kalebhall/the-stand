@@ -9,6 +9,8 @@ import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 import { formatMeetingDateForDisplay } from '@/src/meetings/date';
 
+import { DeleteMeetingButton } from './delete-meeting-button';
+
 type MeetingRow = {
   id: string;
   meeting_date: unknown;
@@ -23,6 +25,7 @@ export default async function MeetingsPage() {
   if (!session.activeWardId || !canViewMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId)) {
     redirect('/dashboard');
   }
+  const wardId = session.activeWardId;
 
   const client = await pool.connect();
 
@@ -69,6 +72,7 @@ export default async function MeetingsPage() {
                       Edit
                     </Link>
                   ) : null}
+                  {canManage ? <DeleteMeetingButton wardId={wardId} meetingId={meeting.id} /> : null}
                   <Link href={`/stand/${meeting.id}`} className={cn(buttonVariants({ size: 'sm', variant: 'outline' }))}>
                     At the Stand
                   </Link>
