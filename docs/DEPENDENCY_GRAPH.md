@@ -29,7 +29,7 @@ flowchart LR
   A17["web:lib<br/>9 files"]
   A18["web:meetings<br/>7 files"]
   A19["web:notes<br/>1 files"]
-  A20["web:notifications<br/>7 files"]
+  A20["web:notifications<br/>9 files"]
   A21["web:stand<br/>5 files"]
   A22["web:tooling<br/>2 files"]
   A23["web:types<br/>2 files"]
@@ -98,7 +98,7 @@ flowchart LR
 | `web:lib` | 9 |
 | `web:meetings` | 7 |
 | `web:notes` | 1 |
-| `web:notifications` | 7 |
+| `web:notifications` | 9 |
 | `web:stand` | 5 |
 | `web:tooling` | 2 |
 | `web:types` | 2 |
@@ -124,12 +124,12 @@ flowchart LR
 | `web:imports` | `web:imports` | 9 |
 | `web:app` | `web:meetings` | 8 |
 | `web:auth` | `web:auth` | 8 |
+| `web:notifications` | `web:notifications` | 6 |
 | `web:api` | `web:notifications` | 4 |
 | `web:app` | `web:callings` | 4 |
 | `web:callings` | `web:callings` | 4 |
 | `web:db` | `web:db` | 4 |
 | `web:meetings` | `web:meetings` | 4 |
-| `web:notifications` | `web:notifications` | 4 |
 | `web:stand` | `web:stand` | 4 |
 | `web:api` | `web:meetings` | 3 |
 | `web:app` | `web:announcements` | 3 |
@@ -185,6 +185,8 @@ flowchart LR
 | `web:db` | `vitest` | 3 |
 | `web:lib` | `vitest` | 3 |
 | `web:meetings` | `vitest` | 3 |
+| `web:notifications` | `pg` | 3 |
+| `web:notifications` | `vitest` | 3 |
 | `package:shared` | `vitest` | 2 |
 | `root:other` | `Node.js` | 2 |
 | `web:api` | `Node.js` | 2 |
@@ -199,8 +201,6 @@ flowchart LR
 | `web:hardening` | `Node.js` | 2 |
 | `web:imports` | `Node.js` | 2 |
 | `web:notifications` | `bullmq` | 2 |
-| `web:notifications` | `pg` | 2 |
-| `web:notifications` | `vitest` | 2 |
 | `web:stand` | `vitest` | 2 |
 | `web:tooling` | `pg` | 2 |
 | `package:shared` | `zod` | 1 |
@@ -485,6 +485,8 @@ flowchart LR
 | `apps/web/src/notifications/queue.ts` | `web:notifications` | 0 | 1 |
 | `apps/web/src/notifications/runner.ts` | `web:notifications` | 0 | 1 |
 | `apps/web/src/notifications/runner.vitest.ts` | `web:notifications` | 1 | 1 |
+| `apps/web/src/notifications/subscriptions.ts` | `web:notifications` | 1 | 1 |
+| `apps/web/src/notifications/subscriptions.vitest.ts` | `web:notifications` | 1 | 1 |
 | `apps/web/src/notifications/worker-entry.ts` | `web:notifications` | 4 | 1 |
 | `apps/web/src/stand/default-template.ts` | `web:stand` | 0 | 0 |
 | `apps/web/src/stand/member-display.ts` | `web:stand` | 0 | 0 |
