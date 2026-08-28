@@ -29,7 +29,7 @@ flowchart LR
   A17["web:lib<br/>9 files"]
   A18["web:meetings<br/>7 files"]
   A19["web:notes<br/>1 files"]
-  A20["web:notifications<br/>5 files"]
+  A20["web:notifications<br/>7 files"]
   A21["web:stand<br/>5 files"]
   A22["web:tooling<br/>2 files"]
   A23["web:types<br/>2 files"]
@@ -98,7 +98,7 @@ flowchart LR
 | `web:lib` | 9 |
 | `web:meetings` | 7 |
 | `web:notes` | 1 |
-| `web:notifications` | 5 |
+| `web:notifications` | 7 |
 | `web:stand` | 5 |
 | `web:tooling` | 2 |
 | `web:types` | 2 |
@@ -129,13 +129,13 @@ flowchart LR
 | `web:callings` | `web:callings` | 4 |
 | `web:db` | `web:db` | 4 |
 | `web:meetings` | `web:meetings` | 4 |
+| `web:notifications` | `web:notifications` | 4 |
 | `web:stand` | `web:stand` | 4 |
 | `web:api` | `web:meetings` | 3 |
 | `web:app` | `web:announcements` | 3 |
 | `web:app` | `web:stand` | 3 |
 | `web:calendar` | `web:calendar` | 3 |
 | `web:lib` | `web:lib` | 3 |
-| `web:notifications` | `web:notifications` | 3 |
 | `package:shared` | `package:shared` | 2 |
 | `web:api` | `web:announcements` | 2 |
 | `web:auth` | `web:db` | 2 |
@@ -200,6 +200,7 @@ flowchart LR
 | `web:imports` | `Node.js` | 2 |
 | `web:notifications` | `bullmq` | 2 |
 | `web:notifications` | `pg` | 2 |
+| `web:notifications` | `vitest` | 2 |
 | `web:stand` | `vitest` | 2 |
 | `web:tooling` | `pg` | 2 |
 | `package:shared` | `zod` | 1 |
@@ -229,7 +230,6 @@ flowchart LR
 | `web:lib` | `@sentry/nextjs` | 1 |
 | `web:lib` | `jspdf` | 1 |
 | `web:lib` | `qrcode` | 1 |
-| `web:notifications` | `vitest` | 1 |
 | `web:ui` | `@testing-library/react` | 1 |
 | `web:ui` | `class-variance-authority` | 1 |
 | `web:ui` | `clsx` | 1 |
@@ -480,6 +480,8 @@ flowchart LR
 | `apps/web/src/meetings/types.ts` | `web:meetings` | 0 | 0 |
 | `apps/web/src/notes/types.ts` | `web:notes` | 0 | 0 |
 | `apps/web/src/notifications/diagnostics.ts` | `web:notifications` | 0 | 1 |
+| `apps/web/src/notifications/events.ts` | `web:notifications` | 0 | 0 |
+| `apps/web/src/notifications/events.vitest.ts` | `web:notifications` | 1 | 1 |
 | `apps/web/src/notifications/queue.ts` | `web:notifications` | 0 | 1 |
 | `apps/web/src/notifications/runner.ts` | `web:notifications` | 0 | 1 |
 | `apps/web/src/notifications/runner.vitest.ts` | `web:notifications` | 1 | 1 |
