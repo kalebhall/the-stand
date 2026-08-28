@@ -223,6 +223,9 @@ Key environment variables (see `.env.example`):
 | `ENCRYPTION_KEY`          | Data encryption key (32 bytes hex)   |
 | `REDIS_URL`               | Redis connection for BullMQ          |
 | `NOTIFICATION_WEBHOOK_URL`| Webhook URL for notifications        |
+| `NOTIFICATION_EMAIL_PROVIDER` | `disabled`, `smtp`, or `webhook` email delivery |
+| `NOTIFICATION_EMAIL_FROM` | Verified sender address for email |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` | SMTP connection settings |
 
 ## Testing Guidelines
 

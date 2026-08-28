@@ -223,6 +223,16 @@ REDIS_URL=redis://127.0.0.1:6379
 
 NOTIFICATION_WEBHOOK_URL=http://127.0.0.1:5678/webhook/the-stand
 
+# Optional email notifications. SMTP is provider-neutral and does not require n8n.
+NOTIFICATION_EMAIL_PROVIDER=disabled
+# Set provider to smtp, then configure these values:
+# NOTIFICATION_EMAIL_FROM=notifications@yourdomain.com
+# SMTP_HOST=smtp.yourprovider.com
+# SMTP_PORT=587
+# SMTP_SECURE=false
+# SMTP_USER=your-smtp-username
+# SMTP_PASSWORD=your-smtp-password
+
 # Logging verbosity for server-side diagnostics
 # Available: debug | info | warn | error
 LOG_LEVEL=info
@@ -249,6 +259,22 @@ Log levels:
 - `error`: Errors only.
 
 Set `LOG_LEVEL` in `/opt/the-stand/app/.env` (or your deployment environment) and restart the app service for changes to take effect.
+
+### Email notifications
+
+Email is disabled by default. To enable it, configure a transactional SMTP account (for example SES, Brevo, Mailgun, Postmark, SMTP2GO, or a hosted mail provider), then set:
+
+```
+NOTIFICATION_EMAIL_PROVIDER=smtp
+NOTIFICATION_EMAIL_FROM=notifications@yourdomain.com
+SMTP_HOST=smtp.yourprovider.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=your-smtp-username
+SMTP_PASSWORD=your-smtp-password
+```
+
+Use `SMTP_SECURE=true` with an implicit TLS provider/port such as 465. Keep `.env` mode `600`; never commit SMTP credentials. The background notification worker must be running, and users must independently enable Email in notification settings. Verify sender-domain DNS (SPF, DKIM, and DMARC) with the provider before enabling production delivery.
 
 For this project, the Google OAuth callback route is:
 
