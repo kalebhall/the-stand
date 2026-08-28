@@ -332,6 +332,40 @@ export const notificationSubscription = pgTable(
   })
 );
 
+export const userNotification = pgTable(
+  'user_notification',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
+    recipientUserId: uuid('recipient_user_id').notNull().references(() => userAccount.id, { onDelete: 'cascade' }),
+    sourceEventId: uuid('source_event_id').notNull().references(() => eventOutbox.id, { onDelete: 'cascade' }),
+    eventType: text('event_type').notNull(),
+    aggregateType: text('aggregate_type').notNull(),
+    aggregateId: uuid('aggregate_id').notNull(),
+    title: text('title').notNull(),
+    summary: text('summary').notNull(),
+    details: jsonb('details'),
+    severity: text('severity').notNull().default('info'),
+    targetUrl: text('target_url'),
+    readAt: timestamp('read_at', { withTimezone: true }),
+    dismissedAt: timestamp('dismissed_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+  },
+  (table) => ({
+    userNotificationRecipientEventUnique: unique().on(table.recipientUserId, table.sourceEventId),
+    userNotificationRecipientWardCreatedIdx: index('user_notification_recipient_ward_created_idx').on(
+      table.recipientUserId,
+      table.wardId,
+      table.createdAt
+    ),
+    userNotificationRecipientWardReadIdx: index('user_notification_recipient_ward_read_idx').on(
+      table.recipientUserId,
+      table.wardId,
+      table.readAt
+    )
+  })
+);
+
 export const publicProgramShare = pgTable(
   'public_program_share',
   {
