@@ -97,4 +97,21 @@ describe('buildMeetingRenderHtml', () => {
     expect(html).toContain('Visible Announcement');
     expect(html).not.toContain('Stand Only Announcement');
   });
+
+  it('renders public program notes for program items', () => {
+    const html = buildMeetingRenderHtml({
+      meetingDate: '2026-01-04',
+      meetingType: 'SACRAMENT',
+      programItems: [{
+        itemType: 'SPEAKER',
+        title: 'Jane Doe',
+        notes: null,
+        programNotes: 'Please welcome our speaker.',
+        hymnNumber: null,
+        hymnTitle: null
+      }]
+    });
+
+    expect(html).toContain('Please welcome our speaker.');
+  });
 });
