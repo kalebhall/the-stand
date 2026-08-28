@@ -19,13 +19,13 @@ flowchart LR
   A7["web:audit<br/>2 files"]
   A8["web:auth<br/>11 files"]
   A9["web:bootstrap.mjs<br/>1 files"]
-  A10["web:calendar<br/>3 files"]
-  A11["web:callings<br/>5 files"]
+  A10["web:calendar<br/>4 files"]
+  A11["web:callings<br/>7 files"]
   A12["web:config<br/>11 files"]
   A13["web:db<br/>7 files"]
   A14["web:hardening<br/>1 files"]
   A15["web:health.mjs<br/>1 files"]
-  A16["web:imports<br/>13 files"]
+  A16["web:imports<br/>14 files"]
   A17["web:lib<br/>9 files"]
   A18["web:meetings<br/>7 files"]
   A19["web:notes<br/>1 files"]
@@ -88,13 +88,13 @@ flowchart LR
 | `web:audit` | 2 |
 | `web:auth` | 11 |
 | `web:bootstrap.mjs` | 1 |
-| `web:calendar` | 3 |
-| `web:callings` | 5 |
+| `web:calendar` | 4 |
+| `web:callings` | 7 |
 | `web:config` | 11 |
 | `web:db` | 7 |
 | `web:hardening` | 1 |
 | `web:health.mjs` | 1 |
-| `web:imports` | 13 |
+| `web:imports` | 14 |
 | `web:lib` | 9 |
 | `web:meetings` | 7 |
 | `web:notes` | 1 |
@@ -121,25 +121,25 @@ flowchart LR
 | `web:api` | `web:callings` | 15 |
 | `web:api` | `web:audit` | 13 |
 | `web:api` | `web:imports` | 10 |
+| `web:imports` | `web:imports` | 9 |
 | `web:app` | `web:meetings` | 8 |
 | `web:auth` | `web:auth` | 8 |
-| `web:imports` | `web:imports` | 8 |
 | `web:api` | `web:notifications` | 4 |
 | `web:app` | `web:callings` | 4 |
+| `web:callings` | `web:callings` | 4 |
 | `web:db` | `web:db` | 4 |
 | `web:meetings` | `web:meetings` | 4 |
 | `web:stand` | `web:stand` | 4 |
 | `web:api` | `web:meetings` | 3 |
 | `web:app` | `web:announcements` | 3 |
 | `web:app` | `web:stand` | 3 |
+| `web:calendar` | `web:calendar` | 3 |
 | `web:lib` | `web:lib` | 3 |
 | `web:notifications` | `web:notifications` | 3 |
 | `package:shared` | `package:shared` | 2 |
 | `web:api` | `web:announcements` | 2 |
 | `web:auth` | `web:db` | 2 |
-| `web:calendar` | `web:calendar` | 2 |
 | `web:calendar` | `web:db` | 2 |
-| `web:callings` | `web:callings` | 2 |
 | `web:config` | `web:lib` | 2 |
 | `web:db` | `web:auth` | 2 |
 | `web:notifications` | `web:db` | 2 |
@@ -175,11 +175,12 @@ flowchart LR
 | `root:tooling` | `Node.js` | 12 |
 | `web:ui` | `next` | 9 |
 | `web:auth` | `next-auth` | 6 |
+| `web:imports` | `vitest` | 5 |
 | `web:app` | `vitest` | 4 |
 | `web:auth` | `vitest` | 4 |
-| `web:imports` | `vitest` | 4 |
 | `web:tooling` | `Node.js` | 4 |
 | `web:api` | `zod` | 3 |
+| `web:callings` | `vitest` | 3 |
 | `web:db` | `drizzle-orm` | 3 |
 | `web:db` | `vitest` | 3 |
 | `web:lib` | `vitest` | 3 |
@@ -189,6 +190,7 @@ flowchart LR
 | `web:api` | `Node.js` | 2 |
 | `web:api` | `pg` | 2 |
 | `web:app` | `next-auth` | 2 |
+| `web:calendar` | `vitest` | 2 |
 | `web:callings` | `pg` | 2 |
 | `web:config` | `@playwright/test` | 2 |
 | `web:config` | `Node.js` | 2 |
@@ -211,8 +213,6 @@ flowchart LR
 | `web:auth` | `next` | 1 |
 | `web:bootstrap.mjs` | `Node.js` | 1 |
 | `web:calendar` | `pg` | 1 |
-| `web:calendar` | `vitest` | 1 |
-| `web:callings` | `vitest` | 1 |
 | `web:config` | `child_process` | 1 |
 | `web:config` | `drizzle-kit` | 1 |
 | `web:config` | `fs` | 1 |
@@ -427,11 +427,14 @@ flowchart LR
 | `apps/web/src/calendar/ics.ts` | `web:calendar` | 0 | 0 |
 | `apps/web/src/calendar/ics.vitest.ts` | `web:calendar` | 1 | 1 |
 | `apps/web/src/calendar/service.ts` | `web:calendar` | 3 | 1 |
+| `apps/web/src/calendar/service.vitest.ts` | `web:calendar` | 1 | 1 |
 | `apps/web/src/callings/lifecycle.ts` | `web:callings` | 0 | 0 |
 | `apps/web/src/callings/lifecycle.vitest.ts` | `web:callings` | 1 | 1 |
 | `apps/web/src/callings/meeting-business.ts` | `web:callings` | 0 | 1 |
+| `apps/web/src/callings/meeting-business.vitest.ts` | `web:callings` | 1 | 1 |
 | `apps/web/src/callings/standard-callings.ts` | `web:callings` | 0 | 0 |
 | `apps/web/src/callings/transition.ts` | `web:callings` | 1 | 1 |
+| `apps/web/src/callings/transition.vitest.ts` | `web:callings` | 1 | 1 |
 | `apps/web/src/db/bootstrap-support-admin.ts` | `web:db` | 3 | 1 |
 | `apps/web/src/db/bootstrap-support-admin.vitest.ts` | `web:db` | 1 | 1 |
 | `apps/web/src/db/client.ts` | `web:db` | 1 | 4 |
@@ -442,6 +445,7 @@ flowchart LR
 | `apps/web/src/hardening/production-readiness.vitest.ts` | `web:hardening` | 0 | 3 |
 | `apps/web/src/health.mjs` | `web:health.mjs` | 1 | 0 |
 | `apps/web/src/imports/bookmarklet.ts` | `web:imports` | 0 | 0 |
+| `apps/web/src/imports/bookmarklet.vitest.ts` | `web:imports` | 1 | 1 |
 | `apps/web/src/imports/callings.ts` | `web:imports` | 1 | 0 |
 | `apps/web/src/imports/callings.vitest.ts` | `web:imports` | 1 | 1 |
 | `apps/web/src/imports/lcr-jobs.ts` | `web:imports` | 0 | 1 |
