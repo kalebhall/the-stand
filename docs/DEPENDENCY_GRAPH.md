@@ -15,7 +15,7 @@ flowchart LR
   A3["root:tooling<br/>6 files"]
   A4["web:announcements<br/>2 files"]
   A5["web:api<br/>65 files"]
-  A6["web:app<br/>82 files"]
+  A6["web:app<br/>84 files"]
   A7["web:audit<br/>2 files"]
   A8["web:auth<br/>11 files"]
   A9["web:bootstrap.mjs<br/>1 files"]
@@ -39,7 +39,7 @@ flowchart LR
   A6 -->|78| A24
   A5 -->|75| A13
   A6 -->|65| A8
-  A6 -->|40| A13
+  A6 -->|38| A13
   A5 -->|23| A17
   A5 -->|15| A11
   A5 -->|13| A7
@@ -86,7 +86,7 @@ flowchart LR
 | `root:tooling` | 6 |
 | `web:announcements` | 2 |
 | `web:api` | 65 |
-| `web:app` | 82 |
+| `web:app` | 84 |
 | `web:audit` | 2 |
 | `web:auth` | 11 |
 | `web:bootstrap.mjs` | 1 |
@@ -115,8 +115,8 @@ flowchart LR
 | `web:app` | `web:ui` | 78 |
 | `web:api` | `web:db` | 75 |
 | `web:app` | `web:auth` | 65 |
-| `web:app` | `web:db` | 40 |
-| `web:app` | `web:app` | 31 |
+| `web:app` | `web:db` | 38 |
+| `web:app` | `web:app` | 33 |
 | `web:api` | `web:lib` | 23 |
 | `web:ui` | `web:ui` | 20 |
 | `web:api` | `web:api` | 19 |
@@ -173,15 +173,15 @@ flowchart LR
 | --- | --- | ---: |
 | `web:app` | `next` | 65 |
 | `web:api` | `next` | 46 |
-| `web:app` | `react` | 19 |
+| `web:app` | `react` | 21 |
 | `web:ui` | `react` | 19 |
 | `web:api` | `vitest` | 18 |
 | `root:tooling` | `Node.js` | 12 |
 | `web:ui` | `next` | 9 |
 | `web:notifications` | `vitest` | 7 |
 | `web:api` | `zod` | 6 |
+| `web:app` | `vitest` | 6 |
 | `web:auth` | `next-auth` | 6 |
-| `web:app` | `vitest` | 5 |
 | `web:imports` | `vitest` | 5 |
 | `web:notifications` | `pg` | 5 |
 | `web:auth` | `vitest` | 4 |
@@ -195,6 +195,8 @@ flowchart LR
 | `root:other` | `Node.js` | 2 |
 | `web:api` | `Node.js` | 2 |
 | `web:api` | `pg` | 2 |
+| `web:app` | `@testing-library/react` | 2 |
+| `web:app` | `@testing-library/user-event` | 2 |
 | `web:app` | `next-auth` | 2 |
 | `web:calendar` | `vitest` | 2 |
 | `web:callings` | `pg` | 2 |
@@ -210,8 +212,6 @@ flowchart LR
 | `package:shared` | `zod` | 1 |
 | `web:announcements` | `vitest` | 1 |
 | `web:api` | `@the-stand/shared` | 1 |
-| `web:app` | `@testing-library/react` | 1 |
-| `web:app` | `@testing-library/user-event` | 1 |
 | `web:app` | `Node.js` | 1 |
 | `web:app` | `next-themes` | 1 |
 | `web:audit` | `pg` | 1 |
@@ -356,7 +356,9 @@ flowchart LR
 | `apps/web/app/members/page.tsx` | `web:app` | 7 | 2 |
 | `apps/web/app/notifications/error.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/notifications/loading.tsx` | `web:app` | 0 | 0 |
-| `apps/web/app/notifications/page.tsx` | `web:app` | 5 | 1 |
+| `apps/web/app/notifications/notification-center.tsx` | `web:app` | 1 | 1 |
+| `apps/web/app/notifications/notification-center.vitest.tsx` | `web:app` | 1 | 4 |
+| `apps/web/app/notifications/page.tsx` | `web:app` | 3 | 1 |
 | `apps/web/app/p/[meetingToken]/route.ts` | `web:app` | 1 | 1 |
 | `apps/web/app/p/[meetingToken]/route.vitest.ts` | `web:app` | 1 | 1 |
 | `apps/web/app/p/ward/[portalToken]/route.ts` | `web:app` | 1 | 1 |
