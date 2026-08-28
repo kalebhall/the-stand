@@ -14,7 +14,7 @@ flowchart LR
   A2["root:other<br/>1 files"]
   A3["root:tooling<br/>6 files"]
   A4["web:announcements<br/>2 files"]
-  A5["web:api<br/>59 files"]
+  A5["web:api<br/>65 files"]
   A6["web:app<br/>79 files"]
   A7["web:audit<br/>2 files"]
   A8["web:auth<br/>11 files"]
@@ -35,17 +35,17 @@ flowchart LR
   A23["web:types<br/>2 files"]
   A24["web:ui<br/>22 files"]
   A25["web:version.mjs<br/>1 files"]
-  A5 -->|79| A8
+  A5 -->|85| A8
   A6 -->|78| A24
-  A5 -->|69| A13
+  A5 -->|75| A13
   A6 -->|64| A8
   A6 -->|40| A13
   A5 -->|23| A17
   A5 -->|15| A11
   A5 -->|13| A7
   A5 -->|10| A16
+  A5 -->|10| A20
   A6 -->|8| A18
-  A5 -->|6| A20
   A6 -->|4| A11
   A5 -->|3| A18
   A6 -->|3| A4
@@ -85,7 +85,7 @@ flowchart LR
 | `root:other` | 1 |
 | `root:tooling` | 6 |
 | `web:announcements` | 2 |
-| `web:api` | 59 |
+| `web:api` | 65 |
 | `web:app` | 79 |
 | `web:audit` | 2 |
 | `web:auth` | 11 |
@@ -111,23 +111,23 @@ flowchart LR
 
 | Importing area | Imported area | Imports |
 | --- | --- | ---: |
-| `web:api` | `web:auth` | 79 |
+| `web:api` | `web:auth` | 85 |
 | `web:app` | `web:ui` | 78 |
-| `web:api` | `web:db` | 69 |
+| `web:api` | `web:db` | 75 |
 | `web:app` | `web:auth` | 64 |
 | `web:app` | `web:db` | 40 |
 | `web:app` | `web:app` | 29 |
 | `web:api` | `web:lib` | 23 |
 | `web:ui` | `web:ui` | 20 |
+| `web:api` | `web:api` | 19 |
 | `web:notifications` | `web:notifications` | 18 |
-| `web:api` | `web:api` | 16 |
 | `web:api` | `web:callings` | 15 |
 | `web:api` | `web:audit` | 13 |
 | `web:api` | `web:imports` | 10 |
+| `web:api` | `web:notifications` | 10 |
 | `web:imports` | `web:imports` | 9 |
 | `web:app` | `web:meetings` | 8 |
 | `web:auth` | `web:auth` | 8 |
-| `web:api` | `web:notifications` | 6 |
 | `web:app` | `web:callings` | 4 |
 | `web:callings` | `web:callings` | 4 |
 | `web:db` | `web:db` | 4 |
@@ -172,17 +172,17 @@ flowchart LR
 | Importing area | Package/runtime | Imports |
 | --- | --- | ---: |
 | `web:app` | `next` | 64 |
-| `web:api` | `next` | 43 |
+| `web:api` | `next` | 46 |
 | `web:ui` | `react` | 19 |
+| `web:api` | `vitest` | 18 |
 | `web:app` | `react` | 17 |
-| `web:api` | `vitest` | 15 |
 | `root:tooling` | `Node.js` | 12 |
 | `web:ui` | `next` | 9 |
 | `web:notifications` | `vitest` | 7 |
+| `web:api` | `zod` | 6 |
 | `web:auth` | `next-auth` | 6 |
 | `web:imports` | `vitest` | 5 |
 | `web:notifications` | `pg` | 5 |
-| `web:api` | `zod` | 4 |
 | `web:app` | `vitest` | 4 |
 | `web:auth` | `vitest` | 4 |
 | `web:tooling` | `Node.js` | 4 |
@@ -309,7 +309,13 @@ flowchart LR
 | `apps/web/app/api/w/[wardId]/notes/route.vitest.ts` | `web:api` | 2 | 1 |
 | `apps/web/app/api/w/[wardId]/notification-subscriptions/route.ts` | `web:api` | 6 | 2 |
 | `apps/web/app/api/w/[wardId]/notification-subscriptions/route.vitest.ts` | `web:api` | 1 | 1 |
+| `apps/web/app/api/w/[wardId]/notifications/[notificationId]/route.ts` | `web:api` | 5 | 2 |
+| `apps/web/app/api/w/[wardId]/notifications/[notificationId]/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/notifications/diagnostics/route.ts` | `web:api` | 5 | 1 |
+| `apps/web/app/api/w/[wardId]/notifications/mark-all-read/route.ts` | `web:api` | 5 | 1 |
+| `apps/web/app/api/w/[wardId]/notifications/mark-all-read/route.vitest.ts` | `web:api` | 1 | 1 |
+| `apps/web/app/api/w/[wardId]/notifications/route.ts` | `web:api` | 6 | 2 |
+| `apps/web/app/api/w/[wardId]/notifications/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/portal/route.ts` | `web:api` | 4 | 2 |
 | `apps/web/app/api/w/[wardId]/users/[userId]/roles/[roleId]/route.ts` | `web:api` | 5 | 1 |
 | `apps/web/app/api/w/[wardId]/users/[userId]/roles/route.ts` | `web:api` | 5 | 1 |
