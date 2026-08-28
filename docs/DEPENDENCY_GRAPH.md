@@ -14,7 +14,7 @@ flowchart LR
   A2["root:other<br/>1 files"]
   A3["root:tooling<br/>6 files"]
   A4["web:announcements<br/>2 files"]
-  A5["web:api<br/>56 files"]
+  A5["web:api<br/>57 files"]
   A6["web:app<br/>79 files"]
   A7["web:audit<br/>2 files"]
   A8["web:auth<br/>11 files"]
@@ -83,7 +83,7 @@ flowchart LR
 | `root:other` | 1 |
 | `root:tooling` | 6 |
 | `web:announcements` | 2 |
-| `web:api` | 56 |
+| `web:api` | 57 |
 | `web:app` | 79 |
 | `web:audit` | 2 |
 | `web:auth` | 11 |
@@ -117,8 +117,8 @@ flowchart LR
 | `web:app` | `web:app` | 29 |
 | `web:api` | `web:lib` | 23 |
 | `web:ui` | `web:ui` | 19 |
+| `web:api` | `web:api` | 15 |
 | `web:api` | `web:callings` | 15 |
-| `web:api` | `web:api` | 13 |
 | `web:api` | `web:audit` | 13 |
 | `web:api` | `web:imports` | 10 |
 | `web:app` | `web:meetings` | 8 |
@@ -171,7 +171,7 @@ flowchart LR
 | `web:api` | `next` | 42 |
 | `web:ui` | `react` | 18 |
 | `web:app` | `react` | 17 |
-| `web:api` | `vitest` | 13 |
+| `web:api` | `vitest` | 14 |
 | `root:tooling` | `Node.js` | 12 |
 | `web:ui` | `next` | 9 |
 | `web:auth` | `next-auth` | 6 |
@@ -299,6 +299,7 @@ flowchart LR
 | `apps/web/app/api/w/[wardId]/members/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/notes/[noteId]/route.ts` | `web:api` | 5 | 2 |
 | `apps/web/app/api/w/[wardId]/notes/route.ts` | `web:api` | 6 | 2 |
+| `apps/web/app/api/w/[wardId]/notes/route.vitest.ts` | `web:api` | 2 | 1 |
 | `apps/web/app/api/w/[wardId]/notifications/diagnostics/route.ts` | `web:api` | 5 | 1 |
 | `apps/web/app/api/w/[wardId]/portal/route.ts` | `web:api` | 4 | 2 |
 | `apps/web/app/api/w/[wardId]/users/[userId]/roles/[roleId]/route.ts` | `web:api` | 5 | 1 |

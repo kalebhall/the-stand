@@ -120,4 +120,18 @@ describe('buildStandRows', () => {
 
     expect(rows[1]).toMatchObject({ kind: 'standard', label: 'Speaker', details: 'Sister Savannah Hall' });
   });
+
+  it('preserves program notes on standard, sustain, release, and business rows', () => {
+    const rows = buildStandRows([
+      { id: 'standard', itemType: 'SPEAKER', title: 'Jane Doe', member: { gender: 'F' }, notes: '', programNotes: 'Public speaker note', hymnNumber: null, hymnTitle: null },
+      { id: 'sustain', itemType: 'SUSTAINING', title: 'John Doe', member: { gender: 'M' }, notes: 'Bishop', programNotes: 'Public sustain note', hymnNumber: null, hymnTitle: null },
+      { id: 'business', itemType: 'WARD_AND_STAKE_BUSINESS', title: '', notes: '', programNotes: 'Public business note', hymnNumber: null, hymnTitle: null }
+    ]);
+
+    expect(rows).toEqual(expect.arrayContaining([
+      expect.objectContaining({ kind: 'standard', programItemId: 'standard', programNotes: 'Public speaker note' }),
+      expect.objectContaining({ kind: 'sustain', programItemId: 'sustain', programNotes: 'Public sustain note' }),
+      expect.objectContaining({ kind: 'ward_business', programItemId: 'business', programNotes: 'Public business note' })
+    ]));
+  });
 });
