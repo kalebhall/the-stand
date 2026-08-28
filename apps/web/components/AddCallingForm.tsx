@@ -68,6 +68,7 @@ export function AddCallingForm({ wardId, standardCallings, onSuccess }: AddCalli
             onChange={setMemberName}
             placeholder="Search or type a name…"
             className={inputClass}
+            minAge={11}
           />
         </div>
         <div className="space-y-1">

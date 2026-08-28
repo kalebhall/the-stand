@@ -11,11 +11,15 @@ import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 import { isAnnouncementActiveForDate } from '@/src/announcements/types';
 import { buildStandRows } from '@/src/stand/render';
+import { formatAtStandMemberName } from '@/src/stand/member-display';
 
 type ProgramItemRow = {
   id: string;
   item_type: string;
   title: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  gender: string | null;
   notes: string | null;
   program_notes: string | null;
   hymn_number: string | null;
@@ -64,10 +68,12 @@ export default async function StandViewPage({
     const meetingDate = meetingResult.rows[0].meeting_date as string;
 
     const programResult = await client.query(
-      `SELECT id, item_type, title, notes, program_notes, hymn_number, hymn_title
-         FROM meeting_program_item
-        WHERE meeting_id = $1 AND ward_id = $2
-        ORDER BY sequence ASC`,
+      `SELECT i.id, i.item_type, i.title, i.notes, i.program_notes, i.hymn_number, i.hymn_title,
+              m.first_name, m.last_name, m.gender
+         FROM meeting_program_item i
+         LEFT JOIN member m ON m.ward_id = i.ward_id AND m.full_name = i.title AND m.archived_at IS NULL
+        WHERE i.meeting_id = $1::uuid AND i.ward_id = $2::uuid
+        ORDER BY i.sequence ASC`,
       [meetingId, session.activeWardId]
     );
 
@@ -85,10 +91,12 @@ export default async function StandViewPage({
     );
 
     const businessLinesResult = await client.query(
-      `SELECT id, member_name, calling_name, action_type, status
-         FROM meeting_business_line
-        WHERE meeting_id = $1::uuid AND ward_id = $2::uuid
-        ORDER BY created_at ASC`,
+      `SELECT b.id, b.member_name, b.calling_name, b.action_type, b.status,
+              m.first_name, m.last_name, m.gender
+         FROM meeting_business_line b
+         LEFT JOIN member m ON m.ward_id = b.ward_id AND m.full_name = b.member_name AND m.archived_at IS NULL
+        WHERE b.meeting_id = $1::uuid AND b.ward_id = $2::uuid
+        ORDER BY b.created_at ASC`,
       [meetingId, session.activeWardId]
     );
 
@@ -133,7 +141,18 @@ export default async function StandViewPage({
       }));
 
     const template = templateResult.rows[0] as TemplateRow | undefined;
-    const businessLines = businessLinesResult.rows as BusinessLine[];
+    const businessLines = (businessLinesResult.rows as Array<BusinessLine & {
+      first_name: string | null;
+      last_name: string | null;
+      gender: string | null;
+    }>).map((line) => ({
+      ...line,
+      member_name: formatAtStandMemberName(line.member_name, {
+        firstName: line.first_name,
+        lastName: line.last_name,
+        gender: line.gender
+      }, line.calling_name)
+    }));
     const notes = notesResult.rows as Array<InternalNoteRow & { program_item_id: string }>;
     const canUseNotes = canUseInternalNotes({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId);
     const canManage = canManageCallings({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId);
@@ -142,6 +161,7 @@ export default async function StandViewPage({
         id: item.id,
         itemType: item.item_type,
         title: item.title,
+        member: { firstName: item.first_name, lastName: item.last_name, gender: item.gender },
         notes: item.notes,
         programNotes: item.program_notes,
         hymnNumber: item.hymn_number,

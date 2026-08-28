@@ -9,6 +9,7 @@ describe('buildStandRows', () => {
         id: 'item-sustain',
         itemType: 'SUSTAINING',
         title: 'Jane Smith',
+        member: { gender: 'F' },
         notes: 'Relief Society President',
         hymnNumber: null,
         hymnTitle: null
@@ -22,11 +23,11 @@ describe('buildStandRows', () => {
 
     expect(rows[1]).toMatchObject({
       kind: 'sustain',
-      summary: 'Jane Smith — Relief Society President'
+      summary: 'President Jane Smith — Relief Society President'
     });
 
     if (rows[1].kind === 'sustain') {
-      expect(rows[1].segments.some((segment) => segment.bold && segment.text === 'Jane Smith')).toBe(true);
+      expect(rows[1].segments.some((segment) => segment.bold && segment.text === 'President Jane Smith')).toBe(true);
       expect(rows[1].segments.some((segment) => segment.bold && segment.text === 'Relief Society President')).toBe(true);
     }
   });
@@ -46,6 +47,7 @@ describe('buildStandRows', () => {
           id: 'item-release',
           itemType: 'RELEASE',
           title: 'John Doe',
+          member: { gender: 'M' },
           notes: 'Elders Quorum President',
           hymnNumber: null,
           hymnTitle: null
@@ -60,9 +62,9 @@ describe('buildStandRows', () => {
     expect(rows[0]).toEqual({ kind: 'welcome', text: 'Welcome friends.' });
     expect(rows[1]).toEqual({ kind: 'standard', programItemId: 'item-opening', label: 'Opening Hymn', details: '1 — The Morning Breaks' });
 
-    expect(rows[2]).toMatchObject({ kind: 'release', summary: 'John Doe — Elders Quorum President' });
+    expect(rows[2]).toMatchObject({ kind: 'release', summary: 'President John Doe — Elders Quorum President' });
     if (rows[2].kind === 'release') {
-      expect(rows[2].segments.filter((segment) => segment.bold).map((segment) => segment.text)).toEqual(['John Doe', 'Elders Quorum President']);
+      expect(rows[2].segments.filter((segment) => segment.bold).map((segment) => segment.text)).toEqual(['President John Doe', 'Elders Quorum President']);
     }
   });
 

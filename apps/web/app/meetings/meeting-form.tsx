@@ -342,6 +342,8 @@ export function MeetingForm({
                       onChange={(value) => updateProgramItem(index, 'title', value)}
                       className="w-full rounded-md border px-3 py-2"
                       placeholder="Name"
+                      minAge={item.itemType === 'SPEAKER' ? 11 : undefined}
+                      leadershipOnly={item.itemType === 'PRESIDING' || item.itemType === 'CONDUCTING'}
                     />
                   ) : item.itemType === ANNOUNCEMENT_ITEM_TYPE ? (
                     <div className="rounded-md border bg-muted p-3 text-sm">
