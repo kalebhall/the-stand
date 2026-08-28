@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { boolean, date, integer, jsonb, pgTable, text, timestamp, unique, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
+import { boolean, date, index, integer, jsonb, pgTable, text, timestamp, unique, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 
 export const stake = pgTable('stake', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -302,6 +302,33 @@ export const notificationDelivery = pgTable(
   },
   (table) => ({
     notificationDeliveryEventChannelUnique: unique().on(table.eventOutboxId, table.channel)
+  })
+);
+
+export const notificationSubscription = pgTable(
+  'notification_subscription',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id').notNull().references(() => userAccount.id, { onDelete: 'cascade' }),
+    category: text('category').notNull(),
+    eventType: text('event_type').notNull(),
+    channel: text('channel').notNull(),
+    enabled: boolean('enabled').notNull().default(true),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
+  },
+  (table) => ({
+    notificationSubscriptionWardUserEventChannelUnique: unique().on(
+      table.wardId,
+      table.userId,
+      table.eventType,
+      table.channel
+    ),
+    notificationSubscriptionWardUserIdx: index('notification_subscription_ward_user_idx').on(
+      table.wardId,
+      table.userId
+    )
   })
 );
 
