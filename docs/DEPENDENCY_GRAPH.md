@@ -240,6 +240,7 @@ flowchart LR
 | `web:lib` | `@sentry/nextjs` | 1 |
 | `web:lib` | `jspdf` | 1 |
 | `web:lib` | `qrcode` | 1 |
+| `web:notifications` | `nodemailer` | 1 |
 | `web:ui` | `class-variance-authority` | 1 |
 | `web:ui` | `clsx` | 1 |
 | `web:ui` | `next-auth` | 1 |
@@ -503,7 +504,7 @@ flowchart LR
 | `apps/web/src/meetings/types.ts` | `web:meetings` | 0 | 0 |
 | `apps/web/src/notes/types.ts` | `web:notes` | 0 | 0 |
 | `apps/web/src/notifications/diagnostics.ts` | `web:notifications` | 0 | 1 |
-| `apps/web/src/notifications/email.ts` | `web:notifications` | 2 | 0 |
+| `apps/web/src/notifications/email.ts` | `web:notifications` | 2 | 1 |
 | `apps/web/src/notifications/email.vitest.ts` | `web:notifications` | 1 | 1 |
 | `apps/web/src/notifications/events.ts` | `web:notifications` | 0 | 0 |
 | `apps/web/src/notifications/events.vitest.ts` | `web:notifications` | 1 | 1 |

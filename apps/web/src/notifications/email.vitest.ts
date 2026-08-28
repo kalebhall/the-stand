@@ -12,7 +12,15 @@ describe('notification email', () => {
   });
 
   it('fails deterministically when provider is unavailable', async () => {
+    vi.stubEnv('NOTIFICATION_EMAIL_PROVIDER', 'disabled');
     vi.stubEnv('NOTIFICATION_EMAIL_WEBHOOK_URL', '');
     await expect(deliverNotificationEmail({ to: 'person@example.com', subject: 'x', text: 'x', html: '<p>x</p>' })).rejects.toThrow('Email delivery unavailable');
+  });
+
+  it('requires portable SMTP configuration when SMTP is selected', async () => {
+    vi.stubEnv('NOTIFICATION_EMAIL_PROVIDER', 'smtp');
+    vi.stubEnv('SMTP_HOST', '');
+    vi.stubEnv('NOTIFICATION_EMAIL_FROM', '');
+    await expect(deliverNotificationEmail({ to: 'person@example.com', subject: 'x', text: 'x', html: '<p>x</p>' })).rejects.toThrow('SMTP_HOST');
   });
 });
