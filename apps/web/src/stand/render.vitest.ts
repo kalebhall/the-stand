@@ -104,4 +104,20 @@ describe('buildStandRows', () => {
       { kind: 'standard', programItemId: 'item-opening', label: 'Opening Hymn', details: '1 — The Morning Breaks' }
     ]);
   });
+
+  it('formats person program items with canonical names and gender titles', () => {
+    const rows = buildStandRows([
+      {
+        id: 'item-speaker',
+        itemType: 'SPEAKER',
+        title: 'Hall, Savannah Marie',
+        member: { firstName: 'Savannah Marie', lastName: 'Hall', gender: 'F' },
+        notes: '',
+        hymnNumber: null,
+        hymnTitle: null
+      }
+    ]);
+
+    expect(rows[1]).toMatchObject({ kind: 'standard', label: 'Speaker', details: 'Sister Savannah Hall' });
+  });
 });

@@ -60,7 +60,7 @@ describe('GET /api/w/[wardId]/members', () => {
     queryMock
       .mockResolvedValueOnce({}) // BEGIN
       .mockResolvedValueOnce({
-        rows: [{ id: 'm-1', full_name: 'Doe, John', age: 42 }]
+        rows: [{ id: 'm-1', full_name: 'Doe, John', age: 42, gender: 'M' }]
       })
       .mockResolvedValueOnce({}); // COMMIT
 
@@ -70,7 +70,7 @@ describe('GET /api/w/[wardId]/members', () => {
 
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({
-      members: [{ id: 'm-1', fullName: 'Doe, John', age: 42 }]
+      members: [{ id: 'm-1', fullName: 'Doe, John', age: 42, gender: 'M' }]
     });
 
     expect(queryMock).toHaveBeenNthCalledWith(1, 'BEGIN');
@@ -81,5 +81,29 @@ describe('GET /api/w/[wardId]/members', () => {
     );
     expect(queryMock).toHaveBeenNthCalledWith(3, 'COMMIT');
     expect(releaseMock).toHaveBeenCalled();
+  });
+
+  it('enforces age and leadership filters in member lookup queries', async () => {
+    queryMock
+      .mockResolvedValueOnce({}) // BEGIN
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({}); // COMMIT
+
+    const response = await GET(
+      new Request('http://localhost/api/w/ward-1/members?minAge=11&leadershipOnly=true&limit=25'),
+      { params: Promise.resolve({ wardId: 'ward-1' }) }
+    );
+
+    expect(response.status).toBe(200);
+    const [, queryCall] = queryMock.mock.calls;
+    const [query, params] = queryCall;
+    expect(query).toContain('age >= $2::int');
+    expect(query).toContain('ca.is_active = TRUE');
+    expect(query).toContain("'stake presidency'");
+    expect(query).toContain("'bishopric'");
+    expect(query).toContain("'district presidency'");
+    expect(query).toContain("'branch presidency'");
+    expect(query).toContain('LIMIT $3::int');
+    expect(params).toEqual(['ward-1', 11, 25]);
   });
 });
