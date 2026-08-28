@@ -3,6 +3,9 @@ import path from 'node:path';
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
+  esbuild: {
+    jsx: 'automatic'
+  },
   resolve: {
     alias: {
       '@': path.resolve(import.meta.dirname, '.'),
@@ -11,6 +14,7 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
-    include: ['app/**/*.vitest.ts', 'lib/**/*.vitest.ts', 'src/**/*.vitest.ts']
+    setupFiles: ['./test/setup.ts'],
+    include: ['app/**/*.vitest.{ts,tsx}', 'components/**/*.vitest.{ts,tsx}', 'lib/**/*.vitest.{ts,tsx}', 'src/**/*.vitest.{ts,tsx}']
   }
 });
