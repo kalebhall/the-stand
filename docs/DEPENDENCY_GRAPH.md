@@ -15,7 +15,7 @@ flowchart LR
   A3["root:tooling<br/>6 files"]
   A4["web:announcements<br/>2 files"]
   A5["web:api<br/>65 files"]
-  A6["web:app<br/>79 files"]
+  A6["web:app<br/>82 files"]
   A7["web:audit<br/>2 files"]
   A8["web:auth<br/>11 files"]
   A9["web:bootstrap.mjs<br/>1 files"]
@@ -38,7 +38,7 @@ flowchart LR
   A5 -->|85| A8
   A6 -->|78| A24
   A5 -->|75| A13
-  A6 -->|64| A8
+  A6 -->|65| A8
   A6 -->|40| A13
   A5 -->|23| A17
   A5 -->|15| A11
@@ -51,6 +51,7 @@ flowchart LR
   A6 -->|3| A4
   A6 -->|3| A21
   A5 -->|2| A4
+  A6 -->|2| A20
   A8 -->|2| A13
   A10 -->|2| A13
   A12 -->|2| A17
@@ -61,7 +62,6 @@ flowchart LR
   A5 -->|1| A19
   A6 -->|1| A10
   A6 -->|1| A17
-  A6 -->|1| A20
   A8 -->|1| A17
   A12 -->|1| A9
   A12 -->|1| A15
@@ -86,7 +86,7 @@ flowchart LR
 | `root:tooling` | 6 |
 | `web:announcements` | 2 |
 | `web:api` | 65 |
-| `web:app` | 79 |
+| `web:app` | 82 |
 | `web:audit` | 2 |
 | `web:auth` | 11 |
 | `web:bootstrap.mjs` | 1 |
@@ -114,9 +114,9 @@ flowchart LR
 | `web:api` | `web:auth` | 85 |
 | `web:app` | `web:ui` | 78 |
 | `web:api` | `web:db` | 75 |
-| `web:app` | `web:auth` | 64 |
+| `web:app` | `web:auth` | 65 |
 | `web:app` | `web:db` | 40 |
-| `web:app` | `web:app` | 29 |
+| `web:app` | `web:app` | 31 |
 | `web:api` | `web:lib` | 23 |
 | `web:ui` | `web:ui` | 20 |
 | `web:api` | `web:api` | 19 |
@@ -140,6 +140,7 @@ flowchart LR
 | `web:lib` | `web:lib` | 3 |
 | `package:shared` | `package:shared` | 2 |
 | `web:api` | `web:announcements` | 2 |
+| `web:app` | `web:notifications` | 2 |
 | `web:auth` | `web:db` | 2 |
 | `web:calendar` | `web:db` | 2 |
 | `web:config` | `web:lib` | 2 |
@@ -151,7 +152,6 @@ flowchart LR
 | `web:api` | `web:notes` | 1 |
 | `web:app` | `web:calendar` | 1 |
 | `web:app` | `web:lib` | 1 |
-| `web:app` | `web:notifications` | 1 |
 | `web:audit` | `web:audit` | 1 |
 | `web:auth` | `web:lib` | 1 |
 | `web:config` | `web:bootstrap.mjs` | 1 |
@@ -171,19 +171,19 @@ flowchart LR
 
 | Importing area | Package/runtime | Imports |
 | --- | --- | ---: |
-| `web:app` | `next` | 64 |
+| `web:app` | `next` | 65 |
 | `web:api` | `next` | 46 |
+| `web:app` | `react` | 19 |
 | `web:ui` | `react` | 19 |
 | `web:api` | `vitest` | 18 |
-| `web:app` | `react` | 17 |
 | `root:tooling` | `Node.js` | 12 |
 | `web:ui` | `next` | 9 |
 | `web:notifications` | `vitest` | 7 |
 | `web:api` | `zod` | 6 |
 | `web:auth` | `next-auth` | 6 |
+| `web:app` | `vitest` | 5 |
 | `web:imports` | `vitest` | 5 |
 | `web:notifications` | `pg` | 5 |
-| `web:app` | `vitest` | 4 |
 | `web:auth` | `vitest` | 4 |
 | `web:tooling` | `Node.js` | 4 |
 | `web:callings` | `vitest` | 3 |
@@ -210,6 +210,8 @@ flowchart LR
 | `package:shared` | `zod` | 1 |
 | `web:announcements` | `vitest` | 1 |
 | `web:api` | `@the-stand/shared` | 1 |
+| `web:app` | `@testing-library/react` | 1 |
+| `web:app` | `@testing-library/user-event` | 1 |
 | `web:app` | `Node.js` | 1 |
 | `web:app` | `next-themes` | 1 |
 | `web:audit` | `pg` | 1 |
@@ -366,6 +368,9 @@ flowchart LR
 | `apps/web/app/sentry-example-page/page.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/settings/audit-log/WardAuditLogClient.tsx` | `web:app` | 1 | 1 |
 | `apps/web/app/settings/audit-log/page.tsx` | `web:app` | 8 | 2 |
+| `apps/web/app/settings/notifications/notification-subscription-settings.tsx` | `web:app` | 1 | 1 |
+| `apps/web/app/settings/notifications/notification-subscription-settings.vitest.tsx` | `web:app` | 1 | 4 |
+| `apps/web/app/settings/notifications/page.tsx` | `web:app` | 2 | 1 |
 | `apps/web/app/settings/public-portal/error.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/settings/public-portal/loading.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/settings/public-portal/page.tsx` | `web:app` | 7 | 3 |
