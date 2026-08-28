@@ -63,6 +63,7 @@ flowchart LR
   A6 -->|1| A10
   A6 -->|1| A17
   A8 -->|1| A17
+  A10 -->|1| A20
   A12 -->|1| A9
   A12 -->|1| A15
   A15 -->|1| A25
@@ -154,6 +155,7 @@ flowchart LR
 | `web:app` | `web:lib` | 1 |
 | `web:audit` | `web:audit` | 1 |
 | `web:auth` | `web:lib` | 1 |
+| `web:calendar` | `web:notifications` | 1 |
 | `web:config` | `web:bootstrap.mjs` | 1 |
 | `web:config` | `web:health.mjs` | 1 |
 | `web:health.mjs` | `web:version.mjs` | 1 |
@@ -451,7 +453,7 @@ flowchart LR
 | `apps/web/src/bootstrap.mjs` | `web:bootstrap.mjs` | 0 | 1 |
 | `apps/web/src/calendar/ics.ts` | `web:calendar` | 0 | 0 |
 | `apps/web/src/calendar/ics.vitest.ts` | `web:calendar` | 1 | 1 |
-| `apps/web/src/calendar/service.ts` | `web:calendar` | 3 | 1 |
+| `apps/web/src/calendar/service.ts` | `web:calendar` | 4 | 1 |
 | `apps/web/src/calendar/service.vitest.ts` | `web:calendar` | 1 | 1 |
 | `apps/web/src/callings/lifecycle.ts` | `web:callings` | 0 | 0 |
 | `apps/web/src/callings/lifecycle.vitest.ts` | `web:callings` | 1 | 1 |
