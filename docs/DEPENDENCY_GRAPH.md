@@ -375,8 +375,8 @@ flowchart LR
 | `apps/web/app/settings/audit-log/page.tsx` | `web:app` | 8 | 2 |
 | `apps/web/app/settings/notifications/notification-subscription-settings.tsx` | `web:app` | 1 | 1 |
 | `apps/web/app/settings/notifications/notification-subscription-settings.vitest.tsx` | `web:app` | 1 | 4 |
-| `apps/web/app/settings/notifications/page.tsx` | `web:app` | 1 | 1 |
-| `apps/web/app/settings/page.tsx` | `web:app` | 5 | 1 |
+| `apps/web/app/settings/notifications/page.tsx` | `web:app` | 2 | 1 |
+| `apps/web/app/settings/page.tsx` | `web:app` | 4 | 1 |
 | `apps/web/app/settings/public-portal/error.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/settings/public-portal/loading.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/settings/public-portal/page.tsx` | `web:app` | 7 | 3 |

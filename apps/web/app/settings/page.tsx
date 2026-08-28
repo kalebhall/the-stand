@@ -2,7 +2,6 @@ import Link from 'next/link';
 
 import { ChangePasswordForm } from '@/app/account/change-password/change-password-form';
 import { ThemeToggle } from '@/app/account/preferences/theme-toggle';
-import { NotificationSubscriptionSettings } from './notifications/notification-subscription-settings';
 import { requireAuthenticatedSession } from '@/src/auth/guards';
 import { canRunImports, hasRole } from '@/src/auth/roles';
 
@@ -44,26 +43,17 @@ export default async function SettingsPage() {
         </section>
       )}
 
-      {canManageNotifications && wardId && (
-        <section className="space-y-4 rounded-lg border bg-card p-5">
-          <div>
-            <h2 className="border-b pb-2 text-xl font-medium">Notifications</h2>
-            <p className="mt-2 text-sm text-muted-foreground">Choose which ward updates appear in the app or are sent by email.</p>
-          </div>
-          <NotificationSubscriptionSettings wardId={wardId} hasUsableEmail={Boolean(session.user.email?.trim())} />
-        </section>
-      )}
-
-      {isStandAdmin && wardId && (
+      {(isStandAdmin || canManageNotifications) && wardId && (
         <section className="space-y-4 rounded-lg border bg-card p-5">
           <div>
             <h2 className="border-b pb-2 text-xl font-medium">Ward settings</h2>
             <p className="mt-2 text-sm text-muted-foreground">Manage ward access and program configuration.</p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
-            <SettingsLink href="/settings/users" label="Ward user management" />
-            <SettingsLink href="/settings/stand-script" label="Stand script templates" />
-            <SettingsLink href="/settings/public-portal" label="Public portal" />
+            {isStandAdmin && <SettingsLink href="/settings/users" label="Ward user management" />}
+            {isStandAdmin && <SettingsLink href="/settings/stand-script" label="Stand script templates" />}
+            {isStandAdmin && <SettingsLink href="/settings/public-portal" label="Public portal" />}
+            {canManageNotifications && <SettingsLink href="/settings/notifications" label="Notification settings" />}
             {canViewActivityLog && <SettingsLink href="/settings/audit-log" label="Activity log" />}
           </div>
         </section>
