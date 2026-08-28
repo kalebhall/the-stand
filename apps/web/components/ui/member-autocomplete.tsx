@@ -6,6 +6,7 @@ type Member = {
   id: string;
   fullName: string;
   age: number | null;
+  gender: string | null;
 };
 
 type MemberAutocompleteProps = {
@@ -14,9 +15,11 @@ type MemberAutocompleteProps = {
   onChange: (value: string) => void;
   placeholder?: string;
   className?: string;
+  minAge?: number;
+  leadershipOnly?: boolean;
 };
 
-export function MemberAutocomplete({ wardId, value, onChange, placeholder, className }: MemberAutocompleteProps) {
+export function MemberAutocomplete({ wardId, value, onChange, placeholder, className, minAge, leadershipOnly }: MemberAutocompleteProps) {
   const [members, setMembers] = useState<Member[]>([]);
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
@@ -37,6 +40,8 @@ export function MemberAutocomplete({ wardId, value, onChange, placeholder, class
     try {
       const search = query.trim();
       const params = new URLSearchParams({ limit: '50' });
+      if (minAge !== undefined) params.set('minAge', String(minAge));
+      if (leadershipOnly) params.set('leadershipOnly', 'true');
       if (search) params.set('q', search);
       const res = await fetch(`/api/w/${wardId}/members?${params.toString()}`);
       if (!res.ok) return;
@@ -90,7 +95,7 @@ export function MemberAutocomplete({ wardId, value, onChange, placeholder, class
     }, 200);
 
     return () => clearTimeout(timeout);
-  }, [value, wardId, open]);
+  }, [value, wardId, open, minAge, leadershipOnly]);
 
   useEffect(() => {
     if (activeIndex >= 0 && listRef.current) {
