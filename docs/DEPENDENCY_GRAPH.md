@@ -21,7 +21,7 @@ flowchart LR
   A9["web:bootstrap.mjs<br/>1 files"]
   A10["web:calendar<br/>4 files"]
   A11["web:callings<br/>7 files"]
-  A12["web:config<br/>11 files"]
+  A12["web:config<br/>12 files"]
   A13["web:db<br/>7 files"]
   A14["web:hardening<br/>1 files"]
   A15["web:health.mjs<br/>1 files"]
@@ -33,7 +33,7 @@ flowchart LR
   A21["web:stand<br/>5 files"]
   A22["web:tooling<br/>2 files"]
   A23["web:types<br/>2 files"]
-  A24["web:ui<br/>21 files"]
+  A24["web:ui<br/>22 files"]
   A25["web:version.mjs<br/>1 files"]
   A6 -->|78| A24
   A5 -->|77| A8
@@ -90,7 +90,7 @@ flowchart LR
 | `web:bootstrap.mjs` | 1 |
 | `web:calendar` | 4 |
 | `web:callings` | 7 |
-| `web:config` | 11 |
+| `web:config` | 12 |
 | `web:db` | 7 |
 | `web:hardening` | 1 |
 | `web:health.mjs` | 1 |
@@ -102,7 +102,7 @@ flowchart LR
 | `web:stand` | 5 |
 | `web:tooling` | 2 |
 | `web:types` | 2 |
-| `web:ui` | 21 |
+| `web:ui` | 22 |
 | `web:version.mjs` | 1 |
 
 ## Internal dependencies
@@ -116,7 +116,7 @@ flowchart LR
 | `web:app` | `web:db` | 40 |
 | `web:app` | `web:app` | 29 |
 | `web:api` | `web:lib` | 23 |
-| `web:ui` | `web:ui` | 19 |
+| `web:ui` | `web:ui` | 20 |
 | `web:api` | `web:api` | 15 |
 | `web:api` | `web:callings` | 15 |
 | `web:api` | `web:audit` | 13 |
@@ -169,7 +169,7 @@ flowchart LR
 | --- | --- | ---: |
 | `web:app` | `next` | 64 |
 | `web:api` | `next` | 42 |
-| `web:ui` | `react` | 18 |
+| `web:ui` | `react` | 19 |
 | `web:app` | `react` | 17 |
 | `web:api` | `vitest` | 14 |
 | `root:tooling` | `Node.js` | 12 |
@@ -213,6 +213,7 @@ flowchart LR
 | `web:auth` | `next` | 1 |
 | `web:bootstrap.mjs` | `Node.js` | 1 |
 | `web:calendar` | `pg` | 1 |
+| `web:config` | `@testing-library/jest-dom` | 1 |
 | `web:config` | `child_process` | 1 |
 | `web:config` | `drizzle-kit` | 1 |
 | `web:config` | `fs` | 1 |
@@ -229,11 +230,13 @@ flowchart LR
 | `web:lib` | `jspdf` | 1 |
 | `web:lib` | `qrcode` | 1 |
 | `web:notifications` | `vitest` | 1 |
+| `web:ui` | `@testing-library/react` | 1 |
 | `web:ui` | `class-variance-authority` | 1 |
 | `web:ui` | `clsx` | 1 |
 | `web:ui` | `next-auth` | 1 |
 | `web:ui` | `next-themes` | 1 |
 | `web:ui` | `tailwind-merge` | 1 |
+| `web:ui` | `vitest` | 1 |
 
 ## File index
 
@@ -391,6 +394,7 @@ flowchart LR
 | `apps/web/components/lcr-extractor-instructions.tsx` | `web:ui` | 2 | 1 |
 | `apps/web/components/public-portal/PublicLinkQrCard.tsx` | `web:ui` | 2 | 1 |
 | `apps/web/components/site-logo.tsx` | `web:ui` | 0 | 2 |
+| `apps/web/components/site-logo.vitest.tsx` | `web:ui` | 1 | 3 |
 | `apps/web/components/theme-provider.tsx` | `web:ui` | 0 | 2 |
 | `apps/web/components/ui/button.tsx` | `web:ui` | 1 | 2 |
 | `apps/web/components/ui/calling-autocomplete.tsx` | `web:ui` | 0 | 1 |
@@ -488,6 +492,7 @@ flowchart LR
 | `apps/web/src/types/external-modules.d.ts` | `web:types` | 0 | 0 |
 | `apps/web/src/types/pg.d.ts` | `web:types` | 0 | 0 |
 | `apps/web/src/version.mjs` | `web:version.mjs` | 0 | 0 |
+| `apps/web/test/setup.ts` | `web:config` | 0 | 1 |
 | `apps/web/vitest.config.ts` | `web:config` | 0 | 2 |
 | `health.test.js` | `root:other` | 1 | 2 |
 | `packages/shared/eslint.config.js` | `package:shared` | 0 | 0 |
