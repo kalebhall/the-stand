@@ -33,7 +33,7 @@ flowchart LR
   A21["web:stand<br/>5 files"]
   A22["web:tooling<br/>2 files"]
   A23["web:types<br/>2 files"]
-  A24["web:ui<br/>22 files"]
+  A24["web:ui<br/>24 files"]
   A25["web:version.mjs<br/>1 files"]
   A5 -->|85| A8
   A6 -->|78| A24
@@ -104,7 +104,7 @@ flowchart LR
 | `web:stand` | 5 |
 | `web:tooling` | 2 |
 | `web:types` | 2 |
-| `web:ui` | 22 |
+| `web:ui` | 24 |
 | `web:version.mjs` | 1 |
 
 ## Internal dependencies
@@ -118,7 +118,7 @@ flowchart LR
 | `web:app` | `web:db` | 38 |
 | `web:app` | `web:app` | 33 |
 | `web:api` | `web:lib` | 23 |
-| `web:ui` | `web:ui` | 20 |
+| `web:ui` | `web:ui` | 22 |
 | `web:api` | `web:api` | 19 |
 | `web:notifications` | `web:notifications` | 18 |
 | `web:api` | `web:callings` | 15 |
@@ -174,10 +174,10 @@ flowchart LR
 | `web:app` | `next` | 65 |
 | `web:api` | `next` | 46 |
 | `web:app` | `react` | 21 |
-| `web:ui` | `react` | 19 |
+| `web:ui` | `react` | 21 |
 | `web:api` | `vitest` | 18 |
 | `root:tooling` | `Node.js` | 12 |
-| `web:ui` | `next` | 9 |
+| `web:ui` | `next` | 10 |
 | `web:notifications` | `vitest` | 7 |
 | `web:api` | `zod` | 6 |
 | `web:app` | `vitest` | 6 |
@@ -209,6 +209,8 @@ flowchart LR
 | `web:notifications` | `bullmq` | 2 |
 | `web:stand` | `vitest` | 2 |
 | `web:tooling` | `pg` | 2 |
+| `web:ui` | `@testing-library/react` | 2 |
+| `web:ui` | `vitest` | 2 |
 | `package:shared` | `zod` | 1 |
 | `web:announcements` | `vitest` | 1 |
 | `web:api` | `@the-stand/shared` | 1 |
@@ -236,13 +238,11 @@ flowchart LR
 | `web:lib` | `@sentry/nextjs` | 1 |
 | `web:lib` | `jspdf` | 1 |
 | `web:lib` | `qrcode` | 1 |
-| `web:ui` | `@testing-library/react` | 1 |
 | `web:ui` | `class-variance-authority` | 1 |
 | `web:ui` | `clsx` | 1 |
 | `web:ui` | `next-auth` | 1 |
 | `web:ui` | `next-themes` | 1 |
 | `web:ui` | `tailwind-merge` | 1 |
-| `web:ui` | `vitest` | 1 |
 
 ## File index
 
@@ -407,10 +407,12 @@ flowchart LR
 | `apps/web/components/StandardCallingsManager.tsx` | `web:ui` | 1 | 2 |
 | `apps/web/components/WardBusinessSection.tsx` | `web:ui` | 2 | 2 |
 | `apps/web/components/app-navigation.tsx` | `web:ui` | 1 | 0 |
-| `apps/web/components/app-shell.tsx` | `web:ui` | 6 | 4 |
+| `apps/web/components/app-shell.tsx` | `web:ui` | 7 | 4 |
 | `apps/web/components/conducting-mode-context.tsx` | `web:ui` | 0 | 1 |
 | `apps/web/components/deployment-watcher.tsx` | `web:ui` | 0 | 1 |
 | `apps/web/components/lcr-extractor-instructions.tsx` | `web:ui` | 2 | 1 |
+| `apps/web/components/notification-bell.tsx` | `web:ui` | 0 | 2 |
+| `apps/web/components/notification-bell.vitest.tsx` | `web:ui` | 1 | 3 |
 | `apps/web/components/public-portal/PublicLinkQrCard.tsx` | `web:ui` | 2 | 1 |
 | `apps/web/components/site-logo.tsx` | `web:ui` | 0 | 2 |
 | `apps/web/components/site-logo.vitest.tsx` | `web:ui` | 1 | 3 |
