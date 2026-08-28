@@ -15,7 +15,7 @@ flowchart LR
   A3["root:tooling<br/>6 files"]
   A4["web:announcements<br/>2 files"]
   A5["web:api<br/>65 files"]
-  A6["web:app<br/>84 files"]
+  A6["web:app<br/>85 files"]
   A7["web:audit<br/>2 files"]
   A8["web:auth<br/>11 files"]
   A9["web:bootstrap.mjs<br/>1 files"]
@@ -38,7 +38,7 @@ flowchart LR
   A5 -->|85| A8
   A6 -->|78| A24
   A5 -->|75| A13
-  A6 -->|65| A8
+  A6 -->|67| A8
   A6 -->|38| A13
   A5 -->|37| A20
   A5 -->|23| A17
@@ -87,7 +87,7 @@ flowchart LR
 | `root:tooling` | 6 |
 | `web:announcements` | 2 |
 | `web:api` | 65 |
-| `web:app` | 84 |
+| `web:app` | 85 |
 | `web:audit` | 2 |
 | `web:auth` | 11 |
 | `web:bootstrap.mjs` | 1 |
@@ -115,7 +115,7 @@ flowchart LR
 | `web:api` | `web:auth` | 85 |
 | `web:app` | `web:ui` | 78 |
 | `web:api` | `web:db` | 75 |
-| `web:app` | `web:auth` | 65 |
+| `web:app` | `web:auth` | 67 |
 | `web:app` | `web:db` | 38 |
 | `web:api` | `web:notifications` | 37 |
 | `web:app` | `web:app` | 33 |
@@ -173,7 +173,7 @@ flowchart LR
 
 | Importing area | Package/runtime | Imports |
 | --- | --- | ---: |
-| `web:app` | `next` | 65 |
+| `web:app` | `next` | 66 |
 | `web:api` | `next` | 46 |
 | `web:app` | `react` | 21 |
 | `web:ui` | `react` | 21 |
@@ -254,7 +254,7 @@ flowchart LR
 | `apps/web/app/account/change-password/change-password-form.tsx` | `web:app` | 0 | 1 |
 | `apps/web/app/account/change-password/page.tsx` | `web:app` | 2 | 1 |
 | `apps/web/app/account/page.tsx` | `web:app` | 5 | 2 |
-| `apps/web/app/account/preferences/page.tsx` | `web:app` | 3 | 1 |
+| `apps/web/app/account/preferences/page.tsx` | `web:app` | 1 | 1 |
 | `apps/web/app/account/preferences/theme-toggle.tsx` | `web:app` | 1 | 2 |
 | `apps/web/app/announcements/announcements-workspace-client.tsx` | `web:app` | 3 | 2 |
 | `apps/web/app/announcements/error.tsx` | `web:app` | 0 | 0 |
@@ -375,7 +375,8 @@ flowchart LR
 | `apps/web/app/settings/audit-log/page.tsx` | `web:app` | 8 | 2 |
 | `apps/web/app/settings/notifications/notification-subscription-settings.tsx` | `web:app` | 1 | 1 |
 | `apps/web/app/settings/notifications/notification-subscription-settings.vitest.tsx` | `web:app` | 1 | 4 |
-| `apps/web/app/settings/notifications/page.tsx` | `web:app` | 2 | 1 |
+| `apps/web/app/settings/notifications/page.tsx` | `web:app` | 1 | 1 |
+| `apps/web/app/settings/page.tsx` | `web:app` | 5 | 1 |
 | `apps/web/app/settings/public-portal/error.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/settings/public-portal/loading.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/settings/public-portal/page.tsx` | `web:app` | 7 | 3 |

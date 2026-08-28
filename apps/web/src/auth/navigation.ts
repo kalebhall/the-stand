@@ -28,12 +28,7 @@ export function getNavigationItems(roles: string[] | undefined): AppNavItem[] {
     items.push({ href: '/imports', label: 'Imports' });
   }
 
-  if (hasAnyRole(roles, MEETING_VIEW_ROLES) || hasRole(roles, 'STAND_ADMIN')) {
-    items.push({ href: '/settings/notifications', label: 'Notification settings' });
-  }
-
   if (hasRole(roles, 'STAND_ADMIN')) {
-    items.push({ href: '/settings/users', label: 'Settings' });
     items.push({ href: '/settings/stand-script', label: 'Stand Script' });
     items.push({ href: '/settings/public-portal', label: 'Public Portal' });
   }

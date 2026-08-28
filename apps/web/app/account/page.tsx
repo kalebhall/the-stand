@@ -48,10 +48,10 @@ export default async function AccountPage() {
         <div className="flex items-center justify-between border-b pb-2">
           <h2 className="text-lg font-medium">Appearance & Preferences</h2>
           <Link
-            href="/account/preferences"
+            href="/settings"
             className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }))}
           >
-            Edit Preferences &rarr;
+            Edit Settings &rarr;
           </Link>
         </div>
         <div className="flex items-center justify-between">
