@@ -365,6 +365,10 @@ SET LOCAL app.ward_id = '<ward_uuid>';
 
 Failure to set ward context must result in no data visibility.
 
+### Notification email deliveries
+
+`notification_delivery.recipient_user_id` identifies email delivery recipient. Webhook delivery remains unique per event/channel; email delivery is unique per event/channel/recipient. Email delivery status is tracked independently and does not mark event outbox processed before webhook delivery.
+
 ====================================================================
 FINAL RULE
 ====================================================================

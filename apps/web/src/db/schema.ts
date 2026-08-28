@@ -292,6 +292,7 @@ export const notificationDelivery = pgTable(
     eventOutboxId: uuid('event_outbox_id')
       .notNull()
       .references(() => eventOutbox.id, { onDelete: 'cascade' }),
+    recipientUserId: uuid('recipient_user_id').references(() => userAccount.id, { onDelete: 'cascade' }),
     channel: text('channel').notNull(),
     deliveryStatus: text('delivery_status').notNull().default('pending'),
     externalId: text('external_id'),
@@ -301,7 +302,12 @@ export const notificationDelivery = pgTable(
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
   },
   (table) => ({
-    notificationDeliveryEventChannelUnique: unique().on(table.eventOutboxId, table.channel)
+    notificationDeliveryWebhookUnique: uniqueIndex('notification_delivery_webhook_unique')
+      .on(table.eventOutboxId, table.channel)
+      .where(sql`${table.channel} = 'webhook'`),
+    notificationDeliveryEmailRecipientUnique: uniqueIndex('notification_delivery_email_recipient_unique')
+      .on(table.eventOutboxId, table.channel, table.recipientUserId)
+      .where(sql`${table.channel} = 'EMAIL'`)
   })
 );
 

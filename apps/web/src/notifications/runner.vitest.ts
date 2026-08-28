@@ -32,7 +32,7 @@ describe('notification worker runner', () => {
     vi.stubGlobal('fetch', vi.fn());
     isKnownNotificationEventMock.mockReturnValue(false);
     resolveRecipientsMock.mockResolvedValue([]);
-    subscribedRecipientsMock.mockResolvedValue([]);
+    subscribedRecipientsMock.mockImplementation((_client, params) => Promise.resolve(params.channel === 'IN_APP' ? ['user-2'] : []));
     ensureDefaultsMock.mockClear();
     createNotificationMock.mockClear();
   });
@@ -94,7 +94,7 @@ describe('notification worker runner', () => {
     fetchMock.mockResolvedValue(new Response('', { status: 200 }));
     isKnownNotificationEventMock.mockReturnValue(true);
     resolveRecipientsMock.mockResolvedValue(['user-2']);
-    subscribedRecipientsMock.mockResolvedValue(['user-2']);
+    subscribedRecipientsMock.mockImplementation((_client, params) => Promise.resolve(params.channel === 'IN_APP' ? ['user-2'] : []));
 
     const queryMock = vi
       .fn()

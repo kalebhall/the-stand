@@ -29,7 +29,7 @@ flowchart LR
   A17["web:lib<br/>9 files"]
   A18["web:meetings<br/>7 files"]
   A19["web:notes<br/>1 files"]
-  A20["web:notifications<br/>18 files"]
+  A20["web:notifications<br/>20 files"]
   A21["web:stand<br/>5 files"]
   A22["web:tooling<br/>2 files"]
   A23["web:types<br/>2 files"]
@@ -101,7 +101,7 @@ flowchart LR
 | `web:lib` | 9 |
 | `web:meetings` | 7 |
 | `web:notes` | 1 |
-| `web:notifications` | 18 |
+| `web:notifications` | 20 |
 | `web:stand` | 5 |
 | `web:tooling` | 2 |
 | `web:types` | 2 |
@@ -120,9 +120,9 @@ flowchart LR
 | `web:api` | `web:notifications` | 37 |
 | `web:app` | `web:app` | 33 |
 | `web:api` | `web:lib` | 23 |
+| `web:notifications` | `web:notifications` | 23 |
 | `web:ui` | `web:ui` | 22 |
 | `web:api` | `web:api` | 19 |
-| `web:notifications` | `web:notifications` | 19 |
 | `web:api` | `web:callings` | 15 |
 | `web:api` | `web:audit` | 13 |
 | `web:api` | `web:imports` | 10 |
@@ -180,7 +180,7 @@ flowchart LR
 | `web:api` | `vitest` | 18 |
 | `root:tooling` | `Node.js` | 12 |
 | `web:ui` | `next` | 10 |
-| `web:notifications` | `vitest` | 7 |
+| `web:notifications` | `vitest` | 8 |
 | `web:api` | `zod` | 6 |
 | `web:app` | `vitest` | 6 |
 | `web:auth` | `next-auth` | 6 |
@@ -503,6 +503,8 @@ flowchart LR
 | `apps/web/src/meetings/types.ts` | `web:meetings` | 0 | 0 |
 | `apps/web/src/notes/types.ts` | `web:notes` | 0 | 0 |
 | `apps/web/src/notifications/diagnostics.ts` | `web:notifications` | 0 | 1 |
+| `apps/web/src/notifications/email.ts` | `web:notifications` | 2 | 0 |
+| `apps/web/src/notifications/email.vitest.ts` | `web:notifications` | 1 | 1 |
 | `apps/web/src/notifications/events.ts` | `web:notifications` | 0 | 0 |
 | `apps/web/src/notifications/events.vitest.ts` | `web:notifications` | 1 | 1 |
 | `apps/web/src/notifications/format.ts` | `web:notifications` | 2 | 0 |
@@ -511,7 +513,7 @@ flowchart LR
 | `apps/web/src/notifications/queue.ts` | `web:notifications` | 0 | 1 |
 | `apps/web/src/notifications/recipients.ts` | `web:notifications` | 2 | 1 |
 | `apps/web/src/notifications/recipients.vitest.ts` | `web:notifications` | 1 | 1 |
-| `apps/web/src/notifications/runner.ts` | `web:notifications` | 4 | 1 |
+| `apps/web/src/notifications/runner.ts` | `web:notifications` | 5 | 1 |
 | `apps/web/src/notifications/runner.vitest.ts` | `web:notifications` | 1 | 1 |
 | `apps/web/src/notifications/subscriptions.ts` | `web:notifications` | 1 | 1 |
 | `apps/web/src/notifications/subscriptions.vitest.ts` | `web:notifications` | 1 | 1 |
