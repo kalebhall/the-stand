@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { authMock, canManageCallingsMock, canViewCallingsMock, setDbContextMock, connectMock, releaseMock, queryMock, loggerErrorMock } = vi.hoisted(() => ({
+const { authMock, canManageCallingsMock, canViewCallingsMock, setDbContextMock, connectMock, releaseMock, queryMock, loggerErrorMock, enqueueMock } = vi.hoisted(() => ({
   authMock: vi.fn(),
   canManageCallingsMock: vi.fn(),
   canViewCallingsMock: vi.fn(),
@@ -8,7 +8,8 @@ const { authMock, canManageCallingsMock, canViewCallingsMock, setDbContextMock, 
   connectMock: vi.fn(),
   releaseMock: vi.fn(),
   queryMock: vi.fn(),
-  loggerErrorMock: vi.fn()
+  loggerErrorMock: vi.fn(),
+  enqueueMock: vi.fn()
 }));
 
 vi.mock('@/src/auth/auth', () => ({ auth: authMock }));
@@ -22,6 +23,7 @@ vi.mock('@/src/db/client', () => ({
 vi.mock('@/src/lib/logger', () => ({
   createLogger: () => ({ error: loggerErrorMock })
 }));
+vi.mock('@/src/notifications/queue', () => ({ enqueueOutboxNotificationJob: enqueueMock }));
 
 import { POST } from './route';
 
@@ -44,6 +46,7 @@ describe('POST /api/w/[wardId]/callings', () => {
       .mockResolvedValueOnce({ rows: [{ id: 'calling-1' }] })
       .mockResolvedValueOnce({})
       .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({ rows: [{ id: 'event-1' }] })
       .mockResolvedValueOnce({});
 
     const response = await POST(
@@ -59,6 +62,7 @@ describe('POST /api/w/[wardId]/callings', () => {
     expect(await response.json()).toEqual({ id: 'calling-1', status: 'PROPOSED' });
     expect(queryMock.mock.calls[2]?.[1]).toEqual(['ward-1', 'calling-1', 'PROPOSED']);
     expect(queryMock.mock.calls[3]?.[1]).toEqual(expect.arrayContaining(['ward-1', 'user-1', 'CALLING_PROPOSED', 'calling-1']));
+    expect(queryMock.mock.calls[4]?.[1]).toEqual(['ward-1', 'calling-1', 'CALLING_SUGGESTED', expect.any(String)]);
   });
 
   it('creates an assignment-only calling with assigned status', async () => {
@@ -67,6 +71,7 @@ describe('POST /api/w/[wardId]/callings', () => {
       .mockResolvedValueOnce({ rows: [{ id: 'calling-2' }] })
       .mockResolvedValueOnce({})
       .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({ rows: [{ id: 'event-2' }] })
       .mockResolvedValueOnce({});
 
     const response = await POST(
