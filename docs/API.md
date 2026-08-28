@@ -304,6 +304,23 @@ All actions modifying:
 Must insert record into audit_log.
 
 ====================================================================
+NOTIFICATION ROUTES
+====================================================================
+
+GET /api/w/{wardId}/notification-subscriptions
+PUT /api/w/{wardId}/notification-subscriptions
+
+Authenticated users may read and update only their own subscriptions in active ward. PUT accepts `{ "subscriptions": [{ "eventType": "MEETING_PUBLISHED", "channel": "IN_APP|EMAIL", "enabled": true }] }`.
+
+GET /api/w/{wardId}/notifications?filter=all|unread&category=CALLINGS&limit=50
+PATCH /api/w/{wardId}/notifications/{notificationId}
+POST /api/w/{wardId}/notifications/mark-all-read
+
+Notification reads and mutations require both matching ward and recipient user identity. PATCH action is `read` or `dismiss`. Invalid event types/channels return `VALIDATION_ERROR`.
+
+Email subscriptions require configured `NOTIFICATION_EMAIL_WEBHOOK_URL`; email delivery is asynchronous, per-recipient, privacy-safe, and independently tracked. Missing configuration records deterministic delivery failure.
+
+====================================================================
 FAILURE RULE
 ====================================================================
 

@@ -204,6 +204,29 @@ When retry logic executes
 Then attempts increment
 And success recorded when delivered
 
+Scenario: Email notification delivery
+Given a recipient has an enabled EMAIL subscription and usable email address
+When the notification worker processes an event
+Then a recipient-specific email delivery record is created
+And provider success or failure is recorded independently
+And retry processing does not create duplicate email delivery records
+
+Scenario: Email provider unavailable
+Given email delivery is enabled but `NOTIFICATION_EMAIL_WEBHOOK_URL` is not configured
+When the notification worker processes an event
+Then delivery enters deterministic failure state
+And no private note text or unauthorized details are included in the email payload
+
+Scenario: Notification privacy
+Given a private or leadership note
+When a user lacks source-record visibility
+Then no notification or email is created for that user
+
+Scenario: Notification preferences are ward scoped
+Given a user belongs to two wards
+When the user changes preferences in Ward 1
+Then Ward 2 preferences remain unchanged
+
 ====================================================================
 SECTION 12 — AUDIT LOGGING
 ====================================================================
