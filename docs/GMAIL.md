@@ -1,4 +1,4 @@
-Yes — The Stand supports Gmail for outbound notification email, but configuration happens in deployment environment variables, not app settings UI.
+The Stand supports Gmail for outbound notification email, but configuration happens in deployment environment variables, not app settings UI.
 
 Already present:
 
