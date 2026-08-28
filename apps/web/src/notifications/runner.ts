@@ -1,5 +1,10 @@
 import type { PoolClient } from 'pg';
 
+import { formatUserNotification } from './format';
+import { getSubscribedRecipientIds, isKnownNotificationEvent, resolveNotificationRecipients } from './recipients';
+import { ensureDefaultNotificationSubscriptions } from './subscriptions';
+import { createUserNotification } from './user-notifications';
+
 type DbClient = Pick<PoolClient, 'query'>;
 
 const DEFAULT_NOTIFICATION_WEBHOOK_URL = 'http://127.0.0.1:5678/webhook/the-stand';
@@ -13,6 +18,54 @@ type OutboxEvent = {
   payload: unknown;
   attempts: number;
 };
+
+type SafeEventPayload = Record<string, unknown>;
+
+function asSafeEventPayload(payload: unknown): SafeEventPayload {
+  return payload && typeof payload === 'object' && !Array.isArray(payload)
+    ? payload as SafeEventPayload
+    : {};
+}
+
+async function createRecipientNotifications(client: DbClient, event: OutboxEvent, wardId: string): Promise<void> {
+  if (!isKnownNotificationEvent(event.event_type)) {
+    return;
+  }
+
+  const payload = asSafeEventPayload(event.payload);
+  const explicitUserIds = Array.isArray(payload.mentionedUserIds)
+    ? payload.mentionedUserIds.filter((value): value is string => typeof value === 'string')
+    : [];
+  const recipientIds = await resolveNotificationRecipients(client, {
+    wardId,
+    eventType: event.event_type,
+    actorUserId: typeof payload.actorUserId === 'string' ? payload.actorUserId : undefined,
+    explicitUserIds
+  });
+
+  for (const recipientUserId of recipientIds) {
+    await ensureDefaultNotificationSubscriptions(client, { wardId, userId: recipientUserId });
+  }
+
+  const subscribedRecipientIds = await getSubscribedRecipientIds(client, {
+    wardId,
+    eventType: event.event_type,
+    channel: 'IN_APP',
+    userIds: recipientIds
+  });
+
+  for (const recipientUserId of subscribedRecipientIds) {
+    await createUserNotification(client, formatUserNotification({
+      wardId,
+      sourceEventId: event.id,
+      eventType: event.event_type,
+      aggregateType: event.aggregate_type,
+      aggregateId: event.aggregate_id,
+      payload: event.payload,
+      recipientUserId
+    }));
+  }
+}
 
 function getNotificationWebhookUrl(): string {
   return process.env.NOTIFICATION_WEBHOOK_URL ?? DEFAULT_NOTIFICATION_WEBHOOK_URL;
@@ -84,6 +137,8 @@ export async function processOutboxEvent(client: DbClient, params: { wardId: str
       WHERE id = $1 AND ward_id = $2`,
     [event.id, params.wardId]
   );
+
+  await createRecipientNotifications(client, event, params.wardId);
 
   const deliveryResult = await client.query(
     `INSERT INTO notification_delivery (ward_id, event_outbox_id, channel, delivery_status, attempted_at)

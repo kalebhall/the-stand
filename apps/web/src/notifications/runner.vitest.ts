@@ -1,10 +1,40 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+const {
+  createNotificationMock,
+  ensureDefaultsMock,
+  formatNotificationMock,
+  isKnownNotificationEventMock,
+  resolveRecipientsMock,
+  subscribedRecipientsMock
+} = vi.hoisted(() => ({
+  createNotificationMock: vi.fn(),
+  ensureDefaultsMock: vi.fn().mockResolvedValue(undefined),
+  formatNotificationMock: vi.fn((input) => input),
+  isKnownNotificationEventMock: vi.fn().mockReturnValue(false),
+  resolveRecipientsMock: vi.fn().mockResolvedValue([]),
+  subscribedRecipientsMock: vi.fn().mockResolvedValue([])
+}));
+
+vi.mock('./recipients', () => ({
+  isKnownNotificationEvent: isKnownNotificationEventMock,
+  resolveNotificationRecipients: resolveRecipientsMock,
+  getSubscribedRecipientIds: subscribedRecipientsMock
+}));
+vi.mock('./subscriptions', () => ({ ensureDefaultNotificationSubscriptions: ensureDefaultsMock }));
+vi.mock('./user-notifications', () => ({ createUserNotification: createNotificationMock }));
+vi.mock('./format', () => ({ formatUserNotification: formatNotificationMock }));
+
 import { markNotificationDeliveryFailure, markNotificationDeliverySuccess, processOutboxEvent } from './runner';
 
 describe('notification worker runner', () => {
   beforeEach(() => {
     vi.stubGlobal('fetch', vi.fn());
+    isKnownNotificationEventMock.mockReturnValue(false);
+    resolveRecipientsMock.mockResolvedValue([]);
+    subscribedRecipientsMock.mockResolvedValue([]);
+    ensureDefaultsMock.mockClear();
+    createNotificationMock.mockClear();
   });
 
   afterEach(() => {
@@ -57,6 +87,31 @@ describe('notification worker runner', () => {
       'ward-1',
       'event-1'
     ]);
+  });
+
+  it('creates subscribed recipient notifications before webhook delivery', async () => {
+    const fetchMock = vi.mocked(fetch);
+    fetchMock.mockResolvedValue(new Response('', { status: 200 }));
+    isKnownNotificationEventMock.mockReturnValue(true);
+    resolveRecipientsMock.mockResolvedValue(['user-2']);
+    subscribedRecipientsMock.mockResolvedValue(['user-2']);
+
+    const queryMock = vi
+      .fn()
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{
+        id: 'event-1', aggregate_type: 'meeting', aggregate_id: 'meeting-1',
+        event_type: 'MEETING_COMPLETED', payload: {}, attempts: 0,
+        status: 'pending', available_now: true
+      }] })
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'delivery-1' }] })
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({});
+
+    await processOutboxEvent({ query: queryMock }, { wardId: 'ward-1', eventOutboxId: 'event-1' });
+
+    expect(ensureDefaultsMock).toHaveBeenCalledWith(expect.anything(), { wardId: 'ward-1', userId: 'user-2' });
+    expect(createNotificationMock).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ recipientUserId: 'user-2' }));
   });
 
   it('returns when event is already processed', async () => {

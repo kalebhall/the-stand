@@ -61,5 +61,11 @@ ALTER TABLE user_notification FORCE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS user_notification_isolation ON user_notification;
 CREATE POLICY user_notification_isolation ON user_notification
-USING (ward_id = app.current_ward_id() AND recipient_user_id = app.current_user_id())
-WITH CHECK (ward_id = app.current_ward_id() AND recipient_user_id = app.current_user_id());
+USING (
+  ward_id = app.current_ward_id()
+  AND (recipient_user_id = app.current_user_id() OR app.current_user_id() = '00000000-0000-0000-0000-000000000000'::uuid)
+)
+WITH CHECK (
+  ward_id = app.current_ward_id()
+  AND (recipient_user_id = app.current_user_id() OR app.current_user_id() = '00000000-0000-0000-0000-000000000000'::uuid)
+);

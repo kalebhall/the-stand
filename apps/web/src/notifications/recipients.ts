@@ -159,6 +159,28 @@ export async function resolveNotificationRecipients(
   return (result.rows as Array<{ user_id: string }>).map((row) => row.user_id);
 }
 
+export async function getSubscribedRecipientIds(
+  client: DbClient,
+  params: { wardId: string; eventType: NotificationEventType; channel: 'IN_APP' | 'EMAIL'; userIds: readonly string[] }
+): Promise<string[]> {
+  if (params.userIds.length === 0) {
+    return [];
+  }
+
+  const result = await client.query(
+    `SELECT user_id
+       FROM notification_subscription
+      WHERE ward_id = $1::uuid
+        AND user_id = ANY($2::uuid[])
+        AND event_type = $3::text
+        AND channel = $4::text
+        AND enabled = true`,
+    [params.wardId, params.userIds, params.eventType, params.channel]
+  );
+
+  return (result.rows as Array<{ user_id: string }>).map((row) => row.user_id);
+}
+
 export function isKnownNotificationEvent(eventType: string): eventType is NotificationEventType {
   return NOTIFICATION_EVENT_TYPES.includes(eventType as NotificationEventType);
 }
