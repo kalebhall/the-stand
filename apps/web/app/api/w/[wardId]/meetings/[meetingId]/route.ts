@@ -112,36 +112,45 @@ export async function PUT(request: Request, context: { params: Promise<{ wardId:
   const meetingType = toTrimmedString(body?.meetingType);
   const programItems = Array.isArray(body?.programItems) ? body.programItems : [];
 
-  if (!meetingDate || !isMeetingType(meetingType)) {
-    return NextResponse.json({ error: 'Invalid meeting payload', code: 'BAD_REQUEST' }, { status: 400 });
-  }
-
   const client = await pool.connect();
 
   try {
     await client.query('BEGIN');
     await setDbContext(client, { userId: session.user.id, wardId });
 
-    const updated = await client.query(
-      `UPDATE meeting
-          SET meeting_date = $1,
-              meeting_type = $2,
-              updated_at = now()
-        WHERE id = $3 AND ward_id = $4
-        RETURNING id`,
-      [meetingDate, meetingType, meetingId, wardId]
+    const existing = await client.query(
+      'SELECT meeting_date, meeting_type FROM meeting WHERE id = $1::uuid AND ward_id = $2::uuid LIMIT 1',
+      [meetingId, wardId]
     );
-
-    if (!updated.rowCount) {
+    if (!existing.rowCount) {
       await client.query('ROLLBACK');
       return NextResponse.json({ error: 'Meeting not found', code: 'NOT_FOUND' }, { status: 404 });
     }
 
-    // If the meeting was changed to a conference type, migrate any pending
-    // ward-business lines (sustain/release) off this meeting to the next
-    // eligible ward meeting.
-    if (isConferenceMeetingType(meetingType)) {
-      await migrateBusinessLinesOffConference(client, { wardId, meetingId, newMeetingDate: meetingDate });
+    const existingMeeting = existing.rows[0] as { meeting_date: string; meeting_type: string };
+    if ((body?.meetingDate !== undefined && !meetingDate) || (body?.meetingType !== undefined && !isMeetingType(meetingType))) {
+      await client.query('ROLLBACK');
+      return NextResponse.json({ error: 'Invalid meeting payload', code: 'BAD_REQUEST' }, { status: 400 });
+    }
+    if (
+      (body?.meetingDate !== undefined && meetingDate !== existingMeeting.meeting_date) ||
+      (body?.meetingType !== undefined && meetingType !== existingMeeting.meeting_type)
+    ) {
+      await client.query('ROLLBACK');
+      return NextResponse.json({ error: 'Meeting date and type cannot be changed after creation', code: 'IMMUTABLE_FIELDS' }, { status: 409 });
+    }
+
+    await client.query(
+      `UPDATE meeting
+          SET updated_at = now()
+        WHERE id = $1::uuid AND ward_id = $2::uuid
+        RETURNING id`,
+      [meetingId, wardId]
+    );
+
+    // Keep pending ward-business lines aligned with conference meetings.
+    if (isConferenceMeetingType(existingMeeting.meeting_type)) {
+      await migrateBusinessLinesOffConference(client, { wardId, meetingId, newMeetingDate: existingMeeting.meeting_date });
     }
 
     const retainedIds = programItems.map((item) => toTrimmedString(item?.id)).filter(Boolean);
@@ -169,7 +178,7 @@ export async function PUT(request: Request, context: { params: Promise<{ wardId:
       aggregateType: 'meeting',
       aggregateId: meetingId,
       eventType: 'MEETING_UPDATED',
-      payload: { meetingId, meetingDate, meetingType, programItemCount: programItems.length }
+      payload: { meetingId, meetingDate: existingMeeting.meeting_date, meetingType: existingMeeting.meeting_type, programItemCount: programItems.length }
     });
 
     await client.query('COMMIT');
