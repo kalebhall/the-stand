@@ -28,11 +28,6 @@ export function getNavigationItems(roles: string[] | undefined): AppNavItem[] {
     items.push({ href: '/imports', label: 'Imports' });
   }
 
-  if (hasRole(roles, 'STAND_ADMIN')) {
-    items.push({ href: '/settings/stand-script', label: 'Stand Script' });
-    items.push({ href: '/settings/public-portal', label: 'Public Portal' });
-  }
-
   if (hasRole(roles, 'SUPPORT_ADMIN')) {
     items.push({ href: '/support', label: 'Support Console' });
   }

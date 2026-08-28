@@ -7,15 +7,16 @@ describe('getNavigationItems', () => {
     expect(getNavigationItems([])).toContainEqual({ href: '/dashboard', label: 'Dashboard' });
   });
 
-  it('includes ward admin links for stand admin', () => {
+  it('includes ward management links for stand admin but keeps settings in settings', () => {
     const items = getNavigationItems(['STAND_ADMIN']);
 
-    expect(items).toContainEqual({ href: '/settings/public-portal', label: 'Public Portal' });
     expect(items).toContainEqual({ href: '/members', label: 'Members' });
     expect(items).toContainEqual({ href: '/callings', label: 'Callings' });
     expect(items).toContainEqual({ href: '/notifications', label: 'Notifications' });
 
     expect(items).toContainEqual({ href: '/reports', label: 'Reports' });
+    expect(items).not.toContainEqual({ href: '/settings/stand-script', label: 'Stand Script' });
+    expect(items).not.toContainEqual({ href: '/settings/public-portal', label: 'Public Portal' });
   });
 
 
