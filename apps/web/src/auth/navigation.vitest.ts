@@ -15,12 +15,14 @@ describe('getNavigationItems', () => {
     expect(items).toContainEqual({ href: '/members', label: 'Members' });
     expect(items).toContainEqual({ href: '/callings', label: 'Callings' });
     expect(items).toContainEqual({ href: '/notifications', label: 'Notifications' });
+    expect(items).toContainEqual({ href: '/settings/notifications', label: 'Notification settings' });
     expect(items).toContainEqual({ href: '/reports', label: 'Reports' });
   });
 
 
   it('includes meetings for conductor role', () => {
     expect(getNavigationItems(['CONDUCTOR_VIEW'])).toContainEqual({ href: '/meetings', label: 'Meetings' });
+    expect(getNavigationItems(['CONDUCTOR_VIEW'])).toContainEqual({ href: '/settings/notifications', label: 'Notification settings' });
     expect(getNavigationItems(['CONDUCTOR_VIEW'])).not.toContainEqual({ href: '/callings', label: 'Callings' });
   });
 
