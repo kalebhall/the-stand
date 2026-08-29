@@ -1,7 +1,10 @@
 import type { PoolClient } from 'pg';
 
-import { formatUserNotification } from './format';
+import { processNotificationDigest, queueNotificationDigest } from './digests';
 import { deliverNotificationEmail, formatNotificationEmail } from './email';
+import { getNotificationEmailPreferences } from './email-preferences';
+import { formatUserNotification } from './format';
+import { enqueueDigestNotificationJob, type NotificationDigestQueueJob } from './queue';
 import { getSubscribedRecipientIds, isKnownNotificationEvent, resolveNotificationRecipients } from './recipients';
 import { ensureDefaultNotificationSubscriptions } from './subscriptions';
 import { createUserNotification } from './user-notifications';
@@ -28,9 +31,10 @@ function asSafeEventPayload(payload: unknown): SafeEventPayload {
     : {};
 }
 
-async function createRecipientNotifications(client: DbClient, event: OutboxEvent, wardId: string): Promise<void> {
+async function createRecipientNotifications(client: DbClient, event: OutboxEvent, wardId: string): Promise<NotificationDigestQueueJob[]> {
+  const digestJobs: NotificationDigestQueueJob[] = [];
   if (!isKnownNotificationEvent(event.event_type)) {
-    return;
+    return digestJobs;
   }
 
   const payload = asSafeEventPayload(event.payload);
@@ -73,21 +77,37 @@ async function createRecipientNotifications(client: DbClient, event: OutboxEvent
     channel: 'EMAIL',
     userIds: recipientIds
   });
-  if (emailRecipientIds.length) {
-    const usersResult = await client.query(
-      `SELECT id, email FROM user_account WHERE id = ANY($1::uuid[])`,
-      [emailRecipientIds]
-    );
-    for (const user of (usersResult?.rows ?? []) as Array<{ id: string; email: string | null }>) {
-      const notification = formatUserNotification({
-        wardId,
-        sourceEventId: event.id,
-        eventType: event.event_type,
-        aggregateType: event.aggregate_type,
-        aggregateId: event.aggregate_id,
-        payload: event.payload,
-        recipientUserId: user.id
-      });
+  if (emailRecipientIds.length === 0) {
+    return digestJobs;
+  }
+
+  const usersResult = await client.query(
+    `SELECT id, email
+       FROM user_account
+      WHERE id = ANY($1::uuid[])`,
+    [emailRecipientIds]
+  );
+  const emailPreferences = await getNotificationEmailPreferences(client, {
+    wardId,
+    userIds: emailRecipientIds
+  });
+
+  for (const user of (usersResult.rows ?? []) as Array<{ id: string; email: string | null }>) {
+    const notification = formatUserNotification({
+      wardId,
+      sourceEventId: event.id,
+      eventType: event.event_type,
+      aggregateType: event.aggregate_type,
+      aggregateId: event.aggregate_id,
+      payload: event.payload,
+      recipientUserId: user.id
+    });
+    const preference = emailPreferences.get(user.id);
+    if (!preference) {
+      continue;
+    }
+
+    if (preference.frequency === 'IMMEDIATE') {
       const message = formatNotificationEmail({
         eventType: event.event_type,
         recipientEmail: user.email,
@@ -97,6 +117,7 @@ async function createRecipientNotifications(client: DbClient, event: OutboxEvent
         severity: notification.severity
       });
       if (!message) continue;
+
       const deliveryResult = await client.query(
         `INSERT INTO notification_delivery (ward_id, event_outbox_id, recipient_user_id, channel, delivery_status, attempted_at)
          VALUES ($1::uuid, $2::uuid, $3::uuid, 'EMAIL', 'pending', now())
@@ -105,24 +126,62 @@ async function createRecipientNotifications(client: DbClient, event: OutboxEvent
          RETURNING id`,
         [wardId, event.id, user.id]
       );
-      const deliveryId = deliveryResult.rows[0].id as string;
+      const deliveryId = deliveryResult.rows[0]?.id as string | undefined;
+      if (!deliveryId) {
+        throw new Error(`Failed to create immediate notification delivery for recipient ${user.id}`);
+      }
+
       try {
         const delivery = await deliverNotificationEmail(message);
         await client.query(
           `UPDATE notification_delivery
-              SET delivery_status = 'success', external_id = $3::text, error_message = NULL, attempted_at = now(), updated_at = now()
-            WHERE id = $1::uuid AND ward_id = $2::uuid`,
+              SET delivery_status = 'success',
+                  external_id = $3::text,
+                  error_message = NULL,
+                  attempted_at = now(),
+                  updated_at = now()
+            WHERE id = $1::uuid
+              AND ward_id = $2::uuid`,
           [deliveryId, wardId, delivery.externalId ?? null]
         );
       } catch (error) {
         await client.query(
-          `UPDATE notification_delivery SET delivery_status = 'failure', error_message = $3::text, attempted_at = now(), updated_at = now()
-           WHERE id = $1::uuid AND ward_id = $2::uuid`,
+          `UPDATE notification_delivery
+              SET delivery_status = 'failure',
+                  error_message = $3::text,
+                  attempted_at = now(),
+                  updated_at = now()
+            WHERE id = $1::uuid
+              AND ward_id = $2::uuid`,
           [deliveryId, wardId, error instanceof Error ? error.message : 'Unknown email delivery error']
         );
       }
+      continue;
     }
+
+    const digestJob = await queueNotificationDigest(client, {
+      wardId,
+      eventOutboxId: event.id,
+      recipientUserId: user.id,
+      title: notification.title,
+      summary: notification.summary,
+      targetUrl: notification.targetUrl ?? null,
+      preference: {
+        frequency: preference.frequency,
+        timezone: preference.timezone
+      }
+    });
+    digestJobs.push({
+      kind: 'digest-delivery',
+      wardId: digestJob.wardId,
+      recipientUserId: digestJob.recipientUserId,
+      frequency: digestJob.frequency,
+      digestItemId: digestJob.digestItemId,
+      runAt: digestJob.runAt
+    });
   }
+
+  return digestJobs;
 }
 
 function getNotificationWebhookUrl(): string {
@@ -159,7 +218,7 @@ async function deliverWebhookEvent(event: OutboxEvent): Promise<{ externalId?: s
   return { externalId: externalIdHeader ?? undefined };
 }
 
-export async function processOutboxEvent(client: DbClient, params: { wardId: string; eventOutboxId: string }): Promise<void> {
+export async function processOutboxEvent(client: DbClient, params: { wardId: string; eventOutboxId: string }): Promise<NotificationDigestQueueJob[]> {
   const outboxResult = await client.query(
     `SELECT id,
             aggregate_type,
@@ -170,8 +229,8 @@ export async function processOutboxEvent(client: DbClient, params: { wardId: str
             status,
             available_at <= now() AS available_now
        FROM event_outbox
-      WHERE ward_id = $1
-        AND id = $2
+      WHERE ward_id = $1::uuid
+        AND id = $2::uuid
       LIMIT 1
       FOR UPDATE SKIP LOCKED`,
     [params.wardId, params.eventOutboxId]
@@ -184,7 +243,7 @@ export async function processOutboxEvent(client: DbClient, params: { wardId: str
   const event = outboxResult.rows[0] as OutboxEvent & { status: string; available_now: boolean };
 
   if (event.status !== 'pending' || !event.available_now) {
-    return;
+    return [];
   }
 
   await client.query(
@@ -192,22 +251,26 @@ export async function processOutboxEvent(client: DbClient, params: { wardId: str
         SET status = 'processing',
             attempts = attempts + 1,
             updated_at = now()
-      WHERE id = $1 AND ward_id = $2`,
+      WHERE id = $1::uuid
+        AND ward_id = $2::uuid`,
     [event.id, params.wardId]
   );
 
-  await createRecipientNotifications(client, event, params.wardId);
+  const digestJobs = await createRecipientNotifications(client, event, params.wardId);
 
   const deliveryResult = await client.query(
     `INSERT INTO notification_delivery (ward_id, event_outbox_id, channel, delivery_status, attempted_at)
-     VALUES ($1, $2, 'webhook', 'pending', now())
+     VALUES ($1::uuid, $2::uuid, 'webhook', 'pending', now())
      ON CONFLICT (event_outbox_id, channel) WHERE channel = 'webhook'
      DO UPDATE SET attempted_at = now(), updated_at = now()
      RETURNING id`,
     [params.wardId, event.id]
   );
 
-  const deliveryId = deliveryResult.rows[0].id as string;
+  const deliveryId = deliveryResult.rows[0]?.id as string | undefined;
+  if (!deliveryId) {
+    throw new Error(`Failed to create webhook delivery for outbox event ${event.id}`);
+  }
 
   try {
     const delivery = await deliverWebhookEvent(event);
@@ -229,6 +292,8 @@ export async function processOutboxEvent(client: DbClient, params: { wardId: str
 
     throw new Error(errorMessage);
   }
+
+  return digestJobs;
 }
 
 export async function markNotificationDeliverySuccess(
@@ -238,11 +303,12 @@ export async function markNotificationDeliverySuccess(
   await client.query(
     `UPDATE notification_delivery
         SET delivery_status = 'success',
-            external_id = COALESCE($3, external_id),
+            external_id = COALESCE($3::text, external_id),
             error_message = NULL,
             attempted_at = now(),
             updated_at = now()
-      WHERE id = $1 AND ward_id = $2`,
+      WHERE id = $1::uuid
+        AND ward_id = $2::uuid`,
     [params.deliveryId, params.wardId, params.externalId ?? null]
   );
 
@@ -251,8 +317,8 @@ export async function markNotificationDeliverySuccess(
         SET status = 'processed',
             updated_at = now()
        FROM notification_delivery nd
-      WHERE nd.id = $1
-        AND nd.ward_id = $2
+      WHERE nd.id = $1::uuid
+        AND nd.ward_id = $2::uuid
         AND eo.id = nd.event_outbox_id
         AND eo.ward_id = nd.ward_id`,
     [params.deliveryId, params.wardId]
@@ -266,10 +332,11 @@ export async function markNotificationDeliveryFailure(
   await client.query(
     `UPDATE notification_delivery
         SET delivery_status = 'failure',
-            error_message = $3,
+            error_message = $3::text,
             attempted_at = now(),
             updated_at = now()
-      WHERE id = $1 AND ward_id = $2`,
+      WHERE id = $1::uuid
+        AND ward_id = $2::uuid`,
     [params.deliveryId, params.wardId, params.errorMessage]
   );
 
@@ -279,10 +346,12 @@ export async function markNotificationDeliveryFailure(
     `UPDATE event_outbox eo
         SET status = 'pending',
             available_at = now() + ($4::text || ' seconds')::interval,
-            last_error = $3,
+            last_error = $3::text,
             updated_at = now()
-      WHERE eo.id = $1
-        AND eo.ward_id = $2`,
+      WHERE eo.id = $1::uuid
+        AND eo.ward_id = $2::uuid`,
     [params.eventOutboxId, params.wardId, params.errorMessage, String(backoffSeconds)]
   );
 }
+
+export { processNotificationDigest };
