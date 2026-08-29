@@ -32,6 +32,30 @@ type TemplateRow = {
   release_template: string;
 };
 
+const SACRAMENT_SCRIPTURE_URL = 'https://www.churchofjesuschrist.org/study/scriptures/dc-testament/dc/20?lang=eng#p77';
+
+function SacramentPrayers({ compact, programNotes }: { compact: boolean; programNotes?: string | null }) {
+  return (
+    <article className="rounded-lg border bg-card p-4 sm:p-5">
+      <p className="text-sm uppercase tracking-wide text-muted-foreground">Sacrament</p>
+      <div className={cn('mt-3 space-y-4', compact ? 'text-sm sm:text-base' : 'text-base leading-relaxed sm:text-lg')}>
+        <section>
+          <h2 className="font-semibold">Bread prayer</h2>
+          <p className="mt-1">O God, the Eternal Father, we ask thee in the name of thy Son, Jesus Christ, to bless and sanctify this bread to the souls of all those who partake of it, that they may eat in remembrance of the body of thy Son, and witness unto thee, O God, the Eternal Father, that they are willing to take upon them the name of thy Son, and always remember him and keep his commandments which he has given them; that they may always have his Spirit to be with them. Amen.</p>
+        </section>
+        <section>
+          <h2 className="font-semibold">Wine prayer</h2>
+          <p className="mt-1">O God, the Eternal Father, we ask thee in the name of thy Son, Jesus Christ, to bless and sanctify this wine to the souls of all those who drink of it, that they may do it in remembrance of the blood of thy Son, which was shed for them; that they may witness unto thee, O God, the Eternal Father, that they do always remember him, that they may have his Spirit to be with them. Amen.</p>
+        </section>
+      </div>
+      {programNotes?.trim() ? <p className="mt-3 whitespace-pre-wrap text-sm text-muted-foreground">{programNotes}</p> : null}
+      <a className="mt-4 inline-block text-sm font-medium underline underline-offset-4" href={SACRAMENT_SCRIPTURE_URL} target="_blank" rel="noreferrer">
+        Doctrine and Covenants 20:77, 79
+      </a>
+    </article>
+  );
+}
+
 export default async function StandViewPage({
   params,
   searchParams
@@ -226,6 +250,10 @@ export default async function StandViewPage({
                   );
                 }
 
+                if (row.kind === 'sacrament') {
+                  return <SacramentPrayers key={`row-${index}`} programNotes={row.programNotes} compact={false} />;
+                }
+
                 if (row.kind === 'ward_business') {
                   return (
                     <WardBusinessSection
@@ -289,6 +317,10 @@ export default async function StandViewPage({
                       ) : null}
                     </article>
                   );
+                }
+
+                if (row.kind === 'sacrament') {
+                  return <SacramentPrayers key={`compact-${index}`} programNotes={row.programNotes} compact={true} />;
                 }
 
                 if (row.kind === 'ward_business') {

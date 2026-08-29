@@ -134,4 +134,14 @@ describe('buildStandRows', () => {
       expect.objectContaining({ kind: 'ward_business', programItemId: 'business', programNotes: 'Public business note' })
     ]));
   });
+
+  it('renders sacrament as a dedicated row in program order', () => {
+    const rows = buildStandRows([
+      { id: 'hymn', itemType: 'SACRAMENT_HYMN', title: '', notes: '', hymnNumber: '169', hymnTitle: 'As Now We Take the Sacrament' },
+      { id: 'sacrament', itemType: 'SACRAMENT', title: '', notes: '', hymnNumber: null, hymnTitle: null }
+    ]);
+
+    expect(rows[1]).toEqual({ kind: 'standard', programItemId: 'hymn', label: 'Sacrament Hymn', details: '169 — As Now We Take the Sacrament' });
+    expect(rows[2]).toEqual({ kind: 'sacrament', programItemId: 'sacrament' });
+  });
 });
