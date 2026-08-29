@@ -28,6 +28,11 @@ export type StandRow =
       text: string;
     }
   | {
+      kind: 'sacrament';
+      programItemId: string;
+      programNotes?: string | null;
+    }
+  | {
       kind: 'standard';
       programItemId?: string;
       programNotes?: string | null;
@@ -136,6 +141,11 @@ export function buildStandRows(
 
     if (normalizedType === 'WARD_AND_STAKE_BUSINESS') {
       rows.push({ kind: 'ward_business', programItemId: item.id, ...(item.programNotes?.trim() ? { programNotes: item.programNotes } : {}) });
+      continue;
+    }
+
+    if (normalizedType === 'SACRAMENT') {
+      rows.push({ kind: 'sacrament', programItemId: item.id, ...(item.programNotes?.trim() ? { programNotes: item.programNotes } : {}) });
       continue;
     }
 
