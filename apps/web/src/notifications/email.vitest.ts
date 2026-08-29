@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { deliverNotificationEmail, formatNotificationEmail } from './email';
+import { deliverNotificationEmail, formatDigestNotificationEmail, formatNotificationEmail } from './email';
 
 describe('notification email', () => {
   it('formats safe app-linked content and rejects unusable addresses', () => {
@@ -9,6 +9,22 @@ describe('notification email', () => {
     expect(message).toMatchObject({ to: 'person@example.com', subject: 'The Stand: <Meeting>' });
     expect(message?.html).toContain('&lt;Meeting&gt;');
     expect(message?.html).not.toContain('<Meeting>');
+  });
+
+  it('formats a weekly digest with safe links and all updates', () => {
+    const message = formatDigestNotificationEmail({
+      frequency: 'WEEKLY',
+      recipientEmail: 'kaleb@kalebhall.com',
+      items: [
+        { title: 'Meeting published', summary: 'Program is ready', targetUrl: '/meetings/m-1' },
+        { title: '<Calling>', summary: 'Review & assign', targetUrl: null }
+      ]
+    });
+
+    expect(message.to).toBe('kaleb@kalebhall.com');
+    expect(message.subject).toContain('weekly digest (2 updates)');
+    expect(message.text).toContain('Meeting published');
+    expect(message.html).toContain('&lt;Calling&gt;');
   });
 
   it('fails deterministically when provider is unavailable', async () => {

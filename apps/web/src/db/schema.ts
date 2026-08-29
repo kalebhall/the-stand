@@ -338,6 +338,56 @@ export const notificationSubscription = pgTable(
   })
 );
 
+export const notificationEmailPreference = pgTable(
+  'notification_email_preference',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id').notNull().references(() => userAccount.id, { onDelete: 'cascade' }),
+    frequency: text('frequency').notNull().default('IMMEDIATE'),
+    timezone: text('timezone').notNull().default('UTC'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
+  },
+  (table) => ({
+    notificationEmailPreferenceWardUserUnique: unique().on(table.wardId, table.userId),
+    notificationEmailPreferenceWardUserIdx: index('notification_email_preference_ward_user_idx').on(
+      table.wardId,
+      table.userId
+    )
+  })
+);
+
+export const notificationEmailDigestItem = pgTable(
+  'notification_email_digest_item',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
+    recipientUserId: uuid('recipient_user_id').notNull().references(() => userAccount.id, { onDelete: 'cascade' }),
+    eventOutboxId: uuid('event_outbox_id').notNull().references(() => eventOutbox.id, { onDelete: 'cascade' }),
+    deliveryId: uuid('delivery_id').notNull().references(() => notificationDelivery.id, { onDelete: 'cascade' }),
+    digestFrequency: text('digest_frequency').notNull(),
+    scheduledFor: timestamp('scheduled_for', { withTimezone: true }).notNull(),
+    title: text('title').notNull(),
+    summary: text('summary').notNull(),
+    targetUrl: text('target_url'),
+    attemptedAt: timestamp('attempted_at', { withTimezone: true }),
+    deliveredAt: timestamp('delivered_at', { withTimezone: true }),
+    lastError: text('last_error'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
+  },
+  (table) => ({
+    notificationEmailDigestDeliveryUnique: unique().on(table.deliveryId),
+    notificationEmailDigestRecipientDueIdx: index('notification_email_digest_recipient_due_idx').on(
+      table.wardId,
+      table.recipientUserId,
+      table.digestFrequency,
+      table.scheduledFor
+    )
+  })
+);
+
 export const userNotification = pgTable(
   'user_notification',
   {

@@ -4,6 +4,8 @@ import * as React from 'react';
 
 import { NOTIFICATION_EVENT_TYPES, getNotificationEventDefinition, type NotificationChannel, type NotificationCategory } from '@/src/notifications/events';
 
+type EmailFrequency = 'IMMEDIATE' | 'DAILY' | 'WEEKLY';
+
 type Preference = {
   eventType: (typeof NOTIFICATION_EVENT_TYPES)[number];
   category: NotificationCategory;
@@ -27,6 +29,10 @@ const CHANNEL_LABELS: Record<NotificationChannel, string> = { IN_APP: 'In-app', 
 
 export function NotificationSubscriptionSettings({ wardId, hasUsableEmail }: { wardId: string; hasUsableEmail: boolean }) {
   const [preferences, setPreferences] = React.useState<Preference[]>([]);
+  const [emailFrequency, setEmailFrequency] = React.useState<EmailFrequency>('IMMEDIATE');
+  const [emailTimezone, setEmailTimezone] = React.useState(() => {
+    try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'; } catch { return 'UTC'; }
+  });
   const [status, setStatus] = React.useState<'loading' | 'ready' | 'saving' | 'saved' | 'error'>('loading');
   const [error, setError] = React.useState<string | null>(null);
 
@@ -34,9 +40,13 @@ export function NotificationSubscriptionSettings({ wardId, hasUsableEmail }: { w
     setStatus('loading');
     try {
       const response = await fetch(`/api/w/${wardId}/notification-subscriptions`);
-      const payload = await response.json() as { subscriptions?: Preference[]; error?: string };
+      const payload = await response.json() as { subscriptions?: Preference[]; emailPreference?: { frequency: EmailFrequency; timezone: string }; error?: string };
       if (!response.ok || !payload.subscriptions) throw new Error(payload.error ?? 'Unable to load preferences.');
       setPreferences(payload.subscriptions);
+      if (payload.emailPreference) {
+        setEmailFrequency(payload.emailPreference.frequency);
+        setEmailTimezone(payload.emailPreference.timezone);
+      }
       setStatus('ready');
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : 'Unable to load preferences.');
@@ -71,11 +81,19 @@ export function NotificationSubscriptionSettings({ wardId, hasUsableEmail }: { w
     try {
       const response = await fetch(`/api/w/${wardId}/notification-subscriptions`, {
         method: 'PUT', headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ subscriptions: preferences.flatMap((preference) => Object.entries(preference.channels).map(([channel, enabled]) => ({ eventType: preference.eventType, channel, enabled: channel === 'EMAIL' && !hasUsableEmail ? false : enabled }))) })
+        body: JSON.stringify({
+          subscriptions: preferences.flatMap((preference) => Object.entries(preference.channels).map(([channel, enabled]) => ({ eventType: preference.eventType, channel, enabled: channel === 'EMAIL' && !hasUsableEmail ? false : enabled }))),
+          emailPreference: { frequency: emailFrequency, timezone: emailTimezone }
+        })
       });
-      const payload = await response.json() as { subscriptions?: Preference[]; error?: string };
+      const payload = await response.json() as { subscriptions?: Preference[]; emailPreference?: { frequency: EmailFrequency; timezone: string }; error?: string };
       if (!response.ok || !payload.subscriptions) throw new Error(payload.error ?? 'Unable to save preferences.');
-      setPreferences(payload.subscriptions); setStatus('saved');
+      setPreferences(payload.subscriptions);
+      if (payload.emailPreference) {
+        setEmailFrequency(payload.emailPreference.frequency);
+        setEmailTimezone(payload.emailPreference.timezone);
+      }
+      setStatus('saved');
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : 'Unable to save preferences.'); setStatus('error');
     }
@@ -87,6 +105,25 @@ export function NotificationSubscriptionSettings({ wardId, hasUsableEmail }: { w
 
   return <div className="space-y-8">
     {!hasUsableEmail && <p className="rounded border border-amber-400 bg-amber-50 p-3 text-sm text-amber-950" role="note">Email notifications are unavailable because this account has no usable email address.</p>}
+    <section className="space-y-3 rounded border p-4">
+      <div>
+        <h2 className="text-lg font-medium">Email delivery</h2>
+        <p className="mt-1 text-sm text-muted-foreground">Choose whether email arrives immediately or as a digest. In-app notifications remain immediate.</p>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className="grid gap-1 text-sm">Frequency
+          <select className="rounded border bg-background px-3 py-2" aria-label="Email frequency" value={emailFrequency} disabled={!hasUsableEmail} onChange={(event) => { setEmailFrequency(event.target.value as EmailFrequency); setStatus('ready'); }}>
+            <option value="IMMEDIATE">Immediately</option>
+            <option value="DAILY">Daily digest at 8:00 AM</option>
+            <option value="WEEKLY">Weekly digest Monday at 8:00 AM</option>
+          </select>
+        </label>
+        <label className="grid gap-1 text-sm">Timezone
+          <input className="rounded border bg-background px-3 py-2" aria-label="Email timezone" value={emailTimezone} disabled={!hasUsableEmail} onChange={(event) => { setEmailTimezone(event.target.value); setStatus('ready'); }} placeholder="America/Los_Angeles" />
+          <span className="text-xs text-muted-foreground">Use an IANA timezone, such as America/Los_Angeles.</span>
+        </label>
+      </div>
+    </section>
     <div className="flex flex-wrap items-center gap-3">
       <button className="rounded bg-primary px-4 py-2 text-primary-foreground disabled:opacity-50" onClick={() => void save()} disabled={status === 'saving'}>Save preferences</button>
       <button className="rounded border px-3 py-2" onClick={applyDefaults}>Restore defaults</button>

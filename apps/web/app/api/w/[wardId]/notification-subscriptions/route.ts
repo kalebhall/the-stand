@@ -5,6 +5,12 @@ import { auth } from '@/src/auth/auth';
 import { canViewMeetings } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
+import {
+  NOTIFICATION_EMAIL_FREQUENCIES,
+  getNotificationEmailPreference,
+  isValidIanaTimeZone,
+  updateNotificationEmailPreference
+} from '@/src/notifications/email-preferences';
 import { NOTIFICATION_EVENT_TYPES } from '@/src/notifications/events';
 import { getNotificationSubscriptions, updateNotificationSubscriptions } from '@/src/notifications/subscriptions';
 
@@ -14,8 +20,14 @@ const subscriptionUpdateSchema = z.object({
   enabled: z.boolean()
 });
 
+const notificationEmailPreferenceSchema = z.object({
+  frequency: z.enum(NOTIFICATION_EMAIL_FREQUENCIES),
+  timezone: z.string().trim().min(1, 'Timezone is required.').refine(isValidIanaTimeZone, 'Timezone must be a valid IANA timezone.')
+});
+
 const updateSubscriptionsSchema = z.object({
-  subscriptions: z.array(subscriptionUpdateSchema).min(1).max(200)
+  subscriptions: z.array(subscriptionUpdateSchema).min(1).max(200),
+  emailPreference: notificationEmailPreferenceSchema
 });
 
 type AuthorizedSession = {
@@ -50,9 +62,12 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
   try {
     await client.query('BEGIN');
     await setDbContext(client, { userId: authorization.session.user.id, wardId });
-    const subscriptions = await getNotificationSubscriptions(client, { wardId, userId: authorization.session.user.id });
+    const [subscriptions, emailPreference] = await Promise.all([
+      getNotificationSubscriptions(client, { wardId, userId: authorization.session.user.id }),
+      getNotificationEmailPreference(client, { wardId, userId: authorization.session.user.id })
+    ]);
     await client.query('COMMIT');
-    return NextResponse.json({ subscriptions });
+    return NextResponse.json({ subscriptions, emailPreference });
   } catch (error) {
     await client.query('ROLLBACK');
     console.error('notification_subscription_get_failed', { wardId, error });
@@ -76,13 +91,21 @@ export async function PUT(request: Request, context: { params: Promise<{ wardId:
   try {
     await client.query('BEGIN');
     await setDbContext(client, { userId: authorization.session.user.id, wardId });
-    const subscriptions = await updateNotificationSubscriptions(client, {
-      wardId,
-      userId: authorization.session.user.id,
-      updates: parsed.data.subscriptions
-    });
+    const [subscriptions, emailPreference] = await Promise.all([
+      updateNotificationSubscriptions(client, {
+        wardId,
+        userId: authorization.session.user.id,
+        updates: parsed.data.subscriptions
+      }),
+      updateNotificationEmailPreference(client, {
+        wardId,
+        userId: authorization.session.user.id,
+        frequency: parsed.data.emailPreference.frequency,
+        timezone: parsed.data.emailPreference.timezone
+      })
+    ]);
     await client.query('COMMIT');
-    return NextResponse.json({ subscriptions });
+    return NextResponse.json({ subscriptions, emailPreference });
   } catch (error) {
     await client.query('ROLLBACK');
     console.error('notification_subscription_put_failed', { wardId, error });
