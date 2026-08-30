@@ -122,7 +122,7 @@ async function createRecipientNotifications(client: DbClient, event: OutboxEvent
       const deliveryResult = await client.query(
         `INSERT INTO notification_delivery (ward_id, event_outbox_id, recipient_user_id, channel, delivery_status, attempted_at)
          VALUES ($1::uuid, $2::uuid, $3::uuid, 'EMAIL', 'pending', now())
-         ON CONFLICT (event_outbox_id, channel, recipient_user_id)
+         ON CONFLICT (event_outbox_id, channel, recipient_user_id) WHERE channel = 'EMAIL'
          DO UPDATE SET attempted_at = now(), updated_at = now()
          RETURNING id`,
         [wardId, event.id, user.id]

@@ -1,11 +1,7 @@
 import type { PoolClient } from 'pg';
 
 import { deliverNotificationEmail, formatDigestNotificationEmail, usableEmail } from './email';
-import {
-  getNextDigestDeliveryTime,
-  type NotificationDigestFrequency,
-  type NotificationEmailPreference
-} from './email-preferences';
+import { getNextDigestDeliveryTime, type NotificationDigestFrequency, type NotificationEmailPreference } from './email-preferences';
 
 type DbClient = Pick<PoolClient, 'query'>;
 
@@ -36,10 +32,7 @@ export type NotificationDigestJob = {
   runAt: string;
 };
 
-export async function queueNotificationDigest(
-  client: DbClient,
-  params: QueueNotificationDigestParams
-): Promise<NotificationDigestJob> {
+export async function queueNotificationDigest(client: DbClient, params: QueueNotificationDigestParams): Promise<NotificationDigestJob> {
   const scheduledFor = getNextDigestDeliveryTime({
     frequency: params.preference.frequency,
     timeZone: params.preference.timezone
@@ -48,7 +41,7 @@ export async function queueNotificationDigest(
   const deliveryResult = await client.query(
     `INSERT INTO notification_delivery (ward_id, event_outbox_id, recipient_user_id, channel, delivery_status, attempted_at)
      VALUES ($1::uuid, $2::uuid, $3::uuid, 'EMAIL', 'pending', NULL)
-     ON CONFLICT (event_outbox_id, channel, recipient_user_id)
+     ON CONFLICT (event_outbox_id, channel, recipient_user_id) WHERE channel = 'EMAIL'
      DO UPDATE SET updated_at = now()
      RETURNING id`,
     [params.wardId, params.eventOutboxId, params.recipientUserId]
