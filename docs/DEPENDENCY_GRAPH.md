@@ -33,10 +33,10 @@ flowchart LR
   A21["web:stand<br/>5 files"]
   A22["web:tooling<br/>2 files"]
   A23["web:types<br/>2 files"]
-  A24["web:ui<br/>25 files"]
+  A24["web:ui<br/>27 files"]
   A25["web:version.mjs<br/>1 files"]
   A5 -->|85| A8
-  A6 -->|79| A24
+  A6 -->|80| A24
   A5 -->|75| A13
   A6 -->|67| A8
   A5 -->|38| A20
@@ -105,7 +105,7 @@ flowchart LR
 | `web:stand` | 5 |
 | `web:tooling` | 2 |
 | `web:types` | 2 |
-| `web:ui` | 25 |
+| `web:ui` | 27 |
 | `web:version.mjs` | 1 |
 
 ## Internal dependencies
@@ -113,15 +113,15 @@ flowchart LR
 | Importing area | Imported area | Imports |
 | --- | --- | ---: |
 | `web:api` | `web:auth` | 85 |
-| `web:app` | `web:ui` | 79 |
+| `web:app` | `web:ui` | 80 |
 | `web:api` | `web:db` | 75 |
 | `web:app` | `web:auth` | 67 |
 | `web:api` | `web:notifications` | 38 |
 | `web:app` | `web:db` | 38 |
 | `web:app` | `web:app` | 37 |
 | `web:notifications` | `web:notifications` | 32 |
+| `web:ui` | `web:ui` | 24 |
 | `web:api` | `web:lib` | 23 |
-| `web:ui` | `web:ui` | 23 |
 | `web:api` | `web:api` | 19 |
 | `web:api` | `web:callings` | 15 |
 | `web:api` | `web:audit` | 13 |
@@ -176,10 +176,10 @@ flowchart LR
 | `web:app` | `next` | 67 |
 | `web:api` | `next` | 46 |
 | `web:app` | `react` | 24 |
-| `web:ui` | `react` | 22 |
+| `web:ui` | `react` | 24 |
 | `web:api` | `vitest` | 18 |
 | `root:tooling` | `Node.js` | 12 |
-| `web:ui` | `next` | 10 |
+| `web:ui` | `next` | 11 |
 | `web:notifications` | `vitest` | 9 |
 | `web:notifications` | `pg` | 8 |
 | `web:app` | `vitest` | 7 |
@@ -188,6 +188,7 @@ flowchart LR
 | `web:imports` | `vitest` | 5 |
 | `web:auth` | `vitest` | 4 |
 | `web:tooling` | `Node.js` | 4 |
+| `web:ui` | `next-auth` | 4 |
 | `web:app` | `@testing-library/react` | 3 |
 | `web:app` | `@testing-library/user-event` | 3 |
 | `web:callings` | `vitest` | 3 |
@@ -243,7 +244,6 @@ flowchart LR
 | `web:notifications` | `nodemailer` | 1 |
 | `web:ui` | `class-variance-authority` | 1 |
 | `web:ui` | `clsx` | 1 |
-| `web:ui` | `next-auth` | 1 |
 | `web:ui` | `next-themes` | 1 |
 | `web:ui` | `tailwind-merge` | 1 |
 
@@ -343,7 +343,7 @@ flowchart LR
 | `apps/web/app/imports/members/page.tsx` | `web:app` | 5 | 2 |
 | `apps/web/app/imports/membership-imports-client.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/imports/page.tsx` | `web:app` | 4 | 2 |
-| `apps/web/app/layout.tsx` | `web:app` | 5 | 1 |
+| `apps/web/app/layout.tsx` | `web:app` | 6 | 1 |
 | `apps/web/app/login/login-form.tsx` | `web:app` | 2 | 2 |
 | `apps/web/app/login/page.tsx` | `web:app` | 2 | 1 |
 | `apps/web/app/logout/logout-form.tsx` | `web:app` | 2 | 2 |
@@ -415,7 +415,9 @@ flowchart LR
 | `apps/web/components/WardBusinessSection.tsx` | `web:ui` | 2 | 2 |
 | `apps/web/components/WardBusinessSection.vitest.tsx` | `web:ui` | 1 | 3 |
 | `apps/web/components/app-navigation.tsx` | `web:ui` | 1 | 0 |
-| `apps/web/components/app-shell.tsx` | `web:ui` | 7 | 4 |
+| `apps/web/components/app-shell.tsx` | `web:ui` | 8 | 4 |
+| `apps/web/components/auth-session-provider.tsx` | `web:ui` | 0 | 3 |
+| `apps/web/components/auth-session-refresh.tsx` | `web:ui` | 0 | 3 |
 | `apps/web/components/conducting-mode-context.tsx` | `web:ui` | 0 | 1 |
 | `apps/web/components/deployment-watcher.tsx` | `web:ui` | 0 | 1 |
 | `apps/web/components/lcr-extractor-instructions.tsx` | `web:ui` | 2 | 1 |
