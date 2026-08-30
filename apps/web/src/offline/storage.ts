@@ -13,7 +13,7 @@ export type OfflineStandSnapshot = {
   wardId: string;
   meeting: { id: string; meetingDate: string; meetingType: string };
   standRows: Array<Record<string, unknown>>;
-  businessLines: Array<{ id: string; memberName: string; callingName: string; actionType: string; status: string }>;
+  businessLines: Array<{ id: string; memberName: string; callingName: string; actionType: string; status: string; updatedAt?: string }>;
   notes?: OfflineNote[];
   progress?: OfflineProgress;
   savedAt: string;
@@ -23,8 +23,8 @@ export type OfflineMutation = {
   id: string;
   meetingId: string;
   wardId: string;
-  operation: 'CREATE_PRIVATE_NOTE' | 'UPDATE_PRIVATE_NOTE';
-  payload: { noteId?: string; localNoteId?: string; target?: { type: 'MEETING' | 'PROGRAM_ITEM'; meetingId?: string; programItemId?: string }; noteText: string; baseRevision?: string };
+  operation: 'CREATE_PRIVATE_NOTE' | 'UPDATE_PRIVATE_NOTE' | 'MARK_BUSINESS_ANNOUNCED';
+  payload: { noteId?: string; localNoteId?: string; lineId?: string; target?: { type: 'MEETING' | 'PROGRAM_ITEM'; meetingId?: string; programItemId?: string }; noteText: string; baseRevision?: string };
   createdAt: string;
   status: 'pending' | 'conflict' | 'failed';
   error?: string;

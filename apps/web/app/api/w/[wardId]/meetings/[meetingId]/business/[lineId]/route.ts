@@ -31,7 +31,7 @@ export async function PATCH(_request: Request, context: RouteContext) {
 
     const result = await client.query(
       `UPDATE meeting_business_line
-          SET status = 'announced'
+          SET status = 'announced', updated_at = now()
         WHERE id = $1::uuid AND meeting_id = $2::uuid AND ward_id = $3::uuid AND status = 'pending'
         RETURNING id`,
       [lineId, meetingId, wardId]

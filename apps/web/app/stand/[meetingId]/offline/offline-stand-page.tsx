@@ -37,7 +37,7 @@ export default function OfflineStandPage({ meetingId }: { meetingId: string }) {
     try {
       const response = await fetch(`/api/w/${snapshot?.wardId}/meetings/${meetingId}/offline-sync`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ mutations }) });
       if (!response.ok) throw new Error('Sync failed');
-      const payload = await response.json() as { results: Array<{ mutationId: string; status: string; noteId?: string; updatedAt?: string; error?: string }> };
+      const payload = await response.json() as { results: Array<{ mutationId: string; status: string; noteId?: string; lineId?: string; updatedAt?: string; error?: string }> };
       for (const result of payload.results) if (result.status === 'applied' || result.status === 'duplicate') await removeOfflineMutation(result.mutationId);
       if (snapshot) {
         const applied = payload.results.filter((result) => result.status === 'applied' || result.status === 'duplicate');
@@ -45,12 +45,20 @@ export default function OfflineStandPage({ meetingId }: { meetingId: string }) {
           const mutation = mutations.find((item) => item.payload.noteId === note.id || item.payload.localNoteId === note.id);
           const result = mutation ? applied.find((item) => item.mutationId === mutation.id) : undefined;
           return result ? { ...note, id: result.noteId ?? note.id, updatedAt: result.updatedAt ?? note.updatedAt, pending: false } : note;
+        }), businessLines: snapshot.businessLines.map((line) => {
+          const mutation = mutations.find((item) => item.payload.lineId === line.id);
+          const result = mutation ? applied.find((item) => item.mutationId === mutation.id) : undefined;
+          return result ? { ...line, status: 'announced', updatedAt: result.updatedAt ?? line.updatedAt } : line;
         }) };
         setSnapshot(next); await saveOfflineSnapshot(next);
       }
       for (const result of payload.results) if (result.status === 'conflict') {
         const mutation = mutations.find((item) => item.id === result.mutationId);
         if (mutation) await updateOfflineMutation({ ...mutation, status: 'conflict', error: result.error });
+        if (result.lineId && snapshot) {
+          const next = { ...snapshot, businessLines: snapshot.businessLines.map((line) => line.id === result.lineId ? { ...line, status: 'pending' } : line) };
+          setSnapshot(next); await saveOfflineSnapshot(next);
+        }
         setError(result.error ?? 'A private note changed while offline. Review it before retrying.');
       }
       const remaining = await listOfflineMutations();
@@ -74,6 +82,14 @@ export default function OfflineStandPage({ meetingId }: { meetingId: string }) {
     await queueOfflineMutation(mutation); setNoteText(''); await refreshPending(); await sync();
   }
   async function toggleProgress(index: number) { if (!snapshot) return; await persist({ ...snapshot, progress: { ...(snapshot.progress ?? {}), [String(index)]: !snapshot.progress?.[String(index)] } }); }
+  async function announceBusinessLine(lineId: string) {
+    if (!snapshot) return;
+    const line = snapshot.businessLines.find((item) => item.id === lineId);
+    if (!line || line.status !== 'pending' || !line.updatedAt) return;
+    const mutation: OfflineMutation = { id: crypto.randomUUID(), meetingId, wardId: snapshot.wardId, operation: 'MARK_BUSINESS_ANNOUNCED', payload: { lineId, noteText: '', baseRevision: line.updatedAt }, createdAt: new Date().toISOString(), status: 'pending' };
+    await persist({ ...snapshot, businessLines: snapshot.businessLines.map((item) => item.id === lineId ? { ...item, status: 'announced' } : item) });
+    await queueOfflineMutation(mutation); await refreshPending(); await sync();
+  }
   async function updateNote() {
     if (!snapshot || !editingNoteId || !editingText.trim()) return;
     const note = snapshot.notes?.find((item) => item.id === editingNoteId);
@@ -88,6 +104,7 @@ export default function OfflineStandPage({ meetingId }: { meetingId: string }) {
   return <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-6 p-4 sm:p-6">
     <section className="rounded-lg border bg-card p-4"><div className="flex flex-wrap items-center justify-between gap-2"><div><p className="text-xs uppercase tracking-wide text-muted-foreground">Offline copy</p><h1 className="text-2xl font-semibold">At the Stand</h1><p className="text-sm text-muted-foreground">{snapshot.meeting.meetingDate} · {snapshot.meeting.meetingType}</p></div><span className="rounded-full border px-3 py-1 text-sm">{navigator.onLine ? 'Online' : 'Offline'}</span></div><p className="mt-2 text-xs text-muted-foreground">Saved {new Date(snapshot.savedAt).toLocaleString()} · {pending} pending {pending === 1 ? 'change' : 'changes'}{syncing ? ' · Syncing…' : ''}</p><div className="mt-3 flex gap-2"><button className="rounded-md border px-3 py-1 text-sm" onClick={() => setMode('formal')}>Formal Script</button><button className="rounded-md border px-3 py-1 text-sm" onClick={() => setMode('compact')}>Compact Labels</button></div></section>
     <section className="rounded-lg border bg-card p-4"><h2 className="font-semibold">Private notes</h2><textarea value={noteText} onChange={(event) => setNoteText(event.target.value)} className="mt-2 min-h-20 w-full rounded-md border bg-background p-2 text-sm" placeholder="Write a private note…" /><button type="button" className="mt-2 rounded-md border px-3 py-1 text-sm" onClick={() => void addNote()} disabled={!noteText.trim()}>Save note</button>{snapshot.notes?.length ? <ul className="mt-3 space-y-2 text-sm">{snapshot.notes.map((note) => <li key={note.id} className="rounded border p-2"><span className="text-xs text-muted-foreground">{note.pending ? 'Pending sync · ' : ''}{new Date(note.createdAt).toLocaleString()}</span>{editingNoteId === note.id ? <><textarea value={editingText} onChange={(event) => setEditingText(event.target.value)} className="mt-1 min-h-16 w-full rounded border p-2" /><button type="button" className="mt-1 rounded border px-2 py-1 text-xs" onClick={() => void updateNote()}>Save edit</button></> : <><p className="whitespace-pre-wrap">{note.noteText}</p>{!note.pending && !note.id.startsWith('local-') ? <button type="button" className="mt-1 rounded border px-2 py-1 text-xs" onClick={() => { setEditingNoteId(note.id); setEditingText(note.noteText); }}>Edit</button> : null}</>}</li>)}</ul> : null}</section>
+    <section className="rounded-lg border bg-card p-4"><h2 className="font-semibold">Ward and Stake Business</h2><ul className="mt-2 space-y-2 text-sm">{snapshot.businessLines.map((line) => <li key={line.id} className="flex flex-wrap items-center justify-between gap-2 rounded border p-2"><span>{line.memberName} — {line.callingName} ({line.status})</span>{line.status === 'pending' ? <button type="button" className="rounded border px-2 py-1 text-xs" onClick={() => void announceBusinessLine(line.id)} disabled={!line.updatedAt}>Mark announced</button> : <span className="text-xs text-muted-foreground">Announced</span>}</li>)}</ul></section>
     <section className="grid gap-3">{rows.map((row, index) => <OfflineRow key={index} row={row} done={Boolean(snapshot.progress?.[String(index)])} onToggle={() => void toggleProgress(index)} />)}</section>
     {error ? <p className="text-sm text-destructive">{error}</p> : null}
   </main>;

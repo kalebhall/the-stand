@@ -38,7 +38,7 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
          FROM announcement WHERE ward_id = $1::uuid AND include_in_stand = TRUE`, [wardId]
     );
     const business = await client.query(
-      `SELECT b.id, b.member_name, b.calling_name, b.action_type, b.status,
+      `SELECT b.id, b.member_name, b.calling_name, b.action_type, b.status, b.updated_at,
               m.first_name, m.last_name, m.gender
          FROM meeting_business_line b
          LEFT JOIN member m ON m.ward_id = b.ward_id AND m.full_name = b.member_name AND m.archived_at IS NULL
@@ -72,7 +72,7 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
       wardId,
       meeting: { id: meetingId, meetingDate, meetingType: meeting.rows[0].meeting_type },
       standRows,
-      businessLines: business.rows.map((line) => ({ id: line.id, memberName: line.member_name, callingName: line.calling_name, actionType: line.action_type, status: line.status })),
+      businessLines: business.rows.map((line) => ({ id: line.id, memberName: line.member_name, callingName: line.calling_name, actionType: line.action_type, status: line.status, updatedAt: line.updated_at })),
       notes: notes.rows.map((note) => ({ id: note.id, visibility: 'PRIVATE', noteText: note.note_text, createdAt: note.created_at, updatedAt: note.updated_at }))
     });
   } catch (error) {
