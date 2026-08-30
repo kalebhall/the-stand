@@ -264,6 +264,7 @@ export default async function StandViewPage({
                       canManage={canManage}
                       showAnnounce={true}
                       showScript={true}
+                      collapsible={true}
                       programNotes={row.programNotes}
                       sustainTemplate={template?.sustain_template ?? undefined}
                       releaseTemplate={template?.release_template ?? undefined}
@@ -333,6 +334,7 @@ export default async function StandViewPage({
                       canManage={canManage}
                       showAnnounce={true}
                       showScript={false}
+                      collapsible={true}
                       programNotes={row.programNotes}
                       sustainTemplate={template?.sustain_template ?? undefined}
                       releaseTemplate={template?.release_template ?? undefined}
