@@ -15,7 +15,7 @@ flowchart LR
   A3["root:tooling<br/>6 files"]
   A4["web:announcements<br/>2 files"]
   A5["web:api<br/>65 files"]
-  A6["web:app<br/>86 files"]
+  A6["web:app<br/>88 files"]
   A7["web:audit<br/>2 files"]
   A8["web:auth<br/>11 files"]
   A9["web:bootstrap.mjs<br/>1 files"]
@@ -87,7 +87,7 @@ flowchart LR
 | `root:tooling` | 6 |
 | `web:announcements` | 2 |
 | `web:api` | 65 |
-| `web:app` | 86 |
+| `web:app` | 88 |
 | `web:audit` | 2 |
 | `web:auth` | 11 |
 | `web:bootstrap.mjs` | 1 |
@@ -118,7 +118,7 @@ flowchart LR
 | `web:app` | `web:auth` | 67 |
 | `web:api` | `web:notifications` | 38 |
 | `web:app` | `web:db` | 38 |
-| `web:app` | `web:app` | 35 |
+| `web:app` | `web:app` | 37 |
 | `web:notifications` | `web:notifications` | 32 |
 | `web:api` | `web:lib` | 23 |
 | `web:ui` | `web:ui` | 23 |
@@ -175,19 +175,21 @@ flowchart LR
 | --- | --- | ---: |
 | `web:app` | `next` | 67 |
 | `web:api` | `next` | 46 |
-| `web:app` | `react` | 22 |
+| `web:app` | `react` | 24 |
 | `web:ui` | `react` | 22 |
 | `web:api` | `vitest` | 18 |
 | `root:tooling` | `Node.js` | 12 |
 | `web:ui` | `next` | 10 |
 | `web:notifications` | `vitest` | 9 |
 | `web:notifications` | `pg` | 8 |
+| `web:app` | `vitest` | 7 |
 | `web:api` | `zod` | 6 |
-| `web:app` | `vitest` | 6 |
 | `web:auth` | `next-auth` | 6 |
 | `web:imports` | `vitest` | 5 |
 | `web:auth` | `vitest` | 4 |
 | `web:tooling` | `Node.js` | 4 |
+| `web:app` | `@testing-library/react` | 3 |
+| `web:app` | `@testing-library/user-event` | 3 |
 | `web:callings` | `vitest` | 3 |
 | `web:db` | `drizzle-orm` | 3 |
 | `web:db` | `vitest` | 3 |
@@ -199,8 +201,6 @@ flowchart LR
 | `root:other` | `Node.js` | 2 |
 | `web:api` | `Node.js` | 2 |
 | `web:api` | `pg` | 2 |
-| `web:app` | `@testing-library/react` | 2 |
-| `web:app` | `@testing-library/user-event` | 2 |
 | `web:app` | `next-auth` | 2 |
 | `web:calendar` | `vitest` | 2 |
 | `web:callings` | `pg` | 2 |
@@ -374,10 +374,12 @@ flowchart LR
 | `apps/web/app/sentry-example-page/page.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/settings/audit-log/WardAuditLogClient.tsx` | `web:app` | 1 | 1 |
 | `apps/web/app/settings/audit-log/page.tsx` | `web:app` | 8 | 2 |
+| `apps/web/app/settings/notification-timezone.tsx` | `web:app` | 0 | 1 |
+| `apps/web/app/settings/notification-timezone.vitest.tsx` | `web:app` | 1 | 4 |
 | `apps/web/app/settings/notifications/notification-subscription-settings.tsx` | `web:app` | 1 | 1 |
 | `apps/web/app/settings/notifications/notification-subscription-settings.vitest.tsx` | `web:app` | 1 | 4 |
 | `apps/web/app/settings/notifications/page.tsx` | `web:app` | 2 | 1 |
-| `apps/web/app/settings/page.tsx` | `web:app` | 4 | 1 |
+| `apps/web/app/settings/page.tsx` | `web:app` | 5 | 1 |
 | `apps/web/app/settings/public-portal/error.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/settings/public-portal/loading.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/settings/public-portal/page.tsx` | `web:app` | 7 | 3 |

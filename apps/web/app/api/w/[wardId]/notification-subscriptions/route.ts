@@ -25,6 +25,10 @@ const notificationEmailPreferenceSchema = z.object({
   timezone: z.string().trim().min(1, 'Timezone is required.').refine(isValidIanaTimeZone, 'Timezone must be a valid IANA timezone.')
 });
 
+const notificationTimezoneSchema = z.object({
+  timezone: z.string().trim().min(1, 'Timezone is required.').refine(isValidIanaTimeZone, 'Timezone must be a valid IANA timezone.')
+});
+
 const updateSubscriptionsSchema = z.object({
   subscriptions: z.array(subscriptionUpdateSchema).min(1).max(200),
   emailPreference: notificationEmailPreferenceSchema
@@ -84,7 +88,10 @@ export async function PUT(request: Request, context: { params: Promise<{ wardId:
 
   const parsed = updateSubscriptionsSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
-    return NextResponse.json({ error: 'Invalid notification subscription payload', code: 'VALIDATION_ERROR', detail: parsed.error.issues[0]?.message }, { status: 400 });
+    return NextResponse.json(
+      { error: 'Invalid notification subscription payload', code: 'VALIDATION_ERROR', detail: parsed.error.issues[0]?.message },
+      { status: 400 }
+    );
   }
 
   const client = await pool.connect();
@@ -110,6 +117,41 @@ export async function PUT(request: Request, context: { params: Promise<{ wardId:
     await client.query('ROLLBACK');
     console.error('notification_subscription_put_failed', { wardId, error });
     return NextResponse.json({ error: 'Failed to save notification subscriptions', code: 'INTERNAL_ERROR' }, { status: 500 });
+  } finally {
+    client.release();
+  }
+}
+
+export async function PATCH(request: Request, context: { params: Promise<{ wardId: string }> }) {
+  const { wardId } = await context.params;
+  const authorization = await getAuthorizedSession(wardId);
+  if ('response' in authorization) return authorization.response;
+
+  const parsed = notificationTimezoneSchema.safeParse(await request.json().catch(() => null));
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: 'Invalid notification timezone payload', code: 'VALIDATION_ERROR', detail: parsed.error.issues[0]?.message },
+      { status: 400 }
+    );
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await setDbContext(client, { userId: authorization.session.user.id, wardId });
+    const currentPreference = await getNotificationEmailPreference(client, { wardId, userId: authorization.session.user.id });
+    const emailPreference = await updateNotificationEmailPreference(client, {
+      wardId,
+      userId: authorization.session.user.id,
+      frequency: currentPreference.frequency,
+      timezone: parsed.data.timezone
+    });
+    await client.query('COMMIT');
+    return NextResponse.json({ emailPreference });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('notification_timezone_patch_failed', { wardId, error });
+    return NextResponse.json({ error: 'Failed to save notification timezone', code: 'INTERNAL_ERROR' }, { status: 500 });
   } finally {
     client.release();
   }

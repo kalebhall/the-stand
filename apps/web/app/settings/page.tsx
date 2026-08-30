@@ -2,6 +2,7 @@ import Link from 'next/link';
 
 import { ChangePasswordForm } from '@/app/account/change-password/change-password-form';
 import { ThemeToggle } from '@/app/account/preferences/theme-toggle';
+import { NotificationTimezoneSetting } from '@/app/settings/notification-timezone';
 import { requireAuthenticatedSession } from '@/src/auth/guards';
 import { canRunImports, hasRole } from '@/src/auth/roles';
 
@@ -9,14 +10,13 @@ export default async function SettingsPage() {
   const session = await requireAuthenticatedSession();
   const wardId = session.activeWardId;
   const isStandAdmin = hasRole(session.user.roles, 'STAND_ADMIN');
-  const canManageNotifications = Boolean(wardId) && (
-    isStandAdmin ||
-    ['BISHOPRIC_EDITOR', 'CLERK_EDITOR', 'WARD_CLERK', 'MEMBERSHIP_CLERK', 'CONDUCTOR_VIEW']
-      .some((role) => hasRole(session.user.roles, role))
-  );
-  const canViewActivityLog = wardId
-    ? canRunImports({ roles: session.user.roles, activeWardId: wardId }, wardId)
-    : false;
+  const canManageNotifications =
+    Boolean(wardId) &&
+    (isStandAdmin ||
+      ['BISHOPRIC_EDITOR', 'CLERK_EDITOR', 'WARD_CLERK', 'MEMBERSHIP_CLERK', 'CONDUCTOR_VIEW'].some((role) =>
+        hasRole(session.user.roles, role)
+      ));
+  const canViewActivityLog = wardId ? canRunImports({ roles: session.user.roles, activeWardId: wardId }, wardId) : false;
 
   return (
     <main className="mx-auto max-w-4xl space-y-8 p-6">
@@ -56,6 +56,11 @@ export default async function SettingsPage() {
             {canManageNotifications && <SettingsLink href="/settings/notifications" label="Notification settings" />}
             {canViewActivityLog && <SettingsLink href="/settings/audit-log" label="Activity log" />}
           </div>
+          {canManageNotifications && (
+            <div className="border-t pt-4">
+              <NotificationTimezoneSetting wardId={wardId} />
+            </div>
+          )}
         </section>
       )}
 
@@ -65,5 +70,9 @@ export default async function SettingsPage() {
 }
 
 function SettingsLink({ href, label }: { href: string; label: string }) {
-  return <Link href={href} className="rounded-md border p-4 text-sm font-medium hover:bg-accent">{label} <span aria-hidden="true">→</span></Link>;
+  return (
+    <Link href={href} className="rounded-md border p-4 text-sm font-medium hover:bg-accent">
+      {label} <span aria-hidden="true">→</span>
+    </Link>
+  );
 }

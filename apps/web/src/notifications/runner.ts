@@ -26,9 +26,7 @@ type OutboxEvent = {
 type SafeEventPayload = Record<string, unknown>;
 
 function asSafeEventPayload(payload: unknown): SafeEventPayload {
-  return payload && typeof payload === 'object' && !Array.isArray(payload)
-    ? payload as SafeEventPayload
-    : {};
+  return payload && typeof payload === 'object' && !Array.isArray(payload) ? (payload as SafeEventPayload) : {};
 }
 
 async function createRecipientNotifications(client: DbClient, event: OutboxEvent, wardId: string): Promise<NotificationDigestQueueJob[]> {
@@ -60,15 +58,18 @@ async function createRecipientNotifications(client: DbClient, event: OutboxEvent
   });
 
   for (const recipientUserId of subscribedRecipientIds) {
-    await createUserNotification(client, formatUserNotification({
-      wardId,
-      sourceEventId: event.id,
-      eventType: event.event_type,
-      aggregateType: event.aggregate_type,
-      aggregateId: event.aggregate_id,
-      payload: event.payload,
-      recipientUserId
-    }));
+    await createUserNotification(
+      client,
+      formatUserNotification({
+        wardId,
+        sourceEventId: event.id,
+        eventType: event.event_type,
+        aggregateType: event.aggregate_type,
+        aggregateId: event.aggregate_id,
+        payload: event.payload,
+        recipientUserId
+      })
+    );
   }
 
   const emailRecipientIds = await getSubscribedRecipientIds(client, {
@@ -218,7 +219,10 @@ async function deliverWebhookEvent(event: OutboxEvent): Promise<{ externalId?: s
   return { externalId: externalIdHeader ?? undefined };
 }
 
-export async function processOutboxEvent(client: DbClient, params: { wardId: string; eventOutboxId: string }): Promise<NotificationDigestQueueJob[]> {
+export async function processOutboxEvent(
+  client: DbClient,
+  params: { wardId: string; eventOutboxId: string }
+): Promise<NotificationDigestQueueJob[]> {
   const outboxResult = await client.query(
     `SELECT id,
             aggregate_type,
@@ -290,7 +294,16 @@ export async function processOutboxEvent(client: DbClient, params: { wardId: str
       errorMessage
     });
 
-    throw new Error(errorMessage);
+    // Webhook delivery is auxiliary. Keep recipient notifications committed even
+    // when webhook delivery fails, then retain the failure for diagnostics.
+    await client.query(
+      `UPDATE event_outbox
+          SET status = 'processed',
+              updated_at = now()
+        WHERE id = $1::uuid
+          AND ward_id = $2::uuid`,
+      [event.id, params.wardId]
+    );
   }
 
   return digestJobs;
