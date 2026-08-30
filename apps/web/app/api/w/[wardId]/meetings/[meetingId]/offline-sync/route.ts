@@ -14,11 +14,11 @@ const targetSchema = z.discriminatedUnion('type', [
 const mutationSchema = z.object({
   id: z.string().uuid(),
   operation: z.enum(['CREATE_PRIVATE_NOTE', 'UPDATE_PRIVATE_NOTE']),
-  payload: z.object({ target: targetSchema.optional(), noteId: z.string().uuid().optional(), noteText: z.string().trim().min(1).max(10000) })
+  payload: z.object({ target: targetSchema.optional(), noteId: z.string().uuid().optional(), localNoteId: z.string().optional(), noteText: z.string().trim().min(1).max(10000), baseRevision: z.string().datetime().optional() })
 });
 const requestSchema = z.object({ mutations: z.array(mutationSchema).min(1).max(50) });
 
-type StoredResponse = { mutationId: string; status: 'applied' | 'duplicate' | 'rejected'; noteId?: string; error?: string };
+type StoredResponse = { mutationId: string; status: 'applied' | 'duplicate' | 'conflict' | 'rejected'; noteId?: string; updatedAt?: string; error?: string };
 
 export async function POST(request: Request, context: { params: Promise<{ wardId: string; meetingId: string }> }) {
   const session = await auth();
@@ -57,16 +57,20 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
           : await client.query('SELECT id FROM meeting_program_item WHERE id = $1::uuid AND ward_id = $2::uuid AND meeting_id = $3::uuid LIMIT 1', [targetId, wardId, meetingId]);
         if (!targetCheck.rowCount) result = { mutationId: mutation.id, status: 'rejected', error: 'Note target not found' };
         else {
-          const inserted = await client.query(`INSERT INTO internal_note (ward_id, ${targetColumn}, visibility, note_text, created_by_user_id) VALUES ($1::uuid, $2::uuid, 'PRIVATE', $3::text, $4::uuid) RETURNING id`, [wardId, targetId, mutation.payload.noteText, session.user.id]);
+          const inserted = await client.query(`INSERT INTO internal_note (ward_id, ${targetColumn}, visibility, note_text, created_by_user_id) VALUES ($1::uuid, $2::uuid, 'PRIVATE', $3::text, $4::uuid) RETURNING id, updated_at`, [wardId, targetId, mutation.payload.noteText, session.user.id]);
           await recordAuditEvent(client, { wardId, userId: session.user.id, actorName: session.user.name ?? session.user.email ?? null, action: 'INTERNAL_NOTE_CREATED', entityType: 'internal_note', entityId: inserted.rows[0].id, details: { visibility: 'PRIVATE', source: 'offline_sync' }, source: 'manual_ui' });
-          result = { mutationId: mutation.id, status: 'applied', noteId: inserted.rows[0].id };
+          result = { mutationId: mutation.id, status: 'applied', noteId: inserted.rows[0].id, updatedAt: inserted.rows[0].updated_at.toISOString() };
         }
       } else if (mutation.operation === 'UPDATE_PRIVATE_NOTE' && mutation.payload.noteId) {
-        const updated = await client.query('UPDATE internal_note SET note_text = $1::text, updated_at = now() WHERE id = $2::uuid AND ward_id = $3::uuid AND created_by_user_id = $4::uuid AND visibility = \'PRIVATE\' RETURNING id', [mutation.payload.noteText, mutation.payload.noteId, wardId, session.user.id]);
-        result = updated.rowCount ? { mutationId: mutation.id, status: 'applied', noteId: mutation.payload.noteId } : { mutationId: mutation.id, status: 'rejected', error: 'Private note not found' };
+        const updated = await client.query('UPDATE internal_note SET note_text = $1::text, updated_at = now() WHERE id = $2::uuid AND ward_id = $3::uuid AND created_by_user_id = $4::uuid AND visibility = \'PRIVATE\' AND updated_at = $5::timestamptz RETURNING id, updated_at', [mutation.payload.noteText, mutation.payload.noteId, wardId, session.user.id, mutation.payload.baseRevision]);
+        if (updated.rowCount) result = { mutationId: mutation.id, status: 'applied', noteId: mutation.payload.noteId, updatedAt: updated.rows[0].updated_at.toISOString() };
+        else {
+          const exists = await client.query('SELECT id FROM internal_note WHERE id = $1::uuid AND ward_id = $2::uuid AND created_by_user_id = $3::uuid AND visibility = \'PRIVATE\' LIMIT 1', [mutation.payload.noteId, wardId, session.user.id]);
+          result = exists.rowCount ? { mutationId: mutation.id, status: 'conflict', noteId: mutation.payload.noteId, error: 'Private note changed while offline' } : { mutationId: mutation.id, status: 'rejected', error: 'Private note not found' };
+        }
       } else result = { mutationId: mutation.id, status: 'rejected', error: 'Invalid private note mutation' };
 
-      await client.query('INSERT INTO offline_mutation (mutation_id, ward_id, user_id, operation, status, response) VALUES ($1::uuid, $2::uuid, $3::uuid, $4::text, $5::text, $6::jsonb)', [mutation.id, wardId, session.user.id, mutation.operation, result.status === 'applied' ? 'APPLIED' : 'REJECTED', JSON.stringify(result)]);
+      await client.query('INSERT INTO offline_mutation (mutation_id, ward_id, user_id, operation, status, response) VALUES ($1::uuid, $2::uuid, $3::uuid, $4::text, $5::text, $6::jsonb)', [mutation.id, wardId, session.user.id, mutation.operation, result.status === 'applied' ? 'APPLIED' : result.status === 'conflict' ? 'CONFLICT' : 'REJECTED', JSON.stringify(result)]);
       results.push(result);
     }
     await client.query('COMMIT');

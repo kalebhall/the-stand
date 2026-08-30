@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { StandRow } from '@/src/stand/render';
 import {
   loadOfflineSnapshot, queueOfflineMutation, listOfflineMutations, removeOfflineMutation,
-  saveOfflineSnapshot, type OfflineMutation, type OfflineNote, type OfflineStandSnapshot
+  saveOfflineSnapshot, updateOfflineMutation, type OfflineMutation, type OfflineNote, type OfflineStandSnapshot
 } from '@/src/offline/storage';
 
 function OfflineRow({ row, done, onToggle }: { row: StandRow; done: boolean; onToggle: () => void }) {
@@ -37,8 +37,22 @@ export default function OfflineStandPage({ meetingId }: { meetingId: string }) {
     try {
       const response = await fetch(`/api/w/${snapshot?.wardId}/meetings/${meetingId}/offline-sync`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ mutations }) });
       if (!response.ok) throw new Error('Sync failed');
-      const payload = await response.json() as { results: Array<{ mutationId: string; status: string; noteId?: string }> };
+      const payload = await response.json() as { results: Array<{ mutationId: string; status: string; noteId?: string; updatedAt?: string; error?: string }> };
       for (const result of payload.results) if (result.status === 'applied' || result.status === 'duplicate') await removeOfflineMutation(result.mutationId);
+      if (snapshot) {
+        const applied = payload.results.filter((result) => result.status === 'applied' || result.status === 'duplicate');
+        const next = { ...snapshot, notes: snapshot.notes?.map((note) => {
+          const mutation = mutations.find((item) => item.payload.noteId === note.id || item.payload.localNoteId === note.id);
+          const result = mutation ? applied.find((item) => item.mutationId === mutation.id) : undefined;
+          return result ? { ...note, id: result.noteId ?? note.id, updatedAt: result.updatedAt ?? note.updatedAt, pending: false } : note;
+        }) };
+        setSnapshot(next); await saveOfflineSnapshot(next);
+      }
+      for (const result of payload.results) if (result.status === 'conflict') {
+        const mutation = mutations.find((item) => item.id === result.mutationId);
+        if (mutation) await updateOfflineMutation({ ...mutation, status: 'conflict', error: result.error });
+        setError(result.error ?? 'A private note changed while offline. Review it before retrying.');
+      }
       const remaining = await listOfflineMutations();
       if (!remaining.some((item) => item.meetingId === meetingId) && snapshot) {
         const next = { ...snapshot, notes: snapshot.notes?.map((note) => ({ ...note, pending: false })) };
@@ -55,7 +69,7 @@ export default function OfflineStandPage({ meetingId }: { meetingId: string }) {
   async function addNote() {
     if (!snapshot || !noteText.trim()) return;
     const note: OfflineNote = { id: `local-${crypto.randomUUID()}`, visibility: 'PRIVATE', noteText: noteText.trim(), createdAt: new Date().toISOString(), pending: true };
-    const mutation: OfflineMutation = { id: crypto.randomUUID(), meetingId, wardId: snapshot.wardId, operation: 'CREATE_PRIVATE_NOTE', payload: { target: { type: 'MEETING', meetingId }, noteText: note.noteText }, createdAt: note.createdAt, status: 'pending' };
+    const mutation: OfflineMutation = { id: crypto.randomUUID(), meetingId, wardId: snapshot.wardId, operation: 'CREATE_PRIVATE_NOTE', payload: { localNoteId: note.id, target: { type: 'MEETING', meetingId }, noteText: note.noteText }, createdAt: note.createdAt, status: 'pending' };
     await persist({ ...snapshot, notes: [note, ...(snapshot.notes ?? [])] });
     await queueOfflineMutation(mutation); setNoteText(''); await refreshPending(); await sync();
   }
@@ -64,7 +78,7 @@ export default function OfflineStandPage({ meetingId }: { meetingId: string }) {
     if (!snapshot || !editingNoteId || !editingText.trim()) return;
     const note = snapshot.notes?.find((item) => item.id === editingNoteId);
     if (!note || note.id.startsWith('local-')) return;
-    const mutation: OfflineMutation = { id: crypto.randomUUID(), meetingId, wardId: snapshot.wardId, operation: 'UPDATE_PRIVATE_NOTE', payload: { noteId: note.id, noteText: editingText.trim() }, createdAt: new Date().toISOString(), status: 'pending' };
+    const mutation: OfflineMutation = { id: crypto.randomUUID(), meetingId, wardId: snapshot.wardId, operation: 'UPDATE_PRIVATE_NOTE', payload: { noteId: note.id, noteText: editingText.trim(), baseRevision: note.updatedAt }, createdAt: new Date().toISOString(), status: 'pending' };
     await persist({ ...snapshot, notes: snapshot.notes?.map((item) => item.id === note.id ? { ...item, noteText: editingText.trim(), pending: true } : item) });
     await queueOfflineMutation(mutation); setEditingNoteId(null); setEditingText(''); await refreshPending(); await sync();
   }

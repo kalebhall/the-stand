@@ -3,6 +3,7 @@ export type OfflineNote = {
   visibility: 'PRIVATE';
   noteText: string;
   createdAt: string;
+  updatedAt?: string;
   pending?: boolean;
 };
 
@@ -23,7 +24,7 @@ export type OfflineMutation = {
   meetingId: string;
   wardId: string;
   operation: 'CREATE_PRIVATE_NOTE' | 'UPDATE_PRIVATE_NOTE';
-  payload: { noteId?: string; target?: { type: 'MEETING' | 'PROGRAM_ITEM'; meetingId?: string; programItemId?: string }; noteText: string };
+  payload: { noteId?: string; localNoteId?: string; target?: { type: 'MEETING' | 'PROGRAM_ITEM'; meetingId?: string; programItemId?: string }; noteText: string; baseRevision?: string };
   createdAt: string;
   status: 'pending' | 'conflict' | 'failed';
   error?: string;

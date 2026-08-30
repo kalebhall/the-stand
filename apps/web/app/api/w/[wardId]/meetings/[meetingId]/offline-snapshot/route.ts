@@ -46,7 +46,7 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
         ORDER BY b.created_at ASC`, [meetingId, wardId]
     );
     const notes = await client.query(
-      `SELECT note.id, note.visibility, note.note_text, note.created_at
+      `SELECT note.id, note.visibility, note.note_text, note.created_at, note.updated_at
          FROM internal_note note
         WHERE note.ward_id = $1::uuid
           AND (note.meeting_id = $2::uuid OR note.program_item_id IN (SELECT id FROM meeting_program_item WHERE meeting_id = $2::uuid AND ward_id = $1::uuid))
@@ -73,7 +73,7 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
       meeting: { id: meetingId, meetingDate, meetingType: meeting.rows[0].meeting_type },
       standRows,
       businessLines: business.rows.map((line) => ({ id: line.id, memberName: line.member_name, callingName: line.calling_name, actionType: line.action_type, status: line.status })),
-      notes: notes.rows.map((note) => ({ id: note.id, visibility: 'PRIVATE', noteText: note.note_text, createdAt: note.created_at }))
+      notes: notes.rows.map((note) => ({ id: note.id, visibility: 'PRIVATE', noteText: note.note_text, createdAt: note.created_at, updatedAt: note.updated_at }))
     });
   } catch (error) {
     await client.query('ROLLBACK');
