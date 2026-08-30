@@ -5,10 +5,7 @@ import { useRouter } from 'next/navigation';
 
 import { Button } from '@/components/ui/button';
 
-import {
-  DEFAULT_STAND_RELEASE_TEMPLATE,
-  DEFAULT_STAND_SUSTAIN_TEMPLATE
-} from '@/src/stand/default-template';
+import { DEFAULT_STAND_RELEASE_TEMPLATE, DEFAULT_STAND_SUSTAIN_TEMPLATE } from '@/src/stand/default-template';
 
 export type BusinessLine = {
   id: string;
@@ -27,6 +24,8 @@ type WardBusinessSectionProps = {
   showAnnounce?: boolean;
   /** When true, renders full scripted phrasing using the templates below. */
   showScript?: boolean;
+  /** When true, collapses the section after all business lines are announced. */
+  collapsible?: boolean;
   sustainTemplate?: string;
   releaseTemplate?: string;
   programNotes?: string | null;
@@ -55,9 +54,7 @@ function parseBoldSegments(text: string): Array<{ text: string; bold: boolean }>
 }
 
 function renderScript(template: string, memberName: string, callingName: string): Array<{ text: string; bold: boolean }> {
-  const text = template
-    .replaceAll('{memberName}', memberName)
-    .replaceAll('{callingName}', callingName);
+  const text = template.replaceAll('{memberName}', memberName).replaceAll('{callingName}', callingName);
   return parseBoldSegments(text);
 }
 
@@ -127,32 +124,21 @@ function BusinessLineRow({
     }
   }
 
-  const scriptSegments =
-    showScript
-      ? renderScript(
-          line.action_type === 'SUSTAIN' ? sustainTemplate : releaseTemplate,
-          line.member_name,
-          line.calling_name
-        )
-      : null;
+  const scriptSegments = showScript
+    ? renderScript(line.action_type === 'SUSTAIN' ? sustainTemplate : releaseTemplate, line.member_name, line.calling_name)
+    : null;
 
   return (
     <li className="rounded-md border">
       {scriptSegments ? (
         /* Scripted (formal) mode: full phrasing with bold segments + actions below */
         <div className="flex flex-col gap-3 p-4">
-          <p className="text-sm uppercase tracking-wide text-muted-foreground">
-            {ACTION_LABELS[line.action_type] ?? line.action_type}
-          </p>
+          <p className="text-sm uppercase tracking-wide text-muted-foreground">{ACTION_LABELS[line.action_type] ?? line.action_type}</p>
           <p className="text-lg leading-relaxed sm:text-xl">
-            {scriptSegments.map((seg, i) =>
-              seg.bold ? <strong key={i}>{seg.text}</strong> : <span key={i}>{seg.text}</span>
-            )}
+            {scriptSegments.map((seg, i) => (seg.bold ? <strong key={i}>{seg.text}</strong> : <span key={i}>{seg.text}</span>))}
           </p>
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className="text-xs text-muted-foreground">
-              {STATUS_LABELS[line.status] ?? line.status}
-            </span>
+            <span className="text-xs text-muted-foreground">{STATUS_LABELS[line.status] ?? line.status}</span>
             <div className="flex items-center gap-2">
               {error ? <span className="text-xs text-destructive">{error}</span> : null}
               {canManage && showAnnounce && line.status === 'pending' ? (
@@ -192,9 +178,7 @@ function BusinessLineRow({
               <span className="rounded-full border px-2 py-0.5 text-xs font-medium">
                 {ACTION_LABELS[line.action_type] ?? line.action_type}
               </span>
-              <span className="text-xs text-muted-foreground">
-                {STATUS_LABELS[line.status] ?? line.status}
-              </span>
+              <span className="text-xs text-muted-foreground">{STATUS_LABELS[line.status] ?? line.status}</span>
             </div>
           </div>
 
@@ -235,6 +219,7 @@ export function WardBusinessSection({
   canManage,
   showAnnounce = false,
   showScript = false,
+  collapsible = false,
   sustainTemplate = DEFAULT_STAND_SUSTAIN_TEMPLATE,
   releaseTemplate = DEFAULT_STAND_RELEASE_TEMPLATE,
   programNotes = null
@@ -250,9 +235,11 @@ export function WardBusinessSection({
     );
   }
 
-  return (
-    <section className="rounded-lg border bg-card p-4">
-      <h2 className="mb-3 text-lg font-semibold">Ward and Stake Business</h2>
+  const pendingCount = lines.filter((line) => line.status === 'pending').length;
+  const announcedCount = lines.length - pendingCount;
+
+  const content = (
+    <>
       {programNotes?.trim() ? <p className="mb-3 whitespace-pre-wrap text-sm text-muted-foreground">{programNotes}</p> : null}
       <ul className="space-y-2">
         {lines.map((line) => (
@@ -270,6 +257,29 @@ export function WardBusinessSection({
           />
         ))}
       </ul>
-    </section>
+    </>
+  );
+
+  if (!collapsible) {
+    return (
+      <section className="rounded-lg border bg-card p-4">
+        <h2 className="mb-3 text-lg font-semibold">Ward and Stake Business</h2>
+        {content}
+      </section>
+    );
+  }
+
+  return (
+    <details className="rounded-lg border bg-card p-4" open={pendingCount > 0}>
+      <summary className="cursor-pointer list-none text-lg font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 [&::-webkit-details-marker]:hidden">
+        <span className="flex flex-wrap items-center justify-between gap-2">
+          <span>Ward and Stake Business</span>
+          <span className="text-sm font-normal text-muted-foreground">
+            {pendingCount > 0 ? `${pendingCount} pending` : `${announcedCount} announced`}
+          </span>
+        </span>
+      </summary>
+      <div className="mt-3">{content}</div>
+    </details>
   );
 }

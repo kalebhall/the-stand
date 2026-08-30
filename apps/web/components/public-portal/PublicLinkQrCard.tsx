@@ -101,7 +101,6 @@ export function PublicLinkQrCard({
             <h3 className="text-lg font-bold tracking-tight text-foreground">{wardName}</h3>
             <p className="text-sm font-semibold text-muted-foreground">{title}</p>
           </div>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={qrDataUrl}
             alt={`QR code for ${title}`}

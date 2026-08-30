@@ -33,7 +33,7 @@ flowchart LR
   A21["web:stand<br/>5 files"]
   A22["web:tooling<br/>2 files"]
   A23["web:types<br/>2 files"]
-  A24["web:ui<br/>24 files"]
+  A24["web:ui<br/>25 files"]
   A25["web:version.mjs<br/>1 files"]
   A5 -->|85| A8
   A6 -->|79| A24
@@ -105,7 +105,7 @@ flowchart LR
 | `web:stand` | 5 |
 | `web:tooling` | 2 |
 | `web:types` | 2 |
-| `web:ui` | 24 |
+| `web:ui` | 25 |
 | `web:version.mjs` | 1 |
 
 ## Internal dependencies
@@ -121,7 +121,7 @@ flowchart LR
 | `web:app` | `web:app` | 35 |
 | `web:notifications` | `web:notifications` | 32 |
 | `web:api` | `web:lib` | 23 |
-| `web:ui` | `web:ui` | 22 |
+| `web:ui` | `web:ui` | 23 |
 | `web:api` | `web:api` | 19 |
 | `web:api` | `web:callings` | 15 |
 | `web:api` | `web:audit` | 13 |
@@ -176,7 +176,7 @@ flowchart LR
 | `web:app` | `next` | 67 |
 | `web:api` | `next` | 46 |
 | `web:app` | `react` | 22 |
-| `web:ui` | `react` | 21 |
+| `web:ui` | `react` | 22 |
 | `web:api` | `vitest` | 18 |
 | `root:tooling` | `Node.js` | 12 |
 | `web:ui` | `next` | 10 |
@@ -193,6 +193,8 @@ flowchart LR
 | `web:db` | `vitest` | 3 |
 | `web:lib` | `vitest` | 3 |
 | `web:meetings` | `vitest` | 3 |
+| `web:ui` | `@testing-library/react` | 3 |
+| `web:ui` | `vitest` | 3 |
 | `package:shared` | `vitest` | 2 |
 | `root:other` | `Node.js` | 2 |
 | `web:api` | `Node.js` | 2 |
@@ -211,8 +213,6 @@ flowchart LR
 | `web:notifications` | `bullmq` | 2 |
 | `web:stand` | `vitest` | 2 |
 | `web:tooling` | `pg` | 2 |
-| `web:ui` | `@testing-library/react` | 2 |
-| `web:ui` | `vitest` | 2 |
 | `package:shared` | `zod` | 1 |
 | `web:announcements` | `vitest` | 1 |
 | `web:api` | `@the-stand/shared` | 1 |
@@ -411,6 +411,7 @@ flowchart LR
 | `apps/web/components/InternalNotesPanel.tsx` | `web:ui` | 2 | 1 |
 | `apps/web/components/StandardCallingsManager.tsx` | `web:ui` | 1 | 2 |
 | `apps/web/components/WardBusinessSection.tsx` | `web:ui` | 2 | 2 |
+| `apps/web/components/WardBusinessSection.vitest.tsx` | `web:ui` | 1 | 3 |
 | `apps/web/components/app-navigation.tsx` | `web:ui` | 1 | 0 |
 | `apps/web/components/app-shell.tsx` | `web:ui` | 7 | 4 |
 | `apps/web/components/conducting-mode-context.tsx` | `web:ui` | 0 | 1 |
