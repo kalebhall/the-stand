@@ -28,6 +28,8 @@ export type OfflineMutation = {
   createdAt: string;
   status: 'pending' | 'conflict' | 'failed';
   error?: string;
+  serverText?: string;
+  serverRevision?: string;
 };
 
 const DATABASE_NAME = 'the-stand-offline';

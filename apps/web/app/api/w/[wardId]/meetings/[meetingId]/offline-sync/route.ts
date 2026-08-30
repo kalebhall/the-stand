@@ -20,7 +20,7 @@ const mutationSchema = z.object({
   })
 });
 const requestSchema = z.object({ mutations: z.array(mutationSchema).min(1).max(50) });
-type StoredResponse = { mutationId: string; status: 'applied' | 'duplicate' | 'conflict' | 'rejected'; noteId?: string; lineId?: string; updatedAt?: string; error?: string };
+type StoredResponse = { mutationId: string; status: 'applied' | 'duplicate' | 'conflict' | 'rejected'; noteId?: string; lineId?: string; updatedAt?: string; serverText?: string; serverRevision?: string; error?: string };
 
 export async function POST(request: Request, context: { params: Promise<{ wardId: string; meetingId: string }> }) {
   const session = await auth();
@@ -41,7 +41,11 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     const results: StoredResponse[] = [];
     for (const mutation of parsed.data.mutations) {
       const existing = await client.query('SELECT response FROM offline_mutation WHERE mutation_id = $1::uuid AND ward_id = $2::uuid AND user_id = $3::uuid LIMIT 1', [mutation.id, wardId, session.user.id]);
-      if (existing.rowCount) { results.push({ ...(existing.rows[0].response as StoredResponse), status: 'duplicate' }); continue; }
+      if (existing.rowCount) {
+        const stored = existing.rows[0].response as StoredResponse;
+        results.push({ ...stored, status: stored.status === 'applied' ? 'duplicate' : stored.status });
+        continue;
+      }
       let result: StoredResponse;
       if (mutation.operation === 'MARK_BUSINESS_ANNOUNCED' && mutation.payload.lineId) {
         if (!canManage) result = { mutationId: mutation.id, status: 'rejected', error: 'Forbidden' };
@@ -78,8 +82,8 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
           const updated = await client.query("UPDATE internal_note SET note_text = $1::text, updated_at = now() WHERE id = $2::uuid AND ward_id = $3::uuid AND created_by_user_id = $4::uuid AND visibility = 'PRIVATE' AND updated_at = $5::timestamptz RETURNING id, updated_at", [mutation.payload.noteText, mutation.payload.noteId, wardId, session.user.id, mutation.payload.baseRevision]);
           if (updated.rowCount) result = { mutationId: mutation.id, status: 'applied', noteId: mutation.payload.noteId, updatedAt: updated.rows[0].updated_at.toISOString() };
           else {
-            const exists = await client.query("SELECT id FROM internal_note WHERE id = $1::uuid AND ward_id = $2::uuid AND created_by_user_id = $3::uuid AND visibility = 'PRIVATE' LIMIT 1", [mutation.payload.noteId, wardId, session.user.id]);
-            result = exists.rowCount ? { mutationId: mutation.id, status: 'conflict', noteId: mutation.payload.noteId, error: 'Private note changed while offline' } : { mutationId: mutation.id, status: 'rejected', error: 'Private note not found' };
+            const exists = await client.query("SELECT id, note_text, updated_at FROM internal_note WHERE id = $1::uuid AND ward_id = $2::uuid AND created_by_user_id = $3::uuid AND visibility = 'PRIVATE' LIMIT 1", [mutation.payload.noteId, wardId, session.user.id]);
+            result = exists.rowCount ? { mutationId: mutation.id, status: 'conflict', noteId: mutation.payload.noteId, serverText: exists.rows[0].note_text, serverRevision: exists.rows[0].updated_at.toISOString(), error: 'Private note changed while offline' } : { mutationId: mutation.id, status: 'rejected', error: 'Private note not found' };
           }
         }
       } else result = { mutationId: mutation.id, status: 'rejected', error: 'Invalid offline mutation' };
