@@ -12,6 +12,7 @@ import { setDbContext } from '@/src/db/context';
 import { isAnnouncementActiveForDate } from '@/src/announcements/types';
 import { buildStandRows } from '@/src/stand/render';
 import { formatAtStandMemberName } from '@/src/stand/member-display';
+import { OfflineStandButton } from '@/components/offline-stand-button';
 
 type ProgramItemRow = {
   id: string;
@@ -217,6 +218,7 @@ export default async function StandViewPage({
               Compact Labels
             </Link>
           </div>
+          <OfflineStandButton wardId={activeWardId} meetingId={meetingId} />
         </section>
 
         <section className="grid gap-3">
