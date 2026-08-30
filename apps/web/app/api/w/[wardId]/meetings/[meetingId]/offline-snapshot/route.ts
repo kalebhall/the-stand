@@ -45,6 +45,15 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
         WHERE b.meeting_id = $1::uuid AND b.ward_id = $2::uuid
         ORDER BY b.created_at ASC`, [meetingId, wardId]
     );
+    const notes = await client.query(
+      `SELECT note.id, note.visibility, note.note_text, note.created_at
+         FROM internal_note note
+        WHERE note.ward_id = $1::uuid
+          AND (note.meeting_id = $2::uuid OR note.program_item_id IN (SELECT id FROM meeting_program_item WHERE meeting_id = $2::uuid AND ward_id = $1::uuid))
+          AND note.visibility = 'PRIVATE'
+          AND note.created_by_user_id = $3::uuid
+        ORDER BY note.created_at DESC`, [wardId, meetingId, session.user.id]
+    );
     await client.query('COMMIT');
 
     const meetingDate = meeting.rows[0].meeting_date as string;
@@ -60,9 +69,11 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
     } : undefined, activeAnnouncements.map((item) => ({ title: item.title, body: item.body, includeInStand: item.include_in_stand })));
 
     return NextResponse.json({
+      wardId,
       meeting: { id: meetingId, meetingDate, meetingType: meeting.rows[0].meeting_type },
       standRows,
-      businessLines: business.rows.map((line) => ({ id: line.id, memberName: line.member_name, callingName: line.calling_name, actionType: line.action_type, status: line.status }))
+      businessLines: business.rows.map((line) => ({ id: line.id, memberName: line.member_name, callingName: line.calling_name, actionType: line.action_type, status: line.status })),
+      notes: notes.rows.map((note) => ({ id: note.id, visibility: 'PRIVATE', noteText: note.note_text, createdAt: note.created_at }))
     });
   } catch (error) {
     await client.query('ROLLBACK');
