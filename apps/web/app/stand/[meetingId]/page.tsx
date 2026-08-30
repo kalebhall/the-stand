@@ -44,8 +44,8 @@ function SacramentPrayers({ compact, programNotes }: { compact: boolean; program
           <p className="mt-1">O God, the Eternal Father, we ask thee in the name of thy Son, Jesus Christ, to bless and sanctify this bread to the souls of all those who partake of it, that they may eat in remembrance of the body of thy Son, and witness unto thee, O God, the Eternal Father, that they are willing to take upon them the name of thy Son, and always remember him and keep his commandments which he has given them; that they may always have his Spirit to be with them. Amen.</p>
         </section>
         <section>
-          <h2 className="font-semibold">Wine prayer</h2>
-          <p className="mt-1">O God, the Eternal Father, we ask thee in the name of thy Son, Jesus Christ, to bless and sanctify this wine to the souls of all those who drink of it, that they may do it in remembrance of the blood of thy Son, which was shed for them; that they may witness unto thee, O God, the Eternal Father, that they do always remember him, that they may have his Spirit to be with them. Amen.</p>
+          <h2 className="font-semibold">Water prayer</h2>
+          <p className="mt-1">O God, the Eternal Father, we ask thee in the name of thy Son, Jesus Christ, to bless and sanctify this water to the souls of all those who drink of it, that they may do it in remembrance of the blood of thy Son, which was shed for them; that they may witness unto thee, O God, the Eternal Father, that they do always remember him, that they may have his Spirit to be with them. Amen.</p>
         </section>
       </div>
       {programNotes?.trim() ? <p className="mt-3 whitespace-pre-wrap text-sm text-muted-foreground">{programNotes}</p> : null}
