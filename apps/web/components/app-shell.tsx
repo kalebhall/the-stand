@@ -12,6 +12,7 @@ import { useConductingMode } from '@/components/conducting-mode-context';
 import { DeploymentWatcher } from '@/components/deployment-watcher';
 import { SiteLogo } from '@/components/site-logo';
 import { NotificationBell } from '@/components/notification-bell';
+import { AuthSessionRefresh } from '@/components/auth-session-refresh';
 
 export function AppShell({
   session,
@@ -38,6 +39,7 @@ export function AppShell({
   if (isConductingMode) {
     return (
       <div className="relative min-h-screen bg-background">
+        <AuthSessionRefresh />
         {/* Main Content Area */}
         <div className="w-full pb-20 sm:pb-8">
           {children}
@@ -112,6 +114,7 @@ export function AppShell({
 
   return (
     <div className="flex min-h-screen bg-background text-foreground">
+      <AuthSessionRefresh />
       {/* Desktop Left Navigation Sidebar (hidden on mobile) */}
       <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 z-30 border-r bg-card/60 backdrop-blur">
         <div className="flex h-16 shrink-0 items-center justify-between border-b px-6">

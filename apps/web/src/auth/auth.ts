@@ -180,7 +180,7 @@ export const { auth, handlers } = NextAuth({
     })
   ],
   callbacks: {
-    signIn: async ({ account, profile, user }) => {
+    signIn: async ({ account, profile, user: _user }) => {
       await ensureSupportAdminBootstrap();
 
       if (account?.provider === 'google') {
@@ -193,7 +193,7 @@ export const { auth, handlers } = NextAuth({
 
       return true;
     },
-    jwt: async ({ token, user, account }) => {
+    jwt: async ({ token, user, account, trigger }) => {
       if (user) {
         if (account?.provider !== 'credentials') {
           const email = (user.email ?? '').toLowerCase().trim();
@@ -218,8 +218,18 @@ export const { auth, handlers } = NextAuth({
         return token;
       }
 
+      if (trigger === 'update' && token.sub) {
+        const sessionUser = await loadSessionUserById(token.sub);
+        if (sessionUser) {
+          token.roles = sessionUser.roles;
+          token.mustChangePassword = sessionUser.mustChangePassword;
+          token.hasPassword = sessionUser.hasPassword;
+          token.activeWardId = sessionUser.activeWardId;
+        }
+      }
+
       // Token already has roles baked in — no DB re-query on every request.
-      // Roles are refreshed on next sign-in.
+      // Explicit client session updates refresh access after role changes.
       return token;
     },
     session: async ({ session, token }) => {
