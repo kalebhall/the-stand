@@ -69,6 +69,7 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
     } : undefined, activeAnnouncements.map((item) => ({ title: item.title, body: item.body, includeInStand: item.include_in_stand })));
 
     return NextResponse.json({
+      userId: session.user.id,
       wardId,
       meeting: { id: meetingId, meetingDate, meetingType: meeting.rows[0].meeting_type },
       standRows,

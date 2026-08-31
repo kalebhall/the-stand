@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useSession } from 'next-auth/react';
 import type { StandRow } from '@/src/stand/render';
 import {
   loadOfflineSnapshot, queueOfflineMutation, listOfflineMutations, removeOfflineMutation,
@@ -18,6 +19,9 @@ function OfflineRow({ row, done, onToggle }: { row: StandRow; done: boolean; onT
 }
 
 export default function OfflineStandPage({ meetingId }: { meetingId: string }) {
+  const { data: session } = useSession();
+  const userId = session?.user?.id;
+  const activeWardId = session?.activeWardId;
   const [snapshot, setSnapshot] = useState<OfflineStandSnapshot | null>(null);
   const [mode, setMode] = useState<'formal' | 'compact'>('formal');
   const [error, setError] = useState<string | null>(null);
@@ -72,7 +76,10 @@ export default function OfflineStandPage({ meetingId }: { meetingId: string }) {
     } catch { setError('Changes waiting to sync.'); } finally { setSyncing(false); }
   }, [meetingId, refreshPending, snapshot?.wardId, syncing]);
 
-  useEffect(() => { void loadOfflineSnapshot(meetingId).then(async (value) => { setSnapshot(value); await refreshPending(); }).catch(() => setError('Unable to open offline copy.')); }, [meetingId, refreshPending]);
+  useEffect(() => {
+    if (!userId || !activeWardId) return;
+    void loadOfflineSnapshot(userId, activeWardId, meetingId).then(async (value) => { setSnapshot(value); await refreshPending(); }).catch(() => setError('Unable to open offline copy.'));
+  }, [activeWardId, meetingId, refreshPending, userId]);
   useEffect(() => { const run = () => void sync(); window.addEventListener('online', run); document.addEventListener('visibilitychange', run); return () => { window.removeEventListener('online', run); document.removeEventListener('visibilitychange', run); }; }, [sync]);
 
   const rows = useMemo(() => (snapshot?.standRows as unknown as StandRow[] | undefined)?.map((row) => mode === 'compact' && (row.kind === 'sustain' || row.kind === 'release') ? { ...row, segments: [{ text: row.summary, bold: false }] } : row) ?? [], [mode, snapshot]);

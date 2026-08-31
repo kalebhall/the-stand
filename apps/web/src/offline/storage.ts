@@ -10,6 +10,7 @@ export type OfflineNote = {
 export type OfflineProgress = Record<string, boolean>;
 
 export type OfflineStandSnapshot = {
+  userId: string;
   wardId: string;
   meeting: { id: string; meetingDate: string; meetingType: string };
   standRows: Array<Record<string, unknown>>;
@@ -34,7 +35,7 @@ export type OfflineMutation = {
 };
 
 const DATABASE_NAME = 'the-stand-offline';
-const VERSION = 2;
+const VERSION = 3;
 const SNAPSHOT_STORE = 'stand-snapshots';
 const MUTATION_STORE = 'stand-mutations';
 
@@ -43,7 +44,8 @@ function openDatabase(): Promise<IDBDatabase> {
     const request = indexedDB.open(DATABASE_NAME, VERSION);
     request.onupgradeneeded = () => {
       const db = request.result;
-      if (!db.objectStoreNames.contains(SNAPSHOT_STORE)) db.createObjectStore(SNAPSHOT_STORE, { keyPath: 'meeting.id' });
+      if (db.objectStoreNames.contains(SNAPSHOT_STORE)) db.deleteObjectStore(SNAPSHOT_STORE);
+      db.createObjectStore(SNAPSHOT_STORE, { keyPath: 'cacheKey' });
       if (!db.objectStoreNames.contains(MUTATION_STORE)) db.createObjectStore(MUTATION_STORE, { keyPath: 'id' });
     };
     request.onsuccess = () => resolve(request.result);
@@ -62,12 +64,16 @@ async function storeRequest<T>(storeName: string, mode: IDBTransactionMode, acti
   } finally { db.close(); }
 }
 
-export async function saveOfflineSnapshot(snapshot: OfflineStandSnapshot): Promise<void> {
-  await storeRequest(SNAPSHOT_STORE, 'readwrite', (store) => store.put(snapshot));
+function snapshotKey(userId: string, wardId: string, meetingId: string): string {
+  return `${userId}:${wardId}:${meetingId}`;
 }
 
-export async function loadOfflineSnapshot(meetingId: string): Promise<OfflineStandSnapshot | null> {
-  return (await storeRequest<OfflineStandSnapshot | undefined>(SNAPSHOT_STORE, 'readonly', (store) => store.get(meetingId))) ?? null;
+export async function saveOfflineSnapshot(snapshot: OfflineStandSnapshot): Promise<void> {
+  await storeRequest(SNAPSHOT_STORE, 'readwrite', (store) => store.put({ ...snapshot, cacheKey: snapshotKey(snapshot.userId, snapshot.wardId, snapshot.meeting.id) }));
+}
+
+export async function loadOfflineSnapshot(userId: string, wardId: string, meetingId: string): Promise<OfflineStandSnapshot | null> {
+  return (await storeRequest<OfflineStandSnapshot | undefined>(SNAPSHOT_STORE, 'readonly', (store) => store.get(snapshotKey(userId, wardId, meetingId)))) ?? null;
 }
 
 export async function queueOfflineMutation(mutation: OfflineMutation): Promise<void> {
