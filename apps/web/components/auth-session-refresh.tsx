@@ -12,17 +12,23 @@ export function AuthSessionRefresh() {
   const { data: session, update } = useSession();
   const router = useRouter();
   const previousAccessKey = useRef(sessionAccessKey(session));
+  const sessionRef = useRef(session);
+  const updateRef = useRef(update);
+  const routerRef = useRef(router);
+  sessionRef.current = session;
+  updateRef.current = update;
+  routerRef.current = router;
 
   const refreshSession = useCallback(async () => {
-    if (!session?.user?.id) return;
+    if (!sessionRef.current?.user?.id) return;
 
-    const refreshedSession = await update();
+    const refreshedSession = await updateRef.current();
     const nextAccessKey = sessionAccessKey(refreshedSession);
     if (nextAccessKey !== previousAccessKey.current) {
       previousAccessKey.current = nextAccessKey;
-      router.refresh();
+      routerRef.current.refresh();
     }
-  }, [router, session?.user?.id, update]);
+  }, []);
 
   useEffect(() => {
     void refreshSession();
