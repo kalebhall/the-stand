@@ -200,6 +200,7 @@ flowchart LR
 | `web:app` | `@testing-library/react` | 3 |
 | `web:app` | `@testing-library/user-event` | 3 |
 | `web:callings` | `vitest` | 3 |
+| `web:db` | `Node.js` | 3 |
 | `web:db` | `drizzle-orm` | 3 |
 | `web:db` | `vitest` | 3 |
 | `web:lib` | `vitest` | 3 |
@@ -215,7 +216,6 @@ flowchart LR
 | `web:callings` | `pg` | 2 |
 | `web:config` | `@playwright/test` | 2 |
 | `web:config` | `Node.js` | 2 |
-| `web:db` | `Node.js` | 2 |
 | `web:db` | `pg` | 2 |
 | `web:hardening` | `Node.js` | 2 |
 | `web:imports` | `Node.js` | 2 |
@@ -486,7 +486,7 @@ flowchart LR
 | `apps/web/src/callings/transition.vitest.ts` | `web:callings` | 1 | 1 |
 | `apps/web/src/db/bootstrap-support-admin.ts` | `web:db` | 3 | 1 |
 | `apps/web/src/db/bootstrap-support-admin.vitest.ts` | `web:db` | 1 | 1 |
-| `apps/web/src/db/client.ts` | `web:db` | 1 | 4 |
+| `apps/web/src/db/client.ts` | `web:db` | 1 | 5 |
 | `apps/web/src/db/context.ts` | `web:db` | 0 | 0 |
 | `apps/web/src/db/context.vitest.ts` | `web:db` | 1 | 1 |
 | `apps/web/src/db/schema.ts` | `web:db` | 0 | 2 |
