@@ -218,7 +218,7 @@ export default async function StandViewPage({
               Compact Labels
             </Link>
           </div>
-          <OfflineStandButton wardId={activeWardId} meetingId={meetingId} />
+          <OfflineStandButton userId={session.user.id} wardId={activeWardId} meetingId={meetingId} />
         </section>
 
         <section className="grid gap-3">

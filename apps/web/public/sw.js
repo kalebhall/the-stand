@@ -6,6 +6,13 @@ self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim(
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   const url = new URL(event.request.url);
+  if (event.request.mode === 'navigate' && /^\/stand\/[^/]+$/.test(url.pathname)) {
+    const offlineUrl = `${url.pathname}/offline`;
+    event.respondWith(
+      fetch(event.request).catch(() => caches.match(offlineUrl).then((cached) => cached ?? new Response('Offline copy unavailable.', { status: 503 })))
+    );
+    return;
+  }
   const cacheable = url.origin === self.location.origin && (
     url.pathname.startsWith('/_next/static/') ||
     url.pathname === '/sw.js' ||

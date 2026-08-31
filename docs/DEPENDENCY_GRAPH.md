@@ -199,6 +199,7 @@ flowchart LR
 | `web:ui` | `next-auth` | 4 |
 | `web:app` | `@testing-library/react` | 3 |
 | `web:app` | `@testing-library/user-event` | 3 |
+| `web:app` | `next-auth` | 3 |
 | `web:callings` | `vitest` | 3 |
 | `web:db` | `Node.js` | 3 |
 | `web:db` | `drizzle-orm` | 3 |
@@ -211,7 +212,6 @@ flowchart LR
 | `root:other` | `Node.js` | 2 |
 | `web:api` | `Node.js` | 2 |
 | `web:api` | `pg` | 2 |
-| `web:app` | `next-auth` | 2 |
 | `web:calendar` | `vitest` | 2 |
 | `web:callings` | `pg` | 2 |
 | `web:config` | `@playwright/test` | 2 |
@@ -400,7 +400,7 @@ flowchart LR
 | `apps/web/app/settings/users/loading.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/settings/users/page.tsx` | `web:app` | 3 | 2 |
 | `apps/web/app/settings/users/ward-users-manager.tsx` | `web:app` | 2 | 1 |
-| `apps/web/app/stand/[meetingId]/offline/offline-stand-page.tsx` | `web:app` | 2 | 1 |
+| `apps/web/app/stand/[meetingId]/offline/offline-stand-page.tsx` | `web:app` | 2 | 2 |
 | `apps/web/app/stand/[meetingId]/offline/page.tsx` | `web:app` | 1 | 0 |
 | `apps/web/app/stand/[meetingId]/page.tsx` | `web:app` | 12 | 2 |
 | `apps/web/app/support/access-requests/page.tsx` | `web:app` | 5 | 3 |
