@@ -26,7 +26,7 @@ export default function OfflineStandPage({ meetingId }: { meetingId: string }) {
   const [noteText, setNoteText] = useState('');
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState('');
-  const [conflict, setConflict] = useState<{ mutation: OfflineMutation; serverText: string; serverRevision: string } | null>(null);
+  const [conflict, setConflict] = useState<{ mutation: OfflineMutation; serverText?: string; serverStatus?: string; serverRevision: string } | null>(null);
 
   const persist = useCallback(async (next: OfflineStandSnapshot) => { setSnapshot(next); await saveOfflineSnapshot(next); }, []);
   const refreshPending = useCallback(async () => setPending((await listOfflineMutations()).filter((item) => item.meetingId === meetingId).length), [meetingId]);
@@ -38,7 +38,7 @@ export default function OfflineStandPage({ meetingId }: { meetingId: string }) {
     try {
       const response = await fetch(`/api/w/${snapshot?.wardId}/meetings/${meetingId}/offline-sync`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ mutations }) });
       if (!response.ok) throw new Error('Sync failed');
-      const payload = await response.json() as { results: Array<{ mutationId: string; status: string; noteId?: string; lineId?: string; updatedAt?: string; serverText?: string; serverRevision?: string; error?: string }> };
+      const payload = await response.json() as { results: Array<{ mutationId: string; status: string; noteId?: string; lineId?: string; updatedAt?: string; serverText?: string; serverStatus?: string; serverRevision?: string; error?: string }> };
       for (const result of payload.results) if (result.status === 'applied' || result.status === 'duplicate') await removeOfflineMutation(result.mutationId);
       if (snapshot) {
         const applied = payload.results.filter((result) => result.status === 'applied' || result.status === 'duplicate');
@@ -55,13 +55,13 @@ export default function OfflineStandPage({ meetingId }: { meetingId: string }) {
       }
       for (const result of payload.results) if (result.status === 'conflict') {
         const mutation = mutations.find((item) => item.id === result.mutationId);
-        if (mutation) await updateOfflineMutation({ ...mutation, status: 'conflict', error: result.error, serverText: result.serverText, serverRevision: result.serverRevision });
-        if (mutation && result.serverText && result.serverRevision) setConflict({ mutation, serverText: result.serverText, serverRevision: result.serverRevision });
+        if (mutation) await updateOfflineMutation({ ...mutation, status: 'conflict', error: result.error, serverText: result.serverText, serverStatus: result.serverStatus, serverRevision: result.serverRevision });
+        if (mutation && result.serverRevision) setConflict({ mutation, serverText: result.serverText, serverStatus: result.serverStatus, serverRevision: result.serverRevision });
         if (result.lineId && snapshot) {
           const next = { ...snapshot, businessLines: snapshot.businessLines.map((line) => line.id === result.lineId ? { ...line, status: 'pending' } : line) };
           setSnapshot(next); await saveOfflineSnapshot(next);
         }
-        setError(result.error ?? 'A private note changed while offline. Review it before retrying.');
+        setError(result.error ?? 'A change conflicted while offline. Review it before retrying.');
       }
       const remaining = await listOfflineMutations();
       if (!remaining.some((item) => item.meetingId === meetingId) && snapshot) {
@@ -101,18 +101,30 @@ export default function OfflineStandPage({ meetingId }: { meetingId: string }) {
     await queueOfflineMutation(mutation); setEditingNoteId(null); setEditingText(''); await refreshPending(); await sync();
   }
   async function resolveConflict(choice: 'server' | 'offline' | 'both') {
-    if (!snapshot || !conflict || !conflict.mutation.payload.noteId) return;
+    if (!snapshot || !conflict) return;
     const noteId = conflict.mutation.payload.noteId;
+    const lineId = conflict.mutation.payload.lineId;
     if (choice === 'server') {
-      const next = { ...snapshot, notes: snapshot.notes?.map((note) => note.id === noteId ? { ...note, noteText: conflict.serverText, updatedAt: conflict.serverRevision, pending: false } : note) };
-      await removeOfflineMutation(conflict.mutation.id); setSnapshot(next); await saveOfflineSnapshot(next); setConflict(null); setError(null); await refreshPending();
+      if (lineId) {
+        const next = { ...snapshot, businessLines: snapshot.businessLines.map((line) => line.id === lineId ? { ...line, status: conflict.serverStatus ?? line.status, updatedAt: conflict.serverRevision } : line) };
+        await removeOfflineMutation(conflict.mutation.id); await persist(next);
+      } else if (!noteId || conflict.serverText === undefined) return;
+      else {
+      const serverText = conflict.serverText;
+      const next = { ...snapshot, notes: snapshot.notes?.map((note) => note.id === noteId ? { ...note, noteText: serverText, updatedAt: conflict.serverRevision, pending: false } : note) };
+      await removeOfflineMutation(conflict.mutation.id); await persist(next);
+      }
+      setConflict(null); setError(null); await refreshPending();
     } else if (choice === 'offline') {
-      await updateOfflineMutation({ ...conflict.mutation, status: 'pending', error: undefined, serverText: undefined, serverRevision: undefined, payload: { ...conflict.mutation.payload, baseRevision: conflict.serverRevision } });
+      await updateOfflineMutation({ ...conflict.mutation, status: 'pending', error: undefined, serverText: undefined, serverStatus: undefined, serverRevision: undefined, payload: { ...conflict.mutation.payload, baseRevision: conflict.serverRevision } });
+      if (lineId) await persist({ ...snapshot, businessLines: snapshot.businessLines.map((line) => line.id === lineId ? { ...line, status: 'announced' } : line) });
       setConflict(null); setError(null); await sync();
-    } else {
+    } else if (noteId) {
       const newNote: OfflineNote = { id: `local-${crypto.randomUUID()}`, visibility: 'PRIVATE', noteText: conflict.mutation.payload.noteText, createdAt: new Date().toISOString(), pending: true };
       const keepBoth: OfflineMutation = { id: crypto.randomUUID(), meetingId, wardId: snapshot.wardId, operation: 'CREATE_PRIVATE_NOTE', payload: { localNoteId: newNote.id, target: { type: 'MEETING', meetingId }, noteText: newNote.noteText }, createdAt: newNote.createdAt, status: 'pending' };
-      const next = { ...snapshot, notes: [newNote, ...(snapshot.notes?.map((note) => note.id === noteId ? { ...note, noteText: conflict.serverText, updatedAt: conflict.serverRevision, pending: false } : note) ?? [])] };
+      if (conflict.serverText === undefined) return;
+      const serverText = conflict.serverText;
+      const next = { ...snapshot, notes: [newNote, ...(snapshot.notes?.map((note) => note.id === noteId ? { ...note, noteText: serverText, updatedAt: conflict.serverRevision, pending: false } : note) ?? [])] };
       await removeOfflineMutation(conflict.mutation.id); await persist(next); await queueOfflineMutation(keepBoth); setConflict(null); setError(null); await refreshPending(); await sync();
     }
   }
@@ -125,6 +137,6 @@ export default function OfflineStandPage({ meetingId }: { meetingId: string }) {
     <section className="rounded-lg border bg-card p-4"><h2 className="font-semibold">Ward and Stake Business</h2><ul className="mt-2 space-y-2 text-sm">{snapshot.businessLines.map((line) => <li key={line.id} className="flex flex-wrap items-center justify-between gap-2 rounded border p-2"><span>{line.memberName} — {line.callingName} ({line.status})</span>{line.status === 'pending' ? <button type="button" className="rounded border px-2 py-1 text-xs" onClick={() => void announceBusinessLine(line.id)} disabled={!line.updatedAt}>Mark announced</button> : <span className="text-xs text-muted-foreground">Announced</span>}</li>)}</ul></section>
     <section className="grid gap-3">{rows.map((row, index) => <OfflineRow key={index} row={row} done={Boolean(snapshot.progress?.[String(index)])} onToggle={() => void toggleProgress(index)} />)}</section>
     {error ? <p className="text-sm text-destructive">{error}</p> : null}
-    {conflict ? <div role="dialog" aria-modal="true" aria-labelledby="offline-conflict-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"><section className="w-full max-w-2xl rounded-lg border bg-card p-5 shadow-xl"><h2 id="offline-conflict-title" className="text-lg font-semibold">Resolve offline conflict</h2><p className="mt-1 text-sm text-muted-foreground">This private note changed on server while you were offline. Choose what to keep.</p><div className="mt-4 grid gap-3 sm:grid-cols-2"><div className="rounded border p-3"><h3 className="font-medium">Your offline change</h3><p className="mt-2 whitespace-pre-wrap text-sm">{conflict.mutation.payload.noteText}</p></div><div className="rounded border p-3"><h3 className="font-medium">Server change</h3><p className="mt-2 whitespace-pre-wrap text-sm">{conflict.serverText}</p></div></div><div className="mt-4 flex flex-wrap justify-end gap-2"><button type="button" className="rounded border px-3 py-2 text-sm" onClick={() => void resolveConflict('server')}>Keep server</button><button type="button" className="rounded border px-3 py-2 text-sm" onClick={() => void resolveConflict('offline')}>Keep my change</button><button type="button" className="rounded border px-3 py-2 text-sm" onClick={() => void resolveConflict('both')}>Keep both</button></div></section></div> : null}
+    {conflict ? <div role="dialog" aria-modal="true" aria-labelledby="offline-conflict-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"><section className="w-full max-w-2xl rounded-lg border bg-card p-5 shadow-xl"><h2 id="offline-conflict-title" className="text-lg font-semibold">Resolve offline conflict</h2><p className="mt-1 text-sm text-muted-foreground">This {conflict.mutation.operation === 'MARK_BUSINESS_ANNOUNCED' ? 'business-line action' : 'change'} changed on server while you were offline. Choose what to keep.</p><div className="mt-4 grid gap-3 sm:grid-cols-2"><div className="rounded border p-3"><h3 className="font-medium">Your offline change</h3><p className="mt-2 whitespace-pre-wrap text-sm">{conflict.mutation.operation === 'MARK_BUSINESS_ANNOUNCED' ? 'Status: announced' : conflict.mutation.payload.noteText}</p></div><div className="rounded border p-3"><h3 className="font-medium">Server change</h3><p className="mt-2 whitespace-pre-wrap text-sm">{conflict.mutation.operation === 'MARK_BUSINESS_ANNOUNCED' ? `Status: ${conflict.serverStatus ?? 'unknown'}` : conflict.serverText}</p><p className="mt-2 text-xs text-muted-foreground">Server revision: {conflict.serverRevision}</p></div></div><div className="mt-4 flex flex-wrap justify-end gap-2"><button type="button" className="rounded border px-3 py-2 text-sm" onClick={() => void resolveConflict('server')}>Keep server</button><button type="button" className="rounded border px-3 py-2 text-sm" onClick={() => void resolveConflict('offline')}>Keep my change</button><button type="button" className="rounded border px-3 py-2 text-sm" onClick={() => void resolveConflict('both')} disabled={conflict.mutation.operation !== 'UPDATE_PRIVATE_NOTE'}>Keep both{conflict.mutation.operation !== 'UPDATE_PRIVATE_NOTE' ? ' (not available)' : ''}</button></div></section></div> : null}
   </main>;
 }

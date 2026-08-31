@@ -20,7 +20,7 @@ const mutationSchema = z.object({
   })
 });
 const requestSchema = z.object({ mutations: z.array(mutationSchema).min(1).max(50) });
-type StoredResponse = { mutationId: string; status: 'applied' | 'duplicate' | 'conflict' | 'rejected'; noteId?: string; lineId?: string; updatedAt?: string; serverText?: string; serverRevision?: string; error?: string };
+type StoredResponse = { mutationId: string; status: 'applied' | 'duplicate' | 'conflict' | 'rejected'; operation?: string; noteId?: string; lineId?: string; updatedAt?: string; serverText?: string; serverStatus?: string; serverRevision?: string; error?: string };
 
 export async function POST(request: Request, context: { params: Promise<{ wardId: string; meetingId: string }> }) {
   const session = await auth();
@@ -56,8 +56,10 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
             result = { mutationId: mutation.id, status: 'applied', lineId: mutation.payload.lineId, updatedAt: updated.rows[0].updated_at.toISOString() };
           }
           else {
-            const exists = await client.query('SELECT id, status FROM meeting_business_line WHERE id = $1::uuid AND meeting_id = $2::uuid AND ward_id = $3::uuid LIMIT 1', [mutation.payload.lineId, meetingId, wardId]);
-            result = exists.rowCount && exists.rows[0].status === 'pending' ? { mutationId: mutation.id, status: 'conflict', lineId: mutation.payload.lineId, error: 'Business line changed while offline' } : { mutationId: mutation.id, status: 'rejected', error: 'Business line not found or already announced' };
+            const exists = await client.query('SELECT id, status, updated_at FROM meeting_business_line WHERE id = $1::uuid AND meeting_id = $2::uuid AND ward_id = $3::uuid LIMIT 1', [mutation.payload.lineId, meetingId, wardId]);
+            result = exists.rowCount
+              ? { mutationId: mutation.id, operation: mutation.operation, status: 'conflict', lineId: mutation.payload.lineId, serverStatus: exists.rows[0].status, serverRevision: exists.rows[0].updated_at.toISOString(), error: 'Business line changed while offline' }
+              : { mutationId: mutation.id, status: 'rejected', error: 'Business line not found or already announced' };
           }
         }
       } else if (mutation.operation === 'CREATE_PRIVATE_NOTE' && mutation.payload.target) {

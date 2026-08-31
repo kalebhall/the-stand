@@ -29,6 +29,7 @@ export type OfflineMutation = {
   status: 'pending' | 'conflict' | 'failed';
   error?: string;
   serverText?: string;
+  serverStatus?: string;
   serverRevision?: string;
 };
 
