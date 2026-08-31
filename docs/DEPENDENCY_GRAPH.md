@@ -39,7 +39,7 @@ flowchart LR
   A5 -->|89| A8
   A6 -->|81| A25
   A5 -->|79| A13
-  A6 -->|67| A8
+  A6 -->|66| A8
   A5 -->|38| A20
   A6 -->|38| A13
   A5 -->|23| A17
@@ -120,7 +120,7 @@ flowchart LR
 | `web:api` | `web:auth` | 89 |
 | `web:app` | `web:ui` | 81 |
 | `web:api` | `web:db` | 79 |
-| `web:app` | `web:auth` | 67 |
+| `web:app` | `web:auth` | 66 |
 | `web:api` | `web:notifications` | 38 |
 | `web:app` | `web:app` | 38 |
 | `web:app` | `web:db` | 38 |
@@ -357,7 +357,7 @@ flowchart LR
 | `apps/web/app/login/login-form.tsx` | `web:app` | 2 | 2 |
 | `apps/web/app/login/page.tsx` | `web:app` | 2 | 1 |
 | `apps/web/app/logout/logout-form.tsx` | `web:app` | 2 | 2 |
-| `apps/web/app/logout/page.tsx` | `web:app` | 2 | 0 |
+| `apps/web/app/logout/page.tsx` | `web:app` | 1 | 0 |
 | `apps/web/app/meetings/[meetingId]/edit/page.tsx` | `web:app` | 10 | 2 |
 | `apps/web/app/meetings/[meetingId]/print/page.tsx` | `web:app` | 6 | 1 |
 | `apps/web/app/meetings/delete-meeting-button.tsx` | `web:app` | 1 | 2 |
