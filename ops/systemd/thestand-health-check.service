@@ -1,0 +1,7 @@
+[Unit]
+Description=The Stand health recovery check
+After=the-stand.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/thestand-health-check.sh
