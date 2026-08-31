@@ -1,4 +1,5 @@
 import { createRequire } from 'module';
+import { EventEmitter } from 'node:events';
 
 import { drizzle, type NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
@@ -36,7 +37,24 @@ function getPool(): Pool {
       // 5s was too short under moderate load bursts.
       connectionTimeoutMillis: 15000,
       // Release idle connections after 60s.
-      idleTimeoutMillis: 60000
+      idleTimeoutMillis: 60000,
+      // Never let a broken database connection hold a request forever.
+      query_timeout: 10000,
+      // Detect dead TCP connections between requests.
+      keepAlive: true,
+      keepAliveInitialDelayMillis: 10000
+    });
+    const activePool = _pool;
+    const poolEvents = activePool as Pool & EventEmitter;
+    poolEvents.on('error', (error: Error) => {
+      console.error('database_pool_error', { error });
+      if (_pool === activePool) {
+        _pool = undefined;
+        _db = undefined;
+      }
+      void activePool.end().catch((endError: unknown) => {
+        console.error('database_pool_close_failed', { error: endError });
+      });
     });
   }
   return _pool;
