@@ -65,12 +65,14 @@ Aggregate hymns by `hymn_number`, `hymn_title`, and item position/type. Aggregat
 
 Return actionable warnings for speaker items missing a topic, speaker/member identity match, hymn details, or required prayer assignment. Keep warnings tied to meeting date and item title.
 
-### Task 5: Replace notes-only reports UI with reports hub
+### Task 5: Build reports hub and separate report pages
 
 **Files:**
 - Modify: `apps/web/app/reports/page.tsx`
+- Create: `apps/web/app/reports/[report]/page.tsx`
+- Create: `apps/web/components/reports/report-view.tsx`
 
-Keep existing note report filters and privacy rules. Add date-filtered cards/sections for speakers, topics, hymns, prayers, and completeness. Use compact lists before adding charts. Display counts, last-use dates, and empty states.
+Keep `/reports` as a navigation hub. Give each report its own route with shared date filters and shared presentation components. Use compact factual lists before adding charts. Preserve ward authorization and show useful empty states.
 
 ### Task 6: Verify and ship
 

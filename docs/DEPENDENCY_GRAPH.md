@@ -15,7 +15,7 @@ flowchart LR
   A3["root:tooling<br/>6 files"]
   A4["web:announcements<br/>2 files"]
   A5["web:api<br/>67 files"]
-  A6["web:app<br/>90 files"]
+  A6["web:app<br/>91 files"]
   A7["web:audit<br/>2 files"]
   A8["web:auth<br/>11 files"]
   A9["web:bootstrap.mjs<br/>1 files"]
@@ -35,12 +35,12 @@ flowchart LR
   A23["web:stand<br/>5 files"]
   A24["web:tooling<br/>2 files"]
   A25["web:types<br/>2 files"]
-  A26["web:ui<br/>28 files"]
+  A26["web:ui<br/>29 files"]
   A27["web:version.mjs<br/>1 files"]
   A5 -->|89| A8
-  A6 -->|82| A26
+  A6 -->|84| A26
   A5 -->|79| A13
-  A6 -->|66| A8
+  A6 -->|68| A8
   A5 -->|38| A20
   A6 -->|38| A13
   A5 -->|23| A17
@@ -80,6 +80,7 @@ flowchart LR
   A26 -->|1| A17
   A26 -->|1| A19
   A26 -->|1| A21
+  A26 -->|1| A22
   A26 -->|1| A23
 ```
 
@@ -92,7 +93,7 @@ flowchart LR
 | `root:tooling` | 6 |
 | `web:announcements` | 2 |
 | `web:api` | 67 |
-| `web:app` | 90 |
+| `web:app` | 91 |
 | `web:audit` | 2 |
 | `web:auth` | 11 |
 | `web:bootstrap.mjs` | 1 |
@@ -112,7 +113,7 @@ flowchart LR
 | `web:stand` | 5 |
 | `web:tooling` | 2 |
 | `web:types` | 2 |
-| `web:ui` | 28 |
+| `web:ui` | 29 |
 | `web:version.mjs` | 1 |
 
 ## Internal dependencies
@@ -120,9 +121,9 @@ flowchart LR
 | Importing area | Imported area | Imports |
 | --- | --- | ---: |
 | `web:api` | `web:auth` | 89 |
-| `web:app` | `web:ui` | 82 |
+| `web:app` | `web:ui` | 84 |
 | `web:api` | `web:db` | 79 |
-| `web:app` | `web:auth` | 66 |
+| `web:app` | `web:auth` | 68 |
 | `web:api` | `web:notifications` | 38 |
 | `web:app` | `web:app` | 38 |
 | `web:app` | `web:db` | 38 |
@@ -178,19 +179,20 @@ flowchart LR
 | `web:ui` | `web:lib` | 1 |
 | `web:ui` | `web:notes` | 1 |
 | `web:ui` | `web:offline` | 1 |
+| `web:ui` | `web:reports` | 1 |
 | `web:ui` | `web:stand` | 1 |
 
 ## External dependencies
 
 | Importing area | Package/runtime | Imports |
 | --- | --- | ---: |
-| `web:app` | `next` | 67 |
+| `web:app` | `next` | 69 |
 | `web:api` | `next` | 48 |
+| `web:ui` | `react` | 26 |
 | `web:app` | `react` | 25 |
-| `web:ui` | `react` | 25 |
 | `web:api` | `vitest` | 18 |
+| `web:ui` | `next` | 13 |
 | `root:tooling` | `Node.js` | 12 |
-| `web:ui` | `next` | 12 |
 | `web:notifications` | `vitest` | 9 |
 | `web:notifications` | `pg` | 8 |
 | `web:api` | `zod` | 7 |
@@ -382,7 +384,8 @@ flowchart LR
 | `apps/web/app/p/ward/[portalToken]/route.ts` | `web:app` | 1 | 1 |
 | `apps/web/app/p/ward/[portalToken]/route.vitest.ts` | `web:app` | 1 | 1 |
 | `apps/web/app/page.tsx` | `web:app` | 4 | 1 |
-| `apps/web/app/reports/page.tsx` | `web:app` | 5 | 1 |
+| `apps/web/app/reports/[report]/page.tsx` | `web:app` | 6 | 2 |
+| `apps/web/app/reports/page.tsx` | `web:app` | 3 | 1 |
 | `apps/web/app/request-access/page.tsx` | `web:app` | 1 | 0 |
 | `apps/web/app/request-access/request-access-form.tsx` | `web:app` | 2 | 1 |
 | `apps/web/app/sentry-example-page/page.tsx` | `web:app` | 0 | 0 |
@@ -441,6 +444,7 @@ flowchart LR
 | `apps/web/components/notification-bell.vitest.tsx` | `web:ui` | 1 | 3 |
 | `apps/web/components/offline-stand-button.tsx` | `web:ui` | 2 | 2 |
 | `apps/web/components/public-portal/PublicLinkQrCard.tsx` | `web:ui` | 2 | 1 |
+| `apps/web/components/reports/report-view.tsx` | `web:ui` | 1 | 2 |
 | `apps/web/components/site-logo.tsx` | `web:ui` | 0 | 2 |
 | `apps/web/components/site-logo.vitest.tsx` | `web:ui` | 1 | 3 |
 | `apps/web/components/theme-provider.tsx` | `web:ui` | 0 | 2 |
