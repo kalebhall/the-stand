@@ -22,7 +22,7 @@ function ChapelMark({ className, ...props }: ComponentPropsWithoutRef<'svg'>) {
 
 export function SiteLogo({ className, iconClassName, showName = true }: { className?: string; iconClassName?: string; showName?: boolean }) {
   return (
-    <Link href="/dashboard" className={`flex items-center gap-2 font-bold tracking-tight ${className ?? ''}`}>
+    <Link href="/dashboard" className={`flex items-center gap-2 font-bold tracking-tight text-primary ${className ?? ''}`}>
       <ChapelMark className={`h-7 w-7 shrink-0 ${iconClassName ?? ''}`} />
       {showName ? <span>The Stand</span> : <span className="sr-only">The Stand</span>}
     </Link>
