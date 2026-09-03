@@ -13,6 +13,7 @@ import { MEETING_TYPES, type ProgramItemInput } from '@/src/meetings/types';
 import { getDefaultProgramItemsForMeetingType } from '@/src/meetings/default-program';
 
 import { DeleteMeetingButton } from './delete-meeting-button';
+import { cn } from '@/lib/utils';
 
 const PERSON_ITEM_TYPES = new Set(['PRESIDING', 'CONDUCTING', 'INVOCATION', 'SPEAKER', 'BENEDICTION']);
 const HYMN_ITEM_TYPES = new Set(['OPENING_HYMN', 'REST_HYMN', 'CLOSING_HYMN', 'SPECIAL_HYMN', 'SACRAMENT_HYMN']);
@@ -39,6 +40,17 @@ function getItemTitleLabel(itemType: string) {
   }
 
   return 'Name';
+}
+
+function getProgramItemAccentClass(itemType: string) {
+  if (HYMN_ITEM_TYPES.has(itemType)) return 'program-item--hymn';
+  if (itemType === 'INVOCATION' || itemType === 'BENEDICTION') return 'program-item--prayer';
+  if (itemType === 'SPEAKER' || itemType === 'PRESIDING' || itemType === 'CONDUCTING') return 'program-item--speaker';
+  if (itemType === 'SACRAMENT') return 'program-item--sacrament';
+  if (itemType === BUSINESS_ITEM_TYPE) return 'program-item--business';
+  if (itemType === ANNOUNCEMENT_ITEM_TYPE) return 'program-item--announcement';
+  if (itemType === 'TESTIMONIES') return 'program-item--testimony';
+  return 'program-item--closing';
 }
 
 type MeetingFormProps = {
@@ -318,7 +330,7 @@ export function MeetingForm({
         {programItems.map((item, index) => (
           <article
             key={`${item.id ?? 'new'}-${index}`}
-            className="space-y-3 rounded-md border p-3"
+            className={cn('program-item space-y-3 rounded-md border p-3', getProgramItemAccentClass(item.itemType))}
             draggable
             onDragStart={(event) => {
               event.dataTransfer.setData('text/program-item-index', String(index));
@@ -332,8 +344,11 @@ export function MeetingForm({
               if (!Number.isNaN(fromIndex)) moveItemToIndex(fromIndex, index);
             }}
           >
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold">{item.itemType.replaceAll('_', ' ')}</h3>
+            <div className="program-item-header flex items-center justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-2">
+                <span className="cursor-grab text-muted-foreground" aria-hidden="true" title="Drag to reorder">⋮⋮</span>
+                <h3 className="truncate text-sm font-semibold">{item.itemType.replaceAll('_', ' ')}</h3>
+              </div>
               <Button
                 type="button"
                 variant="ghost"
