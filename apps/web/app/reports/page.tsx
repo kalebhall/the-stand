@@ -4,6 +4,7 @@ import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth
 import { canUseInternalNotes } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
+import { loadReportData } from '@/src/reports/aggregations';
 
 type NoteReportRow = {
   id: string;
@@ -19,6 +20,10 @@ type NoteReportRow = {
 
 function optionalDate(value: string | undefined): string | null {
   return value && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : null;
+}
+
+function formatReportDate(value: string): string {
+  return new Date(`${value}T00:00:00`).toLocaleDateString();
 }
 
 export default async function ReportsPage({
@@ -73,8 +78,9 @@ export default async function ReportsPage({
         LIMIT 500`,
       [activeWardId, session.user.id, from, to, visibility, target]
     );
-    await client.query('COMMIT');
     const notes = result.rows as NoteReportRow[];
+    const reportData = await loadReportData(client, { wardId: activeWardId, from, to });
+    await client.query('COMMIT');
 
     return (
       <main className="mx-auto w-full max-w-5xl space-y-6 p-4 sm:p-6">
@@ -98,6 +104,33 @@ export default async function ReportsPage({
           </label>
           <button type="submit" className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground sm:col-span-4">Apply filters</button>
         </form>
+
+        <section className="grid gap-4 lg:grid-cols-2">
+          <article className="section-panel section-panel--service p-4">
+            <div className="flex items-baseline justify-between gap-2"><h2 className="font-semibold">Speaker frequency</h2><span className="text-xs text-muted-foreground">{reportData.speakers.length} speakers</span></div>
+            {reportData.speakers.length ? <ul className="mt-3 space-y-2 text-sm">{reportData.speakers.slice(0, 10).map((speaker) => <li key={speaker.speakerName} className="flex items-center justify-between gap-3 rounded-md border bg-background/60 px-3 py-2"><span className="font-medium">{speaker.speakerName}</span><span className="text-right text-xs text-muted-foreground">{speaker.talkCount} {speaker.talkCount === 1 ? 'talk' : 'talks'} · last {formatReportDate(speaker.lastTalkDate)}</span></li>)}</ul> : <p className="mt-3 text-sm text-muted-foreground">No recorded talks match filters.</p>}
+          </article>
+
+          <article className="section-panel section-panel--announcement p-4">
+            <div className="flex items-baseline justify-between gap-2"><h2 className="font-semibold">Topic history</h2><span className="text-xs text-muted-foreground">{reportData.topics.length} topics</span></div>
+            {reportData.topics.length ? <ul className="mt-3 space-y-2 text-sm">{reportData.topics.slice(0, 10).map((topic, index) => <li key={`${topic.meetingDate}-${topic.speakerName}-${index}`} className="rounded-md border bg-background/60 px-3 py-2"><p className="font-medium">{topic.topic}</p><p className="text-xs text-muted-foreground">{topic.speakerName} · {formatReportDate(topic.meetingDate)}</p></li>)}</ul> : <p className="mt-3 text-sm text-muted-foreground">No recorded speaker topics match filters.</p>}
+          </article>
+
+          <article className="section-panel section-panel--resource p-4">
+            <div className="flex items-baseline justify-between gap-2"><h2 className="font-semibold">Hymn frequency</h2><span className="text-xs text-muted-foreground">{reportData.hymns.length} hymns</span></div>
+            {reportData.hymns.length ? <ul className="mt-3 space-y-2 text-sm">{reportData.hymns.slice(0, 10).map((hymn) => <li key={`${hymn.hymnNumber}-${hymn.position}`} className="flex items-center justify-between gap-3 rounded-md border bg-background/60 px-3 py-2"><span><span className="font-medium">{hymn.hymnNumber} · {hymn.hymnTitle}</span><span className="block text-xs text-muted-foreground">{hymn.position.replaceAll('_', ' ')}</span></span><span className="text-right text-xs text-muted-foreground">{hymn.useCount} uses · last {formatReportDate(hymn.lastUsedDate)}</span></li>)}</ul> : <p className="mt-3 text-sm text-muted-foreground">No recorded hymns match filters.</p>}
+          </article>
+
+          <article className="section-panel section-panel--service p-4">
+            <div className="flex items-baseline justify-between gap-2"><h2 className="font-semibold">Prayer frequency</h2><span className="text-xs text-muted-foreground">{reportData.prayers.length} assignments</span></div>
+            {reportData.prayers.length ? <ul className="mt-3 space-y-2 text-sm">{reportData.prayers.slice(0, 10).map((prayer) => <li key={`${prayer.personName}-${prayer.prayerType}`} className="flex items-center justify-between gap-3 rounded-md border bg-background/60 px-3 py-2"><span><span className="font-medium">{prayer.personName}</span><span className="block text-xs text-muted-foreground">{prayer.prayerType.replaceAll('_', ' ')}</span></span><span className="text-right text-xs text-muted-foreground">{prayer.assignmentCount} assignments · last {formatReportDate(prayer.lastAssignmentDate)}</span></li>)}</ul> : <p className="mt-3 text-sm text-muted-foreground">No recorded prayers match filters.</p>}
+          </article>
+        </section>
+
+        <section className="section-panel section-panel--announcement p-4">
+          <div className="flex items-baseline justify-between gap-2"><h2 className="font-semibold">Program completeness</h2><span className="text-xs text-muted-foreground">{reportData.completeness.length} warnings</span></div>
+          {reportData.completeness.length ? <ul className="mt-3 space-y-2 text-sm">{reportData.completeness.slice(0, 20).map((warning, index) => <li key={`${warning.meetingDate}-${warning.itemType}-${index}`} className="flex flex-wrap items-center justify-between gap-2 rounded-md border bg-background/60 px-3 py-2"><span><span className="font-medium">{warning.issue}</span><span className="block text-xs text-muted-foreground">{warning.title} · {warning.itemType.replaceAll('_', ' ')}</span></span><span className="text-xs text-muted-foreground">{formatReportDate(warning.meetingDate)}</span></li>)}</ul> : <p className="mt-3 text-sm text-muted-foreground">No completeness warnings match filters.</p>}
+        </section>
 
         <section className="space-y-3">
           <p className="text-sm text-muted-foreground">{notes.length} notes shown.</p>
