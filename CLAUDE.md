@@ -220,6 +220,7 @@ Key environment variables (see `.env.example`):
 | `AUTH_GOOGLE_SECRET`      | Google OAuth client secret           |
 | `PASSWORD_AUTH_ENABLED`   | Enable email/password login          |
 | `SUPPORT_ADMIN_EMAIL`     | Support admin bootstrap email        |
+| `SUPPORT_ADMIN_INITIAL_PASSWORD` | One-time support admin bootstrap password; never log |
 | `ENCRYPTION_KEY`          | Data encryption key (32 bytes hex)   |
 | `REDIS_URL`               | Redis connection for BullMQ          |
 | `NOTIFICATION_WEBHOOK_URL`| Webhook URL for notifications        |

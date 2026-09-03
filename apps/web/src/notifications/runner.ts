@@ -4,7 +4,7 @@ import { processNotificationDigest, queueNotificationDigest } from './digests';
 import { deliverNotificationEmail, formatNotificationEmail } from './email';
 import { getNotificationEmailPreferences } from './email-preferences';
 import { formatUserNotification } from './format';
-import { enqueueDigestNotificationJob, type NotificationDigestQueueJob } from './queue';
+import { type NotificationDigestQueueJob } from './queue';
 import { getSubscribedRecipientIds, isKnownNotificationEvent, resolveNotificationRecipients } from './recipients';
 import { ensureDefaultNotificationSubscriptions } from './subscriptions';
 import { createUserNotification } from './user-notifications';

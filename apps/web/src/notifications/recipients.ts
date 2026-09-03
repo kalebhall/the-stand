@@ -1,7 +1,5 @@
 import type { PoolClient } from 'pg';
 
-import { hasRole } from '@/src/auth/roles';
-
 import {
   NOTIFICATION_EVENT_TYPES,
   getNotificationEventDefinition,

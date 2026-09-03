@@ -72,7 +72,6 @@ flowchart LR
   A15 -->|1| A26
   A16 -->|1| A13
   A18 -->|1| A4
-  A20 -->|1| A8
   A20 -->|1| A19
   A25 -->|1| A8
   A25 -->|1| A16
@@ -168,7 +167,6 @@ flowchart LR
 | `web:health.mjs` | `web:version.mjs` | 1 |
 | `web:imports` | `web:db` | 1 |
 | `web:meetings` | `web:announcements` | 1 |
-| `web:notifications` | `web:auth` | 1 |
 | `web:notifications` | `web:notes` | 1 |
 | `web:ui` | `web:auth` | 1 |
 | `web:ui` | `web:imports` | 1 |
@@ -227,7 +225,6 @@ flowchart LR
 | `web:api` | `@the-stand/shared` | 1 |
 | `web:app` | `Node.js` | 1 |
 | `web:app` | `next-themes` | 1 |
-| `web:audit` | `pg` | 1 |
 | `web:audit` | `vitest` | 1 |
 | `web:auth` | `argon2` | 1 |
 | `web:auth` | `next` | 1 |
@@ -459,7 +456,7 @@ flowchart LR
 | `apps/web/server.mjs` | `web:config` | 2 | 1 |
 | `apps/web/src/announcements/types.ts` | `web:announcements` | 0 | 0 |
 | `apps/web/src/announcements/types.vitest.ts` | `web:announcements` | 1 | 1 |
-| `apps/web/src/audit/service.ts` | `web:audit` | 0 | 1 |
+| `apps/web/src/audit/service.ts` | `web:audit` | 0 | 0 |
 | `apps/web/src/audit/service.vitest.ts` | `web:audit` | 1 | 1 |
 | `apps/web/src/auth/auth.ts` | `web:auth` | 5 | 3 |
 | `apps/web/src/auth/guards.ts` | `web:auth` | 1 | 2 |
@@ -536,7 +533,7 @@ flowchart LR
 | `apps/web/src/notifications/format.vitest.ts` | `web:notifications` | 1 | 1 |
 | `apps/web/src/notifications/outbox.ts` | `web:notifications` | 1 | 1 |
 | `apps/web/src/notifications/queue.ts` | `web:notifications` | 1 | 1 |
-| `apps/web/src/notifications/recipients.ts` | `web:notifications` | 2 | 1 |
+| `apps/web/src/notifications/recipients.ts` | `web:notifications` | 1 | 1 |
 | `apps/web/src/notifications/recipients.vitest.ts` | `web:notifications` | 1 | 1 |
 | `apps/web/src/notifications/runner.ts` | `web:notifications` | 8 | 1 |
 | `apps/web/src/notifications/runner.vitest.ts` | `web:notifications` | 1 | 1 |
