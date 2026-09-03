@@ -26,6 +26,15 @@
   --section-service: #3f7655;
   --section-announcement: #a66a00;
   --section-resource: #72508f;
+  --program-welcome: #006685;
+  --program-hymn: #3f7655;
+  --program-prayer: #72508f;
+  --program-speaker: #a66a00;
+  --program-sacrament: #24556f;
+  --program-business: #a85632;
+  --program-announcement: #a66a00;
+  --program-testimony: #6b5a91;
+  --program-closing: #387c78;
 }
 
 .dark {
@@ -52,6 +61,15 @@
   --section-service: #78c795;
   --section-announcement: #e7b75f;
   --section-resource: #c19be0;
+  --program-welcome: #65c1d8;
+  --program-hymn: #78c795;
+  --program-prayer: #c19be0;
+  --program-speaker: #e7b75f;
+  --program-sacrament: #8ecbe0;
+  --program-business: #e09574;
+  --program-announcement: #e7b75f;
+  --program-testimony: #c4afe0;
+  --program-closing: #82d0c8;
 }
 
 @theme inline {
@@ -143,7 +161,29 @@ main h3 {
   --section-accent: var(--section-resource);
 }
 
-/* Padded sections with a direct title get a restrained header-bar treatment. */
+/* Program-item window accents identify item type without tinting content. */
+.program-item {
+  border-top: 4px solid var(--program-accent, var(--program-welcome));
+  overflow: hidden;
+}
+
+.program-item--hymn { --program-accent: var(--program-hymn); }
+.program-item--prayer { --program-accent: var(--program-prayer); }
+.program-item--speaker { --program-accent: var(--program-speaker); }
+.program-item--sacrament { --program-accent: var(--program-sacrament); }
+.program-item--business { --program-accent: var(--program-business); }
+.program-item--announcement { --program-accent: var(--program-announcement); }
+.program-item--testimony { --program-accent: var(--program-testimony); }
+.program-item--closing { --program-accent: var(--program-closing); }
+
+.program-item-header {
+  margin: -0.75rem -0.75rem 0;
+  padding: 0.6rem 0.75rem;
+  background: color-mix(in srgb, var(--program-accent, var(--program-welcome)) 12%, var(--card));
+  border-bottom: 1px solid color-mix(in srgb, var(--program-accent, var(--program-welcome)) 24%, var(--border));
+}
+
+
 .section-panel > h2:first-child {
   margin: -1rem -1rem 1rem;
   padding: 0.75rem 1rem;

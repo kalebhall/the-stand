@@ -18,7 +18,7 @@ const targetSchema = z.discriminatedUnion('type', [
 
 const createNoteSchema = z.object({
   target: targetSchema,
-  visibility: z.enum(['LEADERSHIP', 'PRIVATE']),
+  visibility: z.enum(['PUBLIC', 'LEADERSHIP', 'PRIVATE']),
   noteText: z.string().trim().min(1).max(10000)
 });
 
@@ -76,6 +76,22 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
       return NextResponse.json({ error: 'Note target not found', code: 'NOT_FOUND' }, { status: 404 });
     }
 
+    if (parsed.data.visibility === 'PUBLIC' && parsed.data.target.type !== 'PROGRAM_ITEM') {
+      await client.query('ROLLBACK');
+      return NextResponse.json({ error: 'Public notes must belong to a program item', code: 'VALIDATION_ERROR' }, { status: 400 });
+    }
+
+    if (parsed.data.visibility === 'PUBLIC' && parsed.data.target.type === 'PROGRAM_ITEM') {
+      const existingPublic = await client.query(
+        "SELECT id FROM internal_note WHERE program_item_id = $1::uuid AND ward_id = $2::uuid AND visibility = 'PUBLIC' LIMIT 1",
+        [parsed.data.target.programItemId, wardId]
+      );
+      if (existingPublic.rowCount) {
+        await client.query('ROLLBACK');
+        return NextResponse.json({ error: 'A public note already exists for this program item', code: 'CONFLICT' }, { status: 409 });
+      }
+    }
+
     const target = targetColumns(parsed.data.target);
     const inserted = await client.query(
       `INSERT INTO internal_note (
@@ -85,6 +101,13 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
       ) RETURNING id, created_at`,
       [wardId, target.memberId, target.meetingId, target.programItemId, parsed.data.visibility, parsed.data.noteText, session.user.id]
     );
+
+    if (parsed.data.visibility === 'PUBLIC' && parsed.data.target.type === 'PROGRAM_ITEM') {
+      await client.query(
+        'UPDATE meeting_program_item SET program_notes = $1::text WHERE id = $2::uuid AND ward_id = $3::uuid',
+        [parsed.data.noteText, parsed.data.target.programItemId, wardId]
+      );
+    }
 
     await recordAuditEvent(client, {
       wardId,
