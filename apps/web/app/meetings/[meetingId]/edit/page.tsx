@@ -24,6 +24,7 @@ type ProgramItemRow = {
   item_type: string;
   title: string | null;
   notes: string | null;
+  topic: string | null;
   program_notes: string | null;
   hymn_number: string | null;
   hymn_title: string | null;
@@ -69,7 +70,7 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ me
     }
 
     const programItemsResult = await client.query(
-      `SELECT id, item_type, title, notes, program_notes, hymn_number, hymn_title
+      `SELECT id, item_type, title, notes, topic, program_notes, hymn_number, hymn_title
          FROM meeting_program_item
         WHERE meeting_id = $1 AND ward_id = $2
         ORDER BY sequence ASC`,
@@ -119,6 +120,7 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ me
       itemType: item.item_type,
       title: item.title ?? '',
       notes: item.notes ?? '',
+      topic: item.topic ?? '',
       programNotes: item.program_notes ?? '',
       hymnNumber: item.hymn_number ?? '',
       hymnTitle: item.hymn_title ?? ''

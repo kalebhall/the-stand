@@ -124,6 +124,7 @@ export const meetingProgramItem = pgTable('meeting_program_item', {
   itemType: text('item_type').notNull(),
   title: text('title'),
   notes: text('notes'),
+  topic: text('topic'),
   programNotes: text('program_notes'),
   hymnNumber: text('hymn_number'),
   hymnTitle: text('hymn_title'),

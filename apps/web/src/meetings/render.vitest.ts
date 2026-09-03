@@ -106,6 +106,7 @@ describe('buildMeetingRenderHtml', () => {
         itemType: 'SPEAKER',
         title: 'Jane Doe',
         notes: null,
+        topic: 'Finding peace through prayer',
         programNotes: 'Please welcome our speaker.',
         hymnNumber: null,
         hymnTitle: null
@@ -113,5 +114,6 @@ describe('buildMeetingRenderHtml', () => {
     });
 
     expect(html).toContain('Please welcome our speaker.');
+    expect(html).toContain('Finding peace through prayer');
   });
 });

@@ -88,6 +88,7 @@ const PROGRAM_ITEM_TYPES = [
 const DEFAULT_PROGRAM_ITEM: Omit<ProgramItemInput, 'itemType'> = {
   title: '',
   notes: '',
+  topic: '',
   programNotes: '',
   hymnNumber: '',
   hymnTitle: ''
@@ -420,6 +421,18 @@ export function MeetingForm({
                     <HymnAutocomplete hymnNumber={item.hymnNumber} hymnTitle={item.hymnTitle} onChange={(num, title) => updateHymn(index, num, title)} />
                   </div>
                 </div>
+              ) : null}
+
+              {item.itemType === 'SPEAKER' ? (
+                <label className="space-y-1 text-sm">
+                  <span className="font-medium">Speaking topic</span>
+                  <input
+                    className="w-full rounded-md border px-3 py-2"
+                    value={item.topic ?? ''}
+                    onChange={(event) => updateProgramItem(index, 'topic', event.target.value)}
+                    placeholder="Optional topic"
+                  />
+                </label>
               ) : null}
             </div>
 
