@@ -31,13 +31,14 @@ flowchart LR
   A19["web:notes<br/>1 files"]
   A20["web:notifications<br/>23 files"]
   A21["web:offline<br/>1 files"]
-  A22["web:stand<br/>5 files"]
-  A23["web:tooling<br/>2 files"]
-  A24["web:types<br/>2 files"]
-  A25["web:ui<br/>28 files"]
-  A26["web:version.mjs<br/>1 files"]
+  A22["web:reports<br/>2 files"]
+  A23["web:stand<br/>5 files"]
+  A24["web:tooling<br/>2 files"]
+  A25["web:types<br/>2 files"]
+  A26["web:ui<br/>28 files"]
+  A27["web:version.mjs<br/>1 files"]
   A5 -->|89| A8
-  A6 -->|82| A25
+  A6 -->|82| A26
   A5 -->|79| A13
   A6 -->|66| A8
   A5 -->|38| A20
@@ -48,7 +49,7 @@ flowchart LR
   A5 -->|10| A16
   A6 -->|8| A18
   A6 -->|4| A11
-  A6 -->|4| A22
+  A6 -->|4| A23
   A5 -->|3| A4
   A5 -->|3| A18
   A6 -->|3| A4
@@ -61,24 +62,25 @@ flowchart LR
   A2 -->|1| A15
   A5 -->|1| A10
   A5 -->|1| A19
-  A5 -->|1| A22
+  A5 -->|1| A23
   A6 -->|1| A10
   A6 -->|1| A17
   A6 -->|1| A21
+  A6 -->|1| A22
   A8 -->|1| A17
   A10 -->|1| A20
   A12 -->|1| A9
   A12 -->|1| A15
-  A15 -->|1| A26
+  A15 -->|1| A27
   A16 -->|1| A13
   A18 -->|1| A4
   A20 -->|1| A19
-  A25 -->|1| A8
-  A25 -->|1| A16
-  A25 -->|1| A17
-  A25 -->|1| A19
-  A25 -->|1| A21
-  A25 -->|1| A22
+  A26 -->|1| A8
+  A26 -->|1| A16
+  A26 -->|1| A17
+  A26 -->|1| A19
+  A26 -->|1| A21
+  A26 -->|1| A23
 ```
 
 ## Area inventory
@@ -106,6 +108,7 @@ flowchart LR
 | `web:notes` | 1 |
 | `web:notifications` | 23 |
 | `web:offline` | 1 |
+| `web:reports` | 2 |
 | `web:stand` | 5 |
 | `web:tooling` | 2 |
 | `web:types` | 2 |
@@ -159,6 +162,7 @@ flowchart LR
 | `web:app` | `web:calendar` | 1 |
 | `web:app` | `web:lib` | 1 |
 | `web:app` | `web:offline` | 1 |
+| `web:app` | `web:reports` | 1 |
 | `web:audit` | `web:audit` | 1 |
 | `web:auth` | `web:lib` | 1 |
 | `web:calendar` | `web:notifications` | 1 |
@@ -168,6 +172,7 @@ flowchart LR
 | `web:imports` | `web:db` | 1 |
 | `web:meetings` | `web:announcements` | 1 |
 | `web:notifications` | `web:notes` | 1 |
+| `web:reports` | `web:reports` | 1 |
 | `web:ui` | `web:auth` | 1 |
 | `web:ui` | `web:imports` | 1 |
 | `web:ui` | `web:lib` | 1 |
@@ -247,6 +252,8 @@ flowchart LR
 | `web:lib` | `jspdf` | 1 |
 | `web:lib` | `qrcode` | 1 |
 | `web:notifications` | `nodemailer` | 1 |
+| `web:reports` | `pg` | 1 |
+| `web:reports` | `vitest` | 1 |
 | `web:ui` | `class-variance-authority` | 1 |
 | `web:ui` | `clsx` | 1 |
 | `web:ui` | `next-themes` | 1 |
@@ -375,7 +382,7 @@ flowchart LR
 | `apps/web/app/p/ward/[portalToken]/route.ts` | `web:app` | 1 | 1 |
 | `apps/web/app/p/ward/[portalToken]/route.vitest.ts` | `web:app` | 1 | 1 |
 | `apps/web/app/page.tsx` | `web:app` | 4 | 1 |
-| `apps/web/app/reports/page.tsx` | `web:app` | 4 | 1 |
+| `apps/web/app/reports/page.tsx` | `web:app` | 5 | 1 |
 | `apps/web/app/request-access/page.tsx` | `web:app` | 1 | 0 |
 | `apps/web/app/request-access/request-access-form.tsx` | `web:app` | 2 | 1 |
 | `apps/web/app/sentry-example-page/page.tsx` | `web:app` | 0 | 0 |
@@ -545,6 +552,8 @@ flowchart LR
 | `apps/web/src/notifications/visibility.vitest.ts` | `web:notifications` | 1 | 1 |
 | `apps/web/src/notifications/worker-entry.ts` | `web:notifications` | 5 | 1 |
 | `apps/web/src/offline/storage.ts` | `web:offline` | 0 | 0 |
+| `apps/web/src/reports/aggregations.ts` | `web:reports` | 0 | 1 |
+| `apps/web/src/reports/aggregations.vitest.ts` | `web:reports` | 1 | 1 |
 | `apps/web/src/stand/default-template.ts` | `web:stand` | 0 | 0 |
 | `apps/web/src/stand/member-display.ts` | `web:stand` | 0 | 0 |
 | `apps/web/src/stand/member-display.vitest.ts` | `web:stand` | 1 | 1 |
