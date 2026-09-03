@@ -33,7 +33,7 @@ async function run(): Promise<void> {
       await client.query(sql);
       await client.query('INSERT INTO drizzle_migrations (file_name) VALUES ($1)', [file]);
       await client.query('COMMIT');
-      console.log(`Applied migration: ${file}`);
+      console.info(`Applied migration: ${file}`);
     }
   } catch (error) {
     await client.query('ROLLBACK');

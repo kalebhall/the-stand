@@ -7,9 +7,7 @@ import { Pool } from 'pg';
 import * as schema from './schema';
 
 // pg's named ESM exports for `types` confuse the project tsconfig — use require.
-// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 const pgTypes: { setTypeParser: (oid: number, fn: (val: string) => unknown) => void } =
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
   createRequire(import.meta.url)('pg').types;
 
 // Return date/timestamp columns as raw strings instead of JS Date objects.

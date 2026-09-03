@@ -275,7 +275,6 @@ function parseSquishedLine(line: string): ParsedCalling | null {
   if (!m) return null;
 
   const rawName = m[1].trim();
-  const gender = m[2].toUpperCase();
   const digitBlob = m[3];
   const monthStr = m[4];
   const yearStr = m[5];
@@ -293,7 +292,6 @@ function parseSquishedLine(line: string): ParsedCalling | null {
   const bdYear = Number(yearStr);
   if (bdYear < 1900 || bdYear > 2020) return null;
 
-  const birthday = `${monthStr.slice(0, 3)} ${day}`;
   // Normalize month to title case ("May 26", "Nov 23", etc.)
   const birthdayNorm = `${monthStr[0].toUpperCase()}${monthStr.slice(1, 3).toLowerCase()} ${day}`;
 
@@ -644,7 +642,6 @@ function parsePdfCallingsColumnDump(lines: string[]): ParsedCalling[] {
 }
 
 function looksLikeColumnDumpFormat(lines: string[]): boolean {
-  let nameCount = 0;
   let genderCount = 0;
   let inNameBlock = false;
 
@@ -654,7 +651,7 @@ function looksLikeColumnDumpFormat(lines: string[]): boolean {
 
     if (looksLikeMemberNameStart(line)) {
       inNameBlock = true;
-      nameCount++;
+
     } else if (inNameBlock && looksLikeGenderLine(line)) {
       genderCount++;
       if (genderCount >= 3) return true;

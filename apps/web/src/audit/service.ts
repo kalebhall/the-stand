@@ -1,5 +1,3 @@
-import type { PoolClient } from 'pg';
-
 export type AuditSource = 'manual_ui' | 'lcr_import' | 'bulk_sync' | 'api';
 export type AuditSeverity = 'info' | 'notice' | 'security';
 export type AuditEntityType =

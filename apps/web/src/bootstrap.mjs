@@ -11,8 +11,6 @@ export async function ensureSupportAdminBootstrap() {
     throw new Error('SUPPORT_ADMIN_EMAIL is required');
   }
 
-  const password = crypto.randomBytes(24).toString('base64url');
-
   supportAdmin = {
     id: crypto.randomUUID(),
     email,
@@ -23,7 +21,7 @@ export async function ensureSupportAdminBootstrap() {
   };
 
   bootstrapDone = true;
-  console.log(`Support Admin bootstrap credentials (shown once): email=${email} password=${password}`);
+  console.info(`Support Admin bootstrap completed for ${email}; configure credentials through a secure environment`);
 }
 
 export function getCurrentUser(authorizationHeader) {

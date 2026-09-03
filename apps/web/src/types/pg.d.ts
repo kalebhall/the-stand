@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 declare module 'pg' {
   export type QueryResultRow = Record<string, unknown>;
   export type PoolClient = {

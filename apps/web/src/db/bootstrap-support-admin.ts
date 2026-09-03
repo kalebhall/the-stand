@@ -43,7 +43,10 @@ export async function ensureSupportAdminBootstrap(): Promise<void> {
     return;
   }
 
-  const password = generateBootstrapPassword();
+  const password = process.env.SUPPORT_ADMIN_INITIAL_PASSWORD;
+  if (!password) {
+    throw new Error('SUPPORT_ADMIN_INITIAL_PASSWORD is required when bootstrapping support admin');
+  }
   const hash = await hashPassword(password);
 
   const userResult = await pool.query(
@@ -68,5 +71,5 @@ export async function ensureSupportAdminBootstrap(): Promise<void> {
     [userResult.rows[0].id, supportEmail]
   );
 
-  console.log(`Support Admin bootstrap credentials (shown once): email=${supportEmail} password=${password}`);
+  console.info(`Support Admin bootstrap completed for ${supportEmail}; password supplied through environment`);
 }

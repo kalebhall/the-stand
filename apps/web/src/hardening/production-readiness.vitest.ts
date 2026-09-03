@@ -11,7 +11,7 @@ function read(relativePath: string): string {
 }
 
 describe('phase 12 production-readiness checks', () => {
-  it('keeps runtime logs free from secrets except one-time bootstrap password output', () => {
+  it('keeps runtime logs free from secrets', () => {
     const filesToScan = [
       'apps/web/server.mjs',
       'apps/web/src/bootstrap.mjs',
@@ -28,15 +28,7 @@ describe('phase 12 production-readiness checks', () => {
         .filter((line) => line.includes('console.'));
 
       for (const line of logLines) {
-        const isBootstrapPasswordLine =
-          (file === 'apps/web/src/db/bootstrap-support-admin.ts' &&
-            line.includes('Support Admin bootstrap credentials (shown once): email=${supportEmail} password=${password}')) ||
-          (file === 'apps/web/src/bootstrap.mjs' &&
-            line.includes('Support Admin bootstrap credentials (shown once): email=${email} password=${password}'));
-
-        if (!isBootstrapPasswordLine) {
-          expect(sensitivePattern.test(line), `Unexpected sensitive log in ${file}: ${line}`).toBe(false);
-        }
+        expect(sensitivePattern.test(line), `Unexpected sensitive log in ${file}: ${line}`).toBe(false);
       }
     }
   });
