@@ -53,6 +53,7 @@ describe('notification visibility', () => {
 
   it('validates note visibility values', () => {
     expect(validateNoteVisibility('LEADERSHIP')).toBe('LEADERSHIP');
-    expect(() => validateNoteVisibility('PUBLIC')).toThrow('Invalid note visibility');
+    expect(validateNoteVisibility('PUBLIC')).toBe('PUBLIC');
+    expect(() => validateNoteVisibility('UNKNOWN')).toThrow('Invalid note visibility');
   });
 });

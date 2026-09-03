@@ -134,7 +134,7 @@ export default async function StandViewPage({
           AND note.program_item_id IN (
             SELECT id FROM meeting_program_item WHERE meeting_id = $2::uuid AND ward_id = $1::uuid
           )
-          AND (note.visibility = 'LEADERSHIP' OR note.created_by_user_id = $3::uuid)
+          AND (note.visibility IN ('LEADERSHIP', 'PUBLIC') OR note.created_by_user_id = $3::uuid)
         ORDER BY note.created_at DESC`,
       [session.activeWardId, meetingId, session.user.id]
     );

@@ -1,4 +1,4 @@
-export const NOTE_VISIBILITIES = ['LEADERSHIP', 'PRIVATE'] as const;
+export const NOTE_VISIBILITIES = ['PUBLIC', 'LEADERSHIP', 'PRIVATE'] as const;
 export type NoteVisibility = (typeof NOTE_VISIBILITIES)[number];
 
 export const NOTE_TARGET_TYPES = ['MEMBER', 'MEETING', 'PROGRAM_ITEM'] as const;

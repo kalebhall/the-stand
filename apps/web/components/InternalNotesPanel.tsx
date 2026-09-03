@@ -23,6 +23,7 @@ type InternalNotesPanelProps = {
 
 export function InternalNotesPanel({ wardId, target, notes, title = 'Notes' }: InternalNotesPanelProps) {
   const [selectedVisibility, setSelectedVisibility] = useState<NoteVisibility | null>(null);
+  const [audiencePickerOpen, setAudiencePickerOpen] = useState(false);
   const [noteText, setNoteText] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -78,20 +79,35 @@ export function InternalNotesPanel({ wardId, target, notes, title = 'Notes' }: I
     <section className="rounded-lg border bg-card p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-base font-semibold">{title}</h2>
-        <div className="flex flex-wrap gap-2">
-          <Button type="button" size="sm" variant="outline" onClick={() => setSelectedVisibility('LEADERSHIP')}>
-            Add bishopric / clerk note
-          </Button>
-          <Button type="button" size="sm" variant="outline" onClick={() => setSelectedVisibility('PRIVATE')}>
-            Add private note
-          </Button>
-        </div>
+        <Button type="button" size="sm" variant="outline" onClick={() => setAudiencePickerOpen(true)}>
+          Add note
+        </Button>
       </div>
+
+      {audiencePickerOpen ? (
+        <div className="mt-3 rounded-md border bg-background p-3" role="group" aria-label="Choose note audience">
+          <p className="text-sm font-medium">Who can see this note?</p>
+          <div className="mt-2 grid gap-2 sm:grid-cols-3">
+            {target.type === 'PROGRAM_ITEM' ? (
+              <Button type="button" variant="outline" className="h-auto justify-start whitespace-normal p-3 text-left" onClick={() => { setSelectedVisibility('PUBLIC'); setAudiencePickerOpen(false); }}>
+                <span><strong className="block">Public program</strong><span className="text-xs text-muted-foreground">Shown on published program</span></span>
+              </Button>
+            ) : null}
+            <Button type="button" variant="outline" className="h-auto justify-start whitespace-normal p-3 text-left" onClick={() => { setSelectedVisibility('LEADERSHIP'); setAudiencePickerOpen(false); }}>
+              <span><strong className="block">Bishopric / clerk</strong><span className="text-xs text-muted-foreground">Authorized ward leaders</span></span>
+            </Button>
+            <Button type="button" variant="outline" className="h-auto justify-start whitespace-normal p-3 text-left" onClick={() => { setSelectedVisibility('PRIVATE'); setAudiencePickerOpen(false); }}>
+              <span><strong className="block">Personal</strong><span className="text-xs text-muted-foreground">Only you</span></span>
+            </Button>
+          </div>
+          <Button type="button" size="sm" variant="ghost" className="mt-2" onClick={() => setAudiencePickerOpen(false)}>Cancel</Button>
+        </div>
+      ) : null}
 
       {selectedVisibility ? (
         <div className="mt-3 space-y-2">
           <p className="text-sm text-muted-foreground">
-            {selectedVisibility === 'LEADERSHIP' ? 'Visible only to authorized bishopric and clerk roles in this ward.' : 'Visible only to you.'}
+            {selectedVisibility === 'PUBLIC' ? 'This note appears on the published public program. Do not include private information.' : selectedVisibility === 'LEADERSHIP' ? 'Visible only to authorized bishopric and clerk roles in this ward.' : 'Visible only to you.'}
           </p>
           <textarea
             value={noteText}
@@ -117,7 +133,7 @@ export function InternalNotesPanel({ wardId, target, notes, title = 'Notes' }: I
           {notes.map((note) => (
             <li key={note.id} className="rounded-md border bg-background p-3 text-sm">
               <div className="mb-1 flex flex-wrap justify-between gap-2 text-xs text-muted-foreground">
-                <span>{note.visibility === 'PRIVATE' ? 'Private' : 'Bishopric / Clerk'}</span>
+                <span>{note.visibility === 'PUBLIC' ? 'Public program' : note.visibility === 'PRIVATE' ? 'Personal' : 'Bishopric / Clerk'}</span>
                 <span>{note.created_by_email ?? 'Unknown author'} · {new Date(note.created_at).toLocaleString()}</span>
               </div>
               {editingNoteId === note.id ? (

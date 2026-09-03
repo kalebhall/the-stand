@@ -59,7 +59,7 @@ export default async function ReportsPage({
          LEFT JOIN meeting ON meeting.id = note.meeting_id
          LEFT JOIN meeting_program_item item ON item.id = note.program_item_id
         WHERE note.ward_id = $1::uuid
-          AND (note.visibility = 'LEADERSHIP' OR note.created_by_user_id = $2::uuid)
+          AND (note.visibility IN ('LEADERSHIP', 'PUBLIC') OR note.created_by_user_id = $2::uuid)
           AND ($3::date IS NULL OR note.created_at >= $3::date)
           AND ($4::date IS NULL OR note.created_at < ($4::date + INTERVAL '1 day'))
           AND ($5::text = 'ALL' OR note.visibility = $5::text)

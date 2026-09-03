@@ -106,7 +106,7 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ me
          LEFT JOIN user_account ua ON ua.id = note.created_by_user_id
         WHERE note.ward_id = $1::uuid
           AND note.meeting_id = $2::uuid
-          AND (note.visibility = 'LEADERSHIP' OR note.created_by_user_id = $3::uuid)
+          AND (note.visibility IN ('LEADERSHIP', 'PUBLIC') OR note.created_by_user_id = $3::uuid)
         ORDER BY note.created_at DESC`,
       [session.activeWardId, meetingId, session.user.id]
     );
