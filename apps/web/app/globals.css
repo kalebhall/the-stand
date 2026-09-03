@@ -22,6 +22,10 @@
   --popover: #ffffff;
   --popover-foreground: #243746;
   --radius: 0.375rem;
+  --section-primary: #006685;
+  --section-service: #3f7655;
+  --section-announcement: #a66a00;
+  --section-resource: #72508f;
 }
 
 .dark {
@@ -44,6 +48,10 @@
   --accent-foreground: #d9f3f8;
   --popover: #1b2d38;
   --popover-foreground: #edf4f6;
+  --section-primary: #65c1d8;
+  --section-service: #78c795;
+  --section-announcement: #e7b75f;
+  --section-resource: #c19be0;
 }
 
 @theme inline {
@@ -115,6 +123,32 @@ main h3 {
 :focus-visible {
   outline: 2px solid var(--ring);
   outline-offset: 2px;
+}
+
+/* Consistent section hierarchy across operator screens. */
+.section-panel {
+  border-top: 4px solid var(--section-accent, var(--section-primary));
+  overflow: hidden;
+}
+
+.section-panel--service {
+  --section-accent: var(--section-service);
+}
+
+.section-panel--announcement {
+  --section-accent: var(--section-announcement);
+}
+
+.section-panel--resource {
+  --section-accent: var(--section-resource);
+}
+
+/* Padded sections with a direct title get a restrained header-bar treatment. */
+.section-panel > h2:first-child {
+  margin: -1rem -1rem 1rem;
+  padding: 0.75rem 1rem;
+  background: color-mix(in srgb, var(--section-accent, var(--section-primary)) 12%, var(--card));
+  border-bottom: 1px solid color-mix(in srgb, var(--section-accent, var(--section-primary)) 24%, var(--border));
 }
 
 @media print {
