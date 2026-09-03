@@ -4,6 +4,7 @@ export type MeetingRenderItem = {
   itemType: string;
   title: string | null;
   notes: string | null;
+  topic?: string | null;
   programNotes?: string | null;
   hymnNumber: string | null;
   hymnTitle: string | null;
@@ -38,6 +39,10 @@ function displayHymn(item: MeetingRenderItem) {
   return item.title ?? '';
 }
 
+function displayTopic(item: MeetingRenderItem) {
+  return item.itemType.toUpperCase() === 'SPEAKER' && item.topic?.trim() ? item.topic.trim() : '';
+}
+
 function renderAnnouncementBlock(items: AnnouncementRenderItem[]) {
   if (!items.length) {
     return '';
@@ -65,9 +70,11 @@ export function buildMeetingRenderHtml({ meetingDate, meetingType, programItems,
     .map((item) => {
       const label = escapeHtml(item.itemType.replaceAll('_', ' '));
       const value = escapeHtml(displayHymn(item) || '—');
+      const topic = displayTopic(item);
+      const topicHtml = topic ? `<p class="text-sm text-muted-foreground">${escapeHtml(topic)}</p>` : '';
       const notes = (item.programNotes ?? item.notes) ? `<p class="text-xs text-muted-foreground">${escapeHtml(item.programNotes ?? item.notes ?? '')}</p>` : '';
 
-      return `<article class="grid grid-cols-[10rem_1fr] gap-3 border-b py-2"><p class="text-sm font-medium">${label}</p><div class="space-y-1"><p class="text-sm">${value}</p>${notes}</div></article>`;
+      return `<article class="grid grid-cols-[10rem_1fr] gap-3 border-b py-2"><p class="text-sm font-medium">${label}</p><div class="space-y-1"><p class="text-sm">${value}</p>${topicHtml}${notes}</div></article>`;
     })
     .join('');
 

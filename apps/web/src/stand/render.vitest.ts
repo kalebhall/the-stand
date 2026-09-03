@@ -135,6 +135,14 @@ describe('buildStandRows', () => {
     ]));
   });
 
+  it('shows speaker topic beneath speaker name when provided', () => {
+    const rows = buildStandRows([
+      { id: 'speaker', itemType: 'SPEAKER', title: 'Jane Doe', member: { gender: 'F' }, notes: '', topic: 'Finding peace through prayer', hymnNumber: null, hymnTitle: null }
+    ]);
+
+    expect(rows[1]).toMatchObject({ details: 'Sister Jane Doe\nFinding peace through prayer' });
+  });
+
   it('renders sacrament as a dedicated row in program order', () => {
     const rows = buildStandRows([
       { id: 'hymn', itemType: 'SACRAMENT_HYMN', title: '', notes: '', hymnNumber: '169', hymnTitle: 'As Now We Take the Sacrament' },

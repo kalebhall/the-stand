@@ -11,6 +11,7 @@ export type StandProgramItem = {
   title: string | null;
   member?: MemberDisplayInfo;
   notes: string | null;
+  topic?: string | null;
   programNotes?: string | null;
   hymnNumber: string | null;
   hymnTitle: string | null;
@@ -160,7 +161,7 @@ export function buildStandRows(
     const hymnBits = [item.hymnNumber?.trim(), item.hymnTitle?.trim()].filter(Boolean).join(' — ');
     const details = item.title?.trim()
       ? isPersonItem(normalizedType)
-        ? formatAtStandMemberName(item.title, item.member, item.notes ?? undefined)
+        ? [formatAtStandMemberName(item.title, item.member, item.notes ?? undefined), normalizedType === 'SPEAKER' ? item.topic?.trim() : null].filter(Boolean).join('\n')
         : item.title.trim()
       : item.notes?.trim() || hymnBits || label;
 

@@ -39,14 +39,15 @@ async function insertProgramItems(
         itemType,
         toTrimmedString(item?.title),
         toTrimmedString(item?.notes),
+        toTrimmedString(item?.topic),
         toTrimmedString(item?.hymnNumber),
         toTrimmedString(item?.hymnTitle)
       ];
     await client.query(
       programNotes || item?.programNotes !== undefined
-        ? `INSERT INTO meeting_program_item (ward_id, meeting_id, sequence, item_type, title, notes, program_notes, hymn_number, hymn_title) VALUES ($1, $2, $3, $4, NULLIF($5, ''), NULLIF($6, ''), NULLIF($7, ''), NULLIF($8, ''), NULLIF($9, ''))`
-        : `INSERT INTO meeting_program_item (ward_id, meeting_id, sequence, item_type, title, notes, hymn_number, hymn_title) VALUES ($1, $2, $3, $4, NULLIF($5, ''), NULLIF($6, ''), NULLIF($7, ''), NULLIF($8, ''))`,
-      programNotes || item?.programNotes !== undefined ? [...values.slice(0, 6), programNotes, ...values.slice(6)] : values
+        ? `INSERT INTO meeting_program_item (ward_id, meeting_id, sequence, item_type, title, notes, topic, program_notes, hymn_number, hymn_title) VALUES ($1, $2, $3, $4, NULLIF($5, ''), NULLIF($6, ''), NULLIF($7, ''), NULLIF($8, ''), NULLIF($9, ''), NULLIF($10, ''))`
+        : `INSERT INTO meeting_program_item (ward_id, meeting_id, sequence, item_type, title, notes, topic, hymn_number, hymn_title) VALUES ($1, $2, $3, $4, NULLIF($5, ''), NULLIF($6, ''), NULLIF($7, ''), NULLIF($8, ''), NULLIF($9, ''))`,
+      programNotes || item?.programNotes !== undefined ? [...values.slice(0, 7), programNotes, ...values.slice(7)] : values
     );
   }
 }

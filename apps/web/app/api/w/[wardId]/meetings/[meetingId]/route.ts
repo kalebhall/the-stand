@@ -21,6 +21,7 @@ type ProgramItemRow = {
   item_type: string;
   title: string | null;
   notes: string | null;
+  topic: string | null;
   program_notes: string | null;
   hymn_number: string | null;
   hymn_title: string | null;
@@ -55,7 +56,7 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
     }
 
     const itemsResult = await client.query(
-      `SELECT id, item_type, title, notes, program_notes, hymn_number, hymn_title, sequence
+      `SELECT id, item_type, title, notes, topic, program_notes, hymn_number, hymn_title, sequence
          FROM meeting_program_item
         WHERE meeting_id = $1 AND ward_id = $2
         ORDER BY sequence ASC`,
@@ -75,6 +76,7 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
           itemType: item.item_type,
           title: item.title ?? '',
           notes: item.notes ?? '',
+          topic: item.topic ?? '',
           programNotes: item.program_notes ?? '',
           hymnNumber: item.hymn_number ?? '',
           hymnTitle: item.hymn_title ?? '',
@@ -159,11 +161,11 @@ export async function PUT(request: Request, context: { params: Promise<{ wardId:
     for (const [index, item] of programItems.entries()) {
       const itemType = toTrimmedString(item?.itemType);
       if (!itemType) continue;
-      const values = [wardId, meetingId, index + 1, itemType, toTrimmedString(item?.title), toTrimmedString(item?.notes), toTrimmedString(item?.programNotes), toTrimmedString(item?.hymnNumber), toTrimmedString(item?.hymnTitle)];
+      const values = [wardId, meetingId, index + 1, itemType, toTrimmedString(item?.title), toTrimmedString(item?.notes), toTrimmedString(item?.topic), toTrimmedString(item?.programNotes), toTrimmedString(item?.hymnNumber), toTrimmedString(item?.hymnTitle)];
       if (item?.id && retainedIds.includes(item.id)) {
-        await client.query(`UPDATE meeting_program_item SET sequence = $3::int, item_type = $4::text, title = NULLIF($5::text, ''), notes = NULLIF($6::text, ''), program_notes = NULLIF($7::text, ''), hymn_number = NULLIF($8::text, ''), hymn_title = NULLIF($9::text, '') WHERE id = $10::uuid AND meeting_id = $2::uuid AND ward_id = $1::uuid`, [...values, item.id]);
+        await client.query(`UPDATE meeting_program_item SET sequence = $3::int, item_type = $4::text, title = NULLIF($5::text, ''), notes = NULLIF($6::text, ''), topic = NULLIF($7::text, ''), program_notes = NULLIF($8::text, ''), hymn_number = NULLIF($9::text, ''), hymn_title = NULLIF($10::text, '') WHERE id = $11::uuid AND meeting_id = $2::uuid AND ward_id = $1::uuid`, [...values, item.id]);
       } else {
-        await client.query(`INSERT INTO meeting_program_item (ward_id, meeting_id, sequence, item_type, title, notes, program_notes, hymn_number, hymn_title) VALUES ($1::uuid, $2::uuid, $3::int, $4::text, NULLIF($5::text, ''), NULLIF($6::text, ''), NULLIF($7::text, ''), NULLIF($8::text, ''), NULLIF($9::text, ''))`, values);
+        await client.query(`INSERT INTO meeting_program_item (ward_id, meeting_id, sequence, item_type, title, notes, topic, program_notes, hymn_number, hymn_title) VALUES ($1::uuid, $2::uuid, $3::int, $4::text, NULLIF($5::text, ''), NULLIF($6::text, ''), NULLIF($7::text, ''), NULLIF($8::text, ''), NULLIF($9::text, ''), NULLIF($10::text, ''))`, values);
       }
     }
 

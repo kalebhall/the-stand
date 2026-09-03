@@ -61,7 +61,7 @@ describe('POST /api/w/[wardId]/meetings', () => {
           meetingType: 'SACRAMENT',
           programItems: [
             { itemType: 'OPENING_HYMN', title: '', notes: '', hymnNumber: '2', hymnTitle: 'The Spirit of God' },
-            { itemType: 'SPEAKER', title: 'Jane Doe', notes: 'Missionary report', hymnNumber: '', hymnTitle: '' }
+            { itemType: 'SPEAKER', title: 'Jane Doe', notes: '', topic: 'Missionary report', hymnNumber: '', hymnTitle: '' }
           ]
         })
       }),
@@ -77,6 +77,7 @@ describe('POST /api/w/[wardId]/meetings', () => {
       'OPENING_HYMN',
       '',
       '',
+      '',
       '2',
       'The Spirit of God'
     ]);
@@ -86,6 +87,7 @@ describe('POST /api/w/[wardId]/meetings', () => {
       2,
       'SPEAKER',
       'Jane Doe',
+      '',
       'Missionary report',
       '',
       ''

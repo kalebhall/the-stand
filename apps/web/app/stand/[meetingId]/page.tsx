@@ -22,6 +22,7 @@ type ProgramItemRow = {
   last_name: string | null;
   gender: string | null;
   notes: string | null;
+  topic: string | null;
   program_notes: string | null;
   hymn_number: string | null;
   hymn_title: string | null;
@@ -93,7 +94,7 @@ export default async function StandViewPage({
     const meetingDate = meetingResult.rows[0].meeting_date as string;
 
     const programResult = await client.query(
-      `SELECT i.id, i.item_type, i.title, i.notes, i.program_notes, i.hymn_number, i.hymn_title,
+      `SELECT i.id, i.item_type, i.title, i.notes, i.topic, i.program_notes, i.hymn_number, i.hymn_title,
               m.first_name, m.last_name, m.gender
          FROM meeting_program_item i
          LEFT JOIN member m ON m.ward_id = i.ward_id AND m.full_name = i.title AND m.archived_at IS NULL
@@ -188,6 +189,7 @@ export default async function StandViewPage({
         title: item.title,
         member: { firstName: item.first_name, lastName: item.last_name, gender: item.gender },
         notes: item.notes,
+        topic: item.topic,
         programNotes: item.program_notes,
         hymnNumber: item.hymn_number,
         hymnTitle: item.hymn_title
