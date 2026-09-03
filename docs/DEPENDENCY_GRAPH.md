@@ -15,7 +15,7 @@ flowchart LR
   A3["root:tooling<br/>6 files"]
   A4["web:announcements<br/>2 files"]
   A5["web:api<br/>67 files"]
-  A6["web:app<br/>91 files"]
+  A6["web:app<br/>92 files"]
   A7["web:audit<br/>2 files"]
   A8["web:auth<br/>11 files"]
   A9["web:bootstrap.mjs<br/>1 files"]
@@ -40,9 +40,9 @@ flowchart LR
   A5 -->|89| A8
   A6 -->|84| A26
   A5 -->|79| A13
-  A6 -->|68| A8
+  A6 -->|70| A8
+  A6 -->|40| A13
   A5 -->|38| A20
-  A6 -->|38| A13
   A5 -->|23| A17
   A5 -->|15| A11
   A5 -->|14| A7
@@ -93,7 +93,7 @@ flowchart LR
 | `root:tooling` | 6 |
 | `web:announcements` | 2 |
 | `web:api` | 67 |
-| `web:app` | 91 |
+| `web:app` | 92 |
 | `web:audit` | 2 |
 | `web:auth` | 11 |
 | `web:bootstrap.mjs` | 1 |
@@ -123,10 +123,10 @@ flowchart LR
 | `web:api` | `web:auth` | 89 |
 | `web:app` | `web:ui` | 84 |
 | `web:api` | `web:db` | 79 |
-| `web:app` | `web:auth` | 68 |
+| `web:app` | `web:auth` | 70 |
+| `web:app` | `web:db` | 40 |
 | `web:api` | `web:notifications` | 38 |
 | `web:app` | `web:app` | 38 |
-| `web:app` | `web:db` | 38 |
 | `web:notifications` | `web:notifications` | 32 |
 | `web:ui` | `web:ui` | 25 |
 | `web:api` | `web:lib` | 23 |
@@ -186,7 +186,7 @@ flowchart LR
 
 | Importing area | Package/runtime | Imports |
 | --- | --- | ---: |
-| `web:app` | `next` | 69 |
+| `web:app` | `next` | 71 |
 | `web:api` | `next` | 48 |
 | `web:ui` | `react` | 26 |
 | `web:app` | `react` | 25 |
@@ -385,6 +385,7 @@ flowchart LR
 | `apps/web/app/p/ward/[portalToken]/route.vitest.ts` | `web:app` | 1 | 1 |
 | `apps/web/app/page.tsx` | `web:app` | 4 | 1 |
 | `apps/web/app/reports/[report]/page.tsx` | `web:app` | 6 | 2 |
+| `apps/web/app/reports/notes/page.tsx` | `web:app` | 4 | 2 |
 | `apps/web/app/reports/page.tsx` | `web:app` | 3 | 1 |
 | `apps/web/app/request-access/page.tsx` | `web:app` | 1 | 0 |
 | `apps/web/app/request-access/request-access-form.tsx` | `web:app` | 2 | 1 |

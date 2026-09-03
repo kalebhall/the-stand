@@ -70,6 +70,7 @@ Return actionable warnings for speaker items missing a topic, speaker/member ide
 **Files:**
 - Modify: `apps/web/app/reports/page.tsx`
 - Create: `apps/web/app/reports/[report]/page.tsx`
+- Create: `apps/web/app/reports/notes/page.tsx`
 - Create: `apps/web/components/reports/report-view.tsx`
 
 Keep `/reports` as a navigation hub. Give each report its own route with shared date filters and shared presentation components. Use compact factual lists before adding charts. Preserve ward authorization and show useful empty states.
