@@ -19,7 +19,7 @@ function DashboardCard({
   actions?: { href: string; label: string }[];
 }) {
   return (
-    <article className="rounded-lg border bg-card p-5 text-card-foreground shadow-sm">
+    <article className="section-panel rounded-lg border bg-card p-5 text-card-foreground shadow-sm">
       <p className="text-sm font-medium text-muted-foreground">{title}</p>
       <p className="mt-2 text-2xl font-semibold tracking-tight">{value}</p>
       <p className="mt-2 text-sm text-muted-foreground">{detail}</p>

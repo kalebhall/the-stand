@@ -60,7 +60,7 @@ export default async function MeetingsPage() {
         {meetings.length ? (
           <section className="space-y-3">
             {meetings.map((meeting) => (
-              <article key={meeting.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-card p-4">
+              <article key={meeting.id} className="section-panel flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-card p-4">
                 <div>
                   <p className="text-base font-semibold">{formatMeetingDateForDisplay(meeting.meeting_date)}</p>
                   <p className="text-sm text-muted-foreground">{meeting.meeting_type.replaceAll('_', ' ')}</p>
@@ -84,7 +84,7 @@ export default async function MeetingsPage() {
             ))}
           </section>
         ) : (
-          <section className="rounded-lg border bg-card p-8 text-center">
+          <section className="section-panel rounded-lg border bg-card p-8 text-center">
             <h2 className="text-lg font-semibold">No meetings scheduled</h2>
             <p className="mt-2 text-sm text-muted-foreground">Create your first meeting to begin building programs and print layouts.</p>
             {canManage ? (

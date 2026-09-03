@@ -315,7 +315,7 @@ export default async function CallingsPage() {
         </section>
 
         {canManage ? (
-          <section className="rounded-lg border bg-card p-4">
+          <section className="section-panel section-panel--service rounded-lg border bg-card p-4">
             <h2 className="text-lg font-semibold">Add Calling</h2>
             <p className="mb-3 text-sm text-muted-foreground">
               Select from standard callings or type a custom calling name. Use Assignment only for responsibilities that do not require propose, sustain, or set apart workflow.
@@ -325,7 +325,7 @@ export default async function CallingsPage() {
         ) : null}
 
         {/* Proposed section */}
-        <section className="rounded-lg border bg-card p-4">
+        <section className="section-panel section-panel--service rounded-lg border bg-card p-4">
           <h2 className="text-lg font-semibold">Proposed</h2>
           <p className="mb-3 text-sm text-muted-foreground">Callings that have been proposed but not yet extended.</p>
           {proposedCallings.length ? (
@@ -340,7 +340,7 @@ export default async function CallingsPage() {
         </section>
 
         {/* Extended section */}
-        <section className="rounded-lg border bg-card p-4">
+        <section className="section-panel section-panel--service rounded-lg border bg-card p-4">
           <h2 className="text-lg font-semibold">Extended</h2>
           <p className="mb-3 text-sm text-muted-foreground">Callings that have been extended — will appear on sacrament meeting ward business for sustaining.</p>
           {extendedCallings.length ? (
@@ -355,7 +355,7 @@ export default async function CallingsPage() {
         </section>
 
         {/* To Be Released section */}
-        <section className="rounded-lg border bg-card p-4">
+        <section className="section-panel section-panel--service rounded-lg border bg-card p-4">
           <h2 className="text-lg font-semibold">To Be Released</h2>
           <p className="mb-3 text-sm text-muted-foreground">Callings queued for release — will appear on sacrament meeting ward business. Delete permanently removes the record.</p>
           {toBeReleasedCallings.length ? (
@@ -370,7 +370,7 @@ export default async function CallingsPage() {
         </section>
 
         {/* Set Apart Queue */}
-        <section className="rounded-lg border bg-card p-4">
+        <section className="section-panel section-panel--service rounded-lg border bg-card p-4">
           <h2 className="text-lg font-semibold">Set Apart Queue</h2>
           <p className="mb-3 text-sm text-muted-foreground">Sustained callings awaiting set apart action.</p>
           {setApartQueue.length ? (
@@ -399,7 +399,7 @@ export default async function CallingsPage() {
         </section>
 
         {/* All Calling Assignments (excluding proposed, extended, to be released) */}
-        <section className="rounded-lg border bg-card p-4">
+        <section className="section-panel section-panel--service rounded-lg border bg-card p-4">
           <h2 className="text-lg font-semibold">Calling Assignments</h2>
           {activeCallings.length ? (
             <ul className="mt-3 space-y-2">

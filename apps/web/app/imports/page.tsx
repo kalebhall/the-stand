@@ -24,7 +24,7 @@ export default async function ImportsHubPage() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <section className="flex flex-col justify-between rounded-lg border bg-card p-6 shadow-sm space-y-4">
+        <section className="section-panel section-panel--resource flex flex-col justify-between rounded-lg border bg-card p-6 shadow-sm space-y-4">
           <div className="space-y-2">
             <h2 className="text-lg font-semibold flex items-center gap-2">
               <span>👤</span> Import Members
@@ -43,7 +43,7 @@ export default async function ImportsHubPage() {
           </div>
         </section>
 
-        <section className="flex flex-col justify-between rounded-lg border bg-card p-6 shadow-sm space-y-4">
+        <section className="section-panel section-panel--service flex flex-col justify-between rounded-lg border bg-card p-6 shadow-sm space-y-4">
           <div className="space-y-2">
             <h2 className="text-lg font-semibold flex items-center gap-2">
               <span>📋</span> Import Callings
