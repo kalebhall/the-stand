@@ -48,7 +48,7 @@ export function AppShell({
         {/* Floating Action Button (FAB) for Conducting Mode */}
         <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
           {isFabMenuOpen && (
-            <div className="flex flex-col gap-2 rounded-xl border bg-card/95 p-3 shadow-2xl backdrop-blur-md animate-in fade-in slide-in-from-bottom-5">
+            <div className="flex flex-col gap-2 rounded-lg border bg-card/95 p-3 shadow-2xl backdrop-blur-md animate-in fade-in slide-in-from-bottom-5">
               <div className="border-b pb-2 px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 Conducting Stand Menu
               </div>
@@ -116,9 +116,9 @@ export function AppShell({
     <div className="flex min-h-screen bg-background text-foreground">
       <AuthSessionRefresh />
       {/* Desktop Left Navigation Sidebar (hidden on mobile) */}
-      <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 z-30 border-r bg-card/60 backdrop-blur">
-        <div className="flex h-16 shrink-0 items-center justify-between border-b px-6">
-          <SiteLogo className="text-lg" />
+      <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 z-30 border-r border-[#c8d7de] bg-card/95 backdrop-blur">
+        <div className="flex h-16 shrink-0 items-center justify-between border-b border-[#c8d7de] px-6">
+          <SiteLogo className="text-lg text-primary" />
           <NotificationBell wardId={session.activeWardId} />
         </div>
 
@@ -134,7 +134,7 @@ export function AppShell({
                     buttonVariants({ variant: isActive ? 'secondary' : 'ghost', size: 'sm' }),
                     'w-full justify-start text-sm font-medium gap-2.5 px-3 py-2',
                     isActive
-                      ? 'bg-secondary text-secondary-foreground font-semibold'
+                      ? 'border-l-2 border-primary bg-secondary text-secondary-foreground font-semibold'
                       : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
                   )}
                 >
@@ -186,7 +186,7 @@ export function AppShell({
       <div className="flex flex-1 flex-col md:pl-64">
         {/* Mobile Top Bar with Conducting Mode Trigger */}
         <header className="md:hidden sticky top-0 z-20 flex h-14 items-center justify-between border-b bg-background/95 px-4 backdrop-blur">
-          <SiteLogo className="text-base" iconClassName="h-6 w-6" />
+          <SiteLogo className="text-base text-primary" iconClassName="h-6 w-6" />
 
           <div className="flex items-center gap-2">
             <NotificationBell wardId={session.activeWardId} />
