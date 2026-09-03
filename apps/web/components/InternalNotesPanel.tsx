@@ -29,6 +29,7 @@ export function InternalNotesPanel({ wardId, target, notes, title = 'Notes' }: I
   const [error, setError] = useState<string | null>(null);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState('');
+  const showPanel = notes.length > 0 || audiencePickerOpen || selectedVisibility !== null || error !== null;
 
   async function saveNote() {
     const text = noteText.trim();
@@ -73,6 +74,16 @@ export function InternalNotesPanel({ wardId, target, notes, title = 'Notes' }: I
     } finally {
       setSaving(false);
     }
+  }
+
+  if (!showPanel) {
+    return (
+      <div className="flex justify-end">
+        <Button type="button" size="sm" variant="outline" onClick={() => setAudiencePickerOpen(true)}>
+          Add note
+        </Button>
+      </div>
+    );
   }
 
   return (
@@ -153,7 +164,7 @@ export function InternalNotesPanel({ wardId, target, notes, title = 'Notes' }: I
             </li>
           ))}
         </ul>
-      ) : <p className="mt-3 text-sm text-muted-foreground">No notes yet.</p>}
+      ) : null}
     </section>
   );
 }
