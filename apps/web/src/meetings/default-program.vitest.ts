@@ -34,6 +34,11 @@ describe('getDefaultProgramItemsForMeetingType', () => {
     expect(generalConferenceItems).toEqual(['ANNOUNCEMENT']);
   });
 
+  it('keeps introduction roles together before announcements', () => {
+    const itemTypes = getDefaultProgramItemsForMeetingType('SACRAMENT').map((item) => item.itemType);
+    expect(itemTypes.slice(0, 4)).toEqual(['PRESIDING', 'CONDUCTING', 'ORGANIST_PIANIST', 'CHORISTER']);
+  });
+
   it.each(['FAST_TESTIMONY', 'WARD_CONFERENCE'])('adds musicians after conducting for %s meetings', (meetingType) => {
     const itemTypes = getDefaultProgramItemsForMeetingType(meetingType).map((item) => item.itemType);
     const conductingIndex = itemTypes.indexOf('CONDUCTING');
