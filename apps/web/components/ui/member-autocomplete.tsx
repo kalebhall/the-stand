@@ -124,7 +124,7 @@ export function MemberAutocomplete({ wardId, value, onChange, placeholder, class
       {showDropdown ? (
         <ul
           ref={listRef}
-          className="absolute z-50 mt-1 max-h-52 w-full overflow-auto rounded-md border bg-popover text-sm shadow-md"
+          className="absolute z-[100] mt-1 max-h-52 w-full overflow-auto rounded-md border bg-popover text-sm shadow-md"
           role="listbox"
         >
           {filtered.map((member, index) => (
