@@ -148,11 +148,7 @@ function isBeforeDigestTime(local: LocalDateTimeParts): boolean {
   return local.minute < DIGEST_DELIVERY_MINUTE || (local.minute === DIGEST_DELIVERY_MINUTE && local.second === 0);
 }
 
-export function getNextDigestDeliveryTime(params: {
-  frequency: NotificationDigestFrequency;
-  timeZone: string;
-  from?: Date;
-}): Date {
+export function getNextDigestDeliveryTime(params: { frequency: NotificationDigestFrequency; timeZone: string; from?: Date }): Date {
   const timeZone = normalizeNotificationTimeZone(params.timeZone);
   const from = params.from ?? new Date();
   const localNow = parseDateTimeParts(from, timeZone);
@@ -165,9 +161,10 @@ export function getNextDigestDeliveryTime(params: {
   }
 
   const daysUntilMonday = (8 - localNow.weekday) % 7;
-  const targetDate = daysUntilMonday === 0 && isBeforeDigestTime(localNow)
-    ? { year: localNow.year, month: localNow.month, day: localNow.day }
-    : addDays(localNow, daysUntilMonday === 0 ? 7 : daysUntilMonday);
+  const targetDate =
+    daysUntilMonday === 0 && isBeforeDigestTime(localNow)
+      ? { year: localNow.year, month: localNow.month, day: localNow.day }
+      : addDays(localNow, daysUntilMonday === 0 ? 7 : daysUntilMonday);
 
   return zonedDateTimeToUtc({ ...targetDate, hour: DIGEST_DELIVERY_HOUR, minute: DIGEST_DELIVERY_MINUTE, second: 0 }, timeZone);
 }
@@ -262,9 +259,4 @@ export async function updateNotificationEmailPreference(
   return { frequency: params.frequency, timezone };
 }
 
-export {
-  DEFAULT_NOTIFICATION_EMAIL_FREQUENCY,
-  DEFAULT_NOTIFICATION_TIMEZONE,
-  DIGEST_DELIVERY_HOUR,
-  DIGEST_DELIVERY_MINUTE
-};
+export { DEFAULT_NOTIFICATION_EMAIL_FREQUENCY, DEFAULT_NOTIFICATION_TIMEZONE, DIGEST_DELIVERY_HOUR, DIGEST_DELIVERY_MINUTE };

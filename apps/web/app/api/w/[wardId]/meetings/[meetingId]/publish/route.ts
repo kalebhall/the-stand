@@ -84,7 +84,10 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
       [wardId]
     );
 
-    const versionResult = await client.query('SELECT COALESCE(MAX(version), 0)::int AS latest_version FROM meeting_program_render WHERE meeting_id = $1::uuid', [meetingId]);
+    const versionResult = await client.query(
+      'SELECT COALESCE(MAX(version), 0)::int AS latest_version FROM meeting_program_render WHERE meeting_id = $1::uuid',
+      [meetingId]
+    );
 
     const nextVersion = Number(versionResult.rows[0].latest_version) + 1;
     const meeting = meetingResult.rows[0] as MeetingRow;

@@ -64,7 +64,10 @@ describe('buildStandRows', () => {
 
     expect(rows[2]).toMatchObject({ kind: 'release', summary: 'President John Doe — Elders Quorum President' });
     if (rows[2].kind === 'release') {
-      expect(rows[2].segments.filter((segment) => segment.bold).map((segment) => segment.text)).toEqual(['President John Doe', 'Elders Quorum President']);
+      expect(rows[2].segments.filter((segment) => segment.bold).map((segment) => segment.text)).toEqual([
+        'President John Doe',
+        'Elders Quorum President'
+      ]);
     }
   });
 
@@ -100,7 +103,12 @@ describe('buildStandRows', () => {
 
     expect(rows).toEqual([
       { kind: 'welcome', text: 'Welcome to The Church of Jesus Christ of Latter-day Saints.' },
-      { kind: 'standard', programItemId: 'item-announcement', label: 'Announcement', details: 'Stake Conference: Saturday and Sunday sessions' },
+      {
+        kind: 'standard',
+        programItemId: 'item-announcement',
+        label: 'Announcement',
+        details: 'Stake Conference: Saturday and Sunday sessions'
+      },
       { kind: 'standard', programItemId: 'item-opening', label: 'Opening Hymn', details: '1 — The Morning Breaks' }
     ]);
   });
@@ -123,21 +131,58 @@ describe('buildStandRows', () => {
 
   it('preserves program notes on standard, sustain, release, and business rows', () => {
     const rows = buildStandRows([
-      { id: 'standard', itemType: 'SPEAKER', title: 'Jane Doe', member: { gender: 'F' }, notes: '', programNotes: 'Public speaker note', hymnNumber: null, hymnTitle: null },
-      { id: 'sustain', itemType: 'SUSTAINING', title: 'John Doe', member: { gender: 'M' }, notes: 'Bishop', programNotes: 'Public sustain note', hymnNumber: null, hymnTitle: null },
-      { id: 'business', itemType: 'WARD_AND_STAKE_BUSINESS', title: '', notes: '', programNotes: 'Public business note', hymnNumber: null, hymnTitle: null }
+      {
+        id: 'standard',
+        itemType: 'SPEAKER',
+        title: 'Jane Doe',
+        member: { gender: 'F' },
+        notes: '',
+        programNotes: 'Public speaker note',
+        hymnNumber: null,
+        hymnTitle: null
+      },
+      {
+        id: 'sustain',
+        itemType: 'SUSTAINING',
+        title: 'John Doe',
+        member: { gender: 'M' },
+        notes: 'Bishop',
+        programNotes: 'Public sustain note',
+        hymnNumber: null,
+        hymnTitle: null
+      },
+      {
+        id: 'business',
+        itemType: 'WARD_AND_STAKE_BUSINESS',
+        title: '',
+        notes: '',
+        programNotes: 'Public business note',
+        hymnNumber: null,
+        hymnTitle: null
+      }
     ]);
 
-    expect(rows).toEqual(expect.arrayContaining([
-      expect.objectContaining({ kind: 'standard', programItemId: 'standard', programNotes: 'Public speaker note' }),
-      expect.objectContaining({ kind: 'sustain', programItemId: 'sustain', programNotes: 'Public sustain note' }),
-      expect.objectContaining({ kind: 'ward_business', programItemId: 'business', programNotes: 'Public business note' })
-    ]));
+    expect(rows).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ kind: 'standard', programItemId: 'standard', programNotes: 'Public speaker note' }),
+        expect.objectContaining({ kind: 'sustain', programItemId: 'sustain', programNotes: 'Public sustain note' }),
+        expect.objectContaining({ kind: 'ward_business', programItemId: 'business', programNotes: 'Public business note' })
+      ])
+    );
   });
 
   it('shows speaker topic beneath speaker name when provided', () => {
     const rows = buildStandRows([
-      { id: 'speaker', itemType: 'SPEAKER', title: 'Jane Doe', member: { gender: 'F' }, notes: '', topic: 'Finding peace through prayer', hymnNumber: null, hymnTitle: null }
+      {
+        id: 'speaker',
+        itemType: 'SPEAKER',
+        title: 'Jane Doe',
+        member: { gender: 'F' },
+        notes: '',
+        topic: 'Finding peace through prayer',
+        hymnNumber: null,
+        hymnTitle: null
+      }
     ]);
 
     expect(rows[1]).toMatchObject({ details: 'Sister Jane Doe\nFinding peace through prayer' });
@@ -149,7 +194,12 @@ describe('buildStandRows', () => {
       { id: 'sacrament', itemType: 'SACRAMENT', title: '', notes: '', hymnNumber: null, hymnTitle: null }
     ]);
 
-    expect(rows[1]).toEqual({ kind: 'standard', programItemId: 'hymn', label: 'Sacrament Hymn', details: '169 — As Now We Take the Sacrament' });
+    expect(rows[1]).toEqual({
+      kind: 'standard',
+      programItemId: 'hymn',
+      label: 'Sacrament Hymn',
+      details: '169 — As Now We Take the Sacrament'
+    });
     expect(rows[2]).toEqual({ kind: 'sacrament', programItemId: 'sacrament' });
   });
 });

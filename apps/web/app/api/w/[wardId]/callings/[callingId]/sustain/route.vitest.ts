@@ -38,7 +38,9 @@ describe('POST /api/w/[wardId]/callings/[callingId]/sustain', () => {
       .mockResolvedValueOnce({}) // BEGIN
       .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'calling-1', action_status: 'EXTENDED' }] }) // fetchCurrentCallingStatus
       .mockResolvedValueOnce({}) // appendCallingStatus INSERT calling_action
-      .mockResolvedValueOnce({ rows: [{ calling_name: 'Primary Teacher', organization: 'Primary', member_name: 'Jane Doe', member_id: 'm-1' }] }) // calling_assignment SELECT
+      .mockResolvedValueOnce({
+        rows: [{ calling_name: 'Primary Teacher', organization: 'Primary', member_name: 'Jane Doe', member_id: 'm-1' }]
+      }) // calling_assignment SELECT
       .mockResolvedValueOnce({}) // audit_log INSERT
       .mockResolvedValueOnce({}); // COMMIT
   });

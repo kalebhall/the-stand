@@ -24,12 +24,7 @@ const SACRAMENT_PRAYERS = [
 ];
 
 function escapeHtml(value: string) {
-  return value
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;');
+  return value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;');
 }
 
 function displayHymn(item: MeetingRenderItem) {
@@ -83,9 +78,9 @@ export function buildMeetingRenderHtml({ meetingDate, meetingType, programItems,
     })
     .join('');
 
-  const prayersHtml = SACRAMENT_PRAYERS
-    .map((line) => `<p class="text-xs leading-relaxed text-muted-foreground">${escapeHtml(line)}</p>`)
-    .join('');
+  const prayersHtml = SACRAMENT_PRAYERS.map(
+    (line) => `<p class="text-xs leading-relaxed text-muted-foreground">${escapeHtml(line)}</p>`
+  ).join('');
 
   return `<main class="print-page mx-auto max-w-3xl space-y-6 p-4 sm:p-8"><header class="space-y-2 border-b pb-4 text-center"><h1 class="text-2xl font-semibold">Sacrament Meeting Program</h1><p class="text-sm text-muted-foreground">${escapedDate}</p><p class="text-sm text-muted-foreground">${escapedType}</p></header>${renderAnnouncementBlock(topAnnouncements)}<section class="space-y-2">${itemsHtml}</section>${renderAnnouncementBlock(bottomAnnouncements)}<section class="space-y-2"><h2 class="text-base font-semibold">Sacrament Prayers</h2>${prayersHtml}</section></main>`;
 }

@@ -212,7 +212,17 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
              archived_at = NULL,
              updated_at  = now()
            RETURNING (xmax = 0) AS inserted`,
-          [wardId, parsed.fullName, parsed.firstName, parsed.lastName, parsed.email, parsed.phone, parsed.age, makeMemberIdentityKey({ fullName: parsed.fullName, birthday: parsed.birthday ?? '', secret: getMemberIdentitySecret() }), parsed.gender]
+          [
+            wardId,
+            parsed.fullName,
+            parsed.firstName,
+            parsed.lastName,
+            parsed.email,
+            parsed.phone,
+            parsed.age,
+            makeMemberIdentityKey({ fullName: parsed.fullName, birthday: parsed.birthday ?? '', secret: getMemberIdentitySecret() }),
+            parsed.gender
+          ]
         );
 
         if (upsertResult.rows[0]?.inserted) {

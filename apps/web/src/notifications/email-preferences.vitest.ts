@@ -1,10 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  getNextDigestDeliveryTime,
-  isValidIanaTimeZone,
-  normalizeNotificationTimeZone
-} from './email-preferences';
+import { getNextDigestDeliveryTime, isValidIanaTimeZone, normalizeNotificationTimeZone } from './email-preferences';
 
 describe('notification email preferences', () => {
   it('returns the next daily delivery at 8 AM in the user timezone', () => {

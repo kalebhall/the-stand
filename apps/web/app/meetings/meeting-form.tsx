@@ -68,7 +68,6 @@ type MeetingFormProps = {
   standAnnouncements?: Array<{ title: string; body: string | null }>;
 };
 
-
 const PROGRAM_ITEM_TYPES = [
   'PRESIDING',
   'CONDUCTING',
@@ -123,9 +122,14 @@ export function MeetingForm({
   const [autosaveStatus, setAutosaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
 
   const [newItemType, setNewItemType] = useState('SPEAKER');
-  const autosaveSnapshot = useRef(JSON.stringify({ meetingDate: toYyyyMmDd(initialMeetingDate), meetingType: initialMeetingType, programItems: initialProgramItems.length ? initialProgramItems : getDefaultProgramItemsForMeetingType(initialMeetingType) }));
+  const autosaveSnapshot = useRef(
+    JSON.stringify({
+      meetingDate: toYyyyMmDd(initialMeetingDate),
+      meetingType: initialMeetingType,
+      programItems: initialProgramItems.length ? initialProgramItems : getDefaultProgramItemsForMeetingType(initialMeetingType)
+    })
+  );
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
 
   const canSave = useMemo(() => Boolean(meetingDate && meetingType), [meetingDate, meetingType]);
 
@@ -168,9 +172,7 @@ export function MeetingForm({
   }
 
   function updateHymn(index: number, hymnNumber: string, hymnTitle: string) {
-    setProgramItems((current) =>
-      current.map((item, itemIndex) => (itemIndex === index ? { ...item, hymnNumber, hymnTitle } : item))
-    );
+    setProgramItems((current) => current.map((item, itemIndex) => (itemIndex === index ? { ...item, hymnNumber, hymnTitle } : item)));
   }
   function updateHymnPosition(index: number, position: string) {
     const mappedType = HYMN_POSITION_TO_ITEM_TYPE[position] ?? 'OPENING_HYMN';
@@ -187,7 +189,6 @@ export function MeetingForm({
       return next;
     });
   }
-
 
   function onMeetingTypeChange(nextMeetingType: string) {
     setMeetingType(nextMeetingType);
@@ -285,7 +286,9 @@ export function MeetingForm({
         ) : (
           <div className="space-y-1 text-sm">
             <span className="font-medium">Meeting date</span>
-            <p className="rounded-md border bg-muted px-3 py-2" aria-label="Meeting date, cannot be changed">{meetingDate}</p>
+            <p className="rounded-md border bg-muted px-3 py-2" aria-label="Meeting date, cannot be changed">
+              {meetingDate}
+            </p>
             <p className="text-xs text-muted-foreground">Date cannot be changed after creation.</p>
           </div>
         )}
@@ -293,7 +296,12 @@ export function MeetingForm({
         {mode === 'create' ? (
           <label className="space-y-2 text-sm">
             <span className="font-medium">Meeting type</span>
-            <select className="w-full rounded-md border px-3 py-2" value={meetingType} onChange={(event) => onMeetingTypeChange(event.target.value)} required>
+            <select
+              className="w-full rounded-md border px-3 py-2"
+              value={meetingType}
+              onChange={(event) => onMeetingTypeChange(event.target.value)}
+              required
+            >
               {MEETING_TYPES.map((value) => (
                 <option key={value} value={value}>
                   {value.replaceAll('_', ' ')}
@@ -304,7 +312,9 @@ export function MeetingForm({
         ) : (
           <div className="space-y-1 text-sm">
             <span className="font-medium">Meeting type</span>
-            <p className="rounded-md border bg-muted px-3 py-2" aria-label="Meeting type, cannot be changed">{meetingType.replaceAll('_', ' ')}</p>
+            <p className="rounded-md border bg-muted px-3 py-2" aria-label="Meeting type, cannot be changed">
+              {meetingType.replaceAll('_', ' ')}
+            </p>
             <p className="text-xs text-muted-foreground">Type cannot be changed after creation.</p>
           </div>
         )}
@@ -324,7 +334,11 @@ export function MeetingForm({
                 ))}
               </select>
             </label>
-            <Button type="button" variant="outline" onClick={() => setProgramItems((current) => [...current, { itemType: newItemType, ...DEFAULT_PROGRAM_ITEM }])}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setProgramItems((current) => [...current, { itemType: newItemType, ...DEFAULT_PROGRAM_ITEM }])}
+            >
               Add item
             </Button>
           </div>
@@ -352,7 +366,9 @@ export function MeetingForm({
           >
             <div className="program-item-header flex items-center justify-between gap-3">
               <div className="flex min-w-0 items-center gap-2">
-                <span className="cursor-grab text-muted-foreground" aria-hidden="true" title="Drag to reorder">⋮⋮</span>
+                <span className="cursor-grab text-muted-foreground" aria-hidden="true" title="Drag to reorder">
+                  ⋮⋮
+                </span>
                 <h3 className="truncate text-sm font-semibold">{getProgramItemLabel(item.itemType)}</h3>
               </div>
               <Button
@@ -386,22 +402,36 @@ export function MeetingForm({
                     />
                   ) : item.itemType === ANNOUNCEMENT_ITEM_TYPE ? (
                     <div className="rounded-md border bg-muted p-3 text-sm">
-                      <p className="mb-2 text-muted-foreground">Announcements marked “Include in At the Stand” appear here automatically.</p>
+                      <p className="mb-2 text-muted-foreground">
+                        Announcements marked “Include in At the Stand” appear here automatically.
+                      </p>
                       {standAnnouncements.length ? (
                         <ul className="space-y-2">
                           {standAnnouncements.map((announcement) => (
                             <li key={`${announcement.title}-${announcement.body ?? ''}`} className="rounded border bg-background p-2">
                               <p className="font-medium">{announcement.title}</p>
-                              {announcement.body ? <p className="mt-1 whitespace-pre-wrap text-muted-foreground">{announcement.body}</p> : null}
+                              {announcement.body ? (
+                                <p className="mt-1 whitespace-pre-wrap text-muted-foreground">{announcement.body}</p>
+                              ) : null}
                             </li>
                           ))}
                         </ul>
-                      ) : <p className="text-muted-foreground">No active announcements marked for At the Stand.</p>}
+                      ) : (
+                        <p className="text-muted-foreground">No active announcements marked for At the Stand.</p>
+                      )}
                     </div>
                   ) : PLACEHOLDER_ITEM_TYPES.has(item.itemType) ? (
-                    <input className="w-full rounded-md border px-3 py-2 bg-muted" value={item.itemType === 'SACRAMENT' ? 'Sacrament (placeholder)' : 'Testimonies (placeholder)'} readOnly />
+                    <input
+                      className="w-full rounded-md border px-3 py-2 bg-muted"
+                      value={item.itemType === 'SACRAMENT' ? 'Sacrament (placeholder)' : 'Testimonies (placeholder)'}
+                      readOnly
+                    />
                   ) : (
-                    <input className="w-full rounded-md border px-3 py-2" value={item.title} onChange={(event) => updateProgramItem(index, 'title', event.target.value)} />
+                    <input
+                      className="w-full rounded-md border px-3 py-2"
+                      value={item.title}
+                      onChange={(event) => updateProgramItem(index, 'title', event.target.value)}
+                    />
                   )}
                 </label>
               ) : null}
@@ -423,7 +453,11 @@ export function MeetingForm({
                         <option value="SPECIAL">Special</option>
                       </select>
                     ) : null}
-                    <HymnAutocomplete hymnNumber={item.hymnNumber} hymnTitle={item.hymnTitle} onChange={(num, title) => updateHymn(index, num, title)} />
+                    <HymnAutocomplete
+                      hymnNumber={item.hymnNumber}
+                      hymnTitle={item.hymnTitle}
+                      onChange={(num, title) => updateHymn(index, num, title)}
+                    />
                   </div>
                 </div>
               ) : null}
@@ -464,14 +498,19 @@ export function MeetingForm({
                     type="checkbox"
                     checked={item.notes.includes('[STAKE_BUSINESS]')}
                     onChange={(event) =>
-                      updateProgramItem(index, 'notes', event.target.checked ? `${item.notes}\n[STAKE_BUSINESS]`.trim() : item.notes.replace('\n[STAKE_BUSINESS]', '').replace('[STAKE_BUSINESS]', '').trim())
+                      updateProgramItem(
+                        index,
+                        'notes',
+                        event.target.checked
+                          ? `${item.notes}\n[STAKE_BUSINESS]`.trim()
+                          : item.notes.replace('\n[STAKE_BUSINESS]', '').replace('[STAKE_BUSINESS]', '').trim()
+                      )
                     }
                   />
                   Includes stake business
                 </label>
               </div>
             ) : null}
-
           </article>
           </div>
         ))}
@@ -480,9 +519,19 @@ export function MeetingForm({
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
 
       <div className="flex flex-wrap gap-2">
-        {mode === 'create' ? <Button type="submit" disabled={saving || !canSave}>Create meeting</Button> : (
+        {mode === 'create' ? (
+          <Button type="submit" disabled={saving || !canSave}>
+            Create meeting
+          </Button>
+        ) : (
           <span className="self-center text-sm text-muted-foreground" role="status" aria-live="polite">
-            {autosaveStatus === 'saving' ? 'Saving changes...' : autosaveStatus === 'saved' ? 'Changes saved' : autosaveStatus === 'error' ? 'Changes not saved' : 'Changes save automatically'}
+            {autosaveStatus === 'saving'
+              ? 'Saving changes...'
+              : autosaveStatus === 'saved'
+                ? 'Changes saved'
+                : autosaveStatus === 'error'
+                  ? 'Changes not saved'
+                  : 'Changes save automatically'}
           </span>
         )}
         {mode === 'edit' ? (

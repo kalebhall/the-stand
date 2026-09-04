@@ -1,8 +1,4 @@
-import {
-  DEFAULT_STAND_RELEASE_TEMPLATE,
-  DEFAULT_STAND_SUSTAIN_TEMPLATE,
-  DEFAULT_STAND_WELCOME_TEXT
-} from './default-template';
+import { DEFAULT_STAND_RELEASE_TEMPLATE, DEFAULT_STAND_SUSTAIN_TEMPLATE, DEFAULT_STAND_WELCOME_TEXT } from './default-template';
 import { formatAtStandMemberName, type MemberDisplayInfo } from './member-display';
 
 export type StandProgramItem = {
@@ -84,7 +80,9 @@ function getMemberAndCalling(item: StandProgramItem): { memberName: string; call
 }
 
 function isPersonItem(itemType: string): boolean {
-  return ['PRESIDING', 'CONDUCTING', 'ORGANIST_PIANIST', 'CHORISTER', 'INVOCATION', 'SPEAKER', 'BENEDICTION'].includes(itemType.toUpperCase());
+  return ['PRESIDING', 'CONDUCTING', 'ORGANIST_PIANIST', 'CHORISTER', 'INVOCATION', 'SPEAKER', 'BENEDICTION'].includes(
+    itemType.toUpperCase()
+  );
 }
 
 function renderTemplateLine(template: string, values: { memberName: string; callingName: string }) {
@@ -143,7 +141,11 @@ export function buildStandRows(
     }
 
     if (normalizedType === 'WARD_AND_STAKE_BUSINESS') {
-      rows.push({ kind: 'ward_business', programItemId: item.id, ...(item.programNotes?.trim() ? { programNotes: item.programNotes } : {}) });
+      rows.push({
+        kind: 'ward_business',
+        programItemId: item.id,
+        ...(item.programNotes?.trim() ? { programNotes: item.programNotes } : {})
+      });
       continue;
     }
 
@@ -156,18 +158,35 @@ export function buildStandRows(
       const details = standAnnouncements.length
         ? standAnnouncements.map((ann) => (ann.body?.trim() ? `${ann.title}: ${ann.body}` : ann.title)).join('\n')
         : 'No announcements marked for At the Stand.';
-      rows.push({ kind: 'standard', programItemId: item.id, label, details, ...(item.programNotes?.trim() ? { programNotes: item.programNotes } : {}) });
+      rows.push({
+        kind: 'standard',
+        programItemId: item.id,
+        label,
+        details,
+        ...(item.programNotes?.trim() ? { programNotes: item.programNotes } : {})
+      });
       continue;
     }
 
     const hymnBits = [item.hymnNumber?.trim(), item.hymnTitle?.trim()].filter(Boolean).join(' — ');
     const details = item.title?.trim()
       ? isPersonItem(normalizedType)
-        ? [formatAtStandMemberName(item.title, item.member, item.notes ?? undefined), normalizedType === 'SPEAKER' ? item.topic?.trim() : null].filter(Boolean).join('\n')
+        ? [
+            formatAtStandMemberName(item.title, item.member, item.notes ?? undefined),
+            normalizedType === 'SPEAKER' ? item.topic?.trim() : null
+          ]
+            .filter(Boolean)
+            .join('\n')
         : item.title.trim()
       : item.notes?.trim() || hymnBits || label;
 
-    rows.push({ kind: 'standard', programItemId: item.id, label, details, ...(item.programNotes?.trim() ? { programNotes: item.programNotes } : {}) });
+    rows.push({
+      kind: 'standard',
+      programItemId: item.id,
+      label,
+      details,
+      ...(item.programNotes?.trim() ? { programNotes: item.programNotes } : {})
+    });
   }
 
   return rows;

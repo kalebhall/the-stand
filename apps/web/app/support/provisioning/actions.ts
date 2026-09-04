@@ -163,12 +163,7 @@ export async function deleteWard(formData: FormData) {
   await pool.query(
     `INSERT INTO audit_log (ward_id, user_id, action, details)
      VALUES (NULL, $1, 'SUPPORT_WARD_DELETED', jsonb_build_object('wardId', $2::text, 'name', $3::text, 'stakeId', $4::text))`,
-    [
-      actingSession.user.id,
-      deleted.rows[0].id as string,
-      deleted.rows[0].name as string,
-      deleted.rows[0].stake_id as string
-    ]
+    [actingSession.user.id, deleted.rows[0].id as string, deleted.rows[0].name as string, deleted.rows[0].stake_id as string]
   );
 
   revalidatePath('/support/provisioning');

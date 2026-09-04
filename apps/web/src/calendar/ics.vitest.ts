@@ -42,16 +42,18 @@ describe('parseIcsEvents', () => {
   });
 
   it('treats floating Church feed times as local wall-clock values and decodes text', () => {
-    const events = parseIcsEvents([
-      'BEGIN:VEVENT',
-      'UID:floating-1',
-      'SUMMARY:Ward Council\\, Planning',
-      'DESCRIPTION:Line one\\nLine two\\; detail',
-      'LOCATION:Relief Society room',
-      'DTSTART:20260701T180000',
-      'LAST-MODIFIED:20260630T120000Z',
-      'END:VEVENT'
-    ].join('\n'));
+    const events = parseIcsEvents(
+      [
+        'BEGIN:VEVENT',
+        'UID:floating-1',
+        'SUMMARY:Ward Council\\, Planning',
+        'DESCRIPTION:Line one\\nLine two\\; detail',
+        'LOCATION:Relief Society room',
+        'DTSTART:20260701T180000',
+        'LAST-MODIFIED:20260630T120000Z',
+        'END:VEVENT'
+      ].join('\n')
+    );
 
     expect(events).toHaveLength(1);
     expect(events[0]).toMatchObject({
@@ -63,19 +65,21 @@ describe('parseIcsEvents', () => {
   });
 
   it('unfolds continuation lines and ignores incomplete events', () => {
-    const events = parseIcsEvents([
-      'BEGIN:VEVENT',
-      'UID:unfolded',
-      'SUMMARY:Long summary',
-      'DESCRIPTION:First part',
-      ' second part',
-      'DTSTART:20260701T180000Z',
-      'END:VEVENT',
-      'BEGIN:VEVENT',
-      'UID:missing-summary',
-      'DTSTART:20260701T180000Z',
-      'END:VEVENT'
-    ].join('\r\n'));
+    const events = parseIcsEvents(
+      [
+        'BEGIN:VEVENT',
+        'UID:unfolded',
+        'SUMMARY:Long summary',
+        'DESCRIPTION:First part',
+        ' second part',
+        'DTSTART:20260701T180000Z',
+        'END:VEVENT',
+        'BEGIN:VEVENT',
+        'UID:missing-summary',
+        'DTSTART:20260701T180000Z',
+        'END:VEVENT'
+      ].join('\r\n')
+    );
 
     expect(events).toHaveLength(1);
     expect(events[0].description).toBe('First partsecond part');

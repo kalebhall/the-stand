@@ -15,7 +15,12 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
   }
 
-  const body = (await request.json().catch(() => null)) as { memberName?: unknown; actionType?: unknown; reason?: unknown; details?: unknown } | null;
+  const body = (await request.json().catch(() => null)) as {
+    memberName?: unknown;
+    actionType?: unknown;
+    reason?: unknown;
+    details?: unknown;
+  } | null;
   const memberName = typeof body?.memberName === 'string' ? body.memberName.trim() : '';
   const actionType = typeof body?.actionType === 'string' ? body.actionType : '';
   const reason = typeof body?.reason === 'string' ? body.reason.trim() : null;

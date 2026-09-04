@@ -139,7 +139,9 @@ export const { auth, handlers } = NextAuth({
       authorize: async (credentials, request) => {
         await ensureSupportAdminBootstrap();
 
-        const email = String(credentials.email ?? '').trim().toLowerCase();
+        const email = String(credentials.email ?? '')
+          .trim()
+          .toLowerCase();
         const password = String(credentials.password ?? '');
 
         if (!email || !password) {

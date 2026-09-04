@@ -49,7 +49,10 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
 
     await client.query('COMMIT');
 
-    const users = new Map<string, { id: string; email: string; displayName: string | null; isActive: boolean; roles: { id: string; name: string }[] }>();
+    const users = new Map<
+      string,
+      { id: string; email: string; displayName: string | null; isActive: boolean; roles: { id: string; name: string }[] }
+    >();
 
     for (const row of result.rows as WardUserRow[]) {
       const existing = users.get(row.id);

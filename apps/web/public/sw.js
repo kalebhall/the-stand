@@ -9,21 +9,26 @@ self.addEventListener('fetch', (event) => {
   if (event.request.mode === 'navigate' && /^\/stand\/[^/]+$/.test(url.pathname)) {
     const offlineUrl = `${url.pathname}/offline`;
     event.respondWith(
-      fetch(event.request).catch(() => caches.match(offlineUrl).then((cached) => cached ?? new Response('Offline copy unavailable.', { status: 503 })))
+      fetch(event.request).catch(() =>
+        caches.match(offlineUrl).then((cached) => cached ?? new Response('Offline copy unavailable.', { status: 503 }))
+      )
     );
     return;
   }
-  const cacheable = url.origin === self.location.origin && (
-    url.pathname.startsWith('/_next/static/') ||
-    url.pathname === '/sw.js' ||
-    (url.pathname.startsWith('/stand/') && url.pathname.endsWith('/offline'))
-  );
+  const cacheable =
+    url.origin === self.location.origin &&
+    (url.pathname.startsWith('/_next/static/') ||
+      url.pathname === '/sw.js' ||
+      (url.pathname.startsWith('/stand/') && url.pathname.endsWith('/offline')));
   if (!cacheable) return;
   event.respondWith(
     fetch(event.request)
       .then((response) => {
         const copy = response.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy)).catch(() => undefined);
+        caches
+          .open(CACHE_NAME)
+          .then((cache) => cache.put(event.request, copy))
+          .catch(() => undefined);
         return response;
       })
       .catch(() => caches.match(event.request).then((cached) => cached ?? new Response('Offline copy unavailable.', { status: 503 })))

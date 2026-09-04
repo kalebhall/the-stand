@@ -139,7 +139,10 @@ export async function PUT(request: Request, context: { params: Promise<{ wardId:
       (body?.meetingType !== undefined && meetingType !== existingMeeting.meeting_type)
     ) {
       await client.query('ROLLBACK');
-      return NextResponse.json({ error: 'Meeting date and type cannot be changed after creation', code: 'IMMUTABLE_FIELDS' }, { status: 409 });
+      return NextResponse.json(
+        { error: 'Meeting date and type cannot be changed after creation', code: 'IMMUTABLE_FIELDS' },
+        { status: 409 }
+      );
     }
 
     await client.query(
@@ -156,16 +159,36 @@ export async function PUT(request: Request, context: { params: Promise<{ wardId:
     }
 
     const retainedIds = programItems.map((item) => toTrimmedString(item?.id)).filter(Boolean);
-    await client.query(`DELETE FROM meeting_program_item WHERE meeting_id = $1::uuid AND ward_id = $2::uuid AND NOT (id = ANY($3::uuid[]))`, [meetingId, wardId, retainedIds]);
+    await client.query(
+      `DELETE FROM meeting_program_item WHERE meeting_id = $1::uuid AND ward_id = $2::uuid AND NOT (id = ANY($3::uuid[]))`,
+      [meetingId, wardId, retainedIds]
+    );
 
     for (const [index, item] of programItems.entries()) {
       const itemType = toTrimmedString(item?.itemType);
       if (!itemType) continue;
-      const values = [wardId, meetingId, index + 1, itemType, toTrimmedString(item?.title), toTrimmedString(item?.notes), toTrimmedString(item?.topic), toTrimmedString(item?.programNotes), toTrimmedString(item?.hymnNumber), toTrimmedString(item?.hymnTitle)];
+      const values = [
+        wardId,
+        meetingId,
+        index + 1,
+        itemType,
+        toTrimmedString(item?.title),
+        toTrimmedString(item?.notes),
+        toTrimmedString(item?.topic),
+        toTrimmedString(item?.programNotes),
+        toTrimmedString(item?.hymnNumber),
+        toTrimmedString(item?.hymnTitle)
+      ];
       if (item?.id && retainedIds.includes(item.id)) {
-        await client.query(`UPDATE meeting_program_item SET sequence = $3::int, item_type = $4::text, title = NULLIF($5::text, ''), notes = NULLIF($6::text, ''), topic = NULLIF($7::text, ''), program_notes = NULLIF($8::text, ''), hymn_number = NULLIF($9::text, ''), hymn_title = NULLIF($10::text, '') WHERE id = $11::uuid AND meeting_id = $2::uuid AND ward_id = $1::uuid`, [...values, item.id]);
+        await client.query(
+          `UPDATE meeting_program_item SET sequence = $3::int, item_type = $4::text, title = NULLIF($5::text, ''), notes = NULLIF($6::text, ''), topic = NULLIF($7::text, ''), program_notes = NULLIF($8::text, ''), hymn_number = NULLIF($9::text, ''), hymn_title = NULLIF($10::text, '') WHERE id = $11::uuid AND meeting_id = $2::uuid AND ward_id = $1::uuid`,
+          [...values, item.id]
+        );
       } else {
-        await client.query(`INSERT INTO meeting_program_item (ward_id, meeting_id, sequence, item_type, title, notes, topic, program_notes, hymn_number, hymn_title) VALUES ($1::uuid, $2::uuid, $3::int, $4::text, NULLIF($5::text, ''), NULLIF($6::text, ''), NULLIF($7::text, ''), NULLIF($8::text, ''), NULLIF($9::text, ''), NULLIF($10::text, ''))`, values);
+        await client.query(
+          `INSERT INTO meeting_program_item (ward_id, meeting_id, sequence, item_type, title, notes, topic, program_notes, hymn_number, hymn_title) VALUES ($1::uuid, $2::uuid, $3::int, $4::text, NULLIF($5::text, ''), NULLIF($6::text, ''), NULLIF($7::text, ''), NULLIF($8::text, ''), NULLIF($9::text, ''), NULLIF($10::text, ''))`,
+          values
+        );
       }
     }
 
@@ -180,7 +203,12 @@ export async function PUT(request: Request, context: { params: Promise<{ wardId:
       aggregateType: 'meeting',
       aggregateId: meetingId,
       eventType: 'MEETING_UPDATED',
-      payload: { meetingId, meetingDate: existingMeeting.meeting_date, meetingType: existingMeeting.meeting_type, programItemCount: programItems.length }
+      payload: {
+        meetingId,
+        meetingDate: existingMeeting.meeting_date,
+        meetingType: existingMeeting.meeting_type,
+        programItemCount: programItems.length
+      }
     });
 
     await client.query('COMMIT');

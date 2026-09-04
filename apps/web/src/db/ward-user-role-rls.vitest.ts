@@ -81,19 +81,10 @@ ROLLBACK;
 `;
 
     expect(() => {
-      execFileSync(
-        'psql',
-        [
-          dbUrl as string,
-          '--set',
-          'ON_ERROR_STOP=1',
-          '--quiet',
-          '--no-psqlrc',
-          '--file',
-          '-'
-        ],
-        { input: sql, stdio: 'pipe' }
-      );
+      execFileSync('psql', [dbUrl as string, '--set', 'ON_ERROR_STOP=1', '--quiet', '--no-psqlrc', '--file', '-'], {
+        input: sql,
+        stdio: 'pipe'
+      });
     }).not.toThrow();
   });
 });

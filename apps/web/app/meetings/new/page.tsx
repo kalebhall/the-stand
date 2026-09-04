@@ -9,7 +9,10 @@ export default async function NewMeetingPage() {
   const session = await requireAuthenticatedSession();
   enforcePasswordRotation(session);
 
-  if (!session.activeWardId || !canManageMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId)) {
+  if (
+    !session.activeWardId ||
+    !canManageMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId)
+  ) {
     redirect('/meetings');
   }
 

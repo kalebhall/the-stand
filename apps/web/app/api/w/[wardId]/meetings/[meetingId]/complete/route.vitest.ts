@@ -1,22 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const {
-  authMock,
-  canManageMeetingsMock,
-  setDbContextMock,
-  enqueueOutboxNotificationJobMock,
-  connectMock,
-  releaseMock,
-  queryMock
-} = vi.hoisted(() => ({
-  authMock: vi.fn(),
-  canManageMeetingsMock: vi.fn(),
-  setDbContextMock: vi.fn(),
-  enqueueOutboxNotificationJobMock: vi.fn(),
-  connectMock: vi.fn(),
-  releaseMock: vi.fn(),
-  queryMock: vi.fn()
-}));
+const { authMock, canManageMeetingsMock, setDbContextMock, enqueueOutboxNotificationJobMock, connectMock, releaseMock, queryMock } =
+  vi.hoisted(() => ({
+    authMock: vi.fn(),
+    canManageMeetingsMock: vi.fn(),
+    setDbContextMock: vi.fn(),
+    enqueueOutboxNotificationJobMock: vi.fn(),
+    connectMock: vi.fn(),
+    releaseMock: vi.fn(),
+    queryMock: vi.fn()
+  }));
 
 vi.mock('@/src/auth/auth', () => ({ auth: authMock }));
 vi.mock('@/src/auth/roles', () => ({ canManageMeetings: canManageMeetingsMock }));

@@ -89,5 +89,5 @@ export const STANDARD_CALLINGS: string[] = [
   'Ward Emergency Preparedness Specialist',
   'Ward Librarian',
   'Assistant Ward Librarian',
-  'Sunday Meeting Schedule Coordinator',
+  'Sunday Meeting Schedule Coordinator'
 ];

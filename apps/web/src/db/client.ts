@@ -7,8 +7,7 @@ import { Pool } from 'pg';
 import * as schema from './schema';
 
 // pg's named ESM exports for `types` confuse the project tsconfig — use require.
-const pgTypes: { setTypeParser: (oid: number, fn: (val: string) => unknown) => void } =
-  createRequire(import.meta.url)('pg').types;
+const pgTypes: { setTypeParser: (oid: number, fn: (val: string) => unknown) => void } = createRequire(import.meta.url)('pg').types;
 
 // Return date/timestamp columns as raw strings instead of JS Date objects.
 // This prevents silent coercion bugs when string-comparing dates (e.g. YYYY-MM-DD).
@@ -61,7 +60,7 @@ function getPool(): Pool {
 export const pool: Pool = new Proxy({} as Pool, {
   get(_target, prop, receiver) {
     return Reflect.get(getPool(), prop, receiver);
-  },
+  }
 });
 
 /**
@@ -86,14 +85,11 @@ export async function withDbClient<T>(fn: (client: import('pg').PoolClient) => P
   }
 }
 
-export const db: NodePgDatabase<typeof schema> = new Proxy(
-  {} as NodePgDatabase<typeof schema>,
-  {
-    get(_target, prop, receiver) {
-      if (!_db) {
-        _db = drizzle(getPool(), { schema });
-      }
-      return Reflect.get(_db, prop, receiver);
-    },
-  },
-);
+export const db: NodePgDatabase<typeof schema> = new Proxy({} as NodePgDatabase<typeof schema>, {
+  get(_target, prop, receiver) {
+    if (!_db) {
+      _db = drizzle(getPool(), { schema });
+    }
+    return Reflect.get(_db, prop, receiver);
+  }
+});

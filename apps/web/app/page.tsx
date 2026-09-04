@@ -31,10 +31,7 @@ export default async function Home() {
           A ward-scoped planning and conducting workspace for sacrament meetings and related leadership workflows.
         </p>
         <div className="flex flex-wrap gap-3">
-          <Link
-            className={cn(buttonVariants())}
-            href={session?.user?.mustChangePassword ? '/account/change-password' : '/login'}
-          >
+          <Link className={cn(buttonVariants())} href={session?.user?.mustChangePassword ? '/account/change-password' : '/login'}>
             Log In
           </Link>
           <Link className={cn(buttonVariants({ variant: 'outline' }))} href="/request-access">

@@ -19,7 +19,6 @@ describe('getNavigationItems', () => {
     expect(items).not.toContainEqual({ href: '/settings/public-portal', label: 'Public Portal' });
   });
 
-
   it('includes meetings for conductor role', () => {
     expect(getNavigationItems(['CONDUCTOR_VIEW'])).toContainEqual({ href: '/meetings', label: 'Meetings' });
 

@@ -151,15 +151,11 @@ export function StandardCallingsManager({ callings, canManage }: Props) {
               key={type}
               onClick={() => setActiveTab(type)}
               className={`px-4 py-2 text-sm font-medium transition-colors ${
-                activeTab === type
-                  ? 'border-b-2 border-foreground text-foreground'
-                  : 'text-muted-foreground hover:text-foreground'
+                activeTab === type ? 'border-b-2 border-foreground text-foreground' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               {UNIT_TYPE_LABELS[type]}
-              <span className="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-xs font-normal text-muted-foreground">
-                {count}
-              </span>
+              <span className="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-xs font-normal text-muted-foreground">{count}</span>
             </button>
           );
         })}
@@ -182,9 +178,7 @@ export function StandardCallingsManager({ callings, canManage }: Props) {
                 <th className="px-4 py-3 text-left font-medium text-muted-foreground">Calling Name</th>
                 <th className="px-4 py-3 text-left font-medium text-muted-foreground">Organization</th>
                 <th className="px-4 py-3 text-left font-medium text-muted-foreground">Sort Order</th>
-                {canManage ? (
-                  <th className="px-4 py-3 text-right font-medium text-muted-foreground">Actions</th>
-                ) : null}
+                {canManage ? <th className="px-4 py-3 text-right font-medium text-muted-foreground">Actions</th> : null}
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -230,9 +224,7 @@ export function StandardCallingsManager({ callings, canManage }: Props) {
       {dialog ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="w-full max-w-md rounded-lg border bg-background p-6 shadow-xl">
-            <h2 className="mb-4 text-lg font-semibold">
-              {dialog.kind === 'add' ? 'Add Standard Calling' : 'Edit Standard Calling'}
-            </h2>
+            <h2 className="mb-4 text-lg font-semibold">{dialog.kind === 'add' ? 'Add Standard Calling' : 'Edit Standard Calling'}</h2>
 
             <div className="space-y-4">
               <div className="space-y-1">

@@ -1,6 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { authMock, canViewMeetingsMock, setDbContextMock, getSubscriptionsMock, updateSubscriptionsMock, getEmailPreferenceMock, updateEmailPreferenceMock, queryMock, releaseMock, connectMock } = vi.hoisted(() => ({
+const {
+  authMock,
+  canViewMeetingsMock,
+  setDbContextMock,
+  getSubscriptionsMock,
+  updateSubscriptionsMock,
+  getEmailPreferenceMock,
+  updateEmailPreferenceMock,
+  queryMock,
+  releaseMock,
+  connectMock
+} = vi.hoisted(() => ({
   authMock: vi.fn(),
   canViewMeetingsMock: vi.fn(),
   setDbContextMock: vi.fn(),
@@ -74,7 +85,10 @@ describe('notification subscription route', () => {
     const response = await GET(new Request('http://localhost'), context());
 
     expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ subscriptions: [{ eventType: 'MEETING_PUBLISHED' }], emailPreference: { frequency: 'IMMEDIATE', timezone: 'UTC' } });
+    expect(await response.json()).toEqual({
+      subscriptions: [{ eventType: 'MEETING_PUBLISHED' }],
+      emailPreference: { frequency: 'IMMEDIATE', timezone: 'UTC' }
+    });
     expect(setDbContextMock).toHaveBeenCalledWith(expect.anything(), { wardId, userId });
     expect(getSubscriptionsMock).toHaveBeenCalledWith(expect.anything(), { wardId, userId });
     expect(queryMock).toHaveBeenLastCalledWith('COMMIT');
@@ -90,10 +104,16 @@ describe('notification subscription route', () => {
 
   it('accepts a validated batch and commits idempotent updates', async () => {
     queryMock.mockResolvedValueOnce({}).mockResolvedValueOnce({});
-    const response = await PUT(request({ emailPreference: { frequency: 'IMMEDIATE', timezone: 'UTC' }, subscriptions: [
-      { eventType: 'MEETING_PUBLISHED', channel: 'IN_APP', enabled: true },
-      { eventType: 'MEETING_PUBLISHED', channel: 'EMAIL', enabled: false }
-    ] }), context());
+    const response = await PUT(
+      request({
+        emailPreference: { frequency: 'IMMEDIATE', timezone: 'UTC' },
+        subscriptions: [
+          { eventType: 'MEETING_PUBLISHED', channel: 'IN_APP', enabled: true },
+          { eventType: 'MEETING_PUBLISHED', channel: 'EMAIL', enabled: false }
+        ]
+      }),
+      context()
+    );
 
     expect(response.status).toBe(200);
     expect(updateSubscriptionsMock).toHaveBeenCalledWith(expect.anything(), {
@@ -111,7 +131,13 @@ describe('notification subscription route', () => {
   it('rolls back and returns standard error when persistence fails', async () => {
     queryMock.mockResolvedValueOnce({});
     updateSubscriptionsMock.mockRejectedValueOnce(new Error('database unavailable'));
-    const response = await PUT(request({ emailPreference: { frequency: 'IMMEDIATE', timezone: 'UTC' }, subscriptions: [{ eventType: 'MEETING_PUBLISHED', channel: 'IN_APP', enabled: true }] }), context());
+    const response = await PUT(
+      request({
+        emailPreference: { frequency: 'IMMEDIATE', timezone: 'UTC' },
+        subscriptions: [{ eventType: 'MEETING_PUBLISHED', channel: 'IN_APP', enabled: true }]
+      }),
+      context()
+    );
 
     expect(response.status).toBe(500);
     expect((await response.json()).code).toBe('INTERNAL_ERROR');

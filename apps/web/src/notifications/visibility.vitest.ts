@@ -19,15 +19,30 @@ const baseContext = {
 
 describe('notification visibility', () => {
   it('requires source existence, visibility, and ward match', () => {
-    expect(canViewNotificationSource({
-      wardId: 'ward-1', sourceWardId: 'ward-1', sourceExists: true, sourceIsVisible: true
-    })).toBe(true);
-    expect(canViewNotificationSource({
-      wardId: 'ward-1', sourceWardId: 'ward-2', sourceExists: true, sourceIsVisible: true
-    })).toBe(false);
-    expect(canViewNotificationSource({
-      wardId: 'ward-1', sourceWardId: 'ward-1', sourceExists: false, sourceIsVisible: true
-    })).toBe(false);
+    expect(
+      canViewNotificationSource({
+        wardId: 'ward-1',
+        sourceWardId: 'ward-1',
+        sourceExists: true,
+        sourceIsVisible: true
+      })
+    ).toBe(true);
+    expect(
+      canViewNotificationSource({
+        wardId: 'ward-1',
+        sourceWardId: 'ward-2',
+        sourceExists: true,
+        sourceIsVisible: true
+      })
+    ).toBe(false);
+    expect(
+      canViewNotificationSource({
+        wardId: 'ward-1',
+        sourceWardId: 'ward-1',
+        sourceExists: false,
+        sourceIsVisible: true
+      })
+    ).toBe(false);
   });
 
   it('allows private notes only to creator or explicitly authorized users', () => {
@@ -44,11 +59,13 @@ describe('notification visibility', () => {
   });
 
   it('filters recipients before notification details are generated', () => {
-    expect(filterVisibleNoteRecipients(['creator-1', 'reader-1', 'reader-2'], {
-      ...baseContext,
-      visibility: 'PRIVATE',
-      explicitlyAuthorizedUserIds: ['reader-2']
-    })).toEqual(['creator-1', 'reader-2']);
+    expect(
+      filterVisibleNoteRecipients(['creator-1', 'reader-1', 'reader-2'], {
+        ...baseContext,
+        visibility: 'PRIVATE',
+        explicitlyAuthorizedUserIds: ['reader-2']
+      })
+    ).toEqual(['creator-1', 'reader-2']);
   });
 
   it('validates note visibility values', () => {

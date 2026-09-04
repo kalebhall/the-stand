@@ -1,4 +1,3 @@
-
 # HARDENING.md — The Stand (Master Production Hardening Guide)
 
 This document defines the complete security hardening, operational stability,
@@ -6,6 +5,7 @@ monitoring, resilience, and disaster recovery strategy for running The Stand
 on a self-hosted Ubuntu server.
 
 This guide assumes:
+
 - Ubuntu 22.04 / 24.04
 - Local PostgreSQL
 - Node.js LTS
@@ -172,6 +172,7 @@ SECTION 7 — APPLICATION HARDENING
 7.1 Rate Limiting
 
 Apply to:
+
 - Login
 - Password reset
 - Public access request
@@ -226,6 +227,7 @@ rclone sync /opt/the-stand/backups remote:the-stand-backups
 9.4 Quarterly Restore Test
 
 Procedure:
+
 1. Restore backup to test DB
 2. Start app
 3. Verify login
@@ -242,6 +244,7 @@ Option B: Uptime Kuma
 Option C: Prometheus + Grafana
 
 Monitor:
+
 - CPU
 - RAM
 - Disk usage
@@ -257,6 +260,7 @@ SECTION 11 — DISASTER RECOVERY
 Recovery Plan:
 
 If server fails:
+
 1. Provision new Ubuntu server
 2. Install dependencies (Postgres, Node, Nginx)
 3. Restore DB from latest backup
@@ -265,6 +269,7 @@ If server fails:
 6. Validate login + meeting history
 
 Maintain:
+
 - Offsite backup copy
 - Repository clone access
 - Domain DNS access

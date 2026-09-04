@@ -10,10 +10,7 @@ import { enqueueNotificationOutboxEvent, insertNotificationOutboxEvent } from '@
 
 const logger = createLogger('ward-users');
 
-export async function DELETE(
-  _: Request,
-  context: { params: Promise<{ wardId: string; userId: string; roleId: string }> }
-) {
+export async function DELETE(_: Request, context: { params: Promise<{ wardId: string; userId: string; roleId: string }> }) {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, { status: 401 });
@@ -42,10 +39,11 @@ export async function DELETE(
       return NextResponse.json({ error: 'Forbidden role assignment', code: 'FORBIDDEN' }, { status: 403 });
     }
 
-    const deleteResult = await client.query(
-      'DELETE FROM ward_user_role WHERE ward_id = $1 AND user_id = $2 AND role_id = $3',
-      [wardId, userId, roleId]
-    );
+    const deleteResult = await client.query('DELETE FROM ward_user_role WHERE ward_id = $1 AND user_id = $2 AND role_id = $3', [
+      wardId,
+      userId,
+      roleId
+    ]);
 
     if (!deleteResult.rowCount) {
       await client.query('ROLLBACK');

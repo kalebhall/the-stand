@@ -74,11 +74,12 @@ describe('GET /api/w/[wardId]/members', () => {
     });
 
     expect(queryMock).toHaveBeenNthCalledWith(1, 'BEGIN');
-    expect(queryMock).toHaveBeenNthCalledWith(
-      2,
-      expect.stringContaining('full_name ILIKE $2 AND full_name ILIKE $3'),
-      ['ward-1', '%John%', '%Doe%', 50]
-    );
+    expect(queryMock).toHaveBeenNthCalledWith(2, expect.stringContaining('full_name ILIKE $2 AND full_name ILIKE $3'), [
+      'ward-1',
+      '%John%',
+      '%Doe%',
+      50
+    ]);
     expect(queryMock).toHaveBeenNthCalledWith(3, 'COMMIT');
     expect(releaseMock).toHaveBeenCalled();
   });
@@ -89,10 +90,9 @@ describe('GET /api/w/[wardId]/members', () => {
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({}); // COMMIT
 
-    const response = await GET(
-      new Request('http://localhost/api/w/ward-1/members?minAge=11&leadershipOnly=true&limit=25'),
-      { params: Promise.resolve({ wardId: 'ward-1' }) }
-    );
+    const response = await GET(new Request('http://localhost/api/w/ward-1/members?minAge=11&leadershipOnly=true&limit=25'), {
+      params: Promise.resolve({ wardId: 'ward-1' })
+    });
 
     expect(response.status).toBe(200);
     const [, queryCall] = queryMock.mock.calls;

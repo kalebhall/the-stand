@@ -41,7 +41,11 @@ export function DeleteMeetingButton({ wardId, meetingId, redirectTo = '/meetings
       <Button type="button" variant="destructive" onClick={() => void deleteMeeting()} disabled={deleting}>
         {deleting ? 'Deleting...' : 'Delete meeting'}
       </Button>
-      {error ? <span className="text-xs text-red-600" role="alert">{error}</span> : null}
+      {error ? (
+        <span className="text-xs text-red-600" role="alert">
+          {error}
+        </span>
+      ) : null}
     </span>
   );
 }

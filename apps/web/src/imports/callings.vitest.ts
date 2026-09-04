@@ -125,9 +125,7 @@ describe('calling PDF import parsing', () => {
 
   it('parses row with sustained date on a separate line followed by set-apart token', () => {
     // Simulates the PDF pattern where sustained date wraps to its own line
-    const result = parseCallingsPdfText(
-      'Acosta, Frank M 65 26 May 1960 Elders Quorum Elders Quorum Secretary\n9 Mar 2025\n\u2714'
-    );
+    const result = parseCallingsPdfText('Acosta, Frank M 65 26 May 1960 Elders Quorum Elders Quorum Secretary\n9 Mar 2025\n\u2714');
     expect(result).toEqual([
       {
         memberName: 'Acosta, Frank',
@@ -141,9 +139,7 @@ describe('calling PDF import parsing', () => {
   });
 
   it('parses row with no sustained date and no set-apart (both optional/missing)', () => {
-    const result = parseCallingsPdfText(
-      'August, Agnes Alana F 76 9 May 1949 Relief Society Relief Society Activity Coordinator'
-    );
+    const result = parseCallingsPdfText('August, Agnes Alana F 76 9 May 1949 Relief Society Relief Society Activity Coordinator');
     expect(result).toEqual([
       {
         memberName: 'August, Agnes Alana',
@@ -178,8 +174,7 @@ describe('calling PDF import parsing', () => {
 // ---------------------------------------------------------------------------
 
 describe('parseCallingsTsvText — LCR TSV format', () => {
-  const TSV_HEADER =
-    'Name\tGender\tAge\tBirth Date\tPhone Number\tOrganizations\tCalling\tSustained\tSet Apart';
+  const TSV_HEADER = 'Name\tGender\tAge\tBirth Date\tPhone Number\tOrganizations\tCalling\tSustained\tSet Apart';
 
   it('parses a single TSV row with a sustained date and no set-apart', () => {
     const input = [
@@ -209,18 +204,13 @@ describe('parseCallingsTsvText — LCR TSV format', () => {
 
     const result = parseCallingsTsvText(input);
     expect(result).toHaveLength(3);
-    expect(result.map((r) => r.callingName)).toEqual([
-      'Music Leader',
-      'Relief Society Activity Coordinator',
-      'Temple Worker'
-    ]);
+    expect(result.map((r) => r.callingName)).toEqual(['Music Leader', 'Relief Society Activity Coordinator', 'Temple Worker']);
   });
 
   it('routes to TSV parser via parseCallingsPdfText when input contains tabs', () => {
-    const input = [
-      TSV_HEADER,
-      'Hall, Kaleb\tM\t46\t1 Jan 1980\t(702) 249-0875\tBishopric\tBishopric First Counselor\t3 Nov 2024\t'
-    ].join('\n');
+    const input = [TSV_HEADER, 'Hall, Kaleb\tM\t46\t1 Jan 1980\t(702) 249-0875\tBishopric\tBishopric First Counselor\t3 Nov 2024\t'].join(
+      '\n'
+    );
 
     const result = parseCallingsPdfText(input);
     expect(result).toEqual([

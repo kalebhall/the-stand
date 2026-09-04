@@ -1,4 +1,3 @@
-
 # ACCEPTANCE.md — The Stand (Master Acceptance Test Specification)
 
 This document defines formal executable-style acceptance criteria

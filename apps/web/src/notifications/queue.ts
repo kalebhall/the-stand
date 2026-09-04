@@ -35,20 +35,24 @@ export async function enqueueOutboxNotificationJob(payload: { wardId: string; ev
   const queue = await createBullMqQueue();
 
   try {
-    await queue.add('process-outbox-event', {
-      kind: 'outbox-event',
-      wardId: payload.wardId,
-      eventOutboxId: payload.eventOutboxId
-    }, {
-      jobId: `outbox:${payload.wardId}:${payload.eventOutboxId}`,
-      removeOnComplete: 1000,
-      removeOnFail: 5000,
-      attempts: 5,
-      backoff: {
-        type: 'exponential',
-        delay: 5000
+    await queue.add(
+      'process-outbox-event',
+      {
+        kind: 'outbox-event',
+        wardId: payload.wardId,
+        eventOutboxId: payload.eventOutboxId
+      },
+      {
+        jobId: `outbox:${payload.wardId}:${payload.eventOutboxId}`,
+        removeOnComplete: 1000,
+        removeOnFail: 5000,
+        attempts: 5,
+        backoff: {
+          type: 'exponential',
+          delay: 5000
+        }
       }
-    });
+    );
   } finally {
     await queue.close();
   }

@@ -52,7 +52,12 @@ export async function PATCH(_request: Request, context: RouteContext) {
     return NextResponse.json({ success: true });
   } catch (err) {
     await client.query('ROLLBACK');
-    logger.error('Failed to announce business line', { wardId, meetingId, lineId, error: err instanceof Error ? err.message : String(err) });
+    logger.error('Failed to announce business line', {
+      wardId,
+      meetingId,
+      lineId,
+      error: err instanceof Error ? err.message : String(err)
+    });
     return NextResponse.json({ error: 'Failed to announce business line', code: 'INTERNAL_ERROR' }, { status: 500 });
   } finally {
     client.release();

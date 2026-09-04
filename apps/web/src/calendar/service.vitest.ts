@@ -27,16 +27,21 @@ describe('copyCalendarEventToAnnouncement', () => {
   it('creates an immediately active announcement and applies tag mapping', async () => {
     queryMock
       .mockResolvedValueOnce({}) // BEGIN
-      .mockResolvedValueOnce({ rowCount: 1, rows: [{
-        id: args.calendarEventCacheId,
-        title: 'Ward Activity',
-        description: 'Bring dinner',
-        starts_at: '2026-08-30T18:00:00.000Z',
-        ends_at: '2026-08-30T20:00:00.000Z',
-        tags: ['public'],
-        copied_to_announcement_at: null,
-        tag_map: { public: { placement: 'PROGRAM_BOTTOM', isPermanent: false } }
-      }] })
+      .mockResolvedValueOnce({
+        rowCount: 1,
+        rows: [
+          {
+            id: args.calendarEventCacheId,
+            title: 'Ward Activity',
+            description: 'Bring dinner',
+            starts_at: '2026-08-30T18:00:00.000Z',
+            ends_at: '2026-08-30T20:00:00.000Z',
+            tags: ['public'],
+            copied_to_announcement_at: null,
+            tag_map: { public: { placement: 'PROGRAM_BOTTOM', isPermanent: false } }
+          }
+        ]
+      })
       .mockResolvedValueOnce({ rows: [{ id: 'announcement-1' }] }) // INSERT announcement
       .mockResolvedValueOnce({}) // mark copied
       .mockResolvedValueOnce({}) // audit
@@ -46,9 +51,20 @@ describe('copyCalendarEventToAnnouncement', () => {
 
     expect(result).toBe('announcement-1');
     expect(queryMock).toHaveBeenNthCalledWith(3, expect.stringContaining('INSERT INTO announcement'), [
-      args.wardId, 'Ward Activity', 'Bring dinner', null, '2026-08-30', false, 'PROGRAM_BOTTOM', true, false
+      args.wardId,
+      'Ward Activity',
+      'Bring dinner',
+      null,
+      '2026-08-30',
+      false,
+      'PROGRAM_BOTTOM',
+      true,
+      false
     ]);
-    expect(queryMock).toHaveBeenNthCalledWith(4, expect.stringContaining('copied_to_announcement_at'), [args.calendarEventCacheId, args.wardId]);
+    expect(queryMock).toHaveBeenNthCalledWith(4, expect.stringContaining('copied_to_announcement_at'), [
+      args.calendarEventCacheId,
+      args.wardId
+    ]);
     expect(queryMock).toHaveBeenLastCalledWith('COMMIT');
   });
 });

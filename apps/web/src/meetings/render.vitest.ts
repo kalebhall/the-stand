@@ -118,15 +118,17 @@ describe('buildMeetingRenderHtml', () => {
     const html = buildMeetingRenderHtml({
       meetingDate: '2026-01-04',
       meetingType: 'SACRAMENT',
-      programItems: [{
-        itemType: 'SPEAKER',
-        title: 'Jane Doe',
-        notes: null,
-        topic: 'Finding peace through prayer',
-        programNotes: 'Please welcome our speaker.',
-        hymnNumber: null,
-        hymnTitle: null
-      }]
+      programItems: [
+        {
+          itemType: 'SPEAKER',
+          title: 'Jane Doe',
+          notes: null,
+          topic: 'Finding peace through prayer',
+          programNotes: 'Please welcome our speaker.',
+          hymnNumber: null,
+          hymnTitle: null
+        }
+      ]
     });
 
     expect(html).toContain('Please welcome our speaker.');

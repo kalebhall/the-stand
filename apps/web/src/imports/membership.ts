@@ -113,10 +113,7 @@ function isMembershipHeaderFooterLine(line: string): boolean {
   const compact = normalized.toLowerCase().replace(/[\s-]+/g, '');
 
   // Repeated PDF table headers can be extracted without separators.
-  if (
-    compact === 'namegenderagebirthdatephonenumberemail' ||
-    compact.startsWith('namegenderagebirthdatephonenumberemail')
-  ) {
+  if (compact === 'namegenderagebirthdatephonenumberemail' || compact.startsWith('namegenderagebirthdatephonenumberemail')) {
     return true;
   }
 
@@ -191,9 +188,7 @@ function extractPhoneAndEmail(value: string): { phone: string | null; email: str
   if (!normalized) return { phone: null, email: null };
 
   // Parse phone first so it cannot be absorbed into an email local-part.
-  const phoneMatch = normalized.match(
-    /(?:\+?1[\s.-]*)?(?:\(?\d{3}\)?[\s.-]*)\d{3}[\s.-]*\d{4}|(?:\+?1)?\d{10}/
-  );
+  const phoneMatch = normalized.match(/(?:\+?1[\s.-]*)?(?:\(?\d{3}\)?[\s.-]*)\d{3}[\s.-]*\d{4}|(?:\+?1)?\d{10}/);
   const phone = phoneMatch ? sanitizePhone(phoneMatch[0]) : null;
   const withoutPhone = phoneMatch ? normalized.replace(phoneMatch[0], ' ').trim() : normalized;
 
@@ -202,11 +197,7 @@ function extractPhoneAndEmail(value: string): { phone: string | null; email: str
   return { phone, email };
 }
 
-function splitAgeAndBirthdayChunk(
-  digitsChunk: string,
-  monthToken: string,
-  yearToken: string
-): { birthdayToken: string } | null {
+function splitAgeAndBirthdayChunk(digitsChunk: string, monthToken: string, yearToken: string): { birthdayToken: string } | null {
   if (!/^\d+$/.test(digitsChunk)) return null;
   const year = Number.parseInt(yearToken, 10);
   if (Number.isNaN(year)) return null;
@@ -521,7 +512,6 @@ function parseBirthdayFromTokens(tokens: string[], startIndex: number): { birthd
   return null;
 }
 
-
 function findBirthdayInText(value: string): { birthday: string | null; start: number; end: number } | null {
   const normalized = normalizeWhitespace(value);
   const match = normalized.match(/\d{1,2}(?:\s+|-)[A-Za-z]{3,}(?:\s+|-)\d{4}/);
@@ -715,8 +705,7 @@ function parseMemberLegacy(parts: string[], rawLine: string, delimiter: Delimite
       }
     }
 
-    const fullName =
-      nameTokens.length > 0 ? nameTokens.join(' ') : normalizeWhitespace(rawLine);
+    const fullName = nameTokens.length > 0 ? nameTokens.join(' ') : normalizeWhitespace(rawLine);
     if (!fullName) return null;
     return makeParsedMember(fullName, { email, phone, age: null, birthday: null, gender: null });
   }
@@ -766,9 +755,13 @@ export function parseMembershipText(rawText: string): ParsedMember[] {
     let isPdfFormat = false;
     let isPdfTableFormat = false;
     for (let i = 0; i < Math.min(cleanedLines.length - 2, 80); i++) {
-      if (looksLikeNameLine(cleanedLines[i]) &&
-          i + 1 < cleanedLines.length && looksLikeGenderLine(cleanedLines[i + 1]) &&
-          i + 2 < cleanedLines.length && looksLikeAgeBirthdayLine(cleanedLines[i + 2])) {
+      if (
+        looksLikeNameLine(cleanedLines[i]) &&
+        i + 1 < cleanedLines.length &&
+        looksLikeGenderLine(cleanedLines[i + 1]) &&
+        i + 2 < cleanedLines.length &&
+        looksLikeAgeBirthdayLine(cleanedLines[i + 2])
+      ) {
         isPdfFormat = true;
         break;
       }
@@ -814,7 +807,7 @@ export function parseMembershipText(rawText: string): ParsedMember[] {
     // If the header row survived the footer filter (wasn't recognized as a header/footer),
     // cleanedLines[0] == lines[0] and we must skip it. If it was filtered, cleanedLines[0]
     // is already the first data row and startIndex stays 0.
-    startIndex = (cleanedLines[0] && cleanedLines[0].trim() === rawFirstLine.trim()) ? 1 : 0;
+    startIndex = cleanedLines[0] && cleanedLines[0].trim() === rawFirstLine.trim() ? 1 : 0;
   } else {
     delimiter = detectDelimiter(cleanedLines[0]);
     const firstLineParts = splitLine(cleanedLines[0], delimiter)

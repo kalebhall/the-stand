@@ -25,16 +25,14 @@ function normalizeBirthday(value: string): string {
   return normalized;
 }
 
-export function makeMemberIdentityKey(params: {
-  fullName: string;
-  birthday: string;
-  secret?: string;
-}): string | null {
+export function makeMemberIdentityKey(params: { fullName: string; birthday: string; secret?: string }): string | null {
   const birthday = normalizeBirthday(params.birthday);
   if (!birthday) return null;
 
   const payload = `${normalize(params.fullName)}|${birthday}`;
-  return createHmac('sha256', params.secret ?? getMemberIdentitySecret()).update(payload, 'utf8').digest('hex');
+  return createHmac('sha256', params.secret ?? getMemberIdentitySecret())
+    .update(payload, 'utf8')
+    .digest('hex');
 }
 
 export function makeSafeImportSnapshot(value: unknown): string {

@@ -41,10 +41,7 @@ export function canIncludeNoteTextInNotification(context: NoteVisibilityContext)
   return canViewNote(context);
 }
 
-export function filterVisibleNoteRecipients(
-  recipients: readonly string[],
-  context: Omit<NoteVisibilityContext, 'readerUserId'>
-): string[] {
+export function filterVisibleNoteRecipients(recipients: readonly string[], context: Omit<NoteVisibilityContext, 'readerUserId'>): string[] {
   return recipients.filter((readerUserId) => canViewNote({ ...context, readerUserId }));
 }
 

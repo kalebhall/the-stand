@@ -19,17 +19,13 @@ export default async function StandardCallingsPage() {
   const session = await requireAuthenticatedSession();
   enforcePasswordRotation(session);
 
-  if (
-    !session.activeWardId ||
-    !canViewCallings({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId)
-  ) {
+  if (!session.activeWardId || !canViewCallings({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId)) {
     redirect('/dashboard');
   }
 
   const wardId = session.activeWardId;
   const canManage =
-    canManageCallings({ roles: session.user.roles, activeWardId: wardId }, wardId) ||
-    hasRole(session.user.roles, 'SUPPORT_ADMIN');
+    canManageCallings({ roles: session.user.roles, activeWardId: wardId }, wardId) || hasRole(session.user.roles, 'SUPPORT_ADMIN');
 
   let callings: StandardCalling[] = [];
 
@@ -64,8 +60,8 @@ export default async function StandardCallingsPage() {
         </div>
         <h1 className="text-2xl font-semibold tracking-tight">Standard Callings</h1>
         <p className="text-sm text-muted-foreground">
-          The reference list of calling titles used for autocomplete suggestions when adding a calling assignment.
-          Includes ward, stake, branch, and district callings.
+          The reference list of calling titles used for autocomplete suggestions when adding a calling assignment. Includes ward, stake,
+          branch, and district callings.
         </p>
       </section>
 

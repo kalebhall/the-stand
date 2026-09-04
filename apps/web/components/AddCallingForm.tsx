@@ -32,7 +32,7 @@ export function AddCallingForm({ wardId, standardCallings, onSuccess }: AddCalli
       const res = await fetch(`/api/w/${wardId}/callings`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ memberName: member, callingName: calling, isAssignmentOnly }),
+        body: JSON.stringify({ memberName: member, callingName: calling, isAssignmentOnly })
       });
 
       if (!res.ok) {

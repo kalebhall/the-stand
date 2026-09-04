@@ -143,9 +143,7 @@ export default function StakeWardManager({ stakes, wards }: Props) {
 
           {/* Stake List */}
           <section className="space-y-2">
-            {filteredStakes.length === 0 && (
-              <p className="text-sm text-muted-foreground">No stakes match the current filter.</p>
-            )}
+            {filteredStakes.length === 0 && <p className="text-sm text-muted-foreground">No stakes match the current filter.</p>}
             {filteredStakes.map((stake) => {
               const isEditing = editingStakeId === stake.id;
               const wardCount = wardCountByStake.get(stake.id) ?? 0;
@@ -156,8 +154,7 @@ export default function StakeWardManager({ stakes, wards }: Props) {
                     <div className="space-y-0.5">
                       <p className="font-medium">{stake.name}</p>
                       <p className="text-xs text-muted-foreground">
-                        {wardCount} ward{wardCount !== 1 ? 's' : ''} &middot; Created:{' '}
-                        {new Date(stake.created_at).toLocaleDateString()}
+                        {wardCount} ward{wardCount !== 1 ? 's' : ''} &middot; Created: {new Date(stake.created_at).toLocaleDateString()}
                       </p>
                     </div>
                     <div className="flex gap-2">
@@ -279,11 +276,7 @@ export default function StakeWardManager({ stakes, wards }: Props) {
                 <div className="grid gap-3 md:grid-cols-3">
                   <label className="text-xs text-muted-foreground">
                     Stake
-                    <select
-                      name="stakeId"
-                      required
-                      className="mt-1 w-full rounded-md border px-3 py-2 text-sm text-foreground"
-                    >
+                    <select name="stakeId" required className="mt-1 w-full rounded-md border px-3 py-2 text-sm text-foreground">
                       <option value="">Select stake</option>
                       {stakes.map((s) => (
                         <option key={s.id} value={s.id}>
@@ -319,9 +312,7 @@ export default function StakeWardManager({ stakes, wards }: Props) {
 
           {/* Ward List */}
           <section className="space-y-2">
-            {filteredWards.length === 0 && (
-              <p className="text-sm text-muted-foreground">No wards match the current filters.</p>
-            )}
+            {filteredWards.length === 0 && <p className="text-sm text-muted-foreground">No wards match the current filters.</p>}
             {filteredWards.map((ward) => {
               const isEditing = editingWardId === ward.id;
 

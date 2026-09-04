@@ -25,15 +25,24 @@ const createNoteSchema = z.object({
 async function targetExists(client: Awaited<ReturnType<typeof pool.connect>>, wardId: string, target: NoteTarget): Promise<boolean> {
   switch (target.type) {
     case 'MEMBER': {
-      const result = await client.query('SELECT id FROM member WHERE id = $1::uuid AND ward_id = $2::uuid LIMIT 1', [target.memberId, wardId]);
+      const result = await client.query('SELECT id FROM member WHERE id = $1::uuid AND ward_id = $2::uuid LIMIT 1', [
+        target.memberId,
+        wardId
+      ]);
       return Boolean(result.rowCount);
     }
     case 'MEETING': {
-      const result = await client.query('SELECT id FROM meeting WHERE id = $1::uuid AND ward_id = $2::uuid LIMIT 1', [target.meetingId, wardId]);
+      const result = await client.query('SELECT id FROM meeting WHERE id = $1::uuid AND ward_id = $2::uuid LIMIT 1', [
+        target.meetingId,
+        wardId
+      ]);
       return Boolean(result.rowCount);
     }
     case 'PROGRAM_ITEM': {
-      const result = await client.query('SELECT id FROM meeting_program_item WHERE id = $1::uuid AND ward_id = $2::uuid LIMIT 1', [target.programItemId, wardId]);
+      const result = await client.query('SELECT id FROM meeting_program_item WHERE id = $1::uuid AND ward_id = $2::uuid LIMIT 1', [
+        target.programItemId,
+        wardId
+      ]);
       return Boolean(result.rowCount);
     }
   }
@@ -63,7 +72,10 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
 
   const parsed = createNoteSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
-    return NextResponse.json({ error: 'Invalid note payload', code: 'VALIDATION_ERROR', detail: parsed.error.issues[0]?.message }, { status: 400 });
+    return NextResponse.json(
+      { error: 'Invalid note payload', code: 'VALIDATION_ERROR', detail: parsed.error.issues[0]?.message },
+      { status: 400 }
+    );
   }
 
   const client = await pool.connect();
@@ -103,10 +115,11 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     );
 
     if (parsed.data.visibility === 'PUBLIC' && parsed.data.target.type === 'PROGRAM_ITEM') {
-      await client.query(
-        'UPDATE meeting_program_item SET program_notes = $1::text WHERE id = $2::uuid AND ward_id = $3::uuid',
-        [parsed.data.noteText, parsed.data.target.programItemId, wardId]
-      );
+      await client.query('UPDATE meeting_program_item SET program_notes = $1::text WHERE id = $2::uuid AND ward_id = $3::uuid', [
+        parsed.data.noteText,
+        parsed.data.target.programItemId,
+        wardId
+      ]);
     }
 
     await recordAuditEvent(client, {

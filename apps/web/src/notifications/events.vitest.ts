@@ -1,11 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  NOTIFICATION_EVENT_TYPES,
-  getNotificationEventDefinition,
-  type NotificationChannel,
-  type NotificationEventType
-} from './events';
+import { NOTIFICATION_EVENT_TYPES, getNotificationEventDefinition, type NotificationChannel, type NotificationEventType } from './events';
 
 describe('notification event registry', () => {
   it('contains every planned event exactly once', () => {

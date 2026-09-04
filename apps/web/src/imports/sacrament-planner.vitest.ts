@@ -14,15 +14,17 @@ describe('parseSacramentPlannerHtml', () => {
       <tr><td>INVOCATION</td><td>John Doe</td><td>Future Prayer</td></tr>
     </table>`;
 
-    expect(parseSacramentPlannerHtml(html, '2026-08-30')).toEqual([{
-      meetingDate: '2024-11-17',
-      meetingType: 'SACRAMENT',
-      programItems: [
-        { itemType: 'OPENING_HYMN', title: '', hymnNumber: '2', hymnTitle: 'The Spirit of God' },
-        { itemType: 'INVOCATION', title: 'John Doe' },
-        { itemType: 'SPEAKER', title: 'Jane Doe', topic: 'Faith in Christ' }
-      ]
-    }]);
+    expect(parseSacramentPlannerHtml(html, '2026-08-30')).toEqual([
+      {
+        meetingDate: '2024-11-17',
+        meetingType: 'SACRAMENT',
+        programItems: [
+          { itemType: 'OPENING_HYMN', title: '', hymnNumber: '2', hymnTitle: 'The Spirit of God' },
+          { itemType: 'INVOCATION', title: 'John Doe' },
+          { itemType: 'SPEAKER', title: 'Jane Doe', topic: 'Faith in Christ' }
+        ]
+      }
+    ]);
   });
 
   it('normalizes common church title prefixes for confident matching', () => {

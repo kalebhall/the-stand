@@ -42,11 +42,7 @@ type CalendarEventRow = {
   copied_to_announcement_at: string | null;
 };
 
-export default async function AnnouncementsPage({
-  searchParams
-}: {
-  searchParams: Promise<{ sunday?: string }>;
-}) {
+export default async function AnnouncementsPage({ searchParams }: { searchParams: Promise<{ sunday?: string }> }) {
   const session = await requireAuthenticatedSession();
   enforcePasswordRotation(session);
 
@@ -57,9 +53,7 @@ export default async function AnnouncementsPage({
   const canManage = canManageMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId);
 
   const queryParams = await searchParams;
-  const targetSunday = queryParams.sunday && /^\d{4}-\d{2}-\d{2}$/.test(queryParams.sunday)
-    ? queryParams.sunday
-    : getNextSunday();
+  const targetSunday = queryParams.sunday && /^\d{4}-\d{2}-\d{2}$/.test(queryParams.sunday) ? queryParams.sunday : getNextSunday();
 
   // Server action: Create Announcement manually
   async function createAnnouncement(formData: FormData) {
@@ -107,7 +101,16 @@ export default async function AnnouncementsPage({
       await client.query(
         `INSERT INTO audit_log (ward_id, user_id, action, details)
          VALUES ($1::uuid, $2::uuid, 'ANNOUNCEMENT_CREATED', jsonb_build_object('announcementId', $3::text, 'title', $4::text, 'placement', $5::text, 'isPermanent', $6::boolean, 'includeInProgram', $7::boolean, 'includeInStand', $8::boolean))`,
-        [actionSession.activeWardId, actionSession.user.id, inserted.rows[0].id, title, placement, isPermanent, includeInProgram, includeInStand]
+        [
+          actionSession.activeWardId,
+          actionSession.user.id,
+          inserted.rows[0].id,
+          title,
+          placement,
+          isPermanent,
+          includeInProgram,
+          includeInStand
+        ]
       );
 
       await client.query('COMMIT');
@@ -169,7 +172,18 @@ export default async function AnnouncementsPage({
                 include_in_program = $7::boolean,
                 include_in_stand = $8::boolean
           WHERE id = $9::uuid AND ward_id = $10::uuid`,
-        [title, body || null, startDate, endDate, isPermanent, placement, includeInProgram, includeInStand, announcementId, actionSession.activeWardId]
+        [
+          title,
+          body || null,
+          startDate,
+          endDate,
+          isPermanent,
+          placement,
+          includeInProgram,
+          includeInStand,
+          announcementId,
+          actionSession.activeWardId
+        ]
       );
 
       await client.query(
@@ -414,10 +428,10 @@ export default async function AnnouncementsPage({
       await client.query('BEGIN');
       await setDbContext(client, { userId: actionSession.user.id, wardId: actionSession.activeWardId });
 
-      const deleted = await client.query(
-        'DELETE FROM calendar_feed WHERE id = $1::uuid AND ward_id = $2::uuid RETURNING display_name',
-        [feedId, actionSession.activeWardId]
-      );
+      const deleted = await client.query('DELETE FROM calendar_feed WHERE id = $1::uuid AND ward_id = $2::uuid RETURNING display_name', [
+        feedId,
+        actionSession.activeWardId
+      ]);
 
       if (deleted.rowCount) {
         await client.query(

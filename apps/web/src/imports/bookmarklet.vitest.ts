@@ -10,9 +10,9 @@ describe('LCR bookmarklet', () => {
   });
 
   it('supports Eden tables, legacy grids, and SVG set-apart detection', () => {
-    expect(LCR_DOM_EXTRACTOR_SCRIPT).toContain(".eden-table-card-view__cloned-column-header");
+    expect(LCR_DOM_EXTRACTOR_SCRIPT).toContain('.eden-table-card-view__cloned-column-header');
     expect(LCR_DOM_EXTRACTOR_SCRIPT).toContain('[role="grid"]');
-    expect(LCR_DOM_EXTRACTOR_SCRIPT).toContain("svg.eden-icon");
+    expect(LCR_DOM_EXTRACTOR_SCRIPT).toContain('svg.eden-icon');
     expect(LCR_DOM_EXTRACTOR_SCRIPT).toContain("acc.push(svgEl ? 'yes' : 'no')");
     expect(LCR_DOM_EXTRACTOR_SCRIPT).toContain('navigator.clipboard.writeText');
     expect(LCR_DOM_EXTRACTOR_SCRIPT).toContain('prompt(');

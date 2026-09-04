@@ -29,12 +29,7 @@ export async function fetchCurrentCallingStatus(client: PoolClient, wardId: stri
 
 export async function appendCallingStatus(
   client: PoolClient,
-  {
-    wardId,
-    callingId,
-    fromStatus,
-    toStatus
-  }: { wardId: string; callingId: string; fromStatus: CallingStatus; toStatus: CallingStatus }
+  { wardId, callingId, fromStatus, toStatus }: { wardId: string; callingId: string; fromStatus: CallingStatus; toStatus: CallingStatus }
 ): Promise<{ ok: true } | { ok: false; reason: 'INVALID_TRANSITION' }> {
   if (!canTransitionCallingStatus(fromStatus, toStatus)) {
     return { ok: false, reason: 'INVALID_TRANSITION' };

@@ -76,10 +76,14 @@ export default async function StandScriptSettingsPage() {
     const welcomeText = String(formData.get('welcomeText') ?? '').trim() || DEFAULT_WELCOME;
     const sustainTemplate = String(formData.get('sustainTemplate') ?? '').trim() || DEFAULT_SUSTAIN;
     const releaseTemplate = String(formData.get('releaseTemplate') ?? '').trim() || DEFAULT_RELEASE;
-    const welcomeNewMemberTemplate = String(formData.get('welcomeNewMemberTemplate') ?? '').trim() || DEFAULT_STAND_BUSINESS_TEMPLATES.WELCOME_NEW_MEMBER;
-    const babyBlessingTemplate = String(formData.get('babyBlessingTemplate') ?? '').trim() || DEFAULT_STAND_BUSINESS_TEMPLATES.BABY_BLESSING;
-    const priesthoodOrdinationTemplate = String(formData.get('priesthoodOrdinationTemplate') ?? '').trim() || DEFAULT_STAND_BUSINESS_TEMPLATES.PRIESTHOOD_ORDINATION;
-    const priesthoodAdvancementTemplate = String(formData.get('priesthoodAdvancementTemplate') ?? '').trim() || DEFAULT_STAND_BUSINESS_TEMPLATES.PRIESTHOOD_ADVANCEMENT;
+    const welcomeNewMemberTemplate =
+      String(formData.get('welcomeNewMemberTemplate') ?? '').trim() || DEFAULT_STAND_BUSINESS_TEMPLATES.WELCOME_NEW_MEMBER;
+    const babyBlessingTemplate =
+      String(formData.get('babyBlessingTemplate') ?? '').trim() || DEFAULT_STAND_BUSINESS_TEMPLATES.BABY_BLESSING;
+    const priesthoodOrdinationTemplate =
+      String(formData.get('priesthoodOrdinationTemplate') ?? '').trim() || DEFAULT_STAND_BUSINESS_TEMPLATES.PRIESTHOOD_ORDINATION;
+    const priesthoodAdvancementTemplate =
+      String(formData.get('priesthoodAdvancementTemplate') ?? '').trim() || DEFAULT_STAND_BUSINESS_TEMPLATES.PRIESTHOOD_ADVANCEMENT;
 
     const dbClient = await pool.connect();
 
@@ -100,7 +104,16 @@ export default async function StandScriptSettingsPage() {
            priesthood_ordination_template = excluded.priesthood_ordination_template,
            priesthood_advancement_template = excluded.priesthood_advancement_template,
            updated_at = now()`,
-        [session.activeWardId, welcomeText, sustainTemplate, releaseTemplate, welcomeNewMemberTemplate, babyBlessingTemplate, priesthoodOrdinationTemplate, priesthoodAdvancementTemplate]
+        [
+          session.activeWardId,
+          welcomeText,
+          sustainTemplate,
+          releaseTemplate,
+          welcomeNewMemberTemplate,
+          babyBlessingTemplate,
+          priesthoodOrdinationTemplate,
+          priesthoodAdvancementTemplate
+        ]
       );
 
       await dbClient.query(
@@ -124,7 +137,9 @@ export default async function StandScriptSettingsPage() {
     <main className="mx-auto max-w-4xl space-y-6 p-6">
       <div>
         <h1 className="text-2xl font-semibold">Stand Script Templates</h1>
-        <p className="text-sm text-muted-foreground">Customize the Formal Script text for your ward. Use placeholders {'{memberName}'} and {'{callingName}'}.</p>
+        <p className="text-sm text-muted-foreground">
+          Customize the Formal Script text for your ward. Use placeholders {'{memberName}'} and {'{callingName}'}.
+        </p>
       </div>
 
       <form action={updateTemplates} className="space-y-4 rounded-lg border bg-card p-4">
@@ -159,11 +174,49 @@ export default async function StandScriptSettingsPage() {
         </label>
 
         <section className="space-y-3 rounded-md border p-3">
-          <div><h2 className="font-semibold">Membership and ordinance meeting prompts</h2><p className="text-xs text-muted-foreground">These templates are for announcing the action or presenting/sustaining the person before it. They do not replace the ordinance or blessing. Use {`{memberName}`} and {`{callingName}`} as placeholders.</p></div>
-          <label className="block space-y-2 text-sm"><span className="font-medium">Welcome new ward member</span><textarea name="welcomeNewMemberTemplate" defaultValue={template?.welcome_new_member_template ?? DEFAULT_STAND_BUSINESS_TEMPLATES.WELCOME_NEW_MEMBER} className="min-h-20 w-full rounded-md border px-3 py-2" required /></label>
-          <label className="block space-y-2 text-sm"><span className="font-medium">Baby blessing</span><textarea name="babyBlessingTemplate" defaultValue={template?.baby_blessing_template ?? DEFAULT_STAND_BUSINESS_TEMPLATES.BABY_BLESSING} className="min-h-20 w-full rounded-md border px-3 py-2" required /></label>
-          <label className="block space-y-2 text-sm"><span className="font-medium">Priesthood ordination</span><textarea name="priesthoodOrdinationTemplate" defaultValue={template?.priesthood_ordination_template ?? DEFAULT_STAND_BUSINESS_TEMPLATES.PRIESTHOOD_ORDINATION} className="min-h-20 w-full rounded-md border px-3 py-2" required /></label>
-          <label className="block space-y-2 text-sm"><span className="font-medium">Priesthood advancement</span><textarea name="priesthoodAdvancementTemplate" defaultValue={template?.priesthood_advancement_template ?? DEFAULT_STAND_BUSINESS_TEMPLATES.PRIESTHOOD_ADVANCEMENT} className="min-h-20 w-full rounded-md border px-3 py-2" required /></label>
+          <div>
+            <h2 className="font-semibold">Membership and ordinance meeting prompts</h2>
+            <p className="text-xs text-muted-foreground">
+              These templates are for announcing the action or presenting/sustaining the person before it. They do not replace the ordinance
+              or blessing. Use {`{memberName}`} and {`{callingName}`} as placeholders.
+            </p>
+          </div>
+          <label className="block space-y-2 text-sm">
+            <span className="font-medium">Welcome new ward member</span>
+            <textarea
+              name="welcomeNewMemberTemplate"
+              defaultValue={template?.welcome_new_member_template ?? DEFAULT_STAND_BUSINESS_TEMPLATES.WELCOME_NEW_MEMBER}
+              className="min-h-20 w-full rounded-md border px-3 py-2"
+              required
+            />
+          </label>
+          <label className="block space-y-2 text-sm">
+            <span className="font-medium">Baby blessing</span>
+            <textarea
+              name="babyBlessingTemplate"
+              defaultValue={template?.baby_blessing_template ?? DEFAULT_STAND_BUSINESS_TEMPLATES.BABY_BLESSING}
+              className="min-h-20 w-full rounded-md border px-3 py-2"
+              required
+            />
+          </label>
+          <label className="block space-y-2 text-sm">
+            <span className="font-medium">Priesthood ordination</span>
+            <textarea
+              name="priesthoodOrdinationTemplate"
+              defaultValue={template?.priesthood_ordination_template ?? DEFAULT_STAND_BUSINESS_TEMPLATES.PRIESTHOOD_ORDINATION}
+              className="min-h-20 w-full rounded-md border px-3 py-2"
+              required
+            />
+          </label>
+          <label className="block space-y-2 text-sm">
+            <span className="font-medium">Priesthood advancement</span>
+            <textarea
+              name="priesthoodAdvancementTemplate"
+              defaultValue={template?.priesthood_advancement_template ?? DEFAULT_STAND_BUSINESS_TEMPLATES.PRIESTHOOD_ADVANCEMENT}
+              className="min-h-20 w-full rounded-md border px-3 py-2"
+              required
+            />
+          </label>
         </section>
 
         <div className="flex justify-end">

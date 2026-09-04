@@ -60,9 +60,7 @@ export default async function SupportAccessRequestsPage() {
     const existingStake = await pool.query(`SELECT id FROM stake WHERE LOWER(name) = LOWER($1) LIMIT 1`, [stakeName]);
     const stakeId =
       (existingStake.rows[0]?.id as string | undefined) ??
-      (
-        await pool.query(`INSERT INTO stake (name) VALUES ($1) RETURNING id`, [stakeName])
-      ).rows[0].id;
+      (await pool.query(`INSERT INTO stake (name) VALUES ($1) RETURNING id`, [stakeName])).rows[0].id;
 
     await pool.query(
       `INSERT INTO audit_log (ward_id, user_id, action, details)
@@ -100,19 +98,15 @@ export default async function SupportAccessRequestsPage() {
     const existingStake = await pool.query(`SELECT id FROM stake WHERE LOWER(name) = LOWER($1) LIMIT 1`, [stakeName]);
     const stakeId =
       (existingStake.rows[0]?.id as string | undefined) ??
-      (
-        await pool.query(`INSERT INTO stake (name) VALUES ($1) RETURNING id`, [stakeName])
-      ).rows[0].id;
+      (await pool.query(`INSERT INTO stake (name) VALUES ($1) RETURNING id`, [stakeName])).rows[0].id;
 
-    const existingWard = await pool.query(
-      `SELECT id FROM ward WHERE stake_id = $1 AND LOWER(name) = LOWER($2) LIMIT 1`,
-      [stakeId, wardName]
-    );
+    const existingWard = await pool.query(`SELECT id FROM ward WHERE stake_id = $1 AND LOWER(name) = LOWER($2) LIMIT 1`, [
+      stakeId,
+      wardName
+    ]);
     const wardId =
       (existingWard.rows[0]?.id as string | undefined) ??
-      (
-        await pool.query(`INSERT INTO ward (stake_id, name) VALUES ($1, $2) RETURNING id`, [stakeId, wardName])
-      ).rows[0].id;
+      (await pool.query(`INSERT INTO ward (stake_id, name) VALUES ($1, $2) RETURNING id`, [stakeId, wardName])).rows[0].id;
 
     await pool.query(
       `INSERT INTO audit_log (ward_id, user_id, action, details)
@@ -141,7 +135,9 @@ export default async function SupportAccessRequestsPage() {
     }
 
     const name = String(request.rows[0].name ?? '').trim();
-    const email = String(request.rows[0].email ?? '').trim().toLowerCase();
+    const email = String(request.rows[0].email ?? '')
+      .trim()
+      .toLowerCase();
     const displayName = name.length ? name : null;
 
     if (!email) {
@@ -151,9 +147,7 @@ export default async function SupportAccessRequestsPage() {
     const existingUser = await pool.query(`SELECT id FROM user_account WHERE LOWER(email) = LOWER($1) LIMIT 1`, [email]);
     const userId =
       (existingUser.rows[0]?.id as string | undefined) ??
-      (
-        await pool.query(`INSERT INTO user_account (email, display_name) VALUES ($1, $2) RETURNING id`, [email, displayName])
-      ).rows[0].id;
+      (await pool.query(`INSERT INTO user_account (email, display_name) VALUES ($1, $2) RETURNING id`, [email, displayName])).rows[0].id;
 
     await pool.query(
       `INSERT INTO audit_log (ward_id, user_id, action, details)

@@ -221,12 +221,7 @@ export default function UserAdminManager({
           >
             <div className="flex items-center gap-3">
               <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={googleOnly}
-                  onChange={(e) => setGoogleOnly(e.target.checked)}
-                  className="rounded border"
-                />
+                <input type="checkbox" checked={googleOnly} onChange={(e) => setGoogleOnly(e.target.checked)} className="rounded border" />
                 Google sign-in only (no password)
               </label>
               <input type="hidden" name="googleOnly" value={googleOnly ? '1' : '0'} />
@@ -234,19 +229,11 @@ export default function UserAdminManager({
             <div className="grid gap-3 md:grid-cols-2">
               <label className="text-xs text-muted-foreground">
                 Email
-                <input
-                  name="email"
-                  required
-                  type="email"
-                  className="mt-1 w-full rounded-md border px-3 py-2 text-sm text-foreground"
-                />
+                <input name="email" required type="email" className="mt-1 w-full rounded-md border px-3 py-2 text-sm text-foreground" />
               </label>
               <label className="text-xs text-muted-foreground">
                 Display name
-                <input
-                  name="displayName"
-                  className="mt-1 w-full rounded-md border px-3 py-2 text-sm text-foreground"
-                />
+                <input name="displayName" className="mt-1 w-full rounded-md border px-3 py-2 text-sm text-foreground" />
               </label>
             </div>
             {!googleOnly && (
@@ -270,9 +257,7 @@ export default function UserAdminManager({
 
       {/* User List */}
       <section className="space-y-3">
-        {filteredUsers.length === 0 && (
-          <p className="text-sm text-muted-foreground">No users match the current filters.</p>
-        )}
+        {filteredUsers.length === 0 && <p className="text-sm text-muted-foreground">No users match the current filters.</p>}
         {filteredUsers.map((user) => {
           const isEditing = editingId === user.id;
           const userWardAssignments = wardAssignmentsByUser.get(user.id) ?? [];
@@ -301,18 +286,13 @@ export default function UserAdminManager({
                       </span>
                     )}
                     {isSelf && (
-                      <span className="inline-block rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-800">
-                        You
-                      </span>
+                      <span className="inline-block rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-800">You</span>
                     )}
                   </div>
                   <p className="text-sm text-muted-foreground">{user.email}</p>
                   <div className="flex flex-wrap gap-1">
                     {userGlobalAssignments.map((a) => (
-                      <span
-                        key={a.role_id}
-                        className="inline-block rounded bg-purple-100 px-1.5 py-0.5 text-xs text-purple-800"
-                      >
+                      <span key={a.role_id} className="inline-block rounded bg-purple-100 px-1.5 py-0.5 text-xs text-purple-800">
                         {a.role_name}
                       </span>
                     ))}
@@ -329,9 +309,7 @@ export default function UserAdminManager({
                       <span className="text-xs text-muted-foreground">No roles assigned</span>
                     )}
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    Created: {new Date(user.created_at).toLocaleDateString()}
-                  </p>
+                  <p className="text-xs text-muted-foreground">Created: {new Date(user.created_at).toLocaleDateString()}</p>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <Button variant="outline" size="sm" onClick={() => setEditingId(isEditing ? null : user.id)}>
@@ -412,10 +390,7 @@ export default function UserAdminManager({
                     {userGlobalAssignments.length > 0 ? (
                       <ul className="mt-2 space-y-1">
                         {userGlobalAssignments.map((a) => (
-                          <li
-                            key={a.role_id}
-                            className="flex items-center justify-between rounded-md border px-3 py-2 text-sm"
-                          >
+                          <li key={a.role_id} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
                             <span className="font-medium">{a.role_name}</span>
                             <form action={revokeGlobalRole}>
                               <input type="hidden" name="userId" value={user.id} />
@@ -434,11 +409,7 @@ export default function UserAdminManager({
                       <input type="hidden" name="userId" value={user.id} />
                       <label className="flex-1 text-xs text-muted-foreground">
                         Assign global role
-                        <select
-                          name="roleId"
-                          required
-                          className="mt-1 w-full rounded-md border px-3 py-2 text-sm text-foreground"
-                        >
+                        <select name="roleId" required className="mt-1 w-full rounded-md border px-3 py-2 text-sm text-foreground">
                           <option value="">Select role</option>
                           {globalRoles.map((role) => (
                             <option key={role.id} value={role.id}>
@@ -485,11 +456,7 @@ export default function UserAdminManager({
                       <input type="hidden" name="userId" value={user.id} />
                       <label className="text-xs text-muted-foreground">
                         Ward
-                        <select
-                          name="wardId"
-                          required
-                          className="mt-1 w-full rounded-md border px-3 py-2 text-sm text-foreground"
-                        >
+                        <select name="wardId" required className="mt-1 w-full rounded-md border px-3 py-2 text-sm text-foreground">
                           <option value="">Select ward</option>
                           {wards.map((w) => (
                             <option key={w.id} value={w.id}>
@@ -500,11 +467,7 @@ export default function UserAdminManager({
                       </label>
                       <label className="text-xs text-muted-foreground">
                         Role
-                        <select
-                          name="roleId"
-                          required
-                          className="mt-1 w-full rounded-md border px-3 py-2 text-sm text-foreground"
-                        >
+                        <select name="roleId" required className="mt-1 w-full rounded-md border px-3 py-2 text-sm text-foreground">
                           <option value="">Select role</option>
                           {wardRoles.map((role) => (
                             <option key={role.id} value={role.id}>
@@ -540,9 +503,7 @@ export default function UserAdminManager({
                                 <p className="text-xs text-muted-foreground">
                                   Expires: {a.expires_at ? new Date(a.expires_at).toLocaleString() : 'No expiration set'}
                                 </p>
-                                {a.grant_reason && (
-                                  <p className="text-xs text-muted-foreground">Reason: {a.grant_reason}</p>
-                                )}
+                                {a.grant_reason && <p className="text-xs text-muted-foreground">Reason: {a.grant_reason}</p>}
                               </div>
                               <form action={revokeSupportAccess}>
                                 <input type="hidden" name="userId" value={user.id} />
@@ -560,18 +521,11 @@ export default function UserAdminManager({
                       )}
 
                       {canGrantSupportAccess && (
-                        <form
-                          action={grantSupportAccess}
-                          className="mt-3 grid gap-2 md:grid-cols-[1fr_1fr_160px_1.5fr_auto] md:items-end"
-                        >
+                        <form action={grantSupportAccess} className="mt-3 grid gap-2 md:grid-cols-[1fr_1fr_160px_1.5fr_auto] md:items-end">
                           <input type="hidden" name="userId" value={user.id} />
                           <label className="text-xs text-muted-foreground">
                             Ward
-                            <select
-                              name="wardId"
-                              required
-                              className="mt-1 w-full rounded-md border px-3 py-2 text-sm text-foreground"
-                            >
+                            <select name="wardId" required className="mt-1 w-full rounded-md border px-3 py-2 text-sm text-foreground">
                               <option value="">Select ward</option>
                               {wards.map((w) => (
                                 <option key={w.id} value={w.id}>
@@ -582,11 +536,7 @@ export default function UserAdminManager({
                           </label>
                           <label className="text-xs text-muted-foreground">
                             Role
-                            <select
-                              name="roleId"
-                              required
-                              className="mt-1 w-full rounded-md border px-3 py-2 text-sm text-foreground"
-                            >
+                            <select name="roleId" required className="mt-1 w-full rounded-md border px-3 py-2 text-sm text-foreground">
                               <option value="">Select role</option>
                               {wardRoles.map((role) => (
                                 <option key={role.id} value={role.id}>

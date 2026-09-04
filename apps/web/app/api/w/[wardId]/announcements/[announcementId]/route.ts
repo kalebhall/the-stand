@@ -111,7 +111,10 @@ export async function DELETE(_: Request, context: { params: Promise<{ wardId: st
     await client.query('BEGIN');
     await setDbContext(client, { userId: session.user.id, wardId });
 
-    const deleted = await client.query('DELETE FROM announcement WHERE id = $1 AND ward_id = $2 RETURNING id, title', [announcementId, wardId]);
+    const deleted = await client.query('DELETE FROM announcement WHERE id = $1 AND ward_id = $2 RETURNING id, title', [
+      announcementId,
+      wardId
+    ]);
 
     if (!deleted.rowCount) {
       await client.query('ROLLBACK');

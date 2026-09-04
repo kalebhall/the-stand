@@ -23,10 +23,7 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
     await client.query('BEGIN');
     await setDbContext(client, { userId: session.user.id, wardId });
 
-    const portalResult = await client.query(
-      'SELECT id, token, created_at FROM public_program_portal WHERE ward_id = $1 LIMIT 1',
-      [wardId]
-    );
+    const portalResult = await client.query('SELECT id, token, created_at FROM public_program_portal WHERE ward_id = $1 LIMIT 1', [wardId]);
 
     const sharesResult = await client.query(
       `SELECT pps.id, pps.meeting_id, pps.token, m.meeting_date, m.meeting_type, pps.created_at

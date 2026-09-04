@@ -25,7 +25,14 @@ export type OfflineMutation = {
   meetingId: string;
   wardId: string;
   operation: 'CREATE_PRIVATE_NOTE' | 'UPDATE_PRIVATE_NOTE' | 'MARK_BUSINESS_ANNOUNCED';
-  payload: { noteId?: string; localNoteId?: string; lineId?: string; target?: { type: 'MEETING' | 'PROGRAM_ITEM'; meetingId?: string; programItemId?: string }; noteText: string; baseRevision?: string };
+  payload: {
+    noteId?: string;
+    localNoteId?: string;
+    lineId?: string;
+    target?: { type: 'MEETING' | 'PROGRAM_ITEM'; meetingId?: string; programItemId?: string };
+    noteText: string;
+    baseRevision?: string;
+  };
   createdAt: string;
   status: 'pending' | 'conflict' | 'failed';
   error?: string;
@@ -61,7 +68,9 @@ async function storeRequest<T>(storeName: string, mode: IDBTransactionMode, acti
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => reject(request.error ?? new Error('Offline storage request failed.'));
     });
-  } finally { db.close(); }
+  } finally {
+    db.close();
+  }
 }
 
 function snapshotKey(userId: string, wardId: string, meetingId: string): string {
@@ -69,11 +78,17 @@ function snapshotKey(userId: string, wardId: string, meetingId: string): string 
 }
 
 export async function saveOfflineSnapshot(snapshot: OfflineStandSnapshot): Promise<void> {
-  await storeRequest(SNAPSHOT_STORE, 'readwrite', (store) => store.put({ ...snapshot, cacheKey: snapshotKey(snapshot.userId, snapshot.wardId, snapshot.meeting.id) }));
+  await storeRequest(SNAPSHOT_STORE, 'readwrite', (store) =>
+    store.put({ ...snapshot, cacheKey: snapshotKey(snapshot.userId, snapshot.wardId, snapshot.meeting.id) })
+  );
 }
 
 export async function loadOfflineSnapshot(userId: string, wardId: string, meetingId: string): Promise<OfflineStandSnapshot | null> {
-  return (await storeRequest<OfflineStandSnapshot | undefined>(SNAPSHOT_STORE, 'readonly', (store) => store.get(snapshotKey(userId, wardId, meetingId)))) ?? null;
+  return (
+    (await storeRequest<OfflineStandSnapshot | undefined>(SNAPSHOT_STORE, 'readonly', (store) =>
+      store.get(snapshotKey(userId, wardId, meetingId))
+    )) ?? null
+  );
 }
 
 export async function queueOfflineMutation(mutation: OfflineMutation): Promise<void> {

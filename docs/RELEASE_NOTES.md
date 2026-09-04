@@ -6,6 +6,7 @@ Version: v1.0.0-rc
 ## Scope
 
 This release candidate closes Phase 13 objectives from `docs/PLANS.md`:
+
 - release notes generated
 - schema frozen for 1.0.0
 - full regression command set run (`lint`, `typecheck`, `test`, `build`)
@@ -22,6 +23,7 @@ This release candidate closes Phase 13 objectives from `docs/PLANS.md`:
 ## Schema Freeze
 
 Schema is frozen for this release candidate at migration:
+
 - `apps/web/drizzle/0008_phase10_membership_import.sql`
 
 No new migrations were added as part of this Phase 13 release-candidate pass.
@@ -29,6 +31,7 @@ No new migrations were added as part of this Phase 13 release-candidate pass.
 ## Deployment Notes
 
 `docs/INSTALL.md` was aligned with the current monorepo workspace scripts:
+
 - build command uses `npm --workspace @the-stand/web run build`
 - migration command uses `npm --workspace @the-stand/web run db:migrate`
 - systemd startup command uses `npm --workspace @the-stand/web run start`
@@ -39,6 +42,7 @@ No new migrations were added as part of this Phase 13 release-candidate pass.
 ## Regression Status
 
 The following repository checks were executed for this candidate:
+
 - `npm run lint`
 - `npm run typecheck`
 - `npm run test`

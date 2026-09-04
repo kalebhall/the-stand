@@ -58,10 +58,7 @@ describe('DELETE /api/w/[wardId]/callings/[callingId]', () => {
   });
 
   it('returns 404 when the calling does not exist', async () => {
-    queryMock
-      .mockResolvedValueOnce({})
-      .mockResolvedValueOnce({ rowCount: 0, rows: [] })
-      .mockResolvedValueOnce({});
+    queryMock.mockResolvedValueOnce({}).mockResolvedValueOnce({ rowCount: 0, rows: [] }).mockResolvedValueOnce({});
 
     const response = await DELETE(new Request('http://localhost'), {
       params: Promise.resolve({ wardId: 'ward-1', callingId: 'missing-calling' })

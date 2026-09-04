@@ -16,15 +16,13 @@ const sections = [
   },
   {
     title: 'Stake & Ward Provisioning',
-    description:
-      'Create new stakes and wards, then verify current provisioning records before assigning ward administrators.',
+    description: 'Create new stakes and wards, then verify current provisioning records before assigning ward administrators.',
     href: '/support/provisioning',
     action: 'Manage stakes and wards'
   },
   {
     title: 'Access Requests',
-    description:
-      'Review incoming access requests from leaders and clerks so approved users can be provisioned in the correct ward.',
+    description: 'Review incoming access requests from leaders and clerks so approved users can be provisioned in the correct ward.',
     href: '/support/access-requests',
     action: 'Review requests'
   },
@@ -38,7 +36,7 @@ const sections = [
   {
     title: 'Hymn Library',
     description:
-      'Manage the global hymn list used in meeting program autocomplete. Add, edit, or deactivate hymns from the standard hymnbook, new hymnbook, and children\'s songbook.',
+      "Manage the global hymn list used in meeting program autocomplete. Add, edit, or deactivate hymns from the standard hymnbook, new hymnbook, and children's songbook.",
     href: '/support/hymns',
     action: 'Manage hymns'
   }

@@ -127,4 +127,3 @@ export const LCR_DOM_EXTRACTOR_SCRIPT = `(function() {
 export function getLcrBookmarkletHref(): string {
   return `javascript:${encodeURIComponent(LCR_DOM_EXTRACTOR_SCRIPT)}`;
 }
-

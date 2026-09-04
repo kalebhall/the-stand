@@ -12,7 +12,10 @@ export async function POST(request: Request) {
   }
 
   if (!session.user.hasPassword) {
-    return NextResponse.json({ error: 'Password login is not available for this account', code: 'PASSWORD_NOT_AVAILABLE' }, { status: 403 });
+    return NextResponse.json(
+      { error: 'Password login is not available for this account', code: 'PASSWORD_NOT_AVAILABLE' },
+      { status: 403 }
+    );
   }
 
   const ip = request.headers.get('x-forwarded-for') ?? 'unknown-ip';
@@ -20,9 +23,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Too many requests', code: 'RATE_LIMITED' }, { status: 429 });
   }
 
-  const body = (await request.json().catch(() => null)) as
-    | { currentPassword?: string; newPassword?: string }
-    | null;
+  const body = (await request.json().catch(() => null)) as { currentPassword?: string; newPassword?: string } | null;
 
   const currentPassword = body?.currentPassword?.trim() ?? '';
   const newPassword = body?.newPassword?.trim() ?? '';
@@ -40,7 +41,10 @@ export async function POST(request: Request) {
   ]);
 
   if (!userResult.rowCount || !userResult.rows[0].password_hash) {
-    return NextResponse.json({ error: 'Password login is not available for this account', code: 'PASSWORD_NOT_AVAILABLE' }, { status: 403 });
+    return NextResponse.json(
+      { error: 'Password login is not available for this account', code: 'PASSWORD_NOT_AVAILABLE' },
+      { status: 403 }
+    );
   }
 
   const passwordMatches = await verifyPassword(userResult.rows[0].password_hash as string, currentPassword);

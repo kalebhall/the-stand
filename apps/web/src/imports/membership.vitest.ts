@@ -17,9 +17,36 @@ describe('membership import parsing', () => {
     `);
 
     expect(result).toEqual([
-      { fullName: 'Jane Doe', firstName: 'Jane Doe', lastName: null, email: 'jane@example.com', phone: '801-555-0101', age: null, birthday: null, gender: null },
-      { fullName: 'John Doe', firstName: 'John Doe', lastName: null, email: null, phone: '801-555-4444', age: null, birthday: null, gender: null },
-      { fullName: 'Sister Example', firstName: 'Sister Example', lastName: null, email: 'jane2@example.com', phone: null, age: null, birthday: null, gender: null }
+      {
+        fullName: 'Jane Doe',
+        firstName: 'Jane Doe',
+        lastName: null,
+        email: 'jane@example.com',
+        phone: '801-555-0101',
+        age: null,
+        birthday: null,
+        gender: null
+      },
+      {
+        fullName: 'John Doe',
+        firstName: 'John Doe',
+        lastName: null,
+        email: null,
+        phone: '801-555-4444',
+        age: null,
+        birthday: null,
+        gender: null
+      },
+      {
+        fullName: 'Sister Example',
+        firstName: 'Sister Example',
+        lastName: null,
+        email: 'jane2@example.com',
+        phone: null,
+        age: null,
+        birthday: null,
+        gender: null
+      }
     ]);
   });
 
@@ -31,7 +58,16 @@ describe('membership import parsing', () => {
     `);
 
     expect(result).toEqual([
-      { fullName: 'Jane Doe', firstName: 'Jane Doe', lastName: null, email: 'jane@example.com', phone: '801-555-0101', age: null, birthday: null, gender: null }
+      {
+        fullName: 'Jane Doe',
+        firstName: 'Jane Doe',
+        lastName: null,
+        email: 'jane@example.com',
+        phone: '801-555-0101',
+        age: null,
+        birthday: null,
+        gender: null
+      }
     ]);
   });
 
@@ -43,8 +79,26 @@ describe('membership import parsing', () => {
     `);
 
     expect(result).toEqual([
-      { fullName: 'Jane Doe', firstName: 'Jane Doe', lastName: null, email: 'jane@example.com', phone: '801-555-0101', age: 35, birthday: 'Jan 15', gender: 'Female' },
-      { fullName: 'John Doe', firstName: 'John Doe', lastName: null, email: 'john@example.com', phone: '801-555-4444', age: 42, birthday: 'Mar 22', gender: 'Male' }
+      {
+        fullName: 'Jane Doe',
+        firstName: 'Jane Doe',
+        lastName: null,
+        email: 'jane@example.com',
+        phone: '801-555-0101',
+        age: 35,
+        birthday: 'Jan 15',
+        gender: 'Female'
+      },
+      {
+        fullName: 'John Doe',
+        firstName: 'John Doe',
+        lastName: null,
+        email: 'john@example.com',
+        phone: '801-555-4444',
+        age: 42,
+        birthday: 'Mar 22',
+        gender: 'Male'
+      }
     ]);
   });
 
@@ -55,7 +109,16 @@ describe('membership import parsing', () => {
     `);
 
     expect(result).toEqual([
-      { fullName: 'Jane Doe', firstName: 'Jane Doe', lastName: null, email: 'jane@example.com', phone: '801-555-0101', age: 28, birthday: null, gender: 'Female' }
+      {
+        fullName: 'Jane Doe',
+        firstName: 'Jane Doe',
+        lastName: null,
+        email: 'jane@example.com',
+        phone: '801-555-0101',
+        age: 28,
+        birthday: null,
+        gender: 'Female'
+      }
     ]);
   });
 
@@ -63,7 +126,16 @@ describe('membership import parsing', () => {
     const result = parseMembershipText(`Name\tEmail\tBirthday\nJane Doe\tjane@example.com\tFebruary 14, 1990`);
 
     expect(result).toEqual([
-      { fullName: 'Jane Doe', firstName: 'Jane Doe', lastName: null, email: 'jane@example.com', phone: null, age: null, birthday: 'February 14, 1990', gender: null }
+      {
+        fullName: 'Jane Doe',
+        firstName: 'Jane Doe',
+        lastName: null,
+        email: 'jane@example.com',
+        phone: null,
+        age: null,
+        birthday: 'February 14, 1990',
+        gender: null
+      }
     ]);
   });
 
@@ -71,15 +143,22 @@ describe('membership import parsing', () => {
     const result = parseMembershipText('Name\tEmail\tAge\tBirthday\nJane Doe\tjane@example.com\t30\tFeb 14');
 
     expect(result).toEqual([
-      { fullName: 'Jane Doe', firstName: 'Jane Doe', lastName: null, email: 'jane@example.com', phone: null, age: 30, birthday: 'Feb 14', gender: null }
+      {
+        fullName: 'Jane Doe',
+        firstName: 'Jane Doe',
+        lastName: null,
+        email: 'jane@example.com',
+        phone: null,
+        age: 30,
+        birthday: 'Feb 14',
+        gender: null
+      }
     ]);
   });
 
   it('keeps same-name members when birthdays differ', () => {
     const result = parseMembershipText(
-      'Name\tGender\tAge\tBirth Date\n' +
-      'Smith, Alex\tM\t44\t1 May 1981\n' +
-      'Smith, Alex\tM\t19\t22 October 2006'
+      'Name\tGender\tAge\tBirth Date\n' + 'Smith, Alex\tM\t44\t1 May 1981\n' + 'Smith, Alex\tM\t19\t22 October 2006'
     );
 
     expect(result).toHaveLength(2);
@@ -90,7 +169,16 @@ describe('membership import parsing', () => {
     const result = parseMembershipText('Name | Phone | Gender\nJane Doe | 801-555-0101 | Female');
 
     expect(result).toEqual([
-      { fullName: 'Jane Doe', firstName: 'Jane Doe', lastName: null, email: null, phone: '801-555-0101', age: null, birthday: null, gender: 'Female' }
+      {
+        fullName: 'Jane Doe',
+        firstName: 'Jane Doe',
+        lastName: null,
+        email: null,
+        phone: '801-555-0101',
+        age: null,
+        birthday: null,
+        gender: 'Female'
+      }
     ]);
   });
 
@@ -101,7 +189,16 @@ describe('membership import parsing', () => {
     `);
 
     expect(result).toEqual([
-      { fullName: 'Jane Doe', firstName: 'Jane Doe', lastName: null, email: 'jane@example.com', phone: null, age: null, birthday: '1990-01-15', gender: 'F' }
+      {
+        fullName: 'Jane Doe',
+        firstName: 'Jane Doe',
+        lastName: null,
+        email: 'jane@example.com',
+        phone: null,
+        age: null,
+        birthday: '1990-01-15',
+        gender: 'F'
+      }
     ]);
   });
 
@@ -124,7 +221,16 @@ describe('membership import parsing', () => {
     `);
 
     expect(result).toEqual([
-      { fullName: 'Jane Doe', firstName: 'Jane Doe', lastName: null, email: 'jane@example.com', phone: null, age: 36, birthday: null, gender: null }
+      {
+        fullName: 'Jane Doe',
+        firstName: 'Jane Doe',
+        lastName: null,
+        email: 'jane@example.com',
+        phone: null,
+        age: 36,
+        birthday: null,
+        gender: null
+      }
     ]);
   });
 
@@ -409,9 +515,9 @@ describe('membership import parsing', () => {
   it('strips LCR status suffixes (Out-of-Unit, Not Baptized) from names in TSV format', () => {
     const result = parseMembershipText(
       'Name\tGender\tAge\tBirth Date\tPhone Number\tE-mail\n' +
-      'Allen, SueOut-of-Unit\tF\t66\t26 May 1960\t(801) 362-5806\tsueallen968@gmail.com\n' +
-      'Anderson, Amelia JaneNot Baptized\tF\t8\t16 Mar 2018\t\t\n' +
-      'Bowen, William ThomasNot Baptized\tM\t55\t9 Nov 1970\t(702) 409-6077\t'
+        'Allen, SueOut-of-Unit\tF\t66\t26 May 1960\t(801) 362-5806\tsueallen968@gmail.com\n' +
+        'Anderson, Amelia JaneNot Baptized\tF\t8\t16 Mar 2018\t\t\n' +
+        'Bowen, William ThomasNot Baptized\tM\t55\t9 Nov 1970\t(702) 409-6077\t'
     );
     expect(result[0]?.fullName).toBe('Allen, Sue');
     expect(result[1]?.fullName).toBe('Anderson, Amelia Jane');

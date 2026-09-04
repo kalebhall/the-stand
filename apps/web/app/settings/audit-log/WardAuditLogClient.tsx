@@ -28,7 +28,7 @@ const ACTION_LABELS: Record<string, string> = {
   WARD_ROLE_REVOKED: 'Role Revoked',
   MEMBERSHIP_IMPORT_COMMITTED: 'Members Imported',
   CALLINGS_IMPORT_COMMITTED: 'Callings Imported',
-  MEMBER_IMPORT_COMMITTED: 'Members Imported',
+  MEMBER_IMPORT_COMMITTED: 'Members Imported'
 };
 
 function actionLabel(action: string): string {
@@ -57,10 +57,14 @@ function formatDate(iso: string): string {
 function severityBadge(severity: string | null) {
   const s = (severity || 'info').toLowerCase();
   if (s === 'security') {
-    return <span className="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-800">Security</span>;
+    return (
+      <span className="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-800">Security</span>
+    );
   }
   if (s === 'notice') {
-    return <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">Notice</span>;
+    return (
+      <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">Notice</span>
+    );
   }
   return <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">Info</span>;
 }
@@ -68,13 +72,17 @@ function severityBadge(severity: string | null) {
 function sourceBadge(source: string | null) {
   const src = source || 'manual_ui';
   if (src === 'lcr_import') {
-    return <span className="inline-flex items-center rounded bg-purple-100 px-1.5 py-0.5 text-xs font-medium text-purple-800">LCR Sync</span>;
+    return (
+      <span className="inline-flex items-center rounded bg-purple-100 px-1.5 py-0.5 text-xs font-medium text-purple-800">LCR Sync</span>
+    );
   }
   if (src === 'api') {
     return <span className="inline-flex items-center rounded bg-cyan-100 px-1.5 py-0.5 text-xs font-medium text-cyan-800">API</span>;
   }
   if (src === 'bulk_sync') {
-    return <span className="inline-flex items-center rounded bg-indigo-100 px-1.5 py-0.5 text-xs font-medium text-indigo-800">Bulk Sync</span>;
+    return (
+      <span className="inline-flex items-center rounded bg-indigo-100 px-1.5 py-0.5 text-xs font-medium text-indigo-800">Bulk Sync</span>
+    );
   }
   return <span className="inline-flex items-center rounded bg-zinc-100 px-1.5 py-0.5 text-xs font-medium text-zinc-700">Manual UI</span>;
 }
@@ -83,7 +91,14 @@ function actionColor(action: string): string {
   if (action.includes('DELETE') || action.includes('REVOKE') || action.includes('DEACTIVAT') || action.includes('RELEASE')) {
     return 'bg-red-100 text-red-800';
   }
-  if (action.includes('CREATE') || action.includes('ASSIGN') || action.includes('BOOTSTRAP') || action.includes('IMPORT') || action.includes('SUSTAIN') || action.includes('SET_APART')) {
+  if (
+    action.includes('CREATE') ||
+    action.includes('ASSIGN') ||
+    action.includes('BOOTSTRAP') ||
+    action.includes('IMPORT') ||
+    action.includes('SUSTAIN') ||
+    action.includes('SET_APART')
+  ) {
     return 'bg-green-100 text-green-800';
   }
   if (action.includes('UPDATE') || action.includes('PUBLISH') || action.includes('REPUBLISH') || action.includes('COMPLETE')) {
@@ -165,15 +180,18 @@ export function WardAuditLogClient({
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pageSize = initialPageSize;
 
-  async function fetchPage(newPage: number, overrides?: {
-    search?: string;
-    action?: string;
-    entityType?: string;
-    severity?: string;
-    source?: string;
-    dateFrom?: string;
-    dateTo?: string;
-  }) {
+  async function fetchPage(
+    newPage: number,
+    overrides?: {
+      search?: string;
+      action?: string;
+      entityType?: string;
+      severity?: string;
+      source?: string;
+      dateFrom?: string;
+      dateTo?: string;
+    }
+  ) {
     setLoading(true);
     setError(null);
     const params = new URLSearchParams();
@@ -390,11 +408,7 @@ export function WardAuditLogClient({
         </div>
       </div>
 
-      {error && (
-        <div className="rounded-md border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
-          {error}
-        </div>
-      )}
+      {error && <div className="rounded-md border border-destructive bg-destructive/10 p-3 text-sm text-destructive">{error}</div>}
 
       {/* Table */}
       <div className="overflow-x-auto rounded-lg border bg-card text-card-foreground shadow-sm">
@@ -417,16 +431,12 @@ export function WardAuditLogClient({
 
               return (
                 <tr key={item.id} className="hover:bg-muted/30">
-                  <td className="whitespace-nowrap px-4 py-3 text-xs text-muted-foreground">
-                    {formatDate(item.createdAt)}
-                  </td>
+                  <td className="whitespace-nowrap px-4 py-3 text-xs text-muted-foreground">{formatDate(item.createdAt)}</td>
                   <td className="px-4 py-3">
                     <div className="font-medium text-foreground">
                       {item.actorName || item.userDisplayName || item.userEmail || 'System'}
                     </div>
-                    {item.userEmail && item.actorName && (
-                      <div className="text-xs text-muted-foreground">{item.userEmail}</div>
-                    )}
+                    {item.userEmail && item.actorName && <div className="text-xs text-muted-foreground">{item.userEmail}</div>}
                     {item.isCrossWardSupport && (
                       <span className="mt-1 inline-flex items-center rounded bg-amber-100 px-1.5 py-0.2 text-[10px] font-semibold text-amber-900">
                         Cross-Ward Support
@@ -460,15 +470,16 @@ export function WardAuditLogClient({
                     ) : item.callingName ? (
                       <div>
                         <div className="font-medium text-foreground">{item.callingName}</div>
-                        {item.organization && (
-                          <div className="text-xs text-muted-foreground">{item.organization}</div>
-                        )}
+                        {item.organization && <div className="text-xs text-muted-foreground">{item.organization}</div>}
                       </div>
                     ) : item.meetingDate ? (
                       <div>
                         <div className="font-medium text-foreground">Meeting: {item.meetingDate}</div>
                         {item.itemTitle && (
-                          <div className="text-xs text-muted-foreground">{item.itemType ? `${item.itemType}: ` : ''}{item.itemTitle}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {item.itemType ? `${item.itemType}: ` : ''}
+                            {item.itemTitle}
+                          </div>
                         )}
                       </div>
                     ) : (
@@ -482,14 +493,9 @@ export function WardAuditLogClient({
                     </div>
                   </td>
                   <td className="px-4 py-3 text-right">
-                    {(hasChanges || hasDetails) ? (
+                    {hasChanges || hasDetails ? (
                       <div className="space-y-1">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setExpandedId(isExpanded ? null : item.id)}
-                          className="text-xs"
-                        >
+                        <Button variant="outline" size="sm" onClick={() => setExpandedId(isExpanded ? null : item.id)} className="text-xs">
                           {isExpanded ? 'Hide' : hasChanges ? 'View Changes' : 'View Details'}
                         </Button>
                         {isExpanded && (
@@ -545,23 +551,13 @@ export function WardAuditLogClient({
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between text-sm">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page <= 1 || loading}
-            onClick={() => void fetchPage(page - 1)}
-          >
+          <Button variant="outline" size="sm" disabled={page <= 1 || loading} onClick={() => void fetchPage(page - 1)}>
             &larr; Previous
           </Button>
           <span className="text-xs text-muted-foreground">
             Page {page} of {totalPages}
           </span>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page >= totalPages || loading}
-            onClick={() => void fetchPage(page + 1)}
-          >
+          <Button variant="outline" size="sm" disabled={page >= totalPages || loading} onClick={() => void fetchPage(page + 1)}>
             Next &rarr;
           </Button>
         </div>

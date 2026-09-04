@@ -33,16 +33,16 @@ async function insertProgramItems(
 
     const programNotes = toTrimmedString(item?.programNotes);
     const values = [
-        wardId,
-        meetingId,
-        index + 1,
-        itemType,
-        toTrimmedString(item?.title),
-        toTrimmedString(item?.notes),
-        toTrimmedString(item?.topic),
-        toTrimmedString(item?.hymnNumber),
-        toTrimmedString(item?.hymnTitle)
-      ];
+      wardId,
+      meetingId,
+      index + 1,
+      itemType,
+      toTrimmedString(item?.title),
+      toTrimmedString(item?.notes),
+      toTrimmedString(item?.topic),
+      toTrimmedString(item?.hymnNumber),
+      toTrimmedString(item?.hymnTitle)
+    ];
     await client.query(
       programNotes || item?.programNotes !== undefined
         ? `INSERT INTO meeting_program_item (ward_id, meeting_id, sequence, item_type, title, notes, topic, program_notes, hymn_number, hymn_title) VALUES ($1, $2, $3, $4, NULLIF($5, ''), NULLIF($6, ''), NULLIF($7, ''), NULLIF($8, ''), NULLIF($9, ''), NULLIF($10, ''))`

@@ -33,7 +33,10 @@ export default async function MembersPage() {
   const session = await requireAuthenticatedSession();
   enforcePasswordRotation(session);
 
-  if (!session.activeWardId || !canUseInternalNotes({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId)) {
+  if (
+    !session.activeWardId ||
+    !canUseInternalNotes({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId)
+  ) {
     redirect('/dashboard');
   }
 
@@ -74,9 +77,7 @@ export default async function MembersPage() {
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="space-y-1">
             <h1 className="text-2xl font-semibold tracking-tight">Members & Notes</h1>
-            <p className="text-sm text-muted-foreground">
-              Directory of ward members and restricted leadership follow-up notes.
-            </p>
+            <p className="text-sm text-muted-foreground">Directory of ward members and restricted leadership follow-up notes.</p>
           </div>
           {canImportMembers ? (
             <div className="flex items-center gap-2">

@@ -113,9 +113,7 @@ export function AnnouncementsWorkspaceClient({
       <div className="flex flex-col gap-4 rounded-xl border bg-card p-4 sm:flex-row sm:items-center sm:justify-between sm:p-6">
         <div>
           <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Announcements Workspace</h1>
-          <p className="text-sm text-muted-foreground">
-            Plan ward announcements for sacrament meeting programs and stand conducting.
-          </p>
+          <p className="text-sm text-muted-foreground">Plan ward announcements for sacrament meeting programs and stand conducting.</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
@@ -129,11 +127,7 @@ export function AnnouncementsWorkspaceClient({
             />
           </label>
           {canManage && (
-            <Button
-              onClick={() => setIsManualModalOpen(true)}
-              className="font-medium shadow-sm"
-              size="sm"
-            >
+            <Button onClick={() => setIsManualModalOpen(true)} className="font-medium shadow-sm" size="sm">
               + Add Announcement
             </Button>
           )}
@@ -163,10 +157,7 @@ export function AnnouncementsWorkspaceClient({
                   variant="outline"
                   size="sm"
                   onClick={() => setFeedDrawerOpen(!feedDrawerOpen)}
-                  className={cn(
-                    'transition-colors',
-                    feedDrawerOpen ? 'bg-secondary text-secondary-foreground font-semibold' : ''
-                  )}
+                  className={cn('transition-colors', feedDrawerOpen ? 'bg-secondary text-secondary-foreground font-semibold' : '')}
                 >
                   {feedDrawerOpen ? 'Close Feeds' : `Feeds (${calendarFeeds.length})`}
                 </Button>
@@ -184,8 +175,12 @@ export function AnnouncementsWorkspaceClient({
                     {calendarFeeds.map((feed) => (
                       <li key={feed.id} className="flex items-center justify-between gap-2 rounded border bg-background p-2 text-xs">
                         <div>
-                          <p className="font-semibold">{feed.display_name} <span className="text-muted-foreground">({feed.feed_scope})</span></p>
-                          <p className="text-muted-foreground">Last sync: {feed.last_refreshed_at ? formatEventDate(feed.last_refreshed_at) : 'Never'}</p>
+                          <p className="font-semibold">
+                            {feed.display_name} <span className="text-muted-foreground">({feed.feed_scope})</span>
+                          </p>
+                          <p className="text-muted-foreground">
+                            Last sync: {feed.last_refreshed_at ? formatEventDate(feed.last_refreshed_at) : 'Never'}
+                          </p>
                           {feed.last_refresh_error && <p className="text-destructive">{feed.last_refresh_error}</p>}
                         </div>
                         {canManage && (
@@ -206,15 +201,28 @@ export function AnnouncementsWorkspaceClient({
                 {canManage && (
                   <form action={actions.createCalendarFeed} className="space-y-2 border-t pt-2">
                     <p className="text-xs font-semibold">Add Feed URL</p>
-                    <input name="displayName" placeholder="Feed Name (e.g. Ward Calendar)" required className="w-full rounded border bg-background px-2 py-1 text-xs" />
-                    <input name="feedUrl" placeholder="https://.../feed.ics" required type="url" className="w-full rounded border bg-background px-2 py-1 text-xs" />
+                    <input
+                      name="displayName"
+                      placeholder="Feed Name (e.g. Ward Calendar)"
+                      required
+                      className="w-full rounded border bg-background px-2 py-1 text-xs"
+                    />
+                    <input
+                      name="feedUrl"
+                      placeholder="https://.../feed.ics"
+                      required
+                      type="url"
+                      className="w-full rounded border bg-background px-2 py-1 text-xs"
+                    />
                     <div className="flex items-center gap-2">
                       <select name="feedScope" defaultValue="WARD" className="rounded border bg-background px-2 py-1 text-xs">
                         <option value="WARD">Ward</option>
                         <option value="STAKE">Stake</option>
                         <option value="CHURCH">Church</option>
                       </select>
-                      <Button type="submit" size="sm" className="h-7 text-xs">Add Feed</Button>
+                      <Button type="submit" size="sm" className="h-7 text-xs">
+                        Add Feed
+                      </Button>
                     </div>
                   </form>
                 )}
@@ -236,9 +244,7 @@ export function AnnouncementsWorkspaceClient({
                           {formatEventDate(evt.starts_at)}
                         </span>
                       </div>
-                      {evt.description && (
-                        <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{evt.description}</p>
-                      )}
+                      {evt.description && <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{evt.description}</p>}
                       {evt.tags && evt.tags.length > 0 && (
                         <div className="mt-2 flex flex-wrap gap-1">
                           {evt.tags.map((t, idx) => (
@@ -279,9 +285,7 @@ export function AnnouncementsWorkspaceClient({
           <div className="rounded-xl border bg-card p-4 shadow-sm sm:p-6">
             <div className="flex items-center justify-between border-b pb-3">
               <div>
-                <h2 className="text-base font-semibold">
-                  Program Announcements for {selectedSunday}
-                </h2>
+                <h2 className="text-base font-semibold">Program Announcements for {selectedSunday}</h2>
                 <p className="text-xs text-muted-foreground">
                   Carried over from previous weeks unless date has passed. Undated announcements never expire.
                 </p>
@@ -377,8 +381,12 @@ export function AnnouncementsWorkspaceClient({
                         </div>
 
                         <div className="flex gap-2 pt-2">
-                          <Button type="submit" size="sm">Save</Button>
-                          <Button type="button" variant="outline" size="sm" onClick={() => setEditingId(null)}>Cancel</Button>
+                          <Button type="submit" size="sm">
+                            Save
+                          </Button>
+                          <Button type="button" variant="outline" size="sm" onClick={() => setEditingId(null)}>
+                            Cancel
+                          </Button>
                         </div>
                       </form>
                     ) : (
@@ -399,34 +407,26 @@ export function AnnouncementsWorkspaceClient({
                           </div>
                         </div>
 
-                        {item.body && (
-                          <p className="text-sm text-muted-foreground whitespace-pre-wrap">{item.body}</p>
-                        )}
+                        {item.body && <p className="text-sm text-muted-foreground whitespace-pre-wrap">{item.body}</p>}
 
                         <div className="flex items-center justify-between pt-2 text-xs text-muted-foreground border-t">
                           <span>
                             {item.is_permanent || (!item.start_date && !item.end_date)
                               ? 'No expiration (Undated)'
                               : item.start_date && item.end_date
-                              ? `${item.start_date} → ${item.end_date}`
-                              : `Date: ${item.start_date ?? item.end_date}`}
+                                ? `${item.start_date} → ${item.end_date}`
+                                : `Date: ${item.start_date ?? item.end_date}`}
                           </span>
 
                           {canManage && (
                             <div className="flex items-center gap-2">
-                              <button
-                                onClick={() => setEditingId(item.id)}
-                                className="font-medium text-primary hover:underline text-xs"
-                              >
+                              <button onClick={() => setEditingId(item.id)} className="font-medium text-primary hover:underline text-xs">
                                 Edit
                               </button>
                               <span>·</span>
                               <form action={actions.deleteAnnouncement} className="inline">
                                 <input type="hidden" name="announcementId" value={item.id} />
-                                <button
-                                  type="submit"
-                                  className="font-medium text-destructive hover:underline text-xs"
-                                >
+                                <button type="submit" className="font-medium text-destructive hover:underline text-xs">
                                   Delete
                                 </button>
                               </form>
@@ -439,7 +439,8 @@ export function AnnouncementsWorkspaceClient({
                 ))
               ) : (
                 <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
-                  No announcements active for this Sunday. Use <strong>Copy to Program</strong> from the calendar on the left or click <strong>+ Add Announcement</strong>.
+                  No announcements active for this Sunday. Use <strong>Copy to Program</strong> from the calendar on the left or click{' '}
+                  <strong>+ Add Announcement</strong>.
                 </div>
               )}
             </div>
@@ -459,10 +460,10 @@ export function AnnouncementsWorkspaceClient({
                           {item.is_permanent
                             ? 'Permanent'
                             : item.end_date && item.end_date < selectedSunday
-                            ? `Expired (${item.end_date})`
-                            : item.start_date && item.start_date > selectedSunday
-                            ? `Upcoming (${item.start_date})`
-                            : 'Inactive'}
+                              ? `Expired (${item.end_date})`
+                              : item.start_date && item.start_date > selectedSunday
+                                ? `Upcoming (${item.start_date})`
+                                : 'Inactive'}
                         </span>
                       </div>
                       {item.body && <p className="mt-1 text-muted-foreground line-clamp-1">{item.body}</p>}
@@ -514,50 +515,27 @@ export function AnnouncementsWorkspaceClient({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-semibold">Date (optional)</label>
-                  <input
-                    name="startDate"
-                    type="date"
-                    className="mt-1 w-full rounded-md border bg-background px-2 py-1.5 text-xs"
-                  />
+                  <input name="startDate" type="date" className="mt-1 w-full rounded-md border bg-background px-2 py-1.5 text-xs" />
                 </div>
                 <div>
                   <label className="text-xs font-semibold">End Date (optional)</label>
-                  <input
-                    name="endDate"
-                    type="date"
-                    className="mt-1 w-full rounded-md border bg-background px-2 py-1.5 text-xs"
-                  />
+                  <input name="endDate" type="date" className="mt-1 w-full rounded-md border bg-background px-2 py-1.5 text-xs" />
                 </div>
               </div>
 
               <div className="space-y-2 rounded-lg bg-muted/40 p-3">
                 <label className="flex items-center gap-2 text-xs font-medium cursor-pointer">
-                  <input
-                    name="includeInProgram"
-                    type="checkbox"
-                    defaultChecked={true}
-                    className="h-4 w-4 rounded border"
-                  />
+                  <input name="includeInProgram" type="checkbox" defaultChecked={true} className="h-4 w-4 rounded border" />
                   <span>Include on Program (Default: On)</span>
                 </label>
 
                 <label className="flex items-center gap-2 text-xs font-medium cursor-pointer">
-                  <input
-                    name="includeInStand"
-                    type="checkbox"
-                    defaultChecked={false}
-                    className="h-4 w-4 rounded border"
-                  />
+                  <input name="includeInStand" type="checkbox" defaultChecked={false} className="h-4 w-4 rounded border" />
                   <span>Announce at Stand (Default: Off)</span>
                 </label>
 
                 <label className="flex items-center gap-2 text-xs font-medium cursor-pointer">
-                  <input
-                    name="isPermanent"
-                    type="checkbox"
-                    defaultChecked={false}
-                    className="h-4 w-4 rounded border"
-                  />
+                  <input name="isPermanent" type="checkbox" defaultChecked={false} className="h-4 w-4 rounded border" />
                   <span>Never Expire (Permanent)</span>
                 </label>
               </div>

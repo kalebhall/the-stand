@@ -44,6 +44,7 @@ WHERE lower(u.email) = lower('<support-admin-email>');
 ```
 
 Expected:
+
 - `is_active = true`
 - `has_password_hash = true`
 - `has_support_admin_role = true`
@@ -53,6 +54,7 @@ Expected:
 The login form calls NextAuth `signIn('credentials', ...)`, so email/password uses the credentials provider path.
 
 Quick browser checks:
+
 - Use the email/password form (not Google)
 - Make sure email matches `SUPPORT_ADMIN_EMAIL` exactly (case-insensitive)
 
@@ -61,6 +63,7 @@ Quick browser checks:
 Credentials login is rate-limited by email + IP. Repeated retries can temporarily block attempts.
 
 Debug actions:
+
 - Wait and retry from same client later
 - Retry from a different source IP if available
 - Restart dev server to clear in-memory limiter state (local/dev only)
@@ -77,6 +80,7 @@ WHERE email = lower('<support-admin-email>')
 ```
 
 If no row returns, check:
+
 - Email mismatch
 - `is_active` accidentally set to false
 
