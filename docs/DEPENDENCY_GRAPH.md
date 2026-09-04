@@ -21,69 +21,70 @@ flowchart LR
   A9["web:bootstrap.mjs<br/>1 files"]
   A10["web:calendar<br/>4 files"]
   A11["web:callings<br/>7 files"]
-  A12["web:config<br/>13 files"]
-  A13["web:db<br/>7 files"]
-  A14["web:hardening<br/>1 files"]
-  A15["web:health.mjs<br/>1 files"]
-  A16["web:imports<br/>16 files"]
-  A17["web:lib<br/>9 files"]
-  A18["web:meetings<br/>7 files"]
-  A19["web:notes<br/>1 files"]
-  A20["web:notifications<br/>23 files"]
-  A21["web:offline<br/>1 files"]
-  A22["web:reports<br/>2 files"]
-  A23["web:stand<br/>6 files"]
-  A24["web:tooling<br/>2 files"]
-  A25["web:types<br/>2 files"]
-  A26["web:ui<br/>30 files"]
-  A27["web:version.mjs<br/>1 files"]
+  A12["web:church-actions<br/>2 files"]
+  A13["web:config<br/>13 files"]
+  A14["web:db<br/>7 files"]
+  A15["web:hardening<br/>1 files"]
+  A16["web:health.mjs<br/>1 files"]
+  A17["web:imports<br/>16 files"]
+  A18["web:lib<br/>9 files"]
+  A19["web:meetings<br/>7 files"]
+  A20["web:notes<br/>1 files"]
+  A21["web:notifications<br/>23 files"]
+  A22["web:offline<br/>1 files"]
+  A23["web:reports<br/>2 files"]
+  A24["web:stand<br/>6 files"]
+  A25["web:tooling<br/>2 files"]
+  A26["web:types<br/>2 files"]
+  A27["web:ui<br/>30 files"]
+  A28["web:version.mjs<br/>1 files"]
   A5 -->|99| A8
-  A5 -->|89| A13
-  A6 -->|89| A26
+  A5 -->|89| A14
+  A6 -->|89| A27
   A6 -->|72| A8
-  A6 -->|40| A13
-  A5 -->|38| A20
-  A5 -->|23| A17
+  A6 -->|40| A14
+  A5 -->|38| A21
+  A5 -->|23| A18
   A5 -->|15| A11
   A5 -->|14| A7
-  A5 -->|11| A16
-  A6 -->|11| A18
-  A5 -->|5| A18
+  A5 -->|11| A17
+  A6 -->|11| A19
+  A5 -->|5| A19
   A6 -->|4| A11
-  A6 -->|4| A23
+  A6 -->|4| A24
   A5 -->|3| A4
   A6 -->|3| A4
-  A6 -->|2| A20
-  A8 -->|2| A13
-  A10 -->|2| A13
-  A12 -->|2| A17
-  A13 -->|2| A8
-  A20 -->|2| A13
-  A2 -->|1| A15
+  A6 -->|2| A21
+  A8 -->|2| A14
+  A10 -->|2| A14
+  A13 -->|2| A18
+  A14 -->|2| A8
+  A21 -->|2| A14
+  A2 -->|1| A16
   A5 -->|1| A10
-  A5 -->|1| A19
-  A5 -->|1| A23
+  A5 -->|1| A20
+  A5 -->|1| A24
   A6 -->|1| A10
-  A6 -->|1| A16
   A6 -->|1| A17
-  A6 -->|1| A21
+  A6 -->|1| A18
   A6 -->|1| A22
-  A8 -->|1| A17
-  A10 -->|1| A20
-  A12 -->|1| A9
-  A12 -->|1| A15
-  A15 -->|1| A27
-  A16 -->|1| A13
-  A18 -->|1| A4
-  A20 -->|1| A19
-  A23 -->|1| A18
-  A26 -->|1| A8
-  A26 -->|1| A16
-  A26 -->|1| A17
-  A26 -->|1| A19
-  A26 -->|1| A21
-  A26 -->|1| A22
-  A26 -->|1| A23
+  A6 -->|1| A23
+  A8 -->|1| A18
+  A10 -->|1| A21
+  A13 -->|1| A9
+  A13 -->|1| A16
+  A16 -->|1| A28
+  A17 -->|1| A14
+  A19 -->|1| A4
+  A21 -->|1| A20
+  A24 -->|1| A19
+  A27 -->|1| A8
+  A27 -->|1| A17
+  A27 -->|1| A18
+  A27 -->|1| A20
+  A27 -->|1| A22
+  A27 -->|1| A23
+  A27 -->|1| A24
 ```
 
 ## Area inventory
@@ -101,6 +102,7 @@ flowchart LR
 | `web:bootstrap.mjs` | 1 |
 | `web:calendar` | 4 |
 | `web:callings` | 7 |
+| `web:church-actions` | 2 |
 | `web:config` | 13 |
 | `web:db` | 7 |
 | `web:hardening` | 1 |
@@ -170,6 +172,7 @@ flowchart LR
 | `web:audit` | `web:audit` | 1 |
 | `web:auth` | `web:lib` | 1 |
 | `web:calendar` | `web:notifications` | 1 |
+| `web:church-actions` | `web:church-actions` | 1 |
 | `web:config` | `web:bootstrap.mjs` | 1 |
 | `web:config` | `web:health.mjs` | 1 |
 | `web:health.mjs` | `web:version.mjs` | 1 |
@@ -241,6 +244,7 @@ flowchart LR
 | `web:auth` | `next` | 1 |
 | `web:bootstrap.mjs` | `Node.js` | 1 |
 | `web:calendar` | `pg` | 1 |
+| `web:church-actions` | `vitest` | 1 |
 | `web:config` | `@testing-library/jest-dom` | 1 |
 | `web:config` | `child_process` | 1 |
 | `web:config` | `drizzle-kit` | 1 |
@@ -505,6 +509,8 @@ flowchart LR
 | `apps/web/src/callings/standard-callings.ts` | `web:callings` | 0 | 0 |
 | `apps/web/src/callings/transition.ts` | `web:callings` | 1 | 1 |
 | `apps/web/src/callings/transition.vitest.ts` | `web:callings` | 1 | 1 |
+| `apps/web/src/church-actions/types.ts` | `web:church-actions` | 0 | 0 |
+| `apps/web/src/church-actions/types.vitest.ts` | `web:church-actions` | 1 | 1 |
 | `apps/web/src/db/bootstrap-support-admin.ts` | `web:db` | 3 | 1 |
 | `apps/web/src/db/bootstrap-support-admin.vitest.ts` | `web:db` | 1 | 1 |
 | `apps/web/src/db/client.ts` | `web:db` | 1 | 5 |
