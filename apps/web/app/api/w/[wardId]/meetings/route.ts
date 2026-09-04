@@ -16,11 +16,18 @@ function toTrimmedString(value: unknown): string {
 function getIntroductionRoles(value: unknown): IntroductionRoles | null {
   if (!value || typeof value !== 'object') return null;
   const roles = value as Partial<IntroductionRoles>;
+  const visitingLeaders = Array.isArray(roles.visitingLeaders)
+    ? roles.visitingLeaders
+        .filter((leader) => Boolean(leader) && typeof leader === 'object')
+        .map((leader) => ({ name: toTrimmedString(leader.name), calling: toTrimmedString(leader.calling) }))
+        .filter((leader) => leader.name || leader.calling)
+    : [];
   return {
     presiding: toTrimmedString(roles.presiding),
     conducting: toTrimmedString(roles.conducting),
     organist: toTrimmedString(roles.organist),
-    chorister: toTrimmedString(roles.chorister)
+    chorister: toTrimmedString(roles.chorister),
+    ...(visitingLeaders.length ? { visitingLeaders } : {})
   };
 }
 

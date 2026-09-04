@@ -129,6 +129,11 @@ export function buildStandRows(
         ['Chorister', roles.chorister]
       ]
         .map(([role, name]) => `${role}: ${name || 'Unassigned'}`)
+        .concat(
+          (roles.visitingLeaders ?? []).map(
+            (leader) => `Visiting stake leader: ${leader.name || 'Unassigned'}${leader.calling ? ` (${leader.calling})` : ''}`
+          )
+        )
         .join('\n');
       rows.push({
         kind: 'standard',
