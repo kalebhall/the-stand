@@ -1,5 +1,5 @@
 import { isAnnouncementActiveForDate, type AnnouncementRenderItem } from '../announcements/types';
-import { getProgramItemLabel } from './types';
+import { getProgramItemLabel, isIntroductionItemType } from './types';
 
 export type MeetingRenderItem = {
   itemType: string;
@@ -62,18 +62,19 @@ export function buildMeetingRenderHtml({ meetingDate, meetingType, programItems,
   const topAnnouncements = activeAnnouncements.filter((item) => item.placement === 'PROGRAM_TOP');
   const bottomAnnouncements = activeAnnouncements.filter((item) => item.placement === 'PROGRAM_BOTTOM');
 
+  let introductionHeadingRendered = false;
   const itemsHtml = programItems
     .map((item) => {
       const label = escapeHtml(getProgramItemLabel(item.itemType));
       const value = escapeHtml(displayHymn(item) || '—');
       const topic = displayTopic(item);
       const topicHtml = topic ? `<p class="text-sm text-muted-foreground">${escapeHtml(topic)}</p>` : '';
-      const notes =
-        (item.programNotes ?? item.notes)
-          ? `<p class="text-xs text-muted-foreground">${escapeHtml(item.programNotes ?? item.notes ?? '')}</p>`
-          : '';
+      const notes = (item.programNotes ?? item.notes) ? `<p class="text-xs text-muted-foreground">${escapeHtml(item.programNotes ?? item.notes ?? '')}</p>` : '';
+      const introductionHeading = isIntroductionItemType(item.itemType) && !introductionHeadingRendered
+        ? ((introductionHeadingRendered = true), '<h2 class="border-b pb-1 text-base font-semibold">Introduction</h2>')
+        : '';
 
-      return `<article class="grid grid-cols-[10rem_1fr] gap-3 border-b py-2"><p class="text-sm font-medium">${label}</p><div class="space-y-1"><p class="text-sm">${value}</p>${topicHtml}${notes}</div></article>`;
+      return `${introductionHeading}<article class="grid grid-cols-[10rem_1fr] gap-3 border-b py-2"><p class="text-sm font-medium">${label}</p><div class="space-y-1"><p class="text-sm">${value}</p>${topicHtml}${notes}</div></article>`;
     })
     .join('');
 
