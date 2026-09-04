@@ -159,7 +159,7 @@ export default async function StandScriptSettingsPage() {
         </label>
 
         <section className="space-y-3 rounded-md border p-3">
-          <div><h2 className="font-semibold">Membership and ordinance scripts</h2><p className="text-xs text-muted-foreground">Use {`{memberName}`} and {`{callingName}`} as placeholders. These are editable ward templates.</p></div>
+          <div><h2 className="font-semibold">Membership and ordinance meeting prompts</h2><p className="text-xs text-muted-foreground">These templates are for announcing the action or presenting/sustaining the person before it. They do not replace the ordinance or blessing. Use {`{memberName}`} and {`{callingName}`} as placeholders.</p></div>
           <label className="block space-y-2 text-sm"><span className="font-medium">Welcome new ward member</span><textarea name="welcomeNewMemberTemplate" defaultValue={template?.welcome_new_member_template ?? DEFAULT_STAND_BUSINESS_TEMPLATES.WELCOME_NEW_MEMBER} className="min-h-20 w-full rounded-md border px-3 py-2" required /></label>
           <label className="block space-y-2 text-sm"><span className="font-medium">Baby blessing</span><textarea name="babyBlessingTemplate" defaultValue={template?.baby_blessing_template ?? DEFAULT_STAND_BUSINESS_TEMPLATES.BABY_BLESSING} className="min-h-20 w-full rounded-md border px-3 py-2" required /></label>
           <label className="block space-y-2 text-sm"><span className="font-medium">Priesthood ordination</span><textarea name="priesthoodOrdinationTemplate" defaultValue={template?.priesthood_ordination_template ?? DEFAULT_STAND_BUSINESS_TEMPLATES.PRIESTHOOD_ORDINATION} className="min-h-20 w-full rounded-md border px-3 py-2" required /></label>

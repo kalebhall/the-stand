@@ -8,8 +8,8 @@ export const DEFAULT_STAND_RELEASE_TEMPLATE =
   '**{memberName}** has been released as **{callingName}**. Those who would like to express thanks for [his or her] service may show it by the uplifted hand.';
 
 export const DEFAULT_STAND_BUSINESS_TEMPLATES = {
-  WELCOME_NEW_MEMBER: 'After a few words of introduction, we welcome **{memberName}** into the ward by the uplifted hand.',
-  BABY_BLESSING: 'The person acting as voice presents **{memberName}** and addresses Heavenly Father as in prayer, gives the child a name, addresses the child, gives a blessing as guided by the Spirit, and closes in the name of Jesus Christ.',
-  PRIESTHOOD_ORDINATION: '**{memberName}** will be ordained to the office of **{callingName}**. The ordinance is performed by the authority and according to the required elements in General Handbook 18.10.5.',
-  PRIESTHOOD_ADVANCEMENT: '**{memberName}** will be ordained to the office of **{callingName}**. The ordinance is performed by the authority and according to the required elements in General Handbook 18.10.5.'
+  WELCOME_NEW_MEMBER: 'After a few words of introduction, we welcome **{memberName}** into the ward. Those who welcome [him or her] may show it by the uplifted hand. [Pause briefly.]',
+  BABY_BLESSING: 'The blessing of **{memberName}** will take place after this meeting. [Confirm that the parents and participating priesthood holders are prepared before the ordinance.]',
+  PRIESTHOOD_ORDINATION: 'It is proposed that **{memberName}** be ordained to the office of **{callingName}**. Those in favor may manifest it by the uplifted hand. Those opposed, if any, may manifest it. [After the vote, remind the authorized priesthood holder to perform the ordination.]',
+  PRIESTHOOD_ADVANCEMENT: 'It is proposed that **{memberName}** be ordained to the office of **{callingName}**. Those in favor may manifest it by the uplifted hand. Those opposed, if any, may manifest it. [After the vote, remind the authorized priesthood holder to perform the ordination.]'
 } as const;

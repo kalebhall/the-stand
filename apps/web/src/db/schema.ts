@@ -163,10 +163,10 @@ export const wardStandTemplate = pgTable(
       .default(
         '**{memberName}** has been released as  **{callingName}**. Those who would like to express thanks for [his or her] service may show it by the uplifted hand.'
       ),
-    welcomeNewMemberTemplate: text('welcome_new_member_template').notNull().default('After a few words of introduction, we welcome **{memberName}** into the ward by the uplifted hand.'),
-    babyBlessingTemplate: text('baby_blessing_template').notNull().default('The person acting as voice addresses Heavenly Father as in prayer, gives the child a name, addresses the child, gives a blessing as guided by the Spirit, and closes in the name of Jesus Christ.'),
-    priesthoodOrdinationTemplate: text('priesthood_ordination_template').notNull().default('**{memberName}** will be ordained to the office of **{callingName}**. The ordinance is performed by the authority and according to the required elements in General Handbook 18.10.5.'),
-    priesthoodAdvancementTemplate: text('priesthood_advancement_template').notNull().default('**{memberName}** will be ordained to the office of **{callingName}**. The ordinance is performed by the authority and according to the required elements in General Handbook 18.10.5.'),
+    welcomeNewMemberTemplate: text('welcome_new_member_template').notNull().default('After a few words of introduction, we welcome **{memberName}** into the ward. Those who welcome [him or her] may show it by the uplifted hand. [Pause briefly.]'),
+    babyBlessingTemplate: text('baby_blessing_template').notNull().default('The blessing of **{memberName}** will take place after this meeting. [Confirm that the parents and participating priesthood holders are prepared before the ordinance.]'),
+    priesthoodOrdinationTemplate: text('priesthood_ordination_template').notNull().default('It is proposed that **{memberName}** be ordained to the office of **{callingName}**. Those in favor may manifest it by the uplifted hand. Those opposed, if any, may manifest it. [After the vote, remind the authorized priesthood holder to perform the ordination.]'),
+    priesthoodAdvancementTemplate: text('priesthood_advancement_template').notNull().default('It is proposed that **{memberName}** be ordained to the office of **{callingName}**. Those in favor may manifest it by the uplifted hand. Those opposed, if any, may manifest it. [After the vote, remind the authorized priesthood holder to perform the ordination.]'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
   },
