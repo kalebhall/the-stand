@@ -3,6 +3,7 @@ import { notFound, redirect } from 'next/navigation';
 
 import { buttonVariants } from '@/components/ui/button';
 import { WardBusinessSection, type BusinessLine } from '@/components/WardBusinessSection';
+import { MembershipOrdinanceSection, type MembershipOrdinanceAction } from '@/components/MembershipOrdinanceSection';
 import { InternalNotesPanel, type InternalNoteRow } from '@/components/InternalNotesPanel';
 import { cn } from '@/lib/utils';
 import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth/guards';
@@ -32,6 +33,10 @@ type TemplateRow = {
   welcome_text: string;
   sustain_template: string;
   release_template: string;
+  welcome_new_member_template: string;
+  baby_blessing_template: string;
+  priesthood_ordination_template: string;
+  priesthood_advancement_template: string;
 };
 
 const SACRAMENT_SCRIPTURE_URL = 'https://www.churchofjesuschrist.org/study/scriptures/dc-testament/dc/20?lang=eng#p77';
@@ -104,7 +109,7 @@ export default async function StandViewPage({
     );
 
     const templateResult = await client.query(
-      'SELECT welcome_text, sustain_template, release_template FROM ward_stand_template WHERE ward_id = $1 LIMIT 1',
+      'SELECT welcome_text, sustain_template, release_template, welcome_new_member_template, baby_blessing_template, priesthood_ordination_template, priesthood_advancement_template FROM ward_stand_template WHERE ward_id = $1 LIMIT 1',
       [session.activeWardId]
     );
 
@@ -123,6 +128,14 @@ export default async function StandViewPage({
          LEFT JOIN member m ON m.ward_id = b.ward_id AND m.full_name = b.member_name AND m.archived_at IS NULL
         WHERE b.meeting_id = $1::uuid AND b.ward_id = $2::uuid
         ORDER BY b.created_at ASC`,
+      [meetingId, session.activeWardId]
+    );
+
+    const membershipActionsResult = await client.query(
+      `SELECT id, member_name, action_type, reason, details, status
+         FROM meeting_membership_ordinance
+        WHERE meeting_id = $1::uuid AND ward_id = $2::uuid
+        ORDER BY created_at ASC`,
       [meetingId, session.activeWardId]
     );
 
@@ -179,6 +192,7 @@ export default async function StandViewPage({
         gender: line.gender
       }, line.calling_name)
     }));
+    const membershipActions = membershipActionsResult.rows as MembershipOrdinanceAction[];
     const notes = notesResult.rows as Array<InternalNoteRow & { program_item_id: string }>;
     const canUseNotes = canUseInternalNotes({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId);
     const canManage = canManageCallings({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId);
@@ -222,6 +236,19 @@ export default async function StandViewPage({
           </div>
           <OfflineStandButton userId={session.user.id} wardId={activeWardId} meetingId={meetingId} />
         </section>
+
+        <MembershipOrdinanceSection
+          wardId={activeWardId}
+          meetingId={meetingId}
+          actions={membershipActions}
+          canManage={canManage}
+          templates={{
+            WELCOME_NEW_MEMBER: template?.welcome_new_member_template,
+            BABY_BLESSING: template?.baby_blessing_template,
+            PRIESTHOOD_ORDINATION: template?.priesthood_ordination_template,
+            PRIESTHOOD_ADVANCEMENT: template?.priesthood_advancement_template
+          }}
+        />
 
         <section className="grid gap-3">
           {selectedMode === 'formal'

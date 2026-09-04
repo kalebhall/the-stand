@@ -52,6 +52,7 @@ export default async function DashboardPage() {
   const canAccessPortal = Boolean(session.activeWardId) && hasRole(session.user.roles, 'STAND_ADMIN');
   const showSupportCards = session.user.roles?.includes('SUPPORT_ADMIN') ?? false;
   let setApartQueueCount = 'Unavailable';
+  let membershipActionQueueCount = 'Unavailable';
   let notificationHealthValue = 'No deliveries yet';
   let notificationHealthDetail = 'No notification attempts recorded for this ward yet.';
   let nextMeetingValue = 'No meetings scheduled';
@@ -85,6 +86,14 @@ export default async function DashboardPage() {
           WHERE ca.ward_id = $1
             AND ca.is_active = TRUE
             AND latest.action_status = 'SUSTAINED'`,
+        [session.activeWardId]
+      );
+
+      const membershipActionQueueResult = await client.query(
+        `SELECT COUNT(*)::int AS count
+           FROM meeting_membership_ordinance a
+           JOIN meeting m ON m.id = a.meeting_id AND m.ward_id = a.ward_id
+          WHERE a.ward_id = $1::uuid AND a.status = 'action_needed'`,
         [session.activeWardId]
       );
 
@@ -131,6 +140,7 @@ export default async function DashboardPage() {
 
       await client.query('COMMIT');
       setApartQueueCount = `${result.rows[0].count} waiting`;
+      membershipActionQueueCount = `${(membershipActionQueueResult.rows[0] as { count: number }).count} waiting`;
       const notificationHealth = notificationHealthResult.rows[0] as { last_delivery_at: string | null; failure_count: number };
       notificationHealthValue = notificationHealth.last_delivery_at ?? 'No deliveries yet';
       notificationHealthDetail = `${notificationHealth.failure_count} failed deliveries`;
@@ -193,6 +203,15 @@ export default async function DashboardPage() {
             value={draftCountValue}
             detail={draftCountDetail}
             actions={[{ href: '/meetings', label: 'View meetings' }]}
+          />
+        ) : null}
+
+        {canAccessMeetings ? (
+          <DashboardCard
+            title="Membership and ordinance follow-up"
+            value={membershipActionQueueCount}
+            detail="Announced actions still needing completion."
+            actions={[{ href: '/meetings', label: 'Open meetings' }]}
           />
         ) : null}
 
