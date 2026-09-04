@@ -55,6 +55,13 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
         ORDER BY b.created_at ASC`,
       [meetingId, wardId]
     );
+    const membershipActions = await client.query(
+      `SELECT id, member_name, action_type, status, planned_date, interview_status, interview_date, interviewer_name, responsible_leader, lcr_follow_up_status, lcr_updated_at
+         FROM meeting_membership_ordinance
+        WHERE meeting_id = $1::uuid AND ward_id = $2::uuid
+        ORDER BY created_at ASC`,
+      [meetingId, wardId]
+    );
     const notes = await client.query(
       `SELECT note.id, note.visibility, note.note_text, note.created_at, note.updated_at
          FROM internal_note note
@@ -105,6 +112,19 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
         actionType: line.action_type,
         status: line.status,
         updatedAt: line.updated_at
+      })),
+      membershipActions: membershipActions.rows.map((action) => ({
+        id: action.id,
+        memberName: action.member_name,
+        actionType: action.action_type,
+        status: action.status,
+        plannedDate: action.planned_date,
+        interviewStatus: action.interview_status,
+        interviewDate: action.interview_date,
+        interviewerName: action.interviewer_name,
+        responsibleLeader: action.responsible_leader,
+        lcrFollowUpStatus: action.lcr_follow_up_status,
+        lcrUpdatedAt: action.lcr_updated_at
       })),
       notes: notes.rows.map((note) => ({
         id: note.id,

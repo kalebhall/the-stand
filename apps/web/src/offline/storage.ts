@@ -15,6 +15,19 @@ export type OfflineStandSnapshot = {
   meeting: { id: string; meetingDate: string; meetingType: string };
   standRows: Array<Record<string, unknown>>;
   businessLines: Array<{ id: string; memberName: string; callingName: string; actionType: string; status: string; updatedAt?: string }>;
+  membershipActions?: Array<{
+    id: string;
+    memberName: string;
+    actionType: string;
+    status: string;
+    plannedDate?: string | null;
+    interviewStatus?: string;
+    interviewDate?: string | null;
+    interviewerName?: string | null;
+    responsibleLeader?: string | null;
+    lcrFollowUpStatus?: string;
+    lcrUpdatedAt?: string | null;
+  }>;
   notes?: OfflineNote[];
   progress?: OfflineProgress;
   savedAt: string;
