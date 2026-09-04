@@ -511,6 +511,22 @@ export const hymn = pgTable('hymn', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
 });
 
+
+export const historicalImportNameReview = pgTable('historical_import_name_review', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
+  sourceName: text('source_name').notNull(),
+  normalizedName: text('normalized_name').notNull(),
+  occurrenceCount: integer('occurrence_count').notNull().default(1),
+  firstSeenDate: date('first_seen_date').notNull(),
+  lastSeenDate: date('last_seen_date').notNull(),
+  status: text('status').notNull().default('OPEN'),
+  matchedMemberId: uuid('matched_member_id').references(() => member.id, { onDelete: 'set null' }),
+  resolvedName: text('resolved_name'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
+});
+
 export const standardCalling = pgTable('standard_calling', {
   id: uuid('id').defaultRandom().primaryKey(),
   name: text('name').notNull().unique(),

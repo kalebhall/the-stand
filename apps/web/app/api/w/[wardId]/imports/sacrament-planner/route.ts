@@ -7,6 +7,7 @@ import { setDbContext } from '@/src/db/context';
 import { normalizeHistoricalName, type HistoricalMeeting, type HistoricalProgramItem } from '@/src/imports/sacrament-planner';
 
 const MAX_MEETINGS = 150;
+const PERSON_ITEM_TYPES = new Set(['PRESIDING', 'CONDUCTING', 'INVOCATION', 'BENEDICTION', 'SPEAKER']);
 
 function isDate(value: unknown): value is string {
   return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value);
@@ -104,6 +105,22 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
             [wardId, inserted.rows[0].id, index + 1, item.itemType, item.title, item.topic ?? '', item.hymnNumber ?? '', item.hymnTitle ?? '']
           );
           importedItems += 1;
+        }
+        for (const item of meeting.programItems) {
+          if (!PERSON_ITEM_TYPES.has(item.itemType) || !item.title) continue;
+          const matches = memberMap.get(normalizeHistoricalName(item.title)) ?? [];
+          if (matches.length === 1) continue;
+          await client.query(
+            `INSERT INTO historical_import_name_review
+              (ward_id, source_name, normalized_name, occurrence_count, first_seen_date, last_seen_date)
+             VALUES ($1::uuid, $2::text, $3::text, 1, $4::date, $4::date)
+             ON CONFLICT (ward_id, source_name) DO UPDATE
+               SET occurrence_count = historical_import_name_review.occurrence_count + 1,
+                   first_seen_date = LEAST(historical_import_name_review.first_seen_date, EXCLUDED.first_seen_date),
+                   last_seen_date = GREATEST(historical_import_name_review.last_seen_date, EXCLUDED.last_seen_date),
+                   updated_at = now()`,
+            [wardId, item.title, normalizeHistoricalName(item.title), meeting.meetingDate]
+          );
         }
         importedMeetings += 1;
       }
