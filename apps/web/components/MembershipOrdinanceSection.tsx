@@ -72,7 +72,7 @@ export function MembershipOrdinanceSection({ wardId, meetingId, actions, canMana
     window.location.reload();
   }
 
-  async function updateAction(id: string, status: 'announced' | 'completed') {
+  async function updateAction(id: string, status: 'announced' | 'completed' | 'interview_completed' | 'lcr_completed') {
     setBusy(true);
     setError(null);
     const response = await fetch(`/api/w/${wardId}/meetings/${meetingId}/membership-ordinances/${id}`, {
@@ -224,6 +224,16 @@ export function MembershipOrdinanceSection({ wardId, meetingId, actions, canMana
                   <span className="rounded-full border px-2 py-1 text-xs">
                     {action.status === 'action_needed' ? 'Action needed' : action.status[0].toUpperCase() + action.status.slice(1)}
                   </span>
+                  {canManage && action.interview_status && ['needed', 'scheduled'].includes(action.interview_status) ? (
+                    <Button size="sm" variant="outline" disabled={busy} onClick={() => void updateAction(action.id, 'interview_completed')}>
+                      Interview complete
+                    </Button>
+                  ) : null}
+                  {canManage && action.status === 'completed' && action.lcr_follow_up_status === 'needed' ? (
+                    <Button size="sm" variant="outline" disabled={busy} onClick={() => void updateAction(action.id, 'lcr_completed')}>
+                      Mark LCR updated
+                    </Button>
+                  ) : null}
                   {canManage && action.status === 'pending' ? (
                     <Button size="sm" variant="outline" disabled={busy} onClick={() => void updateAction(action.id, 'announced')}>
                       Mark announced

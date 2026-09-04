@@ -14,7 +14,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ wardI
   }
   const body = (await request.json().catch(() => null)) as { status?: unknown } | null;
   const status = body?.status;
-  if (status !== 'announced' && status !== 'completed')
+  if (status !== 'announced' && status !== 'completed' && status !== 'lcr_completed' && status !== 'interview_completed')
     return NextResponse.json({ error: 'Invalid status.', code: 'INVALID_INPUT' }, { status: 400 });
 
   const client = await pool.connect();
@@ -29,12 +29,26 @@ export async function PATCH(request: Request, context: { params: Promise<{ wardI
            RETURNING id, status`,
             [actionId, meetingId, wardId]
           )
-        : await client.query(
-            `UPDATE meeting_membership_ordinance SET status = 'completed', completed_at = now(), completed_by_user_id = $1::uuid, updated_at = now()
-           WHERE id = $2::uuid AND meeting_id = $3::uuid AND ward_id = $4::uuid AND status = 'action_needed'
-           RETURNING id, status`,
-            [session.user.id, actionId, meetingId, wardId]
-          );
+        : status === 'completed'
+          ? await client.query(
+              `UPDATE meeting_membership_ordinance SET status = 'completed', completed_at = now(), completed_by_user_id = $1::uuid, updated_at = now()
+             WHERE id = $2::uuid AND meeting_id = $3::uuid AND ward_id = $4::uuid AND status = 'action_needed'
+             RETURNING id, status`,
+              [session.user.id, actionId, meetingId, wardId]
+            )
+          : status === 'lcr_completed'
+            ? await client.query(
+                `UPDATE meeting_membership_ordinance SET lcr_follow_up_status = 'completed', lcr_updated_at = now(), updated_at = now()
+               WHERE id = $1::uuid AND meeting_id = $2::uuid AND ward_id = $3::uuid AND status = 'completed' AND lcr_follow_up_status = 'needed'
+               RETURNING id, status`,
+                [actionId, meetingId, wardId]
+              )
+            : await client.query(
+                `UPDATE meeting_membership_ordinance SET interview_status = 'completed', updated_at = now()
+               WHERE id = $1::uuid AND meeting_id = $2::uuid AND ward_id = $3::uuid AND interview_status IN ('needed', 'scheduled')
+               RETURNING id, status`,
+                [actionId, meetingId, wardId]
+              );
     if (!result.rowCount) {
       await client.query('ROLLBACK');
       return NextResponse.json({ error: 'Action not found or not in the expected state.', code: 'CONFLICT' }, { status: 409 });
@@ -45,7 +59,13 @@ export async function PATCH(request: Request, context: { params: Promise<{ wardI
       [
         wardId,
         session.user.id,
-        status === 'announced' ? 'MEMBERSHIP_ORDINANCE_ANNOUNCED' : 'MEMBERSHIP_ORDINANCE_COMPLETED',
+        status === 'announced'
+          ? 'MEMBERSHIP_ORDINANCE_ANNOUNCED'
+          : status === 'completed'
+            ? 'MEMBERSHIP_ORDINANCE_COMPLETED'
+            : status === 'lcr_completed'
+              ? 'MEMBERSHIP_ORDINANCE_LCR_UPDATED'
+              : 'MEMBERSHIP_ORDINANCE_INTERVIEW_COMPLETED',
         meetingId,
         actionId
       ]
