@@ -113,6 +113,32 @@ describe('buildStandRows', () => {
     ]);
   });
 
+  it('omits the announcement row when no announcements are selected for the stand', () => {
+    const rows = buildStandRows([
+      {
+        id: 'item-announcement',
+        itemType: 'ANNOUNCEMENT',
+        title: '',
+        notes: '',
+        hymnNumber: null,
+        hymnTitle: null
+      },
+      {
+        id: 'item-opening',
+        itemType: 'OPENING_HYMN',
+        title: '',
+        notes: '',
+        hymnNumber: '1',
+        hymnTitle: 'The Morning Breaks'
+      }
+    ], {}, [{ title: 'Program only', body: null, includeInStand: false }]);
+
+    expect(rows).toEqual([
+      { kind: 'welcome', text: 'Welcome to The Church of Jesus Christ of Latter-day Saints.' },
+      { kind: 'standard', programItemId: 'item-opening', label: 'Opening Hymn', details: '1 — The Morning Breaks' }
+    ]);
+  });
+
   it('formats person program items with canonical names and gender titles', () => {
     const rows = buildStandRows([
       {
