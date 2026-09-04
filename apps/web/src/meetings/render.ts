@@ -1,5 +1,5 @@
 import { isAnnouncementActiveForDate, type AnnouncementRenderItem } from '../announcements/types';
-import { getProgramItemLabel, isIntroductionItemType } from './types';
+import { getProgramItemLabel, INTRODUCTION_ITEM_TYPE, type IntroductionRoles } from './types';
 
 export type MeetingRenderItem = {
   itemType: string;
@@ -7,6 +7,7 @@ export type MeetingRenderItem = {
   notes: string | null;
   topic?: string | null;
   programNotes?: string | null;
+  introductionRoles?: IntroductionRoles | null;
   hymnNumber: string | null;
   hymnTitle: string | null;
 };
@@ -62,19 +63,35 @@ export function buildMeetingRenderHtml({ meetingDate, meetingType, programItems,
   const topAnnouncements = activeAnnouncements.filter((item) => item.placement === 'PROGRAM_TOP');
   const bottomAnnouncements = activeAnnouncements.filter((item) => item.placement === 'PROGRAM_BOTTOM');
 
-  let introductionHeadingRendered = false;
   const itemsHtml = programItems
     .map((item) => {
+      if (item.itemType.toUpperCase() === INTRODUCTION_ITEM_TYPE) {
+        const roles = item.introductionRoles ?? { presiding: '', conducting: '', organist: '', chorister: '' };
+        const roleRows = [
+          ['Presiding', roles.presiding],
+          ['Conducting', roles.conducting],
+          ['Organist / Pianist', roles.organist],
+          ['Chorister', roles.chorister]
+        ]
+          .map(
+            ([role, name]) =>
+              `<div class="grid grid-cols-[10rem_1fr] gap-3 border-b py-2"><p class="text-sm font-medium">${role}</p><p class="text-sm">${escapeHtml(name || '—')}</p></div>`
+          )
+          .join('');
+        const notes = item.programNotes?.trim() || item.notes?.trim();
+        const notesHtml = notes ? `<p class="text-xs text-muted-foreground">${escapeHtml(notes)}</p>` : '';
+        return `<article class="space-y-1"><h2 class="border-b pb-1 text-base font-semibold">Introduction</h2>${roleRows}${notesHtml}</article>`;
+      }
       const label = escapeHtml(getProgramItemLabel(item.itemType));
       const value = escapeHtml(displayHymn(item) || '—');
       const topic = displayTopic(item);
       const topicHtml = topic ? `<p class="text-sm text-muted-foreground">${escapeHtml(topic)}</p>` : '';
-      const notes = (item.programNotes ?? item.notes) ? `<p class="text-xs text-muted-foreground">${escapeHtml(item.programNotes ?? item.notes ?? '')}</p>` : '';
-      const introductionHeading = isIntroductionItemType(item.itemType) && !introductionHeadingRendered
-        ? ((introductionHeadingRendered = true), '<h2 class="border-b pb-1 text-base font-semibold">Introduction</h2>')
-        : '';
+      const notes =
+        (item.programNotes ?? item.notes)
+          ? `<p class="text-xs text-muted-foreground">${escapeHtml(item.programNotes ?? item.notes ?? '')}</p>`
+          : '';
 
-      return `${introductionHeading}<article class="grid grid-cols-[10rem_1fr] gap-3 border-b py-2"><p class="text-sm font-medium">${label}</p><div class="space-y-1"><p class="text-sm">${value}</p>${topicHtml}${notes}</div></article>`;
+      return `<article class="grid grid-cols-[10rem_1fr] gap-3 border-b py-2"><p class="text-sm font-medium">${label}</p><div class="space-y-1"><p class="text-sm">${value}</p>${topicHtml}${notes}</div></article>`;
     })
     .join('');
 

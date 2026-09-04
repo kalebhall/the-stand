@@ -9,10 +9,7 @@ const EMPTY_ITEM_FIELDS = {
 
 const MEETING_DEFAULT_ITEM_TYPES: Record<MeetingType, string[]> = {
   SACRAMENT: [
-    'PRESIDING',
-    'CONDUCTING',
-    'ORGANIST_PIANIST',
-    'CHORISTER',
+    'INTRODUCTION',
     'ANNOUNCEMENT',
     'OPENING_HYMN',
     'INVOCATION',
@@ -26,10 +23,7 @@ const MEETING_DEFAULT_ITEM_TYPES: Record<MeetingType, string[]> = {
     'BENEDICTION'
   ],
   FAST_TESTIMONY: [
-    'PRESIDING',
-    'CONDUCTING',
-    'ORGANIST_PIANIST',
-    'CHORISTER',
+    'INTRODUCTION',
     'ANNOUNCEMENT',
     'OPENING_HYMN',
     'INVOCATION',
@@ -41,10 +35,7 @@ const MEETING_DEFAULT_ITEM_TYPES: Record<MeetingType, string[]> = {
     'BENEDICTION'
   ],
   WARD_CONFERENCE: [
-    'PRESIDING',
-    'CONDUCTING',
-    'ORGANIST_PIANIST',
-    'CHORISTER',
+    'INTRODUCTION',
     'ANNOUNCEMENT',
     'OPENING_HYMN',
     'INVOCATION',
@@ -61,7 +52,13 @@ const MEETING_DEFAULT_ITEM_TYPES: Record<MeetingType, string[]> = {
   GENERAL_CONFERENCE: ['ANNOUNCEMENT']
 };
 
+const EMPTY_INTRODUCTION_ROLES = { presiding: '', conducting: '', organist: '', chorister: '' } as const;
+
 export function getDefaultProgramItemsForMeetingType(meetingType: string): ProgramItemInput[] {
   const safeMeetingType: MeetingType = isMeetingType(meetingType) ? meetingType : 'SACRAMENT';
-  return MEETING_DEFAULT_ITEM_TYPES[safeMeetingType].map((itemType) => ({ itemType, ...EMPTY_ITEM_FIELDS }));
+  return MEETING_DEFAULT_ITEM_TYPES[safeMeetingType].map((itemType) => ({
+    itemType,
+    ...EMPTY_ITEM_FIELDS,
+    ...(itemType === 'INTRODUCTION' ? { introductionRoles: { ...EMPTY_INTRODUCTION_ROLES } } : {})
+  }));
 }

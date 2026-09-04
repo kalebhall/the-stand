@@ -16,20 +16,32 @@ describe('buildMeetingRenderHtml', () => {
     expect(html).toContain('#2 — The Spirit of God');
   });
 
-  it('groups introduction roles under an Introduction heading', () => {
+  it('renders one compact Introduction item with four roles', () => {
     const html = buildMeetingRenderHtml({
       meetingDate: '2026-01-04',
       meetingType: 'SACRAMENT',
       programItems: [
-        { itemType: 'PRESIDING', title: 'Bishop', notes: null, hymnNumber: null, hymnTitle: null },
-        { itemType: 'CONDUCTING', title: 'First Counselor', notes: null, hymnNumber: null, hymnTitle: null },
-        { itemType: 'OPENING_HYMN', title: null, notes: null, hymnNumber: '2', hymnTitle: 'The Spirit of God' }
+        {
+          itemType: 'INTRODUCTION',
+          title: null,
+          notes: null,
+          introductionRoles: {
+            presiding: 'Bishop',
+            conducting: 'First Counselor',
+            organist: 'Organist',
+            chorister: 'Chorister'
+          },
+          hymnNumber: null,
+          hymnTitle: null
+        }
       ]
     });
 
     expect(html).toContain('Introduction</h2>');
-    expect(html.indexOf('Introduction')).toBeLessThan(html.indexOf('PRESIDING'));
-    expect(html).toContain('CONDUCTING');
+    expect(html).toContain('Bishop');
+    expect(html).toContain('First Counselor');
+    expect(html).toContain('Organist');
+    expect(html).toContain('Chorister');
   });
 
   it('renders active and permanent announcements by placement', () => {

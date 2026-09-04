@@ -1,5 +1,6 @@
 import { DEFAULT_STAND_RELEASE_TEMPLATE, DEFAULT_STAND_SUSTAIN_TEMPLATE, DEFAULT_STAND_WELCOME_TEXT } from './default-template';
 import { formatAtStandMemberName, type MemberDisplayInfo } from './member-display';
+import type { IntroductionRoles } from '../meetings/types';
 
 export type StandProgramItem = {
   id: string;
@@ -11,6 +12,7 @@ export type StandProgramItem = {
   programNotes?: string | null;
   hymnNumber: string | null;
   hymnTitle: string | null;
+  introductionRoles?: IntroductionRoles | null;
 };
 
 export type StandTemplate = {
@@ -117,6 +119,26 @@ export function buildStandRows(
   for (const item of items) {
     const normalizedType = item.itemType.toUpperCase();
     const label = toDisplayLabel(normalizedType);
+
+    if (normalizedType === 'INTRODUCTION') {
+      const roles = item.introductionRoles ?? { presiding: '', conducting: '', organist: '', chorister: '' };
+      const details = [
+        ['Presiding', roles.presiding],
+        ['Conducting', roles.conducting],
+        ['Organist / Pianist', roles.organist],
+        ['Chorister', roles.chorister]
+      ]
+        .map(([role, name]) => `${role}: ${name || 'Unassigned'}`)
+        .join('\n');
+      rows.push({
+        kind: 'standard',
+        programItemId: item.id,
+        label: 'Introduction',
+        details,
+        ...(item.programNotes?.trim() ? { programNotes: item.programNotes } : {})
+      });
+      continue;
+    }
 
     if (normalizedType.includes('SUSTAIN')) {
       const values = getMemberAndCalling(item);

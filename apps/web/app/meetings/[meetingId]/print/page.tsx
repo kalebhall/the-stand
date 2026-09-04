@@ -6,6 +6,7 @@ import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 import { toYyyyMmDd } from '@/src/meetings/date';
 import { buildMeetingRenderHtml } from '@/src/meetings/render';
+import type { IntroductionRoles } from '@/src/meetings/types';
 
 type MeetingRow = {
   meeting_date: string;
@@ -21,6 +22,7 @@ type ProgramItemRow = {
   program_notes: string | null;
   hymn_number: string | null;
   hymn_title: string | null;
+  introduction_roles: IntroductionRoles | null;
 };
 
 type AnnouncementRow = {
@@ -100,7 +102,7 @@ export default async function PrintMeetingPage({
     const meetingDate = toYyyyMmDd(meeting.meeting_date);
 
     const programResult = await client.query(
-      `SELECT id, item_type, title, notes, topic, program_notes, hymn_number, hymn_title
+      `SELECT id, item_type, title, notes, topic, program_notes, hymn_number, hymn_title, introduction_roles
          FROM meeting_program_item
         WHERE meeting_id = $1::uuid AND ward_id = $2::uuid
         ORDER BY sequence ASC`,
@@ -125,7 +127,8 @@ export default async function PrintMeetingPage({
         topic: item.topic,
         programNotes: item.program_notes,
         hymnNumber: item.hymn_number,
-        hymnTitle: item.hymn_title
+        hymnTitle: item.hymn_title,
+        introductionRoles: item.introduction_roles
       })),
       announcements: (announcementResult.rows as AnnouncementRow[]).map((item) => ({
         title: item.title,

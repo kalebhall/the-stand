@@ -14,6 +14,7 @@ import { isAnnouncementActiveForDate } from '@/src/announcements/types';
 import { buildStandRows } from '@/src/stand/render';
 import { formatAtStandMemberName } from '@/src/stand/member-display';
 import { OfflineStandButton } from '@/components/offline-stand-button';
+import type { IntroductionRoles } from '@/src/meetings/types';
 
 type ProgramItemRow = {
   id: string;
@@ -27,6 +28,7 @@ type ProgramItemRow = {
   program_notes: string | null;
   hymn_number: string | null;
   hymn_title: string | null;
+  introduction_roles: IntroductionRoles | null;
 };
 
 type TemplateRow = {
@@ -117,7 +119,7 @@ export default async function StandViewPage({
     const meetingDate = meetingResult.rows[0].meeting_date as string;
 
     const programResult = await client.query(
-      `SELECT i.id, i.item_type, i.title, i.notes, i.topic, i.program_notes, i.hymn_number, i.hymn_title,
+      `SELECT i.id, i.item_type, i.title, i.notes, i.topic, i.program_notes, i.hymn_number, i.hymn_title, i.introduction_roles,
               m.first_name, m.last_name, m.gender
          FROM meeting_program_item i
          LEFT JOIN member m ON m.ward_id = i.ward_id AND m.full_name = i.title AND m.archived_at IS NULL
@@ -234,7 +236,8 @@ export default async function StandViewPage({
         topic: item.topic,
         programNotes: item.program_notes,
         hymnNumber: item.hymn_number,
-        hymnTitle: item.hymn_title
+        hymnTitle: item.hymn_title,
+        introductionRoles: item.introduction_roles
       })),
       {
         welcomeText: template?.welcome_text,

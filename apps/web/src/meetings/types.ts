@@ -11,18 +11,17 @@ export type ProgramItemInput = {
   programNotes?: string;
   hymnNumber: string;
   hymnTitle: string;
+  introductionRoles?: IntroductionRoles;
 };
 
-export const INTRODUCTION_ITEM_TYPES = new Set([
-  'PRESIDING',
-  'CONDUCTING',
-  'ORGANIST_PIANIST',
-  'CHORISTER'
-]);
+export type IntroductionRoles = {
+  presiding: string;
+  conducting: string;
+  organist: string;
+  chorister: string;
+};
 
-export function isIntroductionItemType(itemType: string): boolean {
-  return INTRODUCTION_ITEM_TYPES.has(itemType.toUpperCase());
-}
+export const INTRODUCTION_ITEM_TYPE = 'INTRODUCTION';
 
 export function isMeetingType(value: string): value is MeetingType {
   return MEETING_TYPES.includes(value as MeetingType);

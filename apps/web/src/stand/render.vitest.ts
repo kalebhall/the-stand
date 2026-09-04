@@ -188,6 +188,26 @@ describe('buildStandRows', () => {
     expect(rows[1]).toMatchObject({ details: 'Sister Jane Doe\nFinding peace through prayer' });
   });
 
+  it('renders combined introduction roles as one stand row', () => {
+    const rows = buildStandRows([
+      {
+        id: 'introduction',
+        itemType: 'INTRODUCTION',
+        title: null,
+        notes: null,
+        introductionRoles: { presiding: 'Bishop', conducting: 'Counselor', organist: 'Organist', chorister: 'Chorister' },
+        hymnNumber: null,
+        hymnTitle: null
+      }
+    ]);
+
+    expect(rows[1]).toMatchObject({
+      kind: 'standard',
+      label: 'Introduction',
+      details: 'Presiding: Bishop\nConducting: Counselor\nOrganist / Pianist: Organist\nChorister: Chorister'
+    });
+  });
+
   it('renders sacrament as a dedicated row in program order', () => {
     const rows = buildStandRows([
       { id: 'hymn', itemType: 'SACRAMENT_HYMN', title: '', notes: '', hymnNumber: '169', hymnTitle: 'As Now We Take the Sacrament' },

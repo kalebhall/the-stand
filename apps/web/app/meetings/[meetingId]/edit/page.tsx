@@ -11,6 +11,7 @@ import { canManageMeetings, canUseInternalNotes } from '@/src/auth/roles';
 import { isAnnouncementActiveForDate } from '@/src/announcements/types';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
+import type { IntroductionRoles } from '@/src/meetings/types';
 
 import { MeetingForm } from '../../meeting-form';
 
@@ -29,6 +30,7 @@ type ProgramItemRow = {
   program_notes: string | null;
   hymn_number: string | null;
   hymn_title: string | null;
+  introduction_roles: IntroductionRoles | null;
 };
 
 type MeetingRenderVersionRow = {
@@ -74,7 +76,7 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ me
     }
 
     const programItemsResult = await client.query(
-      `SELECT id, item_type, title, notes, topic, program_notes, hymn_number, hymn_title
+      `SELECT id, item_type, title, notes, topic, program_notes, hymn_number, hymn_title, introduction_roles
          FROM meeting_program_item
         WHERE meeting_id = $1 AND ward_id = $2
         ORDER BY sequence ASC`,
@@ -135,7 +137,8 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ me
       topic: item.topic ?? '',
       programNotes: item.program_notes ?? '',
       hymnNumber: item.hymn_number ?? '',
-      hymnTitle: item.hymn_title ?? ''
+      hymnTitle: item.hymn_title ?? '',
+      introductionRoles: item.introduction_roles ?? undefined
     }));
     const versions = versionsResult.rows as MeetingRenderVersionRow[];
     const businessLines = businessLinesResult.rows as BusinessLine[];
