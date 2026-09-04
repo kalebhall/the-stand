@@ -117,13 +117,13 @@ export function HymnAutocomplete({ hymnNumber, hymnTitle, onChange }: HymnAutoco
       />
 
       {open && !loading && filtered.length > 0 && (
-        <ul className="absolute z-50 mt-1 max-h-64 w-full overflow-y-auto rounded-md border bg-white shadow-lg dark:bg-zinc-900">
+        <ul className="absolute z-[100] mt-1 max-h-64 w-full overflow-y-auto rounded-md border bg-popover text-popover-foreground shadow-lg">
           {filtered.map((hymn) => {
             const badge = bookBadge(hymn.book);
             return (
               <li
                 key={hymn.id}
-                className="flex cursor-pointer items-baseline gap-2 px-3 py-2 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                className="flex cursor-pointer items-baseline gap-2 px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground"
                 onMouseDown={() => selectHymn(hymn)}
               >
                 <span className="font-medium tabular-nums">{hymn.hymnNumber}</span>

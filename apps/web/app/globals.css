@@ -164,7 +164,6 @@ main h3 {
 /* Program-item window accents identify item type without tinting content. */
 .program-item {
   border-top: 4px solid var(--program-accent, var(--program-welcome));
-  overflow: hidden;
 }
 
 .program-item--hymn { --program-accent: var(--program-hymn); }
