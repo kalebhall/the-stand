@@ -47,6 +47,9 @@ export default async function DashboardPage() {
   const showSupportCards = session.user.roles?.includes('SUPPORT_ADMIN') ?? false;
   let setApartQueueCount = 'Unavailable';
   let membershipActionQueueCount = 'Unavailable';
+  let actionInterviewQueueCount = 'Unavailable';
+  let overdueActionCount = 'Unavailable';
+  let lcrFollowUpCount = 'Unavailable';
   let notificationHealthValue = 'No deliveries yet';
   let notificationHealthDetail = 'No notification attempts recorded for this ward yet.';
   let nextMeetingValue = 'No meetings scheduled';
@@ -84,10 +87,14 @@ export default async function DashboardPage() {
       );
 
       const membershipActionQueueResult = await client.query(
-        `SELECT COUNT(*)::int AS count
+        `SELECT COUNT(*) FILTER (WHERE a.status = 'action_needed')::int AS action_needed_count,
+                COUNT(*) FILTER (WHERE a.interview_status IN ('needed', 'scheduled'))::int AS interview_count,
+                COUNT(*) FILTER (WHERE a.planned_date < CURRENT_DATE AND a.status != 'completed')::int AS overdue_count,
+                COUNT(*) FILTER (WHERE a.lcr_follow_up_status = 'needed' AND a.status = 'completed')::int AS lcr_count
            FROM meeting_membership_ordinance a
            JOIN meeting m ON m.id = a.meeting_id AND m.ward_id = a.ward_id
-          WHERE a.ward_id = $1::uuid AND a.status = 'action_needed'`,
+          WHERE a.ward_id = $1::uuid
+            AND (a.status != 'completed' OR a.lcr_follow_up_status = 'needed')`,
         [session.activeWardId]
       );
 
@@ -131,7 +138,16 @@ export default async function DashboardPage() {
 
       await client.query('COMMIT');
       setApartQueueCount = `${result.rows[0].count} waiting`;
-      membershipActionQueueCount = `${(membershipActionQueueResult.rows[0] as { count: number }).count} waiting`;
+      const actionQueue = membershipActionQueueResult.rows[0] as {
+        action_needed_count: number;
+        interview_count: number;
+        overdue_count: number;
+        lcr_count: number;
+      };
+      membershipActionQueueCount = `${actionQueue.action_needed_count} waiting`;
+      actionInterviewQueueCount = `${actionQueue.interview_count} waiting`;
+      overdueActionCount = `${actionQueue.overdue_count} overdue`;
+      lcrFollowUpCount = `${actionQueue.lcr_count} waiting`;
       const notificationHealth = notificationHealthResult.rows[0] as { last_delivery_at: string | null; failure_count: number };
       notificationHealthValue = notificationHealth.last_delivery_at ?? 'No deliveries yet';
       notificationHealthDetail = `${notificationHealth.failure_count} failed deliveries`;
@@ -203,6 +219,33 @@ export default async function DashboardPage() {
             value={membershipActionQueueCount}
             detail="Announced actions still needing completion."
             actions={[{ href: '/meetings', label: 'Open meetings' }]}
+          />
+        ) : null}
+
+        {canAccessMeetings ? (
+          <DashboardCard
+            title="Interview follow-up"
+            value={actionInterviewQueueCount}
+            detail="Actions needing an interview."
+            actions={[{ href: '/meetings', label: 'Review actions' }]}
+          />
+        ) : null}
+
+        {canAccessMeetings ? (
+          <DashboardCard
+            title="Overdue planned actions"
+            value={overdueActionCount}
+            detail="Planned actions past their date and not completed."
+            actions={[{ href: '/meetings', label: 'Review meetings' }]}
+          />
+        ) : null}
+
+        {canAccessMeetings ? (
+          <DashboardCard
+            title="LCR follow-up"
+            value={lcrFollowUpCount}
+            detail="Completed actions still needing LCR entry."
+            actions={[{ href: '/meetings', label: 'Review LCR work' }]}
           />
         ) : null}
 
