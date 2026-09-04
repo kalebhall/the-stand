@@ -12,6 +12,13 @@ export type MembershipOrdinanceAction = {
   reason: string | null;
   details: string | null;
   status: 'pending' | 'action_needed' | 'completed';
+  planned_date?: string | null;
+  interview_status?: 'not_required' | 'needed' | 'scheduled' | 'completed';
+  interview_date?: string | null;
+  interviewer_name?: string | null;
+  responsible_leader?: string | null;
+  lcr_follow_up_status?: 'not_applicable' | 'needed' | 'completed';
+  lcr_updated_at?: string | null;
 };
 
 type Props = {
@@ -42,6 +49,10 @@ export function MembershipOrdinanceSection({ wardId, meetingId, actions, canMana
   const [memberName, setMemberName] = useState('');
   const [reason, setReason] = useState('');
   const [details, setDetails] = useState('');
+  const [plannedDate, setPlannedDate] = useState('');
+  const [interviewDate, setInterviewDate] = useState('');
+  const [interviewerName, setInterviewerName] = useState('');
+  const [responsibleLeader, setResponsibleLeader] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -51,7 +62,7 @@ export function MembershipOrdinanceSection({ wardId, meetingId, actions, canMana
     const response = await fetch(`/api/w/${wardId}/meetings/${meetingId}/membership-ordinances`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ actionType, memberName, reason, details })
+      body: JSON.stringify({ actionType, memberName, reason, details, plannedDate, interviewDate, interviewerName, responsibleLeader })
     });
     if (!response.ok) {
       setError('Unable to add membership or ordinance action.');
@@ -130,6 +141,46 @@ export function MembershipOrdinanceSection({ wardId, meetingId, actions, canMana
               />
             </label>
           ) : null}
+          <label className="space-y-1 text-sm">
+            <span className="font-medium">Planned date</span>
+            <input
+              className="w-full rounded-md border px-3 py-2"
+              type="date"
+              value={plannedDate}
+              onChange={(e) => setPlannedDate(e.target.value)}
+            />
+          </label>
+          {actionType.includes('PRIESTHOOD') ? (
+            <>
+              <label className="space-y-1 text-sm">
+                <span className="font-medium">Interview date</span>
+                <input
+                  className="w-full rounded-md border px-3 py-2"
+                  type="date"
+                  value={interviewDate}
+                  onChange={(e) => setInterviewDate(e.target.value)}
+                />
+              </label>
+              <label className="space-y-1 text-sm">
+                <span className="font-medium">Interviewer</span>
+                <input
+                  className="w-full rounded-md border px-3 py-2"
+                  value={interviewerName}
+                  onChange={(e) => setInterviewerName(e.target.value)}
+                  placeholder="Name"
+                />
+              </label>
+            </>
+          ) : null}
+          <label className="space-y-1 text-sm">
+            <span className="font-medium">Responsible leader</span>
+            <input
+              className="w-full rounded-md border px-3 py-2"
+              value={responsibleLeader}
+              onChange={(e) => setResponsibleLeader(e.target.value)}
+              placeholder="Name"
+            />
+          </label>
           <div className="flex items-end">
             <Button type="button" disabled={busy || !memberName.trim()} onClick={() => void createAction()}>
               Add action
@@ -152,6 +203,19 @@ export function MembershipOrdinanceSection({ wardId, meetingId, actions, canMana
                     </p>
                   ) : null}
                   {action.details ? <p className="text-sm text-muted-foreground">{action.details}</p> : null}
+                  {action.planned_date ? <p className="text-sm text-muted-foreground">Planned: {action.planned_date}</p> : null}
+                  {action.responsible_leader ? (
+                    <p className="text-sm text-muted-foreground">Responsible: {action.responsible_leader}</p>
+                  ) : null}
+                  {action.interview_status && action.interview_status !== 'not_required' ? (
+                    <p className="text-sm text-muted-foreground">
+                      Interview: {action.interview_status.replaceAll('_', ' ')}
+                      {action.interviewer_name ? ` — ${action.interviewer_name}` : ''}
+                    </p>
+                  ) : null}
+                  {action.lcr_follow_up_status === 'needed' ? (
+                    <p className="text-sm font-medium text-amber-700">LCR update needed</p>
+                  ) : null}
                   {templates[action.action_type] ? (
                     <p className="mt-2 whitespace-pre-wrap text-sm">{fillTemplate(templates[action.action_type]!, action)}</p>
                   ) : null}
