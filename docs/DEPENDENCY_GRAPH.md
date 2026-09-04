@@ -14,8 +14,8 @@ flowchart LR
   A2["root:other<br/>1 files"]
   A3["root:tooling<br/>6 files"]
   A4["web:announcements<br/>2 files"]
-  A5["web:api<br/>67 files"]
-  A6["web:app<br/>92 files"]
+  A5["web:api<br/>68 files"]
+  A6["web:app<br/>94 files"]
   A7["web:audit<br/>2 files"]
   A8["web:auth<br/>11 files"]
   A9["web:bootstrap.mjs<br/>1 files"]
@@ -25,7 +25,7 @@ flowchart LR
   A13["web:db<br/>7 files"]
   A14["web:hardening<br/>1 files"]
   A15["web:health.mjs<br/>1 files"]
-  A16["web:imports<br/>14 files"]
+  A16["web:imports<br/>16 files"]
   A17["web:lib<br/>9 files"]
   A18["web:meetings<br/>7 files"]
   A19["web:notes<br/>1 files"]
@@ -37,16 +37,16 @@ flowchart LR
   A25["web:types<br/>2 files"]
   A26["web:ui<br/>29 files"]
   A27["web:version.mjs<br/>1 files"]
-  A5 -->|89| A8
-  A6 -->|84| A26
-  A5 -->|79| A13
-  A6 -->|70| A8
+  A5 -->|91| A8
+  A6 -->|87| A26
+  A5 -->|81| A13
+  A6 -->|72| A8
   A6 -->|40| A13
   A5 -->|38| A20
   A5 -->|23| A17
   A5 -->|15| A11
   A5 -->|14| A7
-  A5 -->|10| A16
+  A5 -->|11| A16
   A6 -->|8| A18
   A6 -->|4| A11
   A6 -->|4| A23
@@ -64,6 +64,7 @@ flowchart LR
   A5 -->|1| A19
   A5 -->|1| A23
   A6 -->|1| A10
+  A6 -->|1| A16
   A6 -->|1| A17
   A6 -->|1| A21
   A6 -->|1| A22
@@ -92,8 +93,8 @@ flowchart LR
 | `root:other` | 1 |
 | `root:tooling` | 6 |
 | `web:announcements` | 2 |
-| `web:api` | 67 |
-| `web:app` | 92 |
+| `web:api` | 68 |
+| `web:app` | 94 |
 | `web:audit` | 2 |
 | `web:auth` | 11 |
 | `web:bootstrap.mjs` | 1 |
@@ -103,7 +104,7 @@ flowchart LR
 | `web:db` | 7 |
 | `web:hardening` | 1 |
 | `web:health.mjs` | 1 |
-| `web:imports` | 14 |
+| `web:imports` | 16 |
 | `web:lib` | 9 |
 | `web:meetings` | 7 |
 | `web:notes` | 1 |
@@ -120,21 +121,21 @@ flowchart LR
 
 | Importing area | Imported area | Imports |
 | --- | --- | ---: |
-| `web:api` | `web:auth` | 89 |
-| `web:app` | `web:ui` | 84 |
-| `web:api` | `web:db` | 79 |
-| `web:app` | `web:auth` | 70 |
+| `web:api` | `web:auth` | 91 |
+| `web:app` | `web:ui` | 87 |
+| `web:api` | `web:db` | 81 |
+| `web:app` | `web:auth` | 72 |
 | `web:app` | `web:db` | 40 |
+| `web:app` | `web:app` | 39 |
 | `web:api` | `web:notifications` | 38 |
-| `web:app` | `web:app` | 38 |
 | `web:notifications` | `web:notifications` | 32 |
 | `web:ui` | `web:ui` | 25 |
 | `web:api` | `web:lib` | 23 |
 | `web:api` | `web:api` | 19 |
 | `web:api` | `web:callings` | 15 |
 | `web:api` | `web:audit` | 14 |
-| `web:api` | `web:imports` | 10 |
-| `web:imports` | `web:imports` | 9 |
+| `web:api` | `web:imports` | 11 |
+| `web:imports` | `web:imports` | 10 |
 | `web:app` | `web:meetings` | 8 |
 | `web:auth` | `web:auth` | 8 |
 | `web:app` | `web:callings` | 4 |
@@ -161,6 +162,7 @@ flowchart LR
 | `web:api` | `web:notes` | 1 |
 | `web:api` | `web:stand` | 1 |
 | `web:app` | `web:calendar` | 1 |
+| `web:app` | `web:imports` | 1 |
 | `web:app` | `web:lib` | 1 |
 | `web:app` | `web:offline` | 1 |
 | `web:app` | `web:reports` | 1 |
@@ -186,10 +188,10 @@ flowchart LR
 
 | Importing area | Package/runtime | Imports |
 | --- | --- | ---: |
-| `web:app` | `next` | 71 |
-| `web:api` | `next` | 48 |
+| `web:app` | `next` | 73 |
+| `web:api` | `next` | 49 |
+| `web:app` | `react` | 26 |
 | `web:ui` | `react` | 26 |
-| `web:app` | `react` | 25 |
 | `web:api` | `vitest` | 18 |
 | `web:ui` | `next` | 13 |
 | `root:tooling` | `Node.js` | 12 |
@@ -198,7 +200,7 @@ flowchart LR
 | `web:api` | `zod` | 7 |
 | `web:app` | `vitest` | 7 |
 | `web:auth` | `next-auth` | 6 |
-| `web:imports` | `vitest` | 5 |
+| `web:imports` | `vitest` | 6 |
 | `web:auth` | `vitest` | 4 |
 | `web:tooling` | `Node.js` | 4 |
 | `web:ui` | `next-auth` | 4 |
@@ -312,6 +314,7 @@ flowchart LR
 | `apps/web/app/api/w/[wardId]/imports/lcr/route.ts` | `web:api` | 8 | 2 |
 | `apps/web/app/api/w/[wardId]/imports/membership/route.ts` | `web:api` | 11 | 1 |
 | `apps/web/app/api/w/[wardId]/imports/membership/route.vitest.ts` | `web:api` | 1 | 1 |
+| `apps/web/app/api/w/[wardId]/imports/sacrament-planner/route.ts` | `web:api` | 5 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/business/[lineId]/route.ts` | `web:api` | 5 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/complete/route.ts` | `web:api` | 7 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/complete/route.vitest.ts` | `web:api` | 1 | 1 |
@@ -359,6 +362,8 @@ flowchart LR
 | `apps/web/app/imports/members/page.tsx` | `web:app` | 5 | 2 |
 | `apps/web/app/imports/membership-imports-client.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/imports/page.tsx` | `web:app` | 4 | 2 |
+| `apps/web/app/imports/sacrament-planner/page.tsx` | `web:app` | 5 | 2 |
+| `apps/web/app/imports/sacrament-planner/sacrament-planner-import-client.tsx` | `web:app` | 2 | 1 |
 | `apps/web/app/layout.tsx` | `web:app` | 6 | 1 |
 | `apps/web/app/login/login-form.tsx` | `web:app` | 2 | 2 |
 | `apps/web/app/login/page.tsx` | `web:app` | 2 | 1 |
@@ -516,6 +521,8 @@ flowchart LR
 | `apps/web/src/imports/pdf-cleanup.ts` | `web:imports` | 0 | 0 |
 | `apps/web/src/imports/pdf.ts` | `web:imports` | 0 | 1 |
 | `apps/web/src/imports/purge.ts` | `web:imports` | 1 | 0 |
+| `apps/web/src/imports/sacrament-planner.ts` | `web:imports` | 0 | 0 |
+| `apps/web/src/imports/sacrament-planner.vitest.ts` | `web:imports` | 1 | 1 |
 | `apps/web/src/lib/logger.ts` | `web:lib` | 0 | 0 |
 | `apps/web/src/lib/qr-pdf.ts` | `web:lib` | 0 | 2 |
 | `apps/web/src/lib/qr-pdf.vitest.ts` | `web:lib` | 1 | 1 |

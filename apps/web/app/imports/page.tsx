@@ -46,6 +46,21 @@ export default async function ImportsHubPage() {
         <section className="section-panel section-panel--service flex flex-col justify-between rounded-lg border bg-card p-6 shadow-sm space-y-4">
           <div className="space-y-2">
             <h2 className="text-lg font-semibold flex items-center gap-2">
+              <span>🗂️</span> Historical Programs
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Import completed Sacrament Planner history for speaker, topic, hymn, prayer, and completeness reports.
+            </p>
+          </div>
+          <div className="pt-2">
+            <Link href="/imports/sacrament-planner" className={cn(buttonVariants({ size: 'sm' }))}>
+              Open Historical Importer →
+            </Link>
+          </div>
+        </section>
+        <section className="section-panel section-panel--service flex flex-col justify-between rounded-lg border bg-card p-6 shadow-sm space-y-4">
+          <div className="space-y-2">
+            <h2 className="text-lg font-semibold flex items-center gap-2">
               <span>📋</span> Import Callings
             </h2>
             <p className="text-sm text-muted-foreground">
