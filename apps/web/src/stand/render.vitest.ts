@@ -195,7 +195,13 @@ describe('buildStandRows', () => {
         itemType: 'INTRODUCTION',
         title: null,
         notes: null,
-        introductionRoles: { presiding: 'Bishop', conducting: 'Counselor', organist: 'Organist', chorister: 'Chorister' },
+        introductionRoles: {
+          presiding: 'Bishop',
+          conducting: 'Counselor',
+          organist: 'Organist',
+          chorister: 'Chorister',
+          visitingLeaders: [{ name: 'President Smith', calling: 'Stake President' }]
+        },
         hymnNumber: null,
         hymnTitle: null
       }
@@ -204,7 +210,8 @@ describe('buildStandRows', () => {
     expect(rows[1]).toMatchObject({
       kind: 'standard',
       label: 'Introduction',
-      details: 'Presiding: Bishop\nConducting: Counselor\nOrganist / Pianist: Organist\nChorister: Chorister'
+      details:
+        'Presiding: Bishop\nConducting: Counselor\nOrganist / Pianist: Organist\nChorister: Chorister\nVisiting stake leader: President Smith (Stake President)'
     });
   });
 

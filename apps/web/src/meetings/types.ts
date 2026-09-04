@@ -19,6 +19,12 @@ export type IntroductionRoles = {
   conducting: string;
   organist: string;
   chorister: string;
+  visitingLeaders?: VisitingStakeLeader[];
+};
+
+export type VisitingStakeLeader = {
+  name: string;
+  calling: string;
 };
 
 export const INTRODUCTION_ITEM_TYPE = 'INTRODUCTION';

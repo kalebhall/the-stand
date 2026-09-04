@@ -14,7 +14,8 @@ import {
   INTRODUCTION_ITEM_TYPE,
   MEETING_TYPES,
   type IntroductionRoles,
-  type ProgramItemInput
+  type ProgramItemInput,
+  type VisitingStakeLeader
 } from '@/src/meetings/types';
 import { getDefaultProgramItemsForMeetingType } from '@/src/meetings/default-program';
 
@@ -184,6 +185,55 @@ export function MeetingForm({
             }
           : item
       )
+    );
+  }
+
+  function updateVisitingLeader(index: number, leaderIndex: number, field: keyof VisitingStakeLeader, value: string) {
+    setProgramItems((current) =>
+      current.map((item, itemIndex) => {
+        if (itemIndex !== index) return item;
+        const visitingLeaders = [...(item.introductionRoles?.visitingLeaders ?? [])];
+        visitingLeaders[leaderIndex] = visitingLeaders[leaderIndex]
+          ? { ...visitingLeaders[leaderIndex], [field]: value }
+          : { name: field === 'name' ? value : '', calling: field === 'calling' ? value : '' };
+        return {
+          ...item,
+          introductionRoles: { presiding: '', conducting: '', organist: '', chorister: '', ...item.introductionRoles, visitingLeaders }
+        };
+      })
+    );
+  }
+
+  function addVisitingLeader(index: number) {
+    setProgramItems((current) =>
+      current.map((item, itemIndex) =>
+        itemIndex === index
+          ? {
+              ...item,
+              introductionRoles: {
+                presiding: '',
+                conducting: '',
+                organist: '',
+                chorister: '',
+                ...item.introductionRoles,
+                visitingLeaders: [...(item.introductionRoles?.visitingLeaders ?? []), { name: '', calling: '' }]
+              }
+            }
+          : item
+      )
+    );
+  }
+
+  function removeVisitingLeader(index: number, leaderIndex: number) {
+    setProgramItems((current) =>
+      current.map((item, itemIndex) => {
+        if (itemIndex !== index) return item;
+        const visitingLeaders = (item.introductionRoles?.visitingLeaders ?? []).filter((_, currentIndex) => currentIndex !== leaderIndex);
+        return {
+          ...item,
+          introductionRoles: { presiding: '', conducting: '', organist: '', chorister: '', ...item.introductionRoles, visitingLeaders }
+        };
+      })
     );
   }
 
@@ -417,27 +467,65 @@ export function MeetingForm({
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               {item.itemType === INTRODUCTION_ITEM_TYPE ? (
-                <div className="grid gap-3 sm:col-span-2 sm:grid-cols-2">
-                  {(
-                    [
-                      ['presiding', 'Presiding'],
-                      ['conducting', 'Conducting'],
-                      ['organist', 'Organist / Pianist'],
-                      ['chorister', 'Chorister']
-                    ] as const
-                  ).map(([role, label]) => (
-                    <label key={role} className="space-y-1 text-sm">
-                      <span className="font-medium">{label}</span>
-                      <MemberAutocomplete
-                        wardId={wardId}
-                        value={item.introductionRoles?.[role] ?? ''}
-                        onChange={(value) => updateIntroductionRole(index, role, value)}
-                        className="w-full rounded-md border px-3 py-2"
-                        placeholder="Name"
-                        leadershipOnly={role === 'presiding' || role === 'conducting'}
-                      />
-                    </label>
-                  ))}
+                <div className="grid gap-3 sm:col-span-2">
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {(
+                      [
+                        ['presiding', 'Presiding'],
+                        ['conducting', 'Conducting'],
+                        ['organist', 'Organist / Pianist'],
+                        ['chorister', 'Chorister']
+                      ] as const
+                    ).map(([role, label]) => (
+                      <label key={role} className="space-y-1 text-sm">
+                        <span className="font-medium">{label}</span>
+                        <MemberAutocomplete
+                          wardId={wardId}
+                          value={item.introductionRoles?.[role] ?? ''}
+                          onChange={(value) => updateIntroductionRole(index, role, value)}
+                          className="w-full rounded-md border px-3 py-2"
+                          placeholder="Name"
+                          leadershipOnly={role === 'presiding' || role === 'conducting'}
+                        />
+                      </label>
+                    ))}
+                  </div>
+                  <div className="space-y-2 sm:col-span-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-medium">Visiting stake leaders</span>
+                      <Button type="button" variant="outline" size="sm" onClick={() => addVisitingLeader(index)}>
+                        Add leader
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">For the bishopric and At-the-Stand only. These names are not published.</p>
+                    {(item.introductionRoles?.visitingLeaders ?? []).map((leader, leaderIndex) => (
+                      <div key={leaderIndex} className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
+                        <input
+                          className="rounded-md border px-3 py-2"
+                          value={leader.name}
+                          onChange={(event) => updateVisitingLeader(index, leaderIndex, 'name', event.target.value)}
+                          placeholder="Name"
+                          aria-label={`Visiting leader ${leaderIndex + 1} name`}
+                        />
+                        <input
+                          className="rounded-md border px-3 py-2"
+                          value={leader.calling}
+                          onChange={(event) => updateVisitingLeader(index, leaderIndex, 'calling', event.target.value)}
+                          placeholder="Calling or role"
+                          aria-label={`Visiting leader ${leaderIndex + 1} calling`}
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeVisitingLeader(index, leaderIndex)}
+                          aria-label={`Remove visiting leader ${leaderIndex + 1}`}
+                        >
+                          ×
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               ) : !HYMN_ITEM_TYPES.has(item.itemType) && item.itemType !== BUSINESS_ITEM_TYPE ? (
                 <label className="space-y-1 text-sm">
