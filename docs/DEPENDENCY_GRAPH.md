@@ -42,8 +42,8 @@ flowchart LR
   A5 -->|89| A14
   A6 -->|89| A27
   A6 -->|72| A8
+  A5 -->|40| A21
   A6 -->|40| A14
-  A5 -->|38| A21
   A5 -->|23| A18
   A5 -->|15| A11
   A5 -->|14| A7
@@ -128,9 +128,9 @@ flowchart LR
 | `web:api` | `web:db` | 89 |
 | `web:app` | `web:ui` | 89 |
 | `web:app` | `web:auth` | 72 |
+| `web:api` | `web:notifications` | 40 |
 | `web:app` | `web:db` | 40 |
 | `web:app` | `web:app` | 39 |
-| `web:api` | `web:notifications` | 38 |
 | `web:notifications` | `web:notifications` | 32 |
 | `web:ui` | `web:ui` | 27 |
 | `web:api` | `web:lib` | 23 |
@@ -326,7 +326,7 @@ flowchart LR
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/business/[lineId]/route.ts` | `web:api` | 5 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/complete/route.ts` | `web:api` | 7 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/complete/route.vitest.ts` | `web:api` | 1 | 1 |
-| `apps/web/app/api/w/[wardId]/meetings/[meetingId]/membership-ordinances/[actionId]/route.ts` | `web:api` | 4 | 1 |
+| `apps/web/app/api/w/[wardId]/meetings/[meetingId]/membership-ordinances/[actionId]/route.ts` | `web:api` | 6 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/membership-ordinances/route.ts` | `web:api` | 4 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/offline-snapshot/route.ts` | `web:api` | 7 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/offline-sync/route.ts` | `web:api` | 5 | 2 |

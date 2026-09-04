@@ -67,6 +67,8 @@ export const NOTIFICATION_EVENT_TYPES = [
   'MEETING_NOT_PUBLISHED_REMINDER',
   'MEETING_PREPARATION_REMINDER',
   'CALLING_ACTION_PENDING_REMINDER',
+  'MEMBERSHIP_ORDINANCE_ACTION_NEEDED_REMINDER',
+  'MEMBERSHIP_ORDINANCE_LCR_NEEDED_REMINDER',
   'ANNOUNCEMENT_EXPIRING_REMINDER',
   'CALENDAR_SYNC_OVERDUE_REMINDER'
 ] as const;
@@ -376,6 +378,18 @@ const EVENT_DEFINITIONS: Record<NotificationEventType, NotificationEventDefiniti
   CALLING_ACTION_PENDING_REMINDER: definition('CALLING_ACTION_PENDING_REMINDER', {
     category: 'REMINDERS',
     label: 'Calling action needs attention',
+    defaultChannels: inApp,
+    severity: 'warning'
+  }),
+  MEMBERSHIP_ORDINANCE_ACTION_NEEDED_REMINDER: definition('MEMBERSHIP_ORDINANCE_ACTION_NEEDED_REMINDER', {
+    category: 'REMINDERS',
+    label: 'Membership or ordinance action needs attention',
+    defaultChannels: inApp,
+    severity: 'warning'
+  }),
+  MEMBERSHIP_ORDINANCE_LCR_NEEDED_REMINDER: definition('MEMBERSHIP_ORDINANCE_LCR_NEEDED_REMINDER', {
+    category: 'REMINDERS',
+    label: 'Priesthood action needs LCR update',
     defaultChannels: inApp,
     severity: 'warning'
   }),
