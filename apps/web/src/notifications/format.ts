@@ -17,7 +17,11 @@ function asSafePayload(payload: unknown): SafePayload {
   return payload && typeof payload === 'object' && !Array.isArray(payload) ? (payload as SafePayload) : {};
 }
 
-function approvedTargetUrl(aggregateType: string, aggregateId: string): string | null {
+function approvedTargetUrl(aggregateType: string, aggregateId: string, payload?: SafePayload): string | null {
+  if (aggregateType === 'membership_ordinance' && typeof payload?.meetingId === 'string') {
+    return `/meetings/${payload.meetingId}/edit`;
+  }
+
   const targets: Record<string, string> = {
     meeting: `/meetings/${aggregateId}/edit`,
     calling: `/callings/${aggregateId}`,
@@ -60,7 +64,7 @@ export function formatUserNotification(input: FormatEventInput): CreateUserNotif
     summary: safeSummary(definition, payload),
     details,
     severity: definition.severity as NotificationSeverity,
-    targetUrl: approvedTargetUrl(input.aggregateType, input.aggregateId)
+    targetUrl: approvedTargetUrl(input.aggregateType, input.aggregateId, payload)
   };
 }
 

@@ -100,7 +100,7 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ me
     );
 
     const membershipActionsResult = await client.query(
-      `SELECT id, member_name, action_type, reason, details, status
+      `SELECT id, member_name, action_type, reason, details, status, planned_date, interview_status, interview_date, interviewer_name, responsible_leader, lcr_follow_up_status, lcr_updated_at
          FROM meeting_membership_ordinance
         WHERE meeting_id = $1::uuid AND ward_id = $2::uuid
         ORDER BY created_at ASC`,

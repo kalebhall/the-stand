@@ -6,6 +6,11 @@ import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 
 const ACTION_TYPES = new Set(['WELCOME_NEW_MEMBER', 'BABY_BLESSING', 'PRIESTHOOD_ORDINATION', 'PRIESTHOOD_ADVANCEMENT']);
+const PRIESTHOOD_ACTION_TYPES = new Set(['PRIESTHOOD_ORDINATION', 'PRIESTHOOD_ADVANCEMENT']);
+
+function trimmed(value: unknown): string | null {
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
 
 export async function POST(request: Request, context: { params: Promise<{ wardId: string; meetingId: string }> }) {
   const session = await auth();
@@ -20,11 +25,26 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     actionType?: unknown;
     reason?: unknown;
     details?: unknown;
+    plannedDate?: unknown;
+    interviewStatus?: unknown;
+    interviewDate?: unknown;
+    interviewerName?: unknown;
+    responsibleLeader?: unknown;
   } | null;
   const memberName = typeof body?.memberName === 'string' ? body.memberName.trim() : '';
   const actionType = typeof body?.actionType === 'string' ? body.actionType : '';
   const reason = typeof body?.reason === 'string' ? body.reason.trim() : null;
   const details = typeof body?.details === 'string' ? body.details.trim() : null;
+  const plannedDate = trimmed(body?.plannedDate);
+  const interviewStatus = PRIESTHOOD_ACTION_TYPES.has(actionType)
+    ? typeof body?.interviewStatus === 'string' && ['needed', 'scheduled', 'completed'].includes(body.interviewStatus)
+      ? body.interviewStatus
+      : 'needed'
+    : 'not_required';
+  const interviewDate = trimmed(body?.interviewDate);
+  const interviewerName = trimmed(body?.interviewerName);
+  const responsibleLeader = trimmed(body?.responsibleLeader);
+  const lcrFollowUpStatus = PRIESTHOOD_ACTION_TYPES.has(actionType) ? 'needed' : 'not_applicable';
   if (!memberName || !ACTION_TYPES.has(actionType)) {
     return NextResponse.json({ error: 'Member name and valid action type are required.', code: 'INVALID_INPUT' }, { status: 400 });
   }
@@ -39,10 +59,23 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
       return NextResponse.json({ error: 'Meeting not found.', code: 'NOT_FOUND' }, { status: 404 });
     }
     const result = await client.query(
-      `INSERT INTO meeting_membership_ordinance (ward_id, meeting_id, member_name, action_type, reason, details)
-       VALUES ($1::uuid, $2::uuid, $3::text, $4::text, $5::text, $6::text)
-       RETURNING id, member_name, action_type, reason, details, status, announced_at, completed_at, completed_by_user_id, created_at, updated_at`,
-      [wardId, meetingId, memberName, actionType, reason, details]
+      `INSERT INTO meeting_membership_ordinance (ward_id, meeting_id, member_name, action_type, reason, details, planned_date, interview_status, interview_date, interviewer_name, responsible_leader, lcr_follow_up_status)
+       VALUES ($1::uuid, $2::uuid, $3::text, $4::text, $5::text, $6::text, $7::date, $8::text, $9::date, $10::text, $11::text, $12::text)
+       RETURNING id, member_name, action_type, reason, details, status, planned_date, interview_status, interview_date, interviewer_name, responsible_leader, lcr_follow_up_status, lcr_updated_at, announced_at, completed_at, completed_by_user_id, created_at, updated_at`,
+      [
+        wardId,
+        meetingId,
+        memberName,
+        actionType,
+        reason,
+        details,
+        plannedDate,
+        interviewStatus,
+        interviewDate,
+        interviewerName,
+        responsibleLeader,
+        lcrFollowUpStatus
+      ]
     );
     await client.query(
       `INSERT INTO audit_log (ward_id, user_id, action, details)
