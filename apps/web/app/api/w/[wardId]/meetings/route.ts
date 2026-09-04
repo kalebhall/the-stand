@@ -143,10 +143,17 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     if (legacyIntroductionTypes.has(itemType) || itemType === INTRODUCTION_ITEM_TYPE) indexes.push(index);
     return indexes;
   }, []);
+  const announcementIndexes = programItems.reduce<number[]>((indexes, item, index) => {
+    if (toTrimmedString(item?.itemType).toUpperCase() === 'ANNOUNCEMENT') indexes.push(index);
+    return indexes;
+  }, []);
   const requiresIntroduction = !['STAKE_CONFERENCE', 'GENERAL_CONFERENCE'].includes(meetingType);
+  const expectedAnnouncementIndex = requiresIntroduction ? 1 : 0;
   if (
     (requiresIntroduction && (introductionIndexes.length !== 1 || introductionIndexes[0] !== 0)) ||
-    (!requiresIntroduction && introductionIndexes.length)
+    (!requiresIntroduction && introductionIndexes.length) ||
+    announcementIndexes.length !== 1 ||
+    announcementIndexes[0] !== expectedAnnouncementIndex
   ) {
     return NextResponse.json({ error: 'Invalid protected Introduction item', code: 'BAD_REQUEST' }, { status: 400 });
   }

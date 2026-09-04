@@ -25,6 +25,7 @@ const PERSON_ITEM_TYPES = new Set(['INVOCATION', 'SPEAKER', 'BENEDICTION']);
 const HYMN_ITEM_TYPES = new Set(['OPENING_HYMN', 'REST_HYMN', 'CLOSING_HYMN', 'SPECIAL_HYMN', 'SACRAMENT_HYMN']);
 const PLACEHOLDER_ITEM_TYPES = new Set(['SACRAMENT', 'TESTIMONIES']);
 const ANNOUNCEMENT_ITEM_TYPE = 'ANNOUNCEMENT';
+const PROTECTED_ITEM_TYPES = new Set([INTRODUCTION_ITEM_TYPE, ANNOUNCEMENT_ITEM_TYPE]);
 const BUSINESS_ITEM_TYPE = 'WARD_AND_STAKE_BUSINESS';
 const HYMN_POSITION_TO_ITEM_TYPE: Record<string, string> = {
   OPENING: 'OPENING_HYMN',
@@ -196,6 +197,7 @@ export function MeetingForm({
 
   function moveItemToIndex(fromIndex: number, toIndex: number) {
     if (toIndex < 0 || toIndex >= programItems.length || fromIndex === toIndex) return;
+    if (PROTECTED_ITEM_TYPES.has(programItems[fromIndex]?.itemType) || PROTECTED_ITEM_TYPES.has(programItems[toIndex]?.itemType)) return;
 
     setProgramItems((current) => {
       const next = [...current];
@@ -362,18 +364,18 @@ export function MeetingForm({
         {programItems.map((item, index) => (
           <article
             className={cn('program-item space-y-3 rounded-md border p-3', getProgramItemAccentClass(item.itemType))}
-            draggable={item.itemType !== INTRODUCTION_ITEM_TYPE}
+            draggable={!PROTECTED_ITEM_TYPES.has(item.itemType)}
             onDragStart={
-              item.itemType === INTRODUCTION_ITEM_TYPE
+              PROTECTED_ITEM_TYPES.has(item.itemType)
                 ? undefined
                 : (event) => {
                     event.dataTransfer.setData('text/program-item-index', String(index));
                     event.dataTransfer.effectAllowed = 'move';
                   }
             }
-            onDragOver={item.itemType === INTRODUCTION_ITEM_TYPE ? undefined : (event) => event.preventDefault()}
+            onDragOver={PROTECTED_ITEM_TYPES.has(item.itemType) ? undefined : (event) => event.preventDefault()}
             onDrop={
-              item.itemType === INTRODUCTION_ITEM_TYPE
+              PROTECTED_ITEM_TYPES.has(item.itemType)
                 ? undefined
                 : (event) => {
                     event.preventDefault();
@@ -386,15 +388,15 @@ export function MeetingForm({
             <div className="program-item-header flex items-center justify-between gap-3">
               <div className="flex min-w-0 items-center gap-2">
                 <span
-                  className={cn('text-muted-foreground', item.itemType === INTRODUCTION_ITEM_TYPE ? 'opacity-0' : 'cursor-grab')}
+                  className={cn('text-muted-foreground', PROTECTED_ITEM_TYPES.has(item.itemType) ? 'opacity-0' : 'cursor-grab')}
                   aria-hidden="true"
-                  title={item.itemType === INTRODUCTION_ITEM_TYPE ? undefined : 'Drag to reorder'}
+                  title={PROTECTED_ITEM_TYPES.has(item.itemType) ? undefined : 'Drag to reorder'}
                 >
                   ⋮⋮
                 </span>
                 <h3 className="truncate text-sm font-semibold">{getProgramItemLabel(item.itemType)}</h3>
               </div>
-              {item.itemType !== INTRODUCTION_ITEM_TYPE ? (
+              {!PROTECTED_ITEM_TYPES.has(item.itemType) ? (
                 <Button
                   type="button"
                   variant="ghost"
@@ -524,6 +526,21 @@ export function MeetingForm({
                 </label>
               ) : null}
             </div>
+
+            {item.itemType === INTRODUCTION_ITEM_TYPE ? (
+              <label className="space-y-1 text-sm">
+                <span className="font-medium">Introduction notes</span>
+                <textarea
+                  className="min-h-20 w-full rounded-md border px-3 py-2"
+                  value={item.programNotes ?? ''}
+                  onChange={(event) => updateProgramItem(index, 'programNotes', event.target.value)}
+                  placeholder="Optional notes for the entire Introduction"
+                />
+                <p className="text-xs text-muted-foreground">
+                  These notes apply to the entire Introduction and appear on the public program.
+                </p>
+              </label>
+            ) : null}
 
             {canUseInternalNotes && item.id ? (
               <InternalNotesPanel

@@ -164,10 +164,17 @@ export async function PUT(request: Request, context: { params: Promise<{ wardId:
       if (protectedIntroductionTypes.has(itemType) || itemType === INTRODUCTION_ITEM_TYPE) indexes.push(index);
       return indexes;
     }, []);
+    const announcementIndexes = programItems.reduce<number[]>((indexes, item, index) => {
+      if (toTrimmedString(item?.itemType).toUpperCase() === 'ANNOUNCEMENT') indexes.push(index);
+      return indexes;
+    }, []);
     const requiresIntroduction = !isConferenceMeetingType(existingMeeting.meeting_type);
+    const expectedAnnouncementIndex = requiresIntroduction ? 1 : 0;
     if (
       (requiresIntroduction && (introductionIndexes.length !== 1 || introductionIndexes[0] !== 0)) ||
-      (!requiresIntroduction && introductionIndexes.length)
+      (!requiresIntroduction && introductionIndexes.length) ||
+      announcementIndexes.length !== 1 ||
+      announcementIndexes[0] !== expectedAnnouncementIndex
     ) {
       await client.query('ROLLBACK');
       return NextResponse.json({ error: 'Invalid protected Introduction item', code: 'BAD_REQUEST' }, { status: 400 });

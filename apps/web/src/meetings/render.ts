@@ -78,7 +78,9 @@ export function buildMeetingRenderHtml({ meetingDate, meetingType, programItems,
               `<div class="grid grid-cols-[10rem_1fr] gap-3 border-b py-2"><p class="text-sm font-medium">${role}</p><p class="text-sm">${escapeHtml(name || '—')}</p></div>`
           )
           .join('');
-        return `<article class="space-y-1"><h2 class="border-b pb-1 text-base font-semibold">Introduction</h2>${roleRows}</article>`;
+        const notes = item.programNotes?.trim() || item.notes?.trim();
+        const notesHtml = notes ? `<p class="text-xs text-muted-foreground">${escapeHtml(notes)}</p>` : '';
+        return `<article class="space-y-1"><h2 class="border-b pb-1 text-base font-semibold">Introduction</h2>${roleRows}${notesHtml}</article>`;
       }
       const label = escapeHtml(getProgramItemLabel(item.itemType));
       const value = escapeHtml(displayHymn(item) || '—');
