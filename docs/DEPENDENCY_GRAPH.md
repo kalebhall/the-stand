@@ -14,7 +14,7 @@ flowchart LR
   A2["root:other<br/>1 files"]
   A3["root:tooling<br/>6 files"]
   A4["web:announcements<br/>2 files"]
-  A5["web:api<br/>70 files"]
+  A5["web:api<br/>72 files"]
   A6["web:app<br/>94 files"]
   A7["web:audit<br/>2 files"]
   A8["web:auth<br/>11 files"]
@@ -32,14 +32,14 @@ flowchart LR
   A20["web:notifications<br/>23 files"]
   A21["web:offline<br/>1 files"]
   A22["web:reports<br/>2 files"]
-  A23["web:stand<br/>5 files"]
+  A23["web:stand<br/>6 files"]
   A24["web:tooling<br/>2 files"]
   A25["web:types<br/>2 files"]
-  A26["web:ui<br/>29 files"]
+  A26["web:ui<br/>30 files"]
   A27["web:version.mjs<br/>1 files"]
-  A5 -->|95| A8
-  A6 -->|87| A26
-  A5 -->|85| A13
+  A5 -->|99| A8
+  A5 -->|89| A13
+  A6 -->|89| A26
   A6 -->|72| A8
   A6 -->|40| A13
   A5 -->|38| A20
@@ -93,7 +93,7 @@ flowchart LR
 | `root:other` | 1 |
 | `root:tooling` | 6 |
 | `web:announcements` | 2 |
-| `web:api` | 70 |
+| `web:api` | 72 |
 | `web:app` | 94 |
 | `web:audit` | 2 |
 | `web:auth` | 11 |
@@ -111,25 +111,25 @@ flowchart LR
 | `web:notifications` | 23 |
 | `web:offline` | 1 |
 | `web:reports` | 2 |
-| `web:stand` | 5 |
+| `web:stand` | 6 |
 | `web:tooling` | 2 |
 | `web:types` | 2 |
-| `web:ui` | 29 |
+| `web:ui` | 30 |
 | `web:version.mjs` | 1 |
 
 ## Internal dependencies
 
 | Importing area | Imported area | Imports |
 | --- | --- | ---: |
-| `web:api` | `web:auth` | 95 |
-| `web:app` | `web:ui` | 87 |
-| `web:api` | `web:db` | 85 |
+| `web:api` | `web:auth` | 99 |
+| `web:api` | `web:db` | 89 |
+| `web:app` | `web:ui` | 89 |
 | `web:app` | `web:auth` | 72 |
 | `web:app` | `web:db` | 40 |
 | `web:app` | `web:app` | 39 |
 | `web:api` | `web:notifications` | 38 |
 | `web:notifications` | `web:notifications` | 32 |
-| `web:ui` | `web:ui` | 25 |
+| `web:ui` | `web:ui` | 27 |
 | `web:api` | `web:lib` | 23 |
 | `web:api` | `web:api` | 19 |
 | `web:api` | `web:callings` | 15 |
@@ -139,11 +139,11 @@ flowchart LR
 | `web:app` | `web:meetings` | 8 |
 | `web:auth` | `web:auth` | 8 |
 | `web:meetings` | `web:meetings` | 6 |
+| `web:stand` | `web:stand` | 5 |
 | `web:app` | `web:callings` | 4 |
 | `web:app` | `web:stand` | 4 |
 | `web:callings` | `web:callings` | 4 |
 | `web:db` | `web:db` | 4 |
-| `web:stand` | `web:stand` | 4 |
 | `web:api` | `web:announcements` | 3 |
 | `web:api` | `web:meetings` | 3 |
 | `web:app` | `web:announcements` | 3 |
@@ -189,9 +189,9 @@ flowchart LR
 | Importing area | Package/runtime | Imports |
 | --- | --- | ---: |
 | `web:app` | `next` | 73 |
-| `web:api` | `next` | 51 |
+| `web:api` | `next` | 53 |
+| `web:ui` | `react` | 27 |
 | `web:app` | `react` | 26 |
-| `web:ui` | `react` | 26 |
 | `web:api` | `vitest` | 18 |
 | `web:ui` | `next` | 13 |
 | `root:tooling` | `Node.js` | 12 |
@@ -213,6 +213,7 @@ flowchart LR
 | `web:db` | `vitest` | 3 |
 | `web:lib` | `vitest` | 3 |
 | `web:meetings` | `vitest` | 3 |
+| `web:stand` | `vitest` | 3 |
 | `web:ui` | `@testing-library/react` | 3 |
 | `web:ui` | `vitest` | 3 |
 | `package:shared` | `vitest` | 2 |
@@ -227,7 +228,6 @@ flowchart LR
 | `web:hardening` | `Node.js` | 2 |
 | `web:imports` | `Node.js` | 2 |
 | `web:notifications` | `bullmq` | 2 |
-| `web:stand` | `vitest` | 2 |
 | `web:tooling` | `pg` | 2 |
 | `package:shared` | `zod` | 1 |
 | `web:announcements` | `vitest` | 1 |
@@ -320,6 +320,8 @@ flowchart LR
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/business/[lineId]/route.ts` | `web:api` | 5 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/complete/route.ts` | `web:api` | 7 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/complete/route.vitest.ts` | `web:api` | 1 | 1 |
+| `apps/web/app/api/w/[wardId]/meetings/[meetingId]/membership-ordinances/[actionId]/route.ts` | `web:api` | 4 | 1 |
+| `apps/web/app/api/w/[wardId]/meetings/[meetingId]/membership-ordinances/route.ts` | `web:api` | 4 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/offline-snapshot/route.ts` | `web:api` | 6 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/offline-sync/route.ts` | `web:api` | 5 | 2 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/publish/route.ts` | `web:api` | 7 | 2 |
@@ -371,7 +373,7 @@ flowchart LR
 | `apps/web/app/login/page.tsx` | `web:app` | 2 | 1 |
 | `apps/web/app/logout/logout-form.tsx` | `web:app` | 2 | 2 |
 | `apps/web/app/logout/page.tsx` | `web:app` | 1 | 0 |
-| `apps/web/app/meetings/[meetingId]/edit/page.tsx` | `web:app` | 10 | 2 |
+| `apps/web/app/meetings/[meetingId]/edit/page.tsx` | `web:app` | 11 | 2 |
 | `apps/web/app/meetings/[meetingId]/print/page.tsx` | `web:app` | 6 | 1 |
 | `apps/web/app/meetings/delete-meeting-button.tsx` | `web:app` | 1 | 2 |
 | `apps/web/app/meetings/error.tsx` | `web:app` | 0 | 0 |
@@ -417,7 +419,7 @@ flowchart LR
 | `apps/web/app/settings/users/ward-users-manager.tsx` | `web:app` | 2 | 1 |
 | `apps/web/app/stand/[meetingId]/offline/offline-stand-page.tsx` | `web:app` | 2 | 2 |
 | `apps/web/app/stand/[meetingId]/offline/page.tsx` | `web:app` | 1 | 0 |
-| `apps/web/app/stand/[meetingId]/page.tsx` | `web:app` | 12 | 2 |
+| `apps/web/app/stand/[meetingId]/page.tsx` | `web:app` | 13 | 2 |
 | `apps/web/app/support/access-requests/page.tsx` | `web:app` | 5 | 3 |
 | `apps/web/app/support/audit-log/AuditLogViewer.tsx` | `web:app` | 1 | 1 |
 | `apps/web/app/support/audit-log/page.tsx` | `web:app` | 7 | 2 |
@@ -438,6 +440,7 @@ flowchart LR
 | `apps/web/components/CallingReleaseButton.tsx` | `web:ui` | 1 | 2 |
 | `apps/web/components/HymnAutocomplete.tsx` | `web:ui` | 0 | 1 |
 | `apps/web/components/InternalNotesPanel.tsx` | `web:ui` | 2 | 1 |
+| `apps/web/components/MembershipOrdinanceSection.tsx` | `web:ui` | 2 | 1 |
 | `apps/web/components/StandardCallingsManager.tsx` | `web:ui` | 1 | 2 |
 | `apps/web/components/WardBusinessSection.tsx` | `web:ui` | 2 | 2 |
 | `apps/web/components/WardBusinessSection.vitest.tsx` | `web:ui` | 1 | 3 |
@@ -569,6 +572,7 @@ flowchart LR
 | `apps/web/src/reports/aggregations.ts` | `web:reports` | 0 | 1 |
 | `apps/web/src/reports/aggregations.vitest.ts` | `web:reports` | 1 | 1 |
 | `apps/web/src/stand/default-template.ts` | `web:stand` | 0 | 0 |
+| `apps/web/src/stand/default-template.vitest.ts` | `web:stand` | 1 | 1 |
 | `apps/web/src/stand/member-display.ts` | `web:stand` | 0 | 0 |
 | `apps/web/src/stand/member-display.vitest.ts` | `web:stand` | 1 | 1 |
 | `apps/web/src/stand/render.ts` | `web:stand` | 2 | 0 |

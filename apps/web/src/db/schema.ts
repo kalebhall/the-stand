@@ -163,6 +163,10 @@ export const wardStandTemplate = pgTable(
       .default(
         '**{memberName}** has been released as  **{callingName}**. Those who would like to express thanks for [his or her] service may show it by the uplifted hand.'
       ),
+    welcomeNewMemberTemplate: text('welcome_new_member_template').notNull().default('After a few words of introduction, we welcome **{memberName}** into the ward. Those who welcome [him or her] may show it by the uplifted hand. [Pause briefly.]'),
+    babyBlessingTemplate: text('baby_blessing_template').notNull().default('The blessing of **{memberName}** will take place after this meeting. [Confirm that the parents and participating priesthood holders are prepared before the ordinance.]'),
+    priesthoodOrdinationTemplate: text('priesthood_ordination_template').notNull().default('It is proposed that **{memberName}** be ordained to the office of **{callingName}**. Those in favor may manifest it by the uplifted hand. Those opposed, if any, may manifest it. [After the vote, remind the authorized priesthood holder to perform the ordination.]'),
+    priesthoodAdvancementTemplate: text('priesthood_advancement_template').notNull().default('It is proposed that **{memberName}** be ordained to the office of **{callingName}**. Those in favor may manifest it by the uplifted hand. Those opposed, if any, may manifest it. [After the vote, remind the authorized priesthood holder to perform the ordination.]'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
   },
@@ -203,6 +207,22 @@ export const meetingBusinessLine = pgTable('meeting_business_line', {
   actionType: text('action_type').notNull(),
   status: text('status').notNull().default('pending'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+});
+
+export const meetingMembershipOrdinance = pgTable('meeting_membership_ordinance', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
+  meetingId: uuid('meeting_id').notNull().references(() => meeting.id, { onDelete: 'cascade' }),
+  memberName: text('member_name').notNull(),
+  actionType: text('action_type').notNull(),
+  reason: text('reason'),
+  details: text('details'),
+  status: text('status').notNull().default('pending'),
+  announcedAt: timestamp('announced_at', { withTimezone: true }),
+  completedAt: timestamp('completed_at', { withTimezone: true }),
+  completedByUserId: uuid('completed_by_user_id').references(() => userAccount.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
 });
 
 

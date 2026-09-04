@@ -3,6 +3,7 @@ import { notFound, redirect } from 'next/navigation';
 
 import { buttonVariants } from '@/components/ui/button';
 import { InternalNotesPanel, type InternalNoteRow } from '@/components/InternalNotesPanel';
+import { MembershipOrdinanceSection, type MembershipOrdinanceAction } from '@/components/MembershipOrdinanceSection';
 import type { BusinessLine } from '@/components/WardBusinessSection';
 import { cn } from '@/lib/utils';
 import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth/guards';
@@ -93,6 +94,14 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ me
       [meetingId, session.activeWardId]
     );
 
+    const membershipActionsResult = await client.query(
+      `SELECT id, member_name, action_type, reason, details, status
+         FROM meeting_membership_ordinance
+        WHERE meeting_id = $1::uuid AND ward_id = $2::uuid
+        ORDER BY created_at ASC`,
+      [meetingId, session.activeWardId]
+    );
+
     const announcementsResult = await client.query(
       `SELECT title, body, start_date, end_date, is_permanent, include_in_stand
          FROM announcement
@@ -127,6 +136,7 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ me
     }));
     const versions = versionsResult.rows as MeetingRenderVersionRow[];
     const businessLines = businessLinesResult.rows as BusinessLine[];
+    const membershipActions = membershipActionsResult.rows as MembershipOrdinanceAction[];
     const notes = notesResult.rows as InternalNoteRow[];
     const canUseNotes = canUseInternalNotes({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId);
     const standAnnouncements = (announcementsResult.rows as AnnouncementRow[])
@@ -184,6 +194,13 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ me
           businessLines={businessLines}
           canManageBusiness={true}
           standAnnouncements={standAnnouncements}
+        />
+
+        <MembershipOrdinanceSection
+          wardId={session.activeWardId}
+          meetingId={meeting.id}
+          actions={membershipActions}
+          canManage
         />
 
         <InternalNotesPanel

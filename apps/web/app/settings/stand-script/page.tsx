@@ -11,10 +11,15 @@ type TemplateRow = {
   welcome_text: string;
   sustain_template: string;
   release_template: string;
+  welcome_new_member_template: string;
+  baby_blessing_template: string;
+  priesthood_ordination_template: string;
+  priesthood_advancement_template: string;
 };
 
 const DEFAULT_WELCOME = 'Welcome to The Church of Jesus Christ of Latter-day Saints.';
 import {
+  DEFAULT_STAND_BUSINESS_TEMPLATES,
   DEFAULT_STAND_RELEASE_TEMPLATE,
   DEFAULT_STAND_SUSTAIN_TEMPLATE
 } from '@/src/stand/default-template';
@@ -43,7 +48,7 @@ export default async function StandScriptSettingsPage() {
     await setDbContext(client, { userId: session.user.id, wardId });
 
     const templateResult = await client.query(
-      'SELECT welcome_text, sustain_template, release_template FROM ward_stand_template WHERE ward_id = $1 LIMIT 1',
+      'SELECT welcome_text, sustain_template, release_template, welcome_new_member_template, baby_blessing_template, priesthood_ordination_template, priesthood_advancement_template FROM ward_stand_template WHERE ward_id = $1 LIMIT 1',
       [wardId]
     );
 
@@ -71,6 +76,10 @@ export default async function StandScriptSettingsPage() {
     const welcomeText = String(formData.get('welcomeText') ?? '').trim() || DEFAULT_WELCOME;
     const sustainTemplate = String(formData.get('sustainTemplate') ?? '').trim() || DEFAULT_SUSTAIN;
     const releaseTemplate = String(formData.get('releaseTemplate') ?? '').trim() || DEFAULT_RELEASE;
+    const welcomeNewMemberTemplate = String(formData.get('welcomeNewMemberTemplate') ?? '').trim() || DEFAULT_STAND_BUSINESS_TEMPLATES.WELCOME_NEW_MEMBER;
+    const babyBlessingTemplate = String(formData.get('babyBlessingTemplate') ?? '').trim() || DEFAULT_STAND_BUSINESS_TEMPLATES.BABY_BLESSING;
+    const priesthoodOrdinationTemplate = String(formData.get('priesthoodOrdinationTemplate') ?? '').trim() || DEFAULT_STAND_BUSINESS_TEMPLATES.PRIESTHOOD_ORDINATION;
+    const priesthoodAdvancementTemplate = String(formData.get('priesthoodAdvancementTemplate') ?? '').trim() || DEFAULT_STAND_BUSINESS_TEMPLATES.PRIESTHOOD_ADVANCEMENT;
 
     const dbClient = await pool.connect();
 
@@ -79,15 +88,19 @@ export default async function StandScriptSettingsPage() {
       await setDbContext(dbClient, { userId: session.user.id, wardId: session.activeWardId });
 
       await dbClient.query(
-        `INSERT INTO ward_stand_template (ward_id, welcome_text, sustain_template, release_template, updated_at)
-         VALUES ($1, $2, $3, $4, now())
+        `INSERT INTO ward_stand_template (ward_id, welcome_text, sustain_template, release_template, welcome_new_member_template, baby_blessing_template, priesthood_ordination_template, priesthood_advancement_template, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, now())
          ON CONFLICT (ward_id)
          DO UPDATE SET
            welcome_text = excluded.welcome_text,
            sustain_template = excluded.sustain_template,
            release_template = excluded.release_template,
+           welcome_new_member_template = excluded.welcome_new_member_template,
+           baby_blessing_template = excluded.baby_blessing_template,
+           priesthood_ordination_template = excluded.priesthood_ordination_template,
+           priesthood_advancement_template = excluded.priesthood_advancement_template,
            updated_at = now()`,
-        [session.activeWardId, welcomeText, sustainTemplate, releaseTemplate]
+        [session.activeWardId, welcomeText, sustainTemplate, releaseTemplate, welcomeNewMemberTemplate, babyBlessingTemplate, priesthoodOrdinationTemplate, priesthoodAdvancementTemplate]
       );
 
       await dbClient.query(
@@ -144,6 +157,14 @@ export default async function StandScriptSettingsPage() {
             required
           />
         </label>
+
+        <section className="space-y-3 rounded-md border p-3">
+          <div><h2 className="font-semibold">Membership and ordinance meeting prompts</h2><p className="text-xs text-muted-foreground">These templates are for announcing the action or presenting/sustaining the person before it. They do not replace the ordinance or blessing. Use {`{memberName}`} and {`{callingName}`} as placeholders.</p></div>
+          <label className="block space-y-2 text-sm"><span className="font-medium">Welcome new ward member</span><textarea name="welcomeNewMemberTemplate" defaultValue={template?.welcome_new_member_template ?? DEFAULT_STAND_BUSINESS_TEMPLATES.WELCOME_NEW_MEMBER} className="min-h-20 w-full rounded-md border px-3 py-2" required /></label>
+          <label className="block space-y-2 text-sm"><span className="font-medium">Baby blessing</span><textarea name="babyBlessingTemplate" defaultValue={template?.baby_blessing_template ?? DEFAULT_STAND_BUSINESS_TEMPLATES.BABY_BLESSING} className="min-h-20 w-full rounded-md border px-3 py-2" required /></label>
+          <label className="block space-y-2 text-sm"><span className="font-medium">Priesthood ordination</span><textarea name="priesthoodOrdinationTemplate" defaultValue={template?.priesthood_ordination_template ?? DEFAULT_STAND_BUSINESS_TEMPLATES.PRIESTHOOD_ORDINATION} className="min-h-20 w-full rounded-md border px-3 py-2" required /></label>
+          <label className="block space-y-2 text-sm"><span className="font-medium">Priesthood advancement</span><textarea name="priesthoodAdvancementTemplate" defaultValue={template?.priesthood_advancement_template ?? DEFAULT_STAND_BUSINESS_TEMPLATES.PRIESTHOOD_ADVANCEMENT} className="min-h-20 w-full rounded-md border px-3 py-2" required /></label>
+        </section>
 
         <div className="flex justify-end">
           <Button type="submit">Save templates</Button>
