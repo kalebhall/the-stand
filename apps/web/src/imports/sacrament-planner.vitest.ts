@@ -27,6 +27,19 @@ describe('parseSacramentPlannerHtml', () => {
     ]);
   });
 
+  it('does not shift later meeting values into an earlier blank column', () => {
+    const html = `<table>
+      <tr><td></td><td>Nov- 17 (2024)</td><td>Nov- 24 (2024)</td></tr>
+      <tr><td>MEETING TYPE</td><td>REGULAR</td><td>REGULAR</td></tr>
+      <tr><td>OPENING HYMN</td><td></td><td>2 The Spirit of God</td></tr>
+      <tr><td>INVOCATION</td><td></td><td>John Doe</td></tr>
+    </table>`;
+
+    expect(parseSacramentPlannerHtml(html, '2026-08-30')).toEqual([
+      { meetingDate: '2024-11-24', meetingType: 'SACRAMENT', programItems: [{ itemType: 'OPENING_HYMN', title: '', hymnNumber: '2', hymnTitle: 'The Spirit of God' }, { itemType: 'INVOCATION', title: 'John Doe' }] }
+    ]);
+  });
+
   it('normalizes common church title prefixes for confident matching', () => {
     expect(normalizeHistoricalName('Sister Jane Doe')).toBe('jane doe');
     expect(normalizeHistoricalName('Brother Hall.')).toBe('hall');

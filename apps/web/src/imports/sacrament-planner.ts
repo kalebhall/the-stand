@@ -15,8 +15,8 @@ export type HistoricalMeeting = {
 const DATE_RE = /^([A-Z][a-z]{2})-\s*(\d{1,2})\s*\((\d{4})\)$/;
 const DATE_FORMAT = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
-function clean(value: string): string {
-  return value
+function clean(value: string | undefined): string {
+  return (value ?? '')
     .replace(/\uFFFD/g, '')
     .replace(/\s+/g, ' ')
     .trim();
@@ -50,11 +50,9 @@ function cellGrid(table: HTMLTableElement): string[][] {
   });
 }
 
-function alignedValue(row: string[], labelIndex: number, ordinal: number): string {
-  const values = row.slice(labelIndex + 1);
-  while (values[0] === '') values.shift();
-  if (values[1] === '') values.splice(1, 1);
-  return clean(values[ordinal] ?? '');
+function alignedValue(row: string[], labelIndex: number, dateIndex: number, firstDateIndex: number, dataColumnOffset: number): string {
+  const rowIndex = labelIndex + 1 + (dateIndex - firstDateIndex) + dataColumnOffset;
+  return clean(row[rowIndex] ?? '');
 }
 function meetingType(value: string): string {
   const normalized = clean(value).toUpperCase();
@@ -112,13 +110,30 @@ export function parseSacramentPlannerHtml(html: string, cutoffDate = '2026-08-30
     row.some((value) => /^(REGULAR|FAST SUNDAY|STAKE CONFERENCE|WARD CONFERENCE|GENERAL CONFERENCE)$/i.test(value))
   );
 
+  const firstDateIndex = dateColumns[0].index;
+  const dataColumnOffset = [0, 1].reduce((bestOffset, candidateOffset) => {
+    const score = [...byLabel.values()].reduce((total, { row, labelIndex }) => {
+      return total + dateColumns.reduce((rowTotal, { index: dateIndex }) => {
+        const rowIndex = labelIndex + 1 + (dateIndex - firstDateIndex) + candidateOffset;
+        return rowTotal + (clean(row[rowIndex]) ? 1 : 0);
+      }, 0);
+    }, 0);
+    const bestScore = [...byLabel.values()].reduce((total, { row, labelIndex }) => {
+      return total + dateColumns.reduce((rowTotal, { index: dateIndex }) => {
+        const rowIndex = labelIndex + 1 + (dateIndex - firstDateIndex) + bestOffset;
+        return rowTotal + (clean(row[rowIndex]) ? 1 : 0);
+      }, 0);
+    }, 0);
+    return score > bestScore ? candidateOffset : bestOffset;
+  }, 0);
+
   return dateColumns
-    .map(({ date }, ordinal) => {
+    .map(({ date, index: dateIndex }) => {
       let speakerNumber = 0;
       const programItems: HistoricalProgramItem[] = [];
       for (const [label, itemType] of itemRows) {
         const row = byLabel.get(label);
-        const value = row ? alignedValue(row.row, row.labelIndex, ordinal) : '';
+        const value = row ? alignedValue(row.row, row.labelIndex, dateIndex, firstDateIndex, dataColumnOffset) : '';
         if (!value || value.toUpperCase() === 'N/A') continue;
         const isHymn = itemType.endsWith('HYMN');
         const parsed = isHymn ? parseHymn(value) : { title: value };
@@ -127,16 +142,13 @@ export function parseSacramentPlannerHtml(html: string, cutoffDate = '2026-08-30
         if (parsed.hymnTitle) item.hymnTitle = parsed.hymnTitle;
         if (itemType === 'SPEAKER') {
           const topicRow = byLabel.get(topicRows[speakerNumber]);
-          const topic = topicRow ? alignedValue(topicRow.row, topicRow.labelIndex, ordinal) : '';
+          const topic = topicRow ? alignedValue(topicRow.row, topicRow.labelIndex, dateIndex, firstDateIndex, dataColumnOffset) : '';
           if (topic) item.topic = topic;
           speakerNumber += 1;
         }
         programItems.push(item);
       }
-      const typeValue =
-        typeRow?.slice().filter((value) => /^(REGULAR|FAST SUNDAY|STAKE CONFERENCE|WARD CONFERENCE|GENERAL CONFERENCE)$/i.test(value))[
-          ordinal
-        ] ?? '';
+      const typeValue = typeRow?.[firstDateIndex + dataColumnOffset + (dateIndex - firstDateIndex)] ?? '';
       return { meetingDate: date, meetingType: meetingType(typeValue), programItems };
     })
     .filter((meeting) => meeting.programItems.length > 0);
