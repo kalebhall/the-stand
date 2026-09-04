@@ -9,7 +9,7 @@ import { InternalNotesPanel, type InternalNoteRow } from '@/components/InternalN
 import { WardBusinessSection, type BusinessLine } from '@/components/WardBusinessSection';
 import { MemberAutocomplete } from '@/components/ui/member-autocomplete';
 import { toYyyyMmDd } from '@/src/meetings/date';
-import { getProgramItemLabel, MEETING_TYPES, type ProgramItemInput } from '@/src/meetings/types';
+import { getProgramItemLabel, isIntroductionItemType, MEETING_TYPES, type ProgramItemInput } from '@/src/meetings/types';
 import { getDefaultProgramItemsForMeetingType } from '@/src/meetings/default-program';
 
 import { DeleteMeetingButton } from './delete-meeting-button';
@@ -331,8 +331,11 @@ export function MeetingForm({
         </div>
 
         {programItems.map((item, index) => (
+          <div key={`${item.id ?? 'new'}-${index}`}>
+          {isIntroductionItemType(item.itemType) && !programItems.slice(0, index).some((previousItem) => isIntroductionItemType(previousItem.itemType)) ? (
+            <h3 className="mb-2 border-b pb-1 text-base font-semibold">Introduction</h3>
+          ) : null}
           <article
-            key={`${item.id ?? 'new'}-${index}`}
             className={cn('program-item space-y-3 rounded-md border p-3', getProgramItemAccentClass(item.itemType))}
             draggable
             onDragStart={(event) => {
@@ -470,6 +473,7 @@ export function MeetingForm({
             ) : null}
 
           </article>
+          </div>
         ))}
       </section>
 
