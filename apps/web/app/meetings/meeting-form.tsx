@@ -527,21 +527,6 @@ export function MeetingForm({
               ) : null}
             </div>
 
-            {item.itemType === INTRODUCTION_ITEM_TYPE ? (
-              <label className="space-y-1 text-sm">
-                <span className="font-medium">Introduction notes</span>
-                <textarea
-                  className="min-h-20 w-full rounded-md border px-3 py-2"
-                  value={item.programNotes ?? ''}
-                  onChange={(event) => updateProgramItem(index, 'programNotes', event.target.value)}
-                  placeholder="Optional notes for the entire Introduction"
-                />
-                <p className="text-xs text-muted-foreground">
-                  These notes apply to the entire Introduction and appear on the public program.
-                </p>
-              </label>
-            ) : null}
-
             {canUseInternalNotes && item.id ? (
               <InternalNotesPanel
                 wardId={wardId}
