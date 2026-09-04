@@ -56,6 +56,8 @@ const DEFAULT_TEMPLATE: StandTemplate = {
 };
 
 function toDisplayLabel(itemType: string): string {
+  if (itemType.toUpperCase() === 'ORGANIST_PIANIST') return 'Organist / Pianist';
+
   return itemType
     .split('_')
     .map((part) => `${part.slice(0, 1)}${part.slice(1).toLowerCase()}`)
@@ -82,7 +84,7 @@ function getMemberAndCalling(item: StandProgramItem): { memberName: string; call
 }
 
 function isPersonItem(itemType: string): boolean {
-  return ['PRESIDING', 'CONDUCTING', 'INVOCATION', 'SPEAKER', 'BENEDICTION'].includes(itemType.toUpperCase());
+  return ['PRESIDING', 'CONDUCTING', 'ORGANIST_PIANIST', 'CHORISTER', 'INVOCATION', 'SPEAKER', 'BENEDICTION'].includes(itemType.toUpperCase());
 }
 
 function renderTemplateLine(template: string, values: { memberName: string; callingName: string }) {

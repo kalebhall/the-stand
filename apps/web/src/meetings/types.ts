@@ -16,3 +16,9 @@ export type ProgramItemInput = {
 export function isMeetingType(value: string): value is MeetingType {
   return MEETING_TYPES.includes(value as MeetingType);
 }
+
+export function getProgramItemLabel(itemType: string): string {
+  if (itemType.toUpperCase() === 'ORGANIST_PIANIST') return 'Organist / Pianist';
+
+  return itemType.replaceAll('_', ' ');
+}

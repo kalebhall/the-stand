@@ -11,6 +11,8 @@ const MEETING_DEFAULT_ITEM_TYPES: Record<MeetingType, string[]> = {
   SACRAMENT: [
     'PRESIDING',
     'CONDUCTING',
+    'ORGANIST_PIANIST',
+    'CHORISTER',
     'ANNOUNCEMENT',
     'OPENING_HYMN',
     'INVOCATION',
@@ -26,6 +28,8 @@ const MEETING_DEFAULT_ITEM_TYPES: Record<MeetingType, string[]> = {
   FAST_TESTIMONY: [
     'PRESIDING',
     'CONDUCTING',
+    'ORGANIST_PIANIST',
+    'CHORISTER',
     'ANNOUNCEMENT',
     'OPENING_HYMN',
     'INVOCATION',
@@ -39,6 +43,8 @@ const MEETING_DEFAULT_ITEM_TYPES: Record<MeetingType, string[]> = {
   WARD_CONFERENCE: [
     'PRESIDING',
     'CONDUCTING',
+    'ORGANIST_PIANIST',
+    'CHORISTER',
     'ANNOUNCEMENT',
     'OPENING_HYMN',
     'INVOCATION',

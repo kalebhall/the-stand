@@ -1,4 +1,5 @@
 import { isAnnouncementActiveForDate, type AnnouncementRenderItem } from '../announcements/types';
+import { getProgramItemLabel } from './types';
 
 export type MeetingRenderItem = {
   itemType: string;
@@ -68,7 +69,7 @@ export function buildMeetingRenderHtml({ meetingDate, meetingType, programItems,
 
   const itemsHtml = programItems
     .map((item) => {
-      const label = escapeHtml(item.itemType.replaceAll('_', ' '));
+      const label = escapeHtml(getProgramItemLabel(item.itemType));
       const value = escapeHtml(displayHymn(item) || '—');
       const topic = displayTopic(item);
       const topicHtml = topic ? `<p class="text-sm text-muted-foreground">${escapeHtml(topic)}</p>` : '';
