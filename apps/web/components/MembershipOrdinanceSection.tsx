@@ -203,17 +203,19 @@ export function MembershipOrdinanceSection({ wardId, meetingId, actions, canMana
                     </p>
                   ) : null}
                   {action.details ? <p className="text-sm text-muted-foreground">{action.details}</p> : null}
-                  {action.planned_date ? <p className="text-sm text-muted-foreground">Planned: {action.planned_date}</p> : null}
-                  {action.responsible_leader ? (
+                  {canManage && action.planned_date ? (
+                    <p className="text-sm text-muted-foreground">Planned: {action.planned_date}</p>
+                  ) : null}
+                  {canManage && action.responsible_leader ? (
                     <p className="text-sm text-muted-foreground">Responsible: {action.responsible_leader}</p>
                   ) : null}
-                  {action.interview_status && action.interview_status !== 'not_required' ? (
+                  {canManage && action.interview_status && action.interview_status !== 'not_required' ? (
                     <p className="text-sm text-muted-foreground">
                       Interview: {action.interview_status.replaceAll('_', ' ')}
                       {action.interviewer_name ? ` — ${action.interviewer_name}` : ''}
                     </p>
                   ) : null}
-                  {action.lcr_follow_up_status === 'needed' ? (
+                  {canManage && action.lcr_follow_up_status === 'needed' ? (
                     <p className="text-sm font-medium text-amber-700">LCR update needed</p>
                   ) : null}
                   {templates[action.action_type] ? (
