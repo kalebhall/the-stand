@@ -9,13 +9,13 @@ import { InternalNotesPanel, type InternalNoteRow } from '@/components/InternalN
 import { WardBusinessSection, type BusinessLine } from '@/components/WardBusinessSection';
 import { MemberAutocomplete } from '@/components/ui/member-autocomplete';
 import { toYyyyMmDd } from '@/src/meetings/date';
-import { MEETING_TYPES, type ProgramItemInput } from '@/src/meetings/types';
+import { getProgramItemLabel, MEETING_TYPES, type ProgramItemInput } from '@/src/meetings/types';
 import { getDefaultProgramItemsForMeetingType } from '@/src/meetings/default-program';
 
 import { DeleteMeetingButton } from './delete-meeting-button';
 import { cn } from '@/lib/utils';
 
-const PERSON_ITEM_TYPES = new Set(['PRESIDING', 'CONDUCTING', 'INVOCATION', 'SPEAKER', 'BENEDICTION']);
+const PERSON_ITEM_TYPES = new Set(['PRESIDING', 'CONDUCTING', 'ORGANIST_PIANIST', 'CHORISTER', 'INVOCATION', 'SPEAKER', 'BENEDICTION']);
 const HYMN_ITEM_TYPES = new Set(['OPENING_HYMN', 'REST_HYMN', 'CLOSING_HYMN', 'SPECIAL_HYMN', 'SACRAMENT_HYMN']);
 const PLACEHOLDER_ITEM_TYPES = new Set(['SACRAMENT', 'TESTIMONIES']);
 const ANNOUNCEMENT_ITEM_TYPE = 'ANNOUNCEMENT';
@@ -72,6 +72,8 @@ type MeetingFormProps = {
 const PROGRAM_ITEM_TYPES = [
   'PRESIDING',
   'CONDUCTING',
+  'ORGANIST_PIANIST',
+  'CHORISTER',
   'ANNOUNCEMENT',
   'OPENING_HYMN',
   'INVOCATION',
@@ -317,7 +319,7 @@ export function MeetingForm({
               <select className="rounded-md border px-3 py-2" value={newItemType} onChange={(event) => setNewItemType(event.target.value)}>
                 {PROGRAM_ITEM_TYPES.map((value) => (
                   <option key={value} value={value}>
-                    {value.replaceAll('_', ' ')}
+                    {getProgramItemLabel(value)}
                   </option>
                 ))}
               </select>
@@ -348,7 +350,7 @@ export function MeetingForm({
             <div className="program-item-header flex items-center justify-between gap-3">
               <div className="flex min-w-0 items-center gap-2">
                 <span className="cursor-grab text-muted-foreground" aria-hidden="true" title="Drag to reorder">⋮⋮</span>
-                <h3 className="truncate text-sm font-semibold">{item.itemType.replaceAll('_', ' ')}</h3>
+                <h3 className="truncate text-sm font-semibold">{getProgramItemLabel(item.itemType)}</h3>
               </div>
               <Button
                 type="button"
