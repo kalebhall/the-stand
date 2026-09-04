@@ -14,13 +14,7 @@ export type SupportAwareWardAssignment = {
   created_at?: string;
 };
 
-export function getSupportAccessState({
-  user,
-  assignments
-}: {
-  user: SupportAwareUser;
-  assignments: SupportAwareWardAssignment[];
-}) {
+export function getSupportAccessState({ user, assignments }: { user: SupportAwareUser; assignments: SupportAwareWardAssignment[] }) {
   const supportAssignments: SupportAwareWardAssignment[] = [];
   const standardAssignments: SupportAwareWardAssignment[] = [];
 

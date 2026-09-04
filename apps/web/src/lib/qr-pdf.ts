@@ -21,12 +21,7 @@ export async function generateQrDataUrl(url: string): Promise<string> {
 }
 
 export async function createPortalPdfDoc(options: GeneratePortalPdfOptions): Promise<jsPDF> {
-  const {
-    wardName,
-    title = 'Digital Program',
-    url,
-    instructionText = "Scan with your phone's camera to view today's program"
-  } = options;
+  const { wardName, title = 'Digital Program', url, instructionText = "Scan with your phone's camera to view today's program" } = options;
 
   const doc = new jsPDF({
     orientation: 'portrait',

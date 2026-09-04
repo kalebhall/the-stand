@@ -14,13 +14,7 @@ import { SiteLogo } from '@/components/site-logo';
 import { NotificationBell } from '@/components/notification-bell';
 import { AuthSessionRefresh } from '@/components/auth-session-refresh';
 
-export function AppShell({
-  session,
-  children
-}: {
-  session: Session | null;
-  children: ReactNode;
-}) {
+export function AppShell({ session, children }: { session: Session | null; children: ReactNode }) {
   const pathname = usePathname();
   const { isConductingMode, toggleConductingMode } = useConductingMode();
   const [isFabMenuOpen, setIsFabMenuOpen] = useState(false);
@@ -42,9 +36,7 @@ export function AppShell({
       <div className="relative min-h-screen bg-background">
         <AuthSessionRefresh />
         {/* Main Content Area */}
-        <div className="w-full pb-20 sm:pb-8">
-          {children}
-        </div>
+        <div className="w-full pb-20 sm:pb-8">{children}</div>
 
         {/* Floating Action Button (FAB) for Conducting Mode */}
         <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
@@ -102,11 +94,7 @@ export function AppShell({
             aria-label="Open navigation menu in conducting mode"
             title="Conducting Mode Active (Click for Menu)"
           >
-            {isFabMenuOpen ? (
-              <span className="text-2xl font-bold">✕</span>
-            ) : (
-              <span className="text-2xl">🎙️</span>
-            )}
+            {isFabMenuOpen ? <span className="text-2xl font-bold">✕</span> : <span className="text-2xl">🎙️</span>}
           </button>
         </div>
       </div>
@@ -269,19 +257,37 @@ export function AppShell({
                     }}
                     className="flex w-full items-center justify-between rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs font-semibold text-amber-700 hover:bg-amber-500/20 dark:text-amber-300"
                   >
-                    <span className="flex items-center gap-1.5"><span>🎙️</span><span>Stand Focus Mode</span></span>
+                    <span className="flex items-center gap-1.5">
+                      <span>🎙️</span>
+                      <span>Stand Focus Mode</span>
+                    </span>
                     <span className="rounded bg-amber-500/20 px-1.5 py-0.5 text-[10px]">Enter</span>
                   </button>
                   <Link
                     href="/account"
                     onClick={() => setIsMobileNavOpen(false)}
-                    className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'w-full justify-start truncate px-2 text-xs text-muted-foreground')}
+                    className={cn(
+                      buttonVariants({ variant: 'ghost', size: 'sm' }),
+                      'w-full justify-start truncate px-2 text-xs text-muted-foreground'
+                    )}
                   >
                     {session.user.email}
                   </Link>
                   <div className="flex items-center justify-between px-2 text-xs text-muted-foreground">
-                    <Link href="/settings" onClick={() => setIsMobileNavOpen(false)} className="text-[11px] hover:text-foreground hover:underline">Settings</Link>
-                    <Link href="/logout" onClick={() => setIsMobileNavOpen(false)} className="text-[11px] hover:text-foreground hover:underline">Log out</Link>
+                    <Link
+                      href="/settings"
+                      onClick={() => setIsMobileNavOpen(false)}
+                      className="text-[11px] hover:text-foreground hover:underline"
+                    >
+                      Settings
+                    </Link>
+                    <Link
+                      href="/logout"
+                      onClick={() => setIsMobileNavOpen(false)}
+                      className="text-[11px] hover:text-foreground hover:underline"
+                    >
+                      Log out
+                    </Link>
                   </div>
                 </div>
               </div>
@@ -290,9 +296,7 @@ export function AppShell({
         ) : null}
 
         {/* Page Content */}
-        <main className="flex-1 pb-8">
-          {children}
-        </main>
+        <main className="flex-1 pb-8">{children}</main>
       </div>
     </div>
   );

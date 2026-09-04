@@ -60,7 +60,10 @@ export default async function MeetingsPage() {
         {meetings.length ? (
           <section className="space-y-3">
             {meetings.map((meeting) => (
-              <article key={meeting.id} className="section-panel flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-card p-4">
+              <article
+                key={meeting.id}
+                className="section-panel flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-card p-4"
+              >
                 <div>
                   <p className="text-base font-semibold">{formatMeetingDateForDisplay(meeting.meeting_date)}</p>
                   <p className="text-sm text-muted-foreground">{meeting.meeting_type.replaceAll('_', ' ')}</p>

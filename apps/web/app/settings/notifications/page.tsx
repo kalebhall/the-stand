@@ -14,7 +14,11 @@ export default async function NotificationSettingsPage() {
         <h1 className="text-2xl font-semibold">Notification settings</h1>
         <p className="mt-2 text-muted-foreground">Choose which ward updates appear in the app or are sent by email.</p>
       </div>
-      {!wardId ? <p role="alert">Select an active ward before managing notification settings.</p> : <NotificationSubscriptionSettings wardId={wardId} hasUsableEmail={Boolean(session.user.email?.trim())} />}
+      {!wardId ? (
+        <p role="alert">Select an active ward before managing notification settings.</p>
+      ) : (
+        <NotificationSubscriptionSettings wardId={wardId} hasUsableEmail={Boolean(session.user.email?.trim())} />
+      )}
     </main>
   );
 }

@@ -111,9 +111,16 @@ describe('GET and POST /api/w/[wardId]/announcements', () => {
     );
 
     expect(res.status).toBe(201);
-    expect(queryMock).toHaveBeenCalledWith(
-      expect.stringContaining('INSERT INTO announcement'),
-      ['ward-1', 'Stake Conference', 'Held at stake center', null, null, true, 'PROGRAM_TOP', true, true]
-    );
+    expect(queryMock).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO announcement'), [
+      'ward-1',
+      'Stake Conference',
+      'Held at stake center',
+      null,
+      null,
+      true,
+      'PROGRAM_TOP',
+      true,
+      true
+    ]);
   });
 });

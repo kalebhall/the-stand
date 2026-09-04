@@ -1,4 +1,3 @@
-
 # UI.md — The Stand (Master User Interface Specification)
 
 This document defines the complete user interface structure, page behavior,
@@ -24,14 +23,16 @@ GLOBAL UI PRINCIPLES
 PUBLIC PAGES (NO AUTH REQUIRED)
 ====================================================================
 
---------------------------------------------------
-/  (Landing Page)
+---
+
+/ (Landing Page)
 --------------------------------------------------
 
 Purpose:
 Introduce The Stand and allow login or access request.
 
 Sections:
+
 - Hero section (clear mission statement)
 - Feature summary cards
 - Security summary (ward isolation, no LCR integration)
@@ -40,28 +41,34 @@ Sections:
   - Request Access
 
 Footer:
+
 - Version
 - Contact/support email (optional)
 
---------------------------------------------------
+---
+
 /login
 --------------------------------------------------
 
 Features:
+
 - Google OAuth button (primary)
 - Email/password form (if enabled)
 - Forgot password link (if enabled)
 - Error messaging (non-revealing)
 
 State:
+
 - On success → redirect to /dashboard
 - If must_change_password = true → redirect to /account/change-password
 
---------------------------------------------------
+---
+
 /request-access
 --------------------------------------------------
 
 Form Fields:
+
 - Name
 - Email
 - Stake
@@ -69,15 +76,18 @@ Form Fields:
 - Message
 
 Behavior:
+
 - Submit → show confirmation state
 - Rate limited
 - Honeypot field optional for spam protection
 
---------------------------------------------------
+---
+
 /logout
 --------------------------------------------------
 
 Behavior:
+
 - Ends session
 - Displays confirmation
 - Redirect option to home
@@ -87,6 +97,7 @@ AUTHENTICATED SHELL
 ====================================================================
 
 Layout:
+
 - Top navigation bar
 - Ward switcher (if user belongs to multiple wards)
 - Role-based nav items
@@ -95,20 +106,24 @@ Layout:
 Navigation Visibility:
 
 All authenticated users:
+
 - Dashboard
 - Meetings
 
 Bishopric/Clerk roles:
+
 - Callings
 - Announcements
 - Imports
 
 Ward Admin:
+
 - Settings (Users)
 - Templates (future extension)
 - Public Portal settings
 
 Support Admin:
+
 - Support Console
 
 ====================================================================
@@ -134,22 +149,26 @@ Cards (role aware):
 6. Public Portal Status (Admin only)
 
 Empty State:
+
 - If no meetings exist, show “Create First Meeting” CTA.
 
 ====================================================================
 MEETINGS MODULE
 ====================================================================
 
---------------------------------------------------
+---
+
 /meetings
 --------------------------------------------------
 
 Displays:
+
 - Upcoming meetings
 - Past meetings (history)
 - Status badge (Draft / Published / Completed)
 
 Actions:
+
 - Create Meeting
 - Edit
 - Publish
@@ -157,7 +176,8 @@ Actions:
 - Print
 - Complete
 
---------------------------------------------------
+---
+
 /meetings/{meetingId}/edit
 --------------------------------------------------
 
@@ -183,13 +203,16 @@ Sections:
 5. Announcements (optional attach)
 
 Actions:
+
 - Save Draft
 - Publish
 
 Publish Confirmation Modal:
+
 - Warn immutable snapshot will be created.
 
---------------------------------------------------
+---
+
 /meetings/{meetingId}/print
 --------------------------------------------------
 
@@ -202,15 +225,18 @@ Publish Confirmation Modal:
 AT THE STAND VIEW
 ====================================================================
 
---------------------------------------------------
+---
+
 /stand/{meetingId}
 --------------------------------------------------
 
 Modes toggle:
+
 - Formal Script
 - Compact Labels
 
 Formal Script Mode:
+
 - Full phrasing
 - Visitor-friendly welcome:
   “Welcome to The Church of Jesus Christ of Latter-day Saints.”
@@ -219,10 +245,12 @@ Formal Script Mode:
   - Calling name bold
 
 Compact Mode:
+
 - Section labels only
 - Names and callings listed without full script
 
 Design Requirements:
+
 - Large typography
 - Minimal scrolling
 - Dark mode optional
@@ -232,25 +260,30 @@ Design Requirements:
 CALLINGS MODULE
 ====================================================================
 
---------------------------------------------------
+---
+
 /callings
 --------------------------------------------------
 
 Displays:
+
 - Active callings
 - Status column (Proposed, Extended, Sustained, Set Apart)
 - Actions per row depending on status
 
 Buttons:
+
 - Extend
 - Sustain
 - Mark Set Apart
 
 Sustain Action:
+
 - Confirmation modal
 - Auto-add business line
 
 Set Apart Action:
+
 - Confirmation modal
 - Trigger clerk notification
 
@@ -258,11 +291,13 @@ Set Apart Action:
 ANNOUNCEMENTS MODULE
 ====================================================================
 
---------------------------------------------------
+---
+
 /announcements
 --------------------------------------------------
 
 Fields:
+
 - Title
 - Body
 - Start date
@@ -271,6 +306,7 @@ Fields:
 - Placement selector
 
 List View:
+
 - Active
 - Upcoming
 - Expired
@@ -279,19 +315,23 @@ List View:
 IMPORTS MODULE
 ====================================================================
 
---------------------------------------------------
+---
+
 /imports
 --------------------------------------------------
 
 Tabs:
+
 - Membership
 - Callings
 
 Paste Box:
+
 - Plain-text enforced
 - Strip HTML artifacts
 
 Workflow:
+
 1. Paste
 2. Parse preview
 3. Conflict resolution screen
@@ -304,30 +344,36 @@ Raw text auto-purged after retention window.
 SETTINGS
 ====================================================================
 
---------------------------------------------------
+---
+
 /settings/users (Ward Admin)
 --------------------------------------------------
 
 Displays:
+
 - Users in ward
 - Roles per user
 
 Actions:
+
 - Assign role
 - Remove role
 - Disable ward access
 
 Changes must show confirmation and log audit entry.
 
---------------------------------------------------
+---
+
 /account
 --------------------------------------------------
 
 Displays:
+
 - Profile info
 - Change password (if not Google-only)
 
---------------------------------------------------
+---
+
 /account/change-password
 --------------------------------------------------
 
@@ -338,11 +384,13 @@ Cannot navigate away until changed.
 SUPPORT CONSOLE
 ====================================================================
 
---------------------------------------------------
+---
+
 /support
 --------------------------------------------------
 
 Sections:
+
 - Create Stake
 - Create Ward
 - Assign Ward Admin
@@ -350,6 +398,7 @@ Sections:
 - Configure OAuth
 
 OAuth Config UI:
+
 - Mask client secret
 - Save encrypted
 - Audit change
@@ -361,13 +410,16 @@ ERROR STATES
 ====================================================================
 
 403 Forbidden:
+
 - Show permission message.
 - No internal details.
 
 404 Not Found:
+
 - Generic message.
 
 500 Error:
+
 - Generic error screen.
 - Logged server-side.
 
@@ -404,6 +456,7 @@ FAILURE RULE
 ====================================================================
 
 If UI exposes:
+
 - Cross-ward data
 - Internal IDs publicly
 - Unpublished meeting data

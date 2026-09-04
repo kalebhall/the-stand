@@ -23,9 +23,7 @@ export default async function SettingsUsersPage() {
     <main className="mx-auto max-w-4xl space-y-6 p-6">
       <div>
         <h1 className="text-2xl font-semibold">Ward User Management</h1>
-        <p className="text-sm text-muted-foreground">
-          Assign or revoke ward roles. STAND_ADMIN assignment is restricted to Support Admin.
-        </p>
+        <p className="text-sm text-muted-foreground">Assign or revoke ward roles. STAND_ADMIN assignment is restricted to Support Admin.</p>
       </div>
       {canViewActivityLog ? (
         <div className="rounded-lg border bg-card p-4 space-y-1">

@@ -159,10 +159,36 @@ export async function loadReportData(client: PoolClient, filters: ReportFilters)
   ]);
 
   return {
-    speakers: speakerResult.rows.map((row) => ({ speakerName: text(row, 'speaker_name'), talkCount: count(row), lastTalkDate: text(row, 'last_talk_date') })),
-    topics: topicResult.rows.map((row) => ({ topic: text(row, 'topic'), speakerName: text(row, 'speaker_name'), meetingDate: text(row, 'meeting_date') })),
-    hymns: hymnResult.rows.map((row) => ({ hymnNumber: text(row, 'hymn_number'), hymnTitle: text(row, 'hymn_title'), position: text(row, 'position'), useCount: count(row), lastUsedDate: text(row, 'last_used_date') })),
-    prayers: prayerResult.rows.map((row) => ({ personName: text(row, 'person_name'), prayerType: text(row, 'prayer_type'), assignmentCount: count(row), lastAssignmentDate: text(row, 'last_assignment_date') })),
-    completeness: completenessResult.rows.filter((row) => text(row, 'issue')).map((row) => ({ meetingDate: text(row, 'meeting_date'), itemType: text(row, 'item_type'), title: text(row, 'title'), issue: text(row, 'issue') }))
+    speakers: speakerResult.rows.map((row) => ({
+      speakerName: text(row, 'speaker_name'),
+      talkCount: count(row),
+      lastTalkDate: text(row, 'last_talk_date')
+    })),
+    topics: topicResult.rows.map((row) => ({
+      topic: text(row, 'topic'),
+      speakerName: text(row, 'speaker_name'),
+      meetingDate: text(row, 'meeting_date')
+    })),
+    hymns: hymnResult.rows.map((row) => ({
+      hymnNumber: text(row, 'hymn_number'),
+      hymnTitle: text(row, 'hymn_title'),
+      position: text(row, 'position'),
+      useCount: count(row),
+      lastUsedDate: text(row, 'last_used_date')
+    })),
+    prayers: prayerResult.rows.map((row) => ({
+      personName: text(row, 'person_name'),
+      prayerType: text(row, 'prayer_type'),
+      assignmentCount: count(row),
+      lastAssignmentDate: text(row, 'last_assignment_date')
+    })),
+    completeness: completenessResult.rows
+      .filter((row) => text(row, 'issue'))
+      .map((row) => ({
+        meetingDate: text(row, 'meeting_date'),
+        itemType: text(row, 'item_type'),
+        title: text(row, 'title'),
+        issue: text(row, 'issue')
+      }))
   };
 }

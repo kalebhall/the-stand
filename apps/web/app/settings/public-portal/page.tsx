@@ -121,10 +121,9 @@ export default async function PublicPortalSettingsPage() {
     const wardResult = await client.query('SELECT name FROM ward WHERE id = $1::uuid LIMIT 1', [wardId]);
     const wardName = (wardResult.rows[0] as { name: string } | undefined)?.name ?? 'Ward';
 
-    const portalResult = await client.query(
-      'SELECT id, token, created_at FROM public_program_portal WHERE ward_id = $1::uuid LIMIT 1',
-      [wardId]
-    );
+    const portalResult = await client.query('SELECT id, token, created_at FROM public_program_portal WHERE ward_id = $1::uuid LIMIT 1', [
+      wardId
+    ]);
 
     const sharesResult = await client.query(
       `SELECT pps.id, pps.meeting_id, pps.token, m.meeting_date, m.meeting_type, pps.created_at
@@ -166,16 +165,22 @@ export default async function PublicPortalSettingsPage() {
               />
               <div className="flex gap-2 pt-1">
                 <form action={createOrRotatePortalToken}>
-                  <Button type="submit" variant="outline" size="sm">Rotate token</Button>
+                  <Button type="submit" variant="outline" size="sm">
+                    Rotate token
+                  </Button>
                 </form>
                 <form action={revokePortalToken}>
-                  <Button type="submit" variant="outline" size="sm">Revoke token</Button>
+                  <Button type="submit" variant="outline" size="sm">
+                    Revoke token
+                  </Button>
                 </form>
               </div>
             </div>
           ) : (
             <form action={createOrRotatePortalToken}>
-              <Button type="submit" size="sm">Create portal token</Button>
+              <Button type="submit" size="sm">
+                Create portal token
+              </Button>
             </form>
           )}
         </section>

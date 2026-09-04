@@ -17,7 +17,13 @@ export function MemberImportClient({ wardId }: { wardId: string }) {
   const [memberPdfFile, setMemberPdfFile] = useState<File | null>(null);
   const [rawText, setRawText] = useState('');
   const [preview, setPreview] = useState<PreviewMember[]>([]);
-  const [summary, setSummary] = useState<{ parsedCount: number; inserted: number; updated: number; archived: number; commit: boolean } | null>(null);
+  const [summary, setSummary] = useState<{
+    parsedCount: number;
+    inserted: number;
+    updated: number;
+    archived: number;
+    commit: boolean;
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [headerCopied, setHeaderCopied] = useState(false);
@@ -141,7 +147,7 @@ export function MemberImportClient({ wardId }: { wardId: string }) {
               value={rawText}
               onChange={(event) => setRawText(event.target.value)}
               className="min-h-48 w-full rounded-md border bg-background p-3 font-mono text-sm"
-              placeholder={"Name\tEmail\tPhone\tAge\tBirthday\tGender\nJane Doe\tjane@example.com\t801-555-0101\t35\tJan 15\tFemale"}
+              placeholder={'Name\tEmail\tPhone\tAge\tBirthday\tGender\nJane Doe\tjane@example.com\t801-555-0101\t35\tJan 15\tFemale'}
             />
           </div>
         )}

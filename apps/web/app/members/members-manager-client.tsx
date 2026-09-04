@@ -172,28 +172,30 @@ export function MembersManagerClient({
                     {member.gender ? ` · ${member.gender}` : ''}
                   </p>
                 </div>
-                {canManageMembers ? <div className="flex items-center gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="text-xs h-7"
-                    onClick={() => startEdit(member)}
-                    disabled={editingMemberId === member.id}
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => void archiveMember(member.id, displayName(member))}
-                    disabled={isArchivingMemberId === member.id}
-                    className="text-xs h-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                  >
-                    {isArchivingMemberId === member.id ? 'Archiving…' : 'Archive'}
-                  </Button>
-                </div> : null}
+                {canManageMembers ? (
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="text-xs h-7"
+                      onClick={() => startEdit(member)}
+                      disabled={editingMemberId === member.id}
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => void archiveMember(member.id, displayName(member))}
+                      disabled={isArchivingMemberId === member.id}
+                      className="text-xs h-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                    >
+                      {isArchivingMemberId === member.id ? 'Archiving…' : 'Archive'}
+                    </Button>
+                  </div>
+                ) : null}
               </div>
               {editingMemberId === member.id && (
                 <div className="mt-3 rounded-md border bg-muted/20 p-3 space-y-3">
@@ -270,13 +272,7 @@ export function MembersManagerClient({
                     >
                       {isSavingEditId === member.id ? 'Saving…' : 'Save'}
                     </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="text-xs h-7"
-                      onClick={() => setEditingMemberId(null)}
-                    >
+                    <Button type="button" variant="outline" size="sm" className="text-xs h-7" onClick={() => setEditingMemberId(null)}>
                       Cancel
                     </Button>
                   </div>

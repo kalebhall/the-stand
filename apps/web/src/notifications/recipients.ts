@@ -1,10 +1,6 @@
 import type { PoolClient } from 'pg';
 
-import {
-  NOTIFICATION_EVENT_TYPES,
-  getNotificationEventDefinition,
-  type NotificationEventType
-} from './events';
+import { NOTIFICATION_EVENT_TYPES, getNotificationEventDefinition, type NotificationEventType } from './events';
 
 type DbClient = Pick<PoolClient, 'query'>;
 
@@ -107,10 +103,7 @@ export function getExplicitRecipientIds(context: RecipientPolicyContext): string
   return [...new Set(ids.filter((id) => id.trim().length > 0 && id !== context.actorUserId))];
 }
 
-export async function resolveNotificationRecipients(
-  client: DbClient,
-  context: RecipientPolicyContext
-): Promise<string[]> {
+export async function resolveNotificationRecipients(client: DbClient, context: RecipientPolicyContext): Promise<string[]> {
   const policy = getRecipientPolicyKey(context.eventType);
   const roles = getRecipientRoles(policy);
   const explicitIds = getExplicitRecipientIds(context);
@@ -187,7 +180,11 @@ export function isEventInCategory(eventType: NotificationEventType, category: st
   return getNotificationEventDefinition(eventType).category === category;
 }
 
-export function canActorReceiveOwnNotification(params: { eventType: NotificationEventType; actorUserId: string; recipientUserId: string }): boolean {
+export function canActorReceiveOwnNotification(params: {
+  eventType: NotificationEventType;
+  actorUserId: string;
+  recipientUserId: string;
+}): boolean {
   return params.actorUserId !== params.recipientUserId;
 }
 

@@ -77,14 +77,7 @@ function extractTsvFromLcrHtml(html: string): string | null {
   return rows.join('\n');
 }
 
-
-export function CallingImportClient({
-  wardId,
-  initialCallingDrift
-}: {
-  wardId: string;
-  initialCallingDrift: CallingDrift;
-}) {
+export function CallingImportClient({ wardId, initialCallingDrift }: { wardId: string; initialCallingDrift: CallingDrift }) {
   const [callingInputMode, setCallingInputMode] = useState<'pdf' | 'paste'>('paste');
   const [callingPdfFile, setCallingPdfFile] = useState<File | null>(null);
   const [callingRawText, setCallingRawText] = useState('');
@@ -188,9 +181,7 @@ export function CallingImportClient({
 
         <div
           className={`rounded-md border px-3 py-2 text-sm ${
-            drift.isStale
-              ? 'border-amber-300 bg-amber-50 text-amber-900'
-              : 'border-emerald-300 bg-emerald-50 text-emerald-900'
+            drift.isStale ? 'border-amber-300 bg-amber-50 text-amber-900' : 'border-emerald-300 bg-emerald-50 text-emerald-900'
           }`}
         >
           Drift indicator:{' '}
@@ -286,10 +277,7 @@ export function CallingImportClient({
                 </thead>
                 <tbody>
                   {callingPreview.map((item) => (
-                    <tr
-                      key={`${item.memberName}-${item.callingName}`}
-                      className="border-b last:border-b-0"
-                    >
+                    <tr key={`${item.memberName}-${item.callingName}`} className="border-b last:border-b-0">
                       <td className="px-3 py-2 font-medium">{item.memberName}</td>
 
                       <td className="px-3 py-2">{item.organization}</td>

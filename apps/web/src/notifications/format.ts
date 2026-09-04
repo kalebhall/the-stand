@@ -14,9 +14,7 @@ type FormatEventInput = {
 type SafePayload = Record<string, unknown>;
 
 function asSafePayload(payload: unknown): SafePayload {
-  return payload && typeof payload === 'object' && !Array.isArray(payload)
-    ? payload as SafePayload
-    : {};
+  return payload && typeof payload === 'object' && !Array.isArray(payload) ? (payload as SafePayload) : {};
 }
 
 function approvedTargetUrl(aggregateType: string, aggregateId: string): string | null {

@@ -44,15 +44,10 @@ export default async function SupportProvisioningPage() {
           </Link>
         </div>
         <h1 className="text-2xl font-semibold tracking-tight">Stake & Ward Provisioning</h1>
-        <p className="text-muted-foreground">
-          Create and manage stakes and wards. Wards are assigned to a parent stake.
-        </p>
+        <p className="text-muted-foreground">Create and manage stakes and wards. Wards are assigned to a parent stake.</p>
       </section>
 
-      <StakeWardManager
-        stakes={stakesResult.rows as StakeRow[]}
-        wards={wardsResult.rows as WardRow[]}
-      />
+      <StakeWardManager stakes={stakesResult.rows as StakeRow[]} wards={wardsResult.rows as WardRow[]} />
     </main>
   );
 }

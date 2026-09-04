@@ -1,4 +1,3 @@
-
 # PERMISSIONS.md — The Stand (Master Role & Authorization Specification)
 
 This document defines the complete role model, permission model,
@@ -36,10 +35,12 @@ ROLE SCOPES
 There are two role scopes:
 
 GLOBAL ROLES
+
 - SUPPORT_ADMIN
 - SYSTEM_ADMIN
 
 WARD ROLES
+
 - STAND_ADMIN
 - BISHOPRIC_EDITOR
 - CLERK_EDITOR
@@ -54,7 +55,8 @@ WARD roles apply only within a specific ward.
 GLOBAL ROLES
 ====================================================================
 
---------------------------------------------------
+---
+
 SUPPORT_ADMIN
 --------------------------------------------------
 
@@ -62,6 +64,7 @@ Purpose:
 System-level administrator for provisioning and configuration.
 
 Capabilities:
+
 - Create stake
 - Create ward
 - Assign ward admin (STAND_ADMIN)
@@ -70,12 +73,14 @@ Capabilities:
 - Access Support Console UI
 
 Restrictions:
+
 - Cannot bypass ward RLS.
 - Cannot view ward meeting content unless explicitly assigned ward role or granted temporary ward-scoped support access.
 - Temporary support access must be explicitly approved, time-bounded, and auditable.
 - Cannot impersonate users.
 
---------------------------------------------------
+---
+
 SYSTEM_ADMIN (Optional Future Role)
 --------------------------------------------------
 
@@ -83,10 +88,12 @@ Purpose:
 Reserved for infrastructure-level operations.
 
 Capabilities:
+
 - May access system metrics
 - May access diagnostics
 
 Restrictions:
+
 - No implicit ward access
 - Must still respect RLS
 
@@ -94,7 +101,8 @@ Restrictions:
 WARD ROLES
 ====================================================================
 
---------------------------------------------------
+---
+
 STAND_ADMIN (Ward Admin)
 --------------------------------------------------
 
@@ -104,36 +112,44 @@ Primary ward-level administrator.
 Permissions:
 
 User Management:
+
 - View ward users
 - Assign ward roles
 - Revoke ward roles
 - Disable ward access
 
 Meeting Management:
+
 - Create meeting
 - Edit meeting
 - Publish meeting
 - Complete meeting
 
 Callings:
+
 - Full lifecycle control (propose, extend, sustain, set apart)
 
 Announcements:
+
 - Create/update/delete
 
 Imports:
+
 - Run membership import
 - Run callings import
 
 Public Portal:
+
 - Rotate portal token
 - Enable/disable portal
 
 Restrictions:
+
 - Cannot modify other wards
 - Cannot assign GLOBAL roles
 
---------------------------------------------------
+---
+
 BISHOPRIC_EDITOR
 --------------------------------------------------
 
@@ -141,6 +157,7 @@ Purpose:
 Conducting and meeting preparation role.
 
 Permissions:
+
 - Create/edit meetings
 - Add hymns
 - Add program items
@@ -150,11 +167,13 @@ Permissions:
 - Manage callings lifecycle
 
 Restrictions:
+
 - Cannot manage users
 - Cannot modify OAuth config
 - Cannot manage ward settings
 
---------------------------------------------------
+---
+
 CLERK_EDITOR
 --------------------------------------------------
 
@@ -162,6 +181,7 @@ Purpose:
 Administrative support role.
 
 Permissions:
+
 - View meetings
 - Add/edit announcements
 - View callings
@@ -169,10 +189,12 @@ Permissions:
 - View import history
 
 Restrictions:
+
 - Cannot publish meeting
 - Cannot manage users
 
---------------------------------------------------
+---
+
 WARD_CLERK
 --------------------------------------------------
 
@@ -180,15 +202,18 @@ Purpose:
 Receives reminders to update LCR.
 
 Permissions:
+
 - View meetings
 - View callings
 - View set apart queue
 - Receive notifications
 
 Restrictions:
+
 - No editing rights
 
---------------------------------------------------
+---
+
 MEMBERSHIP_CLERK
 --------------------------------------------------
 
@@ -196,14 +221,17 @@ Purpose:
 Membership data oversight.
 
 Permissions:
+
 - View callings
 - View member notes
 - Receive set apart reminders
 
 Restrictions:
+
 - No meeting editing
 
---------------------------------------------------
+---
+
 CONDUCTOR_VIEW
 --------------------------------------------------
 
@@ -211,30 +239,32 @@ Purpose:
 Read-only Stand view access.
 
 Permissions:
+
 - View dashboard
 - View meetings
 - Access /stand/{meetingId}
 
 Restrictions:
+
 - No editing rights
 
 ====================================================================
 PERMISSION MATRIX (SUMMARY)
 ====================================================================
 
-| Capability                          | Support | Ward Admin | Bishopric | Clerk Editor | Clerk | Conductor
+| Capability | Support | Ward Admin | Bishopric | Clerk Editor | Clerk | Conductor
 |-----------------------------------------------------------------------------------------------------------
-| Create Stake/Ward                   |   Yes   |    No      |    No     |     No       | No    | No
-| Assign Ward Roles                   |   Yes*  |    Yes     |    No     |     No       | No    | No
-| Grant Temporary Support Access      |   Yes** |    No      |    No     |     No       | No    | No
-| Create/Edit Meeting                 |   No    |    Yes     |    Yes    |     No       | No    | No
-| Publish Meeting                     |   No    |    Yes     |    Yes    |     No       | No    | No
-| Complete Meeting                    |   No    |    Yes     |    Yes    |     No       | No    | No
-| Callings Lifecycle                  |   No    |    Yes     |    Yes    |     Limited  | View  | No
-| Announcements CRUD                  |   No    |    Yes     |    Yes    |     Yes      | No    | No
-| Imports                             |   No    |    Yes     |    Limited|     Yes      | No    | No
-| Access Stand View                   |   No    |    Yes     |    Yes    |     Yes      | Yes   | Yes
-| Rotate Public Portal Token          |   No    |    Yes     |    No     |     No       | No    | No
+| Create Stake/Ward | Yes | No | No | No | No | No
+| Assign Ward Roles | Yes* | Yes | No | No | No | No
+| Grant Temporary Support Access | Yes** | No | No | No | No | No
+| Create/Edit Meeting | No | Yes | Yes | No | No | No
+| Publish Meeting | No | Yes | Yes | No | No | No
+| Complete Meeting | No | Yes | Yes | No | No | No
+| Callings Lifecycle | No | Yes | Yes | Limited | View | No
+| Announcements CRUD | No | Yes | Yes | Yes | No | No
+| Imports | No | Yes | Limited| Yes | No | No
+| Access Stand View | No | Yes | Yes | Yes | Yes | Yes
+| Rotate Public Portal Token | No | Yes | No | No | No | No
 
 *Support Admin assigns STAND_ADMIN only for normal ward bootstrap; further permanent ward roles handled at ward level.
 **Temporary support access may only be granted to a SUPPORT_ADMIN, must target a ward role, must include a reason, and must expire automatically.
@@ -245,9 +275,9 @@ ENFORCEMENT STRATEGY
 
 1. API Layer:
    - Every ward route validates:
-       requireAuth()
-       requireWardAccess(wardId)
-       requirePermission(permission)
+     requireAuth()
+     requireWardAccess(wardId)
+     requirePermission(permission)
 
 2. Session Context:
    - Must include active ward_id
@@ -300,6 +330,7 @@ AUDIT REQUIREMENTS
 ====================================================================
 
 Must log:
+
 - Role assignment
 - Role revocation
 - Temporary support grant creation
@@ -312,6 +343,7 @@ Must log:
 - Calling lifecycle transitions
 
 Audit fields:
+
 - ward_id (nullable for global actions)
 - user_id
 - action

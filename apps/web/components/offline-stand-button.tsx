@@ -3,12 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import {
-  listOfflineMutations,
-  loadOfflineSnapshot,
-  saveOfflineSnapshot,
-  type OfflineStandSnapshot
-} from '@/src/offline/storage';
+import { listOfflineMutations, loadOfflineSnapshot, saveOfflineSnapshot, type OfflineStandSnapshot } from '@/src/offline/storage';
 
 type OfflineStatus = 'checking' | 'saving' | 'ready' | 'offline' | 'error';
 
@@ -45,7 +40,7 @@ export function OfflineStandButton({ userId, wardId, meetingId }: { userId: stri
         cache: 'no-store'
       });
       if (!response.ok) throw new Error('Snapshot request failed.');
-      const payload = await response.json() as Omit<OfflineStandSnapshot, 'savedAt'>;
+      const payload = (await response.json()) as Omit<OfflineStandSnapshot, 'savedAt'>;
       const snapshot = { ...payload, savedAt: new Date().toISOString() };
       await saveOfflineSnapshot(snapshot);
       if ('caches' in window) {
@@ -64,14 +59,18 @@ export function OfflineStandButton({ userId, wardId, meetingId }: { userId: stri
   useEffect(() => {
     let cancelled = false;
     if ('serviceWorker' in navigator) void navigator.serviceWorker.register('/sw.js').catch(() => undefined);
-    void loadOfflineSnapshot(userId, wardId, meetingId).then((snapshot) => {
-      if (cancelled) return;
-      if (snapshot) setSavedAt(snapshot.savedAt);
-      setStatus(navigator.onLine ? 'checking' : snapshot ? 'offline' : 'error');
-    }).catch(() => undefined);
+    void loadOfflineSnapshot(userId, wardId, meetingId)
+      .then((snapshot) => {
+        if (cancelled) return;
+        if (snapshot) setSavedAt(snapshot.savedAt);
+        setStatus(navigator.onLine ? 'checking' : snapshot ? 'offline' : 'error');
+      })
+      .catch(() => undefined);
     void refreshPending().catch(() => undefined);
     void saveForOffline();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [meetingId, refreshPending, saveForOffline, userId, wardId]);
 
   useEffect(() => {
@@ -80,7 +79,9 @@ export function OfflineStandButton({ userId, wardId, meetingId }: { userId: stri
       if (!navigator.onLine) setStatus('offline');
       else void saveForOffline();
     };
-    const onVisibility = () => { if (document.visibilityState === 'visible') refresh(); };
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') refresh();
+    };
     window.addEventListener('online', updateOfflineState);
     window.addEventListener('offline', updateOfflineState);
     document.addEventListener('visibilitychange', onVisibility);
@@ -95,14 +96,22 @@ export function OfflineStandButton({ userId, wardId, meetingId }: { userId: stri
 
   return (
     <div className="flex flex-wrap items-center gap-2" aria-live="polite">
-      <span className={`rounded-full border px-3 py-1 text-xs font-medium ${status === 'offline' ? 'border-destructive text-destructive' : ''}`}>
+      <span
+        className={`rounded-full border px-3 py-1 text-xs font-medium ${status === 'offline' ? 'border-destructive text-destructive' : ''}`}
+      >
         {statusLabel(status, pending)}
       </span>
       {savedAt ? <span className="text-xs text-muted-foreground">Saved {new Date(savedAt).toLocaleString()}</span> : null}
       {status === 'error' ? (
-        <Button type="button" size="sm" variant="outline" onClick={() => void saveForOffline()}>Retry</Button>
+        <Button type="button" size="sm" variant="outline" onClick={() => void saveForOffline()}>
+          Retry
+        </Button>
       ) : null}
-      {savedAt ? <Link className="text-sm underline" href={`/stand/${meetingId}/offline`}>Open offline copy</Link> : null}
+      {savedAt ? (
+        <Link className="text-sm underline" href={`/stand/${meetingId}/offline`}>
+          Open offline copy
+        </Link>
+      ) : null}
     </div>
   );
 }

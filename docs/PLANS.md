@@ -1,4 +1,3 @@
-
 # PLANS.md — The Stand (Master Implementation Plan)
 
 This document defines the complete phased implementation plan for The Stand.
@@ -26,6 +25,7 @@ Objective:
 Create stable monorepo structure and CI pipeline.
 
 Tasks:
+
 - Scaffold Next.js (App Router) + TypeScript app.
 - Add Tailwind + shadcn/ui.
 - Configure ESLint + Prettier.
@@ -35,6 +35,7 @@ Tasks:
 - Add AGENTS.md, ARCHITECTURE.md, SCHEMA.md, API.md, UI.md, PERMISSIONS.md, ACCEPTANCE.md.
 
 Acceptance Gate:
+
 - npm run build succeeds
 - CI passes
 
@@ -46,6 +47,7 @@ Objective:
 Establish tenancy isolation at DB layer.
 
 Tasks:
+
 - Install PostgreSQL locally.
 - Add Drizzle ORM + migration system.
 - Create base tables:
@@ -56,6 +58,7 @@ Tasks:
 - Write test proving cross-ward query fails.
 
 Acceptance Gate:
+
 - Cross-ward access blocked at DB level.
 - RLS verified in tests.
 
@@ -67,6 +70,7 @@ Objective:
 Implement secure login and Support Admin bootstrap.
 
 Tasks:
+
 - Integrate Auth.js with Google OAuth.
 - Add credentials provider (optional password).
 - Implement Argon2id hashing.
@@ -79,6 +83,7 @@ Tasks:
 - Add /api/me endpoint.
 
 Acceptance Gate:
+
 - Support Admin created automatically on first run.
 - Password forced rotation works.
 - Google login works.
@@ -92,6 +97,7 @@ Objective:
 Implement RBAC enforcement.
 
 Tasks:
+
 - Implement role → permission mapping.
 - Add requireRole/requirePermission helpers.
 - Protect all ward routes.
@@ -100,6 +106,7 @@ Tasks:
 - Audit all admin/support actions.
 
 Acceptance Gate:
+
 - Ward Admin cannot modify other wards.
 - Support Admin can provision wards.
 - All actions logged.
@@ -112,12 +119,14 @@ Objective:
 Implement post-login experience.
 
 Tasks:
+
 - Create /dashboard route.
 - Add role-aware dashboard cards.
 - Implement landing page + request access flow.
 - Implement logout page.
 
 Acceptance Gate:
+
 - Login → dashboard redirect works.
 - Access request stored in DB.
 
@@ -129,6 +138,7 @@ Objective:
 Enable meeting creation and publishing.
 
 Tasks:
+
 - Create meeting CRUD.
 - Add hymns (number + title snapshot).
 - Add ordered program items.
@@ -138,6 +148,7 @@ Tasks:
 - Implement meeting completion flow.
 
 Acceptance Gate:
+
 - Ward can create and publish meeting.
 - Snapshot immutable after publish.
 - Print view functional.
@@ -150,6 +161,7 @@ Objective:
 Tablet-friendly conducting interface.
 
 Tasks:
+
 - Implement /stand/{meeting_id}.
 - Add Formal Script mode.
 - Add Compact Labels mode.
@@ -157,6 +169,7 @@ Tasks:
 - Add visitor-friendly welcome text.
 
 Acceptance Gate:
+
 - View loads under 2 seconds.
 - Formatting correct.
 - Tablet responsive.
@@ -169,6 +182,7 @@ Objective:
 Track proposed → extended → sustained → set apart.
 
 Tasks:
+
 - Create calling_assignment & calling_action tables.
 - Auto-add sustain/release business lines.
 - Implement Set Apart Queue.
@@ -176,6 +190,7 @@ Tasks:
 - Include explicit LCR instruction in notifications.
 
 Acceptance Gate:
+
 - Sustain triggers business line.
 - Completion triggers notification.
 - Set apart triggers clerk reminder.
@@ -188,6 +203,7 @@ Objective:
 Enable QR-accessible public program.
 
 Tasks:
+
 - Implement /p/{meeting_token}.
 - Implement stable ward portal token.
 - Ensure only published snapshots render.
@@ -195,6 +211,7 @@ Tasks:
 - Add token rotation.
 
 Acceptance Gate:
+
 - QR link always routes to current meeting.
 - Unpublished meetings inaccessible publicly.
 
@@ -206,6 +223,7 @@ Objective:
 Integrate ICS feeds and announcement management.
 
 Tasks:
+
 - Add calendar_feed table.
 - Implement ICS refresh (login-triggered + manual).
 - Add cache pruning job.
@@ -213,6 +231,7 @@ Tasks:
 - Implement permanent announcement flag.
 
 Acceptance Gate:
+
 - Calendar imports correctly.
 - Announcements display correctly.
 
@@ -224,6 +243,7 @@ Objective:
 Support membership & calling paste imports.
 
 Tasks:
+
 - Enforce plain-text paste input.
 - Parse membership format.
 - Parse callings format.
@@ -233,6 +253,7 @@ Tasks:
 - Purge raw paste after retention window.
 
 Acceptance Gate:
+
 - Import handles malformed spacing.
 - Dry run displays accurate preview.
 - Commit updates DB correctly.
@@ -245,6 +266,7 @@ Objective:
 Reliable event-driven notifications.
 
 Tasks:
+
 - Implement event_outbox table.
 - Implement notification_delivery tracking.
 - Implement dedupe constraint.
@@ -254,6 +276,7 @@ Tasks:
 - Add diagnostics UI.
 
 Acceptance Gate:
+
 - Notifications retry on failure.
 - No duplicate sends.
 - Diagnostics visible.
@@ -267,6 +290,7 @@ Objective:
 Production readiness.
 
 Tasks:
+
 - Implement /health endpoint.
 - Validate Nginx config.
 - Validate systemd service.
@@ -278,6 +302,7 @@ Tasks:
 - Review audit logging coverage.
 
 Acceptance Gate:
+
 - All ACCEPTANCE.md scenarios pass.
 - Security checklist complete.
 - Disaster recovery tested.
@@ -290,6 +315,7 @@ Objective:
 Prepare production release.
 
 Tasks:
+
 - Tag version (v1.0.0).
 - Generate release notes.
 - Freeze schema.
@@ -298,6 +324,7 @@ Tasks:
 - Document deployment checklist.
 
 Acceptance Gate:
+
 - Clean deploy on fresh Ubuntu VM.
 - Bootstrap flow verified.
 - Ward meeting successfully published and conducted.
@@ -307,6 +334,7 @@ FAILURE RULE
 ============================================================
 
 If any milestone introduces:
+
 - Cross-ward data leakage
 - Disabled RLS
 - Public exposure of internal data

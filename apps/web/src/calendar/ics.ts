@@ -72,12 +72,7 @@ function parseIcsDate(value: string): { iso: string; allDay: boolean } | null {
 }
 
 function decodeIcsText(value: string): string {
-  return value
-    .replace(/\\,/g, ',')
-    .replace(/\\;/g, ';')
-    .replace(/\\n/gi, '\n')
-    .replace(/\\\\/g, '\\')
-    .trim();
+  return value.replace(/\\,/g, ',').replace(/\\;/g, ';').replace(/\\n/gi, '\n').replace(/\\\\/g, '\\').trim();
 }
 
 export function parseIcsEvents(ics: string): ParsedCalendarEvent[] {
@@ -101,7 +96,10 @@ export function parseIcsEvents(ics: string): ParsedCalendarEvent[] {
       const dtEnd = current.DTEND?.[0] ?? null;
       const parsedStart = dtStart ? parseIcsDate(dtStart) : null;
       const parsedEnd = dtEnd ? parseIcsDate(dtEnd) : null;
-      const categories = current.CATEGORIES?.flatMap((value) => value.split(',')).map((value) => value.trim()).filter(Boolean) ?? [];
+      const categories =
+        current.CATEGORIES?.flatMap((value) => value.split(','))
+          .map((value) => value.trim())
+          .filter(Boolean) ?? [];
 
       if (uid && summary && parsedStart) {
         events.push({

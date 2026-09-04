@@ -49,7 +49,10 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ me
   const session = await requireAuthenticatedSession();
   enforcePasswordRotation(session);
 
-  if (!session.activeWardId || !canManageMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId)) {
+  if (
+    !session.activeWardId ||
+    !canManageMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId)
+  ) {
     redirect('/meetings');
   }
 
@@ -140,7 +143,12 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ me
     const notes = notesResult.rows as InternalNoteRow[];
     const canUseNotes = canUseInternalNotes({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId);
     const standAnnouncements = (announcementsResult.rows as AnnouncementRow[])
-      .filter((announcement) => isAnnouncementActiveForDate({ startDate: announcement.start_date, endDate: announcement.end_date, isPermanent: announcement.is_permanent }, meeting.meeting_date))
+      .filter((announcement) =>
+        isAnnouncementActiveForDate(
+          { startDate: announcement.start_date, endDate: announcement.end_date, isPermanent: announcement.is_permanent },
+          meeting.meeting_date
+        )
+      )
       .map(({ title, body }) => ({ title, body }));
 
     return (
@@ -170,7 +178,10 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ me
                     <p className="font-medium">Version {version.version}</p>
                     <p className="text-xs text-muted-foreground">Published {new Date(version.created_at).toLocaleString()}</p>
                   </div>
-                  <Link href={`/meetings/${meeting.id}/print?version=${version.version}`} className={cn(buttonVariants({ size: 'sm', variant: 'outline' }))}>
+                  <Link
+                    href={`/meetings/${meeting.id}/print?version=${version.version}`}
+                    className={cn(buttonVariants({ size: 'sm', variant: 'outline' }))}
+                  >
                     View snapshot
                   </Link>
                 </li>
@@ -196,12 +207,7 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ me
           standAnnouncements={standAnnouncements}
         />
 
-        <MembershipOrdinanceSection
-          wardId={session.activeWardId}
-          meetingId={meeting.id}
-          actions={membershipActions}
-          canManage
-        />
+        <MembershipOrdinanceSection wardId={session.activeWardId} meetingId={meeting.id} actions={membershipActions} canManage />
 
         <InternalNotesPanel
           wardId={session.activeWardId}

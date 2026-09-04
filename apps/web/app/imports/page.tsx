@@ -29,9 +29,7 @@ export default async function ImportsHubPage() {
             <h2 className="text-lg font-semibold flex items-center gap-2">
               <span>👤</span> Import Members
             </h2>
-            <p className="text-sm text-muted-foreground">
-              Import the ward Member List from LCR (names, emails, phones, ages).
-            </p>
+            <p className="text-sm text-muted-foreground">Import the ward Member List from LCR (names, emails, phones, ages).</p>
           </div>
           <div className="pt-2 flex flex-wrap gap-2">
             <Link href="/imports/members" className={cn(buttonVariants({ size: 'sm' }))}>

@@ -133,7 +133,13 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
       `INSERT INTO import_run (ward_id, import_type, raw_text, parsed_count, committed, created_by_user_id)
        VALUES ($1, 'CALLINGS', $2, $3, $4, $5)
        RETURNING id, created_at`,
-      [wardId, makeSafeImportSnapshot(parsedCallings.map(({ birthday: _birthday, ...calling }) => calling)), parsedCallings.length, commit, session.user.id]
+      [
+        wardId,
+        makeSafeImportSnapshot(parsedCallings.map(({ birthday: _birthday, ...calling }) => calling)),
+        parsedCallings.length,
+        commit,
+        session.user.id
+      ]
     );
 
     const importRun = importRunResult.rows[0] as ImportRunRow | undefined;
@@ -217,9 +223,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     );
 
     const memberByKey = new Map<string, string>(
-      (membersResult.rows as MemberRow[])
-        .filter((row) => row.identity_key)
-        .map((row) => [row.identity_key as string, row.id] as const)
+      (membersResult.rows as MemberRow[]).filter((row) => row.identity_key).map((row) => [row.identity_key as string, row.id] as const)
     );
 
     const existingResult = await client.query(
@@ -240,7 +244,10 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
       await client.query('DELETE FROM calling_assignment WHERE ward_id = $1', [wardId]);
 
       for (const parsed of parsedCallings) {
-        const memberId = memberByKey.get(makeMemberIdentityKey({ fullName: parsed.memberName, birthday: parsed.birthday, secret: getMemberIdentitySecret() }) ?? '') ?? null;
+        const memberId =
+          memberByKey.get(
+            makeMemberIdentityKey({ fullName: parsed.memberName, birthday: parsed.birthday, secret: getMemberIdentitySecret() }) ?? ''
+          ) ?? null;
         if (memberId) {
           matchedMembers += 1;
         } else {
@@ -260,15 +267,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
             )
             VALUES ($1, $2, $3, $4, $5, $6, $7, TRUE)
             RETURNING id`,
-          [
-            wardId,
-            memberId,
-            parsed.memberName,
-            parsed.organization,
-            parsed.callingName,
-            parsed.sustainedDate,
-            parsed.setApart
-          ]
+          [wardId, memberId, parsed.memberName, parsed.organization, parsed.callingName, parsed.sustainedDate, parsed.setApart]
         );
         const assignmentId = assignmentResult.rows[0].id as string;
 
@@ -408,16 +407,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
       await client.query(
         `INSERT INTO audit_log (ward_id, user_id, action, details)
          VALUES ($1, $2, 'CALLINGS_IMPORT_FAILED', jsonb_build_object('commitRequested', $3::boolean, 'parsedCount', $4::int, 'fileName', $5::text, 'error', $6::text, 'extractedLineCount', $7::int, 'potentialRowLineCount', $8::int))`,
-        [
-          wardId,
-          session.user.id,
-          commit,
-          parsedCallings.length,
-          fileName,
-          message,
-          extractedLines.length,
-          potentialRowLines.length
-        ]
+        [wardId, session.user.id, commit, parsedCallings.length, fileName, message, extractedLines.length, potentialRowLines.length]
       );
       await client.query('COMMIT');
     } catch (auditError) {

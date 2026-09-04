@@ -62,7 +62,11 @@ export function InternalNotesPanel({ wardId, target, notes, title = 'Notes' }: I
     setSaving(true);
     setError(null);
     try {
-      const response = await fetch(`/api/w/${wardId}/notes/${noteId}`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ noteText: text }) });
+      const response = await fetch(`/api/w/${wardId}/notes/${noteId}`, {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ noteText: text })
+      });
       if (!response.ok) {
         const payload = (await response.json().catch(() => null)) as { error?: string } | null;
         setError(payload?.error ?? 'Failed to update note.');
@@ -100,25 +104,64 @@ export function InternalNotesPanel({ wardId, target, notes, title = 'Notes' }: I
           <p className="text-sm font-medium">Who can see this note?</p>
           <div className="mt-2 grid gap-2 sm:grid-cols-3">
             {target.type === 'PROGRAM_ITEM' ? (
-              <Button type="button" variant="outline" className="h-auto justify-start whitespace-normal p-3 text-left" onClick={() => { setSelectedVisibility('PUBLIC'); setAudiencePickerOpen(false); }}>
-                <span><strong className="block">Public program</strong><span className="text-xs text-muted-foreground">Shown on published program</span></span>
+              <Button
+                type="button"
+                variant="outline"
+                className="h-auto justify-start whitespace-normal p-3 text-left"
+                onClick={() => {
+                  setSelectedVisibility('PUBLIC');
+                  setAudiencePickerOpen(false);
+                }}
+              >
+                <span>
+                  <strong className="block">Public program</strong>
+                  <span className="text-xs text-muted-foreground">Shown on published program</span>
+                </span>
               </Button>
             ) : null}
-            <Button type="button" variant="outline" className="h-auto justify-start whitespace-normal p-3 text-left" onClick={() => { setSelectedVisibility('LEADERSHIP'); setAudiencePickerOpen(false); }}>
-              <span><strong className="block">Bishopric / clerk</strong><span className="text-xs text-muted-foreground">Authorized ward leaders</span></span>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-auto justify-start whitespace-normal p-3 text-left"
+              onClick={() => {
+                setSelectedVisibility('LEADERSHIP');
+                setAudiencePickerOpen(false);
+              }}
+            >
+              <span>
+                <strong className="block">Bishopric / clerk</strong>
+                <span className="text-xs text-muted-foreground">Authorized ward leaders</span>
+              </span>
             </Button>
-            <Button type="button" variant="outline" className="h-auto justify-start whitespace-normal p-3 text-left" onClick={() => { setSelectedVisibility('PRIVATE'); setAudiencePickerOpen(false); }}>
-              <span><strong className="block">Personal</strong><span className="text-xs text-muted-foreground">Only you</span></span>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-auto justify-start whitespace-normal p-3 text-left"
+              onClick={() => {
+                setSelectedVisibility('PRIVATE');
+                setAudiencePickerOpen(false);
+              }}
+            >
+              <span>
+                <strong className="block">Personal</strong>
+                <span className="text-xs text-muted-foreground">Only you</span>
+              </span>
             </Button>
           </div>
-          <Button type="button" size="sm" variant="ghost" className="mt-2" onClick={() => setAudiencePickerOpen(false)}>Cancel</Button>
+          <Button type="button" size="sm" variant="ghost" className="mt-2" onClick={() => setAudiencePickerOpen(false)}>
+            Cancel
+          </Button>
         </div>
       ) : null}
 
       {selectedVisibility ? (
         <div className="mt-3 space-y-2">
           <p className="text-sm text-muted-foreground">
-            {selectedVisibility === 'PUBLIC' ? 'This note appears on the published public program. Do not include private information.' : selectedVisibility === 'LEADERSHIP' ? 'Visible only to authorized bishopric and clerk roles in this ward.' : 'Visible only to you.'}
+            {selectedVisibility === 'PUBLIC'
+              ? 'This note appears on the published public program. Do not include private information.'
+              : selectedVisibility === 'LEADERSHIP'
+                ? 'Visible only to authorized bishopric and clerk roles in this ward.'
+                : 'Visible only to you.'}
           </p>
           <textarea
             value={noteText}
@@ -131,7 +174,16 @@ export function InternalNotesPanel({ wardId, target, notes, title = 'Notes' }: I
             <Button type="button" size="sm" onClick={() => void saveNote()} disabled={saving || !noteText.trim()}>
               {saving ? 'Saving…' : 'Save note'}
             </Button>
-            <Button type="button" size="sm" variant="ghost" onClick={() => { setSelectedVisibility(null); setNoteText(''); }} disabled={saving}>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                setSelectedVisibility(null);
+                setNoteText('');
+              }}
+              disabled={saving}
+            >
               Cancel
             </Button>
           </div>
@@ -144,21 +196,45 @@ export function InternalNotesPanel({ wardId, target, notes, title = 'Notes' }: I
           {notes.map((note) => (
             <li key={note.id} className="rounded-md border bg-background p-3 text-sm">
               <div className="mb-1 flex flex-wrap justify-between gap-2 text-xs text-muted-foreground">
-                <span>{note.visibility === 'PUBLIC' ? 'Public program' : note.visibility === 'PRIVATE' ? 'Personal' : 'Bishopric / Clerk'}</span>
-                <span>{note.created_by_email ?? 'Unknown author'} · {new Date(note.created_at).toLocaleString()}</span>
+                <span>
+                  {note.visibility === 'PUBLIC' ? 'Public program' : note.visibility === 'PRIVATE' ? 'Personal' : 'Bishopric / Clerk'}
+                </span>
+                <span>
+                  {note.created_by_email ?? 'Unknown author'} · {new Date(note.created_at).toLocaleString()}
+                </span>
               </div>
               {editingNoteId === note.id ? (
                 <div className="space-y-2">
-                  <textarea value={editingText} onChange={(event) => setEditingText(event.target.value)} className="min-h-20 w-full rounded-md border bg-background p-2 text-sm" autoFocus />
+                  <textarea
+                    value={editingText}
+                    onChange={(event) => setEditingText(event.target.value)}
+                    className="min-h-20 w-full rounded-md border bg-background p-2 text-sm"
+                    autoFocus
+                  />
                   <div className="flex gap-2">
-                    <Button type="button" size="sm" onClick={() => void updateNote(note.id)} disabled={saving || !editingText.trim()}>Save</Button>
-                    <Button type="button" size="sm" variant="ghost" onClick={() => setEditingNoteId(null)} disabled={saving}>Cancel</Button>
+                    <Button type="button" size="sm" onClick={() => void updateNote(note.id)} disabled={saving || !editingText.trim()}>
+                      Save
+                    </Button>
+                    <Button type="button" size="sm" variant="ghost" onClick={() => setEditingNoteId(null)} disabled={saving}>
+                      Cancel
+                    </Button>
                   </div>
                 </div>
               ) : (
                 <>
                   <p className="whitespace-pre-wrap">{note.note_text}</p>
-                  <Button type="button" size="sm" variant="ghost" className="mt-2 h-7 px-2" onClick={() => { setEditingNoteId(note.id); setEditingText(note.note_text); }}>Edit</Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="mt-2 h-7 px-2"
+                    onClick={() => {
+                      setEditingNoteId(note.id);
+                      setEditingText(note.note_text);
+                    }}
+                  >
+                    Edit
+                  </Button>
                 </>
               )}
             </li>

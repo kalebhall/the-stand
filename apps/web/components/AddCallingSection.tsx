@@ -12,11 +12,5 @@ type AddCallingSectionProps = {
 export function AddCallingSection({ wardId, standardCallings }: AddCallingSectionProps) {
   const router = useRouter();
 
-  return (
-    <AddCallingForm
-      wardId={wardId}
-      standardCallings={standardCallings}
-      onSuccess={() => router.refresh()}
-    />
-  );
+  return <AddCallingForm wardId={wardId} standardCallings={standardCallings} onSuccess={() => router.refresh()} />;
 }

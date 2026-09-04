@@ -124,47 +124,59 @@ describe('user notifications', () => {
   it('rejects invalid filters and limits before querying', async () => {
     const client = clientWithResults([]);
 
-    await expect(listUserNotifications(client, {
-      wardId: 'ward-1',
-      recipientUserId: 'user-1',
-      filter: 'later' as never
-    })).rejects.toThrow('Invalid notification filter');
+    await expect(
+      listUserNotifications(client, {
+        wardId: 'ward-1',
+        recipientUserId: 'user-1',
+        filter: 'later' as never
+      })
+    ).rejects.toThrow('Invalid notification filter');
 
-    await expect(listUserNotifications(client, {
-      wardId: 'ward-1',
-      recipientUserId: 'user-1',
-      limit: 0
-    })).rejects.toThrow('positive integer');
+    await expect(
+      listUserNotifications(client, {
+        wardId: 'ward-1',
+        recipientUserId: 'user-1',
+        limit: 0
+      })
+    ).rejects.toThrow('positive integer');
 
     expect(client.query).not.toHaveBeenCalled();
   });
 
   it('counts unread notifications and scopes state mutations', async () => {
     const countClient = clientWithResults([{ rows: [{ count: '3' }], rowCount: 1 }]);
-    await expect(countUnreadUserNotifications(countClient, {
-      wardId: 'ward-1',
-      recipientUserId: 'user-1'
-    })).resolves.toBe(3);
+    await expect(
+      countUnreadUserNotifications(countClient, {
+        wardId: 'ward-1',
+        recipientUserId: 'user-1'
+      })
+    ).resolves.toBe(3);
 
     const readClient = clientWithResults([{ rows: [], rowCount: 1 }]);
-    await expect(markUserNotificationRead(readClient, {
-      wardId: 'ward-1',
-      recipientUserId: 'user-1',
-      notificationId: 'notification-1'
-    })).resolves.toBe(true);
+    await expect(
+      markUserNotificationRead(readClient, {
+        wardId: 'ward-1',
+        recipientUserId: 'user-1',
+        notificationId: 'notification-1'
+      })
+    ).resolves.toBe(true);
     expect((readClient.query.mock.calls[0] as [string, unknown[]])[0]).toContain('recipient_user_id = $3::uuid');
 
     const dismissClient = clientWithResults([{ rows: [], rowCount: 0 }]);
-    await expect(dismissUserNotification(dismissClient, {
-      wardId: 'ward-1',
-      recipientUserId: 'user-1',
-      notificationId: 'notification-1'
-    })).resolves.toBe(false);
+    await expect(
+      dismissUserNotification(dismissClient, {
+        wardId: 'ward-1',
+        recipientUserId: 'user-1',
+        notificationId: 'notification-1'
+      })
+    ).resolves.toBe(false);
 
     const allReadClient = clientWithResults([{ rows: [], rowCount: 2 }]);
-    await expect(markAllUserNotificationsRead(allReadClient, {
-      wardId: 'ward-1',
-      recipientUserId: 'user-1'
-    })).resolves.toBe(2);
+    await expect(
+      markAllUserNotificationsRead(allReadClient, {
+        wardId: 'ward-1',
+        recipientUserId: 'user-1'
+      })
+    ).resolves.toBe(2);
   });
 });

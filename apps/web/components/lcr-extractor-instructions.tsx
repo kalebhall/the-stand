@@ -4,11 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { getLcrBookmarkletHref, LCR_DOM_EXTRACTOR_SCRIPT } from '@/src/imports/bookmarklet';
 
-export function LcrExtractorInstructions({
-  targetType
-}: {
-  targetType: 'members' | 'callings';
-}) {
+export function LcrExtractorInstructions({ targetType }: { targetType: 'members' | 'callings' }) {
   const [copiedScript, setCopiedScript] = useState(false);
   const [copyError, setCopyError] = useState(false);
 
@@ -36,12 +32,15 @@ export function LcrExtractorInstructions({
       setCopyError(true);
       return;
     }
-    navigator.clipboard.writeText(LCR_DOM_EXTRACTOR_SCRIPT).then(() => {
-      setCopiedScript(true);
-      setTimeout(() => setCopiedScript(false), 2000);
-    }).catch(() => {
-      setCopyError(true);
-    });
+    navigator.clipboard
+      .writeText(LCR_DOM_EXTRACTOR_SCRIPT)
+      .then(() => {
+        setCopiedScript(true);
+        setTimeout(() => setCopiedScript(false), 2000);
+      })
+      .catch(() => {
+        setCopyError(true);
+      });
   }
 
   return (
@@ -50,9 +49,7 @@ export function LcrExtractorInstructions({
         <h3 className="font-semibold text-foreground flex items-center gap-2">
           <span>⚡</span> Browser DOM Extractor (Zero Password Sharing)
         </h3>
-        <span className="text-xs bg-primary/10 text-primary font-medium px-2 py-0.5 rounded-full">
-          Recommended
-        </span>
+        <span className="text-xs bg-primary/10 text-primary font-medium px-2 py-0.5 rounded-full">Recommended</span>
       </div>
       <p className="text-muted-foreground text-xs leading-relaxed">
         Extract data directly from your authenticated Church session without sharing credentials or triggering security lockouts.
@@ -87,27 +84,23 @@ export function LcrExtractorInstructions({
           </a>{' '}
           and log in with your Church Account.
         </li>
-        <li>Click the <strong>The Stand: Extract LCR</strong> bookmark in your bookmarks bar.</li>
-        <li>Return here, click <strong>Paste text</strong>, and paste the clipboard contents into the box.</li>
+        <li>
+          Click the <strong>The Stand: Extract LCR</strong> bookmark in your bookmarks bar.
+        </li>
+        <li>
+          Return here, click <strong>Paste text</strong>, and paste the clipboard contents into the box.
+        </li>
       </ol>
 
       <div className="pt-1 flex items-center gap-2 flex-wrap">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="text-xs h-7"
-          onClick={copyScript}
-        >
+        <Button type="button" variant="outline" size="sm" className="text-xs h-7" onClick={copyScript}>
           {copiedScript ? 'Copied Console Code!' : 'Copy Console Snippet (Alternative)'}
         </Button>
         <span className="text-[11px] text-muted-foreground">
           (If bookmarklets are blocked in your browser, paste this into DevTools Console)
         </span>
         {copyError && (
-          <span className="text-[11px] text-destructive">
-            Clipboard unavailable — open DevTools Console and paste manually.
-          </span>
+          <span className="text-[11px] text-destructive">Clipboard unavailable — open DevTools Console and paste manually.</span>
         )}
       </div>
     </div>

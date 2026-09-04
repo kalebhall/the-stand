@@ -8,8 +8,6 @@ describe('requireWardContext', () => {
   });
 
   it('throws when ward id is empty', () => {
-    expect(() => requireWardContext('   ')).toThrowError(
-      'Ward context is required before executing ward-scoped queries.'
-    );
+    expect(() => requireWardContext('   ')).toThrowError('Ward context is required before executing ward-scoped queries.');
   });
 });

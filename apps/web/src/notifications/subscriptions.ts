@@ -69,10 +69,7 @@ function buildDefaultRows(): Array<{
   });
 }
 
-export async function ensureDefaultNotificationSubscriptions(
-  client: DbClient,
-  params: { wardId: string; userId: string }
-): Promise<void> {
+export async function ensureDefaultNotificationSubscriptions(client: DbClient, params: { wardId: string; userId: string }): Promise<void> {
   const defaults = buildDefaultRows();
   const values: unknown[] = [params.wardId, params.userId];
   const rows = defaults.map((row, index) => {
@@ -120,9 +117,9 @@ export async function getNotificationSubscriptions(
     preference.channels[row.channel] = row.enabled;
   }
 
-  return NOTIFICATION_EVENT_TYPES
-    .map((eventType) => preferences.get(eventType))
-    .filter((preference): preference is NotificationSubscriptionPreference => preference !== undefined);
+  return NOTIFICATION_EVENT_TYPES.map((eventType) => preferences.get(eventType)).filter(
+    (preference): preference is NotificationSubscriptionPreference => preference !== undefined
+  );
 }
 
 export async function updateNotificationSubscriptions(

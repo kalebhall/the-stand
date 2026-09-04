@@ -46,10 +46,13 @@ describe('POST /api/public/access-requests', () => {
 
     expect(response.status).toBe(201);
     expect(await response.json()).toEqual({ success: true });
-    expect(poolQuery).toHaveBeenCalledWith(
-      expect.stringContaining('INSERT INTO access_request'),
-      ['Test User', 'test@example.com', 'Example Stake', 'Example Ward', 'Please grant access']
-    );
+    expect(poolQuery).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO access_request'), [
+      'Test User',
+      'test@example.com',
+      'Example Stake',
+      'Example Ward',
+      'Please grant access'
+    ]);
   });
 
   it('accepts honeypot submissions but does not store', async () => {

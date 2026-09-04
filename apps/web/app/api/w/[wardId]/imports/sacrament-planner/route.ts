@@ -60,10 +60,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
   try {
     await client.query('BEGIN');
     await setDbContext(client, { userId: session.user.id, wardId });
-    const members = await client.query(
-      'SELECT id, full_name FROM member WHERE ward_id = $1::uuid ORDER BY full_name',
-      [wardId]
-    );
+    const members = await client.query('SELECT id, full_name FROM member WHERE ward_id = $1::uuid ORDER BY full_name', [wardId]);
     const memberMap = new Map<string, { id: string; fullName: string }[]>();
     for (const member of members.rows) {
       const key = normalizeHistoricalName(member.full_name);
@@ -77,7 +74,14 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     const normalizedMeetings = meetings.map((meeting) => ({
       ...meeting,
       programItems: meeting.programItems.map((item) => {
-        if (!item.title || item.itemType === 'OPENING_HYMN' || item.itemType === 'SACRAMENT_HYMN' || item.itemType === 'CLOSING_HYMN' || item.itemType === 'SPECIAL_HYMN') return item;
+        if (
+          !item.title ||
+          item.itemType === 'OPENING_HYMN' ||
+          item.itemType === 'SACRAMENT_HYMN' ||
+          item.itemType === 'CLOSING_HYMN' ||
+          item.itemType === 'SPECIAL_HYMN'
+        )
+          return item;
         const matches = memberMap.get(normalizeHistoricalName(item.title)) ?? [];
         if (matches.length === 1) return { ...item, title: matches[0].fullName };
         if (matches.length !== 1) unmatched.add(item.title);
@@ -86,7 +90,10 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     }));
 
     for (const meeting of normalizedMeetings) {
-      const existing = await client.query('SELECT id FROM meeting WHERE ward_id = $1::uuid AND meeting_date = $2::date LIMIT 1', [wardId, meeting.meetingDate]);
+      const existing = await client.query('SELECT id FROM meeting WHERE ward_id = $1::uuid AND meeting_date = $2::date LIMIT 1', [
+        wardId,
+        meeting.meetingDate
+      ]);
       if (existing.rowCount) {
         skippedExisting += 1;
         continue;
@@ -102,7 +109,16 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
             `INSERT INTO meeting_program_item
               (ward_id, meeting_id, sequence, item_type, title, topic, hymn_number, hymn_title)
              VALUES ($1::uuid, $2::uuid, $3::int, $4::text, NULLIF($5::text, ''), NULLIF($6::text, ''), NULLIF($7::text, ''), NULLIF($8::text, ''))`,
-            [wardId, inserted.rows[0].id, index + 1, item.itemType, item.title, item.topic ?? '', item.hymnNumber ?? '', item.hymnTitle ?? '']
+            [
+              wardId,
+              inserted.rows[0].id,
+              index + 1,
+              item.itemType,
+              item.title,
+              item.topic ?? '',
+              item.hymnNumber ?? '',
+              item.hymnTitle ?? ''
+            ]
           );
           importedItems += 1;
         }
@@ -130,7 +146,11 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
       await client.query(
         `INSERT INTO audit_log (ward_id, user_id, action, details)
          VALUES ($1::uuid, $2::uuid, 'HISTORICAL_MEETINGS_IMPORTED', $3::jsonb)`,
-        [wardId, session.user.id, JSON.stringify({ meetingCount: importedMeetings, itemCount: importedItems, skippedExisting, unmatchedCount: unmatched.size })]
+        [
+          wardId,
+          session.user.id,
+          JSON.stringify({ meetingCount: importedMeetings, itemCount: importedItems, skippedExisting, unmatchedCount: unmatched.size })
+        ]
       );
       await client.query('COMMIT');
     } else {

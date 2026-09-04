@@ -65,8 +65,13 @@ export function formatDigestNotificationEmail(args: {
 }): NotificationEmailMessage {
   const digestLabel = args.frequency === 'DAILY' ? 'daily' : 'weekly';
   const subject = `The Stand ${digestLabel} digest (${args.items.length} ${args.items.length === 1 ? 'update' : 'updates'})`;
-  const lines = args.items.map((item, index) => `${index + 1}. ${item.title}\n${item.summary}\nOpen in The Stand: ${getSafeTargetUrl(item.targetUrl)}`);
-  const htmlItems = args.items.map((item) => `<li><p><strong>${escapeHtml(item.title)}</strong></p><p>${escapeHtml(item.summary)}</p><p><a href="${escapeHtml(getSafeTargetUrl(item.targetUrl))}">Open in The Stand</a></p></li>`);
+  const lines = args.items.map(
+    (item, index) => `${index + 1}. ${item.title}\n${item.summary}\nOpen in The Stand: ${getSafeTargetUrl(item.targetUrl)}`
+  );
+  const htmlItems = args.items.map(
+    (item) =>
+      `<li><p><strong>${escapeHtml(item.title)}</strong></p><p>${escapeHtml(item.summary)}</p><p><a href="${escapeHtml(getSafeTargetUrl(item.targetUrl))}">Open in The Stand</a></p></li>`
+  );
 
   return {
     to: args.recipientEmail.trim(),

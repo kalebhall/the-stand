@@ -19,17 +19,14 @@ export function CallingAutocomplete({
   placeholder,
   className,
   required,
-  name,
+  name
 }: CallingAutocompleteProps) {
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const containerRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
 
-  const filtered =
-    value.trim() === ''
-      ? standardCallings
-      : standardCallings.filter((c) => c.toLowerCase().includes(value.toLowerCase()));
+  const filtered = value.trim() === '' ? standardCallings : standardCallings.filter((c) => c.toLowerCase().includes(value.toLowerCase()));
 
   function handleFocus() {
     setOpen(true);
@@ -104,9 +101,7 @@ export function CallingAutocomplete({
               role="option"
               aria-selected={index === activeIndex}
               className={`cursor-pointer px-3 py-2 ${
-                index === activeIndex
-                  ? 'bg-accent text-accent-foreground'
-                  : 'hover:bg-accent hover:text-accent-foreground'
+                index === activeIndex ? 'bg-accent text-accent-foreground' : 'hover:bg-accent hover:text-accent-foreground'
               }`}
               onMouseDown={(e) => {
                 e.preventDefault();

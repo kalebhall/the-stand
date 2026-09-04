@@ -1,7 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { authMock, canViewMeetingsMock, setDbContextMock, listMock, countMock, queryMock, releaseMock, connectMock } = vi.hoisted(() => ({
-  authMock: vi.fn(), canViewMeetingsMock: vi.fn(), setDbContextMock: vi.fn(), listMock: vi.fn(), countMock: vi.fn(), queryMock: vi.fn(), releaseMock: vi.fn(), connectMock: vi.fn()
+  authMock: vi.fn(),
+  canViewMeetingsMock: vi.fn(),
+  setDbContextMock: vi.fn(),
+  listMock: vi.fn(),
+  countMock: vi.fn(),
+  queryMock: vi.fn(),
+  releaseMock: vi.fn(),
+  connectMock: vi.fn()
 }));
 
 vi.mock('@/src/auth/auth', () => ({ auth: authMock }));
@@ -45,7 +52,13 @@ describe('notification list route', () => {
     const response = await GET(new Request('http://localhost/api?filter=unread&category=MEETINGS&limit=25'), context);
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ notifications: [{ id: 'notification-1' }], unreadCount: 1 });
-    expect(listMock).toHaveBeenCalledWith(expect.anything(), { wardId, recipientUserId: userId, filter: 'unread', category: 'MEETINGS', limit: 25 });
+    expect(listMock).toHaveBeenCalledWith(expect.anything(), {
+      wardId,
+      recipientUserId: userId,
+      filter: 'unread',
+      category: 'MEETINGS',
+      limit: 25
+    });
     expect(countMock).toHaveBeenCalledWith(expect.anything(), { wardId, recipientUserId: userId });
     expect(queryMock).toHaveBeenLastCalledWith('COMMIT');
   });

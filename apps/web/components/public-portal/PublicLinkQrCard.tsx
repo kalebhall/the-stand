@@ -13,13 +13,7 @@ interface PublicLinkQrCardProps {
   createdDateText?: string;
 }
 
-export function PublicLinkQrCard({
-  wardName,
-  title = 'Digital Program',
-  url,
-  label,
-  createdDateText
-}: PublicLinkQrCardProps) {
+export function PublicLinkQrCard({ wardName, title = 'Digital Program', url, label, createdDateText }: PublicLinkQrCardProps) {
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
@@ -80,20 +74,13 @@ export function PublicLinkQrCard({
           <Button type="button" variant="outline" size="sm" onClick={() => setShowQr((prev) => !prev)}>
             {showQr ? 'Hide QR' : 'Show QR'}
           </Button>
-          <Button
-            type="button"
-            size="sm"
-            onClick={handleDownloadPdf}
-            disabled={isGeneratingPdf}
-          >
+          <Button type="button" size="sm" onClick={handleDownloadPdf} disabled={isGeneratingPdf}>
             {isGeneratingPdf ? 'Generating PDF...' : 'Download PDF Poster'}
           </Button>
         </div>
       </div>
 
-      {createdDateText ? (
-        <p className="text-xs text-muted-foreground">{createdDateText}</p>
-      ) : null}
+      {createdDateText ? <p className="text-xs text-muted-foreground">{createdDateText}</p> : null}
 
       {showQr && qrDataUrl ? (
         <div className="flex flex-col items-center justify-center rounded-md border bg-background p-4 sm:p-6">
@@ -106,9 +93,7 @@ export function PublicLinkQrCard({
             alt={`QR code for ${title}`}
             className="my-3 h-48 w-48 rounded border bg-white p-2 shadow-sm sm:h-56 sm:w-56"
           />
-          <p className="text-center text-xs text-muted-foreground">
-            Scan with your phone&apos;s camera to open the digital program.
-          </p>
+          <p className="text-center text-xs text-muted-foreground">Scan with your phone&apos;s camera to open the digital program.</p>
         </div>
       ) : null}
     </div>

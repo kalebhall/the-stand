@@ -7,7 +7,10 @@ import { ReportHub } from '@/components/reports/report-view';
 export default async function ReportsPage() {
   const session = await requireAuthenticatedSession();
   enforcePasswordRotation(session);
-  if (!session.activeWardId || !canUseInternalNotes({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId)) {
+  if (
+    !session.activeWardId ||
+    !canUseInternalNotes({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId)
+  ) {
     redirect('/dashboard');
   }
 

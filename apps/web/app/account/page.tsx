@@ -36,9 +36,7 @@ export default async function AccountPage() {
           <div className="flex justify-between py-1">
             <span className="text-muted-foreground">Assigned Roles</span>
             <span className="font-medium">
-              {session.user.roles && session.user.roles.length > 0
-                ? session.user.roles.join(', ')
-                : 'None'}
+              {session.user.roles && session.user.roles.length > 0 ? session.user.roles.join(', ') : 'None'}
             </span>
           </div>
         </div>
@@ -47,10 +45,7 @@ export default async function AccountPage() {
       <section className="space-y-4 rounded-lg border bg-card p-5 text-card-foreground shadow-sm">
         <div className="flex items-center justify-between border-b pb-2">
           <h2 className="text-lg font-medium">Appearance & Preferences</h2>
-          <Link
-            href="/settings"
-            className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }))}
-          >
+          <Link href="/settings" className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }))}>
             Edit Settings &rarr;
           </Link>
         </div>

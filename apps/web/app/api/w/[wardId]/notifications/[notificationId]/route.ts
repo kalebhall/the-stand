@@ -34,9 +34,10 @@ export async function PATCH(request: Request, context: { params: Promise<{ wardI
   try {
     await client.query('BEGIN');
     await setDbContext(client, { userId: session.user.id, wardId });
-    const changed = parsed.data.action === 'read'
-      ? await markUserNotificationRead(client, { wardId, recipientUserId: session.user.id, notificationId })
-      : await dismissUserNotification(client, { wardId, recipientUserId: session.user.id, notificationId });
+    const changed =
+      parsed.data.action === 'read'
+        ? await markUserNotificationRead(client, { wardId, recipientUserId: session.user.id, notificationId })
+        : await dismissUserNotification(client, { wardId, recipientUserId: session.user.id, notificationId });
     await client.query('COMMIT');
     if (!changed) {
       return NextResponse.json({ error: 'Notification not found', code: 'NOT_FOUND' }, { status: 404 });

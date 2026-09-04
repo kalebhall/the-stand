@@ -9,10 +9,7 @@ type UnitType = (typeof VALID_UNIT_TYPES)[number];
 
 function canManageStandardCallings(roles: string[] | undefined): boolean {
   return (
-    hasRole(roles, 'SUPPORT_ADMIN') ||
-    hasRole(roles, 'STAND_ADMIN') ||
-    hasRole(roles, 'BISHOPRIC_EDITOR') ||
-    hasRole(roles, 'CLERK_EDITOR')
+    hasRole(roles, 'SUPPORT_ADMIN') || hasRole(roles, 'STAND_ADMIN') || hasRole(roles, 'BISHOPRIC_EDITOR') || hasRole(roles, 'CLERK_EDITOR')
   );
 }
 

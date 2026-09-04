@@ -19,18 +19,9 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
     <html lang="en" suppressHydrationWarning>
       <body className="min-h-screen bg-background text-foreground antialiased">
         <AuthSessionProvider session={session}>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
             <ConductingModeProvider>
-              {shouldShowNavigation ? (
-                <AppShell session={session}>{children}</AppShell>
-              ) : (
-                children
-              )}
+              {shouldShowNavigation ? <AppShell session={session}>{children}</AppShell> : children}
             </ConductingModeProvider>
           </ThemeProvider>
         </AuthSessionProvider>

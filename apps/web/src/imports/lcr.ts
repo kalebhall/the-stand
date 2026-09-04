@@ -177,19 +177,16 @@ export function formatLaunchErrorForTest(error: unknown): string {
   return formatLaunchError(error);
 }
 
-async function scrapeFirstTable(page: {
-  waitForSelector: (selector: string, options?: { timeout?: number }) => Promise<unknown>;
-  evaluate: <T>(pageFunction: () => T) => Promise<T>;
-  url: () => string;
-  title: () => Promise<string>;
-}, sourceLabel: 'members' | 'callings'): Promise<ScrapedTable> {
-  const candidateSelectors = [
-    'table',
-    '[role="table"]',
-    '[role="grid"]',
-    '[data-testid*="table" i]',
-    '[class*="table" i]'
-  ];
+async function scrapeFirstTable(
+  page: {
+    waitForSelector: (selector: string, options?: { timeout?: number }) => Promise<unknown>;
+    evaluate: <T>(pageFunction: () => T) => Promise<T>;
+    url: () => string;
+    title: () => Promise<string>;
+  },
+  sourceLabel: 'members' | 'callings'
+): Promise<ScrapedTable> {
+  const candidateSelectors = ['table', '[role="table"]', '[role="grid"]', '[data-testid*="table" i]', '[class*="table" i]'];
 
   let found = false;
   for (const selector of candidateSelectors) {
@@ -227,7 +224,9 @@ async function scrapeFirstTable(page: {
     const grid = (document.querySelector('[role="grid"]') ?? document.querySelector('[role="table"]')) as HTMLElement | null;
     if (grid) {
       const headerCells = Array.from(grid.querySelectorAll('[role="columnheader"]'));
-      const dataRows = Array.from(grid.querySelectorAll('[role="row"]')).filter((row) => row.querySelector('[role="gridcell"], [role="cell"]'));
+      const dataRows = Array.from(grid.querySelectorAll('[role="row"]')).filter((row) =>
+        row.querySelector('[role="gridcell"], [role="cell"]')
+      );
 
       const headers = headerCells.map((cell) => normalize(cell.textContent));
       const rows = dataRows.map((row) =>
@@ -249,7 +248,6 @@ async function scrapeFirstTable(page: {
 
   return extracted;
 }
-
 
 type LocatorLike = {
   waitFor: (options: { state: 'visible'; timeout: number }) => Promise<void>;
@@ -280,7 +278,10 @@ async function findFirstVisibleLocator(page: PageLike, selectors: string[], time
     for (const context of contexts) {
       for (const selector of selectors) {
         const locator = context.locator(selector).first();
-        const visible = await locator.waitFor({ state: 'visible', timeout: 250 }).then(() => true).catch(() => false);
+        const visible = await locator
+          .waitFor({ state: 'visible', timeout: 250 })
+          .then(() => true)
+          .catch(() => false);
         if (visible) {
           return locator;
         }
@@ -315,7 +316,6 @@ async function clickAccountChooserIfPresent(page: PageLike): Promise<void> {
     5_000
   );
 }
-
 
 async function completeChurchAuthIfPrompted(page: PageLike, credentials: LcrImportCredentials): Promise<boolean> {
   let acted = false;
@@ -422,10 +422,7 @@ export async function importFromLcr(credentials: LcrImportCredentials): Promise<
       // → LCR sets session cookie → redirects to LCR root.
       // Using a fixed 1 s wait caused the next goto() to interrupt the callback
       // before the session cookie was set, sending the browser back to Okta.
-      await page.waitForURL(
-        (url) => !url.hostname.includes('id.churchofjesuschrist.org'),
-        { timeout: 30_000 }
-      ).catch(() => {});
+      await page.waitForURL((url) => !url.hostname.includes('id.churchofjesuschrist.org'), { timeout: 30_000 }).catch(() => {});
       // Wait for any remaining network activity (callback → cookie → redirect).
       await page.waitForLoadState('networkidle', { timeout: 15_000 }).catch(() => {});
     }
@@ -435,17 +432,16 @@ export async function importFromLcr(credentials: LcrImportCredentials): Promise<
     if (/id\.churchofjesuschrist\.org/.test(page.url())) {
       await completeChurchAuthIfPrompted(page, credentials);
       // Same URL-based wait for the retry path.
-      await page.waitForURL(
-        (url) => !url.hostname.includes('id.churchofjesuschrist.org'),
-        { timeout: 30_000 }
-      ).catch(() => {});
+      await page.waitForURL((url) => !url.hostname.includes('id.churchofjesuschrist.org'), { timeout: 30_000 }).catch(() => {});
       await page.waitForLoadState('networkidle', { timeout: 15_000 }).catch(() => {});
       await page.goto(MEMBER_LIST_URL, { waitUntil: 'domcontentloaded', timeout: 90_000 });
     }
 
     if (/id\.churchofjesuschrist\.org/.test(page.url())) {
       const currentTitle = await page.title().catch(() => 'unknown title');
-      throw new Error(`LCR authentication is incomplete; still on sign-in domain after retry (url: ${page.url()}, title: ${currentTitle}).`);
+      throw new Error(
+        `LCR authentication is incomplete; still on sign-in domain after retry (url: ${page.url()}, title: ${currentTitle}).`
+      );
     }
 
     const memberTable = await scrapeFirstTable(page, 'members');

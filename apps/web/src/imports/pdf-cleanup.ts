@@ -10,7 +10,12 @@ export function isHeaderOrFooterLine(line: string): boolean {
   if (/^(birth\s*date|phone\s*number|e[\s-]*mail|set\s*apart)$/i.test(normalized)) return true;
 
   // Multi-column header combinations
-  if (/^(gender\s+age|age\s+birth|birth\s+date\s+phone|phone\s+e[\s-]*mail|organization\s+calling|calling\s+sustained|sustained\s+set\s+apart)$/i.test(normalized)) return true;
+  if (
+    /^(gender\s+age|age\s+birth|birth\s+date\s+phone|phone\s+e[\s-]*mail|organization\s+calling|calling\s+sustained|sustained\s+set\s+apart)$/i.test(
+      normalized
+    )
+  )
+    return true;
   if (/^name\s+gender\s+age/i.test(normalized)) return true;
 
   // Report titles
@@ -30,7 +35,8 @@ export function isHeaderOrFooterLine(line: string): boolean {
   // NOTE: short-form dates like "9 Mar 2025" are NOT matched here because they
   // also appear as standalone sustained-date lines within the data. The callers
   // use looksLikeSustainedDateLine() to handle those correctly.
-  if (/^(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{1,2},\s+\d{4}$/i.test(normalized)) return true;
+  if (/^(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{1,2},\s+\d{4}$/i.test(normalized))
+    return true;
 
   // Page numbers and markers — BUG-FIX: only match 1-2 digit numbers as page
   // numbers; 3-digit numbers (e.g. 100+ page PDFs are unlikely for ward lists)
@@ -42,7 +48,7 @@ export function isHeaderOrFooterLine(line: string): boolean {
   //
   // Callers that need to distinguish ages from page numbers use looksLikeAgeLine()
   // which additionally bounds the value to 1–120.
-  if (/^\d$/.test(normalized)) return true;  // single digit page numbers (p. 1–9)
+  if (/^\d$/.test(normalized)) return true; // single digit page numbers (p. 1–9)
   if (/^\.{3,}$/.test(normalized)) return true;
   if (/^page\s+\d+/i.test(normalized)) return true;
 

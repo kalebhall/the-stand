@@ -1,16 +1,7 @@
 export type AuditSource = 'manual_ui' | 'lcr_import' | 'bulk_sync' | 'api';
 export type AuditSeverity = 'info' | 'notice' | 'security';
 export type AuditEntityType =
-  | 'calling'
-  | 'program_item'
-  | 'meeting'
-  | 'member'
-  | 'announcement'
-  | 'ward_setting'
-  | 'user'
-  | 'support_grant'
-  | 'import'
-  | string;
+  'calling' | 'program_item' | 'meeting' | 'member' | 'announcement' | 'ward_setting' | 'user' | 'support_grant' | 'import' | string;
 
 export type AuditEventParams = {
   wardId?: string | null;
@@ -100,10 +91,7 @@ export function buildFieldDiff(
   const diff: Record<string, { old: unknown; new: unknown }> = {};
   const ignored = new Set(ignoredKeys.map((k) => k.toLowerCase()));
 
-  const allKeys = new Set([
-    ...Object.keys(oldRecord || {}),
-    ...Object.keys(newRecord || {})
-  ]);
+  const allKeys = new Set([...Object.keys(oldRecord || {}), ...Object.keys(newRecord || {})]);
 
   for (const key of allKeys) {
     if (ignored.has(key.toLowerCase())) continue;

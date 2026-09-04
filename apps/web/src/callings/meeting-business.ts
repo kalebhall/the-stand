@@ -88,10 +88,7 @@ export async function queueCallingBusinessLine(
       const existing = existingResult.rows[0] as { id: string; meeting_type?: string };
       if (isConferenceMeetingType(existing.meeting_type ?? '')) {
         // The only existing meeting on that Sunday is a conference — advance one more week.
-        const nextNextSundayResult = await client.query(
-          `SELECT ($1::date + 7)::text AS next_sunday`,
-          [nextSunday]
-        );
+        const nextNextSundayResult = await client.query(`SELECT ($1::date + 7)::text AS next_sunday`, [nextSunday]);
         const nextNextSunday = (nextNextSundayResult.rows[0] as { next_sunday: string }).next_sunday;
         const insertedMeeting = await client.query(
           `INSERT INTO meeting (ward_id, meeting_date, meeting_type, status)
@@ -179,10 +176,9 @@ export async function migrateBusinessLinesOffConference(
   if (!nextMeetingResult.rowCount) {
     // No eligible meeting after the conference — create one for the next Sunday
     // after the conference date.
-    const nextSundayResult = await client.query(
-      `SELECT ($1::date + (7 - EXTRACT(DOW FROM $1::date)::int) % 7 + 7)::text AS next_sunday`,
-      [newMeetingDate]
-    );
+    const nextSundayResult = await client.query(`SELECT ($1::date + (7 - EXTRACT(DOW FROM $1::date)::int) % 7 + 7)::text AS next_sunday`, [
+      newMeetingDate
+    ]);
 
     const nextSunday = (nextSundayResult.rows[0] as { next_sunday: string }).next_sunday;
 
@@ -198,10 +194,7 @@ export async function migrateBusinessLinesOffConference(
       const existing = existingResult.rows[0] as { id: string; meeting_type: string };
       if (isConferenceMeetingType(existing.meeting_type)) {
         // That Sunday is also a conference — go one more week.
-        const nextNextSundayResult = await client.query(
-          `SELECT ($1::date + 7)::text AS next_sunday`,
-          [nextSunday]
-        );
+        const nextNextSundayResult = await client.query(`SELECT ($1::date + 7)::text AS next_sunday`, [nextSunday]);
         const nextNextSunday = (nextNextSundayResult.rows[0] as { next_sunday: string }).next_sunday;
         const inserted = await client.query(
           `INSERT INTO meeting (ward_id, meeting_date, meeting_type, status)

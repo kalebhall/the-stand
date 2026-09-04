@@ -171,9 +171,7 @@ export default async function CallingsPage() {
   // Fetch standard callings from DB for autocomplete, fall back to hardcoded list
   let standardCallings: string[] = STANDARD_CALLINGS;
   try {
-    const scResult = await pool.query(
-      `SELECT name FROM standard_calling WHERE is_active = true ORDER BY unit_type, sort_order, name`
-    );
+    const scResult = await pool.query(`SELECT name FROM standard_calling WHERE is_active = true ORDER BY unit_type, sort_order, name`);
     if (scResult.rowCount && scResult.rowCount > 0) {
       standardCallings = scResult.rows.map((r) => r.name as string);
     }
@@ -239,9 +237,7 @@ export default async function CallingsPage() {
     const proposedCallings = allCallings.filter((c) => c.status === 'PROPOSED');
     const extendedCallings = allCallings.filter((c) => c.status === 'EXTENDED');
     const toBeReleasedCallings = allCallings.filter((c) => c.status === 'TO_BE_RELEASED');
-    const activeCallings = allCallings.filter(
-      (c) => c.status !== 'PROPOSED' && c.status !== 'EXTENDED' && c.status !== 'TO_BE_RELEASED'
-    );
+    const activeCallings = allCallings.filter((c) => c.status !== 'PROPOSED' && c.status !== 'EXTENDED' && c.status !== 'TO_BE_RELEASED');
 
     function CallingRow({ calling, showRelease = true }: { calling: CallingQueueRow; showRelease?: boolean }) {
       const transition = canManage ? nextTransition(calling.status) : null;
@@ -254,14 +250,14 @@ export default async function CallingsPage() {
             </span>
           </span>
           <div className="flex items-center gap-2">
-            <span className="rounded-full border px-2 py-0.5 text-xs font-medium">
-              {STATUS_LABELS[calling.status] ?? calling.status}
-            </span>
+            <span className="rounded-full border px-2 py-0.5 text-xs font-medium">{STATUS_LABELS[calling.status] ?? calling.status}</span>
             {transition ? (
               <form action={transitionCalling}>
                 <input type="hidden" name="callingId" value={calling.id} />
                 <input type="hidden" name="toStatus" value={transition.toStatus} />
-                <Button type="submit" size="sm" variant="outline">{transition.label}</Button>
+                <Button type="submit" size="sm" variant="outline">
+                  {transition.label}
+                </Button>
               </form>
             ) : null}
             {canManage && calling.status !== 'ASSIGNED' && calling.status !== 'SET_APART' && calling.status !== 'TO_BE_RELEASED' ? (
@@ -318,7 +314,8 @@ export default async function CallingsPage() {
           <section className="section-panel section-panel--service rounded-lg border bg-card p-4">
             <h2 className="text-lg font-semibold">Add Calling</h2>
             <p className="mb-3 text-sm text-muted-foreground">
-              Select from standard callings or type a custom calling name. Use Assignment only for responsibilities that do not require propose, sustain, or set apart workflow.
+              Select from standard callings or type a custom calling name. Use Assignment only for responsibilities that do not require
+              propose, sustain, or set apart workflow.
             </p>
             <AddCallingSection wardId={wardId} standardCallings={standardCallings} />
           </section>
@@ -342,7 +339,9 @@ export default async function CallingsPage() {
         {/* Extended section */}
         <section className="section-panel section-panel--service rounded-lg border bg-card p-4">
           <h2 className="text-lg font-semibold">Extended</h2>
-          <p className="mb-3 text-sm text-muted-foreground">Callings that have been extended — will appear on sacrament meeting ward business for sustaining.</p>
+          <p className="mb-3 text-sm text-muted-foreground">
+            Callings that have been extended — will appear on sacrament meeting ward business for sustaining.
+          </p>
           {extendedCallings.length ? (
             <ul className="space-y-2">
               {extendedCallings.map((calling) => (
@@ -357,7 +356,9 @@ export default async function CallingsPage() {
         {/* To Be Released section */}
         <section className="section-panel section-panel--service rounded-lg border bg-card p-4">
           <h2 className="text-lg font-semibold">To Be Released</h2>
-          <p className="mb-3 text-sm text-muted-foreground">Callings queued for release — will appear on sacrament meeting ward business. Delete permanently removes the record.</p>
+          <p className="mb-3 text-sm text-muted-foreground">
+            Callings queued for release — will appear on sacrament meeting ward business. Delete permanently removes the record.
+          </p>
           {toBeReleasedCallings.length ? (
             <ul className="space-y-2">
               {toBeReleasedCallings.map((calling) => (
@@ -387,7 +388,9 @@ export default async function CallingsPage() {
                     <form action={transitionCalling}>
                       <input type="hidden" name="callingId" value={item.id} />
                       <input type="hidden" name="toStatus" value="SET_APART" />
-                      <Button type="submit" size="sm" variant="outline">Mark Set Apart</Button>
+                      <Button type="submit" size="sm" variant="outline">
+                        Mark Set Apart
+                      </Button>
                     </form>
                   ) : null}
                 </li>

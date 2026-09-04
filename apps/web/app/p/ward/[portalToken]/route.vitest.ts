@@ -44,7 +44,11 @@ describe('GET /p/ward/[portalToken]', () => {
   });
 
   it('returns 404 when portal token does not exist', async () => {
-    queryMock.mockResolvedValueOnce({}).mockResolvedValueOnce({}).mockResolvedValueOnce({ rowCount: 0, rows: [] }).mockResolvedValueOnce({});
+    queryMock
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({ rowCount: 0, rows: [] })
+      .mockResolvedValueOnce({});
 
     const response = await GET(new Request('http://localhost/p/ward/missing-portal'), {
       params: Promise.resolve({ portalToken: 'missing-portal' })

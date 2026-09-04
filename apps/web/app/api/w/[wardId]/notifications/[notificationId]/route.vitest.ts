@@ -1,7 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { authMock, canViewMeetingsMock, setDbContextMock, readMock, dismissMock, queryMock, releaseMock, connectMock } = vi.hoisted(() => ({
-  authMock: vi.fn(), canViewMeetingsMock: vi.fn(), setDbContextMock: vi.fn(), readMock: vi.fn(), dismissMock: vi.fn(), queryMock: vi.fn(), releaseMock: vi.fn(), connectMock: vi.fn()
+  authMock: vi.fn(),
+  canViewMeetingsMock: vi.fn(),
+  setDbContextMock: vi.fn(),
+  readMock: vi.fn(),
+  dismissMock: vi.fn(),
+  queryMock: vi.fn(),
+  releaseMock: vi.fn(),
+  connectMock: vi.fn()
 }));
 
 vi.mock('@/src/auth/auth', () => ({ auth: authMock }));

@@ -80,9 +80,7 @@ export async function GET(request: NextRequest) {
   const dateTo = searchParams.get('dateTo')?.trim() || null;
 
   const sortParam = searchParams.get('sort')?.trim() || 'created_at';
-  const sortColumn: SortColumn = VALID_SORT_COLUMNS.includes(sortParam as SortColumn)
-    ? (sortParam as SortColumn)
-    : 'created_at';
+  const sortColumn: SortColumn = VALID_SORT_COLUMNS.includes(sortParam as SortColumn) ? (sortParam as SortColumn) : 'created_at';
   const sortDir = searchParams.get('dir')?.trim().toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
 
   const conditions: string[] = [];

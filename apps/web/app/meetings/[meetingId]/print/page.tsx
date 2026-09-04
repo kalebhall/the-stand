@@ -88,7 +88,9 @@ export default async function PrintMeetingPage({
       return (
         <>
           <main dangerouslySetInnerHTML={{ __html: publishedRender.render_html }} />
-          <p className="mx-auto max-w-3xl px-4 pb-8 text-right text-xs text-muted-foreground sm:px-8">Published version {publishedRender.version}</p>
+          <p className="mx-auto max-w-3xl px-4 pb-8 text-right text-xs text-muted-foreground sm:px-8">
+            Published version {publishedRender.version}
+          </p>
         </>
       );
     }
@@ -142,7 +144,9 @@ export default async function PrintMeetingPage({
       <>
         <main dangerouslySetInnerHTML={{ __html: renderHtml }} />
         {meeting.status === 'PUBLISHED' ? (
-          <p className="mx-auto max-w-3xl px-4 pb-8 text-right text-xs text-muted-foreground sm:px-8">Published snapshot unavailable; showing current draft layout.</p>
+          <p className="mx-auto max-w-3xl px-4 pb-8 text-right text-xs text-muted-foreground sm:px-8">
+            Published snapshot unavailable; showing current draft layout.
+          </p>
         ) : null}
       </>
     );

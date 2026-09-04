@@ -1,6 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { authMock, canManageCallingsMock, canViewCallingsMock, setDbContextMock, connectMock, releaseMock, queryMock, loggerErrorMock, enqueueMock } = vi.hoisted(() => ({
+const {
+  authMock,
+  canManageCallingsMock,
+  canViewCallingsMock,
+  setDbContextMock,
+  connectMock,
+  releaseMock,
+  queryMock,
+  loggerErrorMock,
+  enqueueMock
+} = vi.hoisted(() => ({
   authMock: vi.fn(),
   canManageCallingsMock: vi.fn(),
   canViewCallingsMock: vi.fn(),

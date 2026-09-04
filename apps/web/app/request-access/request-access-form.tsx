@@ -58,9 +58,7 @@ export function RequestAccessForm() {
     return (
       <div className="rounded-lg border bg-card p-6 text-card-foreground">
         <h2 className="text-xl font-semibold">Request received</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Thanks for your request. A Support Admin will review and follow up.
-        </p>
+        <p className="mt-2 text-sm text-muted-foreground">Thanks for your request. A Support Admin will review and follow up.</p>
       </div>
     );
   }

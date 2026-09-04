@@ -48,15 +48,30 @@ function SacramentPrayers({ compact, programNotes }: { compact: boolean; program
       <div className={cn('mt-3 space-y-4', compact ? 'text-sm sm:text-base' : 'text-base leading-relaxed sm:text-lg')}>
         <section>
           <h2 className="font-semibold">Bread prayer</h2>
-          <p className="mt-1">O God, the Eternal Father, we ask thee in the name of thy Son, Jesus Christ, to bless and sanctify this bread to the souls of all those who partake of it, that they may eat in remembrance of the body of thy Son, and witness unto thee, O God, the Eternal Father, that they are willing to take upon them the name of thy Son, and always remember him and keep his commandments which he has given them; that they may always have his Spirit to be with them. Amen.</p>
+          <p className="mt-1">
+            O God, the Eternal Father, we ask thee in the name of thy Son, Jesus Christ, to bless and sanctify this bread to the souls of
+            all those who partake of it, that they may eat in remembrance of the body of thy Son, and witness unto thee, O God, the Eternal
+            Father, that they are willing to take upon them the name of thy Son, and always remember him and keep his commandments which he
+            has given them; that they may always have his Spirit to be with them. Amen.
+          </p>
         </section>
         <section>
           <h2 className="font-semibold">Water prayer</h2>
-          <p className="mt-1">O God, the Eternal Father, we ask thee in the name of thy Son, Jesus Christ, to bless and sanctify this water to the souls of all those who drink of it, that they may do it in remembrance of the blood of thy Son, which was shed for them; that they may witness unto thee, O God, the Eternal Father, that they do always remember him, that they may have his Spirit to be with them. Amen.</p>
+          <p className="mt-1">
+            O God, the Eternal Father, we ask thee in the name of thy Son, Jesus Christ, to bless and sanctify this water to the souls of
+            all those who drink of it, that they may do it in remembrance of the blood of thy Son, which was shed for them; that they may
+            witness unto thee, O God, the Eternal Father, that they do always remember him, that they may have his Spirit to be with them.
+            Amen.
+          </p>
         </section>
       </div>
       {programNotes?.trim() ? <p className="mt-3 whitespace-pre-wrap text-sm text-muted-foreground">{programNotes}</p> : null}
-      <a className="mt-4 inline-block text-sm font-medium underline underline-offset-4" href={SACRAMENT_SCRIPTURE_URL} target="_blank" rel="noreferrer">
+      <a
+        className="mt-4 inline-block text-sm font-medium underline underline-offset-4"
+        href={SACRAMENT_SCRIPTURE_URL}
+        target="_blank"
+        rel="noreferrer"
+      >
         Doctrine and Covenants 20:77, 79
       </a>
     </article>
@@ -89,7 +104,10 @@ export default async function StandViewPage({
     await client.query('BEGIN');
     await setDbContext(client, { userId: session.user.id, wardId: session.activeWardId });
 
-    const meetingResult = await client.query('SELECT id, meeting_date FROM meeting WHERE id = $1 AND ward_id = $2 LIMIT 1', [meetingId, session.activeWardId]);
+    const meetingResult = await client.query('SELECT id, meeting_date FROM meeting WHERE id = $1 AND ward_id = $2 LIMIT 1', [
+      meetingId,
+      session.activeWardId
+    ]);
 
     if (!meetingResult.rowCount) {
       await client.query('ROLLBACK');
@@ -155,14 +173,16 @@ export default async function StandViewPage({
 
     await client.query('COMMIT');
 
-    const activeStandAnnouncements = (announcementResult.rows as Array<{
-      title: string;
-      body: string | null;
-      start_date: string | null;
-      end_date: string | null;
-      is_permanent: boolean;
-      include_in_stand: boolean;
-    }>)
+    const activeStandAnnouncements = (
+      announcementResult.rows as Array<{
+        title: string;
+        body: string | null;
+        start_date: string | null;
+        end_date: string | null;
+        is_permanent: boolean;
+        include_in_stand: boolean;
+      }>
+    )
       .filter((a) =>
         isAnnouncementActiveForDate(
           {
@@ -180,17 +200,25 @@ export default async function StandViewPage({
       }));
 
     const template = templateResult.rows[0] as TemplateRow | undefined;
-    const businessLines = (businessLinesResult.rows as Array<BusinessLine & {
-      first_name: string | null;
-      last_name: string | null;
-      gender: string | null;
-    }>).map((line) => ({
+    const businessLines = (
+      businessLinesResult.rows as Array<
+        BusinessLine & {
+          first_name: string | null;
+          last_name: string | null;
+          gender: string | null;
+        }
+      >
+    ).map((line) => ({
       ...line,
-      member_name: formatAtStandMemberName(line.member_name, {
-        firstName: line.first_name,
-        lastName: line.last_name,
-        gender: line.gender
-      }, line.calling_name)
+      member_name: formatAtStandMemberName(
+        line.member_name,
+        {
+          firstName: line.first_name,
+          lastName: line.last_name,
+          gender: line.gender
+        },
+        line.calling_name
+      )
     }));
     const membershipActions = membershipActionsResult.rows as MembershipOrdinanceAction[];
     const notes = notesResult.rows as Array<InternalNoteRow & { program_item_id: string }>;
@@ -266,7 +294,9 @@ export default async function StandViewPage({
                     <article key={`row-${index}`} className="rounded-lg border bg-card p-4 sm:p-5">
                       <p className="text-sm uppercase tracking-wide text-muted-foreground">{row.label}</p>
                       <p className="whitespace-pre-wrap text-lg font-medium sm:text-xl">{row.details}</p>
-                      {row.programNotes?.trim() ? <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">{row.programNotes}</p> : null}
+                      {row.programNotes?.trim() ? (
+                        <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">{row.programNotes}</p>
+                      ) : null}
                       {canUseNotes && row.programItemId ? (
                         <div className="mt-3">
                           <InternalNotesPanel
@@ -306,9 +336,15 @@ export default async function StandViewPage({
                 return (
                   <article key={`row-${index}`} className="rounded-lg border bg-card p-4 text-lg leading-relaxed sm:p-5 sm:text-xl">
                     {row.segments.map((segment, segmentIndex) =>
-                      segment.bold ? <strong key={`segment-${segmentIndex}`}>{segment.text}</strong> : <span key={`segment-${segmentIndex}`}>{segment.text}</span>
+                      segment.bold ? (
+                        <strong key={`segment-${segmentIndex}`}>{segment.text}</strong>
+                      ) : (
+                        <span key={`segment-${segmentIndex}`}>{segment.text}</span>
+                      )
                     )}
-                      {row.programNotes?.trim() ? <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">{row.programNotes}</p> : null}
+                    {row.programNotes?.trim() ? (
+                      <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">{row.programNotes}</p>
+                    ) : null}
                     {canUseNotes ? (
                       <div className="mt-3">
                         <InternalNotesPanel
@@ -336,7 +372,9 @@ export default async function StandViewPage({
                     <article key={`compact-${index}`} className="rounded-lg border bg-card p-4 sm:p-5">
                       <p className="text-sm uppercase tracking-wide text-muted-foreground">{row.label}</p>
                       <p className="whitespace-pre-wrap text-base font-medium sm:text-lg">{row.details}</p>
-                      {row.programNotes?.trim() ? <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">{row.programNotes}</p> : null}
+                      {row.programNotes?.trim() ? (
+                        <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">{row.programNotes}</p>
+                      ) : null}
                       {canUseNotes && row.programItemId ? (
                         <div className="mt-3">
                           <InternalNotesPanel
@@ -375,9 +413,13 @@ export default async function StandViewPage({
 
                 return (
                   <article key={`compact-${index}`} className="rounded-lg border bg-card p-4 sm:p-5">
-                    <p className="text-sm uppercase tracking-wide text-muted-foreground">{row.kind === 'sustain' ? 'Sustain' : 'Release'}</p>
+                    <p className="text-sm uppercase tracking-wide text-muted-foreground">
+                      {row.kind === 'sustain' ? 'Sustain' : 'Release'}
+                    </p>
                     <p className="text-base font-medium sm:text-lg">{row.summary}</p>
-                    {row.programNotes?.trim() ? <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">{row.programNotes}</p> : null}
+                    {row.programNotes?.trim() ? (
+                      <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">{row.programNotes}</p>
+                    ) : null}
                     {canUseNotes ? (
                       <div className="mt-3">
                         <InternalNotesPanel

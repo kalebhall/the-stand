@@ -14,6 +14,10 @@ describe('membership and ordinance stand templates', () => {
     expect(DEFAULT_STAND_BUSINESS_TEMPLATES.BABY_BLESSING).toContain('will take place after this meeting');
     expect(DEFAULT_STAND_BUSINESS_TEMPLATES.PRIESTHOOD_ORDINATION).toContain('It is proposed that');
     expect(DEFAULT_STAND_BUSINESS_TEMPLATES.PRIESTHOOD_ADVANCEMENT).toContain('It is proposed that');
-    expect(Object.values(DEFAULT_STAND_BUSINESS_TEMPLATES).every((template) => !template.includes('addresses Heavenly Father') && !template.includes('The ordinance is performed'))).toBe(true);
+    expect(
+      Object.values(DEFAULT_STAND_BUSINESS_TEMPLATES).every(
+        (template) => !template.includes('addresses Heavenly Father') && !template.includes('The ordinance is performed')
+      )
+    ).toBe(true);
   });
 });

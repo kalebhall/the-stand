@@ -67,14 +67,26 @@ async function runLcrImport(params: {
       `INSERT INTO import_run (ward_id, import_type, raw_text, parsed_count, committed, created_by_user_id)
        VALUES ($1, 'MEMBERSHIP', $2, $3, $4, $5)
        RETURNING id`,
-      [params.wardId, makeSafeImportSnapshot(imported.members.map(({ birthday: _birthday, ...member }) => member)), imported.members.length, params.commit, params.userId]
+      [
+        params.wardId,
+        makeSafeImportSnapshot(imported.members.map(({ birthday: _birthday, ...member }) => member)),
+        imported.members.length,
+        params.commit,
+        params.userId
+      ]
     );
 
     const callingsRun = await client.query(
       `INSERT INTO import_run (ward_id, import_type, raw_text, parsed_count, committed, created_by_user_id)
        VALUES ($1, 'CALLINGS', $2, $3, $4, $5)
        RETURNING id`,
-      [params.wardId, makeSafeImportSnapshot(imported.callings.map(({ birthday: _birthday, ...calling }) => calling)), imported.callings.length, params.commit, params.userId]
+      [
+        params.wardId,
+        makeSafeImportSnapshot(imported.callings.map(({ birthday: _birthday, ...calling }) => calling)),
+        imported.callings.length,
+        params.commit,
+        params.userId
+      ]
     );
 
     let memberInserted = 0;
@@ -98,7 +110,15 @@ async function runLcrImport(params: {
              gender = COALESCE(EXCLUDED.gender, member.gender),
              updated_at = now()
            RETURNING (xmax = 0) AS inserted`,
-          [params.wardId, parsed.fullName, parsed.email, parsed.phone, parsed.age, makeMemberIdentityKey({ fullName: parsed.fullName, birthday: parsed.birthday ?? '', secret: getMemberIdentitySecret() }), parsed.gender]
+          [
+            params.wardId,
+            parsed.fullName,
+            parsed.email,
+            parsed.phone,
+            parsed.age,
+            makeMemberIdentityKey({ fullName: parsed.fullName, birthday: parsed.birthday ?? '', secret: getMemberIdentitySecret() }),
+            parsed.gender
+          ]
         );
 
         if (upsertResult.rows[0]?.inserted) {
@@ -108,11 +128,11 @@ async function runLcrImport(params: {
         }
       }
 
-      const membersResult = await client.query(`SELECT id, identity_key FROM member WHERE ward_id = $1 AND archived_at IS NULL`, [params.wardId]);
+      const membersResult = await client.query(`SELECT id, identity_key FROM member WHERE ward_id = $1 AND archived_at IS NULL`, [
+        params.wardId
+      ]);
       const memberByKey = new Map<string, string>(
-        (membersResult.rows as MemberRow[])
-          .filter((row) => row.identity_key)
-          .map((row) => [row.identity_key as string, row.id] as const)
+        (membersResult.rows as MemberRow[]).filter((row) => row.identity_key).map((row) => [row.identity_key as string, row.id] as const)
       );
 
       const existingResult = await client.query(`SELECT id FROM calling_assignment WHERE ward_id = $1`, [params.wardId]);
@@ -120,7 +140,10 @@ async function runLcrImport(params: {
       await client.query('DELETE FROM calling_assignment WHERE ward_id = $1', [params.wardId]);
 
       for (const parsed of imported.callings) {
-        const memberId = memberByKey.get(makeMemberIdentityKey({ fullName: parsed.memberName, birthday: parsed.birthday, secret: getMemberIdentitySecret() }) ?? '') ?? null;
+        const memberId =
+          memberByKey.get(
+            makeMemberIdentityKey({ fullName: parsed.memberName, birthday: parsed.birthday, secret: getMemberIdentitySecret() }) ?? ''
+          ) ?? null;
         if (memberId) {
           matchedMembers += 1;
         } else {
@@ -130,15 +153,7 @@ async function runLcrImport(params: {
         await client.query(
           `INSERT INTO calling_assignment (ward_id, member_id, member_name, organization, calling_name, sustained_date, set_apart, is_active)
            VALUES ($1, $2, $3, $4, $5, $6, $7, TRUE)`,
-          [
-            params.wardId,
-            memberId,
-            parsed.memberName,
-            parsed.organization,
-            parsed.callingName,
-            parsed.sustainedDate,
-            parsed.setApart
-          ]
+          [params.wardId, memberId, parsed.memberName, parsed.organization, parsed.callingName, parsed.sustainedDate, parsed.setApart]
         );
         callingInserted += 1;
       }

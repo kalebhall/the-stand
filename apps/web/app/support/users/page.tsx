@@ -112,9 +112,7 @@ export default async function SupportUsersPage() {
           </Link>
         </div>
         <h1 className="text-2xl font-semibold tracking-tight">User Administration</h1>
-        <p className="text-muted-foreground">
-          Manage all user accounts, role assignments, and account status across the system.
-        </p>
+        <p className="text-muted-foreground">Manage all user accounts, role assignments, and account status across the system.</p>
       </section>
 
       <UserAdminManager

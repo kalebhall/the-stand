@@ -6,7 +6,10 @@ describe('calling transition persistence', () => {
   it('rejects invalid transitions without writing', async () => {
     const query = vi.fn();
     const result = await appendCallingStatus({ query } as never, {
-      wardId: 'ward-1', callingId: 'calling-1', fromStatus: 'PROPOSED', toStatus: 'SET_APART'
+      wardId: 'ward-1',
+      callingId: 'calling-1',
+      fromStatus: 'PROPOSED',
+      toStatus: 'SET_APART'
     });
 
     expect(result).toEqual({ ok: false, reason: 'INVALID_TRANSITION' });
@@ -16,18 +19,28 @@ describe('calling transition persistence', () => {
   it('records release transitions and deactivates calling', async () => {
     const query = vi.fn().mockResolvedValue({});
     const result = await appendCallingStatus({ query } as never, {
-      wardId: 'ward-1', callingId: 'calling-1', fromStatus: 'SUSTAINED', toStatus: 'TO_BE_RELEASED'
+      wardId: 'ward-1',
+      callingId: 'calling-1',
+      fromStatus: 'SUSTAINED',
+      toStatus: 'TO_BE_RELEASED'
     });
 
     expect(result).toEqual({ ok: true });
-    expect(query).toHaveBeenNthCalledWith(1, expect.stringContaining('INSERT INTO calling_action'), ['ward-1', 'calling-1', 'TO_BE_RELEASED']);
+    expect(query).toHaveBeenNthCalledWith(1, expect.stringContaining('INSERT INTO calling_action'), [
+      'ward-1',
+      'calling-1',
+      'TO_BE_RELEASED'
+    ]);
     expect(query).toHaveBeenNthCalledWith(2, expect.stringContaining('is_active = FALSE'), ['calling-1', 'ward-1']);
   });
 
   it('reactivates an assignment when status becomes assigned', async () => {
     const query = vi.fn().mockResolvedValue({});
     await appendCallingStatus({ query } as never, {
-      wardId: 'ward-1', callingId: 'calling-1', fromStatus: 'SET_APART', toStatus: 'ASSIGNED'
+      wardId: 'ward-1',
+      callingId: 'calling-1',
+      fromStatus: 'SET_APART',
+      toStatus: 'ASSIGNED'
     });
 
     expect(query).toHaveBeenNthCalledWith(2, expect.stringContaining('is_active = TRUE'), ['calling-1', 'ward-1']);

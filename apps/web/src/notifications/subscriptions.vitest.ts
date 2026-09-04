@@ -97,32 +97,40 @@ describe('notification subscriptions', () => {
   it('rejects empty, unknown, invalid, and duplicate updates before database writes', async () => {
     const client = createClient();
 
-    await expect(updateNotificationSubscriptions(client, {
-      wardId: 'ward-1',
-      userId: 'user-1',
-      updates: []
-    })).rejects.toThrow('At least one notification subscription update is required');
+    await expect(
+      updateNotificationSubscriptions(client, {
+        wardId: 'ward-1',
+        userId: 'user-1',
+        updates: []
+      })
+    ).rejects.toThrow('At least one notification subscription update is required');
 
-    await expect(updateNotificationSubscriptions(client, {
-      wardId: 'ward-1',
-      userId: 'user-1',
-      updates: [{ eventType: 'NOT_REAL' as never, channel: 'IN_APP', enabled: true }]
-    })).rejects.toThrow('Unknown notification event type');
+    await expect(
+      updateNotificationSubscriptions(client, {
+        wardId: 'ward-1',
+        userId: 'user-1',
+        updates: [{ eventType: 'NOT_REAL' as never, channel: 'IN_APP', enabled: true }]
+      })
+    ).rejects.toThrow('Unknown notification event type');
 
-    await expect(updateNotificationSubscriptions(client, {
-      wardId: 'ward-1',
-      userId: 'user-1',
-      updates: [{ eventType: 'MEETING_UPDATED', channel: 'SMS' as never, enabled: true }]
-    })).rejects.toThrow('Invalid notification channel');
+    await expect(
+      updateNotificationSubscriptions(client, {
+        wardId: 'ward-1',
+        userId: 'user-1',
+        updates: [{ eventType: 'MEETING_UPDATED', channel: 'SMS' as never, enabled: true }]
+      })
+    ).rejects.toThrow('Invalid notification channel');
 
-    await expect(updateNotificationSubscriptions(client, {
-      wardId: 'ward-1',
-      userId: 'user-1',
-      updates: [
-        { eventType: 'MEETING_UPDATED', channel: 'IN_APP', enabled: true },
-        { eventType: 'MEETING_UPDATED', channel: 'IN_APP', enabled: false }
-      ]
-    })).rejects.toThrow('Duplicate notification subscription update');
+    await expect(
+      updateNotificationSubscriptions(client, {
+        wardId: 'ward-1',
+        userId: 'user-1',
+        updates: [
+          { eventType: 'MEETING_UPDATED', channel: 'IN_APP', enabled: true },
+          { eventType: 'MEETING_UPDATED', channel: 'IN_APP', enabled: false }
+        ]
+      })
+    ).rejects.toThrow('Duplicate notification subscription update');
 
     expect(client.query).not.toHaveBeenCalled();
   });

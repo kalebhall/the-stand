@@ -36,8 +36,18 @@ const KNOWN_ORGANIZATIONS = [
 ];
 
 const MONTH_MAP: Record<string, string> = {
-  jan: '01', feb: '02', mar: '03', apr: '04', may: '05', jun: '06',
-  jul: '07', aug: '08', sep: '09', oct: '10', nov: '11', dec: '12'
+  jan: '01',
+  feb: '02',
+  mar: '03',
+  apr: '04',
+  may: '05',
+  jun: '06',
+  jul: '07',
+  aug: '08',
+  sep: '09',
+  oct: '10',
+  nov: '11',
+  dec: '12'
 };
 
 const MONTHS_ALT = 'Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec';
@@ -175,9 +185,7 @@ function stripTrailingSetApartToken(value: string): { value: string; setApart: b
   return { value: parts.join(' ').trim(), setApart: parsed };
 }
 
-function finalizeCallingFields(
-  raw: string
-): { callingName: string; sustainedDate: string | null; setApart: boolean } | null {
+function finalizeCallingFields(raw: string): { callingName: string; sustainedDate: string | null; setApart: boolean } | null {
   let callingText = normalizeWhitespace(raw);
   if (!callingText) return null;
 
@@ -204,21 +212,12 @@ function finalizeCallingFields(
   return { callingName: callingText, sustainedDate, setApart };
 }
 
-function parseBirthdayTokens(
-  tokens: string[],
-  startIndex: number
-): { birthday: string; nextIndex: number } | null {
+function parseBirthdayTokens(tokens: string[], startIndex: number): { birthday: string; nextIndex: number } | null {
   if (startIndex + 2 >= tokens.length) return null;
 
-  if (
-    /^\d{1,2}$/.test(tokens[startIndex]) &&
-    /^[A-Za-z]{3,}$/.test(tokens[startIndex + 1]) &&
-    /^\d{4}$/.test(tokens[startIndex + 2])
-  ) {
+  if (/^\d{1,2}$/.test(tokens[startIndex]) && /^[A-Za-z]{3,}$/.test(tokens[startIndex + 1]) && /^\d{4}$/.test(tokens[startIndex + 2])) {
     return {
-      birthday: normalizeBirthday(
-        `${tokens[startIndex]} ${tokens[startIndex + 1]} ${tokens[startIndex + 2]}`
-      ),
+      birthday: normalizeBirthday(`${tokens[startIndex]} ${tokens[startIndex + 1]} ${tokens[startIndex + 2]}`),
       nextIndex: startIndex + 3
     };
   }
@@ -246,10 +245,7 @@ function parseBirthdayTokens(
 
 // Capture: (name)(gender)(digit_blob) followed by (month) (year)(rest)
 // The digit_blob is 2–5 chars: e.g. "6526" = age 65, day 26.
-const SQUISHED_ROW_RE = new RegExp(
-  `^(.+?[A-Za-z'\\u2019.])\\s*(M|F)\\s*(\\d{2,5})\\s+(${MONTHS_ALT})\\s+(\\d{4})\\s*(.*)$`,
-  'i'
-);
+const SQUISHED_ROW_RE = new RegExp(`^(.+?[A-Za-z'\\u2019.])\\s*(M|F)\\s*(\\d{2,5})\\s+(${MONTHS_ALT})\\s+(\\d{4})\\s*(.*)$`, 'i');
 
 /**
  * Split a digit blob like "6526" into { age: 65, day: 26 }.
@@ -344,11 +340,7 @@ function parseSquishedTableFormat(lines: string[]): ParsedCalling[] {
     }
 
     // Standalone sustained-date
-    if (
-      looksLikeSustainedDateLine(line) &&
-      looksLikePlausibleSustainedDate(line) &&
-      callings.length > 0
-    ) {
+    if (looksLikeSustainedDateLine(line) && looksLikePlausibleSustainedDate(line) && callings.length > 0) {
       callings[callings.length - 1].sustainedDate = toIsoDate(line);
       continue;
     }
@@ -361,15 +353,8 @@ function parseSquishedTableFormat(lines: string[]): ParsedCalling[] {
     }
 
     // Calling name continuation (second line of a wrapped calling)
-    if (
-      callings.length > 0 &&
-      !/^\d/.test(line) &&
-      !looksLikeGenderLine(line) &&
-      !looksLikeMemberNameStart(line)
-    ) {
-      callings[callings.length - 1].callingName = normalizeWhitespace(
-        `${callings[callings.length - 1].callingName} ${line}`
-      );
+    if (callings.length > 0 && !/^\d/.test(line) && !looksLikeGenderLine(line) && !looksLikeMemberNameStart(line)) {
+      callings[callings.length - 1].callingName = normalizeWhitespace(`${callings[callings.length - 1].callingName} ${line}`);
     }
   }
 
@@ -380,9 +365,7 @@ function parseSquishedTableFormat(lines: string[]): ParsedCalling[] {
 // Column-dump parser (for PDFs that use column-dump layout)
 // ---------------------------------------------------------------------------
 
-const CALLING_CONTEXT_WORDS = new Set([
-  'sacrament', 'meeting', 'class', 'quorum', 'ward', 'stake', 'district', 'area'
-]);
+const CALLING_CONTEXT_WORDS = new Set(['sacrament', 'meeting', 'class', 'quorum', 'ward', 'stake', 'district', 'area']);
 
 function looksLikeMemberNameStart(line: string): boolean {
   const normalized = normalizeWhitespace(line);
@@ -444,9 +427,7 @@ function collectOrg(lines: string[], i: number): { org: string; nextIndex: numbe
     }
 
     const couldExtend = KNOWN_ORGANIZATIONS.some(
-      (o) =>
-        o.toLowerCase().startsWith(parts.join(' ').toLowerCase()) ||
-        o.toLowerCase().includes(parts.join(' ').toLowerCase())
+      (o) => o.toLowerCase().startsWith(parts.join(' ').toLowerCase()) || o.toLowerCase().includes(parts.join(' ').toLowerCase())
     );
     if (!couldExtend) break;
   }
@@ -651,7 +632,6 @@ function looksLikeColumnDumpFormat(lines: string[]): boolean {
 
     if (looksLikeMemberNameStart(line)) {
       inNameBlock = true;
-
     } else if (inNameBlock && looksLikeGenderLine(line)) {
       genderCount++;
       if (genderCount >= 3) return true;
@@ -822,12 +802,7 @@ function parsePdfCallingsMultiLine(lines: string[]): ParsedCalling[] {
         i++;
         continue;
       }
-      if (
-        looksLikeNameLine(nextLine) ||
-        looksLikeSustainedDateLine(nextLine) ||
-        looksLikeSetApartToken(nextLine)
-      )
-        break;
+      if (looksLikeNameLine(nextLine) || looksLikeSustainedDateLine(nextLine) || looksLikeSetApartToken(nextLine)) break;
       orgCallingLines.push(normalizeWhitespace(nextLine));
       i++;
     }
@@ -841,11 +816,7 @@ function parsePdfCallingsMultiLine(lines: string[]): ParsedCalling[] {
     let sustainedDate = finalized.sustainedDate;
     let setApart = finalized.setApart;
 
-    if (
-      i < lines.length &&
-      looksLikeSustainedDateLine(lines[i]) &&
-      looksLikePlausibleSustainedDate(lines[i])
-    ) {
+    if (i < lines.length && looksLikeSustainedDateLine(lines[i]) && looksLikePlausibleSustainedDate(lines[i])) {
       sustainedDate = toIsoDate(lines[i]);
       i++;
     }
@@ -880,10 +851,7 @@ function parsePdfCallingsMultiLine(lines: string[]): ParsedCalling[] {
 // ---------------------------------------------------------------------------
 
 export function parseCallingsTsvText(rawText: string): ParsedCalling[] {
-  const lines = rawText
-    .replace(/\r\n?/g, '\n')
-    .split('\n')
-    .filter(Boolean);
+  const lines = rawText.replace(/\r\n?/g, '\n').split('\n').filter(Boolean);
 
   if (lines.length === 0) return [];
 
@@ -899,7 +867,10 @@ export function parseCallingsTsvText(rawText: string): ParsedCalling[] {
   let dataStartIdx = 0;
 
   if (headerIdx >= 0) {
-    const headers = lines[headerIdx].trim().split('\t').map((h) => h.trim().toLowerCase());
+    const headers = lines[headerIdx]
+      .trim()
+      .split('\t')
+      .map((h) => h.trim().toLowerCase());
     nameCol = headers.indexOf('name');
     birthDateCol = headers.findIndex((h) => h === 'birth date');
     orgCol = headers.findIndex((h) => h === 'organizations');

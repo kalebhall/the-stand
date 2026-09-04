@@ -21,7 +21,10 @@ export default async function ReportPage({
 }) {
   const session = await requireAuthenticatedSession();
   enforcePasswordRotation(session);
-  if (!session.activeWardId || !canUseInternalNotes({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId)) {
+  if (
+    !session.activeWardId ||
+    !canUseInternalNotes({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId)
+  ) {
     redirect('/dashboard');
   }
 
@@ -43,7 +46,9 @@ export default async function ReportPage({
       <main className="mx-auto w-full max-w-5xl space-y-6 p-4 sm:p-6">
         <section className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <Link href="/reports" className="text-sm text-muted-foreground hover:text-foreground">← All reports</Link>
+            <Link href="/reports" className="text-sm text-muted-foreground hover:text-foreground">
+              ← All reports
+            </Link>
             <h1 className="mt-2 text-2xl font-semibold tracking-tight">{reportPage.title}</h1>
             <p className="text-sm text-muted-foreground">{reportPage.description}</p>
           </div>

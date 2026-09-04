@@ -50,10 +50,12 @@ export default async function SupportHymnsPage({ searchParams }: { searchParams:
 
     if (!hymnNumber || !title || !VALID_BOOKS.includes(book as Book) || isNaN(sortKeyRaw)) return;
 
-    await pool.query(
-      `INSERT INTO hymn (hymn_number, title, book, sort_key) VALUES ($1, $2, $3, $4)`,
-      [hymnNumber, title, book, sortKeyRaw]
-    );
+    await pool.query(`INSERT INTO hymn (hymn_number, title, book, sort_key) VALUES ($1, $2, $3, $4)`, [
+      hymnNumber,
+      title,
+      book,
+      sortKeyRaw
+    ]);
     revalidatePath('/support/hymns');
   }
 
@@ -70,10 +72,14 @@ export default async function SupportHymnsPage({ searchParams }: { searchParams:
 
     if (!id || !hymnNumber || !title || !VALID_BOOKS.includes(book as Book) || isNaN(sortKeyRaw)) return;
 
-    await pool.query(
-      `UPDATE hymn SET hymn_number=$1, title=$2, book=$3, sort_key=$4, is_active=$5, updated_at=now() WHERE id=$6`,
-      [hymnNumber, title, book, sortKeyRaw, isActive, id]
-    );
+    await pool.query(`UPDATE hymn SET hymn_number=$1, title=$2, book=$3, sort_key=$4, is_active=$5, updated_at=now() WHERE id=$6`, [
+      hymnNumber,
+      title,
+      book,
+      sortKeyRaw,
+      isActive,
+      id
+    ]);
     revalidatePath('/support/hymns');
   }
 
@@ -128,12 +134,7 @@ export default async function SupportHymnsPage({ searchParams }: { searchParams:
 
       {/* Filters */}
       <form method="GET" className="flex flex-wrap gap-2">
-        <input
-          name="q"
-          defaultValue={query ?? ''}
-          placeholder="Search…"
-          className="rounded-md border px-3 py-2 text-sm"
-        />
+        <input name="q" defaultValue={query ?? ''} placeholder="Search…" className="rounded-md border px-3 py-2 text-sm" />
         <select name="book" defaultValue={bookFilter ?? ''} className="rounded-md border px-3 py-2 text-sm">
           <option value="">All books</option>
           {VALID_BOOKS.map((b) => (
@@ -154,18 +155,8 @@ export default async function SupportHymnsPage({ searchParams }: { searchParams:
       <section className="rounded-lg border bg-card p-4">
         <h2 className="mb-3 font-semibold">Add hymn</h2>
         <form action={addHymn} className="grid gap-3 sm:grid-cols-[auto_1fr_auto_auto_auto]">
-          <input
-            name="hymnNumber"
-            required
-            placeholder="Number (e.g. 30, 1001, C1)"
-            className="rounded-md border px-3 py-2 text-sm"
-          />
-          <input
-            name="title"
-            required
-            placeholder="Title"
-            className="rounded-md border px-3 py-2 text-sm"
-          />
+          <input name="hymnNumber" required placeholder="Number (e.g. 30, 1001, C1)" className="rounded-md border px-3 py-2 text-sm" />
+          <input name="title" required placeholder="Title" className="rounded-md border px-3 py-2 text-sm" />
           <select name="book" required className="rounded-md border px-3 py-2 text-sm">
             {VALID_BOOKS.map((b) => (
               <option key={b} value={b}>
@@ -189,7 +180,9 @@ export default async function SupportHymnsPage({ searchParams }: { searchParams:
 
       {/* Hymn list */}
       <section className="space-y-2">
-        <p className="text-sm text-muted-foreground">{hymns.length} hymn{hymns.length !== 1 ? 's' : ''} shown</p>
+        <p className="text-sm text-muted-foreground">
+          {hymns.length} hymn{hymns.length !== 1 ? 's' : ''} shown
+        </p>
         {hymns.length === 0 ? (
           <p className="text-muted-foreground">No hymns match the current filter.</p>
         ) : (
@@ -246,12 +239,7 @@ export default async function SupportHymnsPage({ searchParams }: { searchParams:
                           />
                           <label className="flex items-center gap-1 text-xs">
                             <input type="hidden" name="isActive" value="0" />
-                            <input
-                              type="checkbox"
-                              name="isActive"
-                              value="1"
-                              defaultChecked={hymn.is_active}
-                            />
+                            <input type="checkbox" name="isActive" value="1" defaultChecked={hymn.is_active} />
                             Active
                           </label>
                           <button type="submit" className="rounded-md border px-2 py-1 text-xs font-medium">
@@ -260,10 +248,7 @@ export default async function SupportHymnsPage({ searchParams }: { searchParams:
                         </form>
                         <form action={deleteHymn} className="mt-1">
                           <input type="hidden" name="id" value={hymn.id} />
-                          <button
-                            type="submit"
-                            className="text-xs text-red-600 underline underline-offset-2"
-                          >
+                          <button type="submit" className="text-xs text-red-600 underline underline-offset-2">
                             Delete
                           </button>
                         </form>

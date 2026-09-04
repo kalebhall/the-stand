@@ -24,13 +24,12 @@ export function LogoutForm() {
   return (
     <div className="space-y-4 rounded-lg border bg-card p-6 text-card-foreground">
       <p className="text-sm text-muted-foreground">Are you sure you want to log out?</p>
-      {error ? <p className="text-sm text-destructive" role="alert">{error}</p> : null}
-      <button
-        className={cn(buttonVariants(), 'w-full')}
-        disabled={isSubmitting}
-        onClick={onLogout}
-        type="button"
-      >
+      {error ? (
+        <p className="text-sm text-destructive" role="alert">
+          {error}
+        </p>
+      ) : null}
+      <button className={cn(buttonVariants(), 'w-full')} disabled={isSubmitting} onClick={onLogout} type="button">
         {isSubmitting ? 'Logging out...' : 'Log out'}
       </button>
     </div>

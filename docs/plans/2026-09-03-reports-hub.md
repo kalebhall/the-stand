@@ -36,6 +36,7 @@ Out of scope for first release: automated assignment recommendations, public rep
 ### Task 1: Add typed aggregation module
 
 **Files:**
+
 - Create: `apps/web/src/reports/aggregations.ts`
 - Test: `apps/web/src/reports/aggregations.vitest.ts`
 
@@ -44,6 +45,7 @@ Add pure row-shaping helpers and typed report row contracts. Keep SQL in the rou
 ### Task 2: Add speaker and topic report queries
 
 **Files:**
+
 - Modify: `apps/web/src/reports/aggregations.ts`
 - Test: `apps/web/src/reports/aggregations.vitest.ts`
 
@@ -52,6 +54,7 @@ Query completed/recorded meeting program items with `item_type = 'SPEAKER'`, joi
 ### Task 3: Add hymn and prayer report queries
 
 **Files:**
+
 - Modify: `apps/web/src/reports/aggregations.ts`
 - Test: `apps/web/src/reports/aggregations.vitest.ts`
 
@@ -60,6 +63,7 @@ Aggregate hymns by `hymn_number`, `hymn_title`, and item position/type. Aggregat
 ### Task 4: Add program completeness query
 
 **Files:**
+
 - Modify: `apps/web/src/reports/aggregations.ts`
 - Test: `apps/web/src/reports/aggregations.vitest.ts`
 
@@ -68,6 +72,7 @@ Return actionable warnings for speaker items missing a topic, speaker/member ide
 ### Task 5: Build reports hub and separate report pages
 
 **Files:**
+
 - Modify: `apps/web/app/reports/page.tsx`
 - Create: `apps/web/app/reports/[report]/page.tsx`
 - Create: `apps/web/app/reports/notes/page.tsx`

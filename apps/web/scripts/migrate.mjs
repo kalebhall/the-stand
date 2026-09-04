@@ -10,7 +10,7 @@ async function loadDatabaseUrlFromEnvFile() {
     process.env.ENV_FILE,
     path.resolve(process.cwd(), '.env'),
     path.resolve(__dirname, '../../.env'),
-    path.resolve(__dirname, '../../../.env'),
+    path.resolve(__dirname, '../../../.env')
   ].filter(Boolean);
 
   for (const envFilePath of envCandidates) {
@@ -50,7 +50,9 @@ const loadedFromEnvFile = !process.env.DATABASE_URL ? await loadDatabaseUrlFromE
 
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) {
-  console.error('DATABASE_URL environment variable is required (set it directly or add it to /opt/the-stand/app/.env, apps/.env, or <repo>/.env)');
+  console.error(
+    'DATABASE_URL environment variable is required (set it directly or add it to /opt/the-stand/app/.env, apps/.env, or <repo>/.env)'
+  );
   process.exit(1);
 }
 
@@ -72,15 +74,11 @@ try {
   `);
 
   // Get already-applied migrations
-  const { rows: applied } = await client.query(
-    'SELECT name FROM _migrations ORDER BY name'
-  );
+  const { rows: applied } = await client.query('SELECT name FROM _migrations ORDER BY name');
   const appliedSet = new Set(applied.map((r) => r.name));
 
   // Get migration files sorted alphabetically
-  const files = (await fs.readdir(migrationsDir))
-    .filter((f) => f.endsWith('.sql'))
-    .sort();
+  const files = (await fs.readdir(migrationsDir)).filter((f) => f.endsWith('.sql')).sort();
 
   let count = 0;
   for (const file of files) {

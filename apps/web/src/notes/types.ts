@@ -5,9 +5,7 @@ export const NOTE_TARGET_TYPES = ['MEMBER', 'MEETING', 'PROGRAM_ITEM'] as const;
 export type NoteTargetType = (typeof NOTE_TARGET_TYPES)[number];
 
 export type NoteTarget =
-  | { type: 'MEMBER'; memberId: string }
-  | { type: 'MEETING'; meetingId: string }
-  | { type: 'PROGRAM_ITEM'; programItemId: string };
+  { type: 'MEMBER'; memberId: string } | { type: 'MEETING'; meetingId: string } | { type: 'PROGRAM_ITEM'; programItemId: string };
 
 export function isNoteVisibility(value: unknown): value is NoteVisibility {
   return typeof value === 'string' && NOTE_VISIBILITIES.includes(value as NoteVisibility);

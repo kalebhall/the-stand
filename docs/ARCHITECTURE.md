@@ -1,4 +1,3 @@
-
 # ARCHITECTURE.md — The Stand (Master Architecture Specification)
 
 This document defines the complete architectural blueprint for The Stand.
@@ -9,8 +8,9 @@ deployment topology, and operational considerations.
 This file is authoritative.
 
 ============================================================
+
 1. HIGH-LEVEL SYSTEM OVERVIEW
-============================================================
+   \============================================================
 
 The Stand is a ward-scoped web application that assists local leaders in:
 
@@ -21,15 +21,16 @@ The Stand is a ward-scoped web application that assists local leaders in:
 - Sending reminders to record actions in LCR
 
 The Stand:
+
 - Supplements (never replaces) official Church systems
 - Never writes to LCR
 - Never shares data across wards
 
-============================================================
-2. DEPLOYMENT TOPOLOGY (UBUNTU SELF-HOSTED)
+============================================================ 2. DEPLOYMENT TOPOLOGY (UBUNTU SELF-HOSTED)
 ============================================================
 
 Target Environment:
+
 - Ubuntu Server 22.04/24.04
 - Local PostgreSQL instance
 - Node.js (LTS)
@@ -41,41 +42,46 @@ Target Environment:
 Architecture Layers:
 
 Client (Browser)
-      ↓ HTTPS
+↓ HTTPS
 Nginx Reverse Proxy
-      ↓
+↓
 Node.js Application (Next.js)
-      ↓
+↓
 PostgreSQL (local)
-      ↓
+↓
 Optional Redis (BullMQ background jobs)
 
-============================================================
-3. APPLICATION STACK
+============================================================ 3. APPLICATION STACK
 ============================================================
 
 Frontend + Backend:
+
 - Next.js (App Router)
 - TypeScript
 
 UI:
+
 - Tailwind CSS
 - shadcn/ui components
 
 Authentication:
+
 - Auth.js (NextAuth)
 - Google OAuth (primary)
 - Optional email/password (credential provider)
 
 Password Hashing:
+
 - Argon2id
 
 Database:
+
 - PostgreSQL 15+
 - Drizzle ORM (recommended)
 - SQL migrations required
 
 Background Jobs:
+
 - BullMQ + Redis (recommended)
 - Used for:
   - Outbox dispatch
@@ -83,8 +89,7 @@ Background Jobs:
   - Cache pruning
   - Retry handling
 
-============================================================
-4. TENANCY & ISOLATION MODEL
+============================================================ 4. TENANCY & ISOLATION MODEL
 ============================================================
 
 Hierarchy:
@@ -93,6 +98,7 @@ Stake → Ward
 Stake exists for provisioning only.
 
 All ward-scoped tables MUST:
+
 - Include ward_id
 - Enable PostgreSQL Row Level Security (RLS)
 - Have explicit RLS policies
@@ -109,40 +115,44 @@ SET LOCAL app.ward_id = '...';
 
 Public endpoints MUST NOT accept ward_id.
 
-============================================================
-5. SECURITY ARCHITECTURE (DEFENSE IN DEPTH)
+============================================================ 5. SECURITY ARCHITECTURE (DEFENSE IN DEPTH)
 ============================================================
 
 Layer 1: API RBAC Enforcement
+
 - Every protected route must verify:
   - Authenticated user
   - Active ward context
   - Required permission
 
 Layer 2: Ward Context Validation
+
 - Ward ID in route must match session ward
 - User must have role in that ward
 
 Layer 3: Database RLS
+
 - Prevents cross-ward leakage even if API bug exists
 
 Secrets:
+
 - SESSION_SECRET stored in .env
 - OAuth client secret encrypted at rest
 - .env file permission 600
 - No secrets committed to repo
 
 Password Endpoints:
+
 - Rate limited
 - No verbose error messages
 
-============================================================
-6. SUPPORT ADMIN BOOTSTRAP (OPTION 1)
+============================================================ 6. SUPPORT ADMIN BOOTSTRAP (OPTION 1)
 ============================================================
 
 Startup Behavior:
 
 If no user exists with SUPPORT_ADMIN role:
+
 - Generate secure random password (≥ 24 chars)
 - Create Support Admin using SUPPORT_ADMIN_EMAIL (env var)
 - Hash password using Argon2id
@@ -150,14 +160,14 @@ If no user exists with SUPPORT_ADMIN role:
 - Set must_change_password = true
 
 First Login Flow:
+
 - Redirect to /account/change-password
 - Block all navigation until changed
 - Record last_password_change_at
 
 Plaintext password must never be stored.
 
-============================================================
-7. AUTHENTICATION FLOWS
+============================================================ 7. AUTHENTICATION FLOWS
 ============================================================
 
 Google OAuth Flow:
@@ -167,24 +177,27 @@ Password Flow:
 Browser → Credentials provider → Argon2 verify → Session
 
 Password reset (optional):
+
 - Token-based reset
 - Expiration enforced
 - Rate limited
 
 Session Model:
+
 - Stores user_id
 - Stores active ward_id
 - Must be validated on every request
 
-============================================================
-8. ROLE & PERMISSION MODEL
+============================================================ 8. ROLE & PERMISSION MODEL
 ============================================================
 
 Global Roles:
+
 - SUPPORT_ADMIN
 - SYSTEM_ADMIN
 
 Ward Roles:
+
 - STAND_ADMIN
 - BISHOPRIC_EDITOR
 - CLERK_EDITOR
@@ -196,12 +209,14 @@ Authorization Model:
 role → permissions → API enforcement
 
 Ward Admin:
+
 - Manages ward users
 - Assigns/revokes roles
 - Manages templates
 - Manages public portal
 
 Support Admin:
+
 - Creates stakes
 - Creates wards
 - Assigns ward admins
@@ -210,47 +225,50 @@ Support Admin:
 
 All admin/support actions logged to audit_log.
 
-============================================================
-9. MEETINGS ARCHITECTURE
+============================================================ 9. MEETINGS ARCHITECTURE
 ============================================================
 
 Core Tables:
+
 - meeting
 - meeting_program_item
 - meeting_program_render
 - meeting_business_line
 
 Publish Flow:
+
 1. Editor updates draft
 2. Publish action generates immutable render snapshot
 3. meeting_program_render stored
 4. Previous version preserved
 
 Completion Flow:
+
 - Only announced business lines processed
 - Outbox events created
 - Notifications dispatched
 
-============================================================
-10. AT-THE-STAND VIEW
+============================================================ 10. AT-THE-STAND VIEW
 ============================================================
 
 Route: /stand/{meeting_id}
 
 Modes:
+
 - Formal Script
 - Compact Labels
 
 Requirements:
+
 - Bold name + calling in sustain/release phrases
 - Tablet-friendly layout
 - Must load quickly (<2 seconds target)
 
-============================================================
-11. CALLINGS WORKFLOW ARCHITECTURE
+============================================================ 11. CALLINGS WORKFLOW ARCHITECTURE
 ============================================================
 
 Tables:
+
 - calling_assignment
 - calling_action
 - set_apart_record
@@ -262,8 +280,7 @@ Sustained → Auto-create business line entry
 Completion → Notify bishopric & clerks
 Set apart → Notify clerks (LCR reminder)
 
-============================================================
-12. PUBLIC PROGRAM ARCHITECTURE
+============================================================ 12. PUBLIC PROGRAM ARCHITECTURE
 ============================================================
 
 Routes:
@@ -271,34 +288,37 @@ Routes:
 /p/ward/{portal_token}
 
 Rules:
+
 - Render only published snapshot
 - No internal data exposed
 - Token validation required
 - Token rotation supported
 
-============================================================
-13. ANNOUNCEMENTS & CALENDAR
+============================================================ 13. ANNOUNCEMENTS & CALENDAR
 ============================================================
 
 Calendar:
+
 - Multiple ICS feeds per ward
 - Auto-refresh on login
 - Manual refresh endpoint
 - Cache pruning job
 
 Announcements:
+
 - Date window logic
 - Permanent flag
 - Tag mapping for calendar copy
 
-============================================================
-14. IMPORTS SYSTEM
+============================================================ 14. IMPORTS SYSTEM
 ============================================================
 
 Input:
+
 - Plain text only (strip HTML/PDF artifacts)
 
 Workflow:
+
 1. Paste
 2. Parse
 3. Dry run preview
@@ -306,8 +326,7 @@ Workflow:
 5. Commit
 6. Purge raw text after retention window
 
-============================================================
-15. NOTIFICATION ARCHITECTURE
+============================================================ 15. NOTIFICATION ARCHITECTURE
 ============================================================
 
 Outbox Pattern:
@@ -316,6 +335,7 @@ event_outbox
 notification_delivery
 
 Flow:
+
 1. Insert event
 2. Worker processes queue
 3. Delivery recorded
@@ -323,11 +343,11 @@ Flow:
 5. Deduplicate by constraint
 
 Channels:
+
 - Webhook (n8n default)
 - Optional SMTP/email
 
-============================================================
-16. HEALTH & MONITORING
+============================================================ 16. HEALTH & MONITORING
 ============================================================
 
 Health Endpoint:
@@ -335,17 +355,17 @@ Health Endpoint:
 
 Response:
 {
-  status: "ok",
-  db: "connected",
-  version: "x.x.x"
+status: "ok",
+db: "connected",
+version: "x.x.x"
 }
 
 Monitoring:
+
 - Netdata or Uptime Kuma
 - Monitor CPU, memory, disk, DB connectivity
 
-============================================================
-17. BACKUP & DISASTER RECOVERY
+============================================================ 17. BACKUP & DISASTER RECOVERY
 ============================================================
 
 Daily pg_dump backups
@@ -354,8 +374,7 @@ Optional offsite sync
 
 Quarterly restore test required.
 
-============================================================
-18. PRODUCTION HARDENING
+============================================================ 18. PRODUCTION HARDENING
 ============================================================
 
 - SSH hardened (no root login)
@@ -366,11 +385,11 @@ Quarterly restore test required.
 - Journal log limits configured
 - Rate limiting at API or Nginx
 
-============================================================
-19. FAILURE SAFETY RULE
+============================================================ 19. FAILURE SAFETY RULE
 ============================================================
 
 If any implementation decision risks:
+
 - Cross-ward data leakage
 - Public exposure of internal data
 - Hardcoded secrets

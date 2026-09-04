@@ -15,9 +15,7 @@ describe('audit service', () => {
           recoveryKey: 'recovery-xyz',
           regularField: 'safe'
         },
-        items: [
-          { secret: 'hidden', note: 'visible' }
-        ]
+        items: [{ secret: 'hidden', note: 'visible' }]
       };
 
       const redacted = redactSensitiveData(input);

@@ -108,7 +108,6 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
       notificationEventOutboxIds.push(releaseOutboxResult.rows[0].id as string);
     }
 
-
     await recordAuditEvent(client, {
       wardId,
       userId: session.user.id,

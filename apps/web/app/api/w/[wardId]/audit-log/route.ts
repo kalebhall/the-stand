@@ -130,10 +130,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ war
     await setDbContext(client, { userId: session.user.id, wardId });
 
     const [countResult, dataResult, actionsResult] = await Promise.all([
-      client.query(
-        `SELECT COUNT(*) AS total FROM audit_log al LEFT JOIN user_account ua ON ua.id = al.user_id ${whereClause}`,
-        params
-      ),
+      client.query(`SELECT COUNT(*) AS total FROM audit_log al LEFT JOIN user_account ua ON ua.id = al.user_id ${whereClause}`, params),
       client.query(
         `SELECT al.id,
                 al.user_id,

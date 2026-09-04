@@ -45,10 +45,7 @@ export async function DELETE(_request: Request, context: { params: Promise<{ war
       return NextResponse.json({ error: 'Member not found', code: 'NOT_FOUND' }, { status: 404 });
     }
 
-    await client.query(
-      'UPDATE member SET archived_at = now(), updated_at = now() WHERE id = $1 AND ward_id = $2',
-      [memberId, wardId]
-    );
+    await client.query('UPDATE member SET archived_at = now(), updated_at = now() WHERE id = $1 AND ward_id = $2', [memberId, wardId]);
 
     await client.query(
       `INSERT INTO audit_log (ward_id, user_id, action, details)
@@ -134,10 +131,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ wardI
       values.push(phone);
     }
 
-    await client.query(
-      `UPDATE member SET ${setClauses.join(', ')} WHERE id = $1 AND ward_id = $2`,
-      [memberId, wardId, ...values]
-    );
+    await client.query(`UPDATE member SET ${setClauses.join(', ')} WHERE id = $1 AND ward_id = $2`, [memberId, wardId, ...values]);
 
     await client.query(
       `INSERT INTO audit_log (ward_id, user_id, action, details)

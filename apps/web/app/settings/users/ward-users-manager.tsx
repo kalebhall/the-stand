@@ -86,7 +86,12 @@ export function WardUsersManager({ wardId }: { wardId: string }) {
   );
 
   const roleOptions = useMemo(
-    () => WARD_ROLES.map((roleName) => <option key={roleName} value={roleName}>{roleName}</option>),
+    () =>
+      WARD_ROLES.map((roleName) => (
+        <option key={roleName} value={roleName}>
+          {roleName}
+        </option>
+      )),
     []
   );
 
@@ -125,10 +130,10 @@ export function WardUsersManager({ wardId }: { wardId: string }) {
 
             <div className="mt-3 flex flex-wrap gap-2">
               {user.roles.map((role) => (
-                  <Button key={role.id} onClick={() => void revokeRole(user.id, role)} size="sm" type="button" variant="outline">
-                    Revoke {role.name}
-                  </Button>
-                ))}
+                <Button key={role.id} onClick={() => void revokeRole(user.id, role)} size="sm" type="button" variant="outline">
+                  Revoke {role.name}
+                </Button>
+              ))}
             </div>
           </li>
         ))}

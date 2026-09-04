@@ -75,7 +75,11 @@ export async function pruneCalendarEventCache(client: PoolClient): Promise<numbe
   return pruned.rowCount ?? 0;
 }
 
-export async function refreshCalendarFeedsForWard(args: { wardId: string; userId: string; reason: RefreshReason }): Promise<RefreshSummary[]> {
+export async function refreshCalendarFeedsForWard(args: {
+  wardId: string;
+  userId: string;
+  reason: RefreshReason;
+}): Promise<RefreshSummary[]> {
   const client = await pool.connect();
 
   try {
@@ -210,7 +214,11 @@ async function upsertCachedEvent(
   return result?.rows?.[0]?.id ?? null;
 }
 
-export async function copyCalendarEventToAnnouncement(args: { wardId: string; userId: string; calendarEventCacheId: string }): Promise<string> {
+export async function copyCalendarEventToAnnouncement(args: {
+  wardId: string;
+  userId: string;
+  calendarEventCacheId: string;
+}): Promise<string> {
   const client = await pool.connect();
 
   try {
@@ -249,7 +257,14 @@ export async function copyCalendarEventToAnnouncement(args: { wardId: string; us
       tag_map: Record<string, unknown> | null;
     };
 
-    const fakeFeed = { id: '', ward_id: args.wardId, display_name: '', feed_scope: 'WARD' as FeedScope, feed_url: '', tag_map: event.tag_map };
+    const fakeFeed = {
+      id: '',
+      ward_id: args.wardId,
+      display_name: '',
+      feed_scope: 'WARD' as FeedScope,
+      feed_url: '',
+      tag_map: event.tag_map
+    };
     const rule = resolveTagRule(fakeFeed, event.tags ?? []);
     const placement = rule.placement === 'PROGRAM_BOTTOM' ? 'PROGRAM_BOTTOM' : 'PROGRAM_TOP';
     const isPermanent = Boolean(rule.isPermanent);
@@ -265,7 +280,7 @@ export async function copyCalendarEventToAnnouncement(args: { wardId: string; us
         // start_date is null so the announcement is active immediately.
         // end_date is the event date so it expires after the event passes.
         null,
-        isPermanent ? null : toDateOnly(event.ends_at) ?? toDateOnly(event.starts_at),
+        isPermanent ? null : (toDateOnly(event.ends_at) ?? toDateOnly(event.starts_at)),
         isPermanent,
         placement,
         true,
@@ -273,7 +288,10 @@ export async function copyCalendarEventToAnnouncement(args: { wardId: string; us
       ]
     );
 
-    await client.query('UPDATE calendar_event_cache SET copied_to_announcement_at = now() WHERE id = $1::uuid AND ward_id = $2::uuid', [event.id, args.wardId]);
+    await client.query('UPDATE calendar_event_cache SET copied_to_announcement_at = now() WHERE id = $1::uuid AND ward_id = $2::uuid', [
+      event.id,
+      args.wardId
+    ]);
 
     await client.query(
       `INSERT INTO audit_log (ward_id, user_id, action, details)

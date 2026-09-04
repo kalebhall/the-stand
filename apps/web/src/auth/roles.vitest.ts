@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
-import { canAssignRole, canManageMeetings, canManageWardUsers, canUseInternalNotes, canViewCallings, canViewMeetings, hasRole } from './roles';
+import {
+  canAssignRole,
+  canManageMeetings,
+  canManageWardUsers,
+  canUseInternalNotes,
+  canViewCallings,
+  canViewMeetings,
+  hasRole
+} from './roles';
 
 describe('canManageWardUsers', () => {
   it('allows ward STAND_ADMIN only within their active ward', () => {

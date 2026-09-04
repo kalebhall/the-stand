@@ -40,15 +40,9 @@ export default async function DashboardPage() {
   const session = await requireAuthenticatedSession();
   enforcePasswordRotation(session);
 
-  const wardSession = session.activeWardId
-    ? { roles: session.user.roles, activeWardId: session.activeWardId }
-    : null;
-  const canAccessMeetings = wardSession
-    ? canViewMeetings(wardSession, session.activeWardId!)
-    : false;
-  const canAccessCallings = wardSession
-    ? canViewCallings(wardSession, session.activeWardId!)
-    : false;
+  const wardSession = session.activeWardId ? { roles: session.user.roles, activeWardId: session.activeWardId } : null;
+  const canAccessMeetings = wardSession ? canViewMeetings(wardSession, session.activeWardId!) : false;
+  const canAccessCallings = wardSession ? canViewCallings(wardSession, session.activeWardId!) : false;
   const canAccessPortal = Boolean(session.activeWardId) && hasRole(session.user.roles, 'STAND_ADMIN');
   const showSupportCards = session.user.roles?.includes('SUPPORT_ADMIN') ?? false;
   let setApartQueueCount = 'Unavailable';
@@ -133,10 +127,7 @@ export default async function DashboardPage() {
         [session.activeWardId]
       );
 
-      const portalResult = await client.query(
-        `SELECT id FROM public_program_portal WHERE ward_id = $1 LIMIT 1`,
-        [session.activeWardId]
-      );
+      const portalResult = await client.query(`SELECT id FROM public_program_portal WHERE ward_id = $1 LIMIT 1`, [session.activeWardId]);
 
       await client.query('COMMIT');
       setApartQueueCount = `${result.rows[0].count} waiting`;
@@ -161,7 +152,12 @@ export default async function DashboardPage() {
       draftCountDetail = draftCount > 0 ? `${draftCount} meeting${draftCount === 1 ? '' : 's'} in draft status.` : 'No draft meetings yet.';
 
       if (importSummaryResult.rowCount) {
-        const importRun = importSummaryResult.rows[0] as { import_type: string; parsed_count: number; committed: boolean; created_at: string };
+        const importRun = importSummaryResult.rows[0] as {
+          import_type: string;
+          parsed_count: number;
+          committed: boolean;
+          created_at: string;
+        };
         importSummaryValue = `${importRun.import_type}: ${importRun.parsed_count} records`;
         importSummaryDetail = `${importRun.committed ? 'Committed' : 'Preview only'} on ${new Date(importRun.created_at).toLocaleDateString()}`;
       }
@@ -189,12 +185,7 @@ export default async function DashboardPage() {
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {canAccessMeetings ? (
-          <DashboardCard
-            title="Next meeting"
-            value={nextMeetingValue}
-            detail={nextMeetingDetail}
-            actions={nextMeetingActions}
-          />
+          <DashboardCard title="Next meeting" value={nextMeetingValue} detail={nextMeetingDetail} actions={nextMeetingActions} />
         ) : null}
 
         {canAccessMeetings ? (
@@ -238,7 +229,10 @@ export default async function DashboardPage() {
             title="Last import summary"
             value={importSummaryValue}
             detail={importSummaryDetail}
-            actions={[{ href: '/imports/members', label: 'Import members' }, { href: '/imports/callings', label: 'Import callings' }]}
+            actions={[
+              { href: '/imports/members', label: 'Import members' },
+              { href: '/imports/callings', label: 'Import callings' }
+            ]}
           />
         ) : null}
 

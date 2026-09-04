@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 :root {
   /* Church-inspired palette: calm navy, clear blue, warm gold, quiet surfaces. */
@@ -99,7 +99,7 @@
 }
 
 html {
-  font-family: "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   font-size: 16px;
 }
 
@@ -107,7 +107,9 @@ body {
   @apply bg-background text-foreground;
   min-width: 320px;
   font-family: inherit;
-  font-feature-settings: "rlig" 1, "calt" 1;
+  font-feature-settings:
+    'rlig' 1,
+    'calt' 1;
   line-height: 1.5;
 }
 
@@ -166,14 +168,30 @@ main h3 {
   border-top: 4px solid var(--program-accent, var(--program-welcome));
 }
 
-.program-item--hymn { --program-accent: var(--program-hymn); }
-.program-item--prayer { --program-accent: var(--program-prayer); }
-.program-item--speaker { --program-accent: var(--program-speaker); }
-.program-item--sacrament { --program-accent: var(--program-sacrament); }
-.program-item--business { --program-accent: var(--program-business); }
-.program-item--announcement { --program-accent: var(--program-announcement); }
-.program-item--testimony { --program-accent: var(--program-testimony); }
-.program-item--closing { --program-accent: var(--program-closing); }
+.program-item--hymn {
+  --program-accent: var(--program-hymn);
+}
+.program-item--prayer {
+  --program-accent: var(--program-prayer);
+}
+.program-item--speaker {
+  --program-accent: var(--program-speaker);
+}
+.program-item--sacrament {
+  --program-accent: var(--program-sacrament);
+}
+.program-item--business {
+  --program-accent: var(--program-business);
+}
+.program-item--announcement {
+  --program-accent: var(--program-announcement);
+}
+.program-item--testimony {
+  --program-accent: var(--program-testimony);
+}
+.program-item--closing {
+  --program-accent: var(--program-closing);
+}
 
 .program-item-header {
   margin: -0.75rem -0.75rem 0;
@@ -181,7 +199,6 @@ main h3 {
   background: color-mix(in srgb, var(--program-accent, var(--program-welcome)) 12%, var(--card));
   border-bottom: 1px solid color-mix(in srgb, var(--program-accent, var(--program-welcome)) 24%, var(--border));
 }
-
 
 .section-panel > h2:first-child {
   margin: -1rem -1rem 1rem;

@@ -63,13 +63,17 @@ export async function GET(request: Request, context: { params: Promise<{ wardId:
           WHERE m.ward_id = $1::uuid
             AND m.archived_at IS NULL
             ${ageClause}
-            ${leadershipOnly ? `AND EXISTS (
+            ${
+              leadershipOnly
+                ? `AND EXISTS (
               SELECT 1 FROM calling_assignment ca
                WHERE ca.member_id = m.id
                  AND ca.ward_id = m.ward_id
                  AND ca.is_active = TRUE
                  AND lower(ca.organization) IN ('stake presidency', 'bishopric', 'district presidency', 'branch presidency')
-            )` : ''}
+            )`
+                : ''
+            }
             AND ${conditions}
           ORDER BY full_name ASC
           LIMIT $${limitParamIndex}::int`,
@@ -84,13 +88,17 @@ export async function GET(request: Request, context: { params: Promise<{ wardId:
           WHERE m.ward_id = $1::uuid
             AND m.archived_at IS NULL
             ${ageClause}
-            ${leadershipOnly ? `AND EXISTS (
+            ${
+              leadershipOnly
+                ? `AND EXISTS (
               SELECT 1 FROM calling_assignment ca
                WHERE ca.member_id = m.id
                  AND ca.ward_id = m.ward_id
                  AND ca.is_active = TRUE
                  AND lower(ca.organization) IN ('stake presidency', 'bishopric', 'district presidency', 'branch presidency')
-            )` : ''}
+            )`
+                : ''
+            }
           ORDER BY full_name ASC
           LIMIT $${limitParamIndex}::int`,
         minAge === null ? [wardId, limit] : [wardId, minAge, limit]

@@ -77,34 +77,36 @@ export default async function SupportAuditLogPage() {
 
     total = parseInt(String(countResult.rows[0]?.total ?? '0'), 10);
     distinctActions = (actionsResult.rows as { action: string }[]).map((r) => r.action);
-    items = (dataResult.rows as {
-      id: string;
-      ward_id: string | null;
-      user_id: string | null;
-      actor_name: string | null;
-      actor_role: string | null;
-      action: string;
-      target_member_id: string | null;
-      target_member_name: string | null;
-      entity_type: string | null;
-      entity_id: string | null;
-      changes: Record<string, { old: unknown; new: unknown }> | null;
-      previous_state: Record<string, unknown> | null;
-      details: Record<string, unknown> | null;
-      source: string | null;
-      severity: string | null;
-      is_cross_ward_support: boolean | null;
-      calling_name: string | null;
-      organization: string | null;
-      calling_status: string | null;
-      meeting_date: string | null;
-      item_type: string | null;
-      item_title: string | null;
-      created_at: string;
-      user_email: string | null;
-      user_display_name: string | null;
-      ward_name: string | null;
-    }[]).map((row) => ({
+    items = (
+      dataResult.rows as {
+        id: string;
+        ward_id: string | null;
+        user_id: string | null;
+        actor_name: string | null;
+        actor_role: string | null;
+        action: string;
+        target_member_id: string | null;
+        target_member_name: string | null;
+        entity_type: string | null;
+        entity_id: string | null;
+        changes: Record<string, { old: unknown; new: unknown }> | null;
+        previous_state: Record<string, unknown> | null;
+        details: Record<string, unknown> | null;
+        source: string | null;
+        severity: string | null;
+        is_cross_ward_support: boolean | null;
+        calling_name: string | null;
+        organization: string | null;
+        calling_status: string | null;
+        meeting_date: string | null;
+        item_type: string | null;
+        item_title: string | null;
+        created_at: string;
+        user_email: string | null;
+        user_display_name: string | null;
+        ward_name: string | null;
+      }[]
+    ).map((row) => ({
       id: row.id,
       wardId: row.ward_id,
       userId: row.user_id,

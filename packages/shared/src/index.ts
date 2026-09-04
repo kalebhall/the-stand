@@ -36,14 +36,18 @@ export const meetingTypeSchema = z.enum(MEETING_TYPES);
 export const createMeetingSchema = z.object({
   meetingDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   meetingType: meetingTypeSchema,
-  programItems: z.array(z.object({
-    itemType: z.string().min(1),
-    title: z.string().nullable(),
-    notes: z.string().nullable(),
-    hymnNumber: z.string().nullable(),
-    hymnTitle: z.string().nullable(),
-    sequence: z.number().int().min(0)
-  })).optional()
+  programItems: z
+    .array(
+      z.object({
+        itemType: z.string().min(1),
+        title: z.string().nullable(),
+        notes: z.string().nullable(),
+        hymnNumber: z.string().nullable(),
+        hymnTitle: z.string().nullable(),
+        sequence: z.number().int().min(0)
+      })
+    )
+    .optional()
 });
 
 export const ANNOUNCEMENT_PLACEMENTS = ['PROGRAM_TOP', 'PROGRAM_BOTTOM'] as const;
@@ -52,8 +56,16 @@ export type AnnouncementPlacement = (typeof ANNOUNCEMENT_PLACEMENTS)[number];
 export const createAnnouncementSchema = z.object({
   title: z.string().min(1).max(500),
   body: z.string().max(5000).nullable().optional(),
-  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
-  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+  startDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .nullable()
+    .optional(),
+  endDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .nullable()
+    .optional(),
   isPermanent: z.boolean().optional(),
   placement: z.enum(ANNOUNCEMENT_PLACEMENTS).optional()
 });

@@ -12,11 +12,7 @@ function read(relativePath: string): string {
 
 describe('phase 12 production-readiness checks', () => {
   it('keeps runtime logs free from secrets', () => {
-    const filesToScan = [
-      'apps/web/server.mjs',
-      'apps/web/src/bootstrap.mjs',
-      'apps/web/src/db/bootstrap-support-admin.ts'
-    ];
+    const filesToScan = ['apps/web/server.mjs', 'apps/web/src/bootstrap.mjs', 'apps/web/src/db/bootstrap-support-admin.ts'];
 
     const sensitivePattern = /process\.env|database_url|session_secret|auth_google_secret|password_hash|token/i;
 

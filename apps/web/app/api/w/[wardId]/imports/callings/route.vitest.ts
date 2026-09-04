@@ -1,6 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { authMock, canRunImportsMock, setDbContextMock, connectMock, releaseMock, queryMock, extractPdfTextMock, parseCallingsPdfTextMock, makeMemberBirthdayKeyMock } = vi.hoisted(() => ({
+const {
+  authMock,
+  canRunImportsMock,
+  setDbContextMock,
+  connectMock,
+  releaseMock,
+  queryMock,
+  extractPdfTextMock,
+  parseCallingsPdfTextMock,
+  makeMemberBirthdayKeyMock
+} = vi.hoisted(() => ({
   authMock: vi.fn(),
   canRunImportsMock: vi.fn(),
   setDbContextMock: vi.fn(),
@@ -95,14 +105,18 @@ John Doe  Male  42  Jan 15  Bishopric  Bishop  Yes  No
       .mockResolvedValueOnce({})
       .mockResolvedValueOnce({ rows: [{ id: 'import-1', created_at: new Date().toISOString() }] })
       .mockResolvedValueOnce({ rows: [{ id: 'member-1', identity_key: null }] })
-      .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'assign-1', member_name: 'John Doe', birthday: 'Jan 15', calling_name: 'Bishop' }] })
+      .mockResolvedValueOnce({
+        rowCount: 1,
+        rows: [{ id: 'assign-1', member_name: 'John Doe', birthday: 'Jan 15', calling_name: 'Bishop' }]
+      })
       .mockResolvedValueOnce({ rowCount: 1, rows: [{ member_name: 'John Doe', birthday: 'Jan 15', calling_name: 'Bishop' }] })
       .mockResolvedValueOnce({
         rowCount: 1,
         rows: [
           {
             id: 'import-older',
-            raw_text: 'stale import', parsed_count: 2
+            raw_text: 'stale import',
+            parsed_count: 2
           }
         ]
       })
@@ -143,11 +157,10 @@ John Doe  Male  42  Jan 15  Bishopric  Bishop  Yes  No
     });
 
     expect(queryMock).not.toHaveBeenCalledWith(expect.stringContaining('DELETE FROM calling_assignment'), expect.anything());
-    expect(queryMock).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO audit_log'), expect.arrayContaining([
-      'ward-1',
-      'user-1',
-      'CALLINGS_IMPORT_ISSUE'
-    ]));
+    expect(queryMock).toHaveBeenCalledWith(
+      expect.stringContaining('INSERT INTO audit_log'),
+      expect.arrayContaining(['ward-1', 'user-1', 'CALLINGS_IMPORT_ISSUE'])
+    );
   });
 
   it('uses parsed_count fallback drift calculation for very large stale imports', async () => {
@@ -157,7 +170,10 @@ John Doe  Male  42  Jan 15  Bishopric  Bishop  Yes  No
       .mockResolvedValueOnce({})
       .mockResolvedValueOnce({ rows: [{ id: 'import-3', created_at: new Date().toISOString() }] })
       .mockResolvedValueOnce({ rows: [{ id: 'member-1', identity_key: null }] })
-      .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'assign-1', member_name: 'John Doe', birthday: 'Jan 15', calling_name: 'Bishop' }] })
+      .mockResolvedValueOnce({
+        rowCount: 1,
+        rows: [{ id: 'assign-1', member_name: 'John Doe', birthday: 'Jan 15', calling_name: 'Bishop' }]
+      })
       .mockResolvedValueOnce({ rows: [{ member_name: 'John Doe', birthday: 'Jan 15', calling_name: 'Bishop' }] })
       .mockResolvedValueOnce({
         rowCount: 1,
@@ -215,18 +231,18 @@ John Doe  Male  42  Jan 15  Bishopric  Bishop  Yes  No
 
   it('commits and replaces existing calling assignments', async () => {
     queryMock
-      .mockResolvedValueOnce({})  // BEGIN
-      .mockResolvedValueOnce({ rows: [{ id: 'import-2', created_at: new Date().toISOString() }] })  // INSERT import_run
-      .mockResolvedValueOnce({ rows: [{ id: 'member-1', identity_key: null }] })  // SELECT members
-      .mockResolvedValueOnce({ rowCount: 2, rows: [{}, {}] })  // SELECT existing calling_assignment
-      .mockResolvedValueOnce({})  // DELETE calling_assignment
-      .mockResolvedValueOnce({ rows: [{ id: 'assignment-1' }] })  // INSERT calling_assignment RETURNING id
-      .mockResolvedValueOnce({})  // INSERT calling_action
-      .mockResolvedValueOnce({})  // INSERT audit_log
-      .mockResolvedValueOnce({ rows: [{ id: 'event-2' }] })  // INSERT event_outbox RETURNING id
-      .mockResolvedValueOnce({ rows: [{ member_name: 'John Doe', birthday: 'Jan 15', calling_name: 'Bishop' }] })  // SELECT current active
-      .mockResolvedValueOnce({ rowCount: 0, rows: [] })  // SELECT stale import_run
-      .mockResolvedValueOnce({});  // COMMIT
+      .mockResolvedValueOnce({}) // BEGIN
+      .mockResolvedValueOnce({ rows: [{ id: 'import-2', created_at: new Date().toISOString() }] }) // INSERT import_run
+      .mockResolvedValueOnce({ rows: [{ id: 'member-1', identity_key: null }] }) // SELECT members
+      .mockResolvedValueOnce({ rowCount: 2, rows: [{}, {}] }) // SELECT existing calling_assignment
+      .mockResolvedValueOnce({}) // DELETE calling_assignment
+      .mockResolvedValueOnce({ rows: [{ id: 'assignment-1' }] }) // INSERT calling_assignment RETURNING id
+      .mockResolvedValueOnce({}) // INSERT calling_action
+      .mockResolvedValueOnce({}) // INSERT audit_log
+      .mockResolvedValueOnce({ rows: [{ id: 'event-2' }] }) // INSERT event_outbox RETURNING id
+      .mockResolvedValueOnce({ rows: [{ member_name: 'John Doe', birthday: 'Jan 15', calling_name: 'Bishop' }] }) // SELECT current active
+      .mockResolvedValueOnce({ rowCount: 0, rows: [] }) // SELECT stale import_run
+      .mockResolvedValueOnce({}); // COMMIT
 
     const response = await POST(buildRequest(true), { params: Promise.resolve({ wardId: 'ward-1' }) });
 

@@ -20,12 +20,14 @@ describe('notification recipients', () => {
 
   it('returns least-privilege role sets and removes duplicate explicit users', () => {
     expect(getRecipientRoles('ACCESS_ADMINISTRATORS')).toEqual(['STAND_ADMIN']);
-    expect(getExplicitRecipientIds({
-      wardId: 'ward-1',
-      eventType: 'NOTE_MENTIONED',
-      actorUserId: 'user-1',
-      explicitUserIds: ['user-1', 'user-2', 'user-2', ' ']
-    })).toEqual(['user-2']);
+    expect(
+      getExplicitRecipientIds({
+        wardId: 'ward-1',
+        eventType: 'NOTE_MENTIONED',
+        actorUserId: 'user-1',
+        explicitUserIds: ['user-1', 'user-2', 'user-2', ' ']
+      })
+    ).toEqual(['user-2']);
   });
 
   it('resolves active, unrevoked recipients within the requested ward', async () => {

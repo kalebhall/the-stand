@@ -24,7 +24,9 @@ async function requireSupportAdmin() {
 
 export async function createUser(formData: FormData) {
   const actingSession = await requireSupportAdmin();
-  const email = String(formData.get('email') ?? '').trim().toLowerCase();
+  const email = String(formData.get('email') ?? '')
+    .trim()
+    .toLowerCase();
   const displayNameRaw = String(formData.get('displayName') ?? '').trim();
   const displayName = displayNameRaw.length ? displayNameRaw : null;
   const password = String(formData.get('password') ?? '').trim();
@@ -65,7 +67,9 @@ export async function createUser(formData: FormData) {
 export async function updateUser(formData: FormData) {
   const actingSession = await requireSupportAdmin();
   const userId = String(formData.get('userId') ?? '');
-  const email = String(formData.get('email') ?? '').trim().toLowerCase();
+  const email = String(formData.get('email') ?? '')
+    .trim()
+    .toLowerCase();
   const displayNameRaw = String(formData.get('displayName') ?? '').trim();
   const displayName = displayNameRaw.length ? displayNameRaw : null;
 

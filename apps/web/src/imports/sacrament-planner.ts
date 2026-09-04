@@ -16,7 +16,10 @@ const DATE_RE = /^([A-Z][a-z]{2})-\s*(\d{1,2})\s*\((\d{4})\)$/;
 const DATE_FORMAT = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
 function clean(value: string): string {
-  return value.replace(/\uFFFD/g, '').replace(/\s+/g, ' ').trim();
+  return value
+    .replace(/\uFFFD/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 function parseDate(value: string): string | null {
@@ -78,11 +81,12 @@ export function parseSacramentPlannerHtml(html: string, cutoffDate = '2026-08-30
   if (dateRow < 0) throw new Error('No meeting date row found');
 
   const dates = rows[dateRow].map(parseDate);
-  const dateColumns = dates.flatMap((date, index) => date && date <= cutoffDate ? [{ date, index }] : []);
+  const dateColumns = dates.flatMap((date, index) => (date && date <= cutoffDate ? [{ date, index }] : []));
   if (!dateColumns.length) return [];
 
   const byLabel = new Map<string, { row: string[]; labelIndex: number }>();
-  const knownLabel = /^(PRESIDING|CONDUCTING|INVOCATION|BENEDICTION|YOUTH SPEAKER|\d(?:ST|ND|RD|TH) SPEAKER|OPENING HYMN|SACRAMENT HYMN|INTERMEDIATE HYMN|CLOSING HYMN|THEME \d)$/i;
+  const knownLabel =
+    /^(PRESIDING|CONDUCTING|INVOCATION|BENEDICTION|YOUTH SPEAKER|\d(?:ST|ND|RD|TH) SPEAKER|OPENING HYMN|SACRAMENT HYMN|INTERMEDIATE HYMN|CLOSING HYMN|THEME \d)$/i;
   for (const row of rows.slice(dateRow + 1)) {
     const labelIndex = row.slice(0, dateColumns[0].index).findIndex((value) => knownLabel.test(clean(value)));
     const label = labelIndex >= 0 ? clean(row[labelIndex]) : '';
@@ -104,31 +108,38 @@ export function parseSacramentPlannerHtml(html: string, cutoffDate = '2026-08-30
     ['BENEDICTION', 'BENEDICTION']
   ] as const;
   const topicRows = ['THEME 1', 'THEME 2', 'THEME 3', 'THEME 4'];
-  const typeRow = rows.find((row) => row.some((value) => /^(REGULAR|FAST SUNDAY|STAKE CONFERENCE|WARD CONFERENCE|GENERAL CONFERENCE)$/i.test(value)));
+  const typeRow = rows.find((row) =>
+    row.some((value) => /^(REGULAR|FAST SUNDAY|STAKE CONFERENCE|WARD CONFERENCE|GENERAL CONFERENCE)$/i.test(value))
+  );
 
-  return dateColumns.map(({ date }, ordinal) => {
-    let speakerNumber = 0;
-    const programItems: HistoricalProgramItem[] = [];
-    for (const [label, itemType] of itemRows) {
-      const row = byLabel.get(label);
-      const value = row ? alignedValue(row.row, row.labelIndex, ordinal) : '';
-      if (!value || value.toUpperCase() === 'N/A') continue;
-      const isHymn = itemType.endsWith('HYMN');
-      const parsed = isHymn ? parseHymn(value) : { title: value };
-      const item: HistoricalProgramItem = { itemType, title: parsed.title };
-      if (parsed.hymnNumber) item.hymnNumber = parsed.hymnNumber;
-      if (parsed.hymnTitle) item.hymnTitle = parsed.hymnTitle;
-      if (itemType === 'SPEAKER') {
-        const topicRow = byLabel.get(topicRows[speakerNumber]);
-        const topic = topicRow ? alignedValue(topicRow.row, topicRow.labelIndex, ordinal) : '';
-        if (topic) item.topic = topic;
-        speakerNumber += 1;
+  return dateColumns
+    .map(({ date }, ordinal) => {
+      let speakerNumber = 0;
+      const programItems: HistoricalProgramItem[] = [];
+      for (const [label, itemType] of itemRows) {
+        const row = byLabel.get(label);
+        const value = row ? alignedValue(row.row, row.labelIndex, ordinal) : '';
+        if (!value || value.toUpperCase() === 'N/A') continue;
+        const isHymn = itemType.endsWith('HYMN');
+        const parsed = isHymn ? parseHymn(value) : { title: value };
+        const item: HistoricalProgramItem = { itemType, title: parsed.title };
+        if (parsed.hymnNumber) item.hymnNumber = parsed.hymnNumber;
+        if (parsed.hymnTitle) item.hymnTitle = parsed.hymnTitle;
+        if (itemType === 'SPEAKER') {
+          const topicRow = byLabel.get(topicRows[speakerNumber]);
+          const topic = topicRow ? alignedValue(topicRow.row, topicRow.labelIndex, ordinal) : '';
+          if (topic) item.topic = topic;
+          speakerNumber += 1;
+        }
+        programItems.push(item);
       }
-      programItems.push(item);
-    }
-    const typeValue = typeRow?.slice().filter((value) => /^(REGULAR|FAST SUNDAY|STAKE CONFERENCE|WARD CONFERENCE|GENERAL CONFERENCE)$/i.test(value))[ordinal] ?? '';
-    return { meetingDate: date, meetingType: meetingType(typeValue), programItems };
-  }).filter((meeting) => meeting.programItems.length > 0);
+      const typeValue =
+        typeRow?.slice().filter((value) => /^(REGULAR|FAST SUNDAY|STAKE CONFERENCE|WARD CONFERENCE|GENERAL CONFERENCE)$/i.test(value))[
+          ordinal
+        ] ?? '';
+      return { meetingDate: date, meetingType: meetingType(typeValue), programItems };
+    })
+    .filter((meeting) => meeting.programItems.length > 0);
 }
 
 export function normalizeHistoricalName(value: string): string {

@@ -1,13 +1,6 @@
 export const GLOBAL_ROLES = ['SUPPORT_ADMIN', 'SYSTEM_ADMIN'] as const;
 
-export const WARD_ROLES = [
-  'STAND_ADMIN',
-  'BISHOPRIC_EDITOR',
-  'CLERK_EDITOR',
-  'WARD_CLERK',
-  'MEMBERSHIP_CLERK',
-  'CONDUCTOR_VIEW'
-] as const;
+export const WARD_ROLES = ['STAND_ADMIN', 'BISHOPRIC_EDITOR', 'CLERK_EDITOR', 'WARD_CLERK', 'MEMBERSHIP_CLERK', 'CONDUCTOR_VIEW'] as const;
 
 export type GlobalRoleName = (typeof GLOBAL_ROLES)[number];
 export type WardRoleName = (typeof WARD_ROLES)[number];

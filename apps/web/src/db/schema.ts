@@ -9,7 +9,9 @@ export const stake = pgTable('stake', {
 
 export const ward = pgTable('ward', {
   id: uuid('id').defaultRandom().primaryKey(),
-  stakeId: uuid('stake_id').notNull().references(() => stake.id, { onDelete: 'cascade' }),
+  stakeId: uuid('stake_id')
+    .notNull()
+    .references(() => stake.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
   unitNumber: text('unit_number'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
@@ -32,13 +34,16 @@ export const role = pgTable('role', {
   scope: text('scope').notNull()
 });
 
-
 export const userGlobalRole = pgTable(
   'user_global_role',
   {
     id: uuid('id').defaultRandom().primaryKey(),
-    userId: uuid('user_id').notNull().references(() => userAccount.id, { onDelete: 'cascade' }),
-    roleId: uuid('role_id').notNull().references(() => role.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => userAccount.id, { onDelete: 'cascade' }),
+    roleId: uuid('role_id')
+      .notNull()
+      .references(() => role.id, { onDelete: 'cascade' }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
   },
   (table) => ({
@@ -50,9 +55,15 @@ export const wardUserRole = pgTable(
   'ward_user_role',
   {
     id: uuid('id').defaultRandom().primaryKey(),
-    wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
-    userId: uuid('user_id').notNull().references(() => userAccount.id, { onDelete: 'cascade' }),
-    roleId: uuid('role_id').notNull().references(() => role.id, { onDelete: 'cascade' }),
+    wardId: uuid('ward_id')
+      .notNull()
+      .references(() => ward.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => userAccount.id, { onDelete: 'cascade' }),
+    roleId: uuid('role_id')
+      .notNull()
+      .references(() => role.id, { onDelete: 'cascade' }),
     isSupportAssignment: boolean('is_support_assignment').notNull().default(false),
     grantedByUserId: uuid('granted_by_user_id').references(() => userAccount.id, { onDelete: 'set null' }),
     grantReason: text('grant_reason'),
@@ -108,7 +119,9 @@ export const accessRequest = pgTable('access_request', {
 
 export const meeting = pgTable('meeting', {
   id: uuid('id').defaultRandom().primaryKey(),
-  wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
+  wardId: uuid('ward_id')
+    .notNull()
+    .references(() => ward.id, { onDelete: 'cascade' }),
   meetingDate: date('meeting_date').notNull(),
   meetingType: text('meeting_type').notNull(),
   status: text('status').notNull().default('DRAFT'),
@@ -118,8 +131,12 @@ export const meeting = pgTable('meeting', {
 
 export const meetingProgramItem = pgTable('meeting_program_item', {
   id: uuid('id').defaultRandom().primaryKey(),
-  wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
-  meetingId: uuid('meeting_id').notNull().references(() => meeting.id, { onDelete: 'cascade' }),
+  wardId: uuid('ward_id')
+    .notNull()
+    .references(() => ward.id, { onDelete: 'cascade' }),
+  meetingId: uuid('meeting_id')
+    .notNull()
+    .references(() => meeting.id, { onDelete: 'cascade' }),
   sequence: integer('sequence').notNull(),
   itemType: text('item_type').notNull(),
   title: text('title'),
@@ -135,8 +152,12 @@ export const meetingProgramRender = pgTable(
   'meeting_program_render',
   {
     id: uuid('id').defaultRandom().primaryKey(),
-    wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
-    meetingId: uuid('meeting_id').notNull().references(() => meeting.id, { onDelete: 'cascade' }),
+    wardId: uuid('ward_id')
+      .notNull()
+      .references(() => ward.id, { onDelete: 'cascade' }),
+    meetingId: uuid('meeting_id')
+      .notNull()
+      .references(() => meeting.id, { onDelete: 'cascade' }),
     version: integer('version').notNull(),
     renderHtml: text('render_html').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
@@ -146,12 +167,13 @@ export const meetingProgramRender = pgTable(
   })
 );
 
-
 export const wardStandTemplate = pgTable(
   'ward_stand_template',
   {
     id: uuid('id').defaultRandom().primaryKey(),
-    wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
+    wardId: uuid('ward_id')
+      .notNull()
+      .references(() => ward.id, { onDelete: 'cascade' }),
     welcomeText: text('welcome_text').notNull().default('Welcome to The Church of Jesus Christ of Latter-day Saints.'),
     sustainTemplate: text('sustain_template')
       .notNull()
@@ -163,10 +185,26 @@ export const wardStandTemplate = pgTable(
       .default(
         '**{memberName}** has been released as  **{callingName}**. Those who would like to express thanks for [his or her] service may show it by the uplifted hand.'
       ),
-    welcomeNewMemberTemplate: text('welcome_new_member_template').notNull().default('After a few words of introduction, we welcome **{memberName}** into the ward. Those who welcome [him or her] may show it by the uplifted hand. [Pause briefly.]'),
-    babyBlessingTemplate: text('baby_blessing_template').notNull().default('The blessing of **{memberName}** will take place after this meeting. [Confirm that the parents and participating priesthood holders are prepared before the ordinance.]'),
-    priesthoodOrdinationTemplate: text('priesthood_ordination_template').notNull().default('It is proposed that **{memberName}** be ordained to the office of **{callingName}**. Those in favor may manifest it by the uplifted hand. Those opposed, if any, may manifest it. [After the vote, remind the authorized priesthood holder to perform the ordination.]'),
-    priesthoodAdvancementTemplate: text('priesthood_advancement_template').notNull().default('It is proposed that **{memberName}** be ordained to the office of **{callingName}**. Those in favor may manifest it by the uplifted hand. Those opposed, if any, may manifest it. [After the vote, remind the authorized priesthood holder to perform the ordination.]'),
+    welcomeNewMemberTemplate: text('welcome_new_member_template')
+      .notNull()
+      .default(
+        'After a few words of introduction, we welcome **{memberName}** into the ward. Those who welcome [him or her] may show it by the uplifted hand. [Pause briefly.]'
+      ),
+    babyBlessingTemplate: text('baby_blessing_template')
+      .notNull()
+      .default(
+        'The blessing of **{memberName}** will take place after this meeting. [Confirm that the parents and participating priesthood holders are prepared before the ordinance.]'
+      ),
+    priesthoodOrdinationTemplate: text('priesthood_ordination_template')
+      .notNull()
+      .default(
+        'It is proposed that **{memberName}** be ordained to the office of **{callingName}**. Those in favor may manifest it by the uplifted hand. Those opposed, if any, may manifest it. [After the vote, remind the authorized priesthood holder to perform the ordination.]'
+      ),
+    priesthoodAdvancementTemplate: text('priesthood_advancement_template')
+      .notNull()
+      .default(
+        'It is proposed that **{memberName}** be ordained to the office of **{callingName}**. Those in favor may manifest it by the uplifted hand. Those opposed, if any, may manifest it. [After the vote, remind the authorized priesthood holder to perform the ordination.]'
+      ),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
   },
@@ -177,7 +215,9 @@ export const wardStandTemplate = pgTable(
 
 export const callingAssignment = pgTable('calling_assignment', {
   id: uuid('id').defaultRandom().primaryKey(),
-  wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
+  wardId: uuid('ward_id')
+    .notNull()
+    .references(() => ward.id, { onDelete: 'cascade' }),
   memberId: uuid('member_id').references(() => member.id, { onDelete: 'set null' }),
   memberName: text('member_name').notNull(),
   organization: text('organization'),
@@ -190,7 +230,9 @@ export const callingAssignment = pgTable('calling_assignment', {
 
 export const callingAction = pgTable('calling_action', {
   id: uuid('id').defaultRandom().primaryKey(),
-  wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
+  wardId: uuid('ward_id')
+    .notNull()
+    .references(() => ward.id, { onDelete: 'cascade' }),
   callingAssignmentId: uuid('calling_assignment_id')
     .notNull()
     .references(() => callingAssignment.id, { onDelete: 'cascade' }),
@@ -200,8 +242,12 @@ export const callingAction = pgTable('calling_action', {
 
 export const meetingBusinessLine = pgTable('meeting_business_line', {
   id: uuid('id').defaultRandom().primaryKey(),
-  wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
-  meetingId: uuid('meeting_id').notNull().references(() => meeting.id, { onDelete: 'cascade' }),
+  wardId: uuid('ward_id')
+    .notNull()
+    .references(() => ward.id, { onDelete: 'cascade' }),
+  meetingId: uuid('meeting_id')
+    .notNull()
+    .references(() => meeting.id, { onDelete: 'cascade' }),
   memberName: text('member_name').notNull(),
   callingName: text('calling_name').notNull(),
   actionType: text('action_type').notNull(),
@@ -211,8 +257,12 @@ export const meetingBusinessLine = pgTable('meeting_business_line', {
 
 export const meetingMembershipOrdinance = pgTable('meeting_membership_ordinance', {
   id: uuid('id').defaultRandom().primaryKey(),
-  wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
-  meetingId: uuid('meeting_id').notNull().references(() => meeting.id, { onDelete: 'cascade' }),
+  wardId: uuid('ward_id')
+    .notNull()
+    .references(() => ward.id, { onDelete: 'cascade' }),
+  meetingId: uuid('meeting_id')
+    .notNull()
+    .references(() => meeting.id, { onDelete: 'cascade' }),
   memberName: text('member_name').notNull(),
   actionType: text('action_type').notNull(),
   reason: text('reason'),
@@ -225,10 +275,11 @@ export const meetingMembershipOrdinance = pgTable('meeting_membership_ordinance'
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
 });
 
-
 export const announcement = pgTable('announcement', {
   id: uuid('id').defaultRandom().primaryKey(),
-  wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
+  wardId: uuid('ward_id')
+    .notNull()
+    .references(() => ward.id, { onDelete: 'cascade' }),
   title: text('title').notNull(),
   body: text('body'),
   startDate: date('start_date'),
@@ -240,12 +291,13 @@ export const announcement = pgTable('announcement', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 });
 
-
 export const calendarFeed = pgTable(
   'calendar_feed',
   {
     id: uuid('id').defaultRandom().primaryKey(),
-    wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
+    wardId: uuid('ward_id')
+      .notNull()
+      .references(() => ward.id, { onDelete: 'cascade' }),
     displayName: text('display_name').notNull(),
     feedScope: text('feed_scope').notNull(),
     feedUrl: text('feed_url').notNull(),
@@ -265,8 +317,12 @@ export const calendarEventCache = pgTable(
   'calendar_event_cache',
   {
     id: uuid('id').defaultRandom().primaryKey(),
-    wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
-    calendarFeedId: uuid('calendar_feed_id').notNull().references(() => calendarFeed.id, { onDelete: 'cascade' }),
+    wardId: uuid('ward_id')
+      .notNull()
+      .references(() => ward.id, { onDelete: 'cascade' }),
+    calendarFeedId: uuid('calendar_feed_id')
+      .notNull()
+      .references(() => calendarFeed.id, { onDelete: 'cascade' }),
     externalUid: text('external_uid').notNull(),
     title: text('title').notNull(),
     description: text('description'),
@@ -288,7 +344,9 @@ export const eventOutbox = pgTable(
   'event_outbox',
   {
     id: uuid('id').defaultRandom().primaryKey(),
-    wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
+    wardId: uuid('ward_id')
+      .notNull()
+      .references(() => ward.id, { onDelete: 'cascade' }),
     aggregateType: text('aggregate_type').notNull(),
     aggregateId: uuid('aggregate_id').notNull(),
     eventType: text('event_type').notNull(),
@@ -309,7 +367,9 @@ export const notificationDelivery = pgTable(
   'notification_delivery',
   {
     id: uuid('id').defaultRandom().primaryKey(),
-    wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
+    wardId: uuid('ward_id')
+      .notNull()
+      .references(() => ward.id, { onDelete: 'cascade' }),
     eventOutboxId: uuid('event_outbox_id')
       .notNull()
       .references(() => eventOutbox.id, { onDelete: 'cascade' }),
@@ -336,8 +396,12 @@ export const notificationSubscription = pgTable(
   'notification_subscription',
   {
     id: uuid('id').defaultRandom().primaryKey(),
-    wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
-    userId: uuid('user_id').notNull().references(() => userAccount.id, { onDelete: 'cascade' }),
+    wardId: uuid('ward_id')
+      .notNull()
+      .references(() => ward.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => userAccount.id, { onDelete: 'cascade' }),
     category: text('category').notNull(),
     eventType: text('event_type').notNull(),
     channel: text('channel').notNull(),
@@ -346,16 +410,8 @@ export const notificationSubscription = pgTable(
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
   },
   (table) => ({
-    notificationSubscriptionWardUserEventChannelUnique: unique().on(
-      table.wardId,
-      table.userId,
-      table.eventType,
-      table.channel
-    ),
-    notificationSubscriptionWardUserIdx: index('notification_subscription_ward_user_idx').on(
-      table.wardId,
-      table.userId
-    )
+    notificationSubscriptionWardUserEventChannelUnique: unique().on(table.wardId, table.userId, table.eventType, table.channel),
+    notificationSubscriptionWardUserIdx: index('notification_subscription_ward_user_idx').on(table.wardId, table.userId)
   })
 );
 
@@ -363,8 +419,12 @@ export const notificationEmailPreference = pgTable(
   'notification_email_preference',
   {
     id: uuid('id').defaultRandom().primaryKey(),
-    wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
-    userId: uuid('user_id').notNull().references(() => userAccount.id, { onDelete: 'cascade' }),
+    wardId: uuid('ward_id')
+      .notNull()
+      .references(() => ward.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => userAccount.id, { onDelete: 'cascade' }),
     frequency: text('frequency').notNull().default('IMMEDIATE'),
     timezone: text('timezone').notNull().default('UTC'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -372,10 +432,7 @@ export const notificationEmailPreference = pgTable(
   },
   (table) => ({
     notificationEmailPreferenceWardUserUnique: unique().on(table.wardId, table.userId),
-    notificationEmailPreferenceWardUserIdx: index('notification_email_preference_ward_user_idx').on(
-      table.wardId,
-      table.userId
-    )
+    notificationEmailPreferenceWardUserIdx: index('notification_email_preference_ward_user_idx').on(table.wardId, table.userId)
   })
 );
 
@@ -383,10 +440,18 @@ export const notificationEmailDigestItem = pgTable(
   'notification_email_digest_item',
   {
     id: uuid('id').defaultRandom().primaryKey(),
-    wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
-    recipientUserId: uuid('recipient_user_id').notNull().references(() => userAccount.id, { onDelete: 'cascade' }),
-    eventOutboxId: uuid('event_outbox_id').notNull().references(() => eventOutbox.id, { onDelete: 'cascade' }),
-    deliveryId: uuid('delivery_id').notNull().references(() => notificationDelivery.id, { onDelete: 'cascade' }),
+    wardId: uuid('ward_id')
+      .notNull()
+      .references(() => ward.id, { onDelete: 'cascade' }),
+    recipientUserId: uuid('recipient_user_id')
+      .notNull()
+      .references(() => userAccount.id, { onDelete: 'cascade' }),
+    eventOutboxId: uuid('event_outbox_id')
+      .notNull()
+      .references(() => eventOutbox.id, { onDelete: 'cascade' }),
+    deliveryId: uuid('delivery_id')
+      .notNull()
+      .references(() => notificationDelivery.id, { onDelete: 'cascade' }),
     digestFrequency: text('digest_frequency').notNull(),
     scheduledFor: timestamp('scheduled_for', { withTimezone: true }).notNull(),
     title: text('title').notNull(),
@@ -413,9 +478,15 @@ export const userNotification = pgTable(
   'user_notification',
   {
     id: uuid('id').defaultRandom().primaryKey(),
-    wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
-    recipientUserId: uuid('recipient_user_id').notNull().references(() => userAccount.id, { onDelete: 'cascade' }),
-    sourceEventId: uuid('source_event_id').notNull().references(() => eventOutbox.id, { onDelete: 'cascade' }),
+    wardId: uuid('ward_id')
+      .notNull()
+      .references(() => ward.id, { onDelete: 'cascade' }),
+    recipientUserId: uuid('recipient_user_id')
+      .notNull()
+      .references(() => userAccount.id, { onDelete: 'cascade' }),
+    sourceEventId: uuid('source_event_id')
+      .notNull()
+      .references(() => eventOutbox.id, { onDelete: 'cascade' }),
     eventType: text('event_type').notNull(),
     aggregateType: text('aggregate_type').notNull(),
     aggregateId: uuid('aggregate_id').notNull(),
@@ -447,8 +518,12 @@ export const publicProgramShare = pgTable(
   'public_program_share',
   {
     id: uuid('id').defaultRandom().primaryKey(),
-    wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
-    meetingId: uuid('meeting_id').notNull().references(() => meeting.id, { onDelete: 'cascade' }),
+    wardId: uuid('ward_id')
+      .notNull()
+      .references(() => ward.id, { onDelete: 'cascade' }),
+    meetingId: uuid('meeting_id')
+      .notNull()
+      .references(() => meeting.id, { onDelete: 'cascade' }),
     token: text('token').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
   },
@@ -462,7 +537,9 @@ export const publicProgramPortal = pgTable(
   'public_program_portal',
   {
     id: uuid('id').defaultRandom().primaryKey(),
-    wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
+    wardId: uuid('ward_id')
+      .notNull()
+      .references(() => ward.id, { onDelete: 'cascade' }),
     token: text('token').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
   },
@@ -476,7 +553,9 @@ export const member = pgTable(
   'member',
   {
     id: uuid('id').defaultRandom().primaryKey(),
-    wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
+    wardId: uuid('ward_id')
+      .notNull()
+      .references(() => ward.id, { onDelete: 'cascade' }),
     fullName: text('full_name').notNull(),
     firstName: text('first_name'),
     lastName: text('last_name'),
@@ -498,20 +577,26 @@ export const member = pgTable(
 
 export const internalNote = pgTable('internal_note', {
   id: uuid('id').defaultRandom().primaryKey(),
-  wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
+  wardId: uuid('ward_id')
+    .notNull()
+    .references(() => ward.id, { onDelete: 'cascade' }),
   memberId: uuid('member_id').references(() => member.id, { onDelete: 'cascade' }),
   meetingId: uuid('meeting_id').references(() => meeting.id, { onDelete: 'cascade' }),
   programItemId: uuid('program_item_id').references(() => meetingProgramItem.id, { onDelete: 'cascade' }),
   visibility: text('visibility').notNull(),
   noteText: text('note_text').notNull(),
-  createdByUserId: uuid('created_by_user_id').notNull().references(() => userAccount.id, { onDelete: 'restrict' }),
+  createdByUserId: uuid('created_by_user_id')
+    .notNull()
+    .references(() => userAccount.id, { onDelete: 'restrict' }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
 });
 
 export const importRun = pgTable('import_run', {
   id: uuid('id').defaultRandom().primaryKey(),
-  wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
+  wardId: uuid('ward_id')
+    .notNull()
+    .references(() => ward.id, { onDelete: 'cascade' }),
   importType: text('import_type').notNull(),
   rawText: text('raw_text').notNull(),
   parsedCount: integer('parsed_count').notNull().default(0),
@@ -531,10 +616,11 @@ export const hymn = pgTable('hymn', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
 });
 
-
 export const historicalImportNameReview = pgTable('historical_import_name_review', {
   id: uuid('id').defaultRandom().primaryKey(),
-  wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
+  wardId: uuid('ward_id')
+    .notNull()
+    .references(() => ward.id, { onDelete: 'cascade' }),
   sourceName: text('source_name').notNull(),
   normalizedName: text('normalized_name').notNull(),
   occurrenceCount: integer('occurrence_count').notNull().default(1),

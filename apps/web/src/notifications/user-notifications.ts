@@ -110,10 +110,7 @@ function validateCategory(category: string | undefined): void {
   }
 }
 
-export async function createUserNotification(
-  client: DbClient,
-  input: CreateUserNotificationInput
-): Promise<UserNotification> {
+export async function createUserNotification(client: DbClient, input: CreateUserNotificationInput): Promise<UserNotification> {
   const insertResult = await client.query(
     `INSERT INTO user_notification (
        ward_id, recipient_user_id, source_event_id, event_type, aggregate_type,
@@ -160,10 +157,7 @@ export async function createUserNotification(
   return mapNotificationRow(existingResult.rows[0] as UserNotificationRow);
 }
 
-export async function listUserNotifications(
-  client: DbClient,
-  params: ListUserNotificationsParams
-): Promise<UserNotification[]> {
+export async function listUserNotifications(client: DbClient, params: ListUserNotificationsParams): Promise<UserNotification[]> {
   const limit = normalizeLimit(params.limit);
   validateCategory(params.category);
   const values: unknown[] = [params.wardId, params.recipientUserId];
@@ -203,10 +197,7 @@ export async function listUserNotifications(
   return (result.rows as UserNotificationRow[]).map(mapNotificationRow);
 }
 
-export async function countUnreadUserNotifications(
-  client: DbClient,
-  params: { wardId: string; recipientUserId: string }
-): Promise<number> {
+export async function countUnreadUserNotifications(client: DbClient, params: { wardId: string; recipientUserId: string }): Promise<number> {
   const result = await client.query(
     `SELECT count(*) AS count
        FROM user_notification
@@ -254,10 +245,7 @@ export async function dismissUserNotification(
   return (result.rowCount ?? 0) > 0;
 }
 
-export async function markAllUserNotificationsRead(
-  client: DbClient,
-  params: { wardId: string; recipientUserId: string }
-): Promise<number> {
+export async function markAllUserNotificationsRead(client: DbClient, params: { wardId: string; recipientUserId: string }): Promise<number> {
   const result = await client.query(
     `UPDATE user_notification
         SET read_at = now()
