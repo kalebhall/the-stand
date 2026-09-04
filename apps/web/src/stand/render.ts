@@ -182,9 +182,8 @@ export function buildStandRows(
     }
 
     if (normalizedType === 'ANNOUNCEMENT') {
-      const details = standAnnouncements.length
-        ? standAnnouncements.map((ann) => (ann.body?.trim() ? `${ann.title}: ${ann.body}` : ann.title)).join('\n')
-        : 'No announcements marked for At the Stand.';
+      if (!standAnnouncements.length) continue;
+      const details = standAnnouncements.map((ann) => (ann.body?.trim() ? `${ann.title}: ${ann.body}` : ann.title)).join('\n');
       rows.push({
         kind: 'standard',
         programItemId: item.id,
