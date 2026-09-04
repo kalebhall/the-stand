@@ -6,6 +6,7 @@ import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 import { isAnnouncementActiveForDate } from '@/src/announcements/types';
 import { buildStandRows } from '@/src/stand/render';
+import type { IntroductionRoles } from '@/src/meetings/types';
 
 export async function GET(_: Request, context: { params: Promise<{ wardId: string; meetingId: string }> }) {
   const session = await auth();
@@ -28,7 +29,7 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
       return NextResponse.json({ error: 'Meeting not found', code: 'NOT_FOUND' }, { status: 404 });
     }
     const items = await client.query(
-      `SELECT i.id, i.item_type, i.title, i.notes, i.program_notes, i.hymn_number, i.hymn_title,
+      `SELECT i.id, i.item_type, i.title, i.notes, i.program_notes, i.hymn_number, i.hymn_title, i.introduction_roles,
               m.first_name, m.last_name, m.gender
          FROM meeting_program_item i
          LEFT JOIN member m ON m.ward_id = i.ward_id AND m.full_name = i.title AND m.archived_at IS NULL
@@ -79,6 +80,7 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
         programNotes: item.program_notes,
         hymnNumber: item.hymn_number,
         hymnTitle: item.hymn_title,
+        introductionRoles: item.introduction_roles,
         member: { firstName: item.first_name, lastName: item.last_name, gender: item.gender }
       })),
       template.rows[0]

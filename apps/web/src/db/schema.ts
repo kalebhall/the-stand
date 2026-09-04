@@ -145,6 +145,7 @@ export const meetingProgramItem = pgTable('meeting_program_item', {
   programNotes: text('program_notes'),
   hymnNumber: text('hymn_number'),
   hymnTitle: text('hymn_title'),
+  introductionRoles: jsonb('introduction_roles'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 });
 

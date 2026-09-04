@@ -1,17 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
 import { getDefaultProgramItemsForMeetingType } from './default-program';
-import { getProgramItemLabel } from './types';
 
 describe('getDefaultProgramItemsForMeetingType', () => {
   it('returns the sacrament template in the expected order', () => {
     const itemTypes = getDefaultProgramItemsForMeetingType('SACRAMENT').map((item) => item.itemType);
 
     expect(itemTypes).toEqual([
-      'PRESIDING',
-      'CONDUCTING',
-      'ORGANIST_PIANIST',
-      'CHORISTER',
+      'INTRODUCTION',
       'ANNOUNCEMENT',
       'OPENING_HYMN',
       'INVOCATION',
@@ -34,19 +30,19 @@ describe('getDefaultProgramItemsForMeetingType', () => {
     expect(generalConferenceItems).toEqual(['ANNOUNCEMENT']);
   });
 
-  it('keeps introduction roles together before announcements', () => {
+  it('uses one protected introduction item before announcements', () => {
     const itemTypes = getDefaultProgramItemsForMeetingType('SACRAMENT').map((item) => item.itemType);
-    expect(itemTypes.slice(0, 4)).toEqual(['PRESIDING', 'CONDUCTING', 'ORGANIST_PIANIST', 'CHORISTER']);
+    expect(itemTypes[0]).toBe('INTRODUCTION');
+    expect(getDefaultProgramItemsForMeetingType('SACRAMENT')[0].introductionRoles).toEqual({
+      presiding: '',
+      conducting: '',
+      organist: '',
+      chorister: ''
+    });
   });
 
-  it.each(['FAST_TESTIMONY', 'WARD_CONFERENCE'])('adds musicians after conducting for %s meetings', (meetingType) => {
+  it.each(['FAST_TESTIMONY', 'WARD_CONFERENCE'])('adds protected introduction item before announcements for %s meetings', (meetingType) => {
     const itemTypes = getDefaultProgramItemsForMeetingType(meetingType).map((item) => item.itemType);
-    const conductingIndex = itemTypes.indexOf('CONDUCTING');
-
-    expect(itemTypes.slice(conductingIndex, conductingIndex + 3)).toEqual(['CONDUCTING', 'ORGANIST_PIANIST', 'CHORISTER']);
-  });
-
-  it('uses a readable label for the combined musician entry', () => {
-    expect(getProgramItemLabel('ORGANIST_PIANIST')).toBe('Organist / Pianist');
+    expect(itemTypes[0]).toBe('INTRODUCTION');
   });
 });

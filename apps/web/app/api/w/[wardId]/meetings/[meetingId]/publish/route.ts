@@ -7,6 +7,7 @@ import { canManageMeetings } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 import { buildMeetingRenderHtml } from '@/src/meetings/render';
+import type { IntroductionRoles } from '@/src/meetings/types';
 import { enqueueOutboxNotificationJob } from '@/src/notifications/queue';
 
 type MeetingRow = {
@@ -22,6 +23,7 @@ type ProgramItemRow = {
   program_notes: string | null;
   hymn_number: string | null;
   hymn_title: string | null;
+  introduction_roles: IntroductionRoles | null;
 };
 
 type AnnouncementRow = {
@@ -69,7 +71,7 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
     }
 
     const programResult = await client.query(
-      `SELECT item_type, title, notes, program_notes, hymn_number, hymn_title
+      `SELECT item_type, title, notes, program_notes, hymn_number, hymn_title, introduction_roles
          FROM meeting_program_item
         WHERE meeting_id = $1::uuid AND ward_id = $2::uuid
         ORDER BY sequence ASC`,
@@ -97,7 +99,8 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
       notes: item.notes,
       programNotes: item.program_notes,
       hymnNumber: item.hymn_number,
-      hymnTitle: item.hymn_title
+      hymnTitle: item.hymn_title,
+      introductionRoles: item.introduction_roles
     }));
 
     const renderHtml = buildMeetingRenderHtml({

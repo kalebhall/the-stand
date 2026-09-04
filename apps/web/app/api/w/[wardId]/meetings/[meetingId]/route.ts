@@ -10,10 +10,21 @@ import { enqueueOutboxNotificationJob } from '@/src/notifications/queue';
 import { enqueueNotificationOutboxEvent, insertNotificationOutboxEvent } from '@/src/notifications/outbox';
 
 const logger = createLogger('meetings');
-import { isMeetingType, type ProgramItemInput } from '@/src/meetings/types';
+import { INTRODUCTION_ITEM_TYPE, isMeetingType, type IntroductionRoles, type ProgramItemInput } from '@/src/meetings/types';
 
 function toTrimmedString(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
+}
+
+function getIntroductionRoles(value: unknown): IntroductionRoles | null {
+  if (!value || typeof value !== 'object') return null;
+  const roles = value as Partial<IntroductionRoles>;
+  return {
+    presiding: toTrimmedString(roles.presiding),
+    conducting: toTrimmedString(roles.conducting),
+    organist: toTrimmedString(roles.organist),
+    chorister: toTrimmedString(roles.chorister)
+  };
 }
 
 type ProgramItemRow = {
@@ -25,6 +36,7 @@ type ProgramItemRow = {
   program_notes: string | null;
   hymn_number: string | null;
   hymn_title: string | null;
+  introduction_roles: IntroductionRoles | null;
   sequence: number;
 };
 
@@ -56,7 +68,7 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
     }
 
     const itemsResult = await client.query(
-      `SELECT id, item_type, title, notes, topic, program_notes, hymn_number, hymn_title, sequence
+      `SELECT id, item_type, title, notes, topic, program_notes, hymn_number, hymn_title, introduction_roles, sequence
          FROM meeting_program_item
         WHERE meeting_id = $1 AND ward_id = $2
         ORDER BY sequence ASC`,
@@ -80,6 +92,7 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
           programNotes: item.program_notes ?? '',
           hymnNumber: item.hymn_number ?? '',
           hymnTitle: item.hymn_title ?? '',
+          introductionRoles: item.introduction_roles ?? undefined,
           sequence: item.sequence
         }))
       }
@@ -145,6 +158,21 @@ export async function PUT(request: Request, context: { params: Promise<{ wardId:
       );
     }
 
+    const protectedIntroductionTypes = new Set(['PRESIDING', 'CONDUCTING', 'ORGANIST_PIANIST', 'CHORISTER']);
+    const introductionIndexes = programItems.reduce<number[]>((indexes, item, index) => {
+      const itemType = toTrimmedString(item?.itemType).toUpperCase();
+      if (protectedIntroductionTypes.has(itemType) || itemType === INTRODUCTION_ITEM_TYPE) indexes.push(index);
+      return indexes;
+    }, []);
+    const requiresIntroduction = !isConferenceMeetingType(existingMeeting.meeting_type);
+    if (
+      (requiresIntroduction && (introductionIndexes.length !== 1 || introductionIndexes[0] !== 0)) ||
+      (!requiresIntroduction && introductionIndexes.length)
+    ) {
+      await client.query('ROLLBACK');
+      return NextResponse.json({ error: 'Invalid protected Introduction item', code: 'BAD_REQUEST' }, { status: 400 });
+    }
+
     await client.query(
       `UPDATE meeting
           SET updated_at = now()
@@ -177,16 +205,17 @@ export async function PUT(request: Request, context: { params: Promise<{ wardId:
         toTrimmedString(item?.topic),
         toTrimmedString(item?.programNotes),
         toTrimmedString(item?.hymnNumber),
-        toTrimmedString(item?.hymnTitle)
+        toTrimmedString(item?.hymnTitle),
+        itemType.toUpperCase() === INTRODUCTION_ITEM_TYPE ? JSON.stringify(getIntroductionRoles(item?.introductionRoles)) : null
       ];
       if (item?.id && retainedIds.includes(item.id)) {
         await client.query(
-          `UPDATE meeting_program_item SET sequence = $3::int, item_type = $4::text, title = NULLIF($5::text, ''), notes = NULLIF($6::text, ''), topic = NULLIF($7::text, ''), program_notes = NULLIF($8::text, ''), hymn_number = NULLIF($9::text, ''), hymn_title = NULLIF($10::text, '') WHERE id = $11::uuid AND meeting_id = $2::uuid AND ward_id = $1::uuid`,
+          `UPDATE meeting_program_item SET sequence = $3::int, item_type = $4::text, title = NULLIF($5::text, ''), notes = NULLIF($6::text, ''), topic = NULLIF($7::text, ''), program_notes = NULLIF($8::text, ''), hymn_number = NULLIF($9::text, ''), hymn_title = NULLIF($10::text, ''), introduction_roles = $11::jsonb WHERE id = $12::uuid AND meeting_id = $2::uuid AND ward_id = $1::uuid`,
           [...values, item.id]
         );
       } else {
         await client.query(
-          `INSERT INTO meeting_program_item (ward_id, meeting_id, sequence, item_type, title, notes, topic, program_notes, hymn_number, hymn_title) VALUES ($1::uuid, $2::uuid, $3::int, $4::text, NULLIF($5::text, ''), NULLIF($6::text, ''), NULLIF($7::text, ''), NULLIF($8::text, ''), NULLIF($9::text, ''), NULLIF($10::text, ''))`,
+          `INSERT INTO meeting_program_item (ward_id, meeting_id, sequence, item_type, title, notes, topic, program_notes, hymn_number, hymn_title, introduction_roles) VALUES ($1::uuid, $2::uuid, $3::int, $4::text, NULLIF($5::text, ''), NULLIF($6::text, ''), NULLIF($7::text, ''), NULLIF($8::text, ''), NULLIF($9::text, ''), NULLIF($10::text, ''), $11::jsonb)`,
           values
         );
       }

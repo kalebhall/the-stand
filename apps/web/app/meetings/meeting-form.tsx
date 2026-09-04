@@ -9,13 +9,19 @@ import { InternalNotesPanel, type InternalNoteRow } from '@/components/InternalN
 import { WardBusinessSection, type BusinessLine } from '@/components/WardBusinessSection';
 import { MemberAutocomplete } from '@/components/ui/member-autocomplete';
 import { toYyyyMmDd } from '@/src/meetings/date';
-import { getProgramItemLabel, isIntroductionItemType, MEETING_TYPES, type ProgramItemInput } from '@/src/meetings/types';
+import {
+  getProgramItemLabel,
+  INTRODUCTION_ITEM_TYPE,
+  MEETING_TYPES,
+  type IntroductionRoles,
+  type ProgramItemInput
+} from '@/src/meetings/types';
 import { getDefaultProgramItemsForMeetingType } from '@/src/meetings/default-program';
 
 import { DeleteMeetingButton } from './delete-meeting-button';
 import { cn } from '@/lib/utils';
 
-const PERSON_ITEM_TYPES = new Set(['PRESIDING', 'CONDUCTING', 'ORGANIST_PIANIST', 'CHORISTER', 'INVOCATION', 'SPEAKER', 'BENEDICTION']);
+const PERSON_ITEM_TYPES = new Set(['INVOCATION', 'SPEAKER', 'BENEDICTION']);
 const HYMN_ITEM_TYPES = new Set(['OPENING_HYMN', 'REST_HYMN', 'CLOSING_HYMN', 'SPECIAL_HYMN', 'SACRAMENT_HYMN']);
 const PLACEHOLDER_ITEM_TYPES = new Set(['SACRAMENT', 'TESTIMONIES']);
 const ANNOUNCEMENT_ITEM_TYPE = 'ANNOUNCEMENT';
@@ -45,7 +51,7 @@ function getItemTitleLabel(itemType: string) {
 function getProgramItemAccentClass(itemType: string) {
   if (HYMN_ITEM_TYPES.has(itemType)) return 'program-item--hymn';
   if (itemType === 'INVOCATION' || itemType === 'BENEDICTION') return 'program-item--prayer';
-  if (itemType === 'SPEAKER' || itemType === 'PRESIDING' || itemType === 'CONDUCTING') return 'program-item--speaker';
+  if (itemType === 'SPEAKER' || itemType === INTRODUCTION_ITEM_TYPE) return 'program-item--speaker';
   if (itemType === 'SACRAMENT') return 'program-item--sacrament';
   if (itemType === BUSINESS_ITEM_TYPE) return 'program-item--business';
   if (itemType === ANNOUNCEMENT_ITEM_TYPE) return 'program-item--announcement';
@@ -69,10 +75,6 @@ type MeetingFormProps = {
 };
 
 const PROGRAM_ITEM_TYPES = [
-  'PRESIDING',
-  'CONDUCTING',
-  'ORGANIST_PIANIST',
-  'CHORISTER',
   'ANNOUNCEMENT',
   'OPENING_HYMN',
   'INVOCATION',
@@ -169,6 +171,19 @@ export function MeetingForm({
 
   function updateProgramItem(index: number, field: keyof ProgramItemInput, value: string) {
     setProgramItems((current) => current.map((item, itemIndex) => (itemIndex === index ? { ...item, [field]: value } : item)));
+  }
+
+  function updateIntroductionRole(index: number, role: keyof IntroductionRoles, value: string) {
+    setProgramItems((current) =>
+      current.map((item, itemIndex) =>
+        itemIndex === index
+          ? {
+              ...item,
+              introductionRoles: { presiding: '', conducting: '', organist: '', chorister: '', ...item.introductionRoles, [role]: value }
+            }
+          : item
+      )
+    );
   }
 
   function updateHymn(index: number, hymnNumber: string, hymnTitle: string) {
@@ -345,49 +360,84 @@ export function MeetingForm({
         </div>
 
         {programItems.map((item, index) => (
-          <div key={`${item.id ?? 'new'}-${index}`}>
-          {isIntroductionItemType(item.itemType) && !programItems.slice(0, index).some((previousItem) => isIntroductionItemType(previousItem.itemType)) ? (
-            <h3 className="mb-2 border-b pb-1 text-base font-semibold">Introduction</h3>
-          ) : null}
           <article
             className={cn('program-item space-y-3 rounded-md border p-3', getProgramItemAccentClass(item.itemType))}
-            draggable
-            onDragStart={(event) => {
-              event.dataTransfer.setData('text/program-item-index', String(index));
-              event.dataTransfer.effectAllowed = 'move';
-            }}
-            onDragOver={(event) => event.preventDefault()}
-            onDrop={(event) => {
-              event.preventDefault();
-              const rawIndex = event.dataTransfer.getData('text/program-item-index');
-              const fromIndex = Number(rawIndex);
-              if (!Number.isNaN(fromIndex)) moveItemToIndex(fromIndex, index);
-            }}
+            draggable={item.itemType !== INTRODUCTION_ITEM_TYPE}
+            onDragStart={
+              item.itemType === INTRODUCTION_ITEM_TYPE
+                ? undefined
+                : (event) => {
+                    event.dataTransfer.setData('text/program-item-index', String(index));
+                    event.dataTransfer.effectAllowed = 'move';
+                  }
+            }
+            onDragOver={item.itemType === INTRODUCTION_ITEM_TYPE ? undefined : (event) => event.preventDefault()}
+            onDrop={
+              item.itemType === INTRODUCTION_ITEM_TYPE
+                ? undefined
+                : (event) => {
+                    event.preventDefault();
+                    const rawIndex = event.dataTransfer.getData('text/program-item-index');
+                    const fromIndex = Number(rawIndex);
+                    if (!Number.isNaN(fromIndex)) moveItemToIndex(fromIndex, index);
+                  }
+            }
           >
             <div className="program-item-header flex items-center justify-between gap-3">
               <div className="flex min-w-0 items-center gap-2">
-                <span className="cursor-grab text-muted-foreground" aria-hidden="true" title="Drag to reorder">
+                <span
+                  className={cn('text-muted-foreground', item.itemType === INTRODUCTION_ITEM_TYPE ? 'opacity-0' : 'cursor-grab')}
+                  aria-hidden="true"
+                  title={item.itemType === INTRODUCTION_ITEM_TYPE ? undefined : 'Drag to reorder'}
+                >
                   ⋮⋮
                 </span>
                 <h3 className="truncate text-sm font-semibold">{getProgramItemLabel(item.itemType)}</h3>
               </div>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="h-7 w-7 p-0"
-                onClick={() => {
-                  if (window.confirm('Delete this program section?')) {
-                    setProgramItems((current) => current.filter((_, itemIndex) => itemIndex !== index));
-                  }
-                }}
-                aria-label="Delete program section"
-              >
-                ×
-              </Button>
+              {item.itemType !== INTRODUCTION_ITEM_TYPE ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 w-7 p-0"
+                  onClick={() => {
+                    if (window.confirm('Delete this program section?')) {
+                      setProgramItems((current) => current.filter((_, itemIndex) => itemIndex !== index));
+                    }
+                  }}
+                  aria-label="Delete program section"
+                >
+                  ×
+                </Button>
+              ) : (
+                <span className="text-xs text-muted-foreground">Required</span>
+              )}
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
-              {!HYMN_ITEM_TYPES.has(item.itemType) && item.itemType !== BUSINESS_ITEM_TYPE ? (
+              {item.itemType === INTRODUCTION_ITEM_TYPE ? (
+                <div className="grid gap-3 sm:col-span-2 sm:grid-cols-2">
+                  {(
+                    [
+                      ['presiding', 'Presiding'],
+                      ['conducting', 'Conducting'],
+                      ['organist', 'Organist / Pianist'],
+                      ['chorister', 'Chorister']
+                    ] as const
+                  ).map(([role, label]) => (
+                    <label key={role} className="space-y-1 text-sm">
+                      <span className="font-medium">{label}</span>
+                      <MemberAutocomplete
+                        wardId={wardId}
+                        value={item.introductionRoles?.[role] ?? ''}
+                        onChange={(value) => updateIntroductionRole(index, role, value)}
+                        className="w-full rounded-md border px-3 py-2"
+                        placeholder="Name"
+                        leadershipOnly={role === 'presiding' || role === 'conducting'}
+                      />
+                    </label>
+                  ))}
+                </div>
+              ) : !HYMN_ITEM_TYPES.has(item.itemType) && item.itemType !== BUSINESS_ITEM_TYPE ? (
                 <label className="space-y-1 text-sm">
                   <span className="font-medium">{getItemTitleLabel(item.itemType)}</span>
                   {PERSON_ITEM_TYPES.has(item.itemType) ? (
@@ -398,7 +448,7 @@ export function MeetingForm({
                       className="w-full rounded-md border px-3 py-2"
                       placeholder="Name"
                       minAge={item.itemType === 'SPEAKER' ? 11 : undefined}
-                      leadershipOnly={item.itemType === 'PRESIDING' || item.itemType === 'CONDUCTING'}
+                      leadershipOnly={false}
                     />
                   ) : item.itemType === ANNOUNCEMENT_ITEM_TYPE ? (
                     <div className="rounded-md border bg-muted p-3 text-sm">
@@ -512,7 +562,6 @@ export function MeetingForm({
               </div>
             ) : null}
           </article>
-          </div>
         ))}
       </section>
 

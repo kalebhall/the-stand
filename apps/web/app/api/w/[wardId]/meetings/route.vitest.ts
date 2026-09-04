@@ -47,6 +47,7 @@ describe('POST /api/w/[wardId]/meetings', () => {
       .mockResolvedValueOnce({ rows: [{ id: 'meeting-1' }] }) // INSERT meeting
       .mockResolvedValueOnce({}) // INSERT program item 1
       .mockResolvedValueOnce({}) // INSERT program item 2
+      .mockResolvedValueOnce({}) // INSERT program item 3
       .mockResolvedValueOnce({}) // INSERT audit_log
       .mockResolvedValueOnce({}); // COMMIT
   });
@@ -60,6 +61,7 @@ describe('POST /api/w/[wardId]/meetings', () => {
           meetingDate: '2026-01-04',
           meetingType: 'SACRAMENT',
           programItems: [
+            { itemType: 'INTRODUCTION', title: '', notes: '', introductionRoles: { presiding: 'Bishop', conducting: 'Counselor', organist: 'Organist', chorister: 'Chorister' }, hymnNumber: '', hymnTitle: '' },
             { itemType: 'OPENING_HYMN', title: '', notes: '', hymnNumber: '2', hymnTitle: 'The Spirit of God' },
             { itemType: 'SPEAKER', title: 'Jane Doe', notes: '', topic: 'Missionary report', hymnNumber: '', hymnTitle: '' }
           ]
@@ -73,24 +75,28 @@ describe('POST /api/w/[wardId]/meetings', () => {
     expect(queryMock).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO meeting_program_item'), [
       'ward-1',
       'meeting-1',
-      1,
+      2,
       'OPENING_HYMN',
       '',
       '',
       '',
+      '',
       '2',
-      'The Spirit of God'
+      'The Spirit of God',
+      null
     ]);
     expect(queryMock).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO meeting_program_item'), [
       'ward-1',
       'meeting-1',
-      2,
+      3,
       'SPEAKER',
       'Jane Doe',
       '',
       'Missionary report',
       '',
-      ''
+      '',
+      '',
+      null
     ]);
     expect(queryMock).toHaveBeenCalledWith(
       expect.stringContaining('INSERT INTO audit_log'),

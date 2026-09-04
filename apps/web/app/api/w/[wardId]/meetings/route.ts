@@ -5,12 +5,23 @@ import { auth } from '@/src/auth/auth';
 import { canManageMeetings, canViewMeetings } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
-import { isMeetingType, type ProgramItemInput } from '@/src/meetings/types';
+import { INTRODUCTION_ITEM_TYPE, isMeetingType, type IntroductionRoles, type ProgramItemInput } from '@/src/meetings/types';
 import { enqueueOutboxNotificationJob } from '@/src/notifications/queue';
 import { enqueueNotificationOutboxEvent, insertNotificationOutboxEvent } from '@/src/notifications/outbox';
 
 function toTrimmedString(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
+}
+
+function getIntroductionRoles(value: unknown): IntroductionRoles | null {
+  if (!value || typeof value !== 'object') return null;
+  const roles = value as Partial<IntroductionRoles>;
+  return {
+    presiding: toTrimmedString(roles.presiding),
+    conducting: toTrimmedString(roles.conducting),
+    organist: toTrimmedString(roles.organist),
+    chorister: toTrimmedString(roles.chorister)
+  };
 }
 
 type MeetingListItem = {
@@ -31,7 +42,6 @@ async function insertProgramItems(
     const itemType = toTrimmedString(item?.itemType);
     if (!itemType) continue;
 
-    const programNotes = toTrimmedString(item?.programNotes);
     const values = [
       wardId,
       meetingId,
@@ -40,14 +50,15 @@ async function insertProgramItems(
       toTrimmedString(item?.title),
       toTrimmedString(item?.notes),
       toTrimmedString(item?.topic),
+      toTrimmedString(item?.programNotes),
       toTrimmedString(item?.hymnNumber),
-      toTrimmedString(item?.hymnTitle)
+      toTrimmedString(item?.hymnTitle),
+      itemType === INTRODUCTION_ITEM_TYPE ? JSON.stringify(getIntroductionRoles(item?.introductionRoles)) : null
     ];
     await client.query(
-      programNotes || item?.programNotes !== undefined
-        ? `INSERT INTO meeting_program_item (ward_id, meeting_id, sequence, item_type, title, notes, topic, program_notes, hymn_number, hymn_title) VALUES ($1, $2, $3, $4, NULLIF($5, ''), NULLIF($6, ''), NULLIF($7, ''), NULLIF($8, ''), NULLIF($9, ''), NULLIF($10, ''))`
-        : `INSERT INTO meeting_program_item (ward_id, meeting_id, sequence, item_type, title, notes, topic, hymn_number, hymn_title) VALUES ($1, $2, $3, $4, NULLIF($5, ''), NULLIF($6, ''), NULLIF($7, ''), NULLIF($8, ''), NULLIF($9, ''))`,
-      programNotes || item?.programNotes !== undefined ? [...values.slice(0, 7), programNotes, ...values.slice(7)] : values
+      `INSERT INTO meeting_program_item (ward_id, meeting_id, sequence, item_type, title, notes, topic, program_notes, hymn_number, hymn_title, introduction_roles)
+       VALUES ($1, $2, $3, $4, NULLIF($5, ''), NULLIF($6, ''), NULLIF($7, ''), NULLIF($8, ''), NULLIF($9, ''), NULLIF($10, ''), $11::jsonb)`,
+      values
     );
   }
 }
@@ -124,6 +135,20 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
 
   if (!meetingDate || !isMeetingType(meetingType)) {
     return NextResponse.json({ error: 'Invalid meeting payload', code: 'BAD_REQUEST' }, { status: 400 });
+  }
+
+  const legacyIntroductionTypes = new Set(['PRESIDING', 'CONDUCTING', 'ORGANIST_PIANIST', 'CHORISTER']);
+  const introductionIndexes = programItems.reduce<number[]>((indexes, item, index) => {
+    const itemType = toTrimmedString(item?.itemType).toUpperCase();
+    if (legacyIntroductionTypes.has(itemType) || itemType === INTRODUCTION_ITEM_TYPE) indexes.push(index);
+    return indexes;
+  }, []);
+  const requiresIntroduction = !['STAKE_CONFERENCE', 'GENERAL_CONFERENCE'].includes(meetingType);
+  if (
+    (requiresIntroduction && (introductionIndexes.length !== 1 || introductionIndexes[0] !== 0)) ||
+    (!requiresIntroduction && introductionIndexes.length)
+  ) {
+    return NextResponse.json({ error: 'Invalid protected Introduction item', code: 'BAD_REQUEST' }, { status: 400 });
   }
 
   const client = await pool.connect();
