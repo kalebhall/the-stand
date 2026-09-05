@@ -12,7 +12,11 @@ export type ProgramItemInput = {
   hymnNumber: string;
   hymnTitle: string;
   introductionRoles?: IntroductionRoles;
+  speakerStatus?: SpeakerStatus;
 };
+
+export const SPEAKER_STATUSES = ['PLANNED', 'INVITED', 'ACCEPTED', 'CONFIRMED', 'COMPLETED'] as const;
+export type SpeakerStatus = (typeof SPEAKER_STATUSES)[number];
 
 export type IntroductionRoles = {
   presiding: string;

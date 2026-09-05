@@ -10,7 +10,7 @@ import { enqueueOutboxNotificationJob } from '@/src/notifications/queue';
 import { enqueueNotificationOutboxEvent, insertNotificationOutboxEvent } from '@/src/notifications/outbox';
 
 const logger = createLogger('meetings');
-import { INTRODUCTION_ITEM_TYPE, isMeetingType, type IntroductionRoles, type ProgramItemInput } from '@/src/meetings/types';
+import { INTRODUCTION_ITEM_TYPE, isMeetingType, SPEAKER_STATUSES, type IntroductionRoles, type ProgramItemInput } from '@/src/meetings/types';
 
 function toTrimmedString(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
@@ -44,6 +44,7 @@ type ProgramItemRow = {
   hymn_number: string | null;
   hymn_title: string | null;
   introduction_roles: IntroductionRoles | null;
+  speaker_status: string | null;
   sequence: number;
 };
 
@@ -75,7 +76,7 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
     }
 
     const itemsResult = await client.query(
-      `SELECT id, item_type, title, notes, topic, program_notes, hymn_number, hymn_title, introduction_roles, sequence
+      `SELECT id, item_type, title, notes, topic, program_notes, hymn_number, hymn_title, introduction_roles, speaker_status, sequence
          FROM meeting_program_item
         WHERE meeting_id = $1 AND ward_id = $2
         ORDER BY sequence ASC`,
@@ -100,6 +101,7 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
           hymnNumber: item.hymn_number ?? '',
           hymnTitle: item.hymn_title ?? '',
           introductionRoles: item.introduction_roles ?? undefined,
+          speakerStatus: item.speaker_status as ProgramItemInput['speakerStatus'],
           sequence: item.sequence
         }))
       }
@@ -209,6 +211,9 @@ export async function PUT(request: Request, context: { params: Promise<{ wardId:
     for (const [index, item] of programItems.entries()) {
       const itemType = toTrimmedString(item?.itemType);
       if (!itemType) continue;
+      const speakerStatus = itemType.toUpperCase() === 'SPEAKER'
+        ? (SPEAKER_STATUSES.includes(item?.speakerStatus as (typeof SPEAKER_STATUSES)[number]) ? item?.speakerStatus : 'PLANNED')
+        : null;
       const values = [
         wardId,
         meetingId,
@@ -220,16 +225,17 @@ export async function PUT(request: Request, context: { params: Promise<{ wardId:
         toTrimmedString(item?.programNotes),
         toTrimmedString(item?.hymnNumber),
         toTrimmedString(item?.hymnTitle),
-        itemType.toUpperCase() === INTRODUCTION_ITEM_TYPE ? JSON.stringify(getIntroductionRoles(item?.introductionRoles)) : null
+        itemType.toUpperCase() === INTRODUCTION_ITEM_TYPE ? JSON.stringify(getIntroductionRoles(item?.introductionRoles)) : null,
+        speakerStatus
       ];
       if (item?.id && retainedIds.includes(item.id)) {
         await client.query(
-          `UPDATE meeting_program_item SET sequence = $3::int, item_type = $4::text, title = NULLIF($5::text, ''), notes = NULLIF($6::text, ''), topic = NULLIF($7::text, ''), program_notes = NULLIF($8::text, ''), hymn_number = NULLIF($9::text, ''), hymn_title = NULLIF($10::text, ''), introduction_roles = $11::jsonb WHERE id = $12::uuid AND meeting_id = $2::uuid AND ward_id = $1::uuid`,
+          `UPDATE meeting_program_item SET sequence = $3::int, item_type = $4::text, title = NULLIF($5::text, ''), notes = NULLIF($6::text, ''), topic = NULLIF($7::text, ''), program_notes = NULLIF($8::text, ''), hymn_number = NULLIF($9::text, ''), hymn_title = NULLIF($10::text, ''), introduction_roles = $11::jsonb, speaker_status = $12::text WHERE id = $13::uuid AND meeting_id = $2::uuid AND ward_id = $1::uuid`,
           [...values, item.id]
         );
       } else {
         await client.query(
-          `INSERT INTO meeting_program_item (ward_id, meeting_id, sequence, item_type, title, notes, topic, program_notes, hymn_number, hymn_title, introduction_roles) VALUES ($1::uuid, $2::uuid, $3::int, $4::text, NULLIF($5::text, ''), NULLIF($6::text, ''), NULLIF($7::text, ''), NULLIF($8::text, ''), NULLIF($9::text, ''), NULLIF($10::text, ''), $11::jsonb)`,
+          `INSERT INTO meeting_program_item (ward_id, meeting_id, sequence, item_type, title, notes, topic, program_notes, hymn_number, hymn_title, introduction_roles, speaker_status) VALUES ($1::uuid, $2::uuid, $3::int, $4::text, NULLIF($5::text, ''), NULLIF($6::text, ''), NULLIF($7::text, ''), NULLIF($8::text, ''), NULLIF($9::text, ''), NULLIF($10::text, ''), $11::jsonb, $12::text)`,
           values
         );
       }

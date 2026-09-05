@@ -20,6 +20,7 @@ describe('getDefaultProgramItemsForMeetingType', () => {
       'CLOSING_HYMN',
       'BENEDICTION'
     ]);
+    expect(getDefaultProgramItemsForMeetingType('SACRAMENT').filter((item) => item.itemType === 'SPEAKER').every((item) => item.speakerStatus === 'PLANNED')).toBe(true);
   });
 
   it('returns the conference template with only announcements', () => {
