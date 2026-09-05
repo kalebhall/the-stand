@@ -1,5 +1,6 @@
 import { isAnnouncementActiveForDate, type AnnouncementRenderItem } from '../announcements/types';
 import { getProgramItemLabel, INTRODUCTION_ITEM_TYPE, type IntroductionRoles } from './types';
+import type { PublicAnnouncementMode, PublicCoverMode, PublicLayoutPreset } from './public-layout';
 
 export type MeetingRenderItem = {
   itemType: string;
@@ -17,6 +18,11 @@ export type MeetingRenderInput = {
   meetingType: string;
   programItems: MeetingRenderItem[];
   announcements?: AnnouncementRenderItem[];
+  layout?: {
+    preset: PublicLayoutPreset;
+    announcementMode: PublicAnnouncementMode;
+    coverMode: PublicCoverMode;
+  };
 };
 
 const SACRAMENT_PRAYERS = [
@@ -53,15 +59,19 @@ function renderAnnouncementBlock(items: AnnouncementRenderItem[]) {
     .join('')}</section>`;
 }
 
-export function buildMeetingRenderHtml({ meetingDate, meetingType, programItems, announcements = [] }: MeetingRenderInput) {
+export function buildMeetingRenderHtml({ meetingDate, meetingType, programItems, announcements = [], layout }: MeetingRenderInput) {
+  const selectedLayout = layout ?? { preset: 'FULL_PAGE' as const, announcementMode: 'AFTER_PROGRAM' as const, coverMode: 'NONE' as const };
   const escapedDate = escapeHtml(meetingDate);
   const escapedType = escapeHtml(meetingType.replaceAll('_', ' '));
+  const layoutClass = `public-program public-program--${selectedLayout.preset.toLowerCase()}`;
+  const foldGuide = selectedLayout.preset === 'FULL_PAGE' ? '' : '<div class="print-fold-guides" aria-hidden="true"></div>';
+  const cover = selectedLayout.coverMode === 'AUTHORIZED_IMAGE' ? '<p class="text-xs text-muted-foreground">Ward-authorized cover image slot</p>' : '';
 
   const activeAnnouncements = announcements
     .filter((item) => item.includeInProgram !== false)
     .filter((item) => isAnnouncementActiveForDate(item, meetingDate));
-  const topAnnouncements = activeAnnouncements.filter((item) => item.placement === 'PROGRAM_TOP');
-  const bottomAnnouncements = activeAnnouncements.filter((item) => item.placement === 'PROGRAM_BOTTOM');
+  const topAnnouncements = selectedLayout.announcementMode === 'NONE' ? [] : activeAnnouncements.filter((item) => item.placement === 'PROGRAM_TOP');
+  const bottomAnnouncements = selectedLayout.announcementMode === 'NONE' ? [] : activeAnnouncements.filter((item) => selectedLayout.announcementMode === 'BACK_PANEL' || item.placement === 'PROGRAM_BOTTOM');
 
   const itemsHtml = programItems
     .map((item) => {
@@ -99,5 +109,5 @@ export function buildMeetingRenderHtml({ meetingDate, meetingType, programItems,
     (line) => `<p class="text-xs leading-relaxed text-muted-foreground">${escapeHtml(line)}</p>`
   ).join('');
 
-  return `<main class="print-page mx-auto max-w-3xl space-y-6 p-4 sm:p-8"><header class="space-y-2 border-b pb-4 text-center"><h1 class="text-2xl font-semibold">Sacrament Meeting Program</h1><p class="text-sm text-muted-foreground">${escapedDate}</p><p class="text-sm text-muted-foreground">${escapedType}</p></header>${renderAnnouncementBlock(topAnnouncements)}<section class="space-y-2">${itemsHtml}</section>${renderAnnouncementBlock(bottomAnnouncements)}<section class="space-y-2"><h2 class="text-base font-semibold">Sacrament Prayers</h2>${prayersHtml}</section></main>`;
+  return `<main class="${layoutClass} mx-auto max-w-3xl space-y-6 p-4 sm:p-8" data-layout-preset="${selectedLayout.preset}" data-announcement-mode="${selectedLayout.announcementMode}"><header class="public-program__cover space-y-2 border-b pb-4 text-center"><h1 class="text-2xl font-semibold">Sacrament Meeting Program</h1><p class="text-sm text-muted-foreground">${escapedDate}</p><p class="text-sm text-muted-foreground">${escapedType}</p>${cover}</header>${foldGuide}${renderAnnouncementBlock(topAnnouncements)}<section class="space-y-2">${itemsHtml}</section>${renderAnnouncementBlock(bottomAnnouncements)}<section class="space-y-2"><h2 class="text-base font-semibold">Sacrament Prayers</h2>${prayersHtml}</section></main>`;
 }

@@ -40,6 +40,12 @@ type RenderRow = {
   version: number;
 };
 
+type LayoutRow = {
+  preset: 'SINGLE_SHEET_BIFOLD' | 'TRI_FOLD_BULLETIN' | 'FULL_PAGE';
+  announcement_mode: 'NONE' | 'AFTER_PROGRAM' | 'BACK_PANEL';
+  cover_mode: 'NONE' | 'AUTHORIZED_IMAGE';
+};
+
 export default async function PrintMeetingPage({
   params,
   searchParams
@@ -117,6 +123,12 @@ export default async function PrintMeetingPage({
       [session.activeWardId]
     );
 
+    const layoutResult = await client.query(
+      'SELECT preset, announcement_mode, cover_mode FROM public_program_layout WHERE ward_id = $1::uuid LIMIT 1',
+      [session.activeWardId]
+    );
+    const layout = (layoutResult.rows?.[0] as LayoutRow | undefined) ?? { preset: 'FULL_PAGE' as const, announcement_mode: 'AFTER_PROGRAM' as const, cover_mode: 'NONE' as const };
+
     const renderHtml = buildMeetingRenderHtml({
       meetingDate,
       meetingType: meeting.meeting_type,
@@ -138,7 +150,12 @@ export default async function PrintMeetingPage({
         isPermanent: item.is_permanent,
         placement: item.placement,
         includeInProgram: item.include_in_program
-      }))
+      })),
+      layout: {
+        preset: layout.preset,
+        announcementMode: layout.announcement_mode,
+        coverMode: layout.cover_mode
+      }
     });
 
     await client.query('COMMIT');

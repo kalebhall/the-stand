@@ -35,6 +35,12 @@ type AnnouncementRow = {
   placement: 'PROGRAM_TOP' | 'PROGRAM_BOTTOM';
 };
 
+type LayoutRow = {
+  preset: 'SINGLE_SHEET_BIFOLD' | 'TRI_FOLD_BULLETIN' | 'FULL_PAGE';
+  announcement_mode: 'NONE' | 'AFTER_PROGRAM' | 'BACK_PANEL';
+  cover_mode: 'NONE' | 'AUTHORIZED_IMAGE';
+};
+
 function generatePublicToken(): string {
   return randomBytes(24).toString('base64url');
 }
@@ -86,6 +92,12 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
       [wardId]
     );
 
+    const layoutResult = await client.query(
+      'SELECT preset, announcement_mode, cover_mode FROM public_program_layout WHERE ward_id = $1::uuid LIMIT 1',
+      [wardId]
+    );
+    const layout = (layoutResult.rows?.[0] as LayoutRow | undefined) ?? { preset: 'FULL_PAGE' as const, announcement_mode: 'AFTER_PROGRAM' as const, cover_mode: 'NONE' as const };
+
     const versionResult = await client.query(
       'SELECT COALESCE(MAX(version), 0)::int AS latest_version FROM meeting_program_render WHERE meeting_id = $1::uuid',
       [meetingId]
@@ -115,7 +127,12 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
         isPermanent: item.is_permanent,
         placement: item.placement,
         includeInProgram: item.include_in_program
-      }))
+      })),
+      layout: {
+        preset: layout.preset,
+        announcementMode: layout.announcement_mode,
+        coverMode: layout.cover_mode
+      }
     });
 
     await client.query(

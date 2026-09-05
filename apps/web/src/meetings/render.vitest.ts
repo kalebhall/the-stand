@@ -146,4 +146,20 @@ describe('buildMeetingRenderHtml', () => {
     expect(html).toContain('Please welcome our speaker.');
     expect(html).toContain('Finding peace through prayer');
   });
+
+  it('applies selected preset and announcement mode to output', () => {
+    const html = buildMeetingRenderHtml({
+      meetingDate: '2026-01-04',
+      meetingType: 'SACRAMENT',
+      programItems: [],
+      announcements: [{ title: 'Hidden by layout', body: null, startDate: null, endDate: null, isPermanent: true, placement: 'PROGRAM_TOP' }],
+      layout: { preset: 'TRI_FOLD_BULLETIN', announcementMode: 'NONE', coverMode: 'AUTHORIZED_IMAGE' }
+    });
+
+    expect(html).toContain('public-program--tri_fold_bulletin');
+    expect(html).toContain('data-announcement-mode="NONE"');
+    expect(html).toContain('Ward-authorized cover image slot');
+    expect(html).not.toContain('Hidden by layout');
+    expect(html).toContain('print-fold-guides');
+  });
 });

@@ -147,8 +147,8 @@ flowchart LR
 | `web:imports` | `web:imports` | 14 |
 | `web:app` | `web:meetings` | 12 |
 | `web:api` | `web:imports` | 11 |
+| `web:meetings` | `web:meetings` | 9 |
 | `web:auth` | `web:auth` | 8 |
-| `web:meetings` | `web:meetings` | 8 |
 | `web:api` | `web:meetings` | 5 |
 | `web:stand` | `web:stand` | 5 |
 | `web:api` | `web:leadership` | 4 |
@@ -596,7 +596,7 @@ flowchart LR
 | `apps/web/src/meetings/default-program.vitest.ts` | `web:meetings` | 2 | 1 |
 | `apps/web/src/meetings/public-layout.ts` | `web:meetings` | 0 | 0 |
 | `apps/web/src/meetings/public-layout.vitest.ts` | `web:meetings` | 1 | 1 |
-| `apps/web/src/meetings/render.ts` | `web:meetings` | 2 | 0 |
+| `apps/web/src/meetings/render.ts` | `web:meetings` | 3 | 0 |
 | `apps/web/src/meetings/render.vitest.ts` | `web:meetings` | 1 | 1 |
 | `apps/web/src/meetings/technology.ts` | `web:meetings` | 0 | 0 |
 | `apps/web/src/meetings/technology.vitest.ts` | `web:meetings` | 1 | 1 |

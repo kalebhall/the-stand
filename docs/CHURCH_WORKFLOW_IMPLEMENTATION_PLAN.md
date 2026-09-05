@@ -325,7 +325,7 @@ Public output must exclude private notes, leadership follow-up, interview detail
 
 ## Option 5A: Layout presets
 
-**Implementation status:** Persisted, ward-scoped layout settings now support `SINGLE_SHEET_BIFOLD`, `TRI_FOLD_BULLETIN`, and `FULL_PAGE` presets, plus `NONE`/`AFTER_PROGRAM`/`BACK_PANEL` announcement modes and `NONE`/`AUTHORIZED_IMAGE` cover modes. Protected `/settings/public-layout` editor and API validate values server-side. Print rendering, image upload/alt-text workflow, fold guides, and published snapshot/version remain follow-up work.
+**Implementation status:** Persisted, ward-scoped layout settings now flow into print rendering and publish snapshots. Renderer applies preset data attributes, announcement mode filtering, text-first cover fallback, and fold-guide marker for bifold/tri-fold output. Public URLs serve published snapshots containing selected layout. Image upload/alt-text workflow, richer panel pagination, and QR output remain follow-up work.
 
 Offer named presets instead of forcing users to design from scratch.
 
