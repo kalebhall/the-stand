@@ -161,5 +161,6 @@ describe('buildMeetingRenderHtml', () => {
     expect(html).toContain('Ward-authorized cover image slot');
     expect(html).not.toContain('Hidden by layout');
     expect(html).toContain('print-fold-guides');
+    expect(html).toContain('column-count: 3');
   });
 });
