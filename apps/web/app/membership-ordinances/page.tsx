@@ -38,6 +38,12 @@ type ActionQueryRow = {
   responsible_leader: string | null;
   interview_status: MembershipOrdinanceActionRow['interviewStatus'];
   lcr_follow_up_status: MembershipOrdinanceActionRow['lcrFollowUpStatus'];
+  record_form_needed: boolean;
+  handoff_date: string | null;
+  official_record_updated_by: string | null;
+  certificate_or_form_delivered: boolean;
+  official_system_follow_up_status: MembershipOrdinanceActionRow['officialSystemFollowUpStatus'];
+  official_system_reference_url: string | null;
 };
 
 function displayDate(value: string | null): string {
@@ -89,6 +95,11 @@ function ActionCard({ action, wardId }: { action: MembershipOrdinanceActionRow; 
         {action.lcrFollowUpStatus === 'needed' ? (
           <span className="rounded bg-amber-500/10 px-2 py-1 font-medium text-amber-700 dark:text-amber-300">LCR update needed</span>
         ) : null}
+        {action.recordFormNeeded && action.officialSystemFollowUpStatus !== 'not_applicable' ? (
+          <span className="rounded bg-blue-500/10 px-2 py-1 font-medium text-blue-700 dark:text-blue-300">
+            Official record: {action.officialSystemFollowUpStatus.replaceAll('_', ' ')}
+          </span>
+        ) : null}
       </div>
 
       <div className="mt-4 flex flex-wrap gap-2">
@@ -116,7 +127,10 @@ export default async function MembershipOrdinancesPage({ searchParams }: { searc
     await setDbContext(client, { userId: session.user.id, wardId: session.activeWardId });
     const result = await client.query(
       `SELECT a.id, a.meeting_id, m.meeting_date, m.meeting_type, a.member_name, a.action_type, a.status,
-              a.planned_date, a.responsible_leader, a.interview_status, a.lcr_follow_up_status
+              a.planned_date, a.responsible_leader, a.interview_status, a.lcr_follow_up_status,
+              a.record_form_needed, a.handoff_date, a.official_record_updated_by,
+              a.certificate_or_form_delivered, a.official_system_follow_up_status,
+              a.official_system_reference_url
          FROM meeting_membership_ordinance a
          JOIN meeting m ON m.id = a.meeting_id AND m.ward_id = a.ward_id
         WHERE a.ward_id = $1::uuid
@@ -137,7 +151,13 @@ export default async function MembershipOrdinancesPage({ searchParams }: { searc
       plannedDate: row.planned_date,
       responsibleLeader: row.responsible_leader,
       interviewStatus: row.interview_status,
-      lcrFollowUpStatus: row.lcr_follow_up_status
+      lcrFollowUpStatus: row.lcr_follow_up_status,
+      recordFormNeeded: row.record_form_needed,
+      handoffDate: row.handoff_date,
+      officialRecordUpdatedBy: row.official_record_updated_by,
+      certificateOrFormDelivered: row.certificate_or_form_delivered,
+      officialSystemFollowUpStatus: row.official_system_follow_up_status,
+      officialSystemReferenceUrl: row.official_system_reference_url
     }));
     const actions = allActions.filter((action) => matchesMembershipOrdinanceFilters(action, {
       query: filters.q,
@@ -185,6 +205,7 @@ export default async function MembershipOrdinancesPage({ searchParams }: { searc
               <option value="all">All follow-up</option>
               <option value="interview">Interview needed</option>
               <option value="lcr">LCR update needed</option>
+              <option value="official-record">Official-record handoff needed</option>
               <option value="overdue">Overdue</option>
             </select>
             <button type="submit" className={cn(buttonVariants({ size: 'sm' }))}>Apply filters</button>
