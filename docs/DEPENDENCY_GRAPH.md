@@ -14,8 +14,8 @@ flowchart LR
   A2["root:other<br/>1 files"]
   A3["root:tooling<br/>6 files"]
   A4["web:announcements<br/>2 files"]
-  A5["web:api<br/>77 files"]
-  A6["web:app<br/>102 files"]
+  A5["web:api<br/>78 files"]
+  A6["web:app<br/>104 files"]
   A7["web:audit<br/>2 files"]
   A8["web:auth<br/>11 files"]
   A9["web:bootstrap.mjs<br/>1 files"]
@@ -29,7 +29,7 @@ flowchart LR
   A17["web:imports<br/>19 files"]
   A18["web:leadership<br/>4 files"]
   A19["web:lib<br/>9 files"]
-  A20["web:meetings<br/>7 files"]
+  A20["web:meetings<br/>9 files"]
   A21["web:notes<br/>1 files"]
   A22["web:notifications<br/>23 files"]
   A23["web:offline<br/>2 files"]
@@ -39,11 +39,11 @@ flowchart LR
   A27["web:types<br/>2 files"]
   A28["web:ui<br/>30 files"]
   A29["web:version.mjs<br/>1 files"]
-  A5 -->|109| A8
-  A6 -->|100| A28
-  A5 -->|99| A14
-  A6 -->|78| A8
-  A6 -->|46| A14
+  A5 -->|111| A8
+  A6 -->|104| A28
+  A5 -->|101| A14
+  A6 -->|80| A8
+  A6 -->|48| A14
   A5 -->|40| A22
   A5 -->|23| A19
   A5 -->|16| A7
@@ -101,8 +101,8 @@ flowchart LR
 | `root:other` | 1 |
 | `root:tooling` | 6 |
 | `web:announcements` | 2 |
-| `web:api` | 77 |
-| `web:app` | 102 |
+| `web:api` | 78 |
+| `web:app` | 104 |
 | `web:audit` | 2 |
 | `web:auth` | 11 |
 | `web:bootstrap.mjs` | 1 |
@@ -116,7 +116,7 @@ flowchart LR
 | `web:imports` | 19 |
 | `web:leadership` | 4 |
 | `web:lib` | 9 |
-| `web:meetings` | 7 |
+| `web:meetings` | 9 |
 | `web:notes` | 1 |
 | `web:notifications` | 23 |
 | `web:offline` | 2 |
@@ -131,12 +131,12 @@ flowchart LR
 
 | Importing area | Imported area | Imports |
 | --- | --- | ---: |
-| `web:api` | `web:auth` | 109 |
-| `web:app` | `web:ui` | 100 |
-| `web:api` | `web:db` | 99 |
-| `web:app` | `web:auth` | 78 |
-| `web:app` | `web:db` | 46 |
-| `web:app` | `web:app` | 42 |
+| `web:api` | `web:auth` | 111 |
+| `web:app` | `web:ui` | 104 |
+| `web:api` | `web:db` | 101 |
+| `web:app` | `web:auth` | 80 |
+| `web:app` | `web:db` | 48 |
+| `web:app` | `web:app` | 43 |
 | `web:api` | `web:notifications` | 40 |
 | `web:notifications` | `web:notifications` | 32 |
 | `web:ui` | `web:ui` | 27 |
@@ -148,7 +148,7 @@ flowchart LR
 | `web:api` | `web:imports` | 11 |
 | `web:app` | `web:meetings` | 11 |
 | `web:auth` | `web:auth` | 8 |
-| `web:meetings` | `web:meetings` | 6 |
+| `web:meetings` | `web:meetings` | 7 |
 | `web:stand` | `web:stand` | 5 |
 | `web:api` | `web:leadership` | 4 |
 | `web:api` | `web:meetings` | 4 |
@@ -207,9 +207,9 @@ flowchart LR
 
 | Importing area | Package/runtime | Imports |
 | --- | --- | ---: |
-| `web:app` | `next` | 79 |
-| `web:api` | `next` | 58 |
-| `web:app` | `react` | 29 |
+| `web:app` | `next` | 80 |
+| `web:api` | `next` | 59 |
+| `web:app` | `react` | 30 |
 | `web:ui` | `react` | 27 |
 | `web:api` | `vitest` | 18 |
 | `web:ui` | `next` | 14 |
@@ -221,6 +221,7 @@ flowchart LR
 | `web:imports` | `vitest` | 7 |
 | `web:auth` | `next-auth` | 6 |
 | `web:auth` | `vitest` | 4 |
+| `web:meetings` | `vitest` | 4 |
 | `web:tooling` | `Node.js` | 4 |
 | `web:ui` | `next-auth` | 4 |
 | `web:app` | `@testing-library/react` | 3 |
@@ -231,7 +232,6 @@ flowchart LR
 | `web:db` | `drizzle-orm` | 3 |
 | `web:db` | `vitest` | 3 |
 | `web:lib` | `vitest` | 3 |
-| `web:meetings` | `vitest` | 3 |
 | `web:stand` | `vitest` | 3 |
 | `web:ui` | `@testing-library/react` | 3 |
 | `web:ui` | `vitest` | 3 |
@@ -355,6 +355,7 @@ flowchart LR
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/publish/route.ts` | `web:api` | 8 | 2 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/publish/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/route.ts` | `web:api` | 9 | 1 |
+| `apps/web/app/api/w/[wardId]/meetings/[meetingId]/technology/route.ts` | `web:api` | 4 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/route.ts` | `web:api` | 8 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/members/[memberId]/route.ts` | `web:api` | 5 | 1 |
@@ -468,6 +469,8 @@ flowchart LR
 | `apps/web/app/support/users/page.tsx` | `web:app` | 7 | 2 |
 | `apps/web/app/support/users/support-grants.ts` | `web:app` | 0 | 0 |
 | `apps/web/app/support/users/support-grants.vitest.ts` | `web:app` | 1 | 1 |
+| `apps/web/app/technology/page.tsx` | `web:app` | 7 | 1 |
+| `apps/web/app/technology/technology-client.tsx` | `web:app` | 2 | 1 |
 | `apps/web/app/ward-council/page.tsx` | `web:app` | 0 | 1 |
 | `apps/web/components/AddCallingForm.tsx` | `web:ui` | 3 | 1 |
 | `apps/web/components/AddCallingSection.tsx` | `web:ui` | 1 | 1 |
@@ -590,6 +593,8 @@ flowchart LR
 | `apps/web/src/meetings/default-program.vitest.ts` | `web:meetings` | 2 | 1 |
 | `apps/web/src/meetings/render.ts` | `web:meetings` | 2 | 0 |
 | `apps/web/src/meetings/render.vitest.ts` | `web:meetings` | 1 | 1 |
+| `apps/web/src/meetings/technology.ts` | `web:meetings` | 0 | 0 |
+| `apps/web/src/meetings/technology.vitest.ts` | `web:meetings` | 1 | 1 |
 | `apps/web/src/meetings/types.ts` | `web:meetings` | 0 | 0 |
 | `apps/web/src/notes/types.ts` | `web:notes` | 0 | 0 |
 | `apps/web/src/notifications/diagnostics.ts` | `web:notifications` | 0 | 1 |

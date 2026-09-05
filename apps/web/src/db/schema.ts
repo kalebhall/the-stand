@@ -351,6 +351,23 @@ export const scheduledInterview = pgTable('scheduled_interview', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
 });
 
+export const meetingTechnologyChecklist = pgTable('meeting_technology_checklist', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
+  meetingId: uuid('meeting_id').notNull().references(() => meeting.id, { onDelete: 'cascade' }),
+  ownerName: text('owner_name'),
+  roomReady: boolean('room_ready').notNull().default(false),
+  audioReady: boolean('audio_ready').notNull().default(false),
+  streamReady: boolean('stream_ready').notNull().default(false),
+  accessibilityChecked: boolean('accessibility_checked').notNull().default(false),
+  authorizedLink: text('authorized_link'),
+  startConfirmedAt: timestamp('start_confirmed_at', { withTimezone: true }),
+  stopConfirmedAt: timestamp('stop_confirmed_at', { withTimezone: true }),
+  recordingDeletionReminder: boolean('recording_deletion_reminder').notNull().default(false),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
+});
+
 export const announcement = pgTable('announcement', {
   id: uuid('id').defaultRandom().primaryKey(),
   wardId: uuid('ward_id')

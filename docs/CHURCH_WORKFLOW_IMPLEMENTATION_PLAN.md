@@ -306,6 +306,8 @@ Do not store copied ordinance details or replace LCR status.
 
 **Tasks:** Add optional meeting checklist with owner, audio/room/stream readiness, authorized link, accessibility check, start/stop confirmation, and recording deletion reminder. Keep secrets outside The Stand.
 
+**Implementation status:** Protected `/technology` checklist now tracks owner, room/audio/stream/accessibility readiness, HTTPS authorized link, start/stop confirmation, and recording deletion reminder. Schema/API enforce ward scope and reject non-HTTPS links. Credentials and network secrets remain excluded. Dashboard shortcut, offline reference, and automatic reminders remain follow-up work.
+
 ---
 
 # Phase 5 — Public program and printed-program designer
