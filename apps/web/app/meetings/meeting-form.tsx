@@ -14,6 +14,7 @@ import {
   INTRODUCTION_ITEM_TYPE,
   MEETING_TYPES,
   SPEAKER_STATUSES,
+  validateProgramItemsForMeetingType,
   type IntroductionRoles,
   type ProgramItemInput,
   type VisitingStakeLeader
@@ -411,6 +412,11 @@ export function MeetingForm({
             </Button>
           </div>
         </div>
+        {validateProgramItemsForMeetingType(meetingType, programItems) ? (
+          <p className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900" role="alert">
+            Fast-and-testimony meetings use testimony participation rather than assigned speakers or special musical selections. Save blocked until those items are removed.
+          </p>
+        ) : null}
 
         {programItems.map((item, index) => (
           <article

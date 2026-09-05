@@ -10,7 +10,7 @@ import { enqueueOutboxNotificationJob } from '@/src/notifications/queue';
 import { enqueueNotificationOutboxEvent, insertNotificationOutboxEvent } from '@/src/notifications/outbox';
 
 const logger = createLogger('meetings');
-import { INTRODUCTION_ITEM_TYPE, isMeetingType, SPEAKER_STATUSES, type IntroductionRoles, type ProgramItemInput } from '@/src/meetings/types';
+import { INTRODUCTION_ITEM_TYPE, isMeetingType, SPEAKER_STATUSES, validateProgramItemsForMeetingType, type IntroductionRoles, type ProgramItemInput } from '@/src/meetings/types';
 
 function toTrimmedString(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
@@ -165,6 +165,12 @@ export async function PUT(request: Request, context: { params: Promise<{ wardId:
         { error: 'Meeting date and type cannot be changed after creation', code: 'IMMUTABLE_FIELDS' },
         { status: 409 }
       );
+    }
+
+    const programRuleError = validateProgramItemsForMeetingType(existingMeeting.meeting_type, programItems);
+    if (programRuleError) {
+      await client.query('ROLLBACK');
+      return NextResponse.json({ error: programRuleError, code: 'MEETING_TYPE_RULE' }, { status: 422 });
     }
 
     const protectedIntroductionTypes = new Set(['PRESIDING', 'CONDUCTING', 'ORGANIST_PIANIST', 'CHORISTER']);

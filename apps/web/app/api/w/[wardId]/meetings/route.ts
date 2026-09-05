@@ -5,7 +5,7 @@ import { auth } from '@/src/auth/auth';
 import { canManageMeetings, canViewMeetings } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
-import { INTRODUCTION_ITEM_TYPE, isMeetingType, SPEAKER_STATUSES, type IntroductionRoles, type ProgramItemInput } from '@/src/meetings/types';
+import { INTRODUCTION_ITEM_TYPE, isMeetingType, SPEAKER_STATUSES, validateProgramItemsForMeetingType, type IntroductionRoles, type ProgramItemInput } from '@/src/meetings/types';
 import { enqueueOutboxNotificationJob } from '@/src/notifications/queue';
 import { enqueueNotificationOutboxEvent, insertNotificationOutboxEvent } from '@/src/notifications/outbox';
 
@@ -147,6 +147,8 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
   if (!meetingDate || !isMeetingType(meetingType)) {
     return NextResponse.json({ error: 'Invalid meeting payload', code: 'BAD_REQUEST' }, { status: 400 });
   }
+  const programRuleError = validateProgramItemsForMeetingType(meetingType, programItems);
+  if (programRuleError) return NextResponse.json({ error: programRuleError, code: 'MEETING_TYPE_RULE' }, { status: 422 });
 
   const legacyIntroductionTypes = new Set(['PRESIDING', 'CONDUCTING', 'ORGANIST_PIANIST', 'CHORISTER']);
   const introductionIndexes = programItems.reduce<number[]>((indexes, item, index) => {

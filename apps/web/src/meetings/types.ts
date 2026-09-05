@@ -37,6 +37,12 @@ export function isMeetingType(value: string): value is MeetingType {
   return MEETING_TYPES.includes(value as MeetingType);
 }
 
+export function validateProgramItemsForMeetingType(meetingType: string, items: Pick<ProgramItemInput, 'itemType'>[]): string | null {
+  if (meetingType !== 'FAST_TESTIMONY') return null;
+  const forbidden = items.map((item) => item.itemType.toUpperCase()).filter((itemType) => itemType === 'SPEAKER' || itemType === 'SPECIAL_HYMN');
+  return forbidden.length ? 'Fast-and-testimony meetings cannot include assigned speakers or special musical selections.' : null;
+}
+
 export function getProgramItemLabel(itemType: string): string {
   if (itemType.toUpperCase() === 'ORGANIST_PIANIST') return 'Organist / Pianist';
 
