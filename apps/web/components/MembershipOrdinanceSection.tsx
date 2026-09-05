@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -90,9 +91,14 @@ export function MembershipOrdinanceSection({ wardId, meetingId, actions, canMana
 
   return (
     <section className="space-y-4 rounded-lg border bg-card p-4">
-      <div>
-        <h2 className="text-lg font-semibold">Membership and Ordinances</h2>
-        <p className="text-sm text-muted-foreground">Welcome, blessing, and priesthood actions for this meeting.</p>
+      <div className="flex flex-wrap items-start justify-between gap-3 rounded-md bg-muted/40 p-3">
+        <div>
+          <h2 className="text-lg font-semibold">Membership and Ordinances</h2>
+          <p className="text-sm text-muted-foreground">Welcome, blessing, and priesthood actions for this meeting.</p>
+        </div>
+        <Link href="/membership-ordinances" className="text-sm font-medium underline underline-offset-4">
+          Open workspace
+        </Link>
       </div>
       {canManage ? (
         <div className="grid gap-3 rounded-md border bg-background p-3 sm:grid-cols-2">

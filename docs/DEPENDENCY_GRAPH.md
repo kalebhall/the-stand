@@ -200,7 +200,7 @@ flowchart LR
 | `web:app` | `react` | 27 |
 | `web:ui` | `react` | 27 |
 | `web:api` | `vitest` | 18 |
-| `web:ui` | `next` | 13 |
+| `web:ui` | `next` | 14 |
 | `root:tooling` | `Node.js` | 12 |
 | `web:notifications` | `vitest` | 9 |
 | `web:notifications` | `pg` | 8 |
@@ -450,7 +450,7 @@ flowchart LR
 | `apps/web/components/CallingReleaseButton.tsx` | `web:ui` | 1 | 2 |
 | `apps/web/components/HymnAutocomplete.tsx` | `web:ui` | 0 | 1 |
 | `apps/web/components/InternalNotesPanel.tsx` | `web:ui` | 2 | 1 |
-| `apps/web/components/MembershipOrdinanceSection.tsx` | `web:ui` | 2 | 1 |
+| `apps/web/components/MembershipOrdinanceSection.tsx` | `web:ui` | 2 | 2 |
 | `apps/web/components/StandardCallingsManager.tsx` | `web:ui` | 1 | 2 |
 | `apps/web/components/WardBusinessSection.tsx` | `web:ui` | 2 | 2 |
 | `apps/web/components/WardBusinessSection.vitest.tsx` | `web:ui` | 1 | 3 |
