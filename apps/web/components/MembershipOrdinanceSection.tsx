@@ -10,7 +10,7 @@ import { PRIESTHOOD_OFFICE_LABELS, type PriesthoodOffice } from '@/src/church-ac
 export type MembershipOrdinanceAction = {
   id: string;
   member_name: string;
-  action_type: 'WELCOME_NEW_MEMBER' | 'RECOGNIZE_BAPTIZED_CHILD' | 'BAPTISM_CONFIRMATION_FOLLOW_UP' | 'BABY_BLESSING' | 'PRIESTHOOD_ORDINATION' | 'PRIESTHOOD_ADVANCEMENT';
+  action_type: 'WELCOME_NEW_MEMBER' | 'RECOGNIZE_BAPTIZED_CHILD' | 'BAPTISM_CONFIRMATION_FOLLOW_UP' | 'ATTENDANCE_LCR_HANDOFF' | 'BABY_BLESSING' | 'PRIESTHOOD_ORDINATION' | 'PRIESTHOOD_ADVANCEMENT';
   priesthood_office?: PriesthoodOffice | null;
   reason: string | null;
   details: string | null;
@@ -44,6 +44,7 @@ const OPTIONS = [
   ['WELCOME_NEW_MEMBER', 'Welcome new ward member'],
   ['RECOGNIZE_BAPTIZED_CHILD', 'Recognize baptized child'],
   ['BAPTISM_CONFIRMATION_FOLLOW_UP', 'Baptism and confirmation follow-up'],
+  ['ATTENDANCE_LCR_HANDOFF', 'Record attendance in LCR / Member Tools'],
   ['BABY_BLESSING', 'Baby blessing'],
   ['PRIESTHOOD_ORDINATION', 'Priesthood ordination'],
   ['PRIESTHOOD_ADVANCEMENT', 'Priesthood advancement']
@@ -149,6 +150,13 @@ export function MembershipOrdinanceSection({ wardId, meetingId, actions, canMana
               placeholder="Name"
             />
           </label>
+          {actionType === 'ATTENDANCE_LCR_HANDOFF' ? (
+            <p className="sm:col-span-2 rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">
+              The Stand does not store authoritative attendance. Record attendance in Church tools after the meeting.{' '}
+              <a className="font-medium underline" href="https://www.churchofjesuschrist.org/tools/help/record-attendance" target="_blank" rel="noreferrer">Open Church attendance guidance</a>
+            </p>
+          ) : null}
+
           {actionType === 'WELCOME_NEW_MEMBER' ? (
             <label className="space-y-1 text-sm">
               <span className="font-medium">Reason</span>
@@ -173,7 +181,7 @@ export function MembershipOrdinanceSection({ wardId, meetingId, actions, canMana
               <label className="space-y-1 text-sm"><span className="font-medium">Confirmation status</span><select className="w-full rounded-md border px-3 py-2" value={confirmationStatus} onChange={(e) => setConfirmationStatus(e.target.value)}><option value="planned">Planned</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option></select></label>
             </>
           ) : null}
-          {actionType !== 'WELCOME_NEW_MEMBER' && actionType !== 'RECOGNIZE_BAPTIZED_CHILD' && actionType !== 'BAPTISM_CONFIRMATION_FOLLOW_UP' ? (
+          {actionType !== 'WELCOME_NEW_MEMBER' && actionType !== 'RECOGNIZE_BAPTIZED_CHILD' && actionType !== 'BAPTISM_CONFIRMATION_FOLLOW_UP' && actionType !== 'ATTENDANCE_LCR_HANDOFF' ? (
             <label className="space-y-1 text-sm">
               <span className="font-medium">Office or details</span>
               <input

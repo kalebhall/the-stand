@@ -2,6 +2,7 @@ export type MembershipOrdinanceActionType =
   | 'WELCOME_NEW_MEMBER'
   | 'RECOGNIZE_BAPTIZED_CHILD'
   | 'BAPTISM_CONFIRMATION_FOLLOW_UP'
+  | 'ATTENDANCE_LCR_HANDOFF'
   | 'BABY_BLESSING'
   | 'PRIESTHOOD_ORDINATION'
   | 'PRIESTHOOD_ADVANCEMENT';
@@ -42,6 +43,7 @@ export const MEMBERSHIP_ORDINANCE_ACTION_LABELS: Record<MembershipOrdinanceActio
   WELCOME_NEW_MEMBER: 'Welcome new member',
   RECOGNIZE_BAPTIZED_CHILD: 'Recognize baptized child',
   BAPTISM_CONFIRMATION_FOLLOW_UP: 'Baptism and confirmation follow-up',
+  ATTENDANCE_LCR_HANDOFF: 'Record attendance in LCR / Member Tools',
   BABY_BLESSING: 'Baby blessing',
   PRIESTHOOD_ORDINATION: 'Priesthood ordination',
   PRIESTHOOD_ADVANCEMENT: 'Priesthood advancement'
