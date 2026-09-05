@@ -152,7 +152,7 @@ Do not store copied ordinance details or replace LCR status.
 
 **Outcome:** Priesthood ordination preparation uses validated office values and stays distinct from setting apart.
 
-**Allowed values:** Deacon, Teacher, Priest, Elder, High Priest where applicable, plus temporary unknown during planning.
+**Allowed values:** Deacon, Teacher, Priest, Elder, High Priest where applicable, plus temporary unknown during planning. In a ward sacrament meeting, ward workflows must not sustain or set apart Elders or High Priests; those responsibilities belong to stake leadership.
 
 **Tasks:**
 

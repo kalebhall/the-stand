@@ -4,7 +4,7 @@ import { auth } from '@/src/auth/auth';
 import { canManageMeetings } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
-import { validatePriesthoodOffice, type PriesthoodOffice } from '@/src/church-actions/membership-ordinance';
+import { isWardSacramentPriesthoodActionAllowed, validatePriesthoodOffice, type PriesthoodOffice } from '@/src/church-actions/membership-ordinance';
 
 const ACTION_TYPES = new Set(['WELCOME_NEW_MEMBER', 'BABY_BLESSING', 'PRIESTHOOD_ORDINATION', 'PRIESTHOOD_ADVANCEMENT']);
 const PRIESTHOOD_ACTION_TYPES = new Set(['PRIESTHOOD_ORDINATION', 'PRIESTHOOD_ADVANCEMENT']);
@@ -67,10 +67,14 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
   try {
     await client.query('BEGIN');
     await setDbContext(client, { userId: session.user.id, wardId });
-    const meeting = await client.query('SELECT id FROM meeting WHERE id = $1::uuid AND ward_id = $2::uuid LIMIT 1', [meetingId, wardId]);
+    const meeting = await client.query('SELECT id, meeting_type FROM meeting WHERE id = $1::uuid AND ward_id = $2::uuid LIMIT 1', [meetingId, wardId]);
     if (!meeting.rowCount) {
       await client.query('ROLLBACK');
       return NextResponse.json({ error: 'Meeting not found.', code: 'NOT_FOUND' }, { status: 404 });
+    }
+    if (actionType.startsWith('PRIESTHOOD_') && !isWardSacramentPriesthoodActionAllowed(meeting.rows[0].meeting_type, priesthoodOffice as PriesthoodOffice | null)) {
+      await client.query('ROLLBACK');
+      return NextResponse.json({ error: 'Elder and high priest sustainings or setting-apart actions belong to stake leadership, not a ward sacrament meeting.', code: 'STAKE_SCOPE_REQUIRED' }, { status: 422 });
     }
     const result = await client.query(
       `INSERT INTO meeting_membership_ordinance (ward_id, meeting_id, member_name, action_type, priesthood_office, reason, details, planned_date, interview_status, interview_date, interviewer_name, approval_confirmed, presenting_leader, performing_priesthood_holder, ordinance_date, responsible_leader, lcr_follow_up_status)

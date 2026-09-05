@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { getMembershipOrdinanceGroup, getMembershipOrdinanceNextStep, matchesMembershipOrdinanceFilters, validatePriesthoodOffice, type MembershipOrdinanceActionRow } from './membership-ordinance';
+import { getMembershipOrdinanceGroup, getMembershipOrdinanceNextStep, isWardSacramentPriesthoodActionAllowed, matchesMembershipOrdinanceFilters, validatePriesthoodOffice, type MembershipOrdinanceActionRow } from './membership-ordinance';
 
 const baseAction: MembershipOrdinanceActionRow = {
   id: 'action-1',
@@ -50,5 +50,12 @@ describe('membership ordinance workspace helpers', () => {
     expect(validatePriesthoodOffice('PRIESTHOOD_ADVANCEMENT', 'UNKNOWN')).toBe(true);
     expect(validatePriesthoodOffice('WELCOME_NEW_MEMBER', 'ELDER')).toBe(false);
     expect(validatePriesthoodOffice('PRIESTHOOD_ORDINATION', 'BISHOP')).toBe(false);
+  });
+
+  it('keeps elder and high priest actions out of ward sacrament meetings', () => {
+    expect(isWardSacramentPriesthoodActionAllowed('SACRAMENT', 'ELDER')).toBe(false);
+    expect(isWardSacramentPriesthoodActionAllowed('SACRAMENT', 'HIGH_PRIEST')).toBe(false);
+    expect(isWardSacramentPriesthoodActionAllowed('SACRAMENT', 'PRIEST')).toBe(true);
+    expect(isWardSacramentPriesthoodActionAllowed('SACRAMENT', 'UNKNOWN')).toBe(true);
   });
 });

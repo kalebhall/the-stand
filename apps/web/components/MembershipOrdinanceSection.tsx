@@ -77,7 +77,8 @@ export function MembershipOrdinanceSection({ wardId, meetingId, actions, canMana
       body: JSON.stringify({ actionType, memberName, reason, details, priesthoodOffice: priesthoodOffice || null, plannedDate, interviewDate, interviewerName, approvalConfirmed, presentingLeader, performingPriesthoodHolder, ordinanceDate, responsibleLeader })
     });
     if (!response.ok) {
-      setError('Unable to add membership or ordinance action.');
+      const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+      setError(payload?.error ?? 'Unable to add membership or ordinance action.');
       setBusy(false);
       return;
     }
@@ -113,6 +114,7 @@ export function MembershipOrdinanceSection({ wardId, meetingId, actions, canMana
       </div>
       {canManage ? (
         <div className="grid gap-3 rounded-md border bg-background p-3 sm:grid-cols-2">
+          <p className="sm:col-span-2 text-xs text-muted-foreground">Ward sacrament meetings do not sustain or set apart elders or high priests. Those actions belong to stake leadership.</p>
           <label className="space-y-1 text-sm">
             <span className="font-medium">Action</span>
             <select

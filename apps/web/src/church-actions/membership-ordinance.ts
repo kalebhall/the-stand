@@ -61,6 +61,10 @@ export function validatePriesthoodOffice(actionType: string, office: unknown): o
   return actionType !== 'PRIESTHOOD_ADVANCEMENT' || office === 'UNKNOWN' || office !== 'DEACON';
 }
 
+export function isWardSacramentPriesthoodActionAllowed(meetingType: string, office: PriesthoodOffice | null): boolean {
+  return meetingType !== 'SACRAMENT' || office === null || office === 'UNKNOWN' || (office !== 'ELDER' && office !== 'HIGH_PRIEST');
+}
+
 export function getMembershipOrdinanceGroup(action: MembershipOrdinanceActionRow, today: string): MembershipOrdinanceActionGroup {
   if (action.status === 'completed' && action.lcrFollowUpStatus !== 'needed') return 'completed';
   if (action.status === 'action_needed' || action.interviewStatus === 'needed' || action.interviewStatus === 'scheduled' || action.lcrFollowUpStatus === 'needed') {
