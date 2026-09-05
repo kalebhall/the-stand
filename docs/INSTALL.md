@@ -476,6 +476,60 @@ sudo systemctl status the-stand-worker --no-pager
 
 ---
 
+## SECTION 10.3 — Raw Import Retention Purge
+
+The application includes a deployable purge command for replacing expired raw import text with `[purged]`. Run it from the web workspace with `npm run purge:raw-imports`. The default retention is 30 days. Override only with a whole-day `RAW_PASTE_RETENTION_DAYS` value from 1 through 3650.
+
+Create `/etc/systemd/system/the-stand-raw-import-purge.service`:
+
+```
+[Unit]
+Description=The Stand raw import retention purge
+After=network.target postgresql.service
+
+[Service]
+Type=oneshot
+User=the-stand
+Group=the-stand
+WorkingDirectory=/opt/the-stand/app/apps/web
+EnvironmentFile=/opt/the-stand/app/.env
+ExecStart=/usr/bin/npm run purge:raw-imports
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+```
+
+Create `/etc/systemd/system/the-stand-raw-import-purge.timer`:
+
+```
+[Unit]
+Description=Run The Stand raw import retention purge daily
+
+[Timer]
+OnCalendar=*-*-* 03:15:00
+Persistent=true
+RandomizedDelaySec=15m
+Unit=the-stand-raw-import-purge.service
+
+[Install]
+WantedBy=timers.target
+```
+
+Enable and verify:
+
+```
+sudo systemctl daemon-reload
+sudo systemctl enable --now the-stand-raw-import-purge.timer
+sudo systemctl start the-stand-raw-import-purge.service
+sudo systemctl status the-stand-raw-import-purge.timer --no-pager
+sudo journalctl -u the-stand-raw-import-purge.service -n 20 --no-pager
+```
+
+The purge command logs only the number of rows changed or a non-secret error message. Do not put database credentials in the unit file; keep them in the protected environment file.
+
+---
+
 ## SECTION 11 — NGINX REVERSE PROXY
 
 ```
