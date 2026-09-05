@@ -14,8 +14,8 @@ flowchart LR
   A2["root:other<br/>1 files"]
   A3["root:tooling<br/>6 files"]
   A4["web:announcements<br/>2 files"]
-  A5["web:api<br/>78 files"]
-  A6["web:app<br/>104 files"]
+  A5["web:api<br/>79 files"]
+  A6["web:app<br/>106 files"]
   A7["web:audit<br/>2 files"]
   A8["web:auth<br/>11 files"]
   A9["web:bootstrap.mjs<br/>1 files"]
@@ -29,7 +29,7 @@ flowchart LR
   A17["web:imports<br/>19 files"]
   A18["web:leadership<br/>4 files"]
   A19["web:lib<br/>9 files"]
-  A20["web:meetings<br/>9 files"]
+  A20["web:meetings<br/>11 files"]
   A21["web:notes<br/>1 files"]
   A22["web:notifications<br/>23 files"]
   A23["web:offline<br/>2 files"]
@@ -39,19 +39,19 @@ flowchart LR
   A27["web:types<br/>2 files"]
   A28["web:ui<br/>30 files"]
   A29["web:version.mjs<br/>1 files"]
-  A5 -->|111| A8
-  A6 -->|104| A28
-  A5 -->|101| A14
-  A6 -->|80| A8
-  A6 -->|48| A14
+  A5 -->|113| A8
+  A6 -->|108| A28
+  A5 -->|103| A14
+  A6 -->|82| A8
+  A6 -->|50| A14
   A5 -->|40| A22
   A5 -->|23| A19
   A5 -->|16| A7
   A5 -->|15| A11
+  A6 -->|12| A20
   A5 -->|11| A17
-  A6 -->|11| A20
+  A5 -->|5| A20
   A5 -->|4| A18
-  A5 -->|4| A20
   A6 -->|4| A11
   A6 -->|4| A25
   A5 -->|3| A4
@@ -101,8 +101,8 @@ flowchart LR
 | `root:other` | 1 |
 | `root:tooling` | 6 |
 | `web:announcements` | 2 |
-| `web:api` | 78 |
-| `web:app` | 104 |
+| `web:api` | 79 |
+| `web:app` | 106 |
 | `web:audit` | 2 |
 | `web:auth` | 11 |
 | `web:bootstrap.mjs` | 1 |
@@ -116,7 +116,7 @@ flowchart LR
 | `web:imports` | 19 |
 | `web:leadership` | 4 |
 | `web:lib` | 9 |
-| `web:meetings` | 9 |
+| `web:meetings` | 11 |
 | `web:notes` | 1 |
 | `web:notifications` | 23 |
 | `web:offline` | 2 |
@@ -131,12 +131,12 @@ flowchart LR
 
 | Importing area | Imported area | Imports |
 | --- | --- | ---: |
-| `web:api` | `web:auth` | 111 |
-| `web:app` | `web:ui` | 104 |
-| `web:api` | `web:db` | 101 |
-| `web:app` | `web:auth` | 80 |
-| `web:app` | `web:db` | 48 |
-| `web:app` | `web:app` | 43 |
+| `web:api` | `web:auth` | 113 |
+| `web:app` | `web:ui` | 108 |
+| `web:api` | `web:db` | 103 |
+| `web:app` | `web:auth` | 82 |
+| `web:app` | `web:db` | 50 |
+| `web:app` | `web:app` | 44 |
 | `web:api` | `web:notifications` | 40 |
 | `web:notifications` | `web:notifications` | 32 |
 | `web:ui` | `web:ui` | 27 |
@@ -145,13 +145,13 @@ flowchart LR
 | `web:api` | `web:audit` | 16 |
 | `web:api` | `web:callings` | 15 |
 | `web:imports` | `web:imports` | 14 |
+| `web:app` | `web:meetings` | 12 |
 | `web:api` | `web:imports` | 11 |
-| `web:app` | `web:meetings` | 11 |
 | `web:auth` | `web:auth` | 8 |
-| `web:meetings` | `web:meetings` | 7 |
+| `web:meetings` | `web:meetings` | 8 |
+| `web:api` | `web:meetings` | 5 |
 | `web:stand` | `web:stand` | 5 |
 | `web:api` | `web:leadership` | 4 |
-| `web:api` | `web:meetings` | 4 |
 | `web:app` | `web:callings` | 4 |
 | `web:app` | `web:stand` | 4 |
 | `web:callings` | `web:callings` | 4 |
@@ -207,9 +207,9 @@ flowchart LR
 
 | Importing area | Package/runtime | Imports |
 | --- | --- | ---: |
-| `web:app` | `next` | 80 |
-| `web:api` | `next` | 59 |
-| `web:app` | `react` | 30 |
+| `web:app` | `next` | 81 |
+| `web:api` | `next` | 60 |
+| `web:app` | `react` | 31 |
 | `web:ui` | `react` | 27 |
 | `web:api` | `vitest` | 18 |
 | `web:ui` | `next` | 14 |
@@ -220,8 +220,8 @@ flowchart LR
 | `web:app` | `vitest` | 7 |
 | `web:imports` | `vitest` | 7 |
 | `web:auth` | `next-auth` | 6 |
+| `web:meetings` | `vitest` | 5 |
 | `web:auth` | `vitest` | 4 |
-| `web:meetings` | `vitest` | 4 |
 | `web:tooling` | `Node.js` | 4 |
 | `web:ui` | `next-auth` | 4 |
 | `web:app` | `@testing-library/react` | 3 |
@@ -374,6 +374,7 @@ flowchart LR
 | `apps/web/app/api/w/[wardId]/notifications/route.ts` | `web:api` | 6 | 2 |
 | `apps/web/app/api/w/[wardId]/notifications/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/portal/route.ts` | `web:api` | 4 | 2 |
+| `apps/web/app/api/w/[wardId]/public-layout/route.ts` | `web:api` | 5 | 1 |
 | `apps/web/app/api/w/[wardId]/users/[userId]/roles/[roleId]/route.ts` | `web:api` | 7 | 1 |
 | `apps/web/app/api/w/[wardId]/users/[userId]/roles/route.ts` | `web:api` | 7 | 1 |
 | `apps/web/app/api/w/[wardId]/users/route.ts` | `web:api` | 4 | 1 |
@@ -443,6 +444,8 @@ flowchart LR
 | `apps/web/app/settings/notifications/notification-subscription-settings.vitest.tsx` | `web:app` | 1 | 4 |
 | `apps/web/app/settings/notifications/page.tsx` | `web:app` | 2 | 1 |
 | `apps/web/app/settings/page.tsx` | `web:app` | 5 | 1 |
+| `apps/web/app/settings/public-layout/page.tsx` | `web:app` | 7 | 1 |
+| `apps/web/app/settings/public-layout/public-layout-client.tsx` | `web:app` | 3 | 1 |
 | `apps/web/app/settings/public-portal/error.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/settings/public-portal/loading.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/settings/public-portal/page.tsx` | `web:app` | 7 | 3 |
@@ -591,6 +594,8 @@ flowchart LR
 | `apps/web/src/meetings/date.vitest.ts` | `web:meetings` | 1 | 1 |
 | `apps/web/src/meetings/default-program.ts` | `web:meetings` | 1 | 0 |
 | `apps/web/src/meetings/default-program.vitest.ts` | `web:meetings` | 2 | 1 |
+| `apps/web/src/meetings/public-layout.ts` | `web:meetings` | 0 | 0 |
+| `apps/web/src/meetings/public-layout.vitest.ts` | `web:meetings` | 1 | 1 |
 | `apps/web/src/meetings/render.ts` | `web:meetings` | 2 | 0 |
 | `apps/web/src/meetings/render.vitest.ts` | `web:meetings` | 1 | 1 |
 | `apps/web/src/meetings/technology.ts` | `web:meetings` | 0 | 0 |

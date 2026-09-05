@@ -368,6 +368,16 @@ export const meetingTechnologyChecklist = pgTable('meeting_technology_checklist'
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
 });
 
+export const publicProgramLayout = pgTable('public_program_layout', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
+  preset: text('preset').notNull().default('SINGLE_SHEET_BIFOLD'),
+  announcementMode: text('announcement_mode').notNull().default('AFTER_PROGRAM'),
+  coverMode: text('cover_mode').notNull().default('NONE'),
+  updatedByUserId: uuid('updated_by_user_id').references(() => userAccount.id, { onDelete: 'set null' }),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
+}, (table) => ({ publicProgramLayoutWardUnique: unique().on(table.wardId) }));
+
 export const announcement = pgTable('announcement', {
   id: uuid('id').defaultRandom().primaryKey(),
   wardId: uuid('ward_id')
