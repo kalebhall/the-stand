@@ -6,7 +6,6 @@ import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 import { isAnnouncementActiveForDate } from '@/src/announcements/types';
 import { buildStandRows } from '@/src/stand/render';
-import type { IntroductionRoles } from '@/src/meetings/types';
 
 export async function GET(_: Request, context: { params: Promise<{ wardId: string; meetingId: string }> }) {
   const session = await auth();

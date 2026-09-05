@@ -23,6 +23,7 @@ import {
   DEFAULT_STAND_RELEASE_TEMPLATE,
   DEFAULT_STAND_SUSTAIN_TEMPLATE
 } from '@/src/stand/default-template';
+import { STAND_TEMPLATE_METADATA, templateClassificationLabel } from '@/src/stand/template-metadata';
 
 const DEFAULT_SUSTAIN = DEFAULT_STAND_SUSTAIN_TEMPLATE;
 const DEFAULT_RELEASE = DEFAULT_STAND_RELEASE_TEMPLATE;
@@ -141,6 +142,18 @@ export default async function StandScriptSettingsPage() {
           Customize the Formal Script text for your ward. Use placeholders {'{memberName}'} and {'{callingName}'}.
         </p>
       </div>
+
+      <section className="rounded-lg border border-amber-500/40 bg-amber-500/5 p-4 text-sm">
+        <h2 className="font-semibold">Template source and classification</h2>
+        <p className="mt-1 text-muted-foreground">Editable text is a ward prompt unless marked otherwise. Handbook classifications describe required elements or examples; they are not a replacement for current Handbook instructions.</p>
+        <ul className="mt-3 space-y-2">
+          {Object.entries(STAND_TEMPLATE_METADATA).map(([key, metadata]) => (
+            <li key={key}>
+              <span className="font-medium">{key}:</span> {templateClassificationLabel(metadata.classification)} · {metadata.sourceUrl ? <a className="underline" href={metadata.sourceUrl} target="_blank" rel="noreferrer">{metadata.sourceLabel}</a> : metadata.sourceLabel}
+            </li>
+          ))}
+        </ul>
+      </section>
 
       <form action={updateTemplates} className="space-y-4 rounded-lg border bg-card p-4">
         <label className="space-y-2 text-sm">
