@@ -12,6 +12,7 @@ describe('getNavigationItems', () => {
 
     expect(items).toContainEqual({ href: '/members', label: 'Members' });
     expect(items).toContainEqual({ href: '/callings', label: 'Callings' });
+    expect(items).toContainEqual({ href: '/membership-ordinances', label: 'Membership & Ordinances' });
     expect(items).toContainEqual({ href: '/notifications', label: 'Notifications' });
 
     expect(items).toContainEqual({ href: '/reports', label: 'Reports' });

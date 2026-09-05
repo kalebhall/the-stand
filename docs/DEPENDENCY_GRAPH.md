@@ -15,13 +15,13 @@ flowchart LR
   A3["root:tooling<br/>6 files"]
   A4["web:announcements<br/>2 files"]
   A5["web:api<br/>72 files"]
-  A6["web:app<br/>94 files"]
+  A6["web:app<br/>95 files"]
   A7["web:audit<br/>2 files"]
   A8["web:auth<br/>11 files"]
   A9["web:bootstrap.mjs<br/>1 files"]
   A10["web:calendar<br/>4 files"]
   A11["web:callings<br/>7 files"]
-  A12["web:church-actions<br/>2 files"]
+  A12["web:church-actions<br/>4 files"]
   A13["web:config<br/>13 files"]
   A14["web:db<br/>7 files"]
   A15["web:hardening<br/>1 files"]
@@ -39,11 +39,11 @@ flowchart LR
   A27["web:ui<br/>30 files"]
   A28["web:version.mjs<br/>1 files"]
   A5 -->|99| A8
+  A6 -->|91| A27
   A5 -->|89| A14
-  A6 -->|89| A27
-  A6 -->|72| A8
+  A6 -->|74| A8
+  A6 -->|42| A14
   A5 -->|40| A21
-  A6 -->|40| A14
   A5 -->|23| A18
   A5 -->|15| A11
   A5 -->|14| A7
@@ -65,6 +65,7 @@ flowchart LR
   A5 -->|1| A20
   A5 -->|1| A24
   A6 -->|1| A10
+  A6 -->|1| A12
   A6 -->|1| A17
   A6 -->|1| A18
   A6 -->|1| A22
@@ -96,13 +97,13 @@ flowchart LR
 | `root:tooling` | 6 |
 | `web:announcements` | 2 |
 | `web:api` | 72 |
-| `web:app` | 94 |
+| `web:app` | 95 |
 | `web:audit` | 2 |
 | `web:auth` | 11 |
 | `web:bootstrap.mjs` | 1 |
 | `web:calendar` | 4 |
 | `web:callings` | 7 |
-| `web:church-actions` | 2 |
+| `web:church-actions` | 4 |
 | `web:config` | 13 |
 | `web:db` | 7 |
 | `web:hardening` | 1 |
@@ -125,11 +126,11 @@ flowchart LR
 | Importing area | Imported area | Imports |
 | --- | --- | ---: |
 | `web:api` | `web:auth` | 99 |
+| `web:app` | `web:ui` | 91 |
 | `web:api` | `web:db` | 89 |
-| `web:app` | `web:ui` | 89 |
-| `web:app` | `web:auth` | 72 |
+| `web:app` | `web:auth` | 74 |
+| `web:app` | `web:db` | 42 |
 | `web:api` | `web:notifications` | 40 |
-| `web:app` | `web:db` | 40 |
 | `web:app` | `web:app` | 39 |
 | `web:notifications` | `web:notifications` | 32 |
 | `web:ui` | `web:ui` | 27 |
@@ -156,6 +157,7 @@ flowchart LR
 | `web:app` | `web:notifications` | 2 |
 | `web:auth` | `web:db` | 2 |
 | `web:calendar` | `web:db` | 2 |
+| `web:church-actions` | `web:church-actions` | 2 |
 | `web:config` | `web:lib` | 2 |
 | `web:db` | `web:auth` | 2 |
 | `web:notifications` | `web:db` | 2 |
@@ -165,6 +167,7 @@ flowchart LR
 | `web:api` | `web:notes` | 1 |
 | `web:api` | `web:stand` | 1 |
 | `web:app` | `web:calendar` | 1 |
+| `web:app` | `web:church-actions` | 1 |
 | `web:app` | `web:imports` | 1 |
 | `web:app` | `web:lib` | 1 |
 | `web:app` | `web:offline` | 1 |
@@ -172,7 +175,6 @@ flowchart LR
 | `web:audit` | `web:audit` | 1 |
 | `web:auth` | `web:lib` | 1 |
 | `web:calendar` | `web:notifications` | 1 |
-| `web:church-actions` | `web:church-actions` | 1 |
 | `web:config` | `web:bootstrap.mjs` | 1 |
 | `web:config` | `web:health.mjs` | 1 |
 | `web:health.mjs` | `web:version.mjs` | 1 |
@@ -193,7 +195,7 @@ flowchart LR
 
 | Importing area | Package/runtime | Imports |
 | --- | --- | ---: |
-| `web:app` | `next` | 73 |
+| `web:app` | `next` | 75 |
 | `web:api` | `next` | 53 |
 | `web:ui` | `react` | 27 |
 | `web:app` | `react` | 26 |
@@ -227,6 +229,7 @@ flowchart LR
 | `web:api` | `pg` | 2 |
 | `web:calendar` | `vitest` | 2 |
 | `web:callings` | `pg` | 2 |
+| `web:church-actions` | `vitest` | 2 |
 | `web:config` | `@playwright/test` | 2 |
 | `web:config` | `Node.js` | 2 |
 | `web:db` | `pg` | 2 |
@@ -244,7 +247,6 @@ flowchart LR
 | `web:auth` | `next` | 1 |
 | `web:bootstrap.mjs` | `Node.js` | 1 |
 | `web:calendar` | `pg` | 1 |
-| `web:church-actions` | `vitest` | 1 |
 | `web:config` | `@testing-library/jest-dom` | 1 |
 | `web:config` | `child_process` | 1 |
 | `web:config` | `drizzle-kit` | 1 |
@@ -389,6 +391,7 @@ flowchart LR
 | `apps/web/app/meetings/page.tsx` | `web:app` | 8 | 2 |
 | `apps/web/app/members/members-manager-client.tsx` | `web:app` | 3 | 2 |
 | `apps/web/app/members/page.tsx` | `web:app` | 7 | 2 |
+| `apps/web/app/membership-ordinances/page.tsx` | `web:app` | 7 | 2 |
 | `apps/web/app/notifications/error.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/notifications/loading.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/notifications/notification-center.tsx` | `web:app` | 1 | 1 |
@@ -509,6 +512,8 @@ flowchart LR
 | `apps/web/src/callings/standard-callings.ts` | `web:callings` | 0 | 0 |
 | `apps/web/src/callings/transition.ts` | `web:callings` | 1 | 1 |
 | `apps/web/src/callings/transition.vitest.ts` | `web:callings` | 1 | 1 |
+| `apps/web/src/church-actions/membership-ordinance.ts` | `web:church-actions` | 0 | 0 |
+| `apps/web/src/church-actions/membership-ordinance.vitest.ts` | `web:church-actions` | 1 | 1 |
 | `apps/web/src/church-actions/types.ts` | `web:church-actions` | 0 | 0 |
 | `apps/web/src/church-actions/types.vitest.ts` | `web:church-actions` | 1 | 1 |
 | `apps/web/src/db/bootstrap-support-admin.ts` | `web:db` | 3 | 1 |
