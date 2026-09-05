@@ -4,15 +4,16 @@ import { useState } from 'react';
 
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { BISHOPRIC_ACTION_STATUSES } from '@/src/leadership/bishopric';
+import { BISHOPRIC_ACTION_STATUSES, LEADERSHIP_MEETING_LABELS, LEADERSHIP_MEETING_TYPES } from '@/src/leadership/bishopric';
 
-type Meeting = { id: string; meeting_date: string; agenda_template: string; status: string; action_count: number; open_action_count: number };
+type Meeting = { id: string; meeting_date: string; meeting_type: string; agenda_template: string; status: string; action_count: number; open_action_count: number };
 type Action = { id: string; bishopric_meeting_id: string; title: string; details: string | null; decision: string | null; owner_name: string | null; due_date: string | null; status: string; carry_forward: boolean; meeting_date: string };
 
-export function BishopricWorkspaceClient({ wardId, initialMeetings, initialActions }: { wardId: string; initialMeetings: Meeting[]; initialActions: Action[] }) {
+export function BishopricWorkspaceClient({ wardId, initialMeetings, initialActions, defaultMeetingType = 'BISHOPRIC' }: { wardId: string; initialMeetings: Meeting[]; initialActions: Action[]; defaultMeetingType?: (typeof LEADERSHIP_MEETING_TYPES)[number] }) {
   const [meetings, setMeetings] = useState(initialMeetings);
   const [actions, setActions] = useState(initialActions);
   const [date, setDate] = useState('');
+  const [meetingType, setMeetingType] = useState<(typeof LEADERSHIP_MEETING_TYPES)[number]>(defaultMeetingType);
   const [selectedMeeting, setSelectedMeeting] = useState(initialMeetings[0]?.id ?? '');
   const [title, setTitle] = useState('');
   const [owner, setOwner] = useState('');
@@ -21,7 +22,7 @@ export function BishopricWorkspaceClient({ wardId, initialMeetings, initialActio
 
   async function createMeeting(event: React.FormEvent) {
     event.preventDefault(); setError('');
-    const response = await fetch(`/api/w/${wardId}/bishopric`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ meetingDate: date, agendaTemplate: 'BISHOPRIC' }) });
+    const response = await fetch(`/api/w/${wardId}/bishopric`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ meetingDate: date, meetingType, agendaTemplate: meetingType === 'BISHOPRIC' ? 'BISHOPRIC' : meetingType }) });
     const body = await response.json();
     if (!response.ok) { setError(body.error ?? 'Could not create meeting'); return; }
     setMeetings((current) => [body.meeting, ...current]); setSelectedMeeting(body.meeting.id); setDate('');
@@ -47,6 +48,7 @@ export function BishopricWorkspaceClient({ wardId, initialMeetings, initialActio
     <section className="rounded-lg border bg-card p-5 shadow-sm">
       <h2 className="text-lg font-semibold">New bishopric meeting</h2>
       <form onSubmit={createMeeting} className="mt-3 flex flex-wrap gap-2">
+        <select value={meetingType} onChange={(event) => setMeetingType(event.target.value as (typeof LEADERSHIP_MEETING_TYPES)[number])} className="rounded-md border bg-background px-3 py-2 text-sm" aria-label="Leadership meeting type">{LEADERSHIP_MEETING_TYPES.map((type) => <option key={type} value={type}>{LEADERSHIP_MEETING_LABELS[type]}</option>)}</select>
         <input required type="date" value={date} onChange={(event) => setDate(event.target.value)} className="rounded-md border bg-background px-3 py-2 text-sm" aria-label="Meeting date" />
         <button className={cn(buttonVariants({ size: 'sm' }))}>Create meeting</button>
       </form>

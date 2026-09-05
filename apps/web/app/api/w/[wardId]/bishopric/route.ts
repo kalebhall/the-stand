@@ -5,7 +5,7 @@ import { auth } from '@/src/auth/auth';
 import { canManageMeetings } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
-import { BISHOPRIC_AGENDA_TEMPLATES } from '@/src/leadership/bishopric';
+import { BISHOPRIC_AGENDA_TEMPLATES, LEADERSHIP_MEETING_TYPES, type LeadershipMeetingType } from '@/src/leadership/bishopric';
 
 const text = (value: unknown) => typeof value === 'string' ? value.trim() : '';
 
@@ -27,7 +27,7 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
     await client.query('BEGIN');
     await setDbContext(client, { userId: access.session.user.id, wardId });
     const meetings = await client.query(
-      `SELECT bm.id, bm.meeting_date, bm.agenda_template, bm.status,
+      `SELECT bm.id, bm.meeting_date, bm.meeting_type, bm.agenda_template, bm.status,
               COUNT(ba.id)::int AS action_count,
               COUNT(ba.id) FILTER (WHERE ba.status != 'COMPLETED')::int AS open_action_count
          FROM bishopric_meeting bm
@@ -55,10 +55,11 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
   const { wardId } = await context.params;
   const access = await authorize(wardId);
   if (access.response) return access.response;
-  const body = await request.json().catch(() => null) as { meetingDate?: string; agendaTemplate?: string } | null;
+  const body = await request.json().catch(() => null) as { meetingDate?: string; agendaTemplate?: string; meetingType?: string } | null;
   const meetingDate = text(body?.meetingDate);
-  const agendaTemplate = text(body?.agendaTemplate) || 'BISHOPRIC';
-  if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(meetingDate) || !BISHOPRIC_AGENDA_TEMPLATES.includes(agendaTemplate as (typeof BISHOPRIC_AGENDA_TEMPLATES)[number])) {
+  const meetingType = text(body?.meetingType) || 'BISHOPRIC';
+  const agendaTemplate = text(body?.agendaTemplate) || meetingType;
+  if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(meetingDate) || !LEADERSHIP_MEETING_TYPES.includes(meetingType as LeadershipMeetingType) || !BISHOPRIC_AGENDA_TEMPLATES.includes(agendaTemplate as (typeof BISHOPRIC_AGENDA_TEMPLATES)[number])) {
     return NextResponse.json({ error: 'Invalid bishopric meeting payload', code: 'BAD_REQUEST' }, { status: 400 });
   }
   const client = await pool.connect();
@@ -66,9 +67,9 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     await client.query('BEGIN');
     await setDbContext(client, { userId: access.session.user.id, wardId });
     const result = await client.query(
-      `INSERT INTO bishopric_meeting (ward_id, meeting_date, agenda_template, created_by_user_id)
-       VALUES ($1::uuid, $2::date, $3::text, $4::uuid) RETURNING id, meeting_date, agenda_template, status`,
-      [wardId, meetingDate, agendaTemplate, access.session.user.id]
+      `INSERT INTO bishopric_meeting (ward_id, meeting_date, meeting_type, agenda_template, created_by_user_id)
+       VALUES ($1::uuid, $2::date, $3::text, $4::text, $5::uuid) RETURNING id, meeting_date, meeting_type, agenda_template, status`,
+      [wardId, meetingDate, meetingType, agendaTemplate, access.session.user.id]
     );
     await recordAuditEvent(client, { wardId, userId: access.session.user.id, actorName: access.session.user.name || access.session.user.email || null, action: 'BISHOPRIC_MEETING_CREATED', entityType: 'bishopric_meeting', entityId: result.rows[0].id, meetingDate, changes: { meetingDate: { old: null, new: meetingDate }, agendaTemplate: { old: null, new: agendaTemplate } }, details: { private: true }, source: 'manual_ui', severity: 'info' });
     await client.query('COMMIT');

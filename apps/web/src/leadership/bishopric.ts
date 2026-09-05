@@ -1,4 +1,13 @@
-export const BISHOPRIC_AGENDA_TEMPLATES = ['BISHOPRIC', 'BISHOPRIC_AND_COUNCIL'] as const;
+export const LEADERSHIP_MEETING_TYPES = ['BISHOPRIC', 'WARD_COUNCIL', 'MISSIONARY_COORDINATION'] as const;
+export type LeadershipMeetingType = (typeof LEADERSHIP_MEETING_TYPES)[number];
+
+export const LEADERSHIP_MEETING_LABELS: Record<LeadershipMeetingType, string> = {
+  BISHOPRIC: 'Bishopric meeting',
+  WARD_COUNCIL: 'Ward council',
+  MISSIONARY_COORDINATION: 'Missionary coordination'
+};
+
+export const BISHOPRIC_AGENDA_TEMPLATES = ['BISHOPRIC', 'BISHOPRIC_AND_COUNCIL', 'WARD_COUNCIL', 'MISSIONARY_COORDINATION'] as const;
 export type BishopricAgendaTemplate = (typeof BISHOPRIC_AGENDA_TEMPLATES)[number];
 
 export const BISHOPRIC_ACTION_STATUSES = ['PENDING', 'IN_PROGRESS', 'COMPLETED'] as const;

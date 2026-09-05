@@ -15,7 +15,7 @@ flowchart LR
   A3["root:tooling<br/>6 files"]
   A4["web:announcements<br/>2 files"]
   A5["web:api<br/>75 files"]
-  A6["web:app<br/>98 files"]
+  A6["web:app<br/>100 files"]
   A7["web:audit<br/>2 files"]
   A8["web:auth<br/>11 files"]
   A9["web:bootstrap.mjs<br/>1 files"]
@@ -58,6 +58,7 @@ flowchart LR
   A5 -->|2| A12
   A5 -->|2| A18
   A6 -->|2| A12
+  A6 -->|2| A18
   A6 -->|2| A22
   A8 -->|2| A14
   A10 -->|2| A14
@@ -70,7 +71,6 @@ flowchart LR
   A5 -->|1| A25
   A6 -->|1| A10
   A6 -->|1| A17
-  A6 -->|1| A18
   A6 -->|1| A19
   A6 -->|1| A23
   A6 -->|1| A24
@@ -102,7 +102,7 @@ flowchart LR
 | `root:tooling` | 6 |
 | `web:announcements` | 2 |
 | `web:api` | 75 |
-| `web:app` | 98 |
+| `web:app` | 100 |
 | `web:audit` | 2 |
 | `web:auth` | 11 |
 | `web:bootstrap.mjs` | 1 |
@@ -163,6 +163,7 @@ flowchart LR
 | `web:api` | `web:church-actions` | 2 |
 | `web:api` | `web:leadership` | 2 |
 | `web:app` | `web:church-actions` | 2 |
+| `web:app` | `web:leadership` | 2 |
 | `web:app` | `web:notifications` | 2 |
 | `web:auth` | `web:db` | 2 |
 | `web:calendar` | `web:db` | 2 |
@@ -177,7 +178,6 @@ flowchart LR
 | `web:api` | `web:stand` | 1 |
 | `web:app` | `web:calendar` | 1 |
 | `web:app` | `web:imports` | 1 |
-| `web:app` | `web:leadership` | 1 |
 | `web:app` | `web:lib` | 1 |
 | `web:app` | `web:offline` | 1 |
 | `web:app` | `web:reports` | 1 |
@@ -207,7 +207,7 @@ flowchart LR
 
 | Importing area | Package/runtime | Imports |
 | --- | --- | ---: |
-| `web:app` | `next` | 76 |
+| `web:app` | `next` | 78 |
 | `web:api` | `next` | 56 |
 | `web:app` | `react` | 28 |
 | `web:ui` | `react` | 27 |
@@ -375,7 +375,7 @@ flowchart LR
 | `apps/web/app/api/w/[wardId]/users/[userId]/roles/route.ts` | `web:api` | 7 | 1 |
 | `apps/web/app/api/w/[wardId]/users/route.ts` | `web:api` | 4 | 1 |
 | `apps/web/app/bishopric/bishopric-workspace-client.tsx` | `web:app` | 3 | 1 |
-| `apps/web/app/bishopric/page.tsx` | `web:app` | 7 | 1 |
+| `apps/web/app/bishopric/page.tsx` | `web:app` | 8 | 1 |
 | `apps/web/app/callings/error.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/callings/loading.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/callings/page.tsx` | `web:app` | 14 | 3 |
@@ -413,6 +413,7 @@ flowchart LR
 | `apps/web/app/members/page.tsx` | `web:app` | 7 | 2 |
 | `apps/web/app/membership-ordinances/page.tsx` | `web:app` | 8 | 2 |
 | `apps/web/app/membership-ordinances/workspace-controls.tsx` | `web:app` | 2 | 1 |
+| `apps/web/app/missionary-coordination/page.tsx` | `web:app` | 0 | 1 |
 | `apps/web/app/notifications/error.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/notifications/loading.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/notifications/notification-center.tsx` | `web:app` | 1 | 1 |
@@ -463,6 +464,7 @@ flowchart LR
 | `apps/web/app/support/users/page.tsx` | `web:app` | 7 | 2 |
 | `apps/web/app/support/users/support-grants.ts` | `web:app` | 0 | 0 |
 | `apps/web/app/support/users/support-grants.vitest.ts` | `web:app` | 1 | 1 |
+| `apps/web/app/ward-council/page.tsx` | `web:app` | 0 | 1 |
 | `apps/web/components/AddCallingForm.tsx` | `web:ui` | 3 | 1 |
 | `apps/web/components/AddCallingSection.tsx` | `web:ui` | 1 | 1 |
 | `apps/web/components/CallingAssignButton.tsx` | `web:ui` | 1 | 2 |

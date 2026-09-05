@@ -284,6 +284,8 @@ Do not store copied ordinance details or replace LCR status.
 
 **Tasks:** Add Ward Council and Missionary Coordination meeting types, reusable assignments, member/action links, restricted notes, carry-forward, and dashboard due items. Add Ward Youth Council only after validating need.
 
+**Implementation status:** Coordination types now reuse protected private leadership meetings/actions. Routes `/ward-council` and `/missionary-coordination` open filtered workspaces, with private assignments, due dates, carry-forward, completion lifecycle, and dashboard overdue count. Member/action linking and restricted-note subtypes remain follow-up work; Ward Youth Council not added.
+
 ## Option 4C: Scheduled interviews
 
 **Priority:** P1

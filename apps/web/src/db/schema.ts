@@ -309,6 +309,7 @@ export const bishopricMeeting = pgTable('bishopric_meeting', {
   wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
   meetingDate: date('meeting_date').notNull(),
   agendaTemplate: text('agenda_template').notNull().default('BISHOPRIC'),
+  meetingType: text('meeting_type').notNull().default('BISHOPRIC'),
   status: text('status').notNull().default('OPEN'),
   createdByUserId: uuid('created_by_user_id').notNull().references(() => userAccount.id, { onDelete: 'restrict' }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
