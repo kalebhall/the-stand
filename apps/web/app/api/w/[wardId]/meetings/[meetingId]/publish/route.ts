@@ -39,6 +39,8 @@ type LayoutRow = {
   preset: 'SINGLE_SHEET_BIFOLD' | 'TRI_FOLD_BULLETIN' | 'FULL_PAGE';
   announcement_mode: 'NONE' | 'AFTER_PROGRAM' | 'BACK_PANEL';
   cover_mode: 'NONE' | 'AUTHORIZED_IMAGE';
+  cover_image_url: string | null;
+  cover_image_alt_text: string | null;
 };
 
 function generatePublicToken(): string {
@@ -93,10 +95,10 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
     );
 
     const layoutResult = await client.query(
-      'SELECT preset, announcement_mode, cover_mode FROM public_program_layout WHERE ward_id = $1::uuid LIMIT 1',
+      'SELECT preset, announcement_mode, cover_mode, cover_image_url, cover_image_alt_text FROM public_program_layout WHERE ward_id = $1::uuid LIMIT 1',
       [wardId]
     );
-    const layout = (layoutResult.rows?.[0] as LayoutRow | undefined) ?? { preset: 'FULL_PAGE' as const, announcement_mode: 'AFTER_PROGRAM' as const, cover_mode: 'NONE' as const };
+    const layout = (layoutResult.rows?.[0] as LayoutRow | undefined) ?? { preset: 'FULL_PAGE' as const, announcement_mode: 'AFTER_PROGRAM' as const, cover_mode: 'NONE' as const, cover_image_url: null, cover_image_alt_text: null };
 
     const versionResult = await client.query(
       'SELECT COALESCE(MAX(version), 0)::int AS latest_version FROM meeting_program_render WHERE meeting_id = $1::uuid',
@@ -131,7 +133,9 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
       layout: {
         preset: layout.preset,
         announcementMode: layout.announcement_mode,
-        coverMode: layout.cover_mode
+        coverMode: layout.cover_mode,
+        coverImageUrl: layout.cover_image_url,
+        coverImageAltText: layout.cover_image_alt_text
       }
     });
 

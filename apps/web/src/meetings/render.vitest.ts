@@ -153,12 +153,12 @@ describe('buildMeetingRenderHtml', () => {
       meetingType: 'SACRAMENT',
       programItems: [],
       announcements: [{ title: 'Hidden by layout', body: null, startDate: null, endDate: null, isPermanent: true, placement: 'PROGRAM_TOP' }],
-      layout: { preset: 'TRI_FOLD_BULLETIN', announcementMode: 'NONE', coverMode: 'AUTHORIZED_IMAGE' }
+      layout: { preset: 'TRI_FOLD_BULLETIN', announcementMode: 'NONE', coverMode: 'AUTHORIZED_IMAGE', coverImageUrl: 'https://cdn.example.test/ward.jpg', coverImageAltText: 'Ward meetinghouse' }
     });
 
     expect(html).toContain('public-program--tri_fold_bulletin');
     expect(html).toContain('data-announcement-mode="NONE"');
-    expect(html).toContain('Ward-authorized cover image slot');
+    expect(html).toContain('alt="Ward meetinghouse"');
     expect(html).not.toContain('Hidden by layout');
     expect(html).toContain('print-fold-guides');
     expect(html).toContain('column-count: 3');

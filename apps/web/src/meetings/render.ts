@@ -22,6 +22,8 @@ export type MeetingRenderInput = {
     preset: PublicLayoutPreset;
     announcementMode: PublicAnnouncementMode;
     coverMode: PublicCoverMode;
+    coverImageUrl?: string | null;
+    coverImageAltText?: string | null;
   };
 };
 
@@ -66,7 +68,9 @@ export function buildMeetingRenderHtml({ meetingDate, meetingType, programItems,
   const layoutClass = `public-program public-program--${selectedLayout.preset.toLowerCase()}`;
   const foldGuide = selectedLayout.preset === 'FULL_PAGE' ? '' : '<div class="print-fold-guides" aria-hidden="true"></div>';
   const printStyles = `<style>@media print { .public-program { max-width: none !important; color: #000 !important; } .public-program--single_sheet_bifold, .public-program--tri_fold_bulletin { column-gap: 0.25in; } .public-program--single_sheet_bifold { column-count: 2; } .public-program--tri_fold_bulletin { column-count: 3; } .public-program--single_sheet_bifold .public-program__cover, .public-program--tri_fold_bulletin .public-program__cover, .print-fold-guides { break-inside: avoid; } .print-fold-guides { position: absolute; inset: 0; pointer-events: none; border-left: 1px dashed #999; border-right: 1px dashed #999; } .public-program--single_sheet_bifold .print-fold-guides { left: 50%; right: 50%; } .public-program--tri_fold_bulletin .print-fold-guides { left: 33.333%; right: 33.333%; } .public-program--full_page { column-count: 1; } } @media screen { .print-fold-guides { display: none; } }</style>`;
-  const cover = selectedLayout.coverMode === 'AUTHORIZED_IMAGE' ? '<p class="text-xs text-muted-foreground">Ward-authorized cover image slot</p>' : '';
+  const cover = selectedLayout.coverMode === 'AUTHORIZED_IMAGE' && selectedLayout.coverImageUrl && selectedLayout.coverImageAltText
+    ? `<img src="${escapeHtml(selectedLayout.coverImageUrl)}" alt="${escapeHtml(selectedLayout.coverImageAltText)}" class="mx-auto max-h-48 max-w-full object-contain" />`
+    : '';
 
   const activeAnnouncements = announcements
     .filter((item) => item.includeInProgram !== false)

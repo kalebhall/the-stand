@@ -325,7 +325,7 @@ Public output must exclude private notes, leadership follow-up, interview detail
 
 ## Option 5A: Layout presets
 
-**Implementation status:** Persisted, ward-scoped layout settings now flow into print rendering and publish snapshots. Renderer applies preset data attributes, announcement mode filtering, text-first cover fallback, and fold-guide marker for bifold/tri-fold output. Public URLs serve published snapshots containing selected layout. Image upload/alt-text workflow, richer panel pagination, and QR output remain follow-up work.
+**Implementation status:** Persisted, ward-scoped layout settings now flow into print rendering and publish snapshots. Renderer applies preset data attributes, announcement mode filtering, text-first cover fallback, and fold-guide marker for bifold/tri-fold output. Public URLs serve published snapshots containing selected layout. Image metadata now supported: authorized HTTPS cover URL and required alt text persist through settings/API and render in print/published output. No file upload or private image storage added; text-first fallback remains default.
 
 Offer named presets instead of forcing users to design from scratch.
 

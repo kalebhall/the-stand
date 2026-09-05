@@ -374,6 +374,8 @@ export const publicProgramLayout = pgTable('public_program_layout', {
   preset: text('preset').notNull().default('SINGLE_SHEET_BIFOLD'),
   announcementMode: text('announcement_mode').notNull().default('AFTER_PROGRAM'),
   coverMode: text('cover_mode').notNull().default('NONE'),
+  coverImageUrl: text('cover_image_url'),
+  coverImageAltText: text('cover_image_alt_text'),
   updatedByUserId: uuid('updated_by_user_id').references(() => userAccount.id, { onDelete: 'set null' }),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
 }, (table) => ({ publicProgramLayoutWardUnique: unique().on(table.wardId) }));
