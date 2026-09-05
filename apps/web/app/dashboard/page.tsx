@@ -52,6 +52,7 @@ export default async function DashboardPage() {
   let lcrFollowUpCount = 'Unavailable';
   let priesthoodPreparationCount = 'Unavailable';
   let officialRecordHandoffCount = 'Unavailable';
+  let bishopricDueActionCount = 'Unavailable';
   let notificationHealthValue = 'No deliveries yet';
   let notificationHealthDetail = 'No notification attempts recorded for this ward yet.';
   let nextMeetingValue = 'No meetings scheduled';
@@ -99,6 +100,15 @@ export default async function DashboardPage() {
            JOIN meeting m ON m.id = a.meeting_id AND m.ward_id = a.ward_id
           WHERE a.ward_id = $1::uuid
             AND (a.status != 'completed' OR a.lcr_follow_up_status = 'needed')`,
+        [session.activeWardId]
+      );
+
+      const bishopricDueActionResult = await client.query(
+        `SELECT COUNT(*)::int AS count
+           FROM bishopric_action
+          WHERE ward_id = $1::uuid
+            AND status != 'COMPLETED'
+            AND due_date < CURRENT_DATE`,
         [session.activeWardId]
       );
 
@@ -156,6 +166,7 @@ export default async function DashboardPage() {
       lcrFollowUpCount = `${actionQueue.lcr_count} waiting`;
       priesthoodPreparationCount = `${actionQueue.priesthood_preparation_count} waiting`;
       officialRecordHandoffCount = `${actionQueue.official_record_handoff_count} waiting`;
+      bishopricDueActionCount = `${(bishopricDueActionResult.rows[0] as { count: number }).count} overdue`;
       const notificationHealth = notificationHealthResult.rows[0] as { last_delivery_at: string | null; failure_count: number };
       notificationHealthValue = notificationHealth.last_delivery_at ?? 'No deliveries yet';
       notificationHealthDetail = `${notificationHealth.failure_count} failed deliveries`;
@@ -254,6 +265,15 @@ export default async function DashboardPage() {
             value={overdueActionCount}
             detail="Planned actions past their date and not completed."
             actions={[{ href: '/membership-ordinances?followup=overdue&queue=needs_attention', label: 'Review overdue work' }]}
+          />
+        ) : null}
+
+        {canAccessMeetings ? (
+          <DashboardCard
+            title="Bishopric due actions"
+            value={bishopricDueActionCount}
+            detail="Private bishopric assignments past due."
+            actions={[{ href: '/bishopric', label: 'Open bishopric workspace' }]}
           />
         ) : null}
 

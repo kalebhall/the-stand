@@ -274,6 +274,8 @@ Do not store copied ordinance details or replace LCR status.
 
 **Tasks:** Add meeting type and protected route, agenda templates, action links, private visibility rules, assignment lifecycle, dashboard due items, and tests for ward isolation/public exclusion.
 
+**Implementation status:** Core bishopric workspace delivered in `0045_bishopric_workspace.sql`: protected ward-scoped route, private agenda meetings, action assignments with owners/due dates/carry-forward, completion history, lifecycle validation, dashboard overdue count, and public-program exclusion. Linked member/calling/action references and broader meeting templates remain follow-up work.
+
 ## Option 4B: Ward council and missionary coordination
 
 **Priority:** P1

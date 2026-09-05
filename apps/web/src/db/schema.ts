@@ -304,6 +304,35 @@ export const meetingMembershipOrdinance = pgTable('meeting_membership_ordinance'
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
 });
 
+export const bishopricMeeting = pgTable('bishopric_meeting', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
+  meetingDate: date('meeting_date').notNull(),
+  agendaTemplate: text('agenda_template').notNull().default('BISHOPRIC'),
+  status: text('status').notNull().default('OPEN'),
+  createdByUserId: uuid('created_by_user_id').notNull().references(() => userAccount.id, { onDelete: 'restrict' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
+});
+
+export const bishopricAction = pgTable('bishopric_action', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
+  bishopricMeetingId: uuid('bishopric_meeting_id').notNull().references(() => bishopricMeeting.id, { onDelete: 'cascade' }),
+  title: text('title').notNull(),
+  details: text('details'),
+  decision: text('decision'),
+  ownerName: text('owner_name'),
+  dueDate: date('due_date'),
+  visibility: text('visibility').notNull().default('PRIVATE'),
+  status: text('status').notNull().default('PENDING'),
+  carryForward: boolean('carry_forward').notNull().default(false),
+  completedAt: timestamp('completed_at', { withTimezone: true }),
+  completedByUserId: uuid('completed_by_user_id').references(() => userAccount.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
+});
+
 export const announcement = pgTable('announcement', {
   id: uuid('id').defaultRandom().primaryKey(),
   wardId: uuid('ward_id')
