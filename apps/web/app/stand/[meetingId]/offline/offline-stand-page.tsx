@@ -15,6 +15,19 @@ import {
   type OfflineStandSnapshot
 } from '@/src/offline/storage';
 
+function membershipActionLabel(actionType: string): string {
+  return {
+    WELCOME_NEW_MEMBER: 'Welcome new member',
+    BABY_BLESSING: 'Baby blessing',
+    PRIESTHOOD_ORDINATION: 'Priesthood ordination',
+    PRIESTHOOD_ADVANCEMENT: 'Priesthood advancement'
+  }[actionType] ?? actionType.replaceAll('_', ' ');
+}
+
+function membershipStatusLabel(status: string): string {
+  return status === 'action_needed' ? 'Action needed' : status[0]?.toUpperCase() + status.slice(1);
+}
+
 function OfflineRow({ row, done, onToggle }: { row: StandRow; done: boolean; onToggle: () => void }) {
   const programNotes = 'programNotes' in row ? row.programNotes : null;
   const content =
@@ -496,6 +509,32 @@ export default function OfflineStandPage({ meetingId }: { meetingId: string }) {
           </button>
         </div>
       )}
+      <section className="rounded-lg border bg-card p-4">
+        <h2 className="font-semibold">Membership and Ordinances</h2>
+        <p className="mt-1 text-sm text-muted-foreground">Read-only conducting reference. Status changes require an online connection.</p>
+        {snapshot.membershipActions?.length ? (
+          <ul className="mt-3 space-y-2 text-sm">
+            {snapshot.membershipActions.map((action) => (
+              <li key={action.id} className="rounded border p-3">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground">{membershipActionLabel(action.actionType)}</p>
+                    <p className="font-medium">{action.memberName}</p>
+                    {action.responsibleLeader ? <p className="text-muted-foreground">Responsible: {action.responsibleLeader}</p> : null}
+                    {action.interviewStatus && action.interviewStatus !== 'not_required' ? (
+                      <p className="text-muted-foreground">Interview: {action.interviewStatus.replaceAll('_', ' ')}</p>
+                    ) : null}
+                  </div>
+                  <span className="rounded-full border px-2 py-1 text-xs">{membershipStatusLabel(action.status)}</span>
+                </div>
+                {action.lcrFollowUpStatus === 'needed' ? <p className="mt-2 text-xs font-medium text-amber-700">LCR update needed</p> : null}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="mt-2 text-sm text-muted-foreground">No membership or ordinance actions for this meeting.</p>
+        )}
+      </section>
       <section className="rounded-lg border bg-card p-4">
         <h2 className="font-semibold">Ward and Stake Business</h2>
         <ul className="mt-2 space-y-2 text-sm">
