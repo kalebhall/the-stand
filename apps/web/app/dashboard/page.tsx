@@ -53,6 +53,7 @@ export default async function DashboardPage() {
   let priesthoodPreparationCount = 'Unavailable';
   let officialRecordHandoffCount = 'Unavailable';
   let bishopricDueActionCount = 'Unavailable';
+  let scheduledInterviewCount = 'Unavailable';
   let notificationHealthValue = 'No deliveries yet';
   let notificationHealthDetail = 'No notification attempts recorded for this ward yet.';
   let nextMeetingValue = 'No meetings scheduled';
@@ -112,6 +113,13 @@ export default async function DashboardPage() {
         [session.activeWardId]
       );
 
+      const scheduledInterviewResult = await client.query(
+        `SELECT COUNT(*)::int AS count
+           FROM scheduled_interview
+          WHERE ward_id = $1::uuid AND status = 'SCHEDULED'`,
+        [session.activeWardId]
+      );
+
       const notificationHealthResult = await client.query(
         `SELECT MAX(nd.attempted_at) AS last_delivery_at,
                 COUNT(*) FILTER (WHERE nd.delivery_status = 'failure')::int AS failure_count
@@ -167,6 +175,7 @@ export default async function DashboardPage() {
       priesthoodPreparationCount = `${actionQueue.priesthood_preparation_count} waiting`;
       officialRecordHandoffCount = `${actionQueue.official_record_handoff_count} waiting`;
       bishopricDueActionCount = `${(bishopricDueActionResult.rows[0] as { count: number }).count} overdue`;
+      scheduledInterviewCount = `${(scheduledInterviewResult.rows[0] as { count: number }).count} scheduled`;
       const notificationHealth = notificationHealthResult.rows[0] as { last_delivery_at: string | null; failure_count: number };
       notificationHealthValue = notificationHealth.last_delivery_at ?? 'No deliveries yet';
       notificationHealthDetail = `${notificationHealth.failure_count} failed deliveries`;
@@ -274,6 +283,15 @@ export default async function DashboardPage() {
             value={bishopricDueActionCount}
             detail="Private bishopric assignments past due."
             actions={[{ href: '/bishopric', label: 'Open bishopric workspace' }]}
+          />
+        ) : null}
+
+        {canAccessMeetings ? (
+          <DashboardCard
+            title="Scheduled interviews"
+            value={scheduledInterviewCount}
+            detail="Operational interviews awaiting completion."
+            actions={[{ href: '/interviews', label: 'Open interview schedule' }]}
           />
         ) : null}
 

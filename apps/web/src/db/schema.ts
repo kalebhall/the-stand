@@ -334,6 +334,23 @@ export const bishopricAction = pgTable('bishopric_action', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
 });
 
+export const scheduledInterview = pgTable('scheduled_interview', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
+  interviewType: text('interview_type').notNull(),
+  memberName: text('member_name').notNull(),
+  interviewerName: text('interviewer_name').notNull(),
+  scheduledAt: timestamp('scheduled_at', { withTimezone: true }).notNull(),
+  status: text('status').notNull().default('SCHEDULED'),
+  linkedActionId: uuid('linked_action_id').references(() => meetingMembershipOrdinance.id, { onDelete: 'set null' }),
+  linkedCallingId: uuid('linked_calling_id').references(() => callingAssignment.id, { onDelete: 'set null' }),
+  privateNote: text('private_note'),
+  completedAt: timestamp('completed_at', { withTimezone: true }),
+  createdByUserId: uuid('created_by_user_id').notNull().references(() => userAccount.id, { onDelete: 'restrict' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
+});
+
 export const announcement = pgTable('announcement', {
   id: uuid('id').defaultRandom().primaryKey(),
   wardId: uuid('ward_id')
