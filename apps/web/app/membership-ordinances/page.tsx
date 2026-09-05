@@ -11,10 +11,14 @@ import {
   getMembershipOrdinanceActionLabel,
   getMembershipOrdinanceGroup,
   getMembershipOrdinanceNextStep,
+  matchesMembershipOrdinanceFilters,
+  MEMBERSHIP_ORDINANCE_ACTION_LABELS,
   MEMBERSHIP_ORDINANCE_STATUS_LABELS,
   type MembershipOrdinanceActionRow,
   type MembershipOrdinanceActionGroup
 } from '@/src/church-actions/membership-ordinance';
+
+import { MembershipOrdinanceWorkspaceControls } from './workspace-controls';
 
 const GROUPS: Array<{ key: MembershipOrdinanceActionGroup; title: string; description: string }> = [
   { key: 'needs_attention', title: 'Needs attention', description: 'Actions with follow-up, interview, LCR, or overdue work.' },
@@ -50,7 +54,7 @@ function displayMeetingType(value: string): string {
     .join(' ');
 }
 
-function ActionCard({ action }: { action: MembershipOrdinanceActionRow }) {
+function ActionCard({ action, wardId }: { action: MembershipOrdinanceActionRow; wardId: string }) {
   return (
     <article className="rounded-lg border bg-card p-4 shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -87,16 +91,17 @@ function ActionCard({ action }: { action: MembershipOrdinanceActionRow }) {
         ) : null}
       </div>
 
-      <div className="mt-4">
+      <div className="mt-4 flex flex-wrap gap-2">
         <Link href={`/meetings/${action.meetingId}/edit`} className={cn(buttonVariants({ size: 'sm', variant: 'outline' }))}>
           Open meeting
         </Link>
+        <MembershipOrdinanceWorkspaceControls action={action} wardId={wardId} />
       </div>
     </article>
   );
 }
 
-export default async function MembershipOrdinancesPage() {
+export default async function MembershipOrdinancesPage({ searchParams }: { searchParams: Promise<{ q?: string; action?: string; status?: string; queue?: string }> }) {
   const session = await requireAuthenticatedSession();
   enforcePasswordRotation(session);
 
@@ -104,6 +109,7 @@ export default async function MembershipOrdinancesPage() {
     redirect('/dashboard');
   }
 
+  const filters = await searchParams;
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -120,7 +126,7 @@ export default async function MembershipOrdinancesPage() {
     await client.query('COMMIT');
 
     const today = new Date().toISOString().slice(0, 10);
-    const actions = (result.rows as ActionQueryRow[]).map((row) => ({
+    const allActions = (result.rows as ActionQueryRow[]).map((row) => ({
       id: row.id,
       meetingId: row.meeting_id,
       meetingDate: row.meeting_date,
@@ -133,6 +139,12 @@ export default async function MembershipOrdinancesPage() {
       interviewStatus: row.interview_status,
       lcrFollowUpStatus: row.lcr_follow_up_status
     }));
+    const actions = allActions.filter((action) => matchesMembershipOrdinanceFilters(action, {
+      query: filters.q,
+      actionType: filters.action,
+      status: filters.status,
+      group: filters.queue
+    }, today));
     const grouped = new Map<MembershipOrdinanceActionGroup, MembershipOrdinanceActionRow[]>([
       ['needs_attention', []],
       ['upcoming', []],
@@ -154,6 +166,23 @@ export default async function MembershipOrdinancesPage() {
               Open meetings
             </Link>
           </div>
+          <form method="get" className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+            <input name="q" defaultValue={filters.q ?? ''} placeholder="Search member or leader" className="rounded-md border bg-background px-3 py-2 text-sm lg:col-span-2" />
+            <select name="action" defaultValue={filters.action ?? 'all'} className="rounded-md border bg-background px-3 py-2 text-sm">
+              <option value="all">All actions</option>
+              {Object.entries(MEMBERSHIP_ORDINANCE_ACTION_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+            </select>
+            <select name="status" defaultValue={filters.status ?? 'all'} className="rounded-md border bg-background px-3 py-2 text-sm">
+              <option value="all">All statuses</option>
+              {Object.entries(MEMBERSHIP_ORDINANCE_STATUS_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+            </select>
+            <select name="queue" defaultValue={filters.queue ?? 'all'} className="rounded-md border bg-background px-3 py-2 text-sm">
+              <option value="all">All queues</option>
+              {GROUPS.map((group) => <option key={group.key} value={group.key}>{group.title}</option>)}
+            </select>
+            <button type="submit" className={cn(buttonVariants({ size: 'sm' }))}>Apply filters</button>
+          </form>
+          <p className="mt-3 text-xs text-muted-foreground">Showing {actions.length} of {allActions.length} actions.</p>
         </section>
 
         {GROUPS.map((group) => {
@@ -166,7 +195,7 @@ export default async function MembershipOrdinancesPage() {
               </div>
               {groupActions.length ? (
                 <div className="grid gap-3 lg:grid-cols-2">
-                  {groupActions.map((action) => <ActionCard key={action.id} action={action} />)}
+                  {groupActions.map((action) => <ActionCard key={action.id} action={action} wardId={session.activeWardId!} />)}
                 </div>
               ) : (
                 <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">No actions in this group.</p>

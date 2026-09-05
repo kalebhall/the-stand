@@ -41,7 +41,7 @@ export function getMembershipOrdinanceActionLabel(actionType: MembershipOrdinanc
 
 export function getMembershipOrdinanceGroup(action: MembershipOrdinanceActionRow, today: string): MembershipOrdinanceActionGroup {
   if (action.status === 'completed' && action.lcrFollowUpStatus !== 'needed') return 'completed';
-  if (action.status === 'action_needed' || action.interviewStatus === 'needed' || action.lcrFollowUpStatus === 'needed') {
+  if (action.status === 'action_needed' || action.interviewStatus === 'needed' || action.interviewStatus === 'scheduled' || action.lcrFollowUpStatus === 'needed') {
     return 'needs_attention';
   }
   if (action.plannedDate && action.plannedDate < today) return 'needs_attention';
@@ -55,4 +55,17 @@ export function getMembershipOrdinanceNextStep(action: MembershipOrdinanceAction
   if (action.interviewStatus === 'scheduled') return 'Complete interview';
   if (action.status === 'pending') return 'Present in meeting';
   return 'Complete';
+}
+
+export function matchesMembershipOrdinanceFilters(
+  action: MembershipOrdinanceActionRow,
+  filters: { query?: string; actionType?: string; status?: string; group?: string },
+  today: string
+): boolean {
+  const query = filters.query?.trim().toLowerCase();
+  if (query && !`${action.memberName} ${action.responsibleLeader ?? ''} ${action.meetingType}`.toLowerCase().includes(query)) return false;
+  if (filters.actionType && filters.actionType !== 'all' && action.actionType !== filters.actionType) return false;
+  if (filters.status && filters.status !== 'all' && action.status !== filters.status) return false;
+  if (filters.group && filters.group !== 'all' && getMembershipOrdinanceGroup(action, today) !== filters.group) return false;
+  return true;
 }

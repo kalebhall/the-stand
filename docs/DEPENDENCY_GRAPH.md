@@ -15,7 +15,7 @@ flowchart LR
   A3["root:tooling<br/>6 files"]
   A4["web:announcements<br/>2 files"]
   A5["web:api<br/>72 files"]
-  A6["web:app<br/>95 files"]
+  A6["web:app<br/>96 files"]
   A7["web:audit<br/>2 files"]
   A8["web:auth<br/>11 files"]
   A9["web:bootstrap.mjs<br/>1 files"]
@@ -39,7 +39,7 @@ flowchart LR
   A27["web:ui<br/>30 files"]
   A28["web:version.mjs<br/>1 files"]
   A5 -->|99| A8
-  A6 -->|91| A27
+  A6 -->|92| A27
   A5 -->|89| A14
   A6 -->|74| A8
   A6 -->|42| A14
@@ -54,6 +54,7 @@ flowchart LR
   A6 -->|4| A24
   A5 -->|3| A4
   A6 -->|3| A4
+  A6 -->|2| A12
   A6 -->|2| A21
   A8 -->|2| A14
   A10 -->|2| A14
@@ -65,7 +66,6 @@ flowchart LR
   A5 -->|1| A20
   A5 -->|1| A24
   A6 -->|1| A10
-  A6 -->|1| A12
   A6 -->|1| A17
   A6 -->|1| A18
   A6 -->|1| A22
@@ -97,7 +97,7 @@ flowchart LR
 | `root:tooling` | 6 |
 | `web:announcements` | 2 |
 | `web:api` | 72 |
-| `web:app` | 95 |
+| `web:app` | 96 |
 | `web:audit` | 2 |
 | `web:auth` | 11 |
 | `web:bootstrap.mjs` | 1 |
@@ -126,12 +126,12 @@ flowchart LR
 | Importing area | Imported area | Imports |
 | --- | --- | ---: |
 | `web:api` | `web:auth` | 99 |
-| `web:app` | `web:ui` | 91 |
+| `web:app` | `web:ui` | 92 |
 | `web:api` | `web:db` | 89 |
 | `web:app` | `web:auth` | 74 |
 | `web:app` | `web:db` | 42 |
 | `web:api` | `web:notifications` | 40 |
-| `web:app` | `web:app` | 39 |
+| `web:app` | `web:app` | 40 |
 | `web:notifications` | `web:notifications` | 32 |
 | `web:ui` | `web:ui` | 27 |
 | `web:api` | `web:lib` | 23 |
@@ -154,6 +154,7 @@ flowchart LR
 | `web:calendar` | `web:calendar` | 3 |
 | `web:lib` | `web:lib` | 3 |
 | `package:shared` | `package:shared` | 2 |
+| `web:app` | `web:church-actions` | 2 |
 | `web:app` | `web:notifications` | 2 |
 | `web:auth` | `web:db` | 2 |
 | `web:calendar` | `web:db` | 2 |
@@ -167,7 +168,6 @@ flowchart LR
 | `web:api` | `web:notes` | 1 |
 | `web:api` | `web:stand` | 1 |
 | `web:app` | `web:calendar` | 1 |
-| `web:app` | `web:church-actions` | 1 |
 | `web:app` | `web:imports` | 1 |
 | `web:app` | `web:lib` | 1 |
 | `web:app` | `web:offline` | 1 |
@@ -197,8 +197,8 @@ flowchart LR
 | --- | --- | ---: |
 | `web:app` | `next` | 75 |
 | `web:api` | `next` | 53 |
+| `web:app` | `react` | 27 |
 | `web:ui` | `react` | 27 |
-| `web:app` | `react` | 26 |
 | `web:api` | `vitest` | 18 |
 | `web:ui` | `next` | 13 |
 | `root:tooling` | `Node.js` | 12 |
@@ -391,7 +391,8 @@ flowchart LR
 | `apps/web/app/meetings/page.tsx` | `web:app` | 8 | 2 |
 | `apps/web/app/members/members-manager-client.tsx` | `web:app` | 3 | 2 |
 | `apps/web/app/members/page.tsx` | `web:app` | 7 | 2 |
-| `apps/web/app/membership-ordinances/page.tsx` | `web:app` | 7 | 2 |
+| `apps/web/app/membership-ordinances/page.tsx` | `web:app` | 8 | 2 |
+| `apps/web/app/membership-ordinances/workspace-controls.tsx` | `web:app` | 2 | 1 |
 | `apps/web/app/notifications/error.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/notifications/loading.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/notifications/notification-center.tsx` | `web:app` | 1 | 1 |
