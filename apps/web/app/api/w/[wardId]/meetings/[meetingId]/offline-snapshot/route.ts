@@ -55,7 +55,7 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
       [meetingId, wardId]
     );
     const membershipActions = await client.query(
-      `SELECT id, member_name, action_type, priesthood_office, status, planned_date, interview_status, interview_date, interviewer_name, approval_confirmed, presenting_leader, performing_priesthood_holder, ordinance_date, responsible_leader, lcr_follow_up_status, lcr_updated_at
+      `SELECT id, member_name, action_type, priesthood_office, status, planned_date, interview_status, interview_date, interviewer_name, approval_confirmed, presenting_leader, performing_priesthood_holder, ordinance_date, baptism_date, confirmation_date, baptism_status, confirmation_status, responsible_leader, lcr_follow_up_status, lcr_updated_at
          FROM meeting_membership_ordinance
         WHERE meeting_id = $1::uuid AND ward_id = $2::uuid
         ORDER BY created_at ASC`,

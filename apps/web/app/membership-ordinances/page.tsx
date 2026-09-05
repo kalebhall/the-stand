@@ -42,6 +42,10 @@ type ActionQueryRow = {
   presenting_leader: string | null;
   performing_priesthood_holder: string | null;
   ordinance_date: string | null;
+  baptism_date: string | null;
+  confirmation_date: string | null;
+  baptism_status: MembershipOrdinanceActionRow['baptismStatus'];
+  confirmation_status: MembershipOrdinanceActionRow['confirmationStatus'];
   interview_status: MembershipOrdinanceActionRow['interviewStatus'];
   lcr_follow_up_status: MembershipOrdinanceActionRow['lcrFollowUpStatus'];
   record_form_needed: boolean;
@@ -135,7 +139,7 @@ export default async function MembershipOrdinancesPage({ searchParams }: { searc
     const result = await client.query(
       `SELECT a.id, a.meeting_id, m.meeting_date, m.meeting_type, a.member_name, a.action_type, a.priesthood_office, a.status,
               a.planned_date, a.responsible_leader, a.interview_status, a.approval_confirmed, a.presenting_leader,
-              a.performing_priesthood_holder, a.ordinance_date, a.lcr_follow_up_status,
+              a.performing_priesthood_holder, a.ordinance_date, a.baptism_date, a.confirmation_date, a.baptism_status, a.confirmation_status, a.lcr_follow_up_status,
               a.record_form_needed, a.handoff_date, a.official_record_updated_by,
               a.certificate_or_form_delivered, a.official_system_follow_up_status,
               a.official_system_reference_url
@@ -164,6 +168,10 @@ export default async function MembershipOrdinancesPage({ searchParams }: { searc
       presentingLeader: row.presenting_leader,
       performingPriesthoodHolder: row.performing_priesthood_holder,
       ordinanceDate: row.ordinance_date,
+      baptismDate: row.baptism_date,
+      confirmationDate: row.confirmation_date,
+      baptismStatus: row.baptism_status,
+      confirmationStatus: row.confirmation_status,
       lcrFollowUpStatus: row.lcr_follow_up_status,
       recordFormNeeded: row.record_form_needed,
       handoffDate: row.handoff_date,

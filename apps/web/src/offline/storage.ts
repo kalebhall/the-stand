@@ -29,6 +29,10 @@ export type OfflineStandSnapshot = {
     presentingLeader?: string | null;
     performingPriesthoodHolder?: string | null;
     ordinanceDate?: string | null;
+    baptismDate?: string | null;
+    confirmationDate?: string | null;
+    baptismStatus?: string | null;
+    confirmationStatus?: string | null;
     responsibleLeader?: string | null;
     lcrFollowUpStatus?: string;
     lcrUpdatedAt?: string | null;

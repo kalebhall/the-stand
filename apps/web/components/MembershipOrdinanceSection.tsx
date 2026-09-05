@@ -10,7 +10,7 @@ import { PRIESTHOOD_OFFICE_LABELS, type PriesthoodOffice } from '@/src/church-ac
 export type MembershipOrdinanceAction = {
   id: string;
   member_name: string;
-  action_type: 'WELCOME_NEW_MEMBER' | 'RECOGNIZE_BAPTIZED_CHILD' | 'BABY_BLESSING' | 'PRIESTHOOD_ORDINATION' | 'PRIESTHOOD_ADVANCEMENT';
+  action_type: 'WELCOME_NEW_MEMBER' | 'RECOGNIZE_BAPTIZED_CHILD' | 'BAPTISM_CONFIRMATION_FOLLOW_UP' | 'BABY_BLESSING' | 'PRIESTHOOD_ORDINATION' | 'PRIESTHOOD_ADVANCEMENT';
   priesthood_office?: PriesthoodOffice | null;
   reason: string | null;
   details: string | null;
@@ -23,6 +23,10 @@ export type MembershipOrdinanceAction = {
   presenting_leader?: string | null;
   performing_priesthood_holder?: string | null;
   ordinance_date?: string | null;
+  baptism_date?: string | null;
+  confirmation_date?: string | null;
+  baptism_status?: 'planned' | 'completed' | 'cancelled' | null;
+  confirmation_status?: 'planned' | 'completed' | 'cancelled' | null;
   responsible_leader?: string | null;
   lcr_follow_up_status?: 'not_applicable' | 'needed' | 'completed';
   lcr_updated_at?: string | null;
@@ -39,6 +43,7 @@ type Props = {
 const OPTIONS = [
   ['WELCOME_NEW_MEMBER', 'Welcome new ward member'],
   ['RECOGNIZE_BAPTIZED_CHILD', 'Recognize baptized child'],
+  ['BAPTISM_CONFIRMATION_FOLLOW_UP', 'Baptism and confirmation follow-up'],
   ['BABY_BLESSING', 'Baby blessing'],
   ['PRIESTHOOD_ORDINATION', 'Priesthood ordination'],
   ['PRIESTHOOD_ADVANCEMENT', 'Priesthood advancement']
@@ -66,6 +71,10 @@ export function MembershipOrdinanceSection({ wardId, meetingId, actions, canMana
   const [presentingLeader, setPresentingLeader] = useState('');
   const [performingPriesthoodHolder, setPerformingPriesthoodHolder] = useState('');
   const [ordinanceDate, setOrdinanceDate] = useState('');
+  const [baptismDate, setBaptismDate] = useState('');
+  const [confirmationDate, setConfirmationDate] = useState('');
+  const [baptismStatus, setBaptismStatus] = useState('planned');
+  const [confirmationStatus, setConfirmationStatus] = useState('planned');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -75,7 +84,7 @@ export function MembershipOrdinanceSection({ wardId, meetingId, actions, canMana
     const response = await fetch(`/api/w/${wardId}/meetings/${meetingId}/membership-ordinances`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ actionType, memberName, reason, details, priesthoodOffice: priesthoodOffice || null, plannedDate, interviewDate, interviewerName, approvalConfirmed, presentingLeader, performingPriesthoodHolder, ordinanceDate, responsibleLeader })
+      body: JSON.stringify({ actionType, memberName, reason, details, priesthoodOffice: priesthoodOffice || null, plannedDate, interviewDate, interviewerName, approvalConfirmed, presentingLeader, performingPriesthoodHolder, ordinanceDate, baptismDate, confirmationDate, baptismStatus, confirmationStatus, responsibleLeader })
     });
     if (!response.ok) {
       const payload = (await response.json().catch(() => null)) as { error?: string } | null;
@@ -156,7 +165,15 @@ export function MembershipOrdinanceSection({ wardId, meetingId, actions, canMana
               <input className="w-full rounded-md border px-3 py-2" value={details} onChange={(e) => setDetails(e.target.value)} placeholder="Optional local planning note" />
             </label>
           ) : null}
-          {actionType !== 'WELCOME_NEW_MEMBER' && actionType !== 'RECOGNIZE_BAPTIZED_CHILD' ? (
+          {actionType === 'BAPTISM_CONFIRMATION_FOLLOW_UP' ? (
+            <>
+              <label className="space-y-1 text-sm"><span className="font-medium">Baptism date</span><input className="w-full rounded-md border px-3 py-2" type="date" value={baptismDate} onChange={(e) => setBaptismDate(e.target.value)} /></label>
+              <label className="space-y-1 text-sm"><span className="font-medium">Baptism status</span><select className="w-full rounded-md border px-3 py-2" value={baptismStatus} onChange={(e) => setBaptismStatus(e.target.value)}><option value="planned">Planned</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option></select></label>
+              <label className="space-y-1 text-sm"><span className="font-medium">Confirmation date</span><input className="w-full rounded-md border px-3 py-2" type="date" value={confirmationDate} onChange={(e) => setConfirmationDate(e.target.value)} /></label>
+              <label className="space-y-1 text-sm"><span className="font-medium">Confirmation status</span><select className="w-full rounded-md border px-3 py-2" value={confirmationStatus} onChange={(e) => setConfirmationStatus(e.target.value)}><option value="planned">Planned</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option></select></label>
+            </>
+          ) : null}
+          {actionType !== 'WELCOME_NEW_MEMBER' && actionType !== 'RECOGNIZE_BAPTIZED_CHILD' && actionType !== 'BAPTISM_CONFIRMATION_FOLLOW_UP' ? (
             <label className="space-y-1 text-sm">
               <span className="font-medium">Office or details</span>
               <input
@@ -247,6 +264,7 @@ export function MembershipOrdinanceSection({ wardId, meetingId, actions, canMana
                     </p>
                   ) : null}
                   {action.details ? <p className="text-sm text-muted-foreground">{action.details}</p> : null}
+                  {action.action_type === 'BAPTISM_CONFIRMATION_FOLLOW_UP' ? <p className="text-sm text-muted-foreground">Baptism: {action.baptism_status ?? 'planned'}{action.baptism_date ? ` (${action.baptism_date})` : ''} · Confirmation: {action.confirmation_status ?? 'planned'}{action.confirmation_date ? ` (${action.confirmation_date})` : ''}</p> : null}
                   {action.action_type.includes('PRIESTHOOD') && action.priesthood_office ? <p className="text-sm text-muted-foreground">Office: {PRIESTHOOD_OFFICE_LABELS[action.priesthood_office]}</p> : null}
                   {canManage && action.action_type.includes('PRIESTHOOD') ? <p className="text-sm text-muted-foreground">Approval: {action.approval_confirmed ? 'confirmed' : 'not confirmed'}</p> : null}
                   {canManage && action.planned_date ? (

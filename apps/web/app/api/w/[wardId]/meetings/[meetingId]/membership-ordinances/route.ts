@@ -6,7 +6,7 @@ import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 import { isWardSacramentPriesthoodActionAllowed, validatePriesthoodOffice, type PriesthoodOffice } from '@/src/church-actions/membership-ordinance';
 
-const ACTION_TYPES = new Set(['WELCOME_NEW_MEMBER', 'RECOGNIZE_BAPTIZED_CHILD', 'BABY_BLESSING', 'PRIESTHOOD_ORDINATION', 'PRIESTHOOD_ADVANCEMENT']);
+const ACTION_TYPES = new Set(['WELCOME_NEW_MEMBER', 'RECOGNIZE_BAPTIZED_CHILD', 'BAPTISM_CONFIRMATION_FOLLOW_UP', 'BABY_BLESSING', 'PRIESTHOOD_ORDINATION', 'PRIESTHOOD_ADVANCEMENT']);
 const PRIESTHOOD_ACTION_TYPES = new Set(['PRIESTHOOD_ORDINATION', 'PRIESTHOOD_ADVANCEMENT']);
 
 function trimmed(value: unknown): string | null {
@@ -36,6 +36,10 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     presentingLeader?: unknown;
     performingPriesthoodHolder?: unknown;
     ordinanceDate?: unknown;
+    baptismDate?: unknown;
+    confirmationDate?: unknown;
+    baptismStatus?: unknown;
+    confirmationStatus?: unknown;
   } | null;
   const memberName = typeof body?.memberName === 'string' ? body.memberName.trim() : '';
   const actionType = typeof body?.actionType === 'string' ? body.actionType : '';
@@ -55,7 +59,12 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
   const presentingLeader = trimmed(body?.presentingLeader);
   const performingPriesthoodHolder = trimmed(body?.performingPriesthoodHolder);
   const ordinanceDate = trimmed(body?.ordinanceDate);
+  const baptismDate = trimmed(body?.baptismDate);
+  const confirmationDate = trimmed(body?.confirmationDate);
+  const baptismStatus = typeof body?.baptismStatus === 'string' && ['planned', 'completed', 'cancelled'].includes(body.baptismStatus) ? body.baptismStatus : null;
+  const confirmationStatus = typeof body?.confirmationStatus === 'string' && ['planned', 'completed', 'cancelled'].includes(body.confirmationStatus) ? body.confirmationStatus : null;
   const lcrFollowUpStatus = PRIESTHOOD_ACTION_TYPES.has(actionType) ? 'needed' : 'not_applicable';
+  const recordFormNeeded = actionType === 'BAPTISM_CONFIRMATION_FOLLOW_UP';
   if (!memberName || !ACTION_TYPES.has(actionType) || !validatePriesthoodOffice(actionType, priesthoodOffice)) {
     return NextResponse.json({ error: 'Member name and valid action type are required.', code: 'INVALID_INPUT' }, { status: 400 });
   }
@@ -77,9 +86,9 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
       return NextResponse.json({ error: 'Elder and high priest sustainings or setting-apart actions belong to stake leadership, not a ward sacrament meeting.', code: 'STAKE_SCOPE_REQUIRED' }, { status: 422 });
     }
     const result = await client.query(
-      `INSERT INTO meeting_membership_ordinance (ward_id, meeting_id, member_name, action_type, priesthood_office, reason, details, planned_date, interview_status, interview_date, interviewer_name, approval_confirmed, presenting_leader, performing_priesthood_holder, ordinance_date, responsible_leader, lcr_follow_up_status)
-       VALUES ($1::uuid, $2::uuid, $3::text, $4::text, $5::text, $6::text, $7::text, $8::date, $9::text, $10::date, $11::text, $12::boolean, $13::text, $14::text, $15::date, $16::text, $17::text)
-       RETURNING id, member_name, action_type, priesthood_office, reason, details, status, planned_date, interview_status, interview_date, interviewer_name, approval_confirmed, presenting_leader, performing_priesthood_holder, ordinance_date, responsible_leader, lcr_follow_up_status, lcr_updated_at, announced_at, completed_at, completed_by_user_id, created_at, updated_at`,
+      `INSERT INTO meeting_membership_ordinance (ward_id, meeting_id, member_name, action_type, priesthood_office, reason, details, planned_date, interview_status, interview_date, interviewer_name, approval_confirmed, presenting_leader, performing_priesthood_holder, ordinance_date, baptism_date, confirmation_date, baptism_status, confirmation_status, responsible_leader, lcr_follow_up_status, record_form_needed)
+       VALUES ($1::uuid, $2::uuid, $3::text, $4::text, $5::text, $6::text, $7::text, $8::date, $9::text, $10::date, $11::text, $12::boolean, $13::text, $14::text, $15::date, $16::date, $17::date, $18::text, $19::text, $20::text, $21::text, $22::boolean)
+       RETURNING id, member_name, action_type, priesthood_office, reason, details, status, planned_date, interview_status, interview_date, interviewer_name, approval_confirmed, presenting_leader, performing_priesthood_holder, ordinance_date, baptism_date, confirmation_date, baptism_status, confirmation_status, responsible_leader, lcr_follow_up_status, lcr_updated_at, announced_at, completed_at, completed_by_user_id, created_at, updated_at`,
       [
         wardId,
         meetingId,
@@ -96,8 +105,13 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
         presentingLeader,
         performingPriesthoodHolder,
         ordinanceDate,
+        baptismDate,
+        confirmationDate,
+        baptismStatus,
+        confirmationStatus,
         responsibleLeader,
-        lcrFollowUpStatus
+        lcrFollowUpStatus,
+        recordFormNeeded
       ]
     );
     await client.query(

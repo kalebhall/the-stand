@@ -549,6 +549,9 @@ export default function OfflineStandPage({ meetingId }: { meetingId: string }) {
                     <p className="text-xs uppercase tracking-wide text-muted-foreground">{membershipActionLabel(action.actionType)}</p>
                     <p className="font-medium">{action.memberName}</p>
                     {priesthoodOfficeLabel(action.priesthoodOffice) ? <p className="text-muted-foreground">Office: {priesthoodOfficeLabel(action.priesthoodOffice)}</p> : null}
+                    {action.actionType === 'BAPTISM_CONFIRMATION_FOLLOW_UP' ? (
+                      <p className="text-muted-foreground">Baptism: {action.baptismStatus ?? 'planned'}{action.baptismDate ? ` (${action.baptismDate})` : ''} · Confirmation: {action.confirmationStatus ?? 'planned'}{action.confirmationDate ? ` (${action.confirmationDate})` : ''}</p>
+                    ) : null}
                     {action.responsibleLeader ? <p className="text-muted-foreground">Responsible: {action.responsibleLeader}</p> : null}
                     {action.interviewStatus && action.interviewStatus !== 'not_required' ? (
                       <p className="text-muted-foreground">Interview: {action.interviewStatus.replaceAll('_', ' ')}</p>

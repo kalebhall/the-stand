@@ -65,6 +65,11 @@ describe('membership ordinance workspace helpers', () => {
     expect(getMembershipOrdinanceNextStep({ ...baseAction, actionType: 'RECOGNIZE_BAPTIZED_CHILD', lcrFollowUpStatus: 'not_applicable' })).toBe('Present in meeting');
   });
 
+  it('tracks baptism and confirmation as follow-up, not a sacrament ordinance item', () => {
+    expect(validatePriesthoodOffice('BAPTISM_CONFIRMATION_FOLLOW_UP', null)).toBe(true);
+    expect(getMembershipOrdinanceNextStep({ ...baseAction, actionType: 'BAPTISM_CONFIRMATION_FOLLOW_UP', lcrFollowUpStatus: 'not_applicable' })).toBe('Present in meeting');
+  });
+
   it('keeps elder and high priest actions out of ward sacrament meetings', () => {
     expect(isWardSacramentPriesthoodActionAllowed('SACRAMENT', 'ELDER')).toBe(false);
     expect(isWardSacramentPriesthoodActionAllowed('SACRAMENT', 'HIGH_PRIEST')).toBe(false);

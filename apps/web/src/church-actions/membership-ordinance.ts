@@ -1,6 +1,7 @@
 export type MembershipOrdinanceActionType =
   | 'WELCOME_NEW_MEMBER'
   | 'RECOGNIZE_BAPTIZED_CHILD'
+  | 'BAPTISM_CONFIRMATION_FOLLOW_UP'
   | 'BABY_BLESSING'
   | 'PRIESTHOOD_ORDINATION'
   | 'PRIESTHOOD_ADVANCEMENT';
@@ -24,6 +25,10 @@ export type MembershipOrdinanceActionRow = {
   presentingLeader?: string | null;
   performingPriesthoodHolder?: string | null;
   ordinanceDate?: string | null;
+  baptismDate?: string | null;
+  confirmationDate?: string | null;
+  baptismStatus?: 'planned' | 'completed' | 'cancelled' | null;
+  confirmationStatus?: 'planned' | 'completed' | 'cancelled' | null;
   lcrFollowUpStatus: 'not_applicable' | 'needed' | 'completed';
   recordFormNeeded: boolean;
   handoffDate: string | null;
@@ -36,6 +41,7 @@ export type MembershipOrdinanceActionRow = {
 export const MEMBERSHIP_ORDINANCE_ACTION_LABELS: Record<MembershipOrdinanceActionType, string> = {
   WELCOME_NEW_MEMBER: 'Welcome new member',
   RECOGNIZE_BAPTIZED_CHILD: 'Recognize baptized child',
+  BAPTISM_CONFIRMATION_FOLLOW_UP: 'Baptism and confirmation follow-up',
   BABY_BLESSING: 'Baby blessing',
   PRIESTHOOD_ORDINATION: 'Priesthood ordination',
   PRIESTHOOD_ADVANCEMENT: 'Priesthood advancement'
