@@ -26,12 +26,12 @@ flowchart LR
   A14["web:db<br/>7 files"]
   A15["web:hardening<br/>1 files"]
   A16["web:health.mjs<br/>1 files"]
-  A17["web:imports<br/>16 files"]
+  A17["web:imports<br/>19 files"]
   A18["web:lib<br/>9 files"]
   A19["web:meetings<br/>7 files"]
   A20["web:notes<br/>1 files"]
   A21["web:notifications<br/>23 files"]
-  A22["web:offline<br/>1 files"]
+  A22["web:offline<br/>2 files"]
   A23["web:reports<br/>2 files"]
   A24["web:stand<br/>6 files"]
   A25["web:tooling<br/>2 files"]
@@ -108,12 +108,12 @@ flowchart LR
 | `web:db` | 7 |
 | `web:hardening` | 1 |
 | `web:health.mjs` | 1 |
-| `web:imports` | 16 |
+| `web:imports` | 19 |
 | `web:lib` | 9 |
 | `web:meetings` | 7 |
 | `web:notes` | 1 |
 | `web:notifications` | 23 |
-| `web:offline` | 1 |
+| `web:offline` | 2 |
 | `web:reports` | 2 |
 | `web:stand` | 6 |
 | `web:tooling` | 2 |
@@ -138,9 +138,9 @@ flowchart LR
 | `web:api` | `web:api` | 19 |
 | `web:api` | `web:callings` | 15 |
 | `web:api` | `web:audit` | 14 |
+| `web:imports` | `web:imports` | 14 |
 | `web:api` | `web:imports` | 11 |
 | `web:app` | `web:meetings` | 11 |
-| `web:imports` | `web:imports` | 10 |
 | `web:auth` | `web:auth` | 8 |
 | `web:api` | `web:meetings` | 5 |
 | `web:meetings` | `web:meetings` | 5 |
@@ -181,6 +181,7 @@ flowchart LR
 | `web:imports` | `web:db` | 1 |
 | `web:meetings` | `web:announcements` | 1 |
 | `web:notifications` | `web:notes` | 1 |
+| `web:offline` | `web:offline` | 1 |
 | `web:reports` | `web:reports` | 1 |
 | `web:stand` | `web:meetings` | 1 |
 | `web:ui` | `web:auth` | 1 |
@@ -206,8 +207,8 @@ flowchart LR
 | `web:notifications` | `pg` | 8 |
 | `web:api` | `zod` | 7 |
 | `web:app` | `vitest` | 7 |
+| `web:imports` | `vitest` | 7 |
 | `web:auth` | `next-auth` | 6 |
-| `web:imports` | `vitest` | 6 |
 | `web:auth` | `vitest` | 4 |
 | `web:tooling` | `Node.js` | 4 |
 | `web:ui` | `next-auth` | 4 |
@@ -259,11 +260,13 @@ flowchart LR
 | `web:hardening` | `vitest` | 1 |
 | `web:imports` | `@playwright/test` | 1 |
 | `web:imports` | `pdf-parse` | 1 |
+| `web:imports` | `pg` | 1 |
 | `web:imports` | `playwright` | 1 |
 | `web:lib` | `@sentry/nextjs` | 1 |
 | `web:lib` | `jspdf` | 1 |
 | `web:lib` | `qrcode` | 1 |
 | `web:notifications` | `nodemailer` | 1 |
+| `web:offline` | `vitest` | 1 |
 | `web:reports` | `pg` | 1 |
 | `web:reports` | `vitest` | 1 |
 | `web:ui` | `class-variance-authority` | 1 |
@@ -539,7 +542,10 @@ flowchart LR
 | `apps/web/src/imports/membership.vitest.ts` | `web:imports` | 1 | 1 |
 | `apps/web/src/imports/pdf-cleanup.ts` | `web:imports` | 0 | 0 |
 | `apps/web/src/imports/pdf.ts` | `web:imports` | 0 | 1 |
-| `apps/web/src/imports/purge.ts` | `web:imports` | 1 | 0 |
+| `apps/web/src/imports/purge-contract.js` | `web:imports` | 0 | 0 |
+| `apps/web/src/imports/purge-runner.ts` | `web:imports` | 1 | 1 |
+| `apps/web/src/imports/purge.ts` | `web:imports` | 3 | 0 |
+| `apps/web/src/imports/purge.vitest.ts` | `web:imports` | 1 | 1 |
 | `apps/web/src/imports/sacrament-planner.ts` | `web:imports` | 0 | 0 |
 | `apps/web/src/imports/sacrament-planner.vitest.ts` | `web:imports` | 1 | 1 |
 | `apps/web/src/lib/logger.ts` | `web:lib` | 0 | 0 |
@@ -583,6 +589,7 @@ flowchart LR
 | `apps/web/src/notifications/visibility.vitest.ts` | `web:notifications` | 1 | 1 |
 | `apps/web/src/notifications/worker-entry.ts` | `web:notifications` | 5 | 1 |
 | `apps/web/src/offline/storage.ts` | `web:offline` | 0 | 0 |
+| `apps/web/src/offline/storage.vitest.ts` | `web:offline` | 1 | 1 |
 | `apps/web/src/reports/aggregations.ts` | `web:reports` | 0 | 1 |
 | `apps/web/src/reports/aggregations.vitest.ts` | `web:reports` | 1 | 1 |
 | `apps/web/src/stand/default-template.ts` | `web:stand` | 0 | 0 |

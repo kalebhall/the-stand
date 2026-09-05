@@ -1,20 +1,25 @@
 import { pool } from '@/src/db/client';
 
-const DEFAULT_RETENTION_DAYS = 30;
+import {
+  DEFAULT_RAW_PASTE_RETENTION_DAYS,
+  normalizeRetentionDays,
+  PURGED_RAW_TEXT,
+  RAW_PASTE_PURGE_SQL
+} from './purge-contract.js';
 
-export async function purgeRawPasteData(retentionDays: number = DEFAULT_RETENTION_DAYS): Promise<number> {
+export {
+  DEFAULT_RAW_PASTE_RETENTION_DAYS,
+  normalizeRetentionDays,
+  PURGED_RAW_TEXT,
+  RAW_PASTE_PURGE_SQL
+} from './purge-contract.js';
+
+export async function purgeRawPasteData(retentionDays: number = DEFAULT_RAW_PASTE_RETENTION_DAYS): Promise<number> {
+  const normalizedRetentionDays = normalizeRetentionDays(retentionDays);
   const client = await pool.connect();
 
   try {
-    const result = await client.query(
-      `UPDATE import_run
-          SET raw_text = '[purged]'
-        WHERE raw_text != '[purged]'
-          AND created_at < now() - ($1 || ' days')::interval
-        RETURNING id`,
-      [retentionDays]
-    );
-
+    const result = await client.query(RAW_PASTE_PURGE_SQL, [normalizedRetentionDays, PURGED_RAW_TEXT]);
     return result.rowCount ?? 0;
   } finally {
     client.release();

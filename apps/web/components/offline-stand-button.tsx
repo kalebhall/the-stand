@@ -3,7 +3,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { listOfflineMutations, loadOfflineSnapshot, saveOfflineSnapshot, type OfflineStandSnapshot } from '@/src/offline/storage';
+import {
+  clearOfflineData,
+  ensureOfflineContext,
+  listOfflineMutations,
+  loadOfflineSnapshot,
+  OFFLINE_CACHE_NAME,
+  saveOfflineSnapshot,
+  type OfflineStandSnapshot
+} from '@/src/offline/storage';
 
 type OfflineStatus = 'checking' | 'saving' | 'ready' | 'offline' | 'error';
 
@@ -20,6 +28,7 @@ export function OfflineStandButton({ userId, wardId, meetingId }: { userId: stri
   const [status, setStatus] = useState<OfflineStatus>('checking');
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [pending, setPending] = useState(0);
+  const [clearing, setClearing] = useState(false);
   const running = useRef(false);
 
   const refreshPending = useCallback(async () => {
@@ -36,6 +45,7 @@ export function OfflineStandButton({ userId, wardId, meetingId }: { userId: stri
     running.current = true;
     setStatus('saving');
     try {
+      await ensureOfflineContext(userId, wardId);
       const response = await fetch(`/api/w/${wardId}/meetings/${meetingId}/offline-snapshot`, {
         cache: 'no-store'
       });
@@ -44,7 +54,7 @@ export function OfflineStandButton({ userId, wardId, meetingId }: { userId: stri
       const snapshot = { ...payload, savedAt: new Date().toISOString() };
       await saveOfflineSnapshot(snapshot);
       if ('caches' in window) {
-        await caches.open('the-stand-offline-v1').then((cache) => cache.add(`/stand/${meetingId}/offline`));
+        await caches.open(OFFLINE_CACHE_NAME).then((cache) => cache.add(`/stand/${meetingId}/offline`));
       }
       setSavedAt(snapshot.savedAt);
       setStatus('ready');
@@ -54,12 +64,13 @@ export function OfflineStandButton({ userId, wardId, meetingId }: { userId: stri
     } finally {
       running.current = false;
     }
-  }, [meetingId, refreshPending, wardId]);
+  }, [meetingId, refreshPending, userId, wardId]);
 
   useEffect(() => {
     let cancelled = false;
     if ('serviceWorker' in navigator) void navigator.serviceWorker.register('/sw.js').catch(() => undefined);
-    void loadOfflineSnapshot(userId, wardId, meetingId)
+    void ensureOfflineContext(userId, wardId)
+      .then(() => loadOfflineSnapshot(userId, wardId, meetingId))
       .then((snapshot) => {
         if (cancelled) return;
         if (snapshot) setSavedAt(snapshot.savedAt);
@@ -72,6 +83,19 @@ export function OfflineStandButton({ userId, wardId, meetingId }: { userId: stri
       cancelled = true;
     };
   }, [meetingId, refreshPending, saveForOffline, userId, wardId]);
+
+  async function deleteOfflineData() {
+    if (!window.confirm('Delete saved offline meeting data and pending offline changes from this device?')) return;
+    setClearing(true);
+    try {
+      await clearOfflineData();
+      setSavedAt(null);
+      setPending(0);
+      setStatus('checking');
+    } finally {
+      setClearing(false);
+    }
+  }
 
   useEffect(() => {
     const refresh = () => void saveForOffline();
@@ -112,6 +136,9 @@ export function OfflineStandButton({ userId, wardId, meetingId }: { userId: stri
           Open offline copy
         </Link>
       ) : null}
+      <button type="button" className="text-sm underline" onClick={() => void deleteOfflineData()} disabled={clearing}>
+        {clearing ? 'Deleting offline data…' : 'Delete offline data'}
+      </button>
     </div>
   );
 }

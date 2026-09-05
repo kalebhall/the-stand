@@ -476,6 +476,60 @@ sudo systemctl status the-stand-worker --no-pager
 
 ---
 
+## SECTION 10.3 — Raw Import Retention Purge
+
+The application includes a deployable purge command for replacing expired raw import text with `[purged]`. Run it from the web workspace with `npm run purge:raw-imports`. The default retention is 30 days. Override only with a whole-day `RAW_PASTE_RETENTION_DAYS` value from 1 through 3650.
+
+Create `/etc/systemd/system/the-stand-raw-import-purge.service`:
+
+```
+[Unit]
+Description=The Stand raw import retention purge
+After=network.target postgresql.service
+
+[Service]
+Type=oneshot
+User=the-stand
+Group=the-stand
+WorkingDirectory=/opt/the-stand/app/apps/web
+EnvironmentFile=/opt/the-stand/app/.env
+ExecStart=/usr/bin/npm run purge:raw-imports
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+```
+
+Create `/etc/systemd/system/the-stand-raw-import-purge.timer`:
+
+```
+[Unit]
+Description=Run The Stand raw import retention purge daily
+
+[Timer]
+OnCalendar=*-*-* 03:15:00
+Persistent=true
+RandomizedDelaySec=15m
+Unit=the-stand-raw-import-purge.service
+
+[Install]
+WantedBy=timers.target
+```
+
+Enable and verify:
+
+```
+sudo systemctl daemon-reload
+sudo systemctl enable --now the-stand-raw-import-purge.timer
+sudo systemctl start the-stand-raw-import-purge.service
+sudo systemctl status the-stand-raw-import-purge.timer --no-pager
+sudo journalctl -u the-stand-raw-import-purge.service -n 20 --no-pager
+```
+
+The purge command logs only the number of rows changed or a non-secret error message. Do not put database credentials in the unit file; keep them in the protected environment file.
+
+---
+
 ## SECTION 11 — NGINX REVERSE PROXY
 
 ```
@@ -547,9 +601,7 @@ sudo nano /usr/local/bin/the-stand-backup.sh
 ```
 #!/usr/bin/env bash
 set -euo pipefail
-ts=$(date +"%Y%m%d_%H%M%S")
-sudo -u postgres pg_dump the_stand | gzip > /opt/the-stand/backups/the_stand_${ts}.sql.gz
-find /opt/the-stand/backups -type f -mtime +14 -delete
+/opt/the-stand/app/infra/scripts/backup.sh
 ```
 
 Enable:
@@ -567,11 +619,21 @@ Add:
 
 13.2 Restore from Backup
 
-Use the restore script included in the repository (`infra/scripts/restore.sh`):
+Use the restore script included in the repository (`infra/scripts/restore.sh`) only when restoring into a deliberately selected database. It is destructive to the target database.
 
 ```
 sudo -u the-stand -H bash -lc "/opt/the-stand/app/infra/scripts/restore.sh /opt/the-stand/backups/the_stand_YYYYMMDD_HHMMSS.sql.gz"
 ```
+
+13.3 Restore smoke test
+
+Run quarterly, or after changing backup/restore configuration. This creates a temporary database, verifies the checksum sidecar when present, restores the dump with `ON_ERROR_STOP`, checks core tables, and drops the temporary database on exit:
+
+```
+sudo -u the-stand -H bash -lc "/opt/the-stand/app/infra/scripts/restore-smoke-test.sh /opt/the-stand/backups/the_stand_YYYYMMDD_HHMMSS.sql.gz"
+```
+
+Record the date, backup filename, restore duration, result, and operator in the operations log. Do not run the smoke test against production database name.
 
 ---
 

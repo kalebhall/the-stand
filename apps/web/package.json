@@ -12,6 +12,7 @@
     "test": "vitest run",
     "test:components": "vitest run --environment jsdom components/*.vitest.tsx",
     "db:migrate": "node scripts/migrate.mjs",
+    "purge:raw-imports": "node --experimental-strip-types src/imports/purge-runner.ts",
     "worker": "node --experimental-strip-types src/notifications/worker-entry.ts",
     "test:e2e": "playwright test"
   },
