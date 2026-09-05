@@ -216,22 +216,27 @@ sudo systemctl restart systemd-journald
 SECTION 9 — BACKUPS & RESTORE STRATEGY
 =====================================================================
 
-9.1 Daily Backups (pg_dump)
+9.1 Daily Backups (`infra/scripts/backup.sh`)
 9.2 14-Day Retention
-9.3 Offsite Backup Recommended (rclone or SSH target)
+9.3 Checksum sidecars and atomic backup file creation
+9.4 Offsite Backup Recommended (rclone or SSH target)
 
 Example rclone:
 
 rclone sync /opt/the-stand/backups remote:the-stand-backups
 
-9.4 Quarterly Restore Test
+9.5 Quarterly Restore Test
+
+Use `infra/scripts/restore-smoke-test.sh` with a backup file. It verifies the checksum when present, restores into a temporary database with `ON_ERROR_STOP`, checks core tables, and removes the temporary database on exit. Record date, backup filename, duration, result, and operator. Never run it against the production database name.
 
 Procedure:
 
-1. Restore backup to test DB
-2. Start app
-3. Verify login
-4. Verify meeting history
+1. Select a backup file.
+2. Verify the checksum sidecar.
+3. Restore to an isolated temporary database.
+4. Verify core tables and representative row queries.
+5. Remove the temporary database.
+6. Record the result in the operations log.
 
 =====================================================================
 SECTION 10 — MONITORING

@@ -601,9 +601,7 @@ sudo nano /usr/local/bin/the-stand-backup.sh
 ```
 #!/usr/bin/env bash
 set -euo pipefail
-ts=$(date +"%Y%m%d_%H%M%S")
-sudo -u postgres pg_dump the_stand | gzip > /opt/the-stand/backups/the_stand_${ts}.sql.gz
-find /opt/the-stand/backups -type f -mtime +14 -delete
+/opt/the-stand/app/infra/scripts/backup.sh
 ```
 
 Enable:
@@ -621,11 +619,21 @@ Add:
 
 13.2 Restore from Backup
 
-Use the restore script included in the repository (`infra/scripts/restore.sh`):
+Use the restore script included in the repository (`infra/scripts/restore.sh`) only when restoring into a deliberately selected database. It is destructive to the target database.
 
 ```
 sudo -u the-stand -H bash -lc "/opt/the-stand/app/infra/scripts/restore.sh /opt/the-stand/backups/the_stand_YYYYMMDD_HHMMSS.sql.gz"
 ```
+
+13.3 Restore smoke test
+
+Run quarterly, or after changing backup/restore configuration. This creates a temporary database, verifies the checksum sidecar when present, restores the dump with `ON_ERROR_STOP`, checks core tables, and drops the temporary database on exit:
+
+```
+sudo -u the-stand -H bash -lc "/opt/the-stand/app/infra/scripts/restore-smoke-test.sh /opt/the-stand/backups/the_stand_YYYYMMDD_HHMMSS.sql.gz"
+```
+
+Record the date, backup filename, restore duration, result, and operator in the operations log. Do not run the smoke test against production database name.
 
 ---
 
