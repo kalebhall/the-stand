@@ -55,6 +55,37 @@ export const MEMBERSHIP_ORDINANCE_STATUS_LABELS: Record<MembershipOrdinanceStatu
 
 export type MembershipOrdinanceActionGroup = 'needs_attention' | 'upcoming' | 'completed';
 
+export type MembershipOrdinanceTransition =
+  | 'announced'
+  | 'completed'
+  | 'lcr_completed'
+  | 'interview_completed'
+  | 'official_record_started'
+  | 'official_record_completed'
+  | 'certificate_delivered';
+
+export type MembershipOrdinanceTransitionState = {
+  status: MembershipOrdinanceStatus;
+  interviewStatus: 'not_required' | 'needed' | 'scheduled' | 'completed';
+  lcrFollowUpStatus: 'not_applicable' | 'needed' | 'completed';
+  recordFormNeeded: boolean;
+  officialSystemFollowUpStatus: 'not_started' | 'in_progress' | 'completed' | 'not_applicable';
+};
+
+export function validateMembershipOrdinanceTransition(
+  state: MembershipOrdinanceTransitionState,
+  transition: MembershipOrdinanceTransition
+): string | null {
+  if (transition === 'announced' && state.status !== 'pending') return 'Action must be planned before announcement.';
+  if (transition === 'completed' && state.status !== 'action_needed') return 'Action must be announced before completion.';
+  if (transition === 'lcr_completed' && (state.status !== 'completed' || state.lcrFollowUpStatus !== 'needed')) return 'Underlying action must be completed before LCR follow-up.';
+  if (transition === 'interview_completed' && !['needed', 'scheduled'].includes(state.interviewStatus)) return 'Interview is not awaiting completion.';
+  if (transition === 'official_record_started' && (!state.recordFormNeeded || state.status !== 'completed' || state.officialSystemFollowUpStatus !== 'not_started')) return 'Underlying action must be completed before official-record handoff.';
+  if (transition === 'official_record_completed' && (!state.recordFormNeeded || state.status !== 'completed' || state.officialSystemFollowUpStatus !== 'in_progress')) return 'Official-record handoff must be started after underlying action completion.';
+  if (transition === 'certificate_delivered' && (!state.recordFormNeeded || state.officialSystemFollowUpStatus !== 'completed')) return 'Official record must be updated before certificate or form delivery.';
+  return null;
+}
+
 export function getMembershipOrdinanceActionLabel(actionType: MembershipOrdinanceActionType): string {
   return MEMBERSHIP_ORDINANCE_ACTION_LABELS[actionType];
 }

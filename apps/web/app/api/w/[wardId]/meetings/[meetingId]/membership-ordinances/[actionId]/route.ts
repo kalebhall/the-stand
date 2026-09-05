@@ -6,6 +6,7 @@ import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 import { enqueueOutboxNotificationJob } from '@/src/notifications/queue';
 import { enqueueNotificationOutboxEvent, insertNotificationOutboxEvent } from '@/src/notifications/outbox';
+import { validateMembershipOrdinanceTransition, type MembershipOrdinanceTransition } from '@/src/church-actions/membership-ordinance';
 
 export async function PATCH(request: Request, context: { params: Promise<{ wardId: string; meetingId: string; actionId: string }> }) {
   const session = await auth();
@@ -23,6 +24,38 @@ export async function PATCH(request: Request, context: { params: Promise<{ wardI
   try {
     await client.query('BEGIN');
     await setDbContext(client, { userId: session.user.id, wardId });
+    const current = await client.query(
+      `SELECT status, interview_status, lcr_follow_up_status, record_form_needed, official_system_follow_up_status
+         FROM meeting_membership_ordinance
+        WHERE id = $1::uuid AND meeting_id = $2::uuid AND ward_id = $3::uuid
+        FOR UPDATE`,
+      [actionId, meetingId, wardId]
+    );
+    if (!current.rowCount) {
+      await client.query('ROLLBACK');
+      return NextResponse.json({ error: 'Action not found.', code: 'NOT_FOUND' }, { status: 404 });
+    }
+    const currentState = current.rows[0] as {
+      status: 'pending' | 'action_needed' | 'completed';
+      interview_status: 'not_required' | 'needed' | 'scheduled' | 'completed';
+      lcr_follow_up_status: 'not_applicable' | 'needed' | 'completed';
+      record_form_needed: boolean;
+      official_system_follow_up_status: 'not_started' | 'in_progress' | 'completed' | 'not_applicable';
+    };
+    const transitionError = validateMembershipOrdinanceTransition(
+      {
+        status: currentState.status,
+        interviewStatus: currentState.interview_status,
+        lcrFollowUpStatus: currentState.lcr_follow_up_status,
+        recordFormNeeded: currentState.record_form_needed,
+        officialSystemFollowUpStatus: currentState.official_system_follow_up_status
+      },
+      status as MembershipOrdinanceTransition
+    );
+    if (transitionError) {
+      await client.query('ROLLBACK');
+      return NextResponse.json({ error: transitionError, code: 'INVALID_TRANSITION' }, { status: 409 });
+    }
     const result =
       status === 'announced'
         ? await client.query(
