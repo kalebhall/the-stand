@@ -277,6 +277,7 @@ flowchart LR
 | `web:lib` | `@sentry/nextjs` | 1 |
 | `web:lib` | `jspdf` | 1 |
 | `web:lib` | `qrcode` | 1 |
+| `web:meetings` | `qrcode` | 1 |
 | `web:notifications` | `nodemailer` | 1 |
 | `web:offline` | `vitest` | 1 |
 | `web:reports` | `pg` | 1 |
@@ -596,7 +597,7 @@ flowchart LR
 | `apps/web/src/meetings/default-program.vitest.ts` | `web:meetings` | 2 | 1 |
 | `apps/web/src/meetings/public-layout.ts` | `web:meetings` | 0 | 0 |
 | `apps/web/src/meetings/public-layout.vitest.ts` | `web:meetings` | 1 | 1 |
-| `apps/web/src/meetings/render.ts` | `web:meetings` | 3 | 0 |
+| `apps/web/src/meetings/render.ts` | `web:meetings` | 3 | 1 |
 | `apps/web/src/meetings/render.vitest.ts` | `web:meetings` | 1 | 1 |
 | `apps/web/src/meetings/technology.ts` | `web:meetings` | 0 | 0 |
 | `apps/web/src/meetings/technology.vitest.ts` | `web:meetings` | 1 | 1 |

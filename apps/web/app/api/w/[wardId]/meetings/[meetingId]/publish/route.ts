@@ -100,6 +100,9 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
     );
     const layout = (layoutResult.rows?.[0] as LayoutRow | undefined) ?? { preset: 'FULL_PAGE' as const, announcement_mode: 'AFTER_PROGRAM' as const, cover_mode: 'NONE' as const, cover_image_url: null, cover_image_alt_text: null };
 
+    const shareTokenResult = await client.query('SELECT token FROM public_program_share WHERE meeting_id = $1::uuid AND ward_id = $2::uuid LIMIT 1', [meetingId, wardId]);
+    const shareToken = shareTokenResult.rows?.[0]?.token ?? generatePublicToken();
+
     const versionResult = await client.query(
       'SELECT COALESCE(MAX(version), 0)::int AS latest_version FROM meeting_program_render WHERE meeting_id = $1::uuid',
       [meetingId]
@@ -118,6 +121,7 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
     }));
 
     const renderHtml = buildMeetingRenderHtml({
+      publicUrl: `${process.env.NEXTAUTH_URL ?? 'http://localhost:3000'}/p/${shareToken}`,
       meetingDate: meeting.meeting_date,
       meetingType: meeting.meeting_type,
       programItems,
@@ -157,7 +161,7 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
       `INSERT INTO public_program_share (ward_id, meeting_id, token)
        VALUES ($1::uuid, $2::uuid, $3::text)
        ON CONFLICT (meeting_id) DO NOTHING`,
-      [wardId, meetingId, generatePublicToken()]
+      [wardId, meetingId, shareToken]
     );
 
     await client.query(

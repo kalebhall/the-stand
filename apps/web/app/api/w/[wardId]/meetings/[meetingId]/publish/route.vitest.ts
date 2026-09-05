@@ -48,6 +48,7 @@ describe('POST /api/w/[wardId]/meetings/[meetingId]/publish', () => {
       }) // SELECT program items
       .mockResolvedValueOnce({ rows: [] }) // SELECT announcements
       .mockResolvedValueOnce({ rows: [{ preset: 'FULL_PAGE', announcement_mode: 'AFTER_PROGRAM', cover_mode: 'NONE' }] }) // SELECT public layout
+      .mockResolvedValueOnce({ rows: [] }) // SELECT public share token
       .mockResolvedValueOnce({ rows: [{ latest_version: 1 }] }) // SELECT COALESCE MAX version
       .mockResolvedValueOnce({}) // INSERT meeting_program_render
       .mockResolvedValueOnce({}) // UPDATE meeting status

@@ -153,6 +153,7 @@ describe('buildMeetingRenderHtml', () => {
       meetingType: 'SACRAMENT',
       programItems: [],
       announcements: [{ title: 'Hidden by layout', body: null, startDate: null, endDate: null, isPermanent: true, placement: 'PROGRAM_TOP' }],
+      publicUrl: 'https://thestand.app/p/sample-token',
       layout: { preset: 'TRI_FOLD_BULLETIN', announcementMode: 'NONE', coverMode: 'AUTHORIZED_IMAGE', coverImageUrl: 'https://cdn.example.test/ward.jpg', coverImageAltText: 'Ward meetinghouse' }
     });
 
@@ -161,6 +162,7 @@ describe('buildMeetingRenderHtml', () => {
     expect(html).toContain('alt="Ward meetinghouse"');
     expect(html).not.toContain('Hidden by layout');
     expect(html).toContain('print-fold-guides');
-    expect(html).toContain('column-count: 3');
+    expect(html).toContain('aria-label="QR code for digital program"');
+    expect(html).toContain('href="https://thestand.app/p/sample-token"');
   });
 });
