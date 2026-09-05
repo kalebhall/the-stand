@@ -6,7 +6,7 @@ import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 import { isWardSacramentPriesthoodActionAllowed, validatePriesthoodOffice, type PriesthoodOffice } from '@/src/church-actions/membership-ordinance';
 
-const ACTION_TYPES = new Set(['WELCOME_NEW_MEMBER', 'BABY_BLESSING', 'PRIESTHOOD_ORDINATION', 'PRIESTHOOD_ADVANCEMENT']);
+const ACTION_TYPES = new Set(['WELCOME_NEW_MEMBER', 'RECOGNIZE_BAPTIZED_CHILD', 'BABY_BLESSING', 'PRIESTHOOD_ORDINATION', 'PRIESTHOOD_ADVANCEMENT']);
 const PRIESTHOOD_ACTION_TYPES = new Set(['PRIESTHOOD_ORDINATION', 'PRIESTHOOD_ADVANCEMENT']);
 
 function trimmed(value: unknown): string | null {

@@ -12,6 +12,7 @@ type TemplateRow = {
   sustain_template: string;
   release_template: string;
   welcome_new_member_template: string;
+  recognize_baptized_child_template: string;
   baby_blessing_template: string;
   priesthood_ordination_template: string;
   priesthood_advancement_template: string;
@@ -48,7 +49,7 @@ export default async function StandScriptSettingsPage() {
     await setDbContext(client, { userId: session.user.id, wardId });
 
     const templateResult = await client.query(
-      'SELECT welcome_text, sustain_template, release_template, welcome_new_member_template, baby_blessing_template, priesthood_ordination_template, priesthood_advancement_template FROM ward_stand_template WHERE ward_id = $1 LIMIT 1',
+      'SELECT welcome_text, sustain_template, release_template, welcome_new_member_template, recognize_baptized_child_template, baby_blessing_template, priesthood_ordination_template, priesthood_advancement_template FROM ward_stand_template WHERE ward_id = $1 LIMIT 1',
       [wardId]
     );
 
@@ -80,6 +81,8 @@ export default async function StandScriptSettingsPage() {
       String(formData.get('welcomeNewMemberTemplate') ?? '').trim() || DEFAULT_STAND_BUSINESS_TEMPLATES.WELCOME_NEW_MEMBER;
     const babyBlessingTemplate =
       String(formData.get('babyBlessingTemplate') ?? '').trim() || DEFAULT_STAND_BUSINESS_TEMPLATES.BABY_BLESSING;
+    const recognizeBaptizedChildTemplate =
+      String(formData.get('recognizeBaptizedChildTemplate') ?? '').trim() || DEFAULT_STAND_BUSINESS_TEMPLATES.RECOGNIZE_BAPTIZED_CHILD;
     const priesthoodOrdinationTemplate =
       String(formData.get('priesthoodOrdinationTemplate') ?? '').trim() || DEFAULT_STAND_BUSINESS_TEMPLATES.PRIESTHOOD_ORDINATION;
     const priesthoodAdvancementTemplate =
@@ -92,14 +95,15 @@ export default async function StandScriptSettingsPage() {
       await setDbContext(dbClient, { userId: session.user.id, wardId: session.activeWardId });
 
       await dbClient.query(
-        `INSERT INTO ward_stand_template (ward_id, welcome_text, sustain_template, release_template, welcome_new_member_template, baby_blessing_template, priesthood_ordination_template, priesthood_advancement_template, updated_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, now())
+        `INSERT INTO ward_stand_template (ward_id, welcome_text, sustain_template, release_template, welcome_new_member_template, recognize_baptized_child_template, baby_blessing_template, priesthood_ordination_template, priesthood_advancement_template, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, now())
          ON CONFLICT (ward_id)
          DO UPDATE SET
            welcome_text = excluded.welcome_text,
            sustain_template = excluded.sustain_template,
            release_template = excluded.release_template,
            welcome_new_member_template = excluded.welcome_new_member_template,
+           recognize_baptized_child_template = excluded.recognize_baptized_child_template,
            baby_blessing_template = excluded.baby_blessing_template,
            priesthood_ordination_template = excluded.priesthood_ordination_template,
            priesthood_advancement_template = excluded.priesthood_advancement_template,
@@ -110,6 +114,7 @@ export default async function StandScriptSettingsPage() {
           sustainTemplate,
           releaseTemplate,
           welcomeNewMemberTemplate,
+          recognizeBaptizedChildTemplate,
           babyBlessingTemplate,
           priesthoodOrdinationTemplate,
           priesthoodAdvancementTemplate
@@ -186,6 +191,15 @@ export default async function StandScriptSettingsPage() {
             <textarea
               name="welcomeNewMemberTemplate"
               defaultValue={template?.welcome_new_member_template ?? DEFAULT_STAND_BUSINESS_TEMPLATES.WELCOME_NEW_MEMBER}
+              className="min-h-20 w-full rounded-md border px-3 py-2"
+              required
+            />
+          </label>
+          <label className="block space-y-2 text-sm">
+            <span className="font-medium">Baptized child recognition</span>
+            <textarea
+              name="recognizeBaptizedChildTemplate"
+              defaultValue={template?.recognize_baptized_child_template ?? DEFAULT_STAND_BUSINESS_TEMPLATES.RECOGNIZE_BAPTIZED_CHILD}
               className="min-h-20 w-full rounded-md border px-3 py-2"
               required
             />

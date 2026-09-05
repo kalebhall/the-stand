@@ -6,6 +6,7 @@ describe('membership and ordinance stand templates', () => {
   it('provides templates for every supported membership and ordinance action', () => {
     expect(Object.keys(DEFAULT_STAND_BUSINESS_TEMPLATES)).toEqual([
       'WELCOME_NEW_MEMBER',
+      'RECOGNIZE_BAPTIZED_CHILD',
       'BABY_BLESSING',
       'PRIESTHOOD_ORDINATION',
       'PRIESTHOOD_ADVANCEMENT'

@@ -9,6 +9,8 @@ export const DEFAULT_STAND_RELEASE_TEMPLATE =
 export const DEFAULT_STAND_BUSINESS_TEMPLATES = {
   WELCOME_NEW_MEMBER:
     'After a few words of introduction, we welcome **{memberName}** into the ward. Those who welcome [him or her] may show it by the uplifted hand. [Pause briefly.]',
+  RECOGNIZE_BAPTIZED_CHILD:
+    'We recognize **{memberName}**, who has been baptized. [Use the ward-approved introduction and welcome; this prompt does not replace the baptism or confirmation ordinance.]',
   BABY_BLESSING:
     'The blessing of **{memberName}** will take place after this meeting. [Confirm that the parents and participating priesthood holders are prepared before the ordinance.]',
   PRIESTHOOD_ORDINATION:

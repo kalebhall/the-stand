@@ -10,7 +10,7 @@ import { PRIESTHOOD_OFFICE_LABELS, type PriesthoodOffice } from '@/src/church-ac
 export type MembershipOrdinanceAction = {
   id: string;
   member_name: string;
-  action_type: 'WELCOME_NEW_MEMBER' | 'BABY_BLESSING' | 'PRIESTHOOD_ORDINATION' | 'PRIESTHOOD_ADVANCEMENT';
+  action_type: 'WELCOME_NEW_MEMBER' | 'RECOGNIZE_BAPTIZED_CHILD' | 'BABY_BLESSING' | 'PRIESTHOOD_ORDINATION' | 'PRIESTHOOD_ADVANCEMENT';
   priesthood_office?: PriesthoodOffice | null;
   reason: string | null;
   details: string | null;
@@ -38,6 +38,7 @@ type Props = {
 
 const OPTIONS = [
   ['WELCOME_NEW_MEMBER', 'Welcome new ward member'],
+  ['RECOGNIZE_BAPTIZED_CHILD', 'Recognize baptized child'],
   ['BABY_BLESSING', 'Baby blessing'],
   ['PRIESTHOOD_ORDINATION', 'Priesthood ordination'],
   ['PRIESTHOOD_ADVANCEMENT', 'Priesthood advancement']
@@ -149,7 +150,13 @@ export function MembershipOrdinanceSection({ wardId, meetingId, actions, canMana
               </select>
             </label>
           ) : null}
-          {actionType !== 'WELCOME_NEW_MEMBER' ? (
+          {actionType === 'RECOGNIZE_BAPTIZED_CHILD' ? (
+            <label className="space-y-1 text-sm">
+              <span className="font-medium">Recognition details</span>
+              <input className="w-full rounded-md border px-3 py-2" value={details} onChange={(e) => setDetails(e.target.value)} placeholder="Optional local planning note" />
+            </label>
+          ) : null}
+          {actionType !== 'WELCOME_NEW_MEMBER' && actionType !== 'RECOGNIZE_BAPTIZED_CHILD' ? (
             <label className="space-y-1 text-sm">
               <span className="font-medium">Office or details</span>
               <input

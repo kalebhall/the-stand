@@ -52,6 +52,11 @@ describe('membership ordinance workspace helpers', () => {
     expect(validatePriesthoodOffice('PRIESTHOOD_ORDINATION', 'BISHOP')).toBe(false);
   });
 
+  it('keeps baptized-child recognition distinct from new-member welcome', () => {
+    expect(validatePriesthoodOffice('RECOGNIZE_BAPTIZED_CHILD', null)).toBe(true);
+    expect(getMembershipOrdinanceNextStep({ ...baseAction, actionType: 'RECOGNIZE_BAPTIZED_CHILD', lcrFollowUpStatus: 'not_applicable' })).toBe('Present in meeting');
+  });
+
   it('keeps elder and high priest actions out of ward sacrament meetings', () => {
     expect(isWardSacramentPriesthoodActionAllowed('SACRAMENT', 'ELDER')).toBe(false);
     expect(isWardSacramentPriesthoodActionAllowed('SACRAMENT', 'HIGH_PRIEST')).toBe(false);

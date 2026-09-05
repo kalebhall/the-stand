@@ -1,5 +1,6 @@
 export type MembershipOrdinanceActionType =
   | 'WELCOME_NEW_MEMBER'
+  | 'RECOGNIZE_BAPTIZED_CHILD'
   | 'BABY_BLESSING'
   | 'PRIESTHOOD_ORDINATION'
   | 'PRIESTHOOD_ADVANCEMENT';
@@ -28,6 +29,7 @@ export type MembershipOrdinanceActionRow = {
 
 export const MEMBERSHIP_ORDINANCE_ACTION_LABELS: Record<MembershipOrdinanceActionType, string> = {
   WELCOME_NEW_MEMBER: 'Welcome new member',
+  RECOGNIZE_BAPTIZED_CHILD: 'Recognize baptized child',
   BABY_BLESSING: 'Baby blessing',
   PRIESTHOOD_ORDINATION: 'Priesthood ordination',
   PRIESTHOOD_ADVANCEMENT: 'Priesthood advancement'

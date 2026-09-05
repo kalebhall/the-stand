@@ -196,6 +196,11 @@ export const wardStandTemplate = pgTable(
       .default(
         'The blessing of **{memberName}** will take place after this meeting. [Confirm that the parents and participating priesthood holders are prepared before the ordinance.]'
       ),
+    recognizeBaptizedChildTemplate: text('recognize_baptized_child_template')
+      .notNull()
+      .default(
+        'We recognize **{memberName}**, who has been baptized. [Use the ward-approved introduction and welcome; this prompt does not replace the baptism or confirmation ordinance.]'
+      ),
     priesthoodOrdinationTemplate: text('priesthood_ordination_template')
       .notNull()
       .default(

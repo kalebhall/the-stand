@@ -20,6 +20,7 @@ import {
 function membershipActionLabel(actionType: string): string {
   return {
     WELCOME_NEW_MEMBER: 'Welcome new member',
+    RECOGNIZE_BAPTIZED_CHILD: 'Recognize baptized child',
     BABY_BLESSING: 'Baby blessing',
     PRIESTHOOD_ORDINATION: 'Priesthood ordination',
     PRIESTHOOD_ADVANCEMENT: 'Priesthood advancement'
