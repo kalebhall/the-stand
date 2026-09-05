@@ -5,6 +5,7 @@ export type MembershipOrdinanceActionType =
   | 'PRIESTHOOD_ADVANCEMENT';
 
 export type MembershipOrdinanceStatus = 'pending' | 'action_needed' | 'completed';
+export type PriesthoodOffice = 'DEACON' | 'TEACHER' | 'PRIEST' | 'ELDER' | 'HIGH_PRIEST' | 'UNKNOWN';
 
 export type MembershipOrdinanceActionRow = {
   id: string;
@@ -13,10 +14,15 @@ export type MembershipOrdinanceActionRow = {
   meetingType: string;
   memberName: string;
   actionType: MembershipOrdinanceActionType;
+  priesthoodOffice?: PriesthoodOffice | null;
   status: MembershipOrdinanceStatus;
   plannedDate: string | null;
   responsibleLeader: string | null;
   interviewStatus: 'not_required' | 'needed' | 'scheduled' | 'completed';
+  approvalConfirmed?: boolean;
+  presentingLeader?: string | null;
+  performingPriesthoodHolder?: string | null;
+  ordinanceDate?: string | null;
   lcrFollowUpStatus: 'not_applicable' | 'needed' | 'completed';
 };
 
@@ -37,6 +43,22 @@ export type MembershipOrdinanceActionGroup = 'needs_attention' | 'upcoming' | 'c
 
 export function getMembershipOrdinanceActionLabel(actionType: MembershipOrdinanceActionType): string {
   return MEMBERSHIP_ORDINANCE_ACTION_LABELS[actionType];
+}
+
+export const PRIESTHOOD_OFFICE_LABELS: Record<PriesthoodOffice, string> = {
+  DEACON: 'Deacon',
+  TEACHER: 'Teacher',
+  PRIEST: 'Priest',
+  ELDER: 'Elder',
+  HIGH_PRIEST: 'High priest',
+  UNKNOWN: 'Unknown during planning'
+};
+
+export function validatePriesthoodOffice(actionType: string, office: unknown): office is PriesthoodOffice | null {
+  if (!actionType.startsWith('PRIESTHOOD_')) return office === null || office === undefined || office === '';
+  if (office === null || office === undefined || office === '') return true;
+  if (typeof office !== 'string' || !(office in PRIESTHOOD_OFFICE_LABELS)) return false;
+  return actionType !== 'PRIESTHOOD_ADVANCEMENT' || office === 'UNKNOWN' || office !== 'DEACON';
 }
 
 export function getMembershipOrdinanceGroup(action: MembershipOrdinanceActionRow, today: string): MembershipOrdinanceActionGroup {

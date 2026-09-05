@@ -14,6 +14,7 @@ import {
   matchesMembershipOrdinanceFilters,
   MEMBERSHIP_ORDINANCE_ACTION_LABELS,
   MEMBERSHIP_ORDINANCE_STATUS_LABELS,
+  PRIESTHOOD_OFFICE_LABELS,
   type MembershipOrdinanceActionRow,
   type MembershipOrdinanceActionGroup
 } from '@/src/church-actions/membership-ordinance';
@@ -33,9 +34,14 @@ type ActionQueryRow = {
   meeting_type: string;
   member_name: string;
   action_type: MembershipOrdinanceActionRow['actionType'];
+  priesthood_office: MembershipOrdinanceActionRow['priesthoodOffice'];
   status: MembershipOrdinanceActionRow['status'];
   planned_date: string | null;
   responsible_leader: string | null;
+  approval_confirmed: boolean;
+  presenting_leader: string | null;
+  performing_priesthood_holder: string | null;
+  ordinance_date: string | null;
   interview_status: MembershipOrdinanceActionRow['interviewStatus'];
   lcr_follow_up_status: MembershipOrdinanceActionRow['lcrFollowUpStatus'];
 };
@@ -61,6 +67,7 @@ function ActionCard({ action, wardId }: { action: MembershipOrdinanceActionRow; 
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{getMembershipOrdinanceActionLabel(action.actionType)}</p>
           <h3 className="mt-1 text-lg font-semibold">{action.memberName}</h3>
+          {action.priesthoodOffice ? <p className="mt-1 text-sm text-muted-foreground">Office: {PRIESTHOOD_OFFICE_LABELS[action.priesthoodOffice]}</p> : null}
         </div>
         <span className="rounded-full border px-2.5 py-1 text-xs font-medium">
           {MEMBERSHIP_ORDINANCE_STATUS_LABELS[action.status]}
@@ -115,8 +122,9 @@ export default async function MembershipOrdinancesPage({ searchParams }: { searc
     await client.query('BEGIN');
     await setDbContext(client, { userId: session.user.id, wardId: session.activeWardId });
     const result = await client.query(
-      `SELECT a.id, a.meeting_id, m.meeting_date, m.meeting_type, a.member_name, a.action_type, a.status,
-              a.planned_date, a.responsible_leader, a.interview_status, a.lcr_follow_up_status
+      `SELECT a.id, a.meeting_id, m.meeting_date, m.meeting_type, a.member_name, a.action_type, a.priesthood_office, a.status,
+              a.planned_date, a.responsible_leader, a.interview_status, a.approval_confirmed, a.presenting_leader,
+              a.performing_priesthood_holder, a.ordinance_date, a.lcr_follow_up_status
          FROM meeting_membership_ordinance a
          JOIN meeting m ON m.id = a.meeting_id AND m.ward_id = a.ward_id
         WHERE a.ward_id = $1::uuid
@@ -133,10 +141,15 @@ export default async function MembershipOrdinancesPage({ searchParams }: { searc
       meetingType: row.meeting_type,
       memberName: row.member_name,
       actionType: row.action_type,
+      priesthoodOffice: row.priesthood_office,
       status: row.status,
       plannedDate: row.planned_date,
       responsibleLeader: row.responsible_leader,
       interviewStatus: row.interview_status,
+      approvalConfirmed: row.approval_confirmed,
+      presentingLeader: row.presenting_leader,
+      performingPriesthoodHolder: row.performing_priesthood_holder,
+      ordinanceDate: row.ordinance_date,
       lcrFollowUpStatus: row.lcr_follow_up_status
     }));
     const actions = allActions.filter((action) => matchesMembershipOrdinanceFilters(action, {

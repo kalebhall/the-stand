@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { getMembershipOrdinanceGroup, getMembershipOrdinanceNextStep, matchesMembershipOrdinanceFilters, type MembershipOrdinanceActionRow } from './membership-ordinance';
+import { getMembershipOrdinanceGroup, getMembershipOrdinanceNextStep, matchesMembershipOrdinanceFilters, validatePriesthoodOffice, type MembershipOrdinanceActionRow } from './membership-ordinance';
 
 const baseAction: MembershipOrdinanceActionRow = {
   id: 'action-1',
@@ -42,5 +42,13 @@ describe('membership ordinance workspace helpers', () => {
   it('returns the most important next step', () => {
     expect(getMembershipOrdinanceNextStep(baseAction)).toBe('Update LCR');
     expect(getMembershipOrdinanceNextStep({ ...baseAction, lcrFollowUpStatus: 'not_applicable', status: 'action_needed' })).toBe('Complete action');
+  });
+
+  it('accepts typed priesthood offices and rejects invalid advancement offices', () => {
+    expect(validatePriesthoodOffice('PRIESTHOOD_ORDINATION', 'ELDER')).toBe(true);
+    expect(validatePriesthoodOffice('PRIESTHOOD_ADVANCEMENT', 'DEACON')).toBe(false);
+    expect(validatePriesthoodOffice('PRIESTHOOD_ADVANCEMENT', 'UNKNOWN')).toBe(true);
+    expect(validatePriesthoodOffice('WELCOME_NEW_MEMBER', 'ELDER')).toBe(false);
+    expect(validatePriesthoodOffice('PRIESTHOOD_ORDINATION', 'BISHOP')).toBe(false);
   });
 });

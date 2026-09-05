@@ -49,7 +49,7 @@ flowchart LR
   A5 -->|14| A7
   A5 -->|11| A17
   A6 -->|11| A19
-  A5 -->|5| A19
+  A5 -->|4| A19
   A6 -->|4| A11
   A6 -->|4| A24
   A5 -->|3| A4
@@ -63,6 +63,7 @@ flowchart LR
   A21 -->|2| A14
   A2 -->|1| A16
   A5 -->|1| A10
+  A5 -->|1| A12
   A5 -->|1| A20
   A5 -->|1| A24
   A6 -->|1| A10
@@ -80,6 +81,7 @@ flowchart LR
   A21 -->|1| A20
   A24 -->|1| A19
   A27 -->|1| A8
+  A27 -->|1| A12
   A27 -->|1| A17
   A27 -->|1| A18
   A27 -->|1| A20
@@ -142,9 +144,9 @@ flowchart LR
 | `web:api` | `web:imports` | 11 |
 | `web:app` | `web:meetings` | 11 |
 | `web:auth` | `web:auth` | 8 |
-| `web:api` | `web:meetings` | 5 |
 | `web:meetings` | `web:meetings` | 5 |
 | `web:stand` | `web:stand` | 5 |
+| `web:api` | `web:meetings` | 4 |
 | `web:app` | `web:callings` | 4 |
 | `web:app` | `web:stand` | 4 |
 | `web:callings` | `web:callings` | 4 |
@@ -165,6 +167,7 @@ flowchart LR
 | `root:other` | `web:health.mjs` | 1 |
 | `web:announcements` | `web:announcements` | 1 |
 | `web:api` | `web:calendar` | 1 |
+| `web:api` | `web:church-actions` | 1 |
 | `web:api` | `web:notes` | 1 |
 | `web:api` | `web:stand` | 1 |
 | `web:app` | `web:calendar` | 1 |
@@ -185,6 +188,7 @@ flowchart LR
 | `web:reports` | `web:reports` | 1 |
 | `web:stand` | `web:meetings` | 1 |
 | `web:ui` | `web:auth` | 1 |
+| `web:ui` | `web:church-actions` | 1 |
 | `web:ui` | `web:imports` | 1 |
 | `web:ui` | `web:lib` | 1 |
 | `web:ui` | `web:notes` | 1 |
@@ -332,8 +336,8 @@ flowchart LR
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/complete/route.ts` | `web:api` | 7 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/complete/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/membership-ordinances/[actionId]/route.ts` | `web:api` | 6 | 1 |
-| `apps/web/app/api/w/[wardId]/meetings/[meetingId]/membership-ordinances/route.ts` | `web:api` | 4 | 1 |
-| `apps/web/app/api/w/[wardId]/meetings/[meetingId]/offline-snapshot/route.ts` | `web:api` | 7 | 1 |
+| `apps/web/app/api/w/[wardId]/meetings/[meetingId]/membership-ordinances/route.ts` | `web:api` | 5 | 1 |
+| `apps/web/app/api/w/[wardId]/meetings/[meetingId]/offline-snapshot/route.ts` | `web:api` | 6 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/offline-sync/route.ts` | `web:api` | 5 | 2 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/publish/route.ts` | `web:api` | 8 | 2 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/publish/route.vitest.ts` | `web:api` | 1 | 1 |
@@ -453,7 +457,7 @@ flowchart LR
 | `apps/web/components/CallingReleaseButton.tsx` | `web:ui` | 1 | 2 |
 | `apps/web/components/HymnAutocomplete.tsx` | `web:ui` | 0 | 1 |
 | `apps/web/components/InternalNotesPanel.tsx` | `web:ui` | 2 | 1 |
-| `apps/web/components/MembershipOrdinanceSection.tsx` | `web:ui` | 2 | 2 |
+| `apps/web/components/MembershipOrdinanceSection.tsx` | `web:ui` | 3 | 2 |
 | `apps/web/components/StandardCallingsManager.tsx` | `web:ui` | 1 | 2 |
 | `apps/web/components/WardBusinessSection.tsx` | `web:ui` | 2 | 2 |
 | `apps/web/components/WardBusinessSection.vitest.tsx` | `web:ui` | 1 | 3 |

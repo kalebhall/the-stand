@@ -26,6 +26,10 @@ function membershipActionLabel(actionType: string): string {
   }[actionType] ?? actionType.replaceAll('_', ' ');
 }
 
+function priesthoodOfficeLabel(office: string | null | undefined): string | null {
+  return { DEACON: 'Deacon', TEACHER: 'Teacher', PRIEST: 'Priest', ELDER: 'Elder', HIGH_PRIEST: 'High priest', UNKNOWN: 'Unknown during planning' }[office ?? ''] ?? null;
+}
+
 function membershipStatusLabel(status: string): string {
   return status === 'action_needed' ? 'Action needed' : status[0]?.toUpperCase() + status.slice(1);
 }
@@ -543,6 +547,7 @@ export default function OfflineStandPage({ meetingId }: { meetingId: string }) {
                   <div>
                     <p className="text-xs uppercase tracking-wide text-muted-foreground">{membershipActionLabel(action.actionType)}</p>
                     <p className="font-medium">{action.memberName}</p>
+                    {priesthoodOfficeLabel(action.priesthoodOffice) ? <p className="text-muted-foreground">Office: {priesthoodOfficeLabel(action.priesthoodOffice)}</p> : null}
                     {action.responsibleLeader ? <p className="text-muted-foreground">Responsible: {action.responsibleLeader}</p> : null}
                     {action.interviewStatus && action.interviewStatus !== 'not_required' ? (
                       <p className="text-muted-foreground">Interview: {action.interviewStatus.replaceAll('_', ' ')}</p>

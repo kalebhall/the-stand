@@ -152,7 +152,7 @@ export default async function StandViewPage({
     );
 
     const membershipActionsResult = await client.query(
-      `SELECT id, member_name, action_type, reason, details, status
+      `SELECT id, member_name, action_type, priesthood_office, reason, details, status, approval_confirmed, presenting_leader, performing_priesthood_holder, ordinance_date
          FROM meeting_membership_ordinance
         WHERE meeting_id = $1::uuid AND ward_id = $2::uuid
         ORDER BY created_at ASC`,

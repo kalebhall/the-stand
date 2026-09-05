@@ -19,11 +19,16 @@ export type OfflineStandSnapshot = {
     id: string;
     memberName: string;
     actionType: string;
+    priesthoodOffice?: string | null;
     status: string;
     plannedDate?: string | null;
     interviewStatus?: string;
     interviewDate?: string | null;
     interviewerName?: string | null;
+    approvalConfirmed?: boolean;
+    presentingLeader?: string | null;
+    performingPriesthoodHolder?: string | null;
+    ordinanceDate?: string | null;
     responsibleLeader?: string | null;
     lcrFollowUpStatus?: string;
     lcrUpdatedAt?: string | null;

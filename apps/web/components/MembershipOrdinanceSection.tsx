@@ -5,11 +5,13 @@ import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { MemberAutocomplete } from '@/components/ui/member-autocomplete';
+import { PRIESTHOOD_OFFICE_LABELS, type PriesthoodOffice } from '@/src/church-actions/membership-ordinance';
 
 export type MembershipOrdinanceAction = {
   id: string;
   member_name: string;
   action_type: 'WELCOME_NEW_MEMBER' | 'BABY_BLESSING' | 'PRIESTHOOD_ORDINATION' | 'PRIESTHOOD_ADVANCEMENT';
+  priesthood_office?: PriesthoodOffice | null;
   reason: string | null;
   details: string | null;
   status: 'pending' | 'action_needed' | 'completed';
@@ -17,6 +19,10 @@ export type MembershipOrdinanceAction = {
   interview_status?: 'not_required' | 'needed' | 'scheduled' | 'completed';
   interview_date?: string | null;
   interviewer_name?: string | null;
+  approval_confirmed?: boolean;
+  presenting_leader?: string | null;
+  performing_priesthood_holder?: string | null;
+  ordinance_date?: string | null;
   responsible_leader?: string | null;
   lcr_follow_up_status?: 'not_applicable' | 'needed' | 'completed';
   lcr_updated_at?: string | null;
@@ -50,10 +56,15 @@ export function MembershipOrdinanceSection({ wardId, meetingId, actions, canMana
   const [memberName, setMemberName] = useState('');
   const [reason, setReason] = useState('');
   const [details, setDetails] = useState('');
+  const [priesthoodOffice, setPriesthoodOffice] = useState<PriesthoodOffice | ''>('');
   const [plannedDate, setPlannedDate] = useState('');
   const [interviewDate, setInterviewDate] = useState('');
   const [interviewerName, setInterviewerName] = useState('');
   const [responsibleLeader, setResponsibleLeader] = useState('');
+  const [approvalConfirmed, setApprovalConfirmed] = useState(false);
+  const [presentingLeader, setPresentingLeader] = useState('');
+  const [performingPriesthoodHolder, setPerformingPriesthoodHolder] = useState('');
+  const [ordinanceDate, setOrdinanceDate] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -63,7 +74,7 @@ export function MembershipOrdinanceSection({ wardId, meetingId, actions, canMana
     const response = await fetch(`/api/w/${wardId}/meetings/${meetingId}/membership-ordinances`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ actionType, memberName, reason, details, plannedDate, interviewDate, interviewerName, responsibleLeader })
+      body: JSON.stringify({ actionType, memberName, reason, details, priesthoodOffice: priesthoodOffice || null, plannedDate, interviewDate, interviewerName, approvalConfirmed, presentingLeader, performingPriesthoodHolder, ordinanceDate, responsibleLeader })
     });
     if (!response.ok) {
       setError('Unable to add membership or ordinance action.');
@@ -147,6 +158,24 @@ export function MembershipOrdinanceSection({ wardId, meetingId, actions, canMana
               />
             </label>
           ) : null}
+          {actionType.includes('PRIESTHOOD') ? (
+            <>
+              <label className="space-y-1 text-sm">
+                <span className="font-medium">Priesthood office</span>
+                <select className="w-full rounded-md border px-3 py-2" value={priesthoodOffice} onChange={(e) => setPriesthoodOffice(e.target.value as PriesthoodOffice | '')}>
+                  <option value="">Select office</option>
+                  {Object.entries(PRIESTHOOD_OFFICE_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                </select>
+              </label>
+              <label className="flex items-center gap-2 self-end text-sm">
+                <input type="checkbox" checked={approvalConfirmed} onChange={(e) => setApprovalConfirmed(e.target.checked)} />
+                Approval confirmed
+              </label>
+              <label className="space-y-1 text-sm"><span className="font-medium">Presenting leader</span><input className="w-full rounded-md border px-3 py-2" value={presentingLeader} onChange={(e) => setPresentingLeader(e.target.value)} /></label>
+              <label className="space-y-1 text-sm"><span className="font-medium">Performing priesthood holder</span><input className="w-full rounded-md border px-3 py-2" value={performingPriesthoodHolder} onChange={(e) => setPerformingPriesthoodHolder(e.target.value)} /></label>
+              <label className="space-y-1 text-sm"><span className="font-medium">Ordinance date</span><input className="w-full rounded-md border px-3 py-2" type="date" value={ordinanceDate} onChange={(e) => setOrdinanceDate(e.target.value)} /></label>
+            </>
+          ) : null}
           <label className="space-y-1 text-sm">
             <span className="font-medium">Planned date</span>
             <input
@@ -209,6 +238,8 @@ export function MembershipOrdinanceSection({ wardId, meetingId, actions, canMana
                     </p>
                   ) : null}
                   {action.details ? <p className="text-sm text-muted-foreground">{action.details}</p> : null}
+                  {action.action_type.includes('PRIESTHOOD') && action.priesthood_office ? <p className="text-sm text-muted-foreground">Office: {PRIESTHOOD_OFFICE_LABELS[action.priesthood_office]}</p> : null}
+                  {canManage && action.action_type.includes('PRIESTHOOD') ? <p className="text-sm text-muted-foreground">Approval: {action.approval_confirmed ? 'confirmed' : 'not confirmed'}</p> : null}
                   {canManage && action.planned_date ? (
                     <p className="text-sm text-muted-foreground">Planned: {action.planned_date}</p>
                   ) : null}

@@ -50,6 +50,7 @@ export default async function DashboardPage() {
   let actionInterviewQueueCount = 'Unavailable';
   let overdueActionCount = 'Unavailable';
   let lcrFollowUpCount = 'Unavailable';
+  let priesthoodPreparationCount = 'Unavailable';
   let notificationHealthValue = 'No deliveries yet';
   let notificationHealthDetail = 'No notification attempts recorded for this ward yet.';
   let nextMeetingValue = 'No meetings scheduled';
@@ -90,7 +91,8 @@ export default async function DashboardPage() {
         `SELECT COUNT(*) FILTER (WHERE a.status = 'action_needed')::int AS action_needed_count,
                 COUNT(*) FILTER (WHERE a.interview_status IN ('needed', 'scheduled'))::int AS interview_count,
                 COUNT(*) FILTER (WHERE a.planned_date < CURRENT_DATE AND a.status != 'completed')::int AS overdue_count,
-                COUNT(*) FILTER (WHERE a.lcr_follow_up_status = 'needed' AND a.status = 'completed')::int AS lcr_count
+                COUNT(*) FILTER (WHERE a.lcr_follow_up_status = 'needed' AND a.status = 'completed')::int AS lcr_count,
+                COUNT(*) FILTER (WHERE a.action_type IN ('PRIESTHOOD_ORDINATION', 'PRIESTHOOD_ADVANCEMENT') AND (a.priesthood_office IS NULL OR a.approval_confirmed = FALSE))::int AS priesthood_preparation_count
            FROM meeting_membership_ordinance a
            JOIN meeting m ON m.id = a.meeting_id AND m.ward_id = a.ward_id
           WHERE a.ward_id = $1::uuid
@@ -143,11 +145,13 @@ export default async function DashboardPage() {
         interview_count: number;
         overdue_count: number;
         lcr_count: number;
+        priesthood_preparation_count: number;
       };
       membershipActionQueueCount = `${actionQueue.action_needed_count} waiting`;
       actionInterviewQueueCount = `${actionQueue.interview_count} waiting`;
       overdueActionCount = `${actionQueue.overdue_count} overdue`;
       lcrFollowUpCount = `${actionQueue.lcr_count} waiting`;
+      priesthoodPreparationCount = `${actionQueue.priesthood_preparation_count} waiting`;
       const notificationHealth = notificationHealthResult.rows[0] as { last_delivery_at: string | null; failure_count: number };
       notificationHealthValue = notificationHealth.last_delivery_at ?? 'No deliveries yet';
       notificationHealthDetail = `${notificationHealth.failure_count} failed deliveries`;
@@ -219,6 +223,15 @@ export default async function DashboardPage() {
             value={membershipActionQueueCount}
             detail="Announced actions still needing completion."
             actions={[{ href: '/membership-ordinances?status=action_needed&queue=needs_attention', label: 'Open action queue' }]}
+          />
+        ) : null}
+
+        {canAccessMeetings ? (
+          <DashboardCard
+            title="Priesthood preparation"
+            value={priesthoodPreparationCount}
+            detail="Ordination actions missing a typed office or confirmed approval."
+            actions={[{ href: '/membership-ordinances?action=PRIESTHOOD_ORDINATION&queue=needs_attention', label: 'Review preparation' }]}
           />
         ) : null}
 
