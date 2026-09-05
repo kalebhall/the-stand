@@ -101,7 +101,7 @@ function ActionCard({ action, wardId }: { action: MembershipOrdinanceActionRow; 
   );
 }
 
-export default async function MembershipOrdinancesPage({ searchParams }: { searchParams: Promise<{ q?: string; action?: string; status?: string; queue?: string }> }) {
+export default async function MembershipOrdinancesPage({ searchParams }: { searchParams: Promise<{ q?: string; action?: string; status?: string; queue?: string; followup?: string }> }) {
   const session = await requireAuthenticatedSession();
   enforcePasswordRotation(session);
 
@@ -143,7 +143,8 @@ export default async function MembershipOrdinancesPage({ searchParams }: { searc
       query: filters.q,
       actionType: filters.action,
       status: filters.status,
-      group: filters.queue
+      group: filters.queue,
+      followup: filters.followup
     }, today));
     const grouped = new Map<MembershipOrdinanceActionGroup, MembershipOrdinanceActionRow[]>([
       ['needs_attention', []],
@@ -179,6 +180,12 @@ export default async function MembershipOrdinancesPage({ searchParams }: { searc
             <select name="queue" defaultValue={filters.queue ?? 'all'} className="rounded-md border bg-background px-3 py-2 text-sm">
               <option value="all">All queues</option>
               {GROUPS.map((group) => <option key={group.key} value={group.key}>{group.title}</option>)}
+            </select>
+            <select name="followup" defaultValue={filters.followup ?? 'all'} className="rounded-md border bg-background px-3 py-2 text-sm">
+              <option value="all">All follow-up</option>
+              <option value="interview">Interview needed</option>
+              <option value="lcr">LCR update needed</option>
+              <option value="overdue">Overdue</option>
             </select>
             <button type="submit" className={cn(buttonVariants({ size: 'sm' }))}>Apply filters</button>
           </form>

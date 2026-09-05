@@ -35,6 +35,9 @@ describe('membership ordinance workspace helpers', () => {
     expect(matchesMembershipOrdinanceFilters({ ...baseAction, lcrFollowUpStatus: 'not_applicable' }, { group: 'upcoming', actionType: 'PRIESTHOOD_ORDINATION', status: 'pending', query: 'jane' }, '2026-09-04')).toBe(true);
     expect(matchesMembershipOrdinanceFilters(baseAction, { group: 'completed' }, '2026-09-04')).toBe(false);
     expect(matchesMembershipOrdinanceFilters(baseAction, { query: 'relief society' }, '2026-09-04')).toBe(false);
+    expect(matchesMembershipOrdinanceFilters({ ...baseAction, status: 'completed' }, { followup: 'lcr' }, '2026-09-04')).toBe(true);
+    expect(matchesMembershipOrdinanceFilters({ ...baseAction, lcrFollowUpStatus: 'not_applicable', plannedDate: '2026-08-30' }, { followup: 'overdue' }, '2026-09-04')).toBe(true);
+    expect(matchesMembershipOrdinanceFilters({ ...baseAction, interviewStatus: 'not_required' }, { followup: 'interview' }, '2026-09-04')).toBe(false);
   });
   it('returns the most important next step', () => {
     expect(getMembershipOrdinanceNextStep(baseAction)).toBe('Update LCR');

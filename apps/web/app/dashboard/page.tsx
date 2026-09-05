@@ -218,7 +218,7 @@ export default async function DashboardPage() {
             title="Membership and ordinance follow-up"
             value={membershipActionQueueCount}
             detail="Announced actions still needing completion."
-            actions={[{ href: '/meetings', label: 'Open meetings' }]}
+            actions={[{ href: '/membership-ordinances?status=action_needed&queue=needs_attention', label: 'Open action queue' }]}
           />
         ) : null}
 
@@ -227,7 +227,7 @@ export default async function DashboardPage() {
             title="Interview follow-up"
             value={actionInterviewQueueCount}
             detail="Actions needing an interview."
-            actions={[{ href: '/meetings', label: 'Review actions' }]}
+            actions={[{ href: '/membership-ordinances?followup=interview&queue=needs_attention', label: 'Review interviews' }]}
           />
         ) : null}
 
@@ -236,7 +236,7 @@ export default async function DashboardPage() {
             title="Overdue planned actions"
             value={overdueActionCount}
             detail="Planned actions past their date and not completed."
-            actions={[{ href: '/meetings', label: 'Review meetings' }]}
+            actions={[{ href: '/membership-ordinances?followup=overdue&queue=needs_attention', label: 'Review overdue work' }]}
           />
         ) : null}
 
@@ -245,7 +245,7 @@ export default async function DashboardPage() {
             title="LCR follow-up"
             value={lcrFollowUpCount}
             detail="Completed actions still needing LCR entry."
-            actions={[{ href: '/meetings', label: 'Review LCR work' }]}
+            actions={[{ href: '/membership-ordinances?followup=lcr&queue=needs_attention', label: 'Review LCR work' }]}
           />
         ) : null}
 

@@ -59,7 +59,7 @@ export function getMembershipOrdinanceNextStep(action: MembershipOrdinanceAction
 
 export function matchesMembershipOrdinanceFilters(
   action: MembershipOrdinanceActionRow,
-  filters: { query?: string; actionType?: string; status?: string; group?: string },
+  filters: { query?: string; actionType?: string; status?: string; group?: string; followup?: string },
   today: string
 ): boolean {
   const query = filters.query?.trim().toLowerCase();
@@ -67,5 +67,8 @@ export function matchesMembershipOrdinanceFilters(
   if (filters.actionType && filters.actionType !== 'all' && action.actionType !== filters.actionType) return false;
   if (filters.status && filters.status !== 'all' && action.status !== filters.status) return false;
   if (filters.group && filters.group !== 'all' && getMembershipOrdinanceGroup(action, today) !== filters.group) return false;
+  if (filters.followup === 'interview' && !['needed', 'scheduled'].includes(action.interviewStatus)) return false;
+  if (filters.followup === 'lcr' && !(action.lcrFollowUpStatus === 'needed' && action.status === 'completed')) return false;
+  if (filters.followup === 'overdue' && !(action.plannedDate && action.plannedDate < today && action.status !== 'completed')) return false;
   return true;
 }
