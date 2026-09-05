@@ -18,6 +18,12 @@ export type MembershipOrdinanceActionRow = {
   responsibleLeader: string | null;
   interviewStatus: 'not_required' | 'needed' | 'scheduled' | 'completed';
   lcrFollowUpStatus: 'not_applicable' | 'needed' | 'completed';
+  recordFormNeeded: boolean;
+  handoffDate: string | null;
+  officialRecordUpdatedBy: string | null;
+  certificateOrFormDelivered: boolean;
+  officialSystemFollowUpStatus: 'not_started' | 'in_progress' | 'completed' | 'not_applicable';
+  officialSystemReferenceUrl: string | null;
 };
 
 export const MEMBERSHIP_ORDINANCE_ACTION_LABELS: Record<MembershipOrdinanceActionType, string> = {
@@ -69,6 +75,7 @@ export function matchesMembershipOrdinanceFilters(
   if (filters.group && filters.group !== 'all' && getMembershipOrdinanceGroup(action, today) !== filters.group) return false;
   if (filters.followup === 'interview' && !['needed', 'scheduled'].includes(action.interviewStatus)) return false;
   if (filters.followup === 'lcr' && !(action.lcrFollowUpStatus === 'needed' && action.status === 'completed')) return false;
+  if (filters.followup === 'official-record' && !(action.recordFormNeeded && ['not_started', 'in_progress'].includes(action.officialSystemFollowUpStatus))) return false;
   if (filters.followup === 'overdue' && !(action.plannedDate && action.plannedDate < today && action.status !== 'completed')) return false;
   return true;
 }

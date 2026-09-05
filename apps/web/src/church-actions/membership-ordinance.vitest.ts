@@ -13,7 +13,13 @@ const baseAction: MembershipOrdinanceActionRow = {
   plannedDate: '2026-09-20',
   responsibleLeader: 'Bishop Hall',
   interviewStatus: 'completed',
-  lcrFollowUpStatus: 'needed'
+  lcrFollowUpStatus: 'needed',
+  recordFormNeeded: true,
+  handoffDate: null,
+  officialRecordUpdatedBy: null,
+  certificateOrFormDelivered: false,
+  officialSystemFollowUpStatus: 'in_progress',
+  officialSystemReferenceUrl: null
 };
 
 describe('membership ordinance workspace helpers', () => {
@@ -36,6 +42,8 @@ describe('membership ordinance workspace helpers', () => {
     expect(matchesMembershipOrdinanceFilters(baseAction, { group: 'completed' }, '2026-09-04')).toBe(false);
     expect(matchesMembershipOrdinanceFilters(baseAction, { query: 'relief society' }, '2026-09-04')).toBe(false);
     expect(matchesMembershipOrdinanceFilters({ ...baseAction, status: 'completed' }, { followup: 'lcr' }, '2026-09-04')).toBe(true);
+    expect(matchesMembershipOrdinanceFilters(baseAction, { followup: 'official-record' }, '2026-09-04')).toBe(true);
+    expect(matchesMembershipOrdinanceFilters({ ...baseAction, recordFormNeeded: false }, { followup: 'official-record' }, '2026-09-04')).toBe(false);
     expect(matchesMembershipOrdinanceFilters({ ...baseAction, lcrFollowUpStatus: 'not_applicable', plannedDate: '2026-08-30' }, { followup: 'overdue' }, '2026-09-04')).toBe(true);
     expect(matchesMembershipOrdinanceFilters({ ...baseAction, interviewStatus: 'not_required' }, { followup: 'interview' }, '2026-09-04')).toBe(false);
   });
