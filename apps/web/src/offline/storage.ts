@@ -54,19 +54,27 @@ export type OfflineMutation = {
   serverRevision?: string;
 };
 
+type OfflineContext = { id: 'current'; userId: string; wardId: string };
+
+export const OFFLINE_CACHE_NAME = 'the-stand-offline-v1';
 const DATABASE_NAME = 'the-stand-offline';
-const VERSION = 3;
+const VERSION = 4;
 const SNAPSHOT_STORE = 'stand-snapshots';
 const MUTATION_STORE = 'stand-mutations';
+const CONTEXT_STORE = 'offline-context';
+
+export function isOfflineContextMatch(context: OfflineContext | undefined, userId: string, wardId: string): boolean {
+  return context?.userId === userId && context.wardId === wardId;
+}
 
 function openDatabase(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(DATABASE_NAME, VERSION);
     request.onupgradeneeded = () => {
       const db = request.result;
-      if (db.objectStoreNames.contains(SNAPSHOT_STORE)) db.deleteObjectStore(SNAPSHOT_STORE);
-      db.createObjectStore(SNAPSHOT_STORE, { keyPath: 'cacheKey' });
+      if (!db.objectStoreNames.contains(SNAPSHOT_STORE)) db.createObjectStore(SNAPSHOT_STORE, { keyPath: 'cacheKey' });
       if (!db.objectStoreNames.contains(MUTATION_STORE)) db.createObjectStore(MUTATION_STORE, { keyPath: 'id' });
+      if (!db.objectStoreNames.contains(CONTEXT_STORE)) db.createObjectStore(CONTEXT_STORE, { keyPath: 'id' });
     };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error ?? new Error('Unable to open offline storage.'));
@@ -88,6 +96,32 @@ async function storeRequest<T>(storeName: string, mode: IDBTransactionMode, acti
 
 function snapshotKey(userId: string, wardId: string, meetingId: string): string {
   return `${userId}:${wardId}:${meetingId}`;
+}
+
+export async function clearOfflineData(): Promise<void> {
+  const db = await openDatabase();
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const transaction = db.transaction([SNAPSHOT_STORE, MUTATION_STORE, CONTEXT_STORE], 'readwrite');
+      transaction.objectStore(SNAPSHOT_STORE).clear();
+      transaction.objectStore(MUTATION_STORE).clear();
+      transaction.objectStore(CONTEXT_STORE).clear();
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error ?? new Error('Unable to clear offline storage.'));
+      transaction.onabort = () => reject(transaction.error ?? new Error('Unable to clear offline storage.'));
+    });
+  } finally {
+    db.close();
+  }
+  if ('caches' in globalThis) await caches.delete(OFFLINE_CACHE_NAME);
+}
+
+export async function ensureOfflineContext(userId: string, wardId: string): Promise<void> {
+  const context = await storeRequest<OfflineContext | undefined>(CONTEXT_STORE, 'readonly', (store) => store.get('current'));
+  if (isOfflineContextMatch(context, userId, wardId)) return;
+
+  await clearOfflineData();
+  await storeRequest(CONTEXT_STORE, 'readwrite', (store) => store.put({ id: 'current', userId, wardId } satisfies OfflineContext));
 }
 
 export async function saveOfflineSnapshot(snapshot: OfflineStandSnapshot): Promise<void> {

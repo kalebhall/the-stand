@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import type { StandRow } from '@/src/stand/render';
 import {
+  clearOfflineData,
+  ensureOfflineContext,
   loadOfflineSnapshot,
   queueOfflineMutation,
   listOfflineMutations,
@@ -101,6 +103,7 @@ export default function OfflineStandPage({ meetingId }: { meetingId: string }) {
   const [error, setError] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [pending, setPending] = useState(0);
+  const [clearing, setClearing] = useState(false);
   const [noteText, setNoteText] = useState('');
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState('');
@@ -213,13 +216,27 @@ export default function OfflineStandPage({ meetingId }: { meetingId: string }) {
 
   useEffect(() => {
     if (!userId || !activeWardId) return;
-    void loadOfflineSnapshot(userId, activeWardId, meetingId)
+    void ensureOfflineContext(userId, activeWardId)
+      .then(() => loadOfflineSnapshot(userId, activeWardId, meetingId))
       .then(async (value) => {
         setSnapshot(value);
         await refreshPending();
       })
       .catch(() => setError('Unable to open offline copy.'));
   }, [activeWardId, meetingId, refreshPending, userId]);
+
+  async function deleteOfflineData() {
+    if (!window.confirm('Delete saved offline meeting data and pending offline changes from this device?')) return;
+    setClearing(true);
+    try {
+      await clearOfflineData();
+      setSnapshot(null);
+      setPending(0);
+    } finally {
+      setClearing(false);
+    }
+  }
+
   useEffect(() => {
     const run = () => void sync();
     window.addEventListener('online', run);
@@ -433,6 +450,12 @@ export default function OfflineStandPage({ meetingId }: { meetingId: string }) {
             Compact Labels
           </button>
         </div>
+        <p className="mt-3 text-xs text-muted-foreground">
+          This device contains private ward data. Delete it when finished or before handing device to another user.
+        </p>
+        <button type="button" className="mt-2 rounded-md border px-3 py-1 text-sm" onClick={() => void deleteOfflineData()} disabled={clearing}>
+          {clearing ? 'Deleting offline data…' : 'Delete offline data'}
+        </button>
       </section>
       {snapshot.notes?.length || noteComposerOpen ? (
         <section className="rounded-lg border bg-card p-4">

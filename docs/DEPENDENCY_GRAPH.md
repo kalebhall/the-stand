@@ -31,7 +31,7 @@ flowchart LR
   A19["web:meetings<br/>7 files"]
   A20["web:notes<br/>1 files"]
   A21["web:notifications<br/>23 files"]
-  A22["web:offline<br/>1 files"]
+  A22["web:offline<br/>2 files"]
   A23["web:reports<br/>2 files"]
   A24["web:stand<br/>6 files"]
   A25["web:tooling<br/>2 files"]
@@ -113,7 +113,7 @@ flowchart LR
 | `web:meetings` | 7 |
 | `web:notes` | 1 |
 | `web:notifications` | 23 |
-| `web:offline` | 1 |
+| `web:offline` | 2 |
 | `web:reports` | 2 |
 | `web:stand` | 6 |
 | `web:tooling` | 2 |
@@ -181,6 +181,7 @@ flowchart LR
 | `web:imports` | `web:db` | 1 |
 | `web:meetings` | `web:announcements` | 1 |
 | `web:notifications` | `web:notes` | 1 |
+| `web:offline` | `web:offline` | 1 |
 | `web:reports` | `web:reports` | 1 |
 | `web:stand` | `web:meetings` | 1 |
 | `web:ui` | `web:auth` | 1 |
@@ -265,6 +266,7 @@ flowchart LR
 | `web:lib` | `jspdf` | 1 |
 | `web:lib` | `qrcode` | 1 |
 | `web:notifications` | `nodemailer` | 1 |
+| `web:offline` | `vitest` | 1 |
 | `web:reports` | `pg` | 1 |
 | `web:reports` | `vitest` | 1 |
 | `web:ui` | `class-variance-authority` | 1 |
@@ -587,6 +589,7 @@ flowchart LR
 | `apps/web/src/notifications/visibility.vitest.ts` | `web:notifications` | 1 | 1 |
 | `apps/web/src/notifications/worker-entry.ts` | `web:notifications` | 5 | 1 |
 | `apps/web/src/offline/storage.ts` | `web:offline` | 0 | 0 |
+| `apps/web/src/offline/storage.vitest.ts` | `web:offline` | 1 | 1 |
 | `apps/web/src/reports/aggregations.ts` | `web:reports` | 0 | 1 |
 | `apps/web/src/reports/aggregations.vitest.ts` | `web:reports` | 1 | 1 |
 | `apps/web/src/stand/default-template.ts` | `web:stand` | 0 | 0 |
