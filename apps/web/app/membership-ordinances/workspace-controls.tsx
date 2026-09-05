@@ -10,7 +10,7 @@ type Props = {
   wardId: string;
 };
 
-type ActionStatus = 'announced' | 'completed' | 'lcr_completed' | 'interview_completed';
+type ActionStatus = 'announced' | 'completed' | 'lcr_completed' | 'interview_completed' | 'official_record_started' | 'official_record_completed' | 'certificate_delivered';
 
 export function MembershipOrdinanceWorkspaceControls({ action, wardId }: Props) {
   const [busy, setBusy] = useState(false);
@@ -58,6 +58,21 @@ export function MembershipOrdinanceWorkspaceControls({ action, wardId }: Props) 
       {action.status === 'completed' && action.lcrFollowUpStatus === 'needed' ? (
         <Button size="sm" variant="outline" disabled={busy} onClick={() => void update('lcr_completed')}>
           Mark LCR updated
+        </Button>
+      ) : null}
+      {action.recordFormNeeded && action.officialSystemFollowUpStatus === 'not_started' ? (
+        <Button size="sm" variant="outline" disabled={busy} onClick={() => void update('official_record_started')}>
+          Start official-record handoff
+        </Button>
+      ) : null}
+      {action.recordFormNeeded && action.officialSystemFollowUpStatus === 'in_progress' ? (
+        <Button size="sm" variant="outline" disabled={busy} onClick={() => void update('official_record_completed')}>
+          Mark official record updated
+        </Button>
+      ) : null}
+      {action.recordFormNeeded && action.officialSystemFollowUpStatus === 'completed' && !action.certificateOrFormDelivered ? (
+        <Button size="sm" variant="outline" disabled={busy} onClick={() => void update('certificate_delivered')}>
+          Mark certificate/form delivered
         </Button>
       ) : null}
       {error ? <span className="text-xs text-destructive">{error}</span> : null}

@@ -14,9 +14,9 @@ export async function PATCH(request: Request, context: { params: Promise<{ wardI
   if (!canManageMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) {
     return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
   }
-  const body = (await request.json().catch(() => null)) as { status?: unknown } | null;
+  const body = (await request.json().catch(() => null)) as { status?: unknown; officialRecordUpdatedBy?: unknown; handoffDate?: unknown; officialSystemReferenceUrl?: unknown } | null;
   const status = body?.status;
-  if (status !== 'announced' && status !== 'completed' && status !== 'lcr_completed' && status !== 'interview_completed')
+  if (status !== 'announced' && status !== 'completed' && status !== 'lcr_completed' && status !== 'interview_completed' && status !== 'official_record_started' && status !== 'official_record_completed' && status !== 'certificate_delivered')
     return NextResponse.json({ error: 'Invalid status.', code: 'INVALID_INPUT' }, { status: 400 });
 
   const client = await pool.connect();
@@ -45,11 +45,24 @@ export async function PATCH(request: Request, context: { params: Promise<{ wardI
                RETURNING id, status, member_name, action_type, lcr_follow_up_status`,
                 [actionId, meetingId, wardId]
               )
-            : await client.query(
-                `UPDATE meeting_membership_ordinance SET interview_status = 'completed', updated_at = now()
+            : status === 'interview_completed'
+              ? await client.query(
+              `UPDATE meeting_membership_ordinance SET interview_status = 'completed', updated_at = now()
                WHERE id = $1::uuid AND meeting_id = $2::uuid AND ward_id = $3::uuid AND interview_status IN ('needed', 'scheduled')
                RETURNING id, status, member_name, action_type, lcr_follow_up_status`,
-                [actionId, meetingId, wardId]
+              [actionId, meetingId, wardId]
+              )
+              : await client.query(
+                `UPDATE meeting_membership_ordinance
+                    SET official_system_follow_up_status = $1::text,
+                        official_record_updated_by = COALESCE($2::text, official_record_updated_by),
+                        handoff_date = COALESCE($3::date, handoff_date),
+                        official_system_reference_url = COALESCE($4::text, official_system_reference_url),
+                        certificate_or_form_delivered = CASE WHEN $5::boolean THEN TRUE ELSE certificate_or_form_delivered END,
+                        updated_at = now()
+                  WHERE id = $6::uuid AND meeting_id = $7::uuid AND ward_id = $8::uuid
+                  RETURNING id, status, member_name, action_type, lcr_follow_up_status`,
+                [status === 'official_record_started' ? 'in_progress' : 'completed', body?.officialRecordUpdatedBy ?? null, body?.handoffDate ?? null, body?.officialSystemReferenceUrl ?? null, status === 'certificate_delivered', actionId, meetingId, wardId]
               );
     if (!result.rowCount) {
       await client.query('ROLLBACK');
@@ -88,7 +101,13 @@ export async function PATCH(request: Request, context: { params: Promise<{ wardI
             ? 'MEMBERSHIP_ORDINANCE_COMPLETED'
             : status === 'lcr_completed'
               ? 'MEMBERSHIP_ORDINANCE_LCR_UPDATED'
-              : 'MEMBERSHIP_ORDINANCE_INTERVIEW_COMPLETED',
+              : status === 'interview_completed'
+                ? 'MEMBERSHIP_ORDINANCE_INTERVIEW_COMPLETED'
+                : status === 'official_record_completed'
+                  ? 'MEMBERSHIP_ORDINANCE_OFFICIAL_RECORD_UPDATED'
+                  : status === 'certificate_delivered'
+                    ? 'MEMBERSHIP_ORDINANCE_CERTIFICATE_DELIVERED'
+                    : 'MEMBERSHIP_ORDINANCE_OFFICIAL_RECORD_HANDOFF_STARTED',
         meetingId,
         actionId
       ]
