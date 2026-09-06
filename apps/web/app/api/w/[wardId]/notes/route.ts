@@ -63,6 +63,33 @@ function targetColumns(target: NoteTarget): { memberId: string | null; meetingId
   }
 }
 
+export async function GET(request: Request, context: { params: Promise<{ wardId: string }> }) {
+  const session = await auth();
+  if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, { status: 401 });
+  const { wardId } = await context.params;
+  if (!canUseInternalNotes({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
+  const actionId = new URL(request.url).searchParams.get('bishopricActionId');
+  if (!actionId || !z.string().uuid().safeParse(actionId).success) return NextResponse.json({ error: 'bishopricActionId is required', code: 'VALIDATION_ERROR' }, { status: 400 });
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await setDbContext(client, { userId: session.user.id, wardId });
+    const result = await client.query(
+      `SELECT n.id, n.note_text, n.visibility, n.created_at, n.updated_at, n.created_by_user_id, COALESCE(u.display_name, u.email) AS created_by_name
+         FROM internal_note n
+         JOIN bishopric_action ba ON ba.id = n.bishopric_action_id AND ba.ward_id = n.ward_id
+         LEFT JOIN user_account u ON u.id = n.created_by_user_id
+        WHERE n.ward_id = $1::uuid AND n.bishopric_action_id = $2::uuid AND n.visibility IN ('LEADERSHIP', 'PRIVATE')
+        ORDER BY n.created_at DESC`, [wardId, actionId]
+    );
+    await client.query('COMMIT');
+    return NextResponse.json({ notes: result.rows });
+  } catch {
+    await client.query('ROLLBACK').catch(() => {});
+    return NextResponse.json({ error: 'Failed to load leadership notes', code: 'INTERNAL_ERROR' }, { status: 500 });
+  } finally { client.release(); }
+}
+
 export async function POST(request: Request, context: { params: Promise<{ wardId: string }> }) {
   const session = await auth();
   if (!session?.user?.id) {

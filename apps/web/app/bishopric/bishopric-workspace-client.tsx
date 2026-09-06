@@ -10,6 +10,7 @@ type Meeting = { id: string; meeting_date: string; meeting_type: string; agenda_
 type Action = { id: string; bishopric_meeting_id: string; title: string; details: string | null; decision: string | null; owner_name: string | null; due_date: string | null; status: string; carry_forward: boolean; meeting_date: string; member_id: string | null; linked_member_name: string | null; calling_assignment_id: string | null; linked_calling_name: string | null; linked_membership_action_id: string | null };
 type Member = { id: string; fullName: string };
 type Calling = { id: string; memberName: string; callingName: string };
+type LeadershipNote = { id: string; note_text: string; visibility: string; created_at: string; created_by_name: string | null };
 
 export function BishopricWorkspaceClient({ wardId, initialMeetings, initialActions, defaultMeetingType = 'BISHOPRIC' }: { wardId: string; initialMeetings: Meeting[]; initialActions: Action[]; defaultMeetingType?: (typeof LEADERSHIP_MEETING_TYPES)[number] }) {
   const [meetings, setMeetings] = useState(initialMeetings);
@@ -23,6 +24,7 @@ export function BishopricWorkspaceClient({ wardId, initialMeetings, initialActio
   const [memberId, setMemberId] = useState('');
   const [callingAssignmentId, setCallingAssignmentId] = useState('');
   const [noteText, setNoteText] = useState('');
+  const [notesByAction, setNotesByAction] = useState<Record<string, LeadershipNote[]>>({});
   const [members, setMembers] = useState<Member[]>([]);
   const [callings, setCallings] = useState<Calling[]>([]);
   const [error, setError] = useState('');
@@ -36,6 +38,14 @@ export function BishopricWorkspaceClient({ wardId, initialMeetings, initialActio
       setCallings(callingBody.callings ?? []);
     }).catch(() => setError('Could not load member and calling links.'));
   }, [wardId]);
+
+  useEffect(() => {
+    void Promise.all(initialActions.map(async (action) => {
+      const response = await fetch(`/api/w/${wardId}/notes?bishopricActionId=${action.id}`);
+      const body = await response.json();
+      return [action.id, body.notes ?? []] as const;
+    })).then((entries) => setNotesByAction(Object.fromEntries(entries))).catch(() => setError('Could not load leadership notes.'));
+  }, [initialActions, wardId]);
 
   async function createMeeting(event: React.FormEvent) {
     event.preventDefault(); setError('');
@@ -61,6 +71,7 @@ export function BishopricWorkspaceClient({ wardId, initialMeetings, initialActio
     const body = await response.json();
     if (!response.ok) { setError(body.error ?? 'Could not save leadership note'); return; }
     setNoteText('');
+    setNotesByAction((current) => ({ ...current, [action.id]: [{ id: body.id, note_text: noteText.trim(), visibility: 'LEADERSHIP', created_at: body.createdAt, created_by_name: 'You' }, ...(current[action.id] ?? [])] }));
   }
 
   async function updateAction(action: Action, status: string) {
@@ -93,7 +104,7 @@ export function BishopricWorkspaceClient({ wardId, initialMeetings, initialActio
       {error ? <p className="mt-2 text-sm text-destructive">{error}</p> : null}
     </section>
     <section className="space-y-3"><h2 className="text-lg font-semibold">Open actions</h2>
-      {actions.length ? actions.map((action) => <article key={action.id} className="rounded-lg border bg-card p-4"><div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="font-semibold">{action.title}</h3><p className="text-sm text-muted-foreground">Meeting {action.meeting_date}{action.owner_name ? ` · Owner: ${action.owner_name}` : ''}{action.linked_member_name ? ` · Member: ${action.linked_member_name}` : ''}{action.linked_calling_name ? ` · Calling: ${action.linked_calling_name}` : ''}{action.linked_membership_action_id ? ' · Linked membership follow-up' : ''}{action.due_date ? ` · Due: ${action.due_date}` : ''}</p></div><select value={action.status} onChange={(event) => void updateAction(action, event.target.value)} className="rounded-md border bg-background px-2 py-1 text-sm" aria-label={`Status for ${action.title}`}>{BISHOPRIC_ACTION_STATUSES.map((status) => <option key={status} value={status}>{status.replaceAll('_', ' ')}</option>)}</select></div><form onSubmit={(event) => { event.preventDefault(); void createNote(action); }} className="mt-3 flex gap-2"><label className="sr-only" htmlFor={`leadership-note-${action.id}`}>Restricted leadership note for {action.title}</label><input id={`leadership-note-${action.id}`} value={noteText} onChange={(event) => setNoteText(event.target.value)} placeholder="Restricted leadership note" className="min-w-0 flex-1 rounded-md border bg-background px-3 py-2 text-sm" /><button type="submit" className={cn(buttonVariants({ size: 'sm', variant: 'outline' }))}>Add note</button></form></article>) : <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">No open bishopric actions.</p>}
+      {actions.length ? actions.map((action) => <article key={action.id} className="rounded-lg border bg-card p-4"><div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="font-semibold">{action.title}</h3><p className="text-sm text-muted-foreground">Meeting {action.meeting_date}{action.owner_name ? ` · Owner: ${action.owner_name}` : ''}{action.linked_member_name ? ` · Member: ${action.linked_member_name}` : ''}{action.linked_calling_name ? ` · Calling: ${action.linked_calling_name}` : ''}{action.linked_membership_action_id ? ' · Linked membership follow-up' : ''}{action.due_date ? ` · Due: ${action.due_date}` : ''}</p></div><select value={action.status} onChange={(event) => void updateAction(action, event.target.value)} className="rounded-md border bg-background px-2 py-1 text-sm" aria-label={`Status for ${action.title}`}>{BISHOPRIC_ACTION_STATUSES.map((status) => <option key={status} value={status}>{status.replaceAll('_', ' ')}</option>)}</select></div><form onSubmit={(event) => { event.preventDefault(); void createNote(action); }} className="mt-3 flex gap-2"><label className="sr-only" htmlFor={`leadership-note-${action.id}`}>Restricted leadership note for {action.title}</label><input id={`leadership-note-${action.id}`} value={noteText} onChange={(event) => setNoteText(event.target.value)} placeholder="Restricted leadership note" className="min-w-0 flex-1 rounded-md border bg-background px-3 py-2 text-sm" /><button type="submit" className={cn(buttonVariants({ size: 'sm', variant: 'outline' }))}>Add note</button></form>{notesByAction[action.id]?.length ? <div className="mt-3 space-y-2 border-t pt-3"><h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Restricted notes</h4>{notesByAction[action.id].map((note) => <p key={note.id} className="rounded-md bg-muted/50 p-2 text-sm"><span className="font-medium">{note.created_by_name ?? 'Leader'}</span>: {note.note_text}</p>)}</div> : null}</article>) : <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">No open bishopric actions.</p>}
     </section>
   </div>;
 }
