@@ -1,0 +1,15 @@
+[Unit]
+Description=The Stand technology checklist reminders
+After=network.target postgresql.service the-stand-worker.service
+
+[Service]
+Type=oneshot
+User=the-stand
+Group=the-stand
+WorkingDirectory=/opt/the-stand/app
+EnvironmentFile=/opt/the-stand/app/.env
+ExecStart=/usr/bin/env npm --workspace @the-stand/web run remind:technology
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true

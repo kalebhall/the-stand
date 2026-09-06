@@ -537,9 +537,17 @@ Logs contain counts and sanitized errors only. Keep `DATABASE_URL` in protected 
 
 ## SECTION 10.4 — Scheduled Interview and Technology Reminders
 
-Reminder runners are separate from web requests and require the notification worker plus Redis. They create idempotent outbox events; the worker delivers private in-app notifications to authorized managers. Configure each runner as its own oneshot service so one failure does not hide the other.
+Reminder runners are separate from web requests and require notification worker plus Redis. They create idempotent outbox events; worker delivers private in-app notifications to authorized managers. Configure each runner as its own oneshot service so one failure does not hide other. Repository units are at `infra/systemd/the-stand-interview-reminders.{service,timer}` and `infra/systemd/the-stand-technology-reminders.{service,timer}`. Install them with:
+
+```
+sudo install -m 0644 /opt/the-stand/app/infra/systemd/the-stand-interview-reminders.service /etc/systemd/system/
+sudo install -m 0644 /opt/the-stand/app/infra/systemd/the-stand-interview-reminders.timer /etc/systemd/system/
+sudo install -m 0644 /opt/the-stand/app/infra/systemd/the-stand-technology-reminders.service /etc/systemd/system/
+sudo install -m 0644 /opt/the-stand/app/infra/systemd/the-stand-technology-reminders.timer /etc/systemd/system/
+```
 
 Create `/etc/systemd/system/the-stand-interview-reminders.service`:
+
 
 ```
 [Unit]
@@ -552,7 +560,7 @@ User=the-stand
 Group=the-stand
 WorkingDirectory=/opt/the-stand/app
 EnvironmentFile=/opt/the-stand/app/.env
-ExecStart=/usr/bin/npm --workspace @the-stand/web run remind:interviews
+ExecStart=/usr/bin/env npm --workspace @the-stand/web run remind:interviews
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=full
@@ -579,7 +587,7 @@ Create `/etc/systemd/system/the-stand-technology-reminders.service` with the sam
 
 ```
 Description=The Stand technology checklist reminders
-ExecStart=/usr/bin/npm --workspace @the-stand/web run remind:technology
+ExecStart=/usr/bin/env npm --workspace @the-stand/web run remind:technology
 ```
 
 Create matching `the-stand-technology-reminders.timer`, changing only the description and service unit:

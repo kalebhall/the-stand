@@ -1,0 +1,11 @@
+[Unit]
+Description=Run The Stand technology reminders daily
+
+[Timer]
+OnCalendar=*-*-* 07:00:00
+Persistent=true
+RandomizedDelaySec=15m
+Unit=the-stand-technology-reminders.service
+
+[Install]
+WantedBy=timers.target

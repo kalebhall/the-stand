@@ -1,0 +1,11 @@
+[Unit]
+Description=Run The Stand interview reminders hourly
+
+[Timer]
+OnCalendar=hourly
+Persistent=true
+RandomizedDelaySec=10m
+Unit=the-stand-interview-reminders.service
+
+[Install]
+WantedBy=timers.target
