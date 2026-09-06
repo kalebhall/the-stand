@@ -166,7 +166,7 @@ Do not store copied ordinance details or replace LCR status.
 
 **Priority:** P1
 
-**Outcome:** Users can distinguish official required elements, official examples, and editable ward prompts.
+**Implementation status:** Added typed classification registry and forward migration `0051_stand_template_classification.sql`. Stand-script settings now show each editable template as a ward prompt, sample sustaining wording, or Handbook instruction with current Church source links. Classification metadata remains separate from editable text; prompts do not claim to authorize or complete ordinances.
 
 **Tasks:**
 

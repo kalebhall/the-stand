@@ -35,7 +35,7 @@ flowchart LR
   A23["web:notifications<br/>23 files"]
   A24["web:offline<br/>2 files"]
   A25["web:reports<br/>2 files"]
-  A26["web:stand<br/>6 files"]
+  A26["web:stand<br/>8 files"]
   A27["web:tooling<br/>2 files"]
   A28["web:types<br/>2 files"]
   A29["web:ui<br/>30 files"]
@@ -52,9 +52,9 @@ flowchart LR
   A6 -->|12| A21
   A5 -->|11| A17
   A5 -->|5| A21
+  A6 -->|5| A26
   A5 -->|4| A18
   A6 -->|4| A11
-  A6 -->|4| A26
   A5 -->|3| A4
   A6 -->|3| A4
   A6 -->|3| A18
@@ -124,7 +124,7 @@ flowchart LR
 | `web:notifications` | 23 |
 | `web:offline` | 2 |
 | `web:reports` | 2 |
-| `web:stand` | 6 |
+| `web:stand` | 8 |
 | `web:tooling` | 2 |
 | `web:types` | 2 |
 | `web:ui` | 30 |
@@ -152,11 +152,11 @@ flowchart LR
 | `web:api` | `web:imports` | 11 |
 | `web:meetings` | `web:meetings` | 9 |
 | `web:auth` | `web:auth` | 8 |
+| `web:stand` | `web:stand` | 6 |
 | `web:api` | `web:meetings` | 5 |
-| `web:stand` | `web:stand` | 5 |
+| `web:app` | `web:stand` | 5 |
 | `web:api` | `web:leadership` | 4 |
 | `web:app` | `web:callings` | 4 |
-| `web:app` | `web:stand` | 4 |
 | `web:callings` | `web:callings` | 4 |
 | `web:db` | `web:db` | 4 |
 | `web:api` | `web:announcements` | 3 |
@@ -228,6 +228,7 @@ flowchart LR
 | `web:meetings` | `vitest` | 5 |
 | `web:app` | `@testing-library/react` | 4 |
 | `web:auth` | `vitest` | 4 |
+| `web:stand` | `vitest` | 4 |
 | `web:tooling` | `Node.js` | 4 |
 | `web:ui` | `next-auth` | 4 |
 | `web:app` | `@testing-library/user-event` | 3 |
@@ -238,7 +239,6 @@ flowchart LR
 | `web:db` | `drizzle-orm` | 3 |
 | `web:db` | `vitest` | 3 |
 | `web:lib` | `vitest` | 3 |
-| `web:stand` | `vitest` | 3 |
 | `web:ui` | `@testing-library/react` | 3 |
 | `web:ui` | `vitest` | 3 |
 | `package:shared` | `vitest` | 2 |
@@ -464,7 +464,7 @@ flowchart LR
 | `apps/web/app/settings/public-portal/page.tsx` | `web:app` | 7 | 3 |
 | `apps/web/app/settings/stand-script/error.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/settings/stand-script/loading.tsx` | `web:app` | 0 | 0 |
-| `apps/web/app/settings/stand-script/page.tsx` | `web:app` | 6 | 2 |
+| `apps/web/app/settings/stand-script/page.tsx` | `web:app` | 7 | 2 |
 | `apps/web/app/settings/users/error.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/settings/users/loading.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/settings/users/page.tsx` | `web:app` | 3 | 2 |
@@ -652,6 +652,8 @@ flowchart LR
 | `apps/web/src/stand/member-display.vitest.ts` | `web:stand` | 1 | 1 |
 | `apps/web/src/stand/render.ts` | `web:stand` | 3 | 0 |
 | `apps/web/src/stand/render.vitest.ts` | `web:stand` | 1 | 1 |
+| `apps/web/src/stand/template-classification.ts` | `web:stand` | 0 | 0 |
+| `apps/web/src/stand/template-classification.vitest.ts` | `web:stand` | 1 | 1 |
 | `apps/web/src/types/external-modules.d.ts` | `web:types` | 0 | 0 |
 | `apps/web/src/types/pg.d.ts` | `web:types` | 0 | 0 |
 | `apps/web/src/version.mjs` | `web:version.mjs` | 0 | 0 |

@@ -24,6 +24,7 @@ import {
   DEFAULT_STAND_RELEASE_TEMPLATE,
   DEFAULT_STAND_SUSTAIN_TEMPLATE
 } from '@/src/stand/default-template';
+import { TEMPLATE_CLASSIFICATIONS } from '@/src/stand/template-classification';
 
 const DEFAULT_SUSTAIN = DEFAULT_STAND_SUSTAIN_TEMPLATE;
 const DEFAULT_RELEASE = DEFAULT_STAND_RELEASE_TEMPLATE;
@@ -185,6 +186,16 @@ export default async function StandScriptSettingsPage() {
               These templates are for announcing the action or presenting/sustaining the person before it. They do not replace the ordinance
               or blessing. Use {`{memberName}`} and {`{callingName}`} as placeholders.
             </p>
+            <div className="mt-3 grid gap-2 text-xs text-muted-foreground sm:grid-cols-2" aria-label="Handbook guidance for templates">
+              {Object.entries(TEMPLATE_CLASSIFICATIONS).map(([key, guidance]) => (
+                <p key={key}>
+                  <strong className="text-foreground">{guidance.label}:</strong> {guidance.description}{' '}
+                  <a className="underline" href={guidance.sourceUrl} target="_blank" rel="noreferrer">
+                    {guidance.sourceLabel}
+                  </a>
+                </p>
+              ))}
+            </div>
           </div>
           <label className="block space-y-2 text-sm">
             <span className="font-medium">Welcome new ward member</span>
