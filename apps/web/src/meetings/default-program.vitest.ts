@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { getDefaultProgramItemsForMeetingType } from './default-program';
-import { validateProgramItemsForMeetingType } from './types';
+import { validateProgramItemsForMeetingType, validateSpeakerStatusTransition } from './types';
 
 describe('getDefaultProgramItemsForMeetingType', () => {
   it('returns the sacrament template in the expected order', () => {
@@ -43,6 +43,13 @@ describe('getDefaultProgramItemsForMeetingType', () => {
     });
   });
 
+  it('requires sequential speaker lifecycle transitions and a topic before confirmation', () => {
+    expect(validateSpeakerStatusTransition('PLANNED', 'INVITED')).toBeNull();
+    expect(validateSpeakerStatusTransition('PLANNED', 'CONFIRMED', 'Topic')).toContain('one step');
+    expect(validateSpeakerStatusTransition('ACCEPTED', 'CONFIRMED')).toContain('topic');
+    expect(validateSpeakerStatusTransition('ACCEPTED', 'CONFIRMED', 'Topic')).toBeNull();
+    expect(validateSpeakerStatusTransition('CONFIRMED', 'COMPLETED', 'Topic')).toBeNull();
+  });
   it('rejects assigned speakers and special hymns only for fast-and-testimony', () => {
     expect(validateProgramItemsForMeetingType('FAST_TESTIMONY', [{ itemType: 'SPEAKER' }])).toContain('cannot include');
     expect(validateProgramItemsForMeetingType('FAST_TESTIMONY', [{ itemType: 'SPECIAL_HYMN' }])).toContain('cannot include');

@@ -238,6 +238,8 @@ Do not store copied ordinance details or replace LCR status.
 4. Add meeting readiness summary for speakers, hymns, prayers, and required participants.
 5. Update editor, dashboard, print/public output, and tests.
 
+**Implementation status:** Speaker topics and lifecycle controls are present in meeting editing, and server-side updates now enforce sequential `PLANNED → INVITED → ACCEPTED → CONFIRMED → COMPLETED` transitions with a topic required before confirmation. Meeting editor now shows readiness counts for speakers, hymns, prayers, and required participants. Browser-level reminder delivery and dashboard-wide readiness aggregation remain follow-up.
+
 ## Option 3B: Fast-and-testimony and special-meeting rules
 
 **Priority:** P1

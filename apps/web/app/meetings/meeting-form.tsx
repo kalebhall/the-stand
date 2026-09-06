@@ -20,6 +20,7 @@ import {
   type VisitingStakeLeader
 } from '@/src/meetings/types';
 import { getDefaultProgramItemsForMeetingType } from '@/src/meetings/default-program';
+import { getMeetingReadiness } from '@/src/meetings/readiness';
 
 import { DeleteMeetingButton } from './delete-meeting-button';
 import { cn } from '@/lib/utils';
@@ -123,6 +124,7 @@ export function MeetingForm({
   );
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const readiness = useMemo(() => getMeetingReadiness(programItems), [programItems]);
   const [publishing, setPublishing] = useState(false);
   const [publishedCount, setPublishedCount] = useState(publishedVersionCount);
   const [autosaveStatus, setAutosaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
@@ -417,6 +419,15 @@ export function MeetingForm({
             Fast-and-testimony meetings use testimony participation rather than assigned speakers or special musical selections. Save blocked until those items are removed.
           </p>
         ) : null}
+        <aside className="rounded-md border bg-background/60 p-3 text-sm" aria-label="Meeting readiness summary">
+          <h3 className="font-semibold">Meeting readiness</h3>
+          <ul className="mt-2 grid gap-1 sm:grid-cols-2">
+            <li>Speakers: {readiness.speakers.ready}/{readiness.speakers.total} topics; {readiness.speakers.pending} pending</li>
+            <li>Hymns: {readiness.hymns.missing ? `${readiness.hymns.missing} missing` : 'complete'}</li>
+            <li>Prayers: {readiness.prayers.missing ? `${readiness.prayers.missing} missing` : 'complete'}</li>
+            <li>Required participants: {readiness.requiredParticipants.missing ? `${readiness.requiredParticipants.missing} missing` : 'complete'}</li>
+          </ul>
+        </aside>
 
         {programItems.map((item, index) => (
           <article

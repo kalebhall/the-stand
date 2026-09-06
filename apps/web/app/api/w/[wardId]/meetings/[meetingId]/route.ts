@@ -10,7 +10,7 @@ import { enqueueOutboxNotificationJob } from '@/src/notifications/queue';
 import { enqueueNotificationOutboxEvent, insertNotificationOutboxEvent } from '@/src/notifications/outbox';
 
 const logger = createLogger('meetings');
-import { INTRODUCTION_ITEM_TYPE, isMeetingType, SPEAKER_STATUSES, validateProgramItemsForMeetingType, type IntroductionRoles, type ProgramItemInput } from '@/src/meetings/types';
+import { INTRODUCTION_ITEM_TYPE, isMeetingType, SPEAKER_STATUSES, validateProgramItemsForMeetingType, validateSpeakerStatusTransition, type IntroductionRoles, type ProgramItemInput } from '@/src/meetings/types';
 
 function toTrimmedString(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
@@ -152,6 +152,11 @@ export async function PUT(request: Request, context: { params: Promise<{ wardId:
     }
 
     const existingMeeting = existing.rows[0] as { meeting_date: string; meeting_type: string };
+    const existingItems = await client.query(
+      'SELECT id, item_type, speaker_status, topic FROM meeting_program_item WHERE meeting_id = $1::uuid AND ward_id = $2::uuid',
+      [meetingId, wardId]
+    );
+    const existingItemById = new Map(existingItems.rows.map((item: { id: string; item_type: string; speaker_status: string | null; topic: string | null }) => [item.id, item]));
     if ((body?.meetingDate !== undefined && !meetingDate) || (body?.meetingType !== undefined && !isMeetingType(meetingType))) {
       await client.query('ROLLBACK');
       return NextResponse.json({ error: 'Invalid meeting payload', code: 'BAD_REQUEST' }, { status: 400 });
@@ -171,6 +176,19 @@ export async function PUT(request: Request, context: { params: Promise<{ wardId:
     if (programRuleError) {
       await client.query('ROLLBACK');
       return NextResponse.json({ error: programRuleError, code: 'MEETING_TYPE_RULE' }, { status: 422 });
+    }
+
+    for (const item of programItems) {
+      if (toTrimmedString(item?.itemType).toUpperCase() !== 'SPEAKER' || !item?.id) continue;
+      const existingItem = existingItemById.get(item.id);
+      if (!existingItem || existingItem.item_type.toUpperCase() !== 'SPEAKER') continue;
+      const currentStatus = (existingItem.speaker_status ?? 'PLANNED') as (typeof SPEAKER_STATUSES)[number];
+      const nextStatus = (item.speakerStatus ?? currentStatus) as (typeof SPEAKER_STATUSES)[number];
+      const transitionError = validateSpeakerStatusTransition(currentStatus, nextStatus, item.topic ?? existingItem.topic);
+      if (transitionError) {
+        await client.query('ROLLBACK');
+        return NextResponse.json({ error: transitionError, code: 'SPEAKER_STATUS_TRANSITION' }, { status: 422 });
+      }
     }
 
     const protectedIntroductionTypes = new Set(['PRESIDING', 'CONDUCTING', 'ORGANIST_PIANIST', 'CHORISTER']);

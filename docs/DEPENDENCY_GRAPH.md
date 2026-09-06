@@ -30,7 +30,7 @@ flowchart LR
   A18["web:leadership<br/>14 files"]
   A19["web:lib<br/>9 files"]
   A20["web:maintenance<br/>4 files"]
-  A21["web:meetings<br/>12 files"]
+  A21["web:meetings<br/>14 files"]
   A22["web:notes<br/>1 files"]
   A23["web:notifications<br/>25 files"]
   A24["web:offline<br/>2 files"]
@@ -49,7 +49,7 @@ flowchart LR
   A5 -->|23| A19
   A5 -->|19| A7
   A5 -->|15| A11
-  A6 -->|12| A21
+  A6 -->|13| A21
   A5 -->|11| A17
   A5 -->|8| A18
   A5 -->|5| A21
@@ -120,7 +120,7 @@ flowchart LR
 | `web:leadership` | 14 |
 | `web:lib` | 9 |
 | `web:maintenance` | 4 |
-| `web:meetings` | 12 |
+| `web:meetings` | 14 |
 | `web:notes` | 1 |
 | `web:notifications` | 25 |
 | `web:offline` | 2 |
@@ -149,9 +149,9 @@ flowchart LR
 | `web:api` | `web:audit` | 19 |
 | `web:api` | `web:callings` | 15 |
 | `web:imports` | `web:imports` | 14 |
-| `web:app` | `web:meetings` | 12 |
+| `web:app` | `web:meetings` | 13 |
+| `web:meetings` | `web:meetings` | 12 |
 | `web:api` | `web:imports` | 11 |
-| `web:meetings` | `web:meetings` | 10 |
 | `web:api` | `web:leadership` | 8 |
 | `web:auth` | `web:auth` | 8 |
 | `web:leadership` | `web:leadership` | 8 |
@@ -226,9 +226,9 @@ flowchart LR
 | `web:notifications` | `pg` | 8 |
 | `web:api` | `zod` | 7 |
 | `web:imports` | `vitest` | 7 |
+| `web:meetings` | `vitest` | 7 |
 | `web:auth` | `next-auth` | 6 |
 | `web:leadership` | `vitest` | 6 |
-| `web:meetings` | `vitest` | 6 |
 | `web:app` | `@testing-library/react` | 4 |
 | `web:auth` | `vitest` | 4 |
 | `web:stand` | `vitest` | 4 |
@@ -431,7 +431,7 @@ flowchart LR
 | `apps/web/app/meetings/delete-meeting-button.tsx` | `web:app` | 1 | 2 |
 | `apps/web/app/meetings/error.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/meetings/loading.tsx` | `web:app` | 0 | 0 |
-| `apps/web/app/meetings/meeting-form.tsx` | `web:app` | 10 | 2 |
+| `apps/web/app/meetings/meeting-form.tsx` | `web:app` | 11 | 2 |
 | `apps/web/app/meetings/new/page.tsx` | `web:app` | 3 | 1 |
 | `apps/web/app/meetings/page.tsx` | `web:app` | 8 | 2 |
 | `apps/web/app/members/members-manager-client.tsx` | `web:app` | 3 | 2 |
@@ -632,6 +632,8 @@ flowchart LR
 | `apps/web/src/meetings/print-fixtures.vitest.ts` | `web:meetings` | 1 | 1 |
 | `apps/web/src/meetings/public-layout.ts` | `web:meetings` | 0 | 0 |
 | `apps/web/src/meetings/public-layout.vitest.ts` | `web:meetings` | 1 | 1 |
+| `apps/web/src/meetings/readiness.ts` | `web:meetings` | 1 | 0 |
+| `apps/web/src/meetings/readiness.vitest.ts` | `web:meetings` | 1 | 1 |
 | `apps/web/src/meetings/render.ts` | `web:meetings` | 3 | 1 |
 | `apps/web/src/meetings/render.vitest.ts` | `web:meetings` | 1 | 1 |
 | `apps/web/src/meetings/technology.ts` | `web:meetings` | 0 | 0 |

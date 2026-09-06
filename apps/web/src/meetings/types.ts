@@ -43,6 +43,26 @@ export function validateProgramItemsForMeetingType(meetingType: string, items: P
   return forbidden.length ? 'Fast-and-testimony meetings cannot include assigned speakers or special musical selections.' : null;
 }
 
+export function validateSpeakerStatusTransition(
+  current: SpeakerStatus,
+  next: SpeakerStatus,
+  topic?: string | null
+): string | null {
+  if (current === next) return null;
+
+  const currentIndex = SPEAKER_STATUSES.indexOf(current);
+  const nextIndex = SPEAKER_STATUSES.indexOf(next);
+  if (nextIndex !== currentIndex + 1) {
+    return 'Speaker status must advance one step at a time.';
+  }
+
+  if (next === 'CONFIRMED' && !topic?.trim()) {
+    return 'Speaker topic is required before confirmation.';
+  }
+
+  return null;
+}
+
 export function getProgramItemLabel(itemType: string): string {
   if (itemType.toUpperCase() === 'ORGANIST_PIANIST') return 'Organist / Pianist';
 
