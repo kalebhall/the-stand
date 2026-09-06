@@ -493,7 +493,7 @@ Show database, queue, backup, purge, and notification-worker state to authorized
 
 ## Option 6C: Audit improvements
 
-**Implementation status:** Public layout updates now record ward, actor, action, entity, previous state, and field-level changes in same transaction. Public publish audits now record actual prior meeting status and prior render version instead of assuming every publish starts from draft. Membership/ordinance transitions and deletion now record actor, entity, previous workflow state, field-level transition, member/action context, and official-record handoff action in same transaction. Deployment-level audit-retention review remains open.
+**Implementation status:** Retention contract and runner are implemented with bounded raw-import marker replacement, seven-year audit-log deletion, dry-run counts, explicit PostgreSQL casts, same-client transaction handling, sanitized logs, and idempotent behavior. Added repository-managed systemd service/timer; production timer is active and a real oneshot run completed successfully with zero expired rows. Deployment audit ownership, restore-drill evidence, and worker/process monitoring remain deployment responsibilities.
 
 ---
 

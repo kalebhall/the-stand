@@ -488,12 +488,19 @@ The application includes deployable retention purge command: `npm --workspace @t
 
 Override only with whole-day values: `RAW_PASTE_RETENTION_DAYS` from 1 through 3650 and `AUDIT_LOG_RETENTION_DAYS` from 365 through 3650. Set `RETENTION_DRY_RUN=1` for safe counts without changes. Invalid values fail before database connection.
 
-Create `/etc/systemd/system/the-stand-retention-purge.service`:
+Create units from repository files:
 
+```bash
+sudo install -o root -g root -m 0644 infra/systemd/the-stand-retention-purge.service /etc/systemd/system/the-stand-retention-purge.service
+sudo install -o root -g root -m 0644 infra/systemd/the-stand-retention-purge.timer /etc/systemd/system/the-stand-retention-purge.timer
 ```
+
+`the-stand-retention-purge.service` contains:
+
+```ini
 [Unit]
 Description=The Stand operational retention purge
-After=network.target postgresql.service
+After=network.target postgresql@16-main.service
 
 [Service]
 Type=oneshot
