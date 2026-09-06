@@ -444,7 +444,7 @@ Add draft/published states for public layout settings.
 7. Stable public URL QR output.
 8. Private-field, empty-section, escaping, layout, and announcement tests.
 
-**Remaining:** Deterministic PDF fixtures and browser-level print-preview exercise.
+**Remaining:** Deterministic renderer fixtures and browser-level print-preview exercise.
 
 ## Recommended first public-program release
 
@@ -483,6 +483,8 @@ Defer custom freeform layout until real ward usage shows need.
 ## Option 6A: Accessibility coverage
 
 Add keyboard/screen-reader tests for filters, status controls, conflict dialogs, offline state, public pages, print preview, and layout controls. Add large-print/full-page preset.
+
+**Progress:** Browser tests now cover login/access-request semantics and shared print renderer media behavior for bifold, tri-fold, and full-page presets. Authenticated page-level print/public preview remains open pending seeded E2E fixtures.
 
 ## Option 6B: Deployment health page
 

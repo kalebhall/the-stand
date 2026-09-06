@@ -22,7 +22,7 @@ flowchart LR
   A10["web:calendar<br/>4 files"]
   A11["web:callings<br/>7 files"]
   A12["web:church-actions<br/>4 files"]
-  A13["web:config<br/>14 files"]
+  A13["web:config<br/>15 files"]
   A14["web:db<br/>7 files"]
   A15["web:hardening<br/>1 files"]
   A16["web:health.mjs<br/>1 files"]
@@ -80,6 +80,7 @@ flowchart LR
   A10 -->|1| A23
   A13 -->|1| A9
   A13 -->|1| A16
+  A13 -->|1| A21
   A16 -->|1| A30
   A17 -->|1| A14
   A20 -->|1| A14
@@ -112,7 +113,7 @@ flowchart LR
 | `web:calendar` | 4 |
 | `web:callings` | 7 |
 | `web:church-actions` | 4 |
-| `web:config` | 14 |
+| `web:config` | 15 |
 | `web:db` | 7 |
 | `web:hardening` | 1 |
 | `web:health.mjs` | 1 |
@@ -193,6 +194,7 @@ flowchart LR
 | `web:calendar` | `web:notifications` | 1 |
 | `web:config` | `web:bootstrap.mjs` | 1 |
 | `web:config` | `web:health.mjs` | 1 |
+| `web:config` | `web:meetings` | 1 |
 | `web:health.mjs` | `web:version.mjs` | 1 |
 | `web:imports` | `web:db` | 1 |
 | `web:maintenance` | `web:db` | 1 |
@@ -231,6 +233,7 @@ flowchart LR
 | `web:leadership` | `vitest` | 6 |
 | `web:app` | `@testing-library/react` | 4 |
 | `web:auth` | `vitest` | 4 |
+| `web:config` | `@playwright/test` | 4 |
 | `web:stand` | `vitest` | 4 |
 | `web:tooling` | `Node.js` | 4 |
 | `web:ui` | `next-auth` | 4 |
@@ -239,7 +242,6 @@ flowchart LR
 | `web:app` | `Node.js` | 3 |
 | `web:app` | `next-auth` | 3 |
 | `web:callings` | `vitest` | 3 |
-| `web:config` | `@playwright/test` | 3 |
 | `web:db` | `Node.js` | 3 |
 | `web:db` | `drizzle-orm` | 3 |
 | `web:db` | `vitest` | 3 |
@@ -528,6 +530,7 @@ flowchart LR
 | `apps/web/drizzle.config.ts` | `web:config` | 0 | 1 |
 | `apps/web/e2e/acceptance.spec.ts` | `web:config` | 0 | 1 |
 | `apps/web/e2e/accessibility.spec.ts` | `web:config` | 0 | 1 |
+| `apps/web/e2e/print-preview.spec.ts` | `web:config` | 1 | 1 |
 | `apps/web/eslint.config.mjs` | `web:config` | 0 | 1 |
 | `apps/web/instrumentation-client.ts` | `web:config` | 1 | 0 |
 | `apps/web/instrumentation.ts` | `web:config` | 1 | 0 |
