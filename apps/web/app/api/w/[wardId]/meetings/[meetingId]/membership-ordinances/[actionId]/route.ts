@@ -174,13 +174,28 @@ export async function DELETE(_request: Request, context: { params: Promise<{ war
     await client.query('BEGIN');
     await setDbContext(client, { userId: session.user.id, wardId });
     const result = await client.query(
-      'DELETE FROM meeting_membership_ordinance WHERE id = $1::uuid AND meeting_id = $2::uuid AND ward_id = $3::uuid RETURNING id',
+      'DELETE FROM meeting_membership_ordinance WHERE id = $1::uuid AND meeting_id = $2::uuid AND ward_id = $3::uuid RETURNING id, member_name, action_type, status, interview_status, lcr_follow_up_status, official_system_follow_up_status',
       [actionId, meetingId, wardId]
     );
     if (!result.rowCount) {
       await client.query('ROLLBACK');
       return NextResponse.json({ error: 'Action not found.', code: 'NOT_FOUND' }, { status: 404 });
     }
+    const deletedAction = result.rows[0] as Record<string, unknown>;
+    await recordAuditEvent(client, {
+      wardId,
+      userId: session.user.id,
+      actorName: session.user.name || session.user.email || null,
+      actorRole: session.user.roles?.[0] || null,
+      action: 'MEMBERSHIP_ORDINANCE_DELETED',
+      entityType: 'membership_ordinance',
+      entityId: actionId,
+      previousState: deletedAction,
+      changes: { deleted: { old: false, new: true } },
+      details: { meetingId, actionId, memberName: deletedAction.member_name, actionType: deletedAction.action_type },
+      source: 'manual_ui',
+      severity: 'notice'
+    });
     await client.query('COMMIT');
     return NextResponse.json({ success: true });
   } catch {
