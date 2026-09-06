@@ -10,7 +10,7 @@ Target Environment:
 
 - Ubuntu Server 22.04 LTS or 24.04 LTS
 - Local PostgreSQL
-- Node.js LTS (20+)
+- Node.js LTS (22+; required by direct TypeScript reminder runners)
 - Nginx reverse proxy
 - systemd process management
 - HTTPS via Certbot
@@ -101,7 +101,7 @@ psql "postgresql://stand_user:REPLACE_WITH_STRONG_PASSWORD@localhost:5432/the_st
 ## SECTION 3 — INSTALL NODE.JS (LTS)
 
 ```
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
 sudo apt install -y nodejs
 node -v
 npm -v
