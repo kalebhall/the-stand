@@ -9,7 +9,7 @@ export default defineConfig({
     trace: 'on-first-retry'
   },
   webServer: {
-    command: 'E2E_TEST_MODE=1 SUPPORT_ADMIN_EMAIL=support-admin@example.test npm run dev -- --port 3005',
+    command: 'E2E_TEST_MODE=1 AUTH_SECRET=e2e-test-secret-change-me SUPPORT_ADMIN_EMAIL=support-admin@example.test npm run dev -- --port 3005',
     port: 3005,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000
