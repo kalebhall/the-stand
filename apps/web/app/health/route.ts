@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
 
-import { pool } from '@/src/db/client';
+import { pool, resetDatabasePool } from '@/src/db/client';
+import { withDatabaseRecovery } from '@/src/db/recovery';
 
 export async function GET() {
-  await pool.query('SELECT 1');
+  await withDatabaseRecovery(() => pool.query('SELECT 1'), resetDatabasePool);
 
   return NextResponse.json({ status: 'ok', db: 'connected' });
 }

@@ -7,7 +7,8 @@ const { poolQuery } = vi.hoisted(() => ({
 vi.mock('@/src/db/client', () => ({
   pool: {
     query: poolQuery
-  }
+  },
+  resetDatabasePool: vi.fn()
 }));
 
 import { GET } from './route';
