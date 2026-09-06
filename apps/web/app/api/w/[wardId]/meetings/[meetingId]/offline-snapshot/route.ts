@@ -61,6 +61,13 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
         ORDER BY created_at ASC`,
       [meetingId, wardId]
     );
+    const technology = await client.query(
+      `SELECT owner_name, room_ready, audio_ready, stream_ready, accessibility_checked, authorized_link, start_confirmed_at, stop_confirmed_at, recording_deletion_reminder
+         FROM meeting_technology_checklist
+        WHERE meeting_id = $1::uuid AND ward_id = $2::uuid
+        LIMIT 1`,
+      [meetingId, wardId]
+    );
     const notes = await client.query(
       `SELECT note.id, note.visibility, note.note_text, note.created_at, note.updated_at
          FROM internal_note note
@@ -130,6 +137,19 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
         lcrFollowUpStatus: action.lcr_follow_up_status,
         lcrUpdatedAt: action.lcr_updated_at
       })),
+      technology: technology.rows[0]
+        ? {
+            ownerName: technology.rows[0].owner_name,
+            roomReady: technology.rows[0].room_ready,
+            audioReady: technology.rows[0].audio_ready,
+            streamReady: technology.rows[0].stream_ready,
+            accessibilityChecked: technology.rows[0].accessibility_checked,
+            authorizedLink: technology.rows[0].authorized_link,
+            startConfirmedAt: technology.rows[0].start_confirmed_at,
+            stopConfirmedAt: technology.rows[0].stop_confirmed_at,
+            recordingDeletionReminder: technology.rows[0].recording_deletion_reminder
+          }
+        : null,
       notes: notes.rows.map((note) => ({
         id: note.id,
         visibility: 'PRIVATE',
