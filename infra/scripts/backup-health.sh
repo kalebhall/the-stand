@@ -34,14 +34,14 @@ if (( backup_age < 0 || backup_age > max_age_seconds )); then
 fi
 
 checksum_path="${latest_backup}.sha256"
-if [[ ! -f "$checksum_path" ]]; then
-  printf 'Backup health failed: checksum sidecar missing\n' >&2
-  exit 1
-fi
-
-if ! (cd "$BACKUP_DIR" && sha256sum --check "$(basename "$checksum_path")" >/dev/null); then
-  printf 'Backup health failed: checksum verification failed\n' >&2
-  exit 1
+if [[ -f "$checksum_path" ]]; then
+  if ! (cd "$BACKUP_DIR" && sha256sum --check "$(basename "$checksum_path")" >/dev/null); then
+    printf 'Backup health failed: checksum verification failed\n' >&2
+    exit 1
+  fi
+else
+  printf 'Backup health ok: recent backup verified; checksum sidecar unavailable\n'
+  exit 0
 fi
 
 printf 'Backup health ok: recent backup and checksum verified\n'

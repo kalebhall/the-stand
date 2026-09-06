@@ -726,6 +726,13 @@ sudo -u the-stand -H env BACKUP_DIR=/opt/the-stand/backups BACKUP_MAX_AGE_HOURS=
   /opt/the-stand/app/infra/scripts/backup-health.sh
 ```
 
+Install probe with root ownership and PostgreSQL group access so systemd can execute it without exposing the application tree:
+
+```bash
+sudo install -o root -g postgres -m 0750 /opt/the-stand/app/infra/scripts/backup-health.sh /usr/local/bin/the-stand-backup-health.sh
+sudo chmod 0751 /opt/the-stand
+```
+
 Use non-zero exit as monitoring failure. Keep `BACKUP_DIR` private and do not place database credentials in the monitor command. This check proves recent local artifact integrity only; it does not prove off-host replication or restore readiness.
 
 For systemd deployments, install the repository units and keep path/age settings in a root-readable protected environment file:
