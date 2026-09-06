@@ -15,7 +15,7 @@ flowchart LR
   A3["root:tooling<br/>6 files"]
   A4["web:announcements<br/>2 files"]
   A5["web:api<br/>79 files"]
-  A6["web:app<br/>106 files"]
+  A6["web:app<br/>107 files"]
   A7["web:audit<br/>2 files"]
   A8["web:auth<br/>11 files"]
   A9["web:bootstrap.mjs<br/>1 files"]
@@ -102,7 +102,7 @@ flowchart LR
 | `root:tooling` | 6 |
 | `web:announcements` | 2 |
 | `web:api` | 79 |
-| `web:app` | 106 |
+| `web:app` | 107 |
 | `web:audit` | 2 |
 | `web:auth` | 11 |
 | `web:bootstrap.mjs` | 1 |
@@ -136,7 +136,7 @@ flowchart LR
 | `web:api` | `web:db` | 103 |
 | `web:app` | `web:auth` | 82 |
 | `web:app` | `web:db` | 50 |
-| `web:app` | `web:app` | 44 |
+| `web:app` | `web:app` | 45 |
 | `web:api` | `web:notifications` | 40 |
 | `web:notifications` | `web:notifications` | 32 |
 | `web:ui` | `web:ui` | 27 |
@@ -215,16 +215,16 @@ flowchart LR
 | `web:ui` | `next` | 14 |
 | `root:tooling` | `Node.js` | 12 |
 | `web:notifications` | `vitest` | 9 |
+| `web:app` | `vitest` | 8 |
 | `web:notifications` | `pg` | 8 |
 | `web:api` | `zod` | 7 |
-| `web:app` | `vitest` | 7 |
 | `web:imports` | `vitest` | 7 |
 | `web:auth` | `next-auth` | 6 |
 | `web:meetings` | `vitest` | 5 |
+| `web:app` | `@testing-library/react` | 4 |
 | `web:auth` | `vitest` | 4 |
 | `web:tooling` | `Node.js` | 4 |
 | `web:ui` | `next-auth` | 4 |
-| `web:app` | `@testing-library/react` | 3 |
 | `web:app` | `@testing-library/user-event` | 3 |
 | `web:app` | `next-auth` | 3 |
 | `web:callings` | `vitest` | 3 |
@@ -447,6 +447,7 @@ flowchart LR
 | `apps/web/app/settings/page.tsx` | `web:app` | 5 | 1 |
 | `apps/web/app/settings/public-layout/page.tsx` | `web:app` | 7 | 1 |
 | `apps/web/app/settings/public-layout/public-layout-client.tsx` | `web:app` | 3 | 1 |
+| `apps/web/app/settings/public-layout/public-layout-client.vitest.tsx` | `web:app` | 1 | 2 |
 | `apps/web/app/settings/public-portal/error.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/settings/public-portal/loading.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/settings/public-portal/page.tsx` | `web:app` | 7 | 3 |

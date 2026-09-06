@@ -162,6 +162,8 @@ describe('buildMeetingRenderHtml', () => {
     expect(html).toContain('alt="Ward meetinghouse"');
     expect(html).not.toContain('Hidden by layout');
     expect(html).toContain('print-fold-guides');
+    expect(html).toContain('aria-labelledby="public-program-title"');
+    expect(html).toContain('id="public-program-title"');
     expect(html).toContain('aria-label="QR code for digital program"');
     expect(html).toContain('href="https://thestand.app/p/sample-token"');
   });

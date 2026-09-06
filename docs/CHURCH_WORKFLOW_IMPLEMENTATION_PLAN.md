@@ -473,6 +473,8 @@ Defer custom freeform layout until real ward usage shows need.
 
 # Phase 6 — Accessibility, health, and audit
 
+**Implementation status:** Public layout controls now expose explicit labels, grouped options, keyboard-friendly native controls, live save status, failure recovery, and disabled save state. Public program output has a labelled main landmark and accessible QR link/SVG labels. Browser-level accessibility and print-preview exercise remain open.
+
 ## Option 6A: Accessibility coverage
 
 Add keyboard/screen-reader tests for filters, status controls, conflict dialogs, offline state, public pages, print preview, and layout controls. Add large-print/full-page preset.
