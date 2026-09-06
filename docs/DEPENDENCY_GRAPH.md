@@ -30,7 +30,7 @@ flowchart LR
   A18["web:leadership<br/>12 files"]
   A19["web:lib<br/>9 files"]
   A20["web:maintenance<br/>4 files"]
-  A21["web:meetings<br/>11 files"]
+  A21["web:meetings<br/>12 files"]
   A22["web:notes<br/>1 files"]
   A23["web:notifications<br/>25 files"]
   A24["web:offline<br/>2 files"]
@@ -120,7 +120,7 @@ flowchart LR
 | `web:leadership` | 12 |
 | `web:lib` | 9 |
 | `web:maintenance` | 4 |
-| `web:meetings` | 11 |
+| `web:meetings` | 12 |
 | `web:notes` | 1 |
 | `web:notifications` | 25 |
 | `web:offline` | 2 |
@@ -151,7 +151,7 @@ flowchart LR
 | `web:imports` | `web:imports` | 14 |
 | `web:app` | `web:meetings` | 12 |
 | `web:api` | `web:imports` | 11 |
-| `web:meetings` | `web:meetings` | 9 |
+| `web:meetings` | `web:meetings` | 10 |
 | `web:auth` | `web:auth` | 8 |
 | `web:leadership` | `web:leadership` | 7 |
 | `web:stand` | `web:stand` | 6 |
@@ -227,8 +227,8 @@ flowchart LR
 | `web:api` | `zod` | 7 |
 | `web:imports` | `vitest` | 7 |
 | `web:auth` | `next-auth` | 6 |
+| `web:meetings` | `vitest` | 6 |
 | `web:leadership` | `vitest` | 5 |
-| `web:meetings` | `vitest` | 5 |
 | `web:app` | `@testing-library/react` | 4 |
 | `web:auth` | `vitest` | 4 |
 | `web:stand` | `vitest` | 4 |
@@ -624,6 +624,7 @@ flowchart LR
 | `apps/web/src/meetings/date.vitest.ts` | `web:meetings` | 1 | 1 |
 | `apps/web/src/meetings/default-program.ts` | `web:meetings` | 1 | 0 |
 | `apps/web/src/meetings/default-program.vitest.ts` | `web:meetings` | 2 | 1 |
+| `apps/web/src/meetings/print-fixtures.vitest.ts` | `web:meetings` | 1 | 1 |
 | `apps/web/src/meetings/public-layout.ts` | `web:meetings` | 0 | 0 |
 | `apps/web/src/meetings/public-layout.vitest.ts` | `web:meetings` | 1 | 1 |
 | `apps/web/src/meetings/render.ts` | `web:meetings` | 3 | 1 |
