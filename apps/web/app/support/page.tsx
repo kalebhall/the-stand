@@ -39,6 +39,12 @@ const sections = [
       "Manage the global hymn list used in meeting program autocomplete. Add, edit, or deactivate hymns from the standard hymnbook, new hymnbook, and children's songbook.",
     href: '/support/hymns',
     action: 'Manage hymns'
+  },
+  {
+    title: 'Deployment Health',
+    description: 'Review database, queue, backup, purge, and notification status without exposing secrets or private payloads.',
+    href: '/settings/health',
+    action: 'View deployment health'
   }
 ] as const;
 

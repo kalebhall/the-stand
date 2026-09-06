@@ -15,7 +15,7 @@ flowchart LR
   A3["root:tooling<br/>6 files"]
   A4["web:announcements<br/>2 files"]
   A5["web:api<br/>79 files"]
-  A6["web:app<br/>107 files"]
+  A6["web:app<br/>108 files"]
   A7["web:audit<br/>2 files"]
   A8["web:auth<br/>11 files"]
   A9["web:bootstrap.mjs<br/>1 files"]
@@ -42,8 +42,8 @@ flowchart LR
   A5 -->|113| A8
   A6 -->|108| A28
   A5 -->|103| A14
-  A6 -->|82| A8
-  A6 -->|50| A14
+  A6 -->|84| A8
+  A6 -->|51| A14
   A5 -->|40| A22
   A5 -->|23| A19
   A5 -->|16| A7
@@ -102,7 +102,7 @@ flowchart LR
 | `root:tooling` | 6 |
 | `web:announcements` | 2 |
 | `web:api` | 79 |
-| `web:app` | 107 |
+| `web:app` | 108 |
 | `web:audit` | 2 |
 | `web:auth` | 11 |
 | `web:bootstrap.mjs` | 1 |
@@ -134,8 +134,8 @@ flowchart LR
 | `web:api` | `web:auth` | 113 |
 | `web:app` | `web:ui` | 108 |
 | `web:api` | `web:db` | 103 |
-| `web:app` | `web:auth` | 82 |
-| `web:app` | `web:db` | 50 |
+| `web:app` | `web:auth` | 84 |
+| `web:app` | `web:db` | 51 |
 | `web:app` | `web:app` | 45 |
 | `web:api` | `web:notifications` | 40 |
 | `web:notifications` | `web:notifications` | 32 |
@@ -207,7 +207,7 @@ flowchart LR
 
 | Importing area | Package/runtime | Imports |
 | --- | --- | ---: |
-| `web:app` | `next` | 81 |
+| `web:app` | `next` | 82 |
 | `web:api` | `next` | 60 |
 | `web:app` | `react` | 31 |
 | `web:ui` | `react` | 27 |
@@ -226,6 +226,7 @@ flowchart LR
 | `web:tooling` | `Node.js` | 4 |
 | `web:ui` | `next-auth` | 4 |
 | `web:app` | `@testing-library/user-event` | 3 |
+| `web:app` | `Node.js` | 3 |
 | `web:app` | `next-auth` | 3 |
 | `web:callings` | `vitest` | 3 |
 | `web:db` | `Node.js` | 3 |
@@ -253,7 +254,7 @@ flowchart LR
 | `package:shared` | `zod` | 1 |
 | `web:announcements` | `vitest` | 1 |
 | `web:api` | `@the-stand/shared` | 1 |
-| `web:app` | `Node.js` | 1 |
+| `web:app` | `bullmq` | 1 |
 | `web:app` | `next-themes` | 1 |
 | `web:audit` | `vitest` | 1 |
 | `web:auth` | `argon2` | 1 |
@@ -439,6 +440,7 @@ flowchart LR
 | `apps/web/app/sentry-example-page/page.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/settings/audit-log/WardAuditLogClient.tsx` | `web:app` | 1 | 1 |
 | `apps/web/app/settings/audit-log/page.tsx` | `web:app` | 8 | 2 |
+| `apps/web/app/settings/health/page.tsx` | `web:app` | 3 | 4 |
 | `apps/web/app/settings/notification-timezone.tsx` | `web:app` | 0 | 1 |
 | `apps/web/app/settings/notification-timezone.vitest.tsx` | `web:app` | 1 | 4 |
 | `apps/web/app/settings/notifications/notification-subscription-settings.tsx` | `web:app` | 1 | 1 |

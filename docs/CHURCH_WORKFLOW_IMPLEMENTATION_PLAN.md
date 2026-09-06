@@ -481,6 +481,7 @@ Add keyboard/screen-reader tests for filters, status controls, conflict dialogs,
 
 ## Option 6B: Deployment health page
 
+**Implementation status:** Added authenticated Support/System Admin deployment health page at `/settings/health`. It reports safe database, Redis queue, backup-directory, raw-import purge, and notification-delivery checks without displaying secrets or private payloads. Worker process liveness, scheduling, and restore drills remain deployment-level responsibilities.
 Show database, queue, backup, purge, and notification-worker state to authorized administrators. Do not expose secrets or private payloads.
 
 ## Option 6C: Audit improvements
