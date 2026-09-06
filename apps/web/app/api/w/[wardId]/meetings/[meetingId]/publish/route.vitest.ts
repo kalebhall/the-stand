@@ -41,7 +41,7 @@ describe('POST /api/w/[wardId]/meetings/[meetingId]/publish', () => {
 
     queryMock
       .mockResolvedValueOnce({}) // BEGIN
-      .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'meeting-1', meeting_date: '2026-01-04', meeting_type: 'SACRAMENT' }] }) // SELECT meeting
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'meeting-1', meeting_date: '2026-01-04', meeting_type: 'SACRAMENT', status: 'DRAFT' }] }) // SELECT meeting
       .mockResolvedValueOnce({
         rowCount: 1,
         rows: [{ item_type: 'OPENING_HYMN', title: null, notes: null, hymn_number: '1', hymn_title: 'The Morning Breaks' }]

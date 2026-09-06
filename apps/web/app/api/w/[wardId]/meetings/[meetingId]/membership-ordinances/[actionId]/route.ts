@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 
+import { recordAuditEvent } from '@/src/audit/service';
 import { auth } from '@/src/auth/auth';
 import { canManageMeetings } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
@@ -122,29 +123,35 @@ export async function PATCH(request: Request, context: { params: Promise<{ wardI
         }
       });
     }
-    await client.query(
-      `INSERT INTO audit_log (ward_id, user_id, action, details)
-       VALUES ($1::uuid, $2::uuid, $3::text, jsonb_build_object('meetingId', $4::text, 'actionId', $5::text))`,
-      [
-        wardId,
-        session.user.id,
-        status === 'announced'
-          ? 'MEMBERSHIP_ORDINANCE_ANNOUNCED'
-          : status === 'completed'
-            ? 'MEMBERSHIP_ORDINANCE_COMPLETED'
-            : status === 'lcr_completed'
-              ? 'MEMBERSHIP_ORDINANCE_LCR_UPDATED'
-              : status === 'interview_completed'
-                ? 'MEMBERSHIP_ORDINANCE_INTERVIEW_COMPLETED'
-                : status === 'official_record_completed'
-                  ? 'MEMBERSHIP_ORDINANCE_OFFICIAL_RECORD_UPDATED'
-                  : status === 'certificate_delivered'
-                    ? 'MEMBERSHIP_ORDINANCE_CERTIFICATE_DELIVERED'
-                    : 'MEMBERSHIP_ORDINANCE_OFFICIAL_RECORD_HANDOFF_STARTED',
-        meetingId,
-        actionId
-      ]
-    );
+    const auditAction = status === 'announced'
+      ? 'MEMBERSHIP_ORDINANCE_ANNOUNCED'
+      : status === 'completed'
+        ? 'MEMBERSHIP_ORDINANCE_COMPLETED'
+        : status === 'lcr_completed'
+          ? 'MEMBERSHIP_ORDINANCE_LCR_UPDATED'
+          : status === 'interview_completed'
+            ? 'MEMBERSHIP_ORDINANCE_INTERVIEW_COMPLETED'
+            : status === 'official_record_completed'
+              ? 'MEMBERSHIP_ORDINANCE_OFFICIAL_RECORD_UPDATED'
+              : status === 'certificate_delivered'
+                ? 'MEMBERSHIP_ORDINANCE_CERTIFICATE_DELIVERED'
+                : 'MEMBERSHIP_ORDINANCE_OFFICIAL_RECORD_HANDOFF_STARTED';
+    const field = status === 'announced' || status === 'completed' ? 'status' : status === 'lcr_completed' ? 'lcr_follow_up_status' : status === 'interview_completed' ? 'interview_status' : 'official_system_follow_up_status';
+    const newValue = status === 'announced' ? 'action_needed' : status === 'completed' ? 'completed' : status === 'lcr_completed' ? 'completed' : status === 'interview_completed' ? 'completed' : status === 'official_record_started' ? 'in_progress' : 'completed';
+    await recordAuditEvent(client, {
+      wardId,
+      userId: session.user.id,
+      actorName: session.user.name || session.user.email || null,
+      actorRole: session.user.roles?.[0] || null,
+      action: auditAction,
+      entityType: 'membership_ordinance',
+      entityId: actionId,
+      changes: { [field]: { old: currentState[field as keyof typeof currentState], new: newValue } },
+      previousState: currentState,
+      details: { meetingId, actionId, memberName: updatedAction.member_name, actionType: updatedAction.action_type },
+      source: 'manual_ui',
+      severity: 'notice'
+    });
     await client.query('COMMIT');
     enqueueNotificationOutboxEvent(enqueueOutboxNotificationJob, wardId, notificationEventOutboxId);
     return NextResponse.json({ action: result.rows[0] });

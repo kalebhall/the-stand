@@ -14,7 +14,7 @@ flowchart LR
   A2["root:other<br/>1 files"]
   A3["root:tooling<br/>6 files"]
   A4["web:announcements<br/>2 files"]
-  A5["web:api<br/>79 files"]
+  A5["web:api<br/>80 files"]
   A6["web:app<br/>108 files"]
   A7["web:audit<br/>2 files"]
   A8["web:auth<br/>11 files"]
@@ -46,7 +46,7 @@ flowchart LR
   A6 -->|51| A14
   A5 -->|40| A22
   A5 -->|23| A19
-  A5 -->|16| A7
+  A5 -->|19| A7
   A5 -->|15| A11
   A6 -->|12| A20
   A5 -->|11| A17
@@ -101,7 +101,7 @@ flowchart LR
 | `root:other` | 1 |
 | `root:tooling` | 6 |
 | `web:announcements` | 2 |
-| `web:api` | 79 |
+| `web:api` | 80 |
 | `web:app` | 108 |
 | `web:audit` | 2 |
 | `web:auth` | 11 |
@@ -141,8 +141,8 @@ flowchart LR
 | `web:notifications` | `web:notifications` | 32 |
 | `web:ui` | `web:ui` | 27 |
 | `web:api` | `web:lib` | 23 |
-| `web:api` | `web:api` | 19 |
-| `web:api` | `web:audit` | 16 |
+| `web:api` | `web:api` | 20 |
+| `web:api` | `web:audit` | 19 |
 | `web:api` | `web:callings` | 15 |
 | `web:imports` | `web:imports` | 14 |
 | `web:app` | `web:meetings` | 12 |
@@ -211,7 +211,7 @@ flowchart LR
 | `web:api` | `next` | 60 |
 | `web:app` | `react` | 31 |
 | `web:ui` | `react` | 27 |
-| `web:api` | `vitest` | 18 |
+| `web:api` | `vitest` | 19 |
 | `web:ui` | `next` | 14 |
 | `root:tooling` | `Node.js` | 12 |
 | `web:notifications` | `vitest` | 9 |
@@ -350,7 +350,7 @@ flowchart LR
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/business/[lineId]/route.ts` | `web:api` | 5 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/complete/route.ts` | `web:api` | 7 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/complete/route.vitest.ts` | `web:api` | 1 | 1 |
-| `apps/web/app/api/w/[wardId]/meetings/[meetingId]/membership-ordinances/[actionId]/route.ts` | `web:api` | 7 | 1 |
+| `apps/web/app/api/w/[wardId]/meetings/[meetingId]/membership-ordinances/[actionId]/route.ts` | `web:api` | 8 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/membership-ordinances/route.ts` | `web:api` | 5 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/offline-snapshot/route.ts` | `web:api` | 6 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/offline-sync/route.ts` | `web:api` | 5 | 2 |
@@ -376,7 +376,8 @@ flowchart LR
 | `apps/web/app/api/w/[wardId]/notifications/route.ts` | `web:api` | 6 | 2 |
 | `apps/web/app/api/w/[wardId]/notifications/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/portal/route.ts` | `web:api` | 4 | 2 |
-| `apps/web/app/api/w/[wardId]/public-layout/route.ts` | `web:api` | 5 | 1 |
+| `apps/web/app/api/w/[wardId]/public-layout/route.ts` | `web:api` | 6 | 1 |
+| `apps/web/app/api/w/[wardId]/public-layout/route.vitest.ts` | `web:api` | 2 | 1 |
 | `apps/web/app/api/w/[wardId]/users/[userId]/roles/[roleId]/route.ts` | `web:api` | 7 | 1 |
 | `apps/web/app/api/w/[wardId]/users/[userId]/roles/route.ts` | `web:api` | 7 | 1 |
 | `apps/web/app/api/w/[wardId]/users/route.ts` | `web:api` | 4 | 1 |

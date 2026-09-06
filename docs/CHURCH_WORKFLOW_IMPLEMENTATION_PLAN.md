@@ -486,7 +486,7 @@ Show database, queue, backup, purge, and notification-worker state to authorized
 
 ## Option 6C: Audit improvements
 
-Add before/after state, actor, source, timestamp, and ward to membership/ordinance transitions, public publishing, layout changes, and official-record handoff changes.
+**Implementation status:** Public layout updates now record ward, actor, action, entity, previous state, and field-level changes in same transaction. Public publish audits now record actual prior meeting status and prior render version instead of assuming every publish starts from draft. Membership/ordinance transitions now record actor, entity, previous workflow state, field-level transition, member/action context, and official-record handoff action in same transaction. Remaining gap: delete-path audit coverage and deployment-level audit retention review.
 
 ---
 

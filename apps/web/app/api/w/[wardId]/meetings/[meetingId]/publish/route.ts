@@ -14,6 +14,7 @@ type MeetingRow = {
   id: string;
   meeting_date: string;
   meeting_type: string;
+  status: string;
 };
 
 type ProgramItemRow = {
@@ -65,7 +66,7 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
     await setDbContext(client, { userId: session.user.id, wardId });
 
     const meetingResult = await client.query(
-      `SELECT id, meeting_date, meeting_type
+      `SELECT id, meeting_date, meeting_type, status
          FROM meeting
         WHERE id = $1::uuid AND ward_id = $2::uuid
         LIMIT 1
@@ -182,8 +183,12 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
       entityId: meetingId,
       meetingDate: meeting.meeting_date,
       changes: {
-        status: { old: 'DRAFT', new: 'PUBLISHED' },
+        status: { old: meeting.status || 'DRAFT', new: 'PUBLISHED' },
         version: { old: nextVersion - 1, new: nextVersion }
+      },
+      previousState: {
+        status: meeting.status || 'DRAFT',
+        version: nextVersion - 1
       },
       details: {
         meetingId,
