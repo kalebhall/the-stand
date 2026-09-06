@@ -27,12 +27,12 @@ flowchart LR
   A15["web:hardening<br/>1 files"]
   A16["web:health.mjs<br/>1 files"]
   A17["web:imports<br/>19 files"]
-  A18["web:leadership<br/>6 files"]
+  A18["web:leadership<br/>9 files"]
   A19["web:lib<br/>9 files"]
   A20["web:maintenance<br/>4 files"]
   A21["web:meetings<br/>11 files"]
   A22["web:notes<br/>1 files"]
-  A23["web:notifications<br/>23 files"]
+  A23["web:notifications<br/>24 files"]
   A24["web:offline<br/>2 files"]
   A25["web:reports<br/>2 files"]
   A26["web:stand<br/>8 files"]
@@ -81,6 +81,7 @@ flowchart LR
   A13 -->|1| A16
   A16 -->|1| A30
   A17 -->|1| A14
+  A18 -->|1| A23
   A20 -->|1| A14
   A21 -->|1| A4
   A23 -->|1| A22
@@ -116,12 +117,12 @@ flowchart LR
 | `web:hardening` | 1 |
 | `web:health.mjs` | 1 |
 | `web:imports` | 19 |
-| `web:leadership` | 6 |
+| `web:leadership` | 9 |
 | `web:lib` | 9 |
 | `web:maintenance` | 4 |
 | `web:meetings` | 11 |
 | `web:notes` | 1 |
-| `web:notifications` | 23 |
+| `web:notifications` | 24 |
 | `web:offline` | 2 |
 | `web:reports` | 2 |
 | `web:stand` | 8 |
@@ -141,7 +142,7 @@ flowchart LR
 | `web:app` | `web:db` | 51 |
 | `web:app` | `web:app` | 45 |
 | `web:api` | `web:notifications` | 40 |
-| `web:notifications` | `web:notifications` | 32 |
+| `web:notifications` | `web:notifications` | 35 |
 | `web:ui` | `web:ui` | 27 |
 | `web:api` | `web:lib` | 23 |
 | `web:api` | `web:api` | 21 |
@@ -156,6 +157,7 @@ flowchart LR
 | `web:api` | `web:leadership` | 5 |
 | `web:api` | `web:meetings` | 5 |
 | `web:app` | `web:stand` | 5 |
+| `web:leadership` | `web:leadership` | 5 |
 | `web:app` | `web:callings` | 4 |
 | `web:callings` | `web:callings` | 4 |
 | `web:db` | `web:db` | 4 |
@@ -163,7 +165,6 @@ flowchart LR
 | `web:app` | `web:announcements` | 3 |
 | `web:app` | `web:leadership` | 3 |
 | `web:calendar` | `web:calendar` | 3 |
-| `web:leadership` | `web:leadership` | 3 |
 | `web:lib` | `web:lib` | 3 |
 | `web:maintenance` | `web:maintenance` | 3 |
 | `package:shared` | `package:shared` | 2 |
@@ -193,6 +194,7 @@ flowchart LR
 | `web:config` | `web:health.mjs` | 1 |
 | `web:health.mjs` | `web:version.mjs` | 1 |
 | `web:imports` | `web:db` | 1 |
+| `web:leadership` | `web:notifications` | 1 |
 | `web:maintenance` | `web:db` | 1 |
 | `web:meetings` | `web:announcements` | 1 |
 | `web:notifications` | `web:notes` | 1 |
@@ -219,7 +221,7 @@ flowchart LR
 | `web:api` | `vitest` | 20 |
 | `web:ui` | `next` | 14 |
 | `root:tooling` | `Node.js` | 12 |
-| `web:notifications` | `vitest` | 9 |
+| `web:notifications` | `vitest` | 10 |
 | `web:app` | `vitest` | 8 |
 | `web:notifications` | `pg` | 8 |
 | `web:api` | `zod` | 7 |
@@ -228,6 +230,7 @@ flowchart LR
 | `web:meetings` | `vitest` | 5 |
 | `web:app` | `@testing-library/react` | 4 |
 | `web:auth` | `vitest` | 4 |
+| `web:leadership` | `vitest` | 4 |
 | `web:stand` | `vitest` | 4 |
 | `web:tooling` | `Node.js` | 4 |
 | `web:ui` | `next-auth` | 4 |
@@ -238,7 +241,6 @@ flowchart LR
 | `web:db` | `Node.js` | 3 |
 | `web:db` | `drizzle-orm` | 3 |
 | `web:db` | `vitest` | 3 |
-| `web:leadership` | `vitest` | 3 |
 | `web:lib` | `vitest` | 3 |
 | `web:ui` | `@testing-library/react` | 3 |
 | `web:ui` | `vitest` | 3 |
@@ -280,6 +282,7 @@ flowchart LR
 | `web:imports` | `pdf-parse` | 1 |
 | `web:imports` | `pg` | 1 |
 | `web:imports` | `playwright` | 1 |
+| `web:leadership` | `pg` | 1 |
 | `web:lib` | `@sentry/nextjs` | 1 |
 | `web:lib` | `jspdf` | 1 |
 | `web:lib` | `qrcode` | 1 |
@@ -595,6 +598,9 @@ flowchart LR
 | `apps/web/src/leadership/bishopric.vitest.ts` | `web:leadership` | 1 | 1 |
 | `apps/web/src/leadership/interview-ics.ts` | `web:leadership` | 0 | 0 |
 | `apps/web/src/leadership/interview-ics.vitest.ts` | `web:leadership` | 1 | 1 |
+| `apps/web/src/leadership/interview-reminder-runner.mjs` | `web:leadership` | 2 | 1 |
+| `apps/web/src/leadership/interview-reminders.ts` | `web:leadership` | 0 | 0 |
+| `apps/web/src/leadership/interview-reminders.vitest.ts` | `web:leadership` | 1 | 1 |
 | `apps/web/src/leadership/interviews.ts` | `web:leadership` | 0 | 0 |
 | `apps/web/src/leadership/interviews.vitest.ts` | `web:leadership` | 1 | 1 |
 | `apps/web/src/lib/logger.ts` | `web:lib` | 0 | 0 |
@@ -632,6 +638,7 @@ flowchart LR
 | `apps/web/src/notifications/events.vitest.ts` | `web:notifications` | 1 | 1 |
 | `apps/web/src/notifications/format.ts` | `web:notifications` | 2 | 0 |
 | `apps/web/src/notifications/format.vitest.ts` | `web:notifications` | 1 | 1 |
+| `apps/web/src/notifications/interview-reminder.vitest.ts` | `web:notifications` | 3 | 1 |
 | `apps/web/src/notifications/outbox.ts` | `web:notifications` | 1 | 1 |
 | `apps/web/src/notifications/queue.ts` | `web:notifications` | 1 | 1 |
 | `apps/web/src/notifications/recipients.ts` | `web:notifications` | 1 | 1 |

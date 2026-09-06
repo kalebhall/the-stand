@@ -22,6 +22,10 @@ function approvedTargetUrl(aggregateType: string, aggregateId: string, payload?:
     return `/meetings/${payload.meetingId}/edit`;
   }
 
+  if (aggregateType === 'scheduled_interview') {
+    return '/interviews';
+  }
+
   const targets: Record<string, string> = {
     meeting: `/meetings/${aggregateId}/edit`,
     calling: `/callings/${aggregateId}`,
@@ -46,7 +50,7 @@ function safeSummary(definition: ReturnType<typeof getNotificationEventDefinitio
 export function formatUserNotification(input: FormatEventInput): CreateUserNotificationInput {
   const definition = getNotificationEventDefinition(input.eventType);
   const payload = asSafePayload(input.payload);
-  const detailKeys = ['meetingDate', 'callingName', 'memberName', 'action', 'reason'];
+  const detailKeys = ['meetingDate', 'callingName', 'memberName', 'action', 'reason', 'interviewType', 'interviewerName', 'scheduledAt'];
   const details = Object.fromEntries(
     detailKeys
       .filter((key) => typeof payload[key] === 'string' || typeof payload[key] === 'number' || typeof payload[key] === 'boolean')
