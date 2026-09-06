@@ -153,7 +153,7 @@ Display the source link and a warning when a ward prompt is editable. Do not cla
 - private/leadership visibility;
 - carry-forward and completion history.
 
-This should not be mixed into the public sacrament program.
+This should not be mixed into the public sacrament program. Linked private actions now resolve ward members, calling assignments, and membership/ordinance follow-up records; restricted-note subtypes remain separate follow-up scope.
 
 ### P1.6 Ward council and missionary coordination support
 

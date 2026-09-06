@@ -37,9 +37,14 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
     );
     const actions = await client.query(
       `SELECT ba.id, ba.bishopric_meeting_id, ba.title, ba.details, ba.decision, ba.owner_name,
-              ba.due_date, ba.status, ba.carry_forward, bm.meeting_date
+              ba.due_date, ba.status, ba.carry_forward, bm.meeting_date,
+              ba.member_id, m.full_name AS linked_member_name,
+              ba.calling_assignment_id, ca.calling_name AS linked_calling_name,
+              ba.linked_membership_action_id
          FROM bishopric_action ba
          JOIN bishopric_meeting bm ON bm.id = ba.bishopric_meeting_id AND bm.ward_id = ba.ward_id
+         LEFT JOIN member m ON m.id = ba.member_id AND m.ward_id = ba.ward_id
+         LEFT JOIN calling_assignment ca ON ca.id = ba.calling_assignment_id AND ca.ward_id = ba.ward_id
         WHERE ba.ward_id = $1::uuid AND ba.status != 'COMPLETED'
         ORDER BY ba.due_date NULLS LAST, bm.meeting_date DESC, ba.created_at`, [wardId]
     );
