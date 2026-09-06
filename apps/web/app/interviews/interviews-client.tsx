@@ -27,6 +27,9 @@ export function InterviewsClient({ wardId, userId, initial }: { wardId: string; 
   const [online, setOnline] = useState(true);
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [loadedOffline, setLoadedOffline] = useState(false);
+  const [subscriptionActive, setSubscriptionActive] = useState(false);
+  const [feedUrl, setFeedUrl] = useState<string | null>(null);
+  const [subscriptionMessage, setSubscriptionMessage] = useState('');
 
   const load = useCallback(async () => {
     setOnline(navigator.onLine);
@@ -36,6 +39,11 @@ export function InterviewsClient({ wardId, userId, initial }: { wardId: string; 
         const response = await fetch(`/api/w/${wardId}/interviews`, { cache: 'no-store' });
         if (!response.ok) throw new Error('Unable to load interviews');
         const body = (await response.json()) as { interviews: Interview[] };
+        const subscriptionResponse = await fetch(`/api/w/${wardId}/interviews/calendar-subscription`, { cache: 'no-store' });
+        if (subscriptionResponse.ok) {
+          const subscriptionBody = (await subscriptionResponse.json()) as { subscription: { id: string } | null };
+          setSubscriptionActive(Boolean(subscriptionBody.subscription));
+        }
         const next = sortInterviews(body.interviews);
         const snapshot = { userId, wardId, interviews: next, savedAt: new Date().toISOString() };
         setItems(next);
@@ -67,6 +75,33 @@ export function InterviewsClient({ wardId, userId, initial }: { wardId: string; 
       window.removeEventListener('offline', refresh);
     };
   }, [load]);
+
+  async function createSubscription() {
+    if (!online) return;
+    setSubscriptionMessage('');
+    const response = await fetch(`/api/w/${wardId}/interviews/calendar-subscription`, { method: 'POST' });
+    const body = await response.json();
+    if (!response.ok) {
+      setSubscriptionMessage(body.error ?? 'Could not create calendar subscription');
+      return;
+    }
+    setSubscriptionActive(true);
+    setFeedUrl(body.feedUrl);
+    setSubscriptionMessage('Copy this URL now. It will not be shown again.');
+  }
+
+  async function revokeSubscription() {
+    if (!online) return;
+    const response = await fetch(`/api/w/${wardId}/interviews/calendar-subscription`, { method: 'DELETE' });
+    if (!response.ok) {
+      const body = await response.json();
+      setSubscriptionMessage(body.error ?? 'Could not revoke calendar subscription');
+      return;
+    }
+    setSubscriptionActive(false);
+    setFeedUrl(null);
+    setSubscriptionMessage('Calendar subscription revoked.');
+  }
 
   async function create(event: React.FormEvent) {
     event.preventDefault();
@@ -114,6 +149,16 @@ export function InterviewsClient({ wardId, userId, initial }: { wardId: string; 
   return <div className="space-y-6">
     {loadedOffline || !online ? <div role="status" className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">Offline — showing saved interview schedule. Read-only; changes require connection.</div> : null}
     {savedAt ? <p className="text-xs text-muted-foreground">Saved copy: {new Date(savedAt).toLocaleString()}</p> : null}
+    <section className="rounded-lg border bg-card p-5 shadow-sm">
+      <h2 className="text-lg font-semibold">Calendar subscription</h2>
+      <p className="mt-1 text-sm text-muted-foreground">Create a private, revocable calendar URL for this ward’s scheduled interviews. Anyone with the URL can read the operational schedule.</p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <button type="button" disabled={!online} onClick={() => void createSubscription()} className={cn(buttonVariants({ size: 'sm' }))}>{subscriptionActive ? 'Rotate subscription URL' : 'Create subscription URL'}</button>
+        {subscriptionActive ? <button type="button" disabled={!online} onClick={() => void revokeSubscription()} className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}>Revoke URL</button> : null}
+      </div>
+      {feedUrl ? <div className="mt-3 space-y-1"><label htmlFor="interview-calendar-feed-url" className="text-sm font-medium">New calendar URL</label><input id="interview-calendar-feed-url" readOnly value={feedUrl} className="w-full rounded-md border bg-muted px-3 py-2 text-sm" /></div> : null}
+      {subscriptionMessage ? <p role="status" className="mt-2 text-sm text-muted-foreground">{subscriptionMessage}</p> : null}
+    </section>
     <section className="rounded-lg border bg-card p-5 shadow-sm">
       <h2 className="text-lg font-semibold">Schedule interview</h2>
       <form onSubmit={create} className="mt-3 grid gap-2 sm:grid-cols-2">

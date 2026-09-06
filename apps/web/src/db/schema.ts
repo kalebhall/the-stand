@@ -449,6 +449,27 @@ export const calendarEventCache = pgTable(
   })
 );
 
+export const interviewCalendarSubscription = pgTable(
+  'interview_calendar_subscription',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    wardId: uuid('ward_id')
+      .notNull()
+      .references(() => ward.id, { onDelete: 'cascade' }),
+    tokenHash: text('token_hash').notNull().unique(),
+    createdByUserId: uuid('created_by_user_id')
+      .notNull()
+      .references(() => userAccount.id, { onDelete: 'restrict' }),
+    revokedAt: timestamp('revoked_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+  },
+  (table) => ({
+    interviewCalendarSubscriptionWardIdx: index('interview_calendar_subscription_ward_idx')
+      .on(table.wardId)
+      .where(sql`${table.revokedAt} IS NULL`)
+  })
+);
+
 export const eventOutbox = pgTable(
   'event_outbox',
   {

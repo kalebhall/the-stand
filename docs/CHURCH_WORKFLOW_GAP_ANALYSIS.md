@@ -169,7 +169,7 @@ Reuse the action/assignment engine, but keep sensitive notes permission-scoped a
 
 ### P1.7 Interviews as scheduled operational work
 
-**Finding:** Priesthood actions have interview fields, but general interview scheduling is now available with reminders, operational links, and a protected ward-scoped schedule. The schedule has an authenticated IndexedDB read-only offline fallback; offline create/update remains intentionally disabled. Handbook chapter 31 treats interviews and other meetings with members as a distinct leadership workflow.[5]
+**Finding:** Priesthood actions have interview fields, and general interview scheduling now supports reminders, operational links, authenticated ICS export, a revocable ward-scoped calendar subscription, and a protected ward-scoped schedule. The schedule has an authenticated IndexedDB read-only offline fallback; offline create/update remains intentionally disabled. Handbook chapter 31 treats interviews and other meetings with members as a distinct leadership workflow.[5]
 
 **Recommendation:** Add an interview record or generalized scheduled conversation record with only operational metadata:
 
