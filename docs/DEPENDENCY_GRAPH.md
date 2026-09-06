@@ -23,7 +23,7 @@ flowchart LR
   A11["web:callings<br/>7 files"]
   A12["web:church-actions<br/>4 files"]
   A13["web:config<br/>13 files"]
-  A14["web:db<br/>9 files"]
+  A14["web:db<br/>7 files"]
   A15["web:hardening<br/>1 files"]
   A16["web:health.mjs<br/>1 files"]
   A17["web:imports<br/>19 files"]
@@ -44,7 +44,7 @@ flowchart LR
   A5 -->|109| A14
   A6 -->|108| A29
   A6 -->|84| A8
-  A6 -->|52| A14
+  A6 -->|51| A14
   A5 -->|40| A23
   A5 -->|23| A19
   A5 -->|19| A7
@@ -113,7 +113,7 @@ flowchart LR
 | `web:callings` | 7 |
 | `web:church-actions` | 4 |
 | `web:config` | 13 |
-| `web:db` | 9 |
+| `web:db` | 7 |
 | `web:hardening` | 1 |
 | `web:health.mjs` | 1 |
 | `web:imports` | 19 |
@@ -139,7 +139,7 @@ flowchart LR
 | `web:api` | `web:db` | 109 |
 | `web:app` | `web:ui` | 108 |
 | `web:app` | `web:auth` | 84 |
-| `web:app` | `web:db` | 52 |
+| `web:app` | `web:db` | 51 |
 | `web:app` | `web:app` | 46 |
 | `web:api` | `web:notifications` | 40 |
 | `web:notifications` | `web:notifications` | 38 |
@@ -155,12 +155,12 @@ flowchart LR
 | `web:api` | `web:leadership` | 8 |
 | `web:auth` | `web:auth` | 8 |
 | `web:leadership` | `web:leadership` | 8 |
-| `web:db` | `web:db` | 6 |
 | `web:stand` | `web:stand` | 6 |
 | `web:api` | `web:meetings` | 5 |
 | `web:app` | `web:stand` | 5 |
 | `web:app` | `web:callings` | 4 |
 | `web:callings` | `web:callings` | 4 |
+| `web:db` | `web:db` | 4 |
 | `web:api` | `web:announcements` | 3 |
 | `web:app` | `web:announcements` | 3 |
 | `web:app` | `web:leadership` | 3 |
@@ -231,7 +231,6 @@ flowchart LR
 | `web:meetings` | `vitest` | 6 |
 | `web:app` | `@testing-library/react` | 4 |
 | `web:auth` | `vitest` | 4 |
-| `web:db` | `vitest` | 4 |
 | `web:stand` | `vitest` | 4 |
 | `web:tooling` | `Node.js` | 4 |
 | `web:ui` | `next-auth` | 4 |
@@ -242,6 +241,7 @@ flowchart LR
 | `web:callings` | `vitest` | 3 |
 | `web:db` | `Node.js` | 3 |
 | `web:db` | `drizzle-orm` | 3 |
+| `web:db` | `vitest` | 3 |
 | `web:lib` | `vitest` | 3 |
 | `web:ui` | `@testing-library/react` | 3 |
 | `web:ui` | `vitest` | 3 |
@@ -406,7 +406,7 @@ flowchart LR
 | `apps/web/app/dashboard/loading.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/dashboard/page.tsx` | `web:app` | 6 | 1 |
 | `apps/web/app/global-error.tsx` | `web:app` | 1 | 1 |
-| `apps/web/app/health/route.ts` | `web:app` | 2 | 1 |
+| `apps/web/app/health/route.ts` | `web:app` | 1 | 1 |
 | `apps/web/app/health/route.vitest.ts` | `web:app` | 1 | 1 |
 | `apps/web/app/imports/callings/calling-import-client.tsx` | `web:app` | 2 | 1 |
 | `apps/web/app/imports/callings/page.tsx` | `web:app` | 7 | 2 |
@@ -572,11 +572,9 @@ flowchart LR
 | `apps/web/src/church-actions/types.vitest.ts` | `web:church-actions` | 1 | 1 |
 | `apps/web/src/db/bootstrap-support-admin.ts` | `web:db` | 3 | 1 |
 | `apps/web/src/db/bootstrap-support-admin.vitest.ts` | `web:db` | 1 | 1 |
-| `apps/web/src/db/client.ts` | `web:db` | 2 | 5 |
+| `apps/web/src/db/client.ts` | `web:db` | 1 | 5 |
 | `apps/web/src/db/context.ts` | `web:db` | 0 | 0 |
 | `apps/web/src/db/context.vitest.ts` | `web:db` | 1 | 1 |
-| `apps/web/src/db/recovery.ts` | `web:db` | 0 | 0 |
-| `apps/web/src/db/recovery.vitest.ts` | `web:db` | 1 | 1 |
 | `apps/web/src/db/schema.ts` | `web:db` | 0 | 2 |
 | `apps/web/src/db/ward-user-role-rls.vitest.ts` | `web:db` | 0 | 2 |
 | `apps/web/src/hardening/production-readiness.vitest.ts` | `web:hardening` | 0 | 3 |

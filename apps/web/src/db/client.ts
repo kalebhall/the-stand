@@ -5,7 +5,6 @@ import { drizzle, type NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 
 import * as schema from './schema';
-import { withDatabaseRecovery } from './recovery';
 
 // pg's named ESM exports for `types` confuse the project tsconfig — use require.
 const pgTypes: { setTypeParser: (oid: number, fn: (val: string) => unknown) => void } = createRequire(import.meta.url)('pg').types;
@@ -46,27 +45,20 @@ function getPool(): Pool {
     const poolEvents = activePool as Pool & EventEmitter;
     poolEvents.on('error', (error: Error) => {
       console.error('database_pool_error', { error });
-      resetDatabasePool(activePool);
+      if (_pool === activePool) {
+        _pool = undefined;
+        _db = undefined;
+      }
+      void activePool.end().catch((endError: unknown) => {
+        console.error('database_pool_close_failed', { error: endError });
+      });
     });
   }
   return _pool;
 }
 
-export function resetDatabasePool(poolToClose: Pool | undefined = _pool): void {
-  if (!poolToClose || _pool !== poolToClose) return;
-
-  _pool = undefined;
-  _db = undefined;
-  void poolToClose.end().catch((error: unknown) => {
-    console.error('database_pool_close_failed', { error });
-  });
-}
-
 export const pool: Pool = new Proxy({} as Pool, {
   get(_target, prop, receiver) {
-    if (prop === 'connect') {
-      return () => withDatabaseRecovery(() => getPool().connect(), resetDatabasePool);
-    }
     return Reflect.get(getPool(), prop, receiver);
   }
 });
@@ -85,7 +77,7 @@ export const pool: Pool = new Proxy({} as Pool, {
  *   });
  */
 export async function withDbClient<T>(fn: (client: import('pg').PoolClient) => Promise<T>): Promise<T> {
-  const client = await withDatabaseRecovery(() => getPool().connect(), resetDatabasePool);
+  const client = await getPool().connect();
   try {
     return await fn(client);
   } finally {
