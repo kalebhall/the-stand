@@ -1,8 +1,6 @@
-import type { Session } from 'next-auth';
 import { redirect } from 'next/navigation';
 
 import { auth } from '@/src/auth/auth';
-import { getSafeSession } from '@/src/auth/safe-session';
 
 import { LoginForm } from './login-form';
 
@@ -11,7 +9,7 @@ type LoginPageProps = {
 };
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
-  const session = await getSafeSession<Session | null>(auth);
+  const session = await auth();
 
   if (session?.user?.id) {
     if (session.user.mustChangePassword && session.user.hasPassword) {
