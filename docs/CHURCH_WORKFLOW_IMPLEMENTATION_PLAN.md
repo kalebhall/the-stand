@@ -296,7 +296,7 @@ Do not store copied ordinance details or replace LCR status.
 
 **Tasks:** Add schema/API, calendar/reminder integration, permission checks, dashboard view, offline read-only reference only, and tests.
 
-**Implementation status:** Scheduled interview records now track interview type, member, interviewer, scheduled time, linked action/calling IDs, status, and completion time. Protected `/interviews` UI, ward-scoped API, lifecycle validation, dashboard count, and private-content boundary are delivered. Calendar-feed export/reminders and offline read-only snapshot remain follow-up work.
+**Implementation status:** Scheduled interviews now support authenticated ward-scoped ICS export at `/api/w/[wardId]/interviews/calendar`, limited to scheduled records and marked private/no-store. Export includes operational metadata only; confidential interview content remains excluded. Calendar reminders and external subscription/webhook delivery remain deployment/product follow-up.
 
 ## Option 4D: Technology/streaming checklist
 
