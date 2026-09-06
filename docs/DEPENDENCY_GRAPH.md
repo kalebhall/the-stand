@@ -29,68 +29,70 @@ flowchart LR
   A17["web:imports<br/>19 files"]
   A18["web:leadership<br/>4 files"]
   A19["web:lib<br/>9 files"]
-  A20["web:meetings<br/>11 files"]
-  A21["web:notes<br/>1 files"]
-  A22["web:notifications<br/>23 files"]
-  A23["web:offline<br/>2 files"]
-  A24["web:reports<br/>2 files"]
-  A25["web:stand<br/>6 files"]
-  A26["web:tooling<br/>2 files"]
-  A27["web:types<br/>2 files"]
-  A28["web:ui<br/>30 files"]
-  A29["web:version.mjs<br/>1 files"]
+  A20["web:maintenance<br/>4 files"]
+  A21["web:meetings<br/>11 files"]
+  A22["web:notes<br/>1 files"]
+  A23["web:notifications<br/>23 files"]
+  A24["web:offline<br/>2 files"]
+  A25["web:reports<br/>2 files"]
+  A26["web:stand<br/>6 files"]
+  A27["web:tooling<br/>2 files"]
+  A28["web:types<br/>2 files"]
+  A29["web:ui<br/>30 files"]
+  A30["web:version.mjs<br/>1 files"]
   A5 -->|113| A8
-  A6 -->|108| A28
+  A6 -->|108| A29
   A5 -->|103| A14
   A6 -->|84| A8
   A6 -->|51| A14
-  A5 -->|40| A22
+  A5 -->|40| A23
   A5 -->|23| A19
   A5 -->|19| A7
   A5 -->|15| A11
-  A6 -->|12| A20
+  A6 -->|12| A21
   A5 -->|11| A17
-  A5 -->|5| A20
+  A5 -->|5| A21
   A5 -->|4| A18
   A6 -->|4| A11
-  A6 -->|4| A25
+  A6 -->|4| A26
   A5 -->|3| A4
   A6 -->|3| A4
   A6 -->|3| A18
   A5 -->|2| A12
   A6 -->|2| A12
-  A6 -->|2| A22
+  A6 -->|2| A23
   A8 -->|2| A14
   A10 -->|2| A14
   A13 -->|2| A19
   A14 -->|2| A8
-  A22 -->|2| A14
+  A23 -->|2| A14
   A2 -->|1| A16
   A5 -->|1| A10
-  A5 -->|1| A21
-  A5 -->|1| A25
+  A5 -->|1| A22
+  A5 -->|1| A26
   A6 -->|1| A10
   A6 -->|1| A17
   A6 -->|1| A19
-  A6 -->|1| A23
   A6 -->|1| A24
+  A6 -->|1| A25
   A8 -->|1| A19
-  A10 -->|1| A22
+  A10 -->|1| A23
   A13 -->|1| A9
   A13 -->|1| A16
-  A16 -->|1| A29
+  A16 -->|1| A30
   A17 -->|1| A14
-  A20 -->|1| A4
-  A22 -->|1| A21
-  A25 -->|1| A20
-  A28 -->|1| A8
-  A28 -->|1| A12
-  A28 -->|1| A17
-  A28 -->|1| A19
-  A28 -->|1| A21
-  A28 -->|1| A23
-  A28 -->|1| A24
-  A28 -->|1| A25
+  A20 -->|1| A14
+  A21 -->|1| A4
+  A23 -->|1| A22
+  A26 -->|1| A21
+  A29 -->|1| A8
+  A29 -->|1| A12
+  A29 -->|1| A17
+  A29 -->|1| A19
+  A29 -->|1| A22
+  A29 -->|1| A24
+  A29 -->|1| A25
+  A29 -->|1| A26
 ```
 
 ## Area inventory
@@ -116,6 +118,7 @@ flowchart LR
 | `web:imports` | 19 |
 | `web:leadership` | 4 |
 | `web:lib` | 9 |
+| `web:maintenance` | 4 |
 | `web:meetings` | 11 |
 | `web:notes` | 1 |
 | `web:notifications` | 23 |
@@ -161,6 +164,7 @@ flowchart LR
 | `web:app` | `web:leadership` | 3 |
 | `web:calendar` | `web:calendar` | 3 |
 | `web:lib` | `web:lib` | 3 |
+| `web:maintenance` | `web:maintenance` | 3 |
 | `package:shared` | `package:shared` | 2 |
 | `web:api` | `web:church-actions` | 2 |
 | `web:app` | `web:church-actions` | 2 |
@@ -189,6 +193,7 @@ flowchart LR
 | `web:config` | `web:health.mjs` | 1 |
 | `web:health.mjs` | `web:version.mjs` | 1 |
 | `web:imports` | `web:db` | 1 |
+| `web:maintenance` | `web:db` | 1 |
 | `web:meetings` | `web:announcements` | 1 |
 | `web:notifications` | `web:notes` | 1 |
 | `web:offline` | `web:offline` | 1 |
@@ -278,6 +283,8 @@ flowchart LR
 | `web:lib` | `@sentry/nextjs` | 1 |
 | `web:lib` | `jspdf` | 1 |
 | `web:lib` | `qrcode` | 1 |
+| `web:maintenance` | `pg` | 1 |
+| `web:maintenance` | `vitest` | 1 |
 | `web:meetings` | `qrcode` | 1 |
 | `web:notifications` | `nodemailer` | 1 |
 | `web:offline` | `vitest` | 1 |
@@ -596,6 +603,10 @@ flowchart LR
 | `apps/web/src/lib/sentry.ts` | `web:lib` | 0 | 1 |
 | `apps/web/src/lib/version.ts` | `web:lib` | 0 | 0 |
 | `apps/web/src/lib/version.vitest.ts` | `web:lib` | 1 | 1 |
+| `apps/web/src/maintenance/retention-contract.js` | `web:maintenance` | 0 | 0 |
+| `apps/web/src/maintenance/retention-contract.vitest.ts` | `web:maintenance` | 1 | 1 |
+| `apps/web/src/maintenance/retention-runner.mjs` | `web:maintenance` | 1 | 1 |
+| `apps/web/src/maintenance/retention.ts` | `web:maintenance` | 2 | 0 |
 | `apps/web/src/meetings/date.ts` | `web:meetings` | 0 | 0 |
 | `apps/web/src/meetings/date.vitest.ts` | `web:meetings` | 1 | 1 |
 | `apps/web/src/meetings/default-program.ts` | `web:meetings` | 1 | 0 |

@@ -68,7 +68,7 @@ git diff --check
 
 **Priority:** P0
 
-**Outcome:** Existing raw-import purge becomes an operating control, not unused code.
+**Implementation status:** Raw import text purge now runs through combined operational retention runner. Audit logs use separate bounded 7-year default retention and delete only expired rows. Both operations support dry-run counts, typed SQL, safe metrics, deterministic configuration validation, and daily systemd timer instructions. Private notes, offline mutation ledger, and browser snapshots remain user/authorization lifecycle controlled and are not server-purged by this job.
 
 **Files likely involved:**
 
