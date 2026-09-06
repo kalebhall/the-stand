@@ -478,7 +478,7 @@ Defer custom freeform layout until real ward usage shows need.
 
 # Phase 6 — Accessibility, health, and audit
 
-**Implementation status:** Public layout controls now expose explicit labels, grouped options, keyboard-friendly native controls, live save status, failure recovery, and disabled save state. Public program output has a labelled main landmark and accessible QR link/SVG labels. Added Playwright browser coverage for login landmark, heading, labelled email/password controls, autocomplete semantics, and keyboard focus order. Broader authenticated filters, status controls, conflict dialogs, offline state, public pages, and print preview remain open pending seeded E2E fixtures and browser execution.
+**Implementation status:** Public layout controls now expose explicit labels, grouped options, keyboard-friendly native controls, live save status, failure recovery, and disabled save state. Public program output has a labelled main landmark and accessible QR link/SVG labels. Added Playwright browser coverage for login and access-request pages, including landmarks, headings, labelled controls, input semantics, and keyboard focus order. Broader authenticated filters, status controls, conflict dialogs, offline state, public pages, and print preview remain open pending seeded E2E fixtures and browser execution.
 
 ## Option 6A: Accessibility coverage
 

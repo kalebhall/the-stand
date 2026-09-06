@@ -21,3 +21,25 @@ test('login page exposes accessible form controls and keyboard focus', async ({ 
   await page.keyboard.press('Tab');
   await expect(page.getByRole('button', { name: 'Sign in' })).toBeFocused();
 });
+
+test('access request page exposes labelled fields and keyboard order', async ({ page }) => {
+  await page.goto('/request-access');
+
+  await expect(page.getByRole('main')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Request Access' })).toBeVisible();
+  for (const name of ['Name', 'Email', 'Stake', 'Ward', 'Message']) {
+    await expect(page.getByLabel(name, { exact: true })).toBeVisible();
+  }
+  await expect(page.getByLabel('Email', { exact: true })).toHaveAttribute('type', 'email');
+  await expect(page.getByRole('button', { name: 'Submit request' })).toBeVisible();
+
+  await page.getByLabel('Name', { exact: true }).focus();
+  await page.keyboard.press('Tab');
+  await expect(page.getByLabel('Email', { exact: true })).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(page.getByLabel('Stake', { exact: true })).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(page.getByLabel('Ward', { exact: true })).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(page.getByLabel('Message', { exact: true })).toBeFocused();
+});
