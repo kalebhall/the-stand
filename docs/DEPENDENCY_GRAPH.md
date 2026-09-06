@@ -15,7 +15,7 @@ flowchart LR
   A3["root:tooling<br/>6 files"]
   A4["web:announcements<br/>2 files"]
   A5["web:api<br/>82 files"]
-  A6["web:app<br/>108 files"]
+  A6["web:app<br/>109 files"]
   A7["web:audit<br/>2 files"]
   A8["web:auth<br/>11 files"]
   A9["web:bootstrap.mjs<br/>1 files"]
@@ -105,7 +105,7 @@ flowchart LR
 | `root:tooling` | 6 |
 | `web:announcements` | 2 |
 | `web:api` | 82 |
-| `web:app` | 108 |
+| `web:app` | 109 |
 | `web:audit` | 2 |
 | `web:auth` | 11 |
 | `web:bootstrap.mjs` | 1 |
@@ -140,7 +140,7 @@ flowchart LR
 | `web:api` | `web:db` | 105 |
 | `web:app` | `web:auth` | 84 |
 | `web:app` | `web:db` | 51 |
-| `web:app` | `web:app` | 45 |
+| `web:app` | `web:app` | 46 |
 | `web:api` | `web:notifications` | 40 |
 | `web:notifications` | `web:notifications` | 38 |
 | `web:ui` | `web:ui` | 27 |
@@ -424,6 +424,7 @@ flowchart LR
 | `apps/web/app/logout/page.tsx` | `web:app` | 1 | 0 |
 | `apps/web/app/meetings/[meetingId]/edit/page.tsx` | `web:app` | 12 | 2 |
 | `apps/web/app/meetings/[meetingId]/print/page.tsx` | `web:app` | 7 | 1 |
+| `apps/web/app/meetings/[meetingId]/public-preview/page.tsx` | `web:app` | 1 | 0 |
 | `apps/web/app/meetings/delete-meeting-button.tsx` | `web:app` | 1 | 2 |
 | `apps/web/app/meetings/error.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/meetings/loading.tsx` | `web:app` | 0 | 0 |

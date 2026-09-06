@@ -53,7 +53,7 @@ export default async function PrintMeetingPage({
   searchParams
 }: {
   params: Promise<{ meetingId: string }>;
-  searchParams: Promise<{ version?: string }>;
+  searchParams: Promise<{ version?: string; draft?: string }>;
 }) {
   const session = await requireAuthenticatedSession();
   enforcePasswordRotation(session);
@@ -63,7 +63,7 @@ export default async function PrintMeetingPage({
   }
 
   const { meetingId } = await params;
-  const { version } = await searchParams;
+  const { version, draft } = await searchParams;
   const versionNumber = Number(version);
   const requestedVersion = Number.isInteger(versionNumber) && versionNumber > 0 ? versionNumber : null;
   const client = await pool.connect();
@@ -82,7 +82,9 @@ export default async function PrintMeetingPage({
       notFound();
     }
 
-    const renderResult = requestedVersion
+    const renderResult = draft === '1'
+      ? { rowCount: 0, rows: [] }
+      : requestedVersion
       ? await client.query(
           'SELECT render_html, version FROM meeting_program_render WHERE meeting_id = $1::uuid AND ward_id = $2::uuid AND version = $3::int LIMIT 1',
           [meetingId, session.activeWardId, requestedVersion]

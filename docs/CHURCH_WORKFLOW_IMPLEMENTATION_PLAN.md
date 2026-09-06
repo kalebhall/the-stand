@@ -429,17 +429,20 @@ Date-active filtering must use one shared helper across editor, public, print, a
 
 Add draft/published states for public layout settings.
 
-**Tasks:**
+**Implementation status:** Public layout configuration, draft/print rendering, accessible public output, stable published snapshots, and QR output are implemented. Added authenticated `/meetings/[meetingId]/public-preview` draft preview that bypasses published snapshots and uses same normalized renderer/layout path as print output, so authorized users can inspect current public-shaped content before publish. Browser-level print-preview exercise remains open.
 
-1. Add persisted public layout configuration with versioned JSON shape.
-2. Validate allowed presets, paper sizes, panel slots, cover image metadata, and announcement mode server-side.
-3. Add print preview with fold/panel guides.
-4. Add public preview before publish.
-5. Add publish snapshot/version and explicit republish status.
-6. Keep public page responsive and text-first.
-7. Add QR code that points to stable public URL.
-8. Add tests for private-field exclusion, empty sections, escaped text, image absence, all presets, and announcement modes.
-9. Add deterministic PDF/print fixtures where practical.
+**Completed tasks:**
+
+1. Persisted public layout configuration.
+2. Server-side validation for layout and cover metadata.
+3. Print preview with fold/panel guides.
+4. Public preview before publish.
+5. Published snapshot/version and explicit republish behavior.
+6. Responsive, text-first public page.
+7. Stable public URL QR output.
+8. Private-field, empty-section, escaping, layout, and announcement tests.
+
+**Remaining:** Deterministic PDF fixtures and browser-level print-preview exercise.
 
 ## Recommended first public-program release
 

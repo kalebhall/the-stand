@@ -170,6 +170,9 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ me
             <Link href={`/meetings/${meeting.id}/print`} className={cn(buttonVariants({ variant: 'outline' }))}>
               Open print view
             </Link>
+            <Link href={`/meetings/${meeting.id}/public-preview`} className={cn(buttonVariants({ variant: 'outline' }))}>
+              Preview public program
+            </Link>
           </div>
         </section>
 
