@@ -22,7 +22,7 @@ flowchart LR
   A10["web:calendar<br/>4 files"]
   A11["web:callings<br/>7 files"]
   A12["web:church-actions<br/>4 files"]
-  A13["web:config<br/>13 files"]
+  A13["web:config<br/>14 files"]
   A14["web:db<br/>7 files"]
   A15["web:hardening<br/>1 files"]
   A16["web:health.mjs<br/>1 files"]
@@ -112,7 +112,7 @@ flowchart LR
 | `web:calendar` | 4 |
 | `web:callings` | 7 |
 | `web:church-actions` | 4 |
-| `web:config` | 13 |
+| `web:config` | 14 |
 | `web:db` | 7 |
 | `web:hardening` | 1 |
 | `web:health.mjs` | 1 |
@@ -239,6 +239,7 @@ flowchart LR
 | `web:app` | `Node.js` | 3 |
 | `web:app` | `next-auth` | 3 |
 | `web:callings` | `vitest` | 3 |
+| `web:config` | `@playwright/test` | 3 |
 | `web:db` | `Node.js` | 3 |
 | `web:db` | `drizzle-orm` | 3 |
 | `web:db` | `vitest` | 3 |
@@ -251,7 +252,6 @@ flowchart LR
 | `web:calendar` | `vitest` | 2 |
 | `web:callings` | `pg` | 2 |
 | `web:church-actions` | `vitest` | 2 |
-| `web:config` | `@playwright/test` | 2 |
 | `web:config` | `Node.js` | 2 |
 | `web:db` | `pg` | 2 |
 | `web:hardening` | `Node.js` | 2 |
@@ -527,6 +527,7 @@ flowchart LR
 | `apps/web/components/ui/member-autocomplete.tsx` | `web:ui` | 0 | 1 |
 | `apps/web/drizzle.config.ts` | `web:config` | 0 | 1 |
 | `apps/web/e2e/acceptance.spec.ts` | `web:config` | 0 | 1 |
+| `apps/web/e2e/accessibility.spec.ts` | `web:config` | 0 | 1 |
 | `apps/web/eslint.config.mjs` | `web:config` | 0 | 1 |
 | `apps/web/instrumentation-client.ts` | `web:config` | 1 | 0 |
 | `apps/web/instrumentation.ts` | `web:config` | 1 | 0 |
