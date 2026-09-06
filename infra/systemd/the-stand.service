@@ -13,7 +13,8 @@
 
 [Unit]
 Description=The Stand (Web)
-After=network.target postgresql.service
+After=network.target postgresql@16-main.service
+Requires=postgresql@16-main.service
 
 [Service]
 Type=simple
@@ -21,7 +22,6 @@ User=the-stand
 Group=the-stand
 WorkingDirectory=/opt/the-stand/app/apps/web
 EnvironmentFile=/opt/the-stand/app/.env
-ExecStartPre=/usr/bin/npm run db:migrate
 ExecStart=/usr/bin/npm run start
 Restart=always
 RestartSec=5

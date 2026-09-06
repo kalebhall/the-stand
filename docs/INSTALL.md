@@ -404,7 +404,8 @@ sudo nano /etc/systemd/system/the-stand.service
 ```
 [Unit]
 Description=The Stand (Web)
-After=network.target postgresql.service
+After=network.target postgresql@16-main.service
+Requires=postgresql@16-main.service
 
 [Service]
 Type=simple
@@ -423,6 +424,8 @@ ProtectHome=true
 [Install]
 WantedBy=multi-user.target
 ```
+
+The web service must start only the already-built application. Do not add an `ExecStartPre` hook that runs `deploy.sh`, `npm ci`, or a production build: deployment is a separate operation. Run migrations and build before restarting the service, then verify `/health`.
 
 Enable:
 
