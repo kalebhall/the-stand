@@ -284,7 +284,7 @@ Do not store copied ordinance details or replace LCR status.
 
 **Tasks:** Add Ward Council and Missionary Coordination meeting types, reusable assignments, member/action links, restricted notes, carry-forward, and dashboard due items. Add Ward Youth Council only after validating need.
 
-**Implementation status:** Coordination types now reuse protected private leadership meetings/actions. Routes `/ward-council` and `/missionary-coordination` open filtered workspaces, with private assignments, due dates, carry-forward, completion lifecycle, and dashboard overdue count. Leadership notes can now target bishopric actions through the shared restricted-note API; ward council/missionary action-note presentation remains follow-up UI work. Ward Youth Council not added.
+**Implementation status:** Coordination types now reuse protected private leadership meetings/actions. Routes `/ward-council` and `/missionary-coordination` redirect into same filtered workspace component, so linked records and restricted action-note history/entry are available without duplicating UI or privacy logic. Ward Youth Council not added.
 
 ## Option 4C: Scheduled interviews
 
