@@ -57,7 +57,7 @@ export function BishopricWorkspaceClient({ wardId, initialMeetings, initialActio
 
   async function createAction(event: React.FormEvent) {
     event.preventDefault(); setError('');
-    if (!selectedMeeting) { setError('Create or select bishopric meeting first.'); return; }
+    if (!selectedMeeting) { setError('Create or select leadership meeting first.'); return; }
     const response = await fetch(`/api/w/${wardId}/bishopric/${selectedMeeting}/actions`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ title, ownerName: owner, dueDate, memberId: memberId || undefined, callingAssignmentId: callingAssignmentId || undefined }) });
     const body = await response.json();
     if (!response.ok) { setError(body.error ?? 'Could not create action'); return; }
@@ -83,7 +83,7 @@ export function BishopricWorkspaceClient({ wardId, initialMeetings, initialActio
 
   return <div className="space-y-6">
     <section className="rounded-lg border bg-card p-5 shadow-sm">
-      <h2 className="text-lg font-semibold">New bishopric meeting</h2>
+      <h2 className="text-lg font-semibold">New {LEADERSHIP_MEETING_LABELS[meetingType]}</h2>
       <form onSubmit={createMeeting} className="mt-3 flex flex-wrap gap-2">
         <select value={meetingType} onChange={(event) => setMeetingType(event.target.value as (typeof LEADERSHIP_MEETING_TYPES)[number])} className="rounded-md border bg-background px-3 py-2 text-sm" aria-label="Leadership meeting type">{LEADERSHIP_MEETING_TYPES.map((type) => <option key={type} value={type}>{LEADERSHIP_MEETING_LABELS[type]}</option>)}</select>
         <input required type="date" value={date} onChange={(event) => setDate(event.target.value)} className="rounded-md border bg-background px-3 py-2 text-sm" aria-label="Meeting date" />
@@ -93,7 +93,7 @@ export function BishopricWorkspaceClient({ wardId, initialMeetings, initialActio
     <section className="rounded-lg border bg-card p-5 shadow-sm">
       <h2 className="text-lg font-semibold">Add private action</h2>
       <form onSubmit={createAction} className="mt-3 grid gap-2 sm:grid-cols-2">
-        <select required value={selectedMeeting} onChange={(event) => setSelectedMeeting(event.target.value)} className="rounded-md border bg-background px-3 py-2 text-sm" aria-label="Bishopric meeting"><option value="">Select meeting</option>{meetings.map((meeting) => <option key={meeting.id} value={meeting.id}>{meeting.meeting_date} · {meeting.agenda_template}</option>)}</select>
+        <select required value={selectedMeeting} onChange={(event) => setSelectedMeeting(event.target.value)} className="rounded-md border bg-background px-3 py-2 text-sm" aria-label="Leadership meeting"><option value="">Select meeting</option>{meetings.map((meeting) => <option key={meeting.id} value={meeting.id}>{meeting.meeting_date} · {meeting.agenda_template}</option>)}</select>
         <input required value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Action or assignment" className="rounded-md border bg-background px-3 py-2 text-sm" />
         <input value={owner} onChange={(event) => setOwner(event.target.value)} placeholder="Owner" className="rounded-md border bg-background px-3 py-2 text-sm" />
         <select value={memberId} onChange={(event) => setMemberId(event.target.value)} className="rounded-md border bg-background px-3 py-2 text-sm" aria-label="Linked member"><option value="">No linked member</option>{members.map((member) => <option key={member.id} value={member.id}>{member.fullName}</option>)}</select>

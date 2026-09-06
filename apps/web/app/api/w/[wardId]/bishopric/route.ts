@@ -18,10 +18,17 @@ async function authorize(wardId: string) {
   return { session };
 }
 
-export async function GET(_: Request, context: { params: Promise<{ wardId: string }> }) {
+export async function GET(request: Request, context: { params: Promise<{ wardId: string }> }) {
   const { wardId } = await context.params;
   const access = await authorize(wardId);
   if (access.response) return access.response;
+  const requestedType = new URL(request.url).searchParams.get('type');
+  if (requestedType && !LEADERSHIP_MEETING_TYPES.includes(requestedType as LeadershipMeetingType)) {
+    return NextResponse.json({ error: 'Invalid leadership meeting type', code: 'BAD_REQUEST' }, { status: 400 });
+  }
+  const meetingType = requestedType ? (requestedType as LeadershipMeetingType) : null;
+  const typeClause = meetingType ? ' AND bm.meeting_type = $2::text' : '';
+  const params = meetingType ? [wardId, meetingType] : [wardId];
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -32,8 +39,8 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
               COUNT(ba.id) FILTER (WHERE ba.status != 'COMPLETED')::int AS open_action_count
          FROM bishopric_meeting bm
          LEFT JOIN bishopric_action ba ON ba.bishopric_meeting_id = bm.id AND ba.ward_id = bm.ward_id
-        WHERE bm.ward_id = $1::uuid
-        GROUP BY bm.id ORDER BY bm.meeting_date DESC`, [wardId]
+        WHERE bm.ward_id = $1::uuid${typeClause}
+        GROUP BY bm.id ORDER BY bm.meeting_date DESC`, params
     );
     const actions = await client.query(
       `SELECT ba.id, ba.bishopric_meeting_id, ba.title, ba.details, ba.decision, ba.owner_name,
@@ -45,8 +52,8 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
          JOIN bishopric_meeting bm ON bm.id = ba.bishopric_meeting_id AND bm.ward_id = ba.ward_id
          LEFT JOIN member m ON m.id = ba.member_id AND m.ward_id = ba.ward_id
          LEFT JOIN calling_assignment ca ON ca.id = ba.calling_assignment_id AND ca.ward_id = ba.ward_id
-        WHERE ba.ward_id = $1::uuid AND ba.status != 'COMPLETED'
-        ORDER BY ba.due_date NULLS LAST, bm.meeting_date DESC, ba.created_at`, [wardId]
+        WHERE ba.ward_id = $1::uuid AND ba.status != 'COMPLETED'${typeClause}
+        ORDER BY ba.due_date NULLS LAST, bm.meeting_date DESC, ba.created_at`, params
     );
     await client.query('COMMIT');
     return NextResponse.json({ meetings: meetings.rows, openActions: actions.rows });
