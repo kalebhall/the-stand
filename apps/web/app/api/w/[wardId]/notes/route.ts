@@ -13,7 +13,8 @@ import type { NoteTarget } from '@/src/notes/types';
 const targetSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('MEMBER'), memberId: z.string().uuid() }),
   z.object({ type: z.literal('MEETING'), meetingId: z.string().uuid() }),
-  z.object({ type: z.literal('PROGRAM_ITEM'), programItemId: z.string().uuid() })
+  z.object({ type: z.literal('PROGRAM_ITEM'), programItemId: z.string().uuid() }),
+  z.object({ type: z.literal('BISHOPRIC_ACTION'), bishopricActionId: z.string().uuid() })
 ]);
 
 const createNoteSchema = z.object({
@@ -39,23 +40,26 @@ async function targetExists(client: Awaited<ReturnType<typeof pool.connect>>, wa
       return Boolean(result.rowCount);
     }
     case 'PROGRAM_ITEM': {
-      const result = await client.query('SELECT id FROM meeting_program_item WHERE id = $1::uuid AND ward_id = $2::uuid LIMIT 1', [
-        target.programItemId,
-        wardId
-      ]);
+      const result = await client.query('SELECT id FROM meeting_program_item WHERE id = $1::uuid AND ward_id = $2::uuid LIMIT 1', [target.programItemId, wardId]);
+      return Boolean(result.rowCount);
+    }
+    case 'BISHOPRIC_ACTION': {
+      const result = await client.query('SELECT id FROM bishopric_action WHERE id = $1::uuid AND ward_id = $2::uuid LIMIT 1', [target.bishopricActionId, wardId]);
       return Boolean(result.rowCount);
     }
   }
 }
 
-function targetColumns(target: NoteTarget): { memberId: string | null; meetingId: string | null; programItemId: string | null } {
+function targetColumns(target: NoteTarget): { memberId: string | null; meetingId: string | null; programItemId: string | null; bishopricActionId: string | null } {
   switch (target.type) {
     case 'MEMBER':
-      return { memberId: target.memberId, meetingId: null, programItemId: null };
+      return { memberId: target.memberId, meetingId: null, programItemId: null, bishopricActionId: null };
     case 'MEETING':
-      return { memberId: null, meetingId: target.meetingId, programItemId: null };
+      return { memberId: null, meetingId: target.meetingId, programItemId: null, bishopricActionId: null };
     case 'PROGRAM_ITEM':
-      return { memberId: null, meetingId: null, programItemId: target.programItemId };
+      return { memberId: null, meetingId: null, programItemId: target.programItemId, bishopricActionId: null };
+    case 'BISHOPRIC_ACTION':
+      return { memberId: null, meetingId: null, programItemId: null, bishopricActionId: target.bishopricActionId };
   }
 }
 
@@ -107,11 +111,11 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     const target = targetColumns(parsed.data.target);
     const inserted = await client.query(
       `INSERT INTO internal_note (
-        ward_id, member_id, meeting_id, program_item_id, visibility, note_text, created_by_user_id
+        ward_id, member_id, meeting_id, program_item_id, bishopric_action_id, visibility, note_text, created_by_user_id
       ) VALUES (
-        $1::uuid, $2::uuid, $3::uuid, $4::uuid, $5::text, $6::text, $7::uuid
+        $1::uuid, $2::uuid, $3::uuid, $4::uuid, $5::uuid, $6::text, $7::text, $8::uuid
       ) RETURNING id, created_at`,
-      [wardId, target.memberId, target.meetingId, target.programItemId, parsed.data.visibility, parsed.data.noteText, session.user.id]
+      [wardId, target.memberId, target.meetingId, target.programItemId, target.bishopricActionId, parsed.data.visibility, parsed.data.noteText, session.user.id]
     );
 
     if (parsed.data.visibility === 'PUBLIC' && parsed.data.target.type === 'PROGRAM_ITEM') {

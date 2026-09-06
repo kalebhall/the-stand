@@ -1,11 +1,14 @@
 export const NOTE_VISIBILITIES = ['PUBLIC', 'LEADERSHIP', 'PRIVATE'] as const;
 export type NoteVisibility = (typeof NOTE_VISIBILITIES)[number];
 
-export const NOTE_TARGET_TYPES = ['MEMBER', 'MEETING', 'PROGRAM_ITEM'] as const;
+export const NOTE_TARGET_TYPES = ['MEMBER', 'MEETING', 'PROGRAM_ITEM', 'BISHOPRIC_ACTION'] as const;
 export type NoteTargetType = (typeof NOTE_TARGET_TYPES)[number];
 
 export type NoteTarget =
-  { type: 'MEMBER'; memberId: string } | { type: 'MEETING'; meetingId: string } | { type: 'PROGRAM_ITEM'; programItemId: string };
+  | { type: 'MEMBER'; memberId: string }
+  | { type: 'MEETING'; meetingId: string }
+  | { type: 'PROGRAM_ITEM'; programItemId: string }
+  | { type: 'BISHOPRIC_ACTION'; bishopricActionId: string };
 
 export function isNoteVisibility(value: unknown): value is NoteVisibility {
   return typeof value === 'string' && NOTE_VISIBILITIES.includes(value as NoteVisibility);
@@ -18,6 +21,7 @@ export function isNoteTarget(value: unknown): value is NoteTarget {
   if (candidate.type === 'MEMBER') return typeof candidate.memberId === 'string' && candidate.memberId.trim().length > 0;
   if (candidate.type === 'MEETING') return typeof candidate.meetingId === 'string' && candidate.meetingId.trim().length > 0;
   if (candidate.type === 'PROGRAM_ITEM') return typeof candidate.programItemId === 'string' && candidate.programItemId.trim().length > 0;
+  if (candidate.type === 'BISHOPRIC_ACTION') return typeof candidate.bishopricActionId === 'string' && candidate.bishopricActionId.trim().length > 0;
   return false;
 }
 
@@ -29,5 +33,7 @@ export function noteTargetId(target: NoteTarget): string {
       return target.meetingId;
     case 'PROGRAM_ITEM':
       return target.programItemId;
+    case 'BISHOPRIC_ACTION':
+      return target.bishopricActionId;
   }
 }

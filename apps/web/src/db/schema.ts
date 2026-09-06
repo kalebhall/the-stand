@@ -692,6 +692,7 @@ export const internalNote = pgTable('internal_note', {
   memberId: uuid('member_id').references(() => member.id, { onDelete: 'cascade' }),
   meetingId: uuid('meeting_id').references(() => meeting.id, { onDelete: 'cascade' }),
   programItemId: uuid('program_item_id').references(() => meetingProgramItem.id, { onDelete: 'cascade' }),
+  bishopricActionId: uuid('bishopric_action_id').references(() => bishopricAction.id, { onDelete: 'cascade' }),
   visibility: text('visibility').notNull(),
   noteText: text('note_text').notNull(),
   createdByUserId: uuid('created_by_user_id')

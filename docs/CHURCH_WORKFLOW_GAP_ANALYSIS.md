@@ -153,7 +153,7 @@ Display the source link and a warning when a ward prompt is editable. Do not cla
 - private/leadership visibility;
 - carry-forward and completion history.
 
-This should not be mixed into the public sacrament program. Linked private actions now resolve ward members, calling assignments, and membership/ordinance follow-up records; restricted-note subtypes remain separate follow-up scope.
+Migration `0053_restricted_leadership_notes.sql` adds action-targeted internal notes. Leadership notes accept only `LEADERSHIP` or `PRIVATE` visibility, require a ward-owned bishopric action, and remain excluded from public output and generic offline snapshots. Bishopric workspace now provides restricted-note entry beside each open action. Existing member, meeting, and program-item note targets remain unchanged.
 
 ### P1.6 Ward council and missionary coordination support
 

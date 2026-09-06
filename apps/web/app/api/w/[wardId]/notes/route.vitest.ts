@@ -64,6 +64,7 @@ describe('internal notes routes', () => {
       null,
       meetingId,
       null,
+      null,
       'PRIVATE',
       'Follow up',
       userId
@@ -73,6 +74,23 @@ describe('internal notes routes', () => {
       expect.objectContaining({ action: 'INTERNAL_NOTE_CREATED', entityId: noteId })
     );
     expect(queryMock).toHaveBeenLastCalledWith('COMMIT');
+  });
+
+  it('creates a restricted note for a ward-scoped bishopric action', async () => {
+    const bishopricActionId = '55555555-5555-4555-8555-555555555555';
+    queryMock
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: bishopricActionId }] })
+      .mockResolvedValueOnce({ rows: [{ id: noteId, created_at: '2026-08-28T00:00:00.000Z' }] })
+      .mockResolvedValueOnce({});
+
+    const response = await POST(request({ target: { type: 'BISHOPRIC_ACTION', bishopricActionId }, visibility: 'LEADERSHIP', noteText: 'Private follow-up' }), {
+      params: Promise.resolve({ wardId })
+    });
+
+    expect(response.status).toBe(201);
+    expect(queryMock).toHaveBeenNthCalledWith(2, expect.stringContaining('FROM bishopric_action WHERE id = $1::uuid AND ward_id = $2::uuid'), [bishopricActionId, wardId]);
+    expect(queryMock).toHaveBeenNthCalledWith(3, expect.stringContaining('bishopric_action_id'), [wardId, null, null, null, bishopricActionId, 'LEADERSHIP', 'Private follow-up', userId]);
   });
 
   it('rejects invalid note payload before database access', async () => {

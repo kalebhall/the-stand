@@ -274,7 +274,7 @@ Do not store copied ordinance details or replace LCR status.
 
 **Tasks:** Add meeting type and protected route, agenda templates, action links, private visibility rules, assignment lifecycle, dashboard due items, and tests for ward isolation/public exclusion.
 
-**Implementation status:** Core bishopric workspace delivered in `0045_bishopric_workspace.sql`: protected ward-scoped route, private agenda meetings, action assignments with owners/due dates/carry-forward, completion history, lifecycle validation, dashboard overdue count, and public-program exclusion. Migration `0052_leadership_linked_records.sql` now links private actions to ward members, active calling assignments, or membership/ordinance follow-up records. Reads join linked names without exposing private action data publicly; link writes validate ward ownership. Restricted-note linking remains follow-up work.
+**Implementation status:** Core bishopric workspace delivered in `0045_bishopric_workspace.sql`: protected ward-scoped route, private agenda meetings, action assignments with owners/due dates/carry-forward, completion history, lifecycle validation, dashboard overdue count, and public-program exclusion. Migration `0052_leadership_linked_records.sql` now links private actions to ward members, active calling assignments, or membership/ordinance follow-up records. Migration `0053_restricted_leadership_notes.sql` adds ward-scoped action-targeted `LEADERSHIP`/`PRIVATE` notes with shared API authorization and bishopric UI entry. Reads join linked labels without exposing private action data publicly. Broader note history/read UI and restricted-note presentation for other coordination workspaces remain follow-up.
 
 ## Option 4B: Ward council and missionary coordination
 
@@ -284,7 +284,7 @@ Do not store copied ordinance details or replace LCR status.
 
 **Tasks:** Add Ward Council and Missionary Coordination meeting types, reusable assignments, member/action links, restricted notes, carry-forward, and dashboard due items. Add Ward Youth Council only after validating need.
 
-**Implementation status:** Coordination types now reuse protected private leadership meetings/actions. Routes `/ward-council` and `/missionary-coordination` open filtered workspaces, with private assignments, due dates, carry-forward, completion lifecycle, and dashboard overdue count. Member/action linking and restricted-note subtypes remain follow-up work; Ward Youth Council not added.
+**Implementation status:** Coordination types now reuse protected private leadership meetings/actions. Routes `/ward-council` and `/missionary-coordination` open filtered workspaces, with private assignments, due dates, carry-forward, completion lifecycle, and dashboard overdue count. Leadership notes can now target bishopric actions through the shared restricted-note API; ward council/missionary action-note presentation remains follow-up UI work. Ward Youth Council not added.
 
 ## Option 4C: Scheduled interviews
 
