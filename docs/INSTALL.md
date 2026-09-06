@@ -717,6 +717,27 @@ sudo -u the-stand -H env BACKUP_DIR=/opt/the-stand/backups BACKUP_MAX_AGE_HOURS=
 
 Use non-zero exit as monitoring failure. Keep `BACKUP_DIR` private and do not place database credentials in the monitor command. This check proves recent local artifact integrity only; it does not prove off-host replication or restore readiness.
 
+For systemd deployments, install the repository units and keep path/age settings in a root-readable protected environment file:
+
+```bash
+sudo install -m 0644 /opt/the-stand/app/infra/systemd/the-stand-backup-health.service /etc/systemd/system/
+sudo install -m 0644 /opt/the-stand/app/infra/systemd/the-stand-backup-health.timer /etc/systemd/system/
+sudo install -d -m 0750 -o root -g postgres /etc/the-stand
+sudo sh -c 'printf "%s\\n" "BACKUP_DIR=/opt/the-stand/backups" "BACKUP_MAX_AGE_HOURS=26" > /etc/the-stand/backup-health.env'
+sudo chown root:postgres /etc/the-stand/backup-health.env
+sudo chmod 0640 /etc/the-stand/backup-health.env
+sudo systemctl daemon-reload
+sudo systemctl enable --now the-stand-backup-health.timer
+sudo systemctl start the-stand-backup-health.service
+sudo systemctl status the-stand-backup-health.service --no-pager
+```
+
+Verify oneshot result and logs separately from timer activation:
+
+```bash
+sudo journalctl -u the-stand-backup-health.service -n 20 --no-pager
+```
+
 13.2 Restore from Backup
 
 Use the restore script included in the repository (`infra/scripts/restore.sh`) only when restoring into a deliberately selected database. It is destructive to the target database.
