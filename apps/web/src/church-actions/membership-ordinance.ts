@@ -1,10 +1,14 @@
 export type MembershipOrdinanceActionType =
   | 'WELCOME_NEW_MEMBER'
+  | 'RECOGNIZE_BAPTIZED_CHILD'
+  | 'BAPTISM_CONFIRMATION_FOLLOW_UP'
+  | 'ATTENDANCE_LCR_HANDOFF'
   | 'BABY_BLESSING'
   | 'PRIESTHOOD_ORDINATION'
   | 'PRIESTHOOD_ADVANCEMENT';
 
 export type MembershipOrdinanceStatus = 'pending' | 'action_needed' | 'completed';
+export type PriesthoodOffice = 'DEACON' | 'TEACHER' | 'PRIEST' | 'ELDER' | 'HIGH_PRIEST' | 'UNKNOWN';
 
 export type MembershipOrdinanceActionRow = {
   id: string;
@@ -13,10 +17,19 @@ export type MembershipOrdinanceActionRow = {
   meetingType: string;
   memberName: string;
   actionType: MembershipOrdinanceActionType;
+  priesthoodOffice?: PriesthoodOffice | null;
   status: MembershipOrdinanceStatus;
   plannedDate: string | null;
   responsibleLeader: string | null;
   interviewStatus: 'not_required' | 'needed' | 'scheduled' | 'completed';
+  approvalConfirmed?: boolean;
+  presentingLeader?: string | null;
+  performingPriesthoodHolder?: string | null;
+  ordinanceDate?: string | null;
+  baptismDate?: string | null;
+  confirmationDate?: string | null;
+  baptismStatus?: 'planned' | 'completed' | 'cancelled' | null;
+  confirmationStatus?: 'planned' | 'completed' | 'cancelled' | null;
   lcrFollowUpStatus: 'not_applicable' | 'needed' | 'completed';
   recordFormNeeded: boolean;
   handoffDate: string | null;
@@ -28,6 +41,9 @@ export type MembershipOrdinanceActionRow = {
 
 export const MEMBERSHIP_ORDINANCE_ACTION_LABELS: Record<MembershipOrdinanceActionType, string> = {
   WELCOME_NEW_MEMBER: 'Welcome new member',
+  RECOGNIZE_BAPTIZED_CHILD: 'Recognize baptized child',
+  BAPTISM_CONFIRMATION_FOLLOW_UP: 'Baptism and confirmation follow-up',
+  ATTENDANCE_LCR_HANDOFF: 'Record attendance in LCR / Member Tools',
   BABY_BLESSING: 'Baby blessing',
   PRIESTHOOD_ORDINATION: 'Priesthood ordination',
   PRIESTHOOD_ADVANCEMENT: 'Priesthood advancement'
@@ -41,8 +57,59 @@ export const MEMBERSHIP_ORDINANCE_STATUS_LABELS: Record<MembershipOrdinanceStatu
 
 export type MembershipOrdinanceActionGroup = 'needs_attention' | 'upcoming' | 'completed';
 
+export type MembershipOrdinanceTransition =
+  | 'announced'
+  | 'completed'
+  | 'lcr_completed'
+  | 'interview_completed'
+  | 'official_record_started'
+  | 'official_record_completed'
+  | 'certificate_delivered';
+
+export type MembershipOrdinanceTransitionState = {
+  status: MembershipOrdinanceStatus;
+  interviewStatus: 'not_required' | 'needed' | 'scheduled' | 'completed';
+  lcrFollowUpStatus: 'not_applicable' | 'needed' | 'completed';
+  recordFormNeeded: boolean;
+  officialSystemFollowUpStatus: 'not_started' | 'in_progress' | 'completed' | 'not_applicable';
+};
+
+export function validateMembershipOrdinanceTransition(
+  state: MembershipOrdinanceTransitionState,
+  transition: MembershipOrdinanceTransition
+): string | null {
+  if (transition === 'announced' && state.status !== 'pending') return 'Action must be planned before announcement.';
+  if (transition === 'completed' && state.status !== 'action_needed') return 'Action must be announced before completion.';
+  if (transition === 'lcr_completed' && (state.status !== 'completed' || state.lcrFollowUpStatus !== 'needed')) return 'Underlying action must be completed before LCR follow-up.';
+  if (transition === 'interview_completed' && !['needed', 'scheduled'].includes(state.interviewStatus)) return 'Interview is not awaiting completion.';
+  if (transition === 'official_record_started' && (!state.recordFormNeeded || state.status !== 'completed' || state.officialSystemFollowUpStatus !== 'not_started')) return 'Underlying action must be completed before official-record handoff.';
+  if (transition === 'official_record_completed' && (!state.recordFormNeeded || state.status !== 'completed' || state.officialSystemFollowUpStatus !== 'in_progress')) return 'Official-record handoff must be started after underlying action completion.';
+  if (transition === 'certificate_delivered' && (!state.recordFormNeeded || state.officialSystemFollowUpStatus !== 'completed')) return 'Official record must be updated before certificate or form delivery.';
+  return null;
+}
+
 export function getMembershipOrdinanceActionLabel(actionType: MembershipOrdinanceActionType): string {
   return MEMBERSHIP_ORDINANCE_ACTION_LABELS[actionType];
+}
+
+export const PRIESTHOOD_OFFICE_LABELS: Record<PriesthoodOffice, string> = {
+  DEACON: 'Deacon',
+  TEACHER: 'Teacher',
+  PRIEST: 'Priest',
+  ELDER: 'Elder',
+  HIGH_PRIEST: 'High priest',
+  UNKNOWN: 'Unknown during planning'
+};
+
+export function validatePriesthoodOffice(actionType: string, office: unknown): office is PriesthoodOffice | null {
+  if (!actionType.startsWith('PRIESTHOOD_')) return office === null || office === undefined || office === '';
+  if (office === null || office === undefined || office === '') return true;
+  if (typeof office !== 'string' || !(office in PRIESTHOOD_OFFICE_LABELS)) return false;
+  return actionType !== 'PRIESTHOOD_ADVANCEMENT' || office === 'UNKNOWN' || office !== 'DEACON';
+}
+
+export function isWardSacramentPriesthoodActionAllowed(meetingType: string, office: PriesthoodOffice | null): boolean {
+  return meetingType !== 'SACRAMENT' || office === null || office === 'UNKNOWN' || (office !== 'ELDER' && office !== 'HIGH_PRIEST');
 }
 
 export function getMembershipOrdinanceGroup(action: MembershipOrdinanceActionRow, today: string): MembershipOrdinanceActionGroup {

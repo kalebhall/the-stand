@@ -5,11 +5,13 @@ import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { MemberAutocomplete } from '@/components/ui/member-autocomplete';
+import { PRIESTHOOD_OFFICE_LABELS, type PriesthoodOffice } from '@/src/church-actions/membership-ordinance';
 
 export type MembershipOrdinanceAction = {
   id: string;
   member_name: string;
-  action_type: 'WELCOME_NEW_MEMBER' | 'BABY_BLESSING' | 'PRIESTHOOD_ORDINATION' | 'PRIESTHOOD_ADVANCEMENT';
+  action_type: 'WELCOME_NEW_MEMBER' | 'RECOGNIZE_BAPTIZED_CHILD' | 'BAPTISM_CONFIRMATION_FOLLOW_UP' | 'ATTENDANCE_LCR_HANDOFF' | 'BABY_BLESSING' | 'PRIESTHOOD_ORDINATION' | 'PRIESTHOOD_ADVANCEMENT';
+  priesthood_office?: PriesthoodOffice | null;
   reason: string | null;
   details: string | null;
   status: 'pending' | 'action_needed' | 'completed';
@@ -17,6 +19,14 @@ export type MembershipOrdinanceAction = {
   interview_status?: 'not_required' | 'needed' | 'scheduled' | 'completed';
   interview_date?: string | null;
   interviewer_name?: string | null;
+  approval_confirmed?: boolean;
+  presenting_leader?: string | null;
+  performing_priesthood_holder?: string | null;
+  ordinance_date?: string | null;
+  baptism_date?: string | null;
+  confirmation_date?: string | null;
+  baptism_status?: 'planned' | 'completed' | 'cancelled' | null;
+  confirmation_status?: 'planned' | 'completed' | 'cancelled' | null;
   responsible_leader?: string | null;
   lcr_follow_up_status?: 'not_applicable' | 'needed' | 'completed';
   lcr_updated_at?: string | null;
@@ -32,6 +42,9 @@ type Props = {
 
 const OPTIONS = [
   ['WELCOME_NEW_MEMBER', 'Welcome new ward member'],
+  ['RECOGNIZE_BAPTIZED_CHILD', 'Recognize baptized child'],
+  ['BAPTISM_CONFIRMATION_FOLLOW_UP', 'Baptism and confirmation follow-up'],
+  ['ATTENDANCE_LCR_HANDOFF', 'Record attendance in LCR / Member Tools'],
   ['BABY_BLESSING', 'Baby blessing'],
   ['PRIESTHOOD_ORDINATION', 'Priesthood ordination'],
   ['PRIESTHOOD_ADVANCEMENT', 'Priesthood advancement']
@@ -50,10 +63,19 @@ export function MembershipOrdinanceSection({ wardId, meetingId, actions, canMana
   const [memberName, setMemberName] = useState('');
   const [reason, setReason] = useState('');
   const [details, setDetails] = useState('');
+  const [priesthoodOffice, setPriesthoodOffice] = useState<PriesthoodOffice | ''>('');
   const [plannedDate, setPlannedDate] = useState('');
   const [interviewDate, setInterviewDate] = useState('');
   const [interviewerName, setInterviewerName] = useState('');
   const [responsibleLeader, setResponsibleLeader] = useState('');
+  const [approvalConfirmed, setApprovalConfirmed] = useState(false);
+  const [presentingLeader, setPresentingLeader] = useState('');
+  const [performingPriesthoodHolder, setPerformingPriesthoodHolder] = useState('');
+  const [ordinanceDate, setOrdinanceDate] = useState('');
+  const [baptismDate, setBaptismDate] = useState('');
+  const [confirmationDate, setConfirmationDate] = useState('');
+  const [baptismStatus, setBaptismStatus] = useState('planned');
+  const [confirmationStatus, setConfirmationStatus] = useState('planned');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -63,10 +85,11 @@ export function MembershipOrdinanceSection({ wardId, meetingId, actions, canMana
     const response = await fetch(`/api/w/${wardId}/meetings/${meetingId}/membership-ordinances`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ actionType, memberName, reason, details, plannedDate, interviewDate, interviewerName, responsibleLeader })
+      body: JSON.stringify({ actionType, memberName, reason, details, priesthoodOffice: priesthoodOffice || null, plannedDate, interviewDate, interviewerName, approvalConfirmed, presentingLeader, performingPriesthoodHolder, ordinanceDate, baptismDate, confirmationDate, baptismStatus, confirmationStatus, responsibleLeader })
     });
     if (!response.ok) {
-      setError('Unable to add membership or ordinance action.');
+      const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+      setError(payload?.error ?? 'Unable to add membership or ordinance action.');
       setBusy(false);
       return;
     }
@@ -102,6 +125,7 @@ export function MembershipOrdinanceSection({ wardId, meetingId, actions, canMana
       </div>
       {canManage ? (
         <div className="grid gap-3 rounded-md border bg-background p-3 sm:grid-cols-2">
+          <p className="sm:col-span-2 text-xs text-muted-foreground">Ward sacrament meetings do not sustain or set apart elders or high priests. Those actions belong to stake leadership.</p>
           <label className="space-y-1 text-sm">
             <span className="font-medium">Action</span>
             <select
@@ -126,6 +150,13 @@ export function MembershipOrdinanceSection({ wardId, meetingId, actions, canMana
               placeholder="Name"
             />
           </label>
+          {actionType === 'ATTENDANCE_LCR_HANDOFF' ? (
+            <p className="sm:col-span-2 rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">
+              The Stand does not store authoritative attendance. Record attendance in Church tools after the meeting.{' '}
+              <a className="font-medium underline" href="https://www.churchofjesuschrist.org/tools/help/record-attendance" target="_blank" rel="noreferrer">Open Church attendance guidance</a>
+            </p>
+          ) : null}
+
           {actionType === 'WELCOME_NEW_MEMBER' ? (
             <label className="space-y-1 text-sm">
               <span className="font-medium">Reason</span>
@@ -136,7 +167,21 @@ export function MembershipOrdinanceSection({ wardId, meetingId, actions, canMana
               </select>
             </label>
           ) : null}
-          {actionType !== 'WELCOME_NEW_MEMBER' ? (
+          {actionType === 'RECOGNIZE_BAPTIZED_CHILD' ? (
+            <label className="space-y-1 text-sm">
+              <span className="font-medium">Recognition details</span>
+              <input className="w-full rounded-md border px-3 py-2" value={details} onChange={(e) => setDetails(e.target.value)} placeholder="Optional local planning note" />
+            </label>
+          ) : null}
+          {actionType === 'BAPTISM_CONFIRMATION_FOLLOW_UP' ? (
+            <>
+              <label className="space-y-1 text-sm"><span className="font-medium">Baptism date</span><input className="w-full rounded-md border px-3 py-2" type="date" value={baptismDate} onChange={(e) => setBaptismDate(e.target.value)} /></label>
+              <label className="space-y-1 text-sm"><span className="font-medium">Baptism status</span><select className="w-full rounded-md border px-3 py-2" value={baptismStatus} onChange={(e) => setBaptismStatus(e.target.value)}><option value="planned">Planned</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option></select></label>
+              <label className="space-y-1 text-sm"><span className="font-medium">Confirmation date</span><input className="w-full rounded-md border px-3 py-2" type="date" value={confirmationDate} onChange={(e) => setConfirmationDate(e.target.value)} /></label>
+              <label className="space-y-1 text-sm"><span className="font-medium">Confirmation status</span><select className="w-full rounded-md border px-3 py-2" value={confirmationStatus} onChange={(e) => setConfirmationStatus(e.target.value)}><option value="planned">Planned</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option></select></label>
+            </>
+          ) : null}
+          {actionType !== 'WELCOME_NEW_MEMBER' && actionType !== 'RECOGNIZE_BAPTIZED_CHILD' && actionType !== 'BAPTISM_CONFIRMATION_FOLLOW_UP' && actionType !== 'ATTENDANCE_LCR_HANDOFF' ? (
             <label className="space-y-1 text-sm">
               <span className="font-medium">Office or details</span>
               <input
@@ -146,6 +191,24 @@ export function MembershipOrdinanceSection({ wardId, meetingId, actions, canMana
                 placeholder={actionType.includes('PRIESTHOOD') ? 'Deacon, Teacher, Priest, or Elder' : 'Optional details'}
               />
             </label>
+          ) : null}
+          {actionType.includes('PRIESTHOOD') ? (
+            <>
+              <label className="space-y-1 text-sm">
+                <span className="font-medium">Priesthood office</span>
+                <select className="w-full rounded-md border px-3 py-2" value={priesthoodOffice} onChange={(e) => setPriesthoodOffice(e.target.value as PriesthoodOffice | '')}>
+                  <option value="">Select office</option>
+                  {Object.entries(PRIESTHOOD_OFFICE_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                </select>
+              </label>
+              <label className="flex items-center gap-2 self-end text-sm">
+                <input type="checkbox" checked={approvalConfirmed} onChange={(e) => setApprovalConfirmed(e.target.checked)} />
+                Approval confirmed
+              </label>
+              <label className="space-y-1 text-sm"><span className="font-medium">Presenting leader</span><input className="w-full rounded-md border px-3 py-2" value={presentingLeader} onChange={(e) => setPresentingLeader(e.target.value)} /></label>
+              <label className="space-y-1 text-sm"><span className="font-medium">Performing priesthood holder</span><input className="w-full rounded-md border px-3 py-2" value={performingPriesthoodHolder} onChange={(e) => setPerformingPriesthoodHolder(e.target.value)} /></label>
+              <label className="space-y-1 text-sm"><span className="font-medium">Ordinance date</span><input className="w-full rounded-md border px-3 py-2" type="date" value={ordinanceDate} onChange={(e) => setOrdinanceDate(e.target.value)} /></label>
+            </>
           ) : null}
           <label className="space-y-1 text-sm">
             <span className="font-medium">Planned date</span>
@@ -209,6 +272,9 @@ export function MembershipOrdinanceSection({ wardId, meetingId, actions, canMana
                     </p>
                   ) : null}
                   {action.details ? <p className="text-sm text-muted-foreground">{action.details}</p> : null}
+                  {action.action_type === 'BAPTISM_CONFIRMATION_FOLLOW_UP' ? <p className="text-sm text-muted-foreground">Baptism: {action.baptism_status ?? 'planned'}{action.baptism_date ? ` (${action.baptism_date})` : ''} · Confirmation: {action.confirmation_status ?? 'planned'}{action.confirmation_date ? ` (${action.confirmation_date})` : ''}</p> : null}
+                  {action.action_type.includes('PRIESTHOOD') && action.priesthood_office ? <p className="text-sm text-muted-foreground">Office: {PRIESTHOOD_OFFICE_LABELS[action.priesthood_office]}</p> : null}
+                  {canManage && action.action_type.includes('PRIESTHOOD') ? <p className="text-sm text-muted-foreground">Approval: {action.approval_confirmed ? 'confirmed' : 'not confirmed'}</p> : null}
                   {canManage && action.planned_date ? (
                     <p className="text-sm text-muted-foreground">Planned: {action.planned_date}</p>
                   ) : null}

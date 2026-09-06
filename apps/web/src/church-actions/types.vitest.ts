@@ -22,5 +22,7 @@ describe('church action follow-up model', () => {
     expect(requiresLcrFollowUp('PRIESTHOOD', 'PRIESTHOOD_ADVANCEMENT')).toBe(true);
     expect(requiresInterview('MEMBERSHIP', 'BABY_BLESSING')).toBe(false);
     expect(requiresLcrFollowUp('MEMBERSHIP', 'WELCOME_NEW_MEMBER')).toBe(false);
+    expect(requiresInterview('MEMBERSHIP', 'BAPTISM_CONFIRMATION_FOLLOW_UP')).toBe(false);
+    expect(requiresLcrFollowUp('MEMBERSHIP', 'BAPTISM_CONFIRMATION_FOLLOW_UP')).toBe(false);
   });
 });

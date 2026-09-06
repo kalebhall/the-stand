@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth/guards';
-import { canViewCallings, canViewMeetings, hasRole } from '@/src/auth/roles';
+import { canManageMeetings, canViewCallings, canViewMeetings, hasRole } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 
@@ -43,6 +43,7 @@ export default async function DashboardPage() {
   const wardSession = session.activeWardId ? { roles: session.user.roles, activeWardId: session.activeWardId } : null;
   const canAccessMeetings = wardSession ? canViewMeetings(wardSession, session.activeWardId!) : false;
   const canAccessCallings = wardSession ? canViewCallings(wardSession, session.activeWardId!) : false;
+  const canAccessTechnology = wardSession ? canManageMeetings(wardSession, session.activeWardId!) : false;
   const canAccessPortal = Boolean(session.activeWardId) && hasRole(session.user.roles, 'STAND_ADMIN');
   const showSupportCards = session.user.roles?.includes('SUPPORT_ADMIN') ?? false;
   let setApartQueueCount = 'Unavailable';
@@ -50,7 +51,11 @@ export default async function DashboardPage() {
   let actionInterviewQueueCount = 'Unavailable';
   let overdueActionCount = 'Unavailable';
   let lcrFollowUpCount = 'Unavailable';
+  let priesthoodPreparationCount = 'Unavailable';
   let officialRecordHandoffCount = 'Unavailable';
+  let bishopricDueActionCount = 'Unavailable';
+  let scheduledInterviewCount = 'Unavailable';
+  let technologyChecklistCount = 'Unavailable';
   let notificationHealthValue = 'No deliveries yet';
   let notificationHealthDetail = 'No notification attempts recorded for this ward yet.';
   let nextMeetingValue = 'No meetings scheduled';
@@ -92,6 +97,7 @@ export default async function DashboardPage() {
                 COUNT(*) FILTER (WHERE a.interview_status IN ('needed', 'scheduled'))::int AS interview_count,
                 COUNT(*) FILTER (WHERE a.planned_date < CURRENT_DATE AND a.status != 'completed')::int AS overdue_count,
                 COUNT(*) FILTER (WHERE a.lcr_follow_up_status = 'needed' AND a.status = 'completed')::int AS lcr_count,
+                COUNT(*) FILTER (WHERE a.action_type IN ('PRIESTHOOD_ORDINATION', 'PRIESTHOOD_ADVANCEMENT') AND (a.priesthood_office IS NULL OR a.approval_confirmed = FALSE))::int AS priesthood_preparation_count,
                 COUNT(*) FILTER (WHERE a.record_form_needed = TRUE AND a.official_system_follow_up_status IN ('not_started', 'in_progress'))::int AS official_record_handoff_count
            FROM meeting_membership_ordinance a
            JOIN meeting m ON m.id = a.meeting_id AND m.ward_id = a.ward_id
@@ -99,6 +105,36 @@ export default async function DashboardPage() {
             AND (a.status != 'completed' OR a.lcr_follow_up_status = 'needed')`,
         [session.activeWardId]
       );
+
+      const bishopricDueActionResult = await client.query(
+        `SELECT COUNT(*)::int AS count
+           FROM bishopric_action
+          WHERE ward_id = $1::uuid
+            AND status != 'COMPLETED'
+            AND due_date < CURRENT_DATE`,
+        [session.activeWardId]
+      );
+
+      const scheduledInterviewResult = await client.query(
+        `SELECT COUNT(*)::int AS count
+           FROM scheduled_interview
+          WHERE ward_id = $1::uuid AND status = 'SCHEDULED'`,
+        [session.activeWardId]
+      );
+
+      const technologyChecklistResult = canAccessTechnology
+        ? await client.query(
+            `SELECT COUNT(*)::int AS count
+               FROM meeting m
+               LEFT JOIN meeting_technology_checklist tc ON tc.meeting_id = m.id AND tc.ward_id = m.ward_id
+              WHERE m.ward_id = $1::uuid
+                AND m.meeting_date >= CURRENT_DATE
+                AND m.meeting_date <= CURRENT_DATE + 7
+                AND m.status != 'COMPLETED'
+                AND (tc.id IS NULL OR tc.room_ready = FALSE OR tc.audio_ready = FALSE OR tc.stream_ready = FALSE OR tc.accessibility_checked = FALSE OR tc.recording_deletion_reminder = FALSE)`,
+            [session.activeWardId]
+          )
+        : null;
 
       const notificationHealthResult = await client.query(
         `SELECT MAX(nd.attempted_at) AS last_delivery_at,
@@ -145,13 +181,18 @@ export default async function DashboardPage() {
         interview_count: number;
         overdue_count: number;
         lcr_count: number;
+        priesthood_preparation_count: number;
         official_record_handoff_count: number;
       };
       membershipActionQueueCount = `${actionQueue.action_needed_count} waiting`;
       actionInterviewQueueCount = `${actionQueue.interview_count} waiting`;
       overdueActionCount = `${actionQueue.overdue_count} overdue`;
       lcrFollowUpCount = `${actionQueue.lcr_count} waiting`;
+      priesthoodPreparationCount = `${actionQueue.priesthood_preparation_count} waiting`;
       officialRecordHandoffCount = `${actionQueue.official_record_handoff_count} waiting`;
+      bishopricDueActionCount = `${(bishopricDueActionResult.rows[0] as { count: number }).count} overdue`;
+      scheduledInterviewCount = `${(scheduledInterviewResult.rows[0] as { count: number }).count} scheduled`;
+      technologyChecklistCount = technologyChecklistResult ? `${(technologyChecklistResult.rows[0] as { count: number }).count} needing review` : 'Unavailable';
       const notificationHealth = notificationHealthResult.rows[0] as { last_delivery_at: string | null; failure_count: number };
       notificationHealthValue = notificationHealth.last_delivery_at ?? 'No deliveries yet';
       notificationHealthDetail = `${notificationHealth.failure_count} failed deliveries`;
@@ -228,6 +269,15 @@ export default async function DashboardPage() {
 
         {canAccessMeetings ? (
           <DashboardCard
+            title="Priesthood preparation"
+            value={priesthoodPreparationCount}
+            detail="Ordination actions missing a typed office or confirmed approval."
+            actions={[{ href: '/membership-ordinances?action=PRIESTHOOD_ORDINATION&queue=needs_attention', label: 'Review preparation' }]}
+          />
+        ) : null}
+
+        {canAccessMeetings ? (
+          <DashboardCard
             title="Interview follow-up"
             value={actionInterviewQueueCount}
             detail="Actions needing an interview."
@@ -241,6 +291,24 @@ export default async function DashboardPage() {
             value={overdueActionCount}
             detail="Planned actions past their date and not completed."
             actions={[{ href: '/membership-ordinances?followup=overdue&queue=needs_attention', label: 'Review overdue work' }]}
+          />
+        ) : null}
+
+        {canAccessMeetings ? (
+          <DashboardCard
+            title="Bishopric due actions"
+            value={bishopricDueActionCount}
+            detail="Private bishopric assignments past due."
+            actions={[{ href: '/bishopric', label: 'Open bishopric workspace' }]}
+          />
+        ) : null}
+
+        {canAccessMeetings ? (
+          <DashboardCard
+            title="Scheduled interviews"
+            value={scheduledInterviewCount}
+            detail="Operational interviews awaiting completion."
+            actions={[{ href: '/interviews', label: 'Open interview schedule' }]}
           />
         ) : null}
 
@@ -289,6 +357,15 @@ export default async function DashboardPage() {
               { href: '/imports/members', label: 'Import members' },
               { href: '/imports/callings', label: 'Import callings' }
             ]}
+          />
+        ) : null}
+
+        {canAccessTechnology ? (
+          <DashboardCard
+            title="Technology readiness"
+            value={technologyChecklistCount}
+            detail="Upcoming meetings with incomplete room, audio, stream, accessibility, or recording checks."
+            actions={[{ href: '/technology', label: 'Open technology checklist' }]}
           />
         ) : null}
 

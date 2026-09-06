@@ -146,4 +146,25 @@ describe('buildMeetingRenderHtml', () => {
     expect(html).toContain('Please welcome our speaker.');
     expect(html).toContain('Finding peace through prayer');
   });
+
+  it('applies selected preset and announcement mode to output', () => {
+    const html = buildMeetingRenderHtml({
+      meetingDate: '2026-01-04',
+      meetingType: 'SACRAMENT',
+      programItems: [],
+      announcements: [{ title: 'Hidden by layout', body: null, startDate: null, endDate: null, isPermanent: true, placement: 'PROGRAM_TOP' }],
+      publicUrl: 'https://thestand.app/p/sample-token',
+      layout: { preset: 'TRI_FOLD_BULLETIN', announcementMode: 'NONE', coverMode: 'AUTHORIZED_IMAGE', coverImageUrl: 'https://cdn.example.test/ward.jpg', coverImageAltText: 'Ward meetinghouse' }
+    });
+
+    expect(html).toContain('public-program--tri_fold_bulletin');
+    expect(html).toContain('data-announcement-mode="NONE"');
+    expect(html).toContain('alt="Ward meetinghouse"');
+    expect(html).not.toContain('Hidden by layout');
+    expect(html).toContain('print-fold-guides');
+    expect(html).toContain('aria-labelledby="public-program-title"');
+    expect(html).toContain('id="public-program-title"');
+    expect(html).toContain('aria-label="QR code for digital program"');
+    expect(html).toContain('href="https://thestand.app/p/sample-token"');
+  });
 });

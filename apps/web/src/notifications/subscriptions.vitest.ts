@@ -20,7 +20,7 @@ describe('notification subscriptions', () => {
   it('builds explicit in-app and email defaults for every event', () => {
     const defaults = buildDefaultRows();
 
-    expect(defaults).toHaveLength(112);
+    expect(defaults).toHaveLength(116);
     expect(defaults).toContainEqual({
       eventType: 'CALLING_SUGGESTED',
       category: 'CALLINGS',
@@ -55,7 +55,7 @@ describe('notification subscriptions', () => {
     expect(query).toContain('$1::uuid');
     expect(query).toContain('$2::uuid');
     expect(values.slice(0, 2)).toEqual(['ward-1', 'user-1']);
-    expect(values).toHaveLength(2 + 112 * 4);
+    expect(values).toHaveLength(2 + 116 * 4);
   });
 
   it('groups stored channel rows and derives labels from the event registry', async () => {

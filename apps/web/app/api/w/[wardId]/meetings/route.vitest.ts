@@ -92,6 +92,7 @@ describe('POST /api/w/[wardId]/meetings', () => {
       '',
       '2',
       'The Spirit of God',
+      null,
       null
     ]);
     expect(queryMock).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO meeting_program_item'), [
@@ -105,7 +106,8 @@ describe('POST /api/w/[wardId]/meetings', () => {
       '',
       '',
       '',
-      null
+      null,
+      'PLANNED'
     ]);
     expect(queryMock).toHaveBeenCalledWith(
       expect.stringContaining('INSERT INTO audit_log'),

@@ -476,41 +476,46 @@ sudo systemctl status the-stand-worker --no-pager
 
 ---
 
-## SECTION 10.3 — Raw Import Retention Purge
+## SECTION 10.3 — Operational Retention Purge
 
-The application includes a deployable purge command for replacing expired raw import text with `[purged]`. Run it from the web workspace with `npm run purge:raw-imports`. The default retention is 30 days. Override only with a whole-day `RAW_PASTE_RETENTION_DAYS` value from 1 through 3650.
+The application includes deployable retention purge command: `npm --workspace @the-stand/web run purge:retention`. It performs two bounded, idempotent operations:
 
-Create `/etc/systemd/system/the-stand-raw-import-purge.service`:
+- Raw import text: default 30 days; expired `import_run.raw_text` replaced with `[purged]`, preserving import metadata.
+- Audit events: default 2,555 days (7 years); expired `audit_log` rows deleted. Keep audit data separate from official Church records; this is local application retention, not Church record retention.
+
+Override only with whole-day values: `RAW_PASTE_RETENTION_DAYS` from 1 through 3650 and `AUDIT_LOG_RETENTION_DAYS` from 365 through 3650. Set `RETENTION_DRY_RUN=1` for safe counts without changes. Invalid values fail before database connection.
+
+Create `/etc/systemd/system/the-stand-retention-purge.service`:
 
 ```
 [Unit]
-Description=The Stand raw import retention purge
+Description=The Stand operational retention purge
 After=network.target postgresql.service
 
 [Service]
 Type=oneshot
 User=the-stand
 Group=the-stand
-WorkingDirectory=/opt/the-stand/app/apps/web
+WorkingDirectory=/opt/the-stand/app
 EnvironmentFile=/opt/the-stand/app/.env
-ExecStart=/usr/bin/npm run purge:raw-imports
+ExecStart=/usr/bin/npm --workspace @the-stand/web run purge:retention
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=full
 ProtectHome=true
 ```
 
-Create `/etc/systemd/system/the-stand-raw-import-purge.timer`:
+Create `/etc/systemd/system/the-stand-retention-purge.timer`:
 
 ```
 [Unit]
-Description=Run The Stand raw import retention purge daily
+Description=Run The Stand operational retention purge daily
 
 [Timer]
 OnCalendar=*-*-* 03:15:00
 Persistent=true
 RandomizedDelaySec=15m
-Unit=the-stand-raw-import-purge.service
+Unit=the-stand-retention-purge.service
 
 [Install]
 WantedBy=timers.target
@@ -520,15 +525,99 @@ Enable and verify:
 
 ```
 sudo systemctl daemon-reload
-sudo systemctl enable --now the-stand-raw-import-purge.timer
-sudo systemctl start the-stand-raw-import-purge.service
-sudo systemctl status the-stand-raw-import-purge.timer --no-pager
-sudo journalctl -u the-stand-raw-import-purge.service -n 20 --no-pager
+sudo systemctl enable --now the-stand-retention-purge.timer
+sudo systemctl start the-stand-retention-purge.service
+sudo systemctl status the-stand-retention-purge.timer --no-pager
+sudo journalctl -u the-stand-retention-purge.service -n 20 --no-pager
 ```
 
-The purge command logs only the number of rows changed or a non-secret error message. Do not put database credentials in the unit file; keep them in the protected environment file.
+Logs contain counts and sanitized errors only. Keep `DATABASE_URL` in protected environment file, never service unit or repository. Timer status proves scheduling only; successful command logs prove one run. Health dashboard must not imply worker liveness or restore verification.
 
 ---
+
+## SECTION 10.4 — Scheduled Interview and Technology Reminders
+
+Reminder runners are separate from web requests and require the notification worker plus Redis. They create idempotent outbox events; the worker delivers private in-app notifications to authorized managers. Configure each runner as its own oneshot service so one failure does not hide the other.
+
+Create `/etc/systemd/system/the-stand-interview-reminders.service`:
+
+```
+[Unit]
+Description=The Stand scheduled interview reminders
+After=network.target postgresql.service the-stand-worker.service
+
+[Service]
+Type=oneshot
+User=the-stand
+Group=the-stand
+WorkingDirectory=/opt/the-stand/app
+EnvironmentFile=/opt/the-stand/app/.env
+ExecStart=/usr/bin/npm --workspace @the-stand/web run remind:interviews
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+```
+
+Create `/etc/systemd/system/the-stand-interview-reminders.timer`:
+
+```
+[Unit]
+Description=Run The Stand interview reminders hourly
+
+[Timer]
+OnCalendar=hourly
+Persistent=true
+RandomizedDelaySec=10m
+Unit=the-stand-interview-reminders.service
+
+[Install]
+WantedBy=timers.target
+```
+
+Create `/etc/systemd/system/the-stand-technology-reminders.service` with the same hardening settings, changing `Description` and `ExecStart`:
+
+```
+Description=The Stand technology checklist reminders
+ExecStart=/usr/bin/npm --workspace @the-stand/web run remind:technology
+```
+
+Create matching `the-stand-technology-reminders.timer`, changing only the description and service unit:
+
+```
+[Unit]
+Description=Run The Stand technology reminders daily
+
+[Timer]
+OnCalendar=*-*-* 07:00:00
+Persistent=true
+RandomizedDelaySec=15m
+Unit=the-stand-technology-reminders.service
+
+[Install]
+WantedBy=timers.target
+```
+
+Enable and verify execution:
+
+```
+sudo systemctl daemon-reload
+sudo systemctl enable --now the-stand-interview-reminders.timer the-stand-technology-reminders.timer
+sudo systemctl start the-stand-interview-reminders.service
+sudo systemctl start the-stand-technology-reminders.service
+sudo systemctl status the-stand-interview-reminders.timer the-stand-technology-reminders.timer --no-pager
+sudo journalctl -u the-stand-interview-reminders.service -n 20 --no-pager
+sudo journalctl -u the-stand-technology-reminders.service -n 20 --no-pager
+```
+
+Timer status proves scheduling only. Successful runner logs prove the query and outbox transaction completed. Verify notification delivery separately through `/notifications` or the notification diagnostics surface. Keep `DATABASE_URL` and `REDIS_URL` in protected environment files, never service units or repository.
+
+---
+
+## SECTION 10.5 — Legacy Raw Import Retention Purge
+
+Existing `the-stand-raw-import-purge.*` units remain supported for raw-only deployments. New deployments should use combined operational retention purge above. Do not run both timers, or raw purge runs twice unnecessarily.
+
 
 ## SECTION 11 — NGINX REVERSE PROXY
 
@@ -616,6 +705,17 @@ Add:
 ```
 15 2 * * * /usr/local/bin/the-stand-backup.sh
 ```
+
+13.1 Backup health monitoring
+
+Run backup health check after backup creation and from a separate periodic monitor. It verifies newest backup age and checksum sidecar without reading backup contents:
+
+```bash
+sudo -u the-stand -H env BACKUP_DIR=/opt/the-stand/backups BACKUP_MAX_AGE_HOURS=26 \
+  /opt/the-stand/app/infra/scripts/backup-health.sh
+```
+
+Use non-zero exit as monitoring failure. Keep `BACKUP_DIR` private and do not place database credentials in the monitor command. This check proves recent local artifact integrity only; it does not prove off-host replication or restore readiness.
 
 13.2 Restore from Backup
 

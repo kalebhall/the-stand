@@ -36,6 +36,7 @@ type TemplateRow = {
   sustain_template: string;
   release_template: string;
   welcome_new_member_template: string;
+  recognize_baptized_child_template: string;
   baby_blessing_template: string;
   priesthood_ordination_template: string;
   priesthood_advancement_template: string;
@@ -129,7 +130,7 @@ export default async function StandViewPage({
     );
 
     const templateResult = await client.query(
-      'SELECT welcome_text, sustain_template, release_template, welcome_new_member_template, baby_blessing_template, priesthood_ordination_template, priesthood_advancement_template FROM ward_stand_template WHERE ward_id = $1 LIMIT 1',
+      'SELECT welcome_text, sustain_template, release_template, welcome_new_member_template, recognize_baptized_child_template, baby_blessing_template, priesthood_ordination_template, priesthood_advancement_template FROM ward_stand_template WHERE ward_id = $1 LIMIT 1',
       [session.activeWardId]
     );
 
@@ -152,7 +153,7 @@ export default async function StandViewPage({
     );
 
     const membershipActionsResult = await client.query(
-      `SELECT id, member_name, action_type, reason, details, status
+      `SELECT id, member_name, action_type, priesthood_office, reason, details, status, approval_confirmed, presenting_leader, performing_priesthood_holder, ordinance_date, baptism_date, confirmation_date, baptism_status, confirmation_status
          FROM meeting_membership_ordinance
         WHERE meeting_id = $1::uuid AND ward_id = $2::uuid
         ORDER BY created_at ASC`,
@@ -275,6 +276,7 @@ export default async function StandViewPage({
           canManage={canManage}
           templates={{
             WELCOME_NEW_MEMBER: template?.welcome_new_member_template,
+            RECOGNIZE_BAPTIZED_CHILD: template?.recognize_baptized_child_template,
             BABY_BLESSING: template?.baby_blessing_template,
             PRIESTHOOD_ORDINATION: template?.priesthood_ordination_template,
             PRIESTHOOD_ADVANCEMENT: template?.priesthood_advancement_template

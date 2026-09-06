@@ -15,15 +15,25 @@ export type OfflineStandSnapshot = {
   meeting: { id: string; meetingDate: string; meetingType: string };
   standRows: Array<Record<string, unknown>>;
   businessLines: Array<{ id: string; memberName: string; callingName: string; actionType: string; status: string; updatedAt?: string }>;
+  technology?: { ownerName: string | null; roomReady: boolean; audioReady: boolean; streamReady: boolean; accessibilityChecked: boolean; authorizedLink: string | null; recordingDeletionReminder: boolean; startConfirmedAt: string | null; stopConfirmedAt: string | null } | null;
   membershipActions?: Array<{
     id: string;
     memberName: string;
     actionType: string;
+    priesthoodOffice?: string | null;
     status: string;
     plannedDate?: string | null;
     interviewStatus?: string;
     interviewDate?: string | null;
     interviewerName?: string | null;
+    approvalConfirmed?: boolean;
+    presentingLeader?: string | null;
+    performingPriesthoodHolder?: string | null;
+    ordinanceDate?: string | null;
+    baptismDate?: string | null;
+    confirmationDate?: string | null;
+    baptismStatus?: string | null;
+    confirmationStatus?: string | null;
     responsibleLeader?: string | null;
     lcrFollowUpStatus?: string;
     lcrUpdatedAt?: string | null;

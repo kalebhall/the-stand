@@ -68,7 +68,7 @@ git diff --check
 
 **Priority:** P0
 
-**Outcome:** Existing raw-import purge becomes an operating control, not unused code.
+**Implementation status:** Raw import text purge now runs through combined operational retention runner. Audit logs use separate bounded 7-year default retention and delete only expired rows. Both operations support dry-run counts, typed SQL, safe metrics, deterministic configuration validation, and daily systemd timer instructions. Private notes, offline mutation ledger, and browser snapshots remain user/authorization lifecycle controlled and are not server-purged by this job.
 
 **Files likely involved:**
 
@@ -93,7 +93,7 @@ git diff --check
 
 **Priority:** P0
 
-**Outcome:** PostgreSQL backups are restorable and monitored.
+**Implementation status:** Added isolated restore smoke validation with optional checksum verification, migration-state validation, core schema checks, representative row count, explicit temporary-database cleanup, and secret-free result metrics. Added `infra/scripts/backup-health.sh` to monitor newest local backup age and checksum integrity with safe non-zero failure states. Documented 14-day backup retention, RPO/RTO assumptions, quarterly drill procedure, and off-site-copy responsibility. Real deployment drill completed 2026-09-06 against latest backup `the_stand_20260905_072725.sql.gz`: restore succeeded, temporary database count returned 0 after cleanup, `/health` returned `{"status":"ok","db":"connected"}`, and `the-stand` remained active. Checksum sidecar was not reported by deployed script; checksum coverage remains conditional on sidecar presence. Off-host replication and production monitor activation remain deployment responsibilities.
 
 **Files likely involved:**
 
@@ -152,7 +152,7 @@ Do not store copied ordinance details or replace LCR status.
 
 **Outcome:** Priesthood ordination preparation uses validated office values and stays distinct from setting apart.
 
-**Allowed values:** Deacon, Teacher, Priest, Elder, High Priest where applicable, plus temporary unknown during planning.
+**Allowed values:** Deacon, Teacher, Priest, Elder, High Priest where applicable, plus temporary unknown during planning. In a ward sacrament meeting, ward workflows must not sustain or set apart Elders or High Priests; those responsibilities belong to stake leadership.
 
 **Tasks:**
 
@@ -166,7 +166,7 @@ Do not store copied ordinance details or replace LCR status.
 
 **Priority:** P1
 
-**Outcome:** Users can distinguish official required elements, official examples, and editable ward prompts.
+**Implementation status:** Added typed classification registry and forward migration `0051_stand_template_classification.sql`. Stand-script settings now show each editable template as a ward prompt, sample sustaining wording, or Handbook instruction with current Church source links. Classification metadata remains separate from editable text; prompts do not claim to authorize or complete ordinances.
 
 **Tasks:**
 
@@ -274,6 +274,8 @@ Do not store copied ordinance details or replace LCR status.
 
 **Tasks:** Add meeting type and protected route, agenda templates, action links, private visibility rules, assignment lifecycle, dashboard due items, and tests for ward isolation/public exclusion.
 
+**Implementation status:** Core bishopric workspace delivered in `0045_bishopric_workspace.sql`: protected ward-scoped route, private agenda meetings, action assignments with owners/due dates/carry-forward, completion history, lifecycle validation, dashboard overdue count, and public-program exclusion. Linked member/calling/action references and broader meeting templates remain follow-up work.
+
 ## Option 4B: Ward council and missionary coordination
 
 **Priority:** P1
@@ -281,6 +283,8 @@ Do not store copied ordinance details or replace LCR status.
 **Outcome:** Lightweight coordination workflows exist without storing unnecessary confidential counseling content.[4][6]
 
 **Tasks:** Add Ward Council and Missionary Coordination meeting types, reusable assignments, member/action links, restricted notes, carry-forward, and dashboard due items. Add Ward Youth Council only after validating need.
+
+**Implementation status:** Coordination types now reuse protected private leadership meetings/actions. Routes `/ward-council` and `/missionary-coordination` open filtered workspaces, with private assignments, due dates, carry-forward, completion lifecycle, and dashboard overdue count. Member/action linking and restricted-note subtypes remain follow-up work; Ward Youth Council not added.
 
 ## Option 4C: Scheduled interviews
 
@@ -292,6 +296,8 @@ Do not store copied ordinance details or replace LCR status.
 
 **Tasks:** Add schema/API, calendar/reminder integration, permission checks, dashboard view, offline read-only reference only, and tests.
 
+**Implementation status:** Scheduled interviews now support authenticated ward-scoped ICS export at `/api/w/[wardId]/interviews/calendar`, limited to scheduled records and marked private/no-store. Export includes operational metadata only; confidential interview content remains excluded. Added deployable `remind:interviews` runner: it finds scheduled interviews in next 24 hours, creates idempotent ward-scoped `INTERVIEW_REMINDER` outbox events, queues notification processing after commit, and sends in-app reminders to calling managers. Horizon can be bounded with `INTERVIEW_REMINDER_HORIZON_HOURS` (1–168). External calendar subscription/webhook delivery remain deployment/product follow-up.
+
 ## Option 4D: Technology/streaming checklist
 
 **Priority:** P2
@@ -299,6 +305,8 @@ Do not store copied ordinance details or replace LCR status.
 **Outcome:** Meeting technology readiness is trackable without storing credentials or network secrets.[8]
 
 **Tasks:** Add optional meeting checklist with owner, audio/room/stream readiness, authorized link, accessibility check, start/stop confirmation, and recording deletion reminder. Keep secrets outside The Stand.
+
+**Implementation status:** Protected `/technology` checklist now tracks owner, room/audio/stream/accessibility readiness, HTTPS authorized link, start/stop confirmation, and recording deletion reminder. Schema/API enforce ward scope and reject non-HTTPS links. Dashboard now shows authorized managers upcoming meetings with incomplete technology checks. Added deployable `remind:technology` runner: it finds incomplete checklists for meetings within the next seven days, creates idempotent ward-scoped `MEETING_TECHNOLOGY_REMINDER` outbox events, and queues private in-app reminders after commit. At-the-Stand offline snapshots now include a read-only technology checklist reference and authorized link when present. Credentials and network secrets remain excluded. Runner deployment through systemd/cron remains operational follow-up.
 
 ---
 
@@ -316,6 +324,8 @@ Create one source of approved meeting content that can produce:
 Public output must exclude private notes, leadership follow-up, interview details, LCR status, internal workflow state, and unpublished content.
 
 ## Option 5A: Layout presets
+
+**Implementation status:** Persisted, ward-scoped layout settings now flow into print rendering and publish snapshots. Renderer applies preset data attributes, announcement mode filtering, text-first cover fallback, and fold-guide marker for bifold/tri-fold output. Public URLs serve published snapshots containing selected layout. QR output integration now emits an accessible inline SVG linking to stable `/p/{meetingToken}` public URL in published renders. Existing share token is reused on republish; new token generated only when needed. Print/published output remains text-first and QR is optional.
 
 Offer named presets instead of forcing users to design from scratch.
 
@@ -419,17 +429,20 @@ Date-active filtering must use one shared helper across editor, public, print, a
 
 Add draft/published states for public layout settings.
 
-**Tasks:**
+**Implementation status:** Public layout configuration, draft/print rendering, accessible public output, stable published snapshots, and QR output are implemented. Added authenticated `/meetings/[meetingId]/public-preview` draft preview that bypasses published snapshots and uses same normalized renderer/layout path as print output, so authorized users can inspect current public-shaped content before publish. Browser-level print-preview exercise remains open.
 
-1. Add persisted public layout configuration with versioned JSON shape.
-2. Validate allowed presets, paper sizes, panel slots, cover image metadata, and announcement mode server-side.
-3. Add print preview with fold/panel guides.
-4. Add public preview before publish.
-5. Add publish snapshot/version and explicit republish status.
-6. Keep public page responsive and text-first.
-7. Add QR code that points to stable public URL.
-8. Add tests for private-field exclusion, empty sections, escaped text, image absence, all presets, and announcement modes.
-9. Add deterministic PDF/print fixtures where practical.
+**Completed tasks:**
+
+1. Persisted public layout configuration.
+2. Server-side validation for layout and cover metadata.
+3. Print preview with fold/panel guides.
+4. Public preview before publish.
+5. Published snapshot/version and explicit republish behavior.
+6. Responsive, text-first public page.
+7. Stable public URL QR output.
+8. Private-field, empty-section, escaping, layout, and announcement tests.
+
+**Remaining:** Deterministic PDF fixtures and browser-level print-preview exercise.
 
 ## Recommended first public-program release
 
@@ -463,17 +476,20 @@ Defer custom freeform layout until real ward usage shows need.
 
 # Phase 6 — Accessibility, health, and audit
 
+**Implementation status:** Public layout controls now expose explicit labels, grouped options, keyboard-friendly native controls, live save status, failure recovery, and disabled save state. Public program output has a labelled main landmark and accessible QR link/SVG labels. Browser-level accessibility and print-preview exercise remain open.
+
 ## Option 6A: Accessibility coverage
 
 Add keyboard/screen-reader tests for filters, status controls, conflict dialogs, offline state, public pages, print preview, and layout controls. Add large-print/full-page preset.
 
 ## Option 6B: Deployment health page
 
+**Implementation status:** Added authenticated Support/System Admin deployment health page at `/settings/health`. It reports safe database, Redis queue, backup-directory, raw-import purge, and notification-delivery checks without displaying secrets or private payloads. Worker process liveness, scheduling, and restore drills remain deployment-level responsibilities.
 Show database, queue, backup, purge, and notification-worker state to authorized administrators. Do not expose secrets or private payloads.
 
 ## Option 6C: Audit improvements
 
-Add before/after state, actor, source, timestamp, and ward to membership/ordinance transitions, public publishing, layout changes, and official-record handoff changes.
+**Implementation status:** Public layout updates now record ward, actor, action, entity, previous state, and field-level changes in same transaction. Public publish audits now record actual prior meeting status and prior render version instead of assuming every publish starts from draft. Membership/ordinance transitions and deletion now record actor, entity, previous workflow state, field-level transition, member/action context, and official-record handoff action in same transaction. Deployment-level audit-retention review remains open.
 
 ---
 

@@ -11,7 +11,7 @@ import { canManageMeetings, canUseInternalNotes } from '@/src/auth/roles';
 import { isAnnouncementActiveForDate } from '@/src/announcements/types';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
-import type { IntroductionRoles } from '@/src/meetings/types';
+import type { IntroductionRoles, ProgramItemInput } from '@/src/meetings/types';
 
 import { MeetingForm } from '../../meeting-form';
 
@@ -31,6 +31,7 @@ type ProgramItemRow = {
   hymn_number: string | null;
   hymn_title: string | null;
   introduction_roles: IntroductionRoles | null;
+  speaker_status: ProgramItemInput['speakerStatus'];
 };
 
 type MeetingRenderVersionRow = {
@@ -76,7 +77,7 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ me
     }
 
     const programItemsResult = await client.query(
-      `SELECT id, item_type, title, notes, topic, program_notes, hymn_number, hymn_title, introduction_roles
+      `SELECT id, item_type, title, notes, topic, program_notes, hymn_number, hymn_title, introduction_roles, speaker_status
          FROM meeting_program_item
         WHERE meeting_id = $1 AND ward_id = $2
         ORDER BY sequence ASC`,
@@ -100,7 +101,7 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ me
     );
 
     const membershipActionsResult = await client.query(
-      `SELECT id, member_name, action_type, reason, details, status, planned_date, interview_status, interview_date, interviewer_name, responsible_leader, lcr_follow_up_status, lcr_updated_at
+      `SELECT id, member_name, action_type, priesthood_office, reason, details, status, planned_date, interview_status, interview_date, interviewer_name, approval_confirmed, presenting_leader, performing_priesthood_holder, ordinance_date, baptism_date, confirmation_date, baptism_status, confirmation_status, responsible_leader, lcr_follow_up_status, lcr_updated_at
          FROM meeting_membership_ordinance
         WHERE meeting_id = $1::uuid AND ward_id = $2::uuid
         ORDER BY created_at ASC`,
@@ -138,7 +139,8 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ me
       programNotes: item.program_notes ?? '',
       hymnNumber: item.hymn_number ?? '',
       hymnTitle: item.hymn_title ?? '',
-      introductionRoles: item.introduction_roles ?? undefined
+      introductionRoles: item.introduction_roles ?? undefined,
+      speakerStatus: item.speaker_status ?? undefined
     }));
     const versions = versionsResult.rows as MeetingRenderVersionRow[];
     const businessLines = businessLinesResult.rows as BusinessLine[];
@@ -167,6 +169,9 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ me
             </Link>
             <Link href={`/meetings/${meeting.id}/print`} className={cn(buttonVariants({ variant: 'outline' }))}>
               Open print view
+            </Link>
+            <Link href={`/meetings/${meeting.id}/public-preview`} className={cn(buttonVariants({ variant: 'outline' }))}>
+              Preview public program
             </Link>
           </div>
         </section>

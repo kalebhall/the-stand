@@ -14,8 +14,8 @@ flowchart LR
   A2["root:other<br/>1 files"]
   A3["root:tooling<br/>6 files"]
   A4["web:announcements<br/>2 files"]
-  A5["web:api<br/>72 files"]
-  A6["web:app<br/>96 files"]
+  A5["web:api<br/>82 files"]
+  A6["web:app<br/>109 files"]
   A7["web:audit<br/>2 files"]
   A8["web:auth<br/>11 files"]
   A9["web:bootstrap.mjs<br/>1 files"]
@@ -27,65 +27,73 @@ flowchart LR
   A15["web:hardening<br/>1 files"]
   A16["web:health.mjs<br/>1 files"]
   A17["web:imports<br/>19 files"]
-  A18["web:lib<br/>9 files"]
-  A19["web:meetings<br/>7 files"]
-  A20["web:notes<br/>1 files"]
-  A21["web:notifications<br/>23 files"]
-  A22["web:offline<br/>2 files"]
-  A23["web:reports<br/>2 files"]
-  A24["web:stand<br/>6 files"]
-  A25["web:tooling<br/>2 files"]
-  A26["web:types<br/>2 files"]
-  A27["web:ui<br/>30 files"]
-  A28["web:version.mjs<br/>1 files"]
-  A5 -->|99| A8
-  A6 -->|92| A27
-  A5 -->|89| A14
-  A6 -->|74| A8
-  A6 -->|42| A14
-  A5 -->|40| A21
-  A5 -->|23| A18
+  A18["web:leadership<br/>12 files"]
+  A19["web:lib<br/>9 files"]
+  A20["web:maintenance<br/>4 files"]
+  A21["web:meetings<br/>12 files"]
+  A22["web:notes<br/>1 files"]
+  A23["web:notifications<br/>25 files"]
+  A24["web:offline<br/>2 files"]
+  A25["web:reports<br/>2 files"]
+  A26["web:stand<br/>8 files"]
+  A27["web:tooling<br/>2 files"]
+  A28["web:types<br/>2 files"]
+  A29["web:ui<br/>30 files"]
+  A30["web:version.mjs<br/>1 files"]
+  A5 -->|115| A8
+  A6 -->|108| A29
+  A5 -->|105| A14
+  A6 -->|84| A8
+  A6 -->|51| A14
+  A5 -->|40| A23
+  A5 -->|23| A19
+  A5 -->|19| A7
   A5 -->|15| A11
-  A5 -->|14| A7
+  A6 -->|12| A21
   A5 -->|11| A17
-  A6 -->|11| A19
-  A5 -->|5| A19
+  A5 -->|5| A18
+  A5 -->|5| A21
+  A6 -->|5| A26
   A6 -->|4| A11
-  A6 -->|4| A24
   A5 -->|3| A4
   A6 -->|3| A4
+  A6 -->|3| A18
+  A5 -->|2| A12
   A6 -->|2| A12
-  A6 -->|2| A21
+  A6 -->|2| A23
   A8 -->|2| A14
   A10 -->|2| A14
-  A13 -->|2| A18
+  A13 -->|2| A19
   A14 -->|2| A8
-  A21 -->|2| A14
+  A18 -->|2| A23
+  A23 -->|2| A14
   A2 -->|1| A16
   A5 -->|1| A10
-  A5 -->|1| A20
-  A5 -->|1| A24
+  A5 -->|1| A22
+  A5 -->|1| A26
   A6 -->|1| A10
   A6 -->|1| A17
-  A6 -->|1| A18
-  A6 -->|1| A22
-  A6 -->|1| A23
-  A8 -->|1| A18
-  A10 -->|1| A21
+  A6 -->|1| A19
+  A6 -->|1| A24
+  A6 -->|1| A25
+  A8 -->|1| A19
+  A10 -->|1| A23
   A13 -->|1| A9
   A13 -->|1| A16
-  A16 -->|1| A28
+  A16 -->|1| A30
   A17 -->|1| A14
-  A19 -->|1| A4
-  A21 -->|1| A20
-  A24 -->|1| A19
-  A27 -->|1| A8
-  A27 -->|1| A17
-  A27 -->|1| A18
-  A27 -->|1| A20
-  A27 -->|1| A22
-  A27 -->|1| A23
-  A27 -->|1| A24
+  A20 -->|1| A14
+  A21 -->|1| A4
+  A23 -->|1| A22
+  A26 -->|1| A21
+  A29 -->|1| A8
+  A29 -->|1| A12
+  A29 -->|1| A17
+  A29 -->|1| A19
+  A29 -->|1| A22
+  A29 -->|1| A24
+  A29 -->|1| A25
+  A29 -->|1| A26
 ```
 
 ## Area inventory
@@ -96,8 +104,8 @@ flowchart LR
 | `root:other` | 1 |
 | `root:tooling` | 6 |
 | `web:announcements` | 2 |
-| `web:api` | 72 |
-| `web:app` | 96 |
+| `web:api` | 82 |
+| `web:app` | 109 |
 | `web:audit` | 2 |
 | `web:auth` | 11 |
 | `web:bootstrap.mjs` | 1 |
@@ -109,13 +117,15 @@ flowchart LR
 | `web:hardening` | 1 |
 | `web:health.mjs` | 1 |
 | `web:imports` | 19 |
+| `web:leadership` | 12 |
 | `web:lib` | 9 |
-| `web:meetings` | 7 |
+| `web:maintenance` | 4 |
+| `web:meetings` | 12 |
 | `web:notes` | 1 |
-| `web:notifications` | 23 |
+| `web:notifications` | 25 |
 | `web:offline` | 2 |
 | `web:reports` | 2 |
-| `web:stand` | 6 |
+| `web:stand` | 8 |
 | `web:tooling` | 2 |
 | `web:types` | 2 |
 | `web:ui` | 30 |
@@ -125,35 +135,40 @@ flowchart LR
 
 | Importing area | Imported area | Imports |
 | --- | --- | ---: |
-| `web:api` | `web:auth` | 99 |
-| `web:app` | `web:ui` | 92 |
-| `web:api` | `web:db` | 89 |
-| `web:app` | `web:auth` | 74 |
-| `web:app` | `web:db` | 42 |
+| `web:api` | `web:auth` | 115 |
+| `web:app` | `web:ui` | 108 |
+| `web:api` | `web:db` | 105 |
+| `web:app` | `web:auth` | 84 |
+| `web:app` | `web:db` | 51 |
+| `web:app` | `web:app` | 46 |
 | `web:api` | `web:notifications` | 40 |
-| `web:app` | `web:app` | 40 |
-| `web:notifications` | `web:notifications` | 32 |
+| `web:notifications` | `web:notifications` | 38 |
 | `web:ui` | `web:ui` | 27 |
 | `web:api` | `web:lib` | 23 |
-| `web:api` | `web:api` | 19 |
+| `web:api` | `web:api` | 21 |
+| `web:api` | `web:audit` | 19 |
 | `web:api` | `web:callings` | 15 |
-| `web:api` | `web:audit` | 14 |
 | `web:imports` | `web:imports` | 14 |
+| `web:app` | `web:meetings` | 12 |
 | `web:api` | `web:imports` | 11 |
-| `web:app` | `web:meetings` | 11 |
+| `web:meetings` | `web:meetings` | 10 |
 | `web:auth` | `web:auth` | 8 |
+| `web:leadership` | `web:leadership` | 7 |
+| `web:stand` | `web:stand` | 6 |
+| `web:api` | `web:leadership` | 5 |
 | `web:api` | `web:meetings` | 5 |
-| `web:meetings` | `web:meetings` | 5 |
-| `web:stand` | `web:stand` | 5 |
+| `web:app` | `web:stand` | 5 |
 | `web:app` | `web:callings` | 4 |
-| `web:app` | `web:stand` | 4 |
 | `web:callings` | `web:callings` | 4 |
 | `web:db` | `web:db` | 4 |
 | `web:api` | `web:announcements` | 3 |
 | `web:app` | `web:announcements` | 3 |
+| `web:app` | `web:leadership` | 3 |
 | `web:calendar` | `web:calendar` | 3 |
 | `web:lib` | `web:lib` | 3 |
+| `web:maintenance` | `web:maintenance` | 3 |
 | `package:shared` | `package:shared` | 2 |
+| `web:api` | `web:church-actions` | 2 |
 | `web:app` | `web:church-actions` | 2 |
 | `web:app` | `web:notifications` | 2 |
 | `web:auth` | `web:db` | 2 |
@@ -161,6 +176,7 @@ flowchart LR
 | `web:church-actions` | `web:church-actions` | 2 |
 | `web:config` | `web:lib` | 2 |
 | `web:db` | `web:auth` | 2 |
+| `web:leadership` | `web:notifications` | 2 |
 | `web:notifications` | `web:db` | 2 |
 | `root:other` | `web:health.mjs` | 1 |
 | `web:announcements` | `web:announcements` | 1 |
@@ -179,12 +195,14 @@ flowchart LR
 | `web:config` | `web:health.mjs` | 1 |
 | `web:health.mjs` | `web:version.mjs` | 1 |
 | `web:imports` | `web:db` | 1 |
+| `web:maintenance` | `web:db` | 1 |
 | `web:meetings` | `web:announcements` | 1 |
 | `web:notifications` | `web:notes` | 1 |
 | `web:offline` | `web:offline` | 1 |
 | `web:reports` | `web:reports` | 1 |
 | `web:stand` | `web:meetings` | 1 |
 | `web:ui` | `web:auth` | 1 |
+| `web:ui` | `web:church-actions` | 1 |
 | `web:ui` | `web:imports` | 1 |
 | `web:ui` | `web:lib` | 1 |
 | `web:ui` | `web:notes` | 1 |
@@ -196,32 +214,34 @@ flowchart LR
 
 | Importing area | Package/runtime | Imports |
 | --- | --- | ---: |
-| `web:app` | `next` | 75 |
-| `web:api` | `next` | 53 |
-| `web:app` | `react` | 27 |
+| `web:app` | `next` | 82 |
+| `web:api` | `next` | 61 |
+| `web:app` | `react` | 31 |
 | `web:ui` | `react` | 27 |
-| `web:api` | `vitest` | 18 |
+| `web:api` | `vitest` | 20 |
 | `web:ui` | `next` | 14 |
 | `root:tooling` | `Node.js` | 12 |
-| `web:notifications` | `vitest` | 9 |
+| `web:notifications` | `vitest` | 11 |
+| `web:app` | `vitest` | 8 |
 | `web:notifications` | `pg` | 8 |
 | `web:api` | `zod` | 7 |
-| `web:app` | `vitest` | 7 |
 | `web:imports` | `vitest` | 7 |
 | `web:auth` | `next-auth` | 6 |
+| `web:meetings` | `vitest` | 6 |
+| `web:leadership` | `vitest` | 5 |
+| `web:app` | `@testing-library/react` | 4 |
 | `web:auth` | `vitest` | 4 |
+| `web:stand` | `vitest` | 4 |
 | `web:tooling` | `Node.js` | 4 |
 | `web:ui` | `next-auth` | 4 |
-| `web:app` | `@testing-library/react` | 3 |
 | `web:app` | `@testing-library/user-event` | 3 |
+| `web:app` | `Node.js` | 3 |
 | `web:app` | `next-auth` | 3 |
 | `web:callings` | `vitest` | 3 |
 | `web:db` | `Node.js` | 3 |
 | `web:db` | `drizzle-orm` | 3 |
 | `web:db` | `vitest` | 3 |
 | `web:lib` | `vitest` | 3 |
-| `web:meetings` | `vitest` | 3 |
-| `web:stand` | `vitest` | 3 |
 | `web:ui` | `@testing-library/react` | 3 |
 | `web:ui` | `vitest` | 3 |
 | `package:shared` | `vitest` | 2 |
@@ -236,12 +256,13 @@ flowchart LR
 | `web:db` | `pg` | 2 |
 | `web:hardening` | `Node.js` | 2 |
 | `web:imports` | `Node.js` | 2 |
+| `web:leadership` | `pg` | 2 |
 | `web:notifications` | `bullmq` | 2 |
 | `web:tooling` | `pg` | 2 |
 | `package:shared` | `zod` | 1 |
 | `web:announcements` | `vitest` | 1 |
 | `web:api` | `@the-stand/shared` | 1 |
-| `web:app` | `Node.js` | 1 |
+| `web:app` | `bullmq` | 1 |
 | `web:app` | `next-themes` | 1 |
 | `web:audit` | `vitest` | 1 |
 | `web:auth` | `argon2` | 1 |
@@ -265,6 +286,9 @@ flowchart LR
 | `web:lib` | `@sentry/nextjs` | 1 |
 | `web:lib` | `jspdf` | 1 |
 | `web:lib` | `qrcode` | 1 |
+| `web:maintenance` | `pg` | 1 |
+| `web:maintenance` | `vitest` | 1 |
+| `web:meetings` | `qrcode` | 1 |
 | `web:notifications` | `nodemailer` | 1 |
 | `web:offline` | `vitest` | 1 |
 | `web:reports` | `pg` | 1 |
@@ -305,6 +329,9 @@ flowchart LR
 | `apps/web/app/api/w/[wardId]/announcements/route.ts` | `web:api` | 9 | 1 |
 | `apps/web/app/api/w/[wardId]/announcements/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/audit-log/route.ts` | `web:api` | 5 | 1 |
+| `apps/web/app/api/w/[wardId]/bishopric/[meetingId]/actions/[actionId]/route.ts` | `web:api` | 6 | 1 |
+| `apps/web/app/api/w/[wardId]/bishopric/[meetingId]/actions/route.ts` | `web:api` | 4 | 1 |
+| `apps/web/app/api/w/[wardId]/bishopric/route.ts` | `web:api` | 6 | 1 |
 | `apps/web/app/api/w/[wardId]/calendar/refresh/route.ts` | `web:api` | 3 | 1 |
 | `apps/web/app/api/w/[wardId]/calendar/route.ts` | `web:api` | 4 | 1 |
 | `apps/web/app/api/w/[wardId]/callings/[callingId]/assign/route.ts` | `web:api` | 10 | 1 |
@@ -328,16 +355,21 @@ flowchart LR
 | `apps/web/app/api/w/[wardId]/imports/sacrament-planner/reviews/[reviewId]/route.ts` | `web:api` | 4 | 1 |
 | `apps/web/app/api/w/[wardId]/imports/sacrament-planner/reviews/route.ts` | `web:api` | 4 | 1 |
 | `apps/web/app/api/w/[wardId]/imports/sacrament-planner/route.ts` | `web:api` | 5 | 1 |
+| `apps/web/app/api/w/[wardId]/interviews/[interviewId]/route.ts` | `web:api` | 5 | 1 |
+| `apps/web/app/api/w/[wardId]/interviews/calendar/route.ts` | `web:api` | 5 | 1 |
+| `apps/web/app/api/w/[wardId]/interviews/route.ts` | `web:api` | 5 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/business/[lineId]/route.ts` | `web:api` | 5 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/complete/route.ts` | `web:api` | 7 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/complete/route.vitest.ts` | `web:api` | 1 | 1 |
-| `apps/web/app/api/w/[wardId]/meetings/[meetingId]/membership-ordinances/[actionId]/route.ts` | `web:api` | 6 | 1 |
-| `apps/web/app/api/w/[wardId]/meetings/[meetingId]/membership-ordinances/route.ts` | `web:api` | 4 | 1 |
-| `apps/web/app/api/w/[wardId]/meetings/[meetingId]/offline-snapshot/route.ts` | `web:api` | 7 | 1 |
+| `apps/web/app/api/w/[wardId]/meetings/[meetingId]/membership-ordinances/[actionId]/route.ts` | `web:api` | 8 | 1 |
+| `apps/web/app/api/w/[wardId]/meetings/[meetingId]/membership-ordinances/[actionId]/route.vitest.ts` | `web:api` | 1 | 1 |
+| `apps/web/app/api/w/[wardId]/meetings/[meetingId]/membership-ordinances/route.ts` | `web:api` | 5 | 1 |
+| `apps/web/app/api/w/[wardId]/meetings/[meetingId]/offline-snapshot/route.ts` | `web:api` | 6 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/offline-sync/route.ts` | `web:api` | 5 | 2 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/publish/route.ts` | `web:api` | 8 | 2 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/publish/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/route.ts` | `web:api` | 9 | 1 |
+| `apps/web/app/api/w/[wardId]/meetings/[meetingId]/technology/route.ts` | `web:api` | 4 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/route.ts` | `web:api` | 8 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/members/[memberId]/route.ts` | `web:api` | 5 | 1 |
@@ -356,9 +388,13 @@ flowchart LR
 | `apps/web/app/api/w/[wardId]/notifications/route.ts` | `web:api` | 6 | 2 |
 | `apps/web/app/api/w/[wardId]/notifications/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/portal/route.ts` | `web:api` | 4 | 2 |
+| `apps/web/app/api/w/[wardId]/public-layout/route.ts` | `web:api` | 6 | 1 |
+| `apps/web/app/api/w/[wardId]/public-layout/route.vitest.ts` | `web:api` | 2 | 1 |
 | `apps/web/app/api/w/[wardId]/users/[userId]/roles/[roleId]/route.ts` | `web:api` | 7 | 1 |
 | `apps/web/app/api/w/[wardId]/users/[userId]/roles/route.ts` | `web:api` | 7 | 1 |
 | `apps/web/app/api/w/[wardId]/users/route.ts` | `web:api` | 4 | 1 |
+| `apps/web/app/bishopric/bishopric-workspace-client.tsx` | `web:app` | 3 | 1 |
+| `apps/web/app/bishopric/page.tsx` | `web:app` | 8 | 1 |
 | `apps/web/app/callings/error.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/callings/loading.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/callings/page.tsx` | `web:app` | 14 | 3 |
@@ -379,6 +415,8 @@ flowchart LR
 | `apps/web/app/imports/page.tsx` | `web:app` | 4 | 2 |
 | `apps/web/app/imports/sacrament-planner/page.tsx` | `web:app` | 5 | 2 |
 | `apps/web/app/imports/sacrament-planner/sacrament-planner-import-client.tsx` | `web:app` | 2 | 1 |
+| `apps/web/app/interviews/interviews-client.tsx` | `web:app` | 3 | 1 |
+| `apps/web/app/interviews/page.tsx` | `web:app` | 7 | 1 |
 | `apps/web/app/layout.tsx` | `web:app` | 6 | 1 |
 | `apps/web/app/login/login-form.tsx` | `web:app` | 2 | 2 |
 | `apps/web/app/login/page.tsx` | `web:app` | 2 | 1 |
@@ -386,6 +424,7 @@ flowchart LR
 | `apps/web/app/logout/page.tsx` | `web:app` | 1 | 0 |
 | `apps/web/app/meetings/[meetingId]/edit/page.tsx` | `web:app` | 12 | 2 |
 | `apps/web/app/meetings/[meetingId]/print/page.tsx` | `web:app` | 7 | 1 |
+| `apps/web/app/meetings/[meetingId]/public-preview/page.tsx` | `web:app` | 1 | 0 |
 | `apps/web/app/meetings/delete-meeting-button.tsx` | `web:app` | 1 | 2 |
 | `apps/web/app/meetings/error.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/meetings/loading.tsx` | `web:app` | 0 | 0 |
@@ -396,6 +435,7 @@ flowchart LR
 | `apps/web/app/members/page.tsx` | `web:app` | 7 | 2 |
 | `apps/web/app/membership-ordinances/page.tsx` | `web:app` | 8 | 2 |
 | `apps/web/app/membership-ordinances/workspace-controls.tsx` | `web:app` | 2 | 1 |
+| `apps/web/app/missionary-coordination/page.tsx` | `web:app` | 0 | 1 |
 | `apps/web/app/notifications/error.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/notifications/loading.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/notifications/notification-center.tsx` | `web:app` | 1 | 1 |
@@ -414,18 +454,22 @@ flowchart LR
 | `apps/web/app/sentry-example-page/page.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/settings/audit-log/WardAuditLogClient.tsx` | `web:app` | 1 | 1 |
 | `apps/web/app/settings/audit-log/page.tsx` | `web:app` | 8 | 2 |
+| `apps/web/app/settings/health/page.tsx` | `web:app` | 3 | 4 |
 | `apps/web/app/settings/notification-timezone.tsx` | `web:app` | 0 | 1 |
 | `apps/web/app/settings/notification-timezone.vitest.tsx` | `web:app` | 1 | 4 |
 | `apps/web/app/settings/notifications/notification-subscription-settings.tsx` | `web:app` | 1 | 1 |
 | `apps/web/app/settings/notifications/notification-subscription-settings.vitest.tsx` | `web:app` | 1 | 4 |
 | `apps/web/app/settings/notifications/page.tsx` | `web:app` | 2 | 1 |
 | `apps/web/app/settings/page.tsx` | `web:app` | 5 | 1 |
+| `apps/web/app/settings/public-layout/page.tsx` | `web:app` | 7 | 1 |
+| `apps/web/app/settings/public-layout/public-layout-client.tsx` | `web:app` | 3 | 1 |
+| `apps/web/app/settings/public-layout/public-layout-client.vitest.tsx` | `web:app` | 1 | 2 |
 | `apps/web/app/settings/public-portal/error.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/settings/public-portal/loading.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/settings/public-portal/page.tsx` | `web:app` | 7 | 3 |
 | `apps/web/app/settings/stand-script/error.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/settings/stand-script/loading.tsx` | `web:app` | 0 | 0 |
-| `apps/web/app/settings/stand-script/page.tsx` | `web:app` | 6 | 2 |
+| `apps/web/app/settings/stand-script/page.tsx` | `web:app` | 7 | 2 |
 | `apps/web/app/settings/users/error.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/settings/users/loading.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/settings/users/page.tsx` | `web:app` | 3 | 2 |
@@ -446,6 +490,9 @@ flowchart LR
 | `apps/web/app/support/users/page.tsx` | `web:app` | 7 | 2 |
 | `apps/web/app/support/users/support-grants.ts` | `web:app` | 0 | 0 |
 | `apps/web/app/support/users/support-grants.vitest.ts` | `web:app` | 1 | 1 |
+| `apps/web/app/technology/page.tsx` | `web:app` | 7 | 1 |
+| `apps/web/app/technology/technology-client.tsx` | `web:app` | 2 | 1 |
+| `apps/web/app/ward-council/page.tsx` | `web:app` | 0 | 1 |
 | `apps/web/components/AddCallingForm.tsx` | `web:ui` | 3 | 1 |
 | `apps/web/components/AddCallingSection.tsx` | `web:ui` | 1 | 1 |
 | `apps/web/components/CallingAssignButton.tsx` | `web:ui` | 1 | 2 |
@@ -453,7 +500,7 @@ flowchart LR
 | `apps/web/components/CallingReleaseButton.tsx` | `web:ui` | 1 | 2 |
 | `apps/web/components/HymnAutocomplete.tsx` | `web:ui` | 0 | 1 |
 | `apps/web/components/InternalNotesPanel.tsx` | `web:ui` | 2 | 1 |
-| `apps/web/components/MembershipOrdinanceSection.tsx` | `web:ui` | 2 | 2 |
+| `apps/web/components/MembershipOrdinanceSection.tsx` | `web:ui` | 3 | 2 |
 | `apps/web/components/StandardCallingsManager.tsx` | `web:ui` | 1 | 2 |
 | `apps/web/components/WardBusinessSection.tsx` | `web:ui` | 2 | 2 |
 | `apps/web/components/WardBusinessSection.vitest.tsx` | `web:ui` | 1 | 3 |
@@ -548,6 +595,18 @@ flowchart LR
 | `apps/web/src/imports/purge.vitest.ts` | `web:imports` | 1 | 1 |
 | `apps/web/src/imports/sacrament-planner.ts` | `web:imports` | 0 | 0 |
 | `apps/web/src/imports/sacrament-planner.vitest.ts` | `web:imports` | 1 | 1 |
+| `apps/web/src/leadership/bishopric.ts` | `web:leadership` | 0 | 0 |
+| `apps/web/src/leadership/bishopric.vitest.ts` | `web:leadership` | 1 | 1 |
+| `apps/web/src/leadership/interview-ics.ts` | `web:leadership` | 0 | 0 |
+| `apps/web/src/leadership/interview-ics.vitest.ts` | `web:leadership` | 1 | 1 |
+| `apps/web/src/leadership/interview-reminder-runner.mjs` | `web:leadership` | 2 | 1 |
+| `apps/web/src/leadership/interview-reminders.ts` | `web:leadership` | 0 | 0 |
+| `apps/web/src/leadership/interview-reminders.vitest.ts` | `web:leadership` | 1 | 1 |
+| `apps/web/src/leadership/interviews.ts` | `web:leadership` | 0 | 0 |
+| `apps/web/src/leadership/interviews.vitest.ts` | `web:leadership` | 1 | 1 |
+| `apps/web/src/leadership/technology-reminder-runner.mjs` | `web:leadership` | 2 | 1 |
+| `apps/web/src/leadership/technology-reminders.ts` | `web:leadership` | 0 | 0 |
+| `apps/web/src/leadership/technology-reminders.vitest.ts` | `web:leadership` | 1 | 1 |
 | `apps/web/src/lib/logger.ts` | `web:lib` | 0 | 0 |
 | `apps/web/src/lib/qr-pdf.ts` | `web:lib` | 0 | 2 |
 | `apps/web/src/lib/qr-pdf.vitest.ts` | `web:lib` | 1 | 1 |
@@ -557,12 +616,21 @@ flowchart LR
 | `apps/web/src/lib/sentry.ts` | `web:lib` | 0 | 1 |
 | `apps/web/src/lib/version.ts` | `web:lib` | 0 | 0 |
 | `apps/web/src/lib/version.vitest.ts` | `web:lib` | 1 | 1 |
+| `apps/web/src/maintenance/retention-contract.js` | `web:maintenance` | 0 | 0 |
+| `apps/web/src/maintenance/retention-contract.vitest.ts` | `web:maintenance` | 1 | 1 |
+| `apps/web/src/maintenance/retention-runner.mjs` | `web:maintenance` | 1 | 1 |
+| `apps/web/src/maintenance/retention.ts` | `web:maintenance` | 2 | 0 |
 | `apps/web/src/meetings/date.ts` | `web:meetings` | 0 | 0 |
 | `apps/web/src/meetings/date.vitest.ts` | `web:meetings` | 1 | 1 |
 | `apps/web/src/meetings/default-program.ts` | `web:meetings` | 1 | 0 |
-| `apps/web/src/meetings/default-program.vitest.ts` | `web:meetings` | 1 | 1 |
-| `apps/web/src/meetings/render.ts` | `web:meetings` | 2 | 0 |
+| `apps/web/src/meetings/default-program.vitest.ts` | `web:meetings` | 2 | 1 |
+| `apps/web/src/meetings/print-fixtures.vitest.ts` | `web:meetings` | 1 | 1 |
+| `apps/web/src/meetings/public-layout.ts` | `web:meetings` | 0 | 0 |
+| `apps/web/src/meetings/public-layout.vitest.ts` | `web:meetings` | 1 | 1 |
+| `apps/web/src/meetings/render.ts` | `web:meetings` | 3 | 1 |
 | `apps/web/src/meetings/render.vitest.ts` | `web:meetings` | 1 | 1 |
+| `apps/web/src/meetings/technology.ts` | `web:meetings` | 0 | 0 |
+| `apps/web/src/meetings/technology.vitest.ts` | `web:meetings` | 1 | 1 |
 | `apps/web/src/meetings/types.ts` | `web:meetings` | 0 | 0 |
 | `apps/web/src/notes/types.ts` | `web:notes` | 0 | 0 |
 | `apps/web/src/notifications/diagnostics.ts` | `web:notifications` | 0 | 1 |
@@ -575,6 +643,7 @@ flowchart LR
 | `apps/web/src/notifications/events.vitest.ts` | `web:notifications` | 1 | 1 |
 | `apps/web/src/notifications/format.ts` | `web:notifications` | 2 | 0 |
 | `apps/web/src/notifications/format.vitest.ts` | `web:notifications` | 1 | 1 |
+| `apps/web/src/notifications/interview-reminder.vitest.ts` | `web:notifications` | 3 | 1 |
 | `apps/web/src/notifications/outbox.ts` | `web:notifications` | 1 | 1 |
 | `apps/web/src/notifications/queue.ts` | `web:notifications` | 1 | 1 |
 | `apps/web/src/notifications/recipients.ts` | `web:notifications` | 1 | 1 |
@@ -583,6 +652,7 @@ flowchart LR
 | `apps/web/src/notifications/runner.vitest.ts` | `web:notifications` | 1 | 1 |
 | `apps/web/src/notifications/subscriptions.ts` | `web:notifications` | 1 | 1 |
 | `apps/web/src/notifications/subscriptions.vitest.ts` | `web:notifications` | 1 | 1 |
+| `apps/web/src/notifications/technology-reminder.vitest.ts` | `web:notifications` | 3 | 1 |
 | `apps/web/src/notifications/user-notifications.ts` | `web:notifications` | 1 | 1 |
 | `apps/web/src/notifications/user-notifications.vitest.ts` | `web:notifications` | 1 | 1 |
 | `apps/web/src/notifications/visibility.ts` | `web:notifications` | 1 | 0 |
@@ -598,6 +668,8 @@ flowchart LR
 | `apps/web/src/stand/member-display.vitest.ts` | `web:stand` | 1 | 1 |
 | `apps/web/src/stand/render.ts` | `web:stand` | 3 | 0 |
 | `apps/web/src/stand/render.vitest.ts` | `web:stand` | 1 | 1 |
+| `apps/web/src/stand/template-classification.ts` | `web:stand` | 0 | 0 |
+| `apps/web/src/stand/template-classification.vitest.ts` | `web:stand` | 1 | 1 |
 | `apps/web/src/types/external-modules.d.ts` | `web:types` | 0 | 0 |
 | `apps/web/src/types/pg.d.ts` | `web:types` | 0 | 0 |
 | `apps/web/src/version.mjs` | `web:version.mjs` | 0 | 0 |

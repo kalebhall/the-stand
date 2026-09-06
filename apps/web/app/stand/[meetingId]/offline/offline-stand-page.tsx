@@ -20,10 +20,15 @@ import {
 function membershipActionLabel(actionType: string): string {
   return {
     WELCOME_NEW_MEMBER: 'Welcome new member',
+    RECOGNIZE_BAPTIZED_CHILD: 'Recognize baptized child',
     BABY_BLESSING: 'Baby blessing',
     PRIESTHOOD_ORDINATION: 'Priesthood ordination',
     PRIESTHOOD_ADVANCEMENT: 'Priesthood advancement'
   }[actionType] ?? actionType.replaceAll('_', ' ');
+}
+
+function priesthoodOfficeLabel(office: string | null | undefined): string | null {
+  return { DEACON: 'Deacon', TEACHER: 'Teacher', PRIEST: 'Priest', ELDER: 'Elder', HIGH_PRIEST: 'High priest', UNKNOWN: 'Unknown during planning' }[office ?? ''] ?? null;
 }
 
 function membershipStatusLabel(status: string): string {
@@ -457,6 +462,25 @@ export default function OfflineStandPage({ meetingId }: { meetingId: string }) {
           {clearing ? 'Deleting offline data…' : 'Delete offline data'}
         </button>
       </section>
+      {snapshot.technology ? (
+        <section className="rounded-lg border bg-card p-4">
+          <h2 className="font-semibold">Technology checklist reference</h2>
+          <p className="mt-1 text-sm text-muted-foreground">Read-only saved checklist. Update checklist while online at <a className="underline" href="/technology">Technology</a>.</p>
+          <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
+            <div><dt className="text-muted-foreground">Owner</dt><dd>{snapshot.technology.ownerName || 'Unassigned'}</dd></div>
+            {[
+              ['Room ready', snapshot.technology.roomReady],
+              ['Audio ready', snapshot.technology.audioReady],
+              ['Stream ready', snapshot.technology.streamReady],
+              ['Accessibility checked', snapshot.technology.accessibilityChecked],
+              ['Recording deletion reminder', snapshot.technology.recordingDeletionReminder],
+              ['Start confirmed', Boolean(snapshot.technology.startConfirmedAt)],
+              ['Stop confirmed', Boolean(snapshot.technology.stopConfirmedAt)]
+            ].map(([label, value]) => <div key={String(label)}><dt className="text-muted-foreground">{String(label)}</dt><dd>{value ? 'Complete' : 'Needs attention'}</dd></div>)}
+          </dl>
+          {snapshot.technology.authorizedLink ? <p className="mt-3 text-sm"><a className="underline" href={snapshot.technology.authorizedLink} target="_blank" rel="noreferrer">Open authorized technology link</a></p> : null}
+        </section>
+      ) : null}
       {snapshot.notes?.length || noteComposerOpen ? (
         <section className="rounded-lg border bg-card p-4">
           <div className="flex items-center justify-between gap-2">
@@ -543,6 +567,10 @@ export default function OfflineStandPage({ meetingId }: { meetingId: string }) {
                   <div>
                     <p className="text-xs uppercase tracking-wide text-muted-foreground">{membershipActionLabel(action.actionType)}</p>
                     <p className="font-medium">{action.memberName}</p>
+                    {priesthoodOfficeLabel(action.priesthoodOffice) ? <p className="text-muted-foreground">Office: {priesthoodOfficeLabel(action.priesthoodOffice)}</p> : null}
+                    {action.actionType === 'BAPTISM_CONFIRMATION_FOLLOW_UP' ? (
+                      <p className="text-muted-foreground">Baptism: {action.baptismStatus ?? 'planned'}{action.baptismDate ? ` (${action.baptismDate})` : ''} · Confirmation: {action.confirmationStatus ?? 'planned'}{action.confirmationDate ? ` (${action.confirmationDate})` : ''}</p>
+                    ) : null}
                     {action.responsibleLeader ? <p className="text-muted-foreground">Responsible: {action.responsibleLeader}</p> : null}
                     {action.interviewStatus && action.interviewStatus !== 'not_required' ? (
                       <p className="text-muted-foreground">Interview: {action.interviewStatus.replaceAll('_', ' ')}</p>

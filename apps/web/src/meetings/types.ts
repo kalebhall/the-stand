@@ -12,7 +12,11 @@ export type ProgramItemInput = {
   hymnNumber: string;
   hymnTitle: string;
   introductionRoles?: IntroductionRoles;
+  speakerStatus?: SpeakerStatus;
 };
+
+export const SPEAKER_STATUSES = ['PLANNED', 'INVITED', 'ACCEPTED', 'CONFIRMED', 'COMPLETED'] as const;
+export type SpeakerStatus = (typeof SPEAKER_STATUSES)[number];
 
 export type IntroductionRoles = {
   presiding: string;
@@ -31,6 +35,12 @@ export const INTRODUCTION_ITEM_TYPE = 'INTRODUCTION';
 
 export function isMeetingType(value: string): value is MeetingType {
   return MEETING_TYPES.includes(value as MeetingType);
+}
+
+export function validateProgramItemsForMeetingType(meetingType: string, items: Pick<ProgramItemInput, 'itemType'>[]): string | null {
+  if (meetingType !== 'FAST_TESTIMONY') return null;
+  const forbidden = items.map((item) => item.itemType.toUpperCase()).filter((itemType) => itemType === 'SPEAKER' || itemType === 'SPECIAL_HYMN');
+  return forbidden.length ? 'Fast-and-testimony meetings cannot include assigned speakers or special musical selections.' : null;
 }
 
 export function getProgramItemLabel(itemType: string): string {

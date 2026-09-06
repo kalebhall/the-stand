@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { getMembershipOrdinanceGroup, getMembershipOrdinanceNextStep, matchesMembershipOrdinanceFilters, type MembershipOrdinanceActionRow } from './membership-ordinance';
+import { getMembershipOrdinanceGroup, getMembershipOrdinanceNextStep, isWardSacramentPriesthoodActionAllowed, matchesMembershipOrdinanceFilters, validateMembershipOrdinanceTransition, validatePriesthoodOffice, type MembershipOrdinanceActionRow } from './membership-ordinance';
 
 const baseAction: MembershipOrdinanceActionRow = {
   id: 'action-1',
@@ -50,5 +50,39 @@ describe('membership ordinance workspace helpers', () => {
   it('returns the most important next step', () => {
     expect(getMembershipOrdinanceNextStep(baseAction)).toBe('Update LCR');
     expect(getMembershipOrdinanceNextStep({ ...baseAction, lcrFollowUpStatus: 'not_applicable', status: 'action_needed' })).toBe('Complete action');
+  });
+
+  it('accepts typed priesthood offices and rejects invalid advancement offices', () => {
+    expect(validatePriesthoodOffice('PRIESTHOOD_ORDINATION', 'ELDER')).toBe(true);
+    expect(validatePriesthoodOffice('PRIESTHOOD_ADVANCEMENT', 'DEACON')).toBe(false);
+    expect(validatePriesthoodOffice('PRIESTHOOD_ADVANCEMENT', 'UNKNOWN')).toBe(true);
+    expect(validatePriesthoodOffice('WELCOME_NEW_MEMBER', 'ELDER')).toBe(false);
+    expect(validatePriesthoodOffice('PRIESTHOOD_ORDINATION', 'BISHOP')).toBe(false);
+  });
+
+  it('keeps baptized-child recognition distinct from new-member welcome', () => {
+    expect(validatePriesthoodOffice('RECOGNIZE_BAPTIZED_CHILD', null)).toBe(true);
+    expect(getMembershipOrdinanceNextStep({ ...baseAction, actionType: 'RECOGNIZE_BAPTIZED_CHILD', lcrFollowUpStatus: 'not_applicable' })).toBe('Present in meeting');
+  });
+
+  it('tracks baptism and confirmation as follow-up, not a sacrament ordinance item', () => {
+    expect(validatePriesthoodOffice('BAPTISM_CONFIRMATION_FOLLOW_UP', null)).toBe(true);
+    expect(getMembershipOrdinanceNextStep({ ...baseAction, actionType: 'BAPTISM_CONFIRMATION_FOLLOW_UP', lcrFollowUpStatus: 'not_applicable' })).toBe('Present in meeting');
+  });
+
+  it('validates follow-up ordering and blocks premature official-record completion', () => {
+    expect(validateMembershipOrdinanceTransition({ status: 'pending', interviewStatus: 'not_required', lcrFollowUpStatus: 'not_applicable', recordFormNeeded: true, officialSystemFollowUpStatus: 'not_started' }, 'completed')).toBe('Action must be announced before completion.');
+    expect(validateMembershipOrdinanceTransition({ status: 'action_needed', interviewStatus: 'not_required', lcrFollowUpStatus: 'needed', recordFormNeeded: true, officialSystemFollowUpStatus: 'not_started' }, 'lcr_completed')).toBe('Underlying action must be completed before LCR follow-up.');
+    expect(validateMembershipOrdinanceTransition({ status: 'completed', interviewStatus: 'not_required', lcrFollowUpStatus: 'not_applicable', recordFormNeeded: true, officialSystemFollowUpStatus: 'not_started' }, 'official_record_completed')).toBe('Official-record handoff must be started after underlying action completion.');
+    expect(validateMembershipOrdinanceTransition({ status: 'completed', interviewStatus: 'not_required', lcrFollowUpStatus: 'not_applicable', recordFormNeeded: true, officialSystemFollowUpStatus: 'in_progress' }, 'official_record_completed')).toBeNull();
+    expect(validateMembershipOrdinanceTransition({ status: 'completed', interviewStatus: 'not_required', lcrFollowUpStatus: 'not_applicable', recordFormNeeded: true, officialSystemFollowUpStatus: 'completed' }, 'certificate_delivered')).toBeNull();
+  });
+
+
+  it('keeps elder and high priest actions out of ward sacrament meetings', () => {
+    expect(isWardSacramentPriesthoodActionAllowed('SACRAMENT', 'ELDER')).toBe(false);
+    expect(isWardSacramentPriesthoodActionAllowed('SACRAMENT', 'HIGH_PRIEST')).toBe(false);
+    expect(isWardSacramentPriesthoodActionAllowed('SACRAMENT', 'PRIEST')).toBe(true);
+    expect(isWardSacramentPriesthoodActionAllowed('SACRAMENT', 'UNKNOWN')).toBe(true);
   });
 });

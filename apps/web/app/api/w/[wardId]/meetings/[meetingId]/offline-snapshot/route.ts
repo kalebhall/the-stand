@@ -6,7 +6,6 @@ import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 import { isAnnouncementActiveForDate } from '@/src/announcements/types';
 import { buildStandRows } from '@/src/stand/render';
-import type { IntroductionRoles } from '@/src/meetings/types';
 
 export async function GET(_: Request, context: { params: Promise<{ wardId: string; meetingId: string }> }) {
   const session = await auth();
@@ -56,10 +55,17 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
       [meetingId, wardId]
     );
     const membershipActions = await client.query(
-      `SELECT id, member_name, action_type, status, planned_date, interview_status, interview_date, interviewer_name, responsible_leader, lcr_follow_up_status, lcr_updated_at
+      `SELECT id, member_name, action_type, priesthood_office, status, planned_date, interview_status, interview_date, interviewer_name, approval_confirmed, presenting_leader, performing_priesthood_holder, ordinance_date, baptism_date, confirmation_date, baptism_status, confirmation_status, responsible_leader, lcr_follow_up_status, lcr_updated_at
          FROM meeting_membership_ordinance
         WHERE meeting_id = $1::uuid AND ward_id = $2::uuid
         ORDER BY created_at ASC`,
+      [meetingId, wardId]
+    );
+    const technology = await client.query(
+      `SELECT owner_name, room_ready, audio_ready, stream_ready, accessibility_checked, authorized_link, start_confirmed_at, stop_confirmed_at, recording_deletion_reminder
+         FROM meeting_technology_checklist
+        WHERE meeting_id = $1::uuid AND ward_id = $2::uuid
+        LIMIT 1`,
       [meetingId, wardId]
     );
     const notes = await client.query(
@@ -117,15 +123,33 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
         id: action.id,
         memberName: action.member_name,
         actionType: action.action_type,
+        priesthoodOffice: action.priesthood_office,
         status: action.status,
         plannedDate: action.planned_date,
         interviewStatus: action.interview_status,
         interviewDate: action.interview_date,
         interviewerName: action.interviewer_name,
+        approvalConfirmed: action.approval_confirmed,
+        presentingLeader: action.presenting_leader,
+        performingPriesthoodHolder: action.performing_priesthood_holder,
+        ordinanceDate: action.ordinance_date,
         responsibleLeader: action.responsible_leader,
         lcrFollowUpStatus: action.lcr_follow_up_status,
         lcrUpdatedAt: action.lcr_updated_at
       })),
+      technology: technology.rows[0]
+        ? {
+            ownerName: technology.rows[0].owner_name,
+            roomReady: technology.rows[0].room_ready,
+            audioReady: technology.rows[0].audio_ready,
+            streamReady: technology.rows[0].stream_ready,
+            accessibilityChecked: technology.rows[0].accessibility_checked,
+            authorizedLink: technology.rows[0].authorized_link,
+            startConfirmedAt: technology.rows[0].start_confirmed_at,
+            stopConfirmedAt: technology.rows[0].stop_confirmed_at,
+            recordingDeletionReminder: technology.rows[0].recording_deletion_reminder
+          }
+        : null,
       notes: notes.rows.map((note) => ({
         id: note.id,
         visibility: 'PRIVATE',

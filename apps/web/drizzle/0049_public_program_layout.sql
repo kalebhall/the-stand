@@ -1,0 +1,10 @@
+CREATE TABLE IF NOT EXISTS public_program_layout (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  ward_id UUID NOT NULL REFERENCES ward(id) ON DELETE CASCADE,
+  preset TEXT NOT NULL DEFAULT 'SINGLE_SHEET_BIFOLD' CHECK (preset IN ('SINGLE_SHEET_BIFOLD', 'TRI_FOLD_BULLETIN', 'FULL_PAGE')),
+  announcement_mode TEXT NOT NULL DEFAULT 'AFTER_PROGRAM' CHECK (announcement_mode IN ('NONE', 'AFTER_PROGRAM', 'BACK_PANEL')),
+  cover_mode TEXT NOT NULL DEFAULT 'NONE' CHECK (cover_mode IN ('NONE', 'AUTHORIZED_IMAGE')),
+  updated_by_user_id UUID REFERENCES user_account(id) ON DELETE SET NULL,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (ward_id)
+);

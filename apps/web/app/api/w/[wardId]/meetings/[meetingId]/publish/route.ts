@@ -14,6 +14,7 @@ type MeetingRow = {
   id: string;
   meeting_date: string;
   meeting_type: string;
+  status: string;
 };
 
 type ProgramItemRow = {
@@ -33,6 +34,14 @@ type AnnouncementRow = {
   end_date: string | null;
   is_permanent: boolean;
   placement: 'PROGRAM_TOP' | 'PROGRAM_BOTTOM';
+};
+
+type LayoutRow = {
+  preset: 'SINGLE_SHEET_BIFOLD' | 'TRI_FOLD_BULLETIN' | 'FULL_PAGE';
+  announcement_mode: 'NONE' | 'AFTER_PROGRAM' | 'BACK_PANEL';
+  cover_mode: 'NONE' | 'AUTHORIZED_IMAGE';
+  cover_image_url: string | null;
+  cover_image_alt_text: string | null;
 };
 
 function generatePublicToken(): string {
@@ -57,7 +66,7 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
     await setDbContext(client, { userId: session.user.id, wardId });
 
     const meetingResult = await client.query(
-      `SELECT id, meeting_date, meeting_type
+      `SELECT id, meeting_date, meeting_type, status
          FROM meeting
         WHERE id = $1::uuid AND ward_id = $2::uuid
         LIMIT 1
@@ -86,6 +95,15 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
       [wardId]
     );
 
+    const layoutResult = await client.query(
+      'SELECT preset, announcement_mode, cover_mode, cover_image_url, cover_image_alt_text FROM public_program_layout WHERE ward_id = $1::uuid LIMIT 1',
+      [wardId]
+    );
+    const layout = (layoutResult.rows?.[0] as LayoutRow | undefined) ?? { preset: 'FULL_PAGE' as const, announcement_mode: 'AFTER_PROGRAM' as const, cover_mode: 'NONE' as const, cover_image_url: null, cover_image_alt_text: null };
+
+    const shareTokenResult = await client.query('SELECT token FROM public_program_share WHERE meeting_id = $1::uuid AND ward_id = $2::uuid LIMIT 1', [meetingId, wardId]);
+    const shareToken = shareTokenResult.rows?.[0]?.token ?? generatePublicToken();
+
     const versionResult = await client.query(
       'SELECT COALESCE(MAX(version), 0)::int AS latest_version FROM meeting_program_render WHERE meeting_id = $1::uuid',
       [meetingId]
@@ -104,6 +122,7 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
     }));
 
     const renderHtml = buildMeetingRenderHtml({
+      publicUrl: `${process.env.NEXTAUTH_URL ?? 'http://localhost:3000'}/p/${shareToken}`,
       meetingDate: meeting.meeting_date,
       meetingType: meeting.meeting_type,
       programItems,
@@ -115,7 +134,14 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
         isPermanent: item.is_permanent,
         placement: item.placement,
         includeInProgram: item.include_in_program
-      }))
+      })),
+      layout: {
+        preset: layout.preset,
+        announcementMode: layout.announcement_mode,
+        coverMode: layout.cover_mode,
+        coverImageUrl: layout.cover_image_url,
+        coverImageAltText: layout.cover_image_alt_text
+      }
     });
 
     await client.query(
@@ -136,7 +162,7 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
       `INSERT INTO public_program_share (ward_id, meeting_id, token)
        VALUES ($1::uuid, $2::uuid, $3::text)
        ON CONFLICT (meeting_id) DO NOTHING`,
-      [wardId, meetingId, generatePublicToken()]
+      [wardId, meetingId, shareToken]
     );
 
     await client.query(
@@ -157,8 +183,12 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
       entityId: meetingId,
       meetingDate: meeting.meeting_date,
       changes: {
-        status: { old: 'DRAFT', new: 'PUBLISHED' },
+        status: { old: meeting.status || 'DRAFT', new: 'PUBLISHED' },
         version: { old: nextVersion - 1, new: nextVersion }
+      },
+      previousState: {
+        status: meeting.status || 'DRAFT',
+        version: nextVersion - 1
       },
       details: {
         meetingId,

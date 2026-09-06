@@ -41,12 +41,14 @@ describe('POST /api/w/[wardId]/meetings/[meetingId]/publish', () => {
 
     queryMock
       .mockResolvedValueOnce({}) // BEGIN
-      .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'meeting-1', meeting_date: '2026-01-04', meeting_type: 'SACRAMENT' }] }) // SELECT meeting
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'meeting-1', meeting_date: '2026-01-04', meeting_type: 'SACRAMENT', status: 'DRAFT' }] }) // SELECT meeting
       .mockResolvedValueOnce({
         rowCount: 1,
         rows: [{ item_type: 'OPENING_HYMN', title: null, notes: null, hymn_number: '1', hymn_title: 'The Morning Breaks' }]
       }) // SELECT program items
       .mockResolvedValueOnce({ rows: [] }) // SELECT announcements
+      .mockResolvedValueOnce({ rows: [{ preset: 'FULL_PAGE', announcement_mode: 'AFTER_PROGRAM', cover_mode: 'NONE' }] }) // SELECT public layout
+      .mockResolvedValueOnce({ rows: [] }) // SELECT public share token
       .mockResolvedValueOnce({ rows: [{ latest_version: 1 }] }) // SELECT COALESCE MAX version
       .mockResolvedValueOnce({}) // INSERT meeting_program_render
       .mockResolvedValueOnce({}) // UPDATE meeting status

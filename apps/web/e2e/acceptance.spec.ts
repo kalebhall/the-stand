@@ -50,11 +50,32 @@ test('meeting create publish and print flow works', async ({ page }) => {
   });
   expect(updateResponse.status()).toBe(200);
 
+  const layoutResponse = await page.request.patch(`/api/w/${WARD_A}/public-layout`, {
+    data: {
+      preset: 'TRI_FOLD_BULLETIN',
+      announcementMode: 'AFTER_PROGRAM',
+      coverMode: 'NONE',
+      coverImageUrl: '',
+      coverImageAltText: ''
+    }
+  });
+  expect(layoutResponse.status()).toBe(200);
+
+  await page.goto(`/meetings/${id}/public-preview`);
+  const preview = page.locator('main.public-program');
+  await expect(preview).toHaveAttribute('aria-labelledby', 'public-program-title');
+  await expect(preview).toHaveAttribute('data-layout-preset', 'TRI_FOLD_BULLETIN');
+  await expect(page.locator('.print-fold-guides')).toBeHidden();
+
+  await page.emulateMedia({ media: 'print' });
+  await expect(preview).toHaveCSS('column-count', '3');
+  await expect(page.locator('.print-fold-guides')).toBeVisible();
+
   const publishResponse = await page.request.post(`/api/w/${WARD_A}/meetings/${id}/publish`);
   expect(publishResponse.status()).toBe(200);
 
   await page.goto(`/meetings/${id}/print`);
-  await expect(page.getByText('Print meeting program')).toBeVisible();
+  await expect(page.locator('main.public-program')).toBeVisible();
   await expect(page.getByText('SACRAMENT')).toBeVisible();
 });
 

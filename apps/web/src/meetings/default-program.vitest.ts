@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { getDefaultProgramItemsForMeetingType } from './default-program';
+import { validateProgramItemsForMeetingType } from './types';
 
 describe('getDefaultProgramItemsForMeetingType', () => {
   it('returns the sacrament template in the expected order', () => {
@@ -20,6 +21,7 @@ describe('getDefaultProgramItemsForMeetingType', () => {
       'CLOSING_HYMN',
       'BENEDICTION'
     ]);
+    expect(getDefaultProgramItemsForMeetingType('SACRAMENT').filter((item) => item.itemType === 'SPEAKER').every((item) => item.speakerStatus === 'PLANNED')).toBe(true);
   });
 
   it('returns the conference template with only announcements', () => {
@@ -41,6 +43,12 @@ describe('getDefaultProgramItemsForMeetingType', () => {
     });
   });
 
+  it('rejects assigned speakers and special hymns only for fast-and-testimony', () => {
+    expect(validateProgramItemsForMeetingType('FAST_TESTIMONY', [{ itemType: 'SPEAKER' }])).toContain('cannot include');
+    expect(validateProgramItemsForMeetingType('FAST_TESTIMONY', [{ itemType: 'SPECIAL_HYMN' }])).toContain('cannot include');
+    expect(validateProgramItemsForMeetingType('WARD_CONFERENCE', [{ itemType: 'SPEAKER' }])).toBeNull();
+    expect(validateProgramItemsForMeetingType('FAST_TESTIMONY', [{ itemType: 'TESTIMONIES' }])).toBeNull();
+  });
   it.each(['FAST_TESTIMONY', 'WARD_CONFERENCE'])('adds protected introduction item before announcements for %s meetings', (meetingType) => {
     const itemTypes = getDefaultProgramItemsForMeetingType(meetingType).map((item) => item.itemType);
     expect(itemTypes[0]).toBe('INTRODUCTION');

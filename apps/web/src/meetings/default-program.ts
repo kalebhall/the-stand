@@ -59,6 +59,7 @@ export function getDefaultProgramItemsForMeetingType(meetingType: string): Progr
   return MEETING_DEFAULT_ITEM_TYPES[safeMeetingType].map((itemType) => ({
     itemType,
     ...EMPTY_ITEM_FIELDS,
+    ...(itemType === 'SPEAKER' ? { speakerStatus: 'PLANNED' as const } : {}),
     ...(itemType === 'INTRODUCTION' ? { introductionRoles: { ...EMPTY_INTRODUCTION_ROLES } } : {})
   }));
 }

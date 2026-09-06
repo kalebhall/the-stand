@@ -65,16 +65,15 @@ Run the purge job from an actual scheduler or deployment job, emit metrics, and 
 
 ### P0.3 Verify backup restoration, not only backup creation
 
-**Finding:** `infra/scripts/backup.sh` creates compressed PostgreSQL dumps and retains 14 days, but there is no automated restore drill, integrity check, off-host copy, alerting, or documented recovery objective.
+**Status:** Resolved in application and deployment runbook. `infra/scripts/restore-smoke-test.sh` now verifies optional checksum, migration state, core schema, representative row count, and cleanup. Latest deployment drill succeeded; off-site encryption/copy remains deployment responsibility, and checksum proof depends on sidecar presence.
 
-**Recommendation:** Add:
+**Remaining deployment work:**
 
 - encrypted off-host backup storage;
 - backup success/failure monitoring;
-- periodic restore into an isolated database;
-- a checksum/row-count smoke test after restore;
-- documented RPO/RTO and restore runbook;
-- a test for secrets/configuration needed after restore.
+- scheduled quarterly restore drill ownership;
+- documented RPO/RTO review after production sizing;
+- test secrets/configuration needed after restore.
 
 ## Priority 1: official Church workflow coverage
 

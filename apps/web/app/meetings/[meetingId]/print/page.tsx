@@ -40,12 +40,20 @@ type RenderRow = {
   version: number;
 };
 
+type LayoutRow = {
+  preset: 'SINGLE_SHEET_BIFOLD' | 'TRI_FOLD_BULLETIN' | 'FULL_PAGE';
+  announcement_mode: 'NONE' | 'AFTER_PROGRAM' | 'BACK_PANEL';
+  cover_mode: 'NONE' | 'AUTHORIZED_IMAGE';
+  cover_image_url: string | null;
+  cover_image_alt_text: string | null;
+};
+
 export default async function PrintMeetingPage({
   params,
   searchParams
 }: {
   params: Promise<{ meetingId: string }>;
-  searchParams: Promise<{ version?: string }>;
+  searchParams: Promise<{ version?: string; draft?: string }>;
 }) {
   const session = await requireAuthenticatedSession();
   enforcePasswordRotation(session);
@@ -55,7 +63,7 @@ export default async function PrintMeetingPage({
   }
 
   const { meetingId } = await params;
-  const { version } = await searchParams;
+  const { version, draft } = await searchParams;
   const versionNumber = Number(version);
   const requestedVersion = Number.isInteger(versionNumber) && versionNumber > 0 ? versionNumber : null;
   const client = await pool.connect();
@@ -74,7 +82,9 @@ export default async function PrintMeetingPage({
       notFound();
     }
 
-    const renderResult = requestedVersion
+    const renderResult = draft === '1'
+      ? { rowCount: 0, rows: [] }
+      : requestedVersion
       ? await client.query(
           'SELECT render_html, version FROM meeting_program_render WHERE meeting_id = $1::uuid AND ward_id = $2::uuid AND version = $3::int LIMIT 1',
           [meetingId, session.activeWardId, requestedVersion]
@@ -117,6 +127,12 @@ export default async function PrintMeetingPage({
       [session.activeWardId]
     );
 
+    const layoutResult = await client.query(
+      'SELECT preset, announcement_mode, cover_mode, cover_image_url, cover_image_alt_text FROM public_program_layout WHERE ward_id = $1::uuid LIMIT 1',
+      [session.activeWardId]
+    );
+    const layout = (layoutResult.rows?.[0] as LayoutRow | undefined) ?? { preset: 'FULL_PAGE' as const, announcement_mode: 'AFTER_PROGRAM' as const, cover_mode: 'NONE' as const, cover_image_url: null, cover_image_alt_text: null };
+
     const renderHtml = buildMeetingRenderHtml({
       meetingDate,
       meetingType: meeting.meeting_type,
@@ -138,7 +154,14 @@ export default async function PrintMeetingPage({
         isPermanent: item.is_permanent,
         placement: item.placement,
         includeInProgram: item.include_in_program
-      }))
+      })),
+      layout: {
+        preset: layout.preset,
+        announcementMode: layout.announcement_mode,
+        coverMode: layout.cover_mode,
+        coverImageUrl: layout.cover_image_url,
+        coverImageAltText: layout.cover_image_alt_text
+      }
     });
 
     await client.query('COMMIT');

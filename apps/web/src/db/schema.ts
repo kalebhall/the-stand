@@ -146,6 +146,7 @@ export const meetingProgramItem = pgTable('meeting_program_item', {
   hymnNumber: text('hymn_number'),
   hymnTitle: text('hymn_title'),
   introductionRoles: jsonb('introduction_roles'),
+  speakerStatus: text('speaker_status'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 });
 
@@ -196,6 +197,11 @@ export const wardStandTemplate = pgTable(
       .default(
         'The blessing of **{memberName}** will take place after this meeting. [Confirm that the parents and participating priesthood holders are prepared before the ordinance.]'
       ),
+    recognizeBaptizedChildTemplate: text('recognize_baptized_child_template')
+      .notNull()
+      .default(
+        'We recognize **{memberName}**, who has been baptized. [Use the ward-approved introduction and welcome; this prompt does not replace the baptism or confirmation ordinance.]'
+      ),
     priesthoodOrdinationTemplate: text('priesthood_ordination_template')
       .notNull()
       .default(
@@ -206,6 +212,7 @@ export const wardStandTemplate = pgTable(
       .default(
         'It is proposed that **{memberName}** be ordained to the office of **{callingName}**. Those in favor may manifest it by the uplifted hand. Those opposed, if any, may manifest it. [After the vote, remind the authorized priesthood holder to perform the ordination.]'
       ),
+    templateMetadata: jsonb('template_metadata').notNull().default({}),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
   },
@@ -266,6 +273,7 @@ export const meetingMembershipOrdinance = pgTable('meeting_membership_ordinance'
     .references(() => meeting.id, { onDelete: 'cascade' }),
   memberName: text('member_name').notNull(),
   actionType: text('action_type').notNull(),
+  priesthoodOffice: text('priesthood_office'),
   reason: text('reason'),
   details: text('details'),
   status: text('status').notNull().default('pending'),
@@ -273,6 +281,14 @@ export const meetingMembershipOrdinance = pgTable('meeting_membership_ordinance'
   interviewStatus: text('interview_status').notNull().default('not_required'),
   interviewDate: date('interview_date'),
   interviewerName: text('interviewer_name'),
+  approvalConfirmed: boolean('approval_confirmed').notNull().default(false),
+  presentingLeader: text('presenting_leader'),
+  performingPriesthoodHolder: text('performing_priesthood_holder'),
+  ordinanceDate: date('ordinance_date'),
+  baptismDate: date('baptism_date'),
+  confirmationDate: date('confirmation_date'),
+  baptismStatus: text('baptism_status'),
+  confirmationStatus: text('confirmation_status'),
   responsibleLeader: text('responsible_leader'),
   lcrFollowUpStatus: text('lcr_follow_up_status').notNull().default('not_applicable'),
   lcrUpdatedAt: timestamp('lcr_updated_at', { withTimezone: true }),
@@ -288,6 +304,82 @@ export const meetingMembershipOrdinance = pgTable('meeting_membership_ordinance'
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
 });
+
+export const bishopricMeeting = pgTable('bishopric_meeting', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
+  meetingDate: date('meeting_date').notNull(),
+  agendaTemplate: text('agenda_template').notNull().default('BISHOPRIC'),
+  meetingType: text('meeting_type').notNull().default('BISHOPRIC'),
+  status: text('status').notNull().default('OPEN'),
+  createdByUserId: uuid('created_by_user_id').notNull().references(() => userAccount.id, { onDelete: 'restrict' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
+});
+
+export const bishopricAction = pgTable('bishopric_action', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
+  bishopricMeetingId: uuid('bishopric_meeting_id').notNull().references(() => bishopricMeeting.id, { onDelete: 'cascade' }),
+  title: text('title').notNull(),
+  details: text('details'),
+  decision: text('decision'),
+  ownerName: text('owner_name'),
+  dueDate: date('due_date'),
+  visibility: text('visibility').notNull().default('PRIVATE'),
+  status: text('status').notNull().default('PENDING'),
+  carryForward: boolean('carry_forward').notNull().default(false),
+  completedAt: timestamp('completed_at', { withTimezone: true }),
+  completedByUserId: uuid('completed_by_user_id').references(() => userAccount.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
+});
+
+export const scheduledInterview = pgTable('scheduled_interview', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
+  interviewType: text('interview_type').notNull(),
+  memberName: text('member_name').notNull(),
+  interviewerName: text('interviewer_name').notNull(),
+  scheduledAt: timestamp('scheduled_at', { withTimezone: true }).notNull(),
+  status: text('status').notNull().default('SCHEDULED'),
+  linkedActionId: uuid('linked_action_id').references(() => meetingMembershipOrdinance.id, { onDelete: 'set null' }),
+  linkedCallingId: uuid('linked_calling_id').references(() => callingAssignment.id, { onDelete: 'set null' }),
+  privateNote: text('private_note'),
+  completedAt: timestamp('completed_at', { withTimezone: true }),
+  createdByUserId: uuid('created_by_user_id').notNull().references(() => userAccount.id, { onDelete: 'restrict' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
+});
+
+export const meetingTechnologyChecklist = pgTable('meeting_technology_checklist', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
+  meetingId: uuid('meeting_id').notNull().references(() => meeting.id, { onDelete: 'cascade' }),
+  ownerName: text('owner_name'),
+  roomReady: boolean('room_ready').notNull().default(false),
+  audioReady: boolean('audio_ready').notNull().default(false),
+  streamReady: boolean('stream_ready').notNull().default(false),
+  accessibilityChecked: boolean('accessibility_checked').notNull().default(false),
+  authorizedLink: text('authorized_link'),
+  startConfirmedAt: timestamp('start_confirmed_at', { withTimezone: true }),
+  stopConfirmedAt: timestamp('stop_confirmed_at', { withTimezone: true }),
+  recordingDeletionReminder: boolean('recording_deletion_reminder').notNull().default(false),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
+});
+
+export const publicProgramLayout = pgTable('public_program_layout', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
+  preset: text('preset').notNull().default('SINGLE_SHEET_BIFOLD'),
+  announcementMode: text('announcement_mode').notNull().default('AFTER_PROGRAM'),
+  coverMode: text('cover_mode').notNull().default('NONE'),
+  coverImageUrl: text('cover_image_url'),
+  coverImageAltText: text('cover_image_alt_text'),
+  updatedByUserId: uuid('updated_by_user_id').references(() => userAccount.id, { onDelete: 'set null' }),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
+}, (table) => ({ publicProgramLayoutWardUnique: unique().on(table.wardId) }));
 
 export const announcement = pgTable('announcement', {
   id: uuid('id').defaultRandom().primaryKey(),
