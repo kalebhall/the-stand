@@ -296,10 +296,10 @@ export default async function DashboardPage() {
 
         {canAccessMeetings ? (
           <DashboardCard
-            title="Bishopric due actions"
+            title="Leadership due actions"
             value={bishopricDueActionCount}
-            detail="Private bishopric assignments past due."
-            actions={[{ href: '/bishopric', label: 'Open bishopric workspace' }]}
+            detail="Private bishopric, ward council, and missionary coordination assignments past due."
+            actions={[{ href: '/bishopric', label: 'Open leadership workspace' }]}
           />
         ) : null}
 

@@ -329,6 +329,9 @@ export const bishopricAction = pgTable('bishopric_action', {
   visibility: text('visibility').notNull().default('PRIVATE'),
   status: text('status').notNull().default('PENDING'),
   carryForward: boolean('carry_forward').notNull().default(false),
+  memberId: uuid('member_id').references(() => member.id, { onDelete: 'set null' }),
+  callingAssignmentId: uuid('calling_assignment_id').references(() => callingAssignment.id, { onDelete: 'set null' }),
+  linkedMembershipActionId: uuid('linked_membership_action_id').references(() => meetingMembershipOrdinance.id, { onDelete: 'set null' }),
   completedAt: timestamp('completed_at', { withTimezone: true }),
   completedByUserId: uuid('completed_by_user_id').references(() => userAccount.id, { onDelete: 'set null' }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -689,6 +692,7 @@ export const internalNote = pgTable('internal_note', {
   memberId: uuid('member_id').references(() => member.id, { onDelete: 'cascade' }),
   meetingId: uuid('meeting_id').references(() => meeting.id, { onDelete: 'cascade' }),
   programItemId: uuid('program_item_id').references(() => meetingProgramItem.id, { onDelete: 'cascade' }),
+  bishopricActionId: uuid('bishopric_action_id').references(() => bishopricAction.id, { onDelete: 'cascade' }),
   visibility: text('visibility').notNull(),
   noteText: text('note_text').notNull(),
   createdByUserId: uuid('created_by_user_id')

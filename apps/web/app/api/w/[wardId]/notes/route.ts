@@ -13,7 +13,8 @@ import type { NoteTarget } from '@/src/notes/types';
 const targetSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('MEMBER'), memberId: z.string().uuid() }),
   z.object({ type: z.literal('MEETING'), meetingId: z.string().uuid() }),
-  z.object({ type: z.literal('PROGRAM_ITEM'), programItemId: z.string().uuid() })
+  z.object({ type: z.literal('PROGRAM_ITEM'), programItemId: z.string().uuid() }),
+  z.object({ type: z.literal('BISHOPRIC_ACTION'), bishopricActionId: z.string().uuid() })
 ]);
 
 const createNoteSchema = z.object({
@@ -39,24 +40,54 @@ async function targetExists(client: Awaited<ReturnType<typeof pool.connect>>, wa
       return Boolean(result.rowCount);
     }
     case 'PROGRAM_ITEM': {
-      const result = await client.query('SELECT id FROM meeting_program_item WHERE id = $1::uuid AND ward_id = $2::uuid LIMIT 1', [
-        target.programItemId,
-        wardId
-      ]);
+      const result = await client.query('SELECT id FROM meeting_program_item WHERE id = $1::uuid AND ward_id = $2::uuid LIMIT 1', [target.programItemId, wardId]);
+      return Boolean(result.rowCount);
+    }
+    case 'BISHOPRIC_ACTION': {
+      const result = await client.query('SELECT id FROM bishopric_action WHERE id = $1::uuid AND ward_id = $2::uuid LIMIT 1', [target.bishopricActionId, wardId]);
       return Boolean(result.rowCount);
     }
   }
 }
 
-function targetColumns(target: NoteTarget): { memberId: string | null; meetingId: string | null; programItemId: string | null } {
+function targetColumns(target: NoteTarget): { memberId: string | null; meetingId: string | null; programItemId: string | null; bishopricActionId: string | null } {
   switch (target.type) {
     case 'MEMBER':
-      return { memberId: target.memberId, meetingId: null, programItemId: null };
+      return { memberId: target.memberId, meetingId: null, programItemId: null, bishopricActionId: null };
     case 'MEETING':
-      return { memberId: null, meetingId: target.meetingId, programItemId: null };
+      return { memberId: null, meetingId: target.meetingId, programItemId: null, bishopricActionId: null };
     case 'PROGRAM_ITEM':
-      return { memberId: null, meetingId: null, programItemId: target.programItemId };
+      return { memberId: null, meetingId: null, programItemId: target.programItemId, bishopricActionId: null };
+    case 'BISHOPRIC_ACTION':
+      return { memberId: null, meetingId: null, programItemId: null, bishopricActionId: target.bishopricActionId };
   }
+}
+
+export async function GET(request: Request, context: { params: Promise<{ wardId: string }> }) {
+  const session = await auth();
+  if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, { status: 401 });
+  const { wardId } = await context.params;
+  if (!canUseInternalNotes({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
+  const actionId = new URL(request.url).searchParams.get('bishopricActionId');
+  if (!actionId || !z.string().uuid().safeParse(actionId).success) return NextResponse.json({ error: 'bishopricActionId is required', code: 'VALIDATION_ERROR' }, { status: 400 });
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await setDbContext(client, { userId: session.user.id, wardId });
+    const result = await client.query(
+      `SELECT n.id, n.note_text, n.visibility, n.created_at, n.updated_at, n.created_by_user_id, COALESCE(u.display_name, u.email) AS created_by_name
+         FROM internal_note n
+         JOIN bishopric_action ba ON ba.id = n.bishopric_action_id AND ba.ward_id = n.ward_id
+         LEFT JOIN user_account u ON u.id = n.created_by_user_id
+        WHERE n.ward_id = $1::uuid AND n.bishopric_action_id = $2::uuid AND n.visibility IN ('LEADERSHIP', 'PRIVATE')
+        ORDER BY n.created_at DESC`, [wardId, actionId]
+    );
+    await client.query('COMMIT');
+    return NextResponse.json({ notes: result.rows });
+  } catch {
+    await client.query('ROLLBACK').catch(() => {});
+    return NextResponse.json({ error: 'Failed to load leadership notes', code: 'INTERNAL_ERROR' }, { status: 500 });
+  } finally { client.release(); }
 }
 
 export async function POST(request: Request, context: { params: Promise<{ wardId: string }> }) {
@@ -107,11 +138,11 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     const target = targetColumns(parsed.data.target);
     const inserted = await client.query(
       `INSERT INTO internal_note (
-        ward_id, member_id, meeting_id, program_item_id, visibility, note_text, created_by_user_id
+        ward_id, member_id, meeting_id, program_item_id, bishopric_action_id, visibility, note_text, created_by_user_id
       ) VALUES (
-        $1::uuid, $2::uuid, $3::uuid, $4::uuid, $5::text, $6::text, $7::uuid
+        $1::uuid, $2::uuid, $3::uuid, $4::uuid, $5::uuid, $6::text, $7::text, $8::uuid
       ) RETURNING id, created_at`,
-      [wardId, target.memberId, target.meetingId, target.programItemId, parsed.data.visibility, parsed.data.noteText, session.user.id]
+      [wardId, target.memberId, target.meetingId, target.programItemId, target.bishopricActionId, parsed.data.visibility, parsed.data.noteText, session.user.id]
     );
 
     if (parsed.data.visibility === 'PUBLIC' && parsed.data.target.type === 'PROGRAM_ITEM') {

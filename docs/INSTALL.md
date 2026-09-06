@@ -537,9 +537,17 @@ Logs contain counts and sanitized errors only. Keep `DATABASE_URL` in protected 
 
 ## SECTION 10.4 — Scheduled Interview and Technology Reminders
 
-Reminder runners are separate from web requests and require the notification worker plus Redis. They create idempotent outbox events; the worker delivers private in-app notifications to authorized managers. Configure each runner as its own oneshot service so one failure does not hide the other.
+Reminder runners are separate from web requests and require notification worker plus Redis. They create idempotent outbox events; worker delivers private in-app notifications to authorized managers. Configure each runner as its own oneshot service so one failure does not hide other. Repository units are at `infra/systemd/the-stand-interview-reminders.{service,timer}` and `infra/systemd/the-stand-technology-reminders.{service,timer}`. Install them with:
+
+```
+sudo install -m 0644 /opt/the-stand/app/infra/systemd/the-stand-interview-reminders.service /etc/systemd/system/
+sudo install -m 0644 /opt/the-stand/app/infra/systemd/the-stand-interview-reminders.timer /etc/systemd/system/
+sudo install -m 0644 /opt/the-stand/app/infra/systemd/the-stand-technology-reminders.service /etc/systemd/system/
+sudo install -m 0644 /opt/the-stand/app/infra/systemd/the-stand-technology-reminders.timer /etc/systemd/system/
+```
 
 Create `/etc/systemd/system/the-stand-interview-reminders.service`:
+
 
 ```
 [Unit]
@@ -552,7 +560,7 @@ User=the-stand
 Group=the-stand
 WorkingDirectory=/opt/the-stand/app
 EnvironmentFile=/opt/the-stand/app/.env
-ExecStart=/usr/bin/npm --workspace @the-stand/web run remind:interviews
+ExecStart=/usr/bin/env npm --workspace @the-stand/web run remind:interviews
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=full
@@ -579,7 +587,7 @@ Create `/etc/systemd/system/the-stand-technology-reminders.service` with the sam
 
 ```
 Description=The Stand technology checklist reminders
-ExecStart=/usr/bin/npm --workspace @the-stand/web run remind:technology
+ExecStart=/usr/bin/env npm --workspace @the-stand/web run remind:technology
 ```
 
 Create matching `the-stand-technology-reminders.timer`, changing only the description and service unit:
@@ -716,6 +724,27 @@ sudo -u the-stand -H env BACKUP_DIR=/opt/the-stand/backups BACKUP_MAX_AGE_HOURS=
 ```
 
 Use non-zero exit as monitoring failure. Keep `BACKUP_DIR` private and do not place database credentials in the monitor command. This check proves recent local artifact integrity only; it does not prove off-host replication or restore readiness.
+
+For systemd deployments, install the repository units and keep path/age settings in a root-readable protected environment file:
+
+```bash
+sudo install -m 0644 /opt/the-stand/app/infra/systemd/the-stand-backup-health.service /etc/systemd/system/
+sudo install -m 0644 /opt/the-stand/app/infra/systemd/the-stand-backup-health.timer /etc/systemd/system/
+sudo install -d -m 0750 -o root -g postgres /etc/the-stand
+sudo sh -c 'printf "%s\\n" "BACKUP_DIR=/opt/the-stand/backups" "BACKUP_MAX_AGE_HOURS=26" > /etc/the-stand/backup-health.env'
+sudo chown root:postgres /etc/the-stand/backup-health.env
+sudo chmod 0640 /etc/the-stand/backup-health.env
+sudo systemctl daemon-reload
+sudo systemctl enable --now the-stand-backup-health.timer
+sudo systemctl start the-stand-backup-health.service
+sudo systemctl status the-stand-backup-health.service --no-pager
+```
+
+Verify oneshot result and logs separately from timer activation:
+
+```bash
+sudo journalctl -u the-stand-backup-health.service -n 20 --no-pager
+```
 
 13.2 Restore from Backup
 

@@ -93,7 +93,7 @@ git diff --check
 
 **Priority:** P0
 
-**Implementation status:** Added isolated restore smoke validation with optional checksum verification, migration-state validation, core schema checks, representative row count, explicit temporary-database cleanup, and secret-free result metrics. Added `infra/scripts/backup-health.sh` to monitor newest local backup age and checksum integrity with safe non-zero failure states. Documented 14-day backup retention, RPO/RTO assumptions, quarterly drill procedure, and off-site-copy responsibility. Real deployment drill completed 2026-09-06 against latest backup `the_stand_20260905_072725.sql.gz`: restore succeeded, temporary database count returned 0 after cleanup, `/health` returned `{"status":"ok","db":"connected"}`, and `the-stand` remained active. Checksum sidecar was not reported by deployed script; checksum coverage remains conditional on sidecar presence. Off-host replication and production monitor activation remain deployment responsibilities.
+**Implementation status:** Added isolated restore smoke validation with optional checksum verification, migration-state validation, core schema checks, representative row count, explicit temporary-database cleanup, and secret-free result metrics. Added `infra/scripts/backup-health.sh` to monitor newest local backup age and checksum integrity with safe non-zero failure states, plus repository systemd service/timer units for recurring execution. Documented 14-day backup retention, RPO/RTO assumptions, quarterly drill procedure, and off-site-copy responsibility. Real deployment drill completed 2026-09-06 against latest backup `the_stand_20260905_072725.sql.gz`: restore succeeded, temporary database count returned 0 after cleanup, `/health` returned `{"status":"ok","db":"connected"}`, and `the-stand` remained active. Checksum sidecar was not reported by deployed script; checksum coverage remains conditional on sidecar presence. Off-host replication and production monitor activation remain deployment responsibilities.
 
 **Files likely involved:**
 
@@ -274,7 +274,7 @@ Do not store copied ordinance details or replace LCR status.
 
 **Tasks:** Add meeting type and protected route, agenda templates, action links, private visibility rules, assignment lifecycle, dashboard due items, and tests for ward isolation/public exclusion.
 
-**Implementation status:** Core bishopric workspace delivered in `0045_bishopric_workspace.sql`: protected ward-scoped route, private agenda meetings, action assignments with owners/due dates/carry-forward, completion history, lifecycle validation, dashboard overdue count, and public-program exclusion. Linked member/calling/action references and broader meeting templates remain follow-up work.
+**Implementation status:** Core bishopric workspace delivered in `0045_bishopric_workspace.sql`: protected ward-scoped route, private agenda meetings, action assignments with owners/due dates/carry-forward, completion history, lifecycle validation, dashboard overdue count, and public-program exclusion. Migration `0052_leadership_linked_records.sql` now links private actions to ward members, active calling assignments, or membership/ordinance follow-up records. Migration `0053_restricted_leadership_notes.sql` adds ward-scoped action-targeted `LEADERSHIP`/`PRIVATE` notes with shared API authorization and bishopric UI entry. Reads join linked labels without exposing private action data publicly. Broader note history/read UI and restricted-note presentation for other coordination workspaces remain follow-up.
 
 ## Option 4B: Ward council and missionary coordination
 
@@ -284,7 +284,7 @@ Do not store copied ordinance details or replace LCR status.
 
 **Tasks:** Add Ward Council and Missionary Coordination meeting types, reusable assignments, member/action links, restricted notes, carry-forward, and dashboard due items. Add Ward Youth Council only after validating need.
 
-**Implementation status:** Coordination types now reuse protected private leadership meetings/actions. Routes `/ward-council` and `/missionary-coordination` open filtered workspaces, with private assignments, due dates, carry-forward, completion lifecycle, and dashboard overdue count. Member/action linking and restricted-note subtypes remain follow-up work; Ward Youth Council not added.
+**Implementation status:** Coordination types now reuse protected private leadership meetings/actions. Routes `/ward-council` and `/missionary-coordination` redirect into same filtered workspace component, so linked records and restricted action-note history/entry are available without duplicating UI or privacy logic. Shared leadership due-action count now includes all three coordination types with accurate dashboard labeling. The leadership collection GET accepts validated `type` filtering, preserving ward scope while preventing type-specific consumers from loading other coordination agendas. Ward Youth Council not added.
 
 ## Option 4C: Scheduled interviews
 
@@ -296,7 +296,7 @@ Do not store copied ordinance details or replace LCR status.
 
 **Tasks:** Add schema/API, calendar/reminder integration, permission checks, dashboard view, offline read-only reference only, and tests.
 
-**Implementation status:** Scheduled interviews now support authenticated ward-scoped ICS export at `/api/w/[wardId]/interviews/calendar`, limited to scheduled records and marked private/no-store. Export includes operational metadata only; confidential interview content remains excluded. Added deployable `remind:interviews` runner: it finds scheduled interviews in next 24 hours, creates idempotent ward-scoped `INTERVIEW_REMINDER` outbox events, queues notification processing after commit, and sends in-app reminders to calling managers. Horizon can be bounded with `INTERVIEW_REMINDER_HORIZON_HOURS` (1–168). External calendar subscription/webhook delivery remain deployment/product follow-up.
+**Implementation status:** Scheduled interviews now support authenticated ward-scoped ICS export at `/api/w/[wardId]/interviews/calendar`, limited to scheduled records and marked private/no-store. Export includes operational metadata only; confidential interview content remains excluded. Added deployable `remind:interviews` runner: it finds scheduled interviews in next 24 hours, creates idempotent ward-scoped `INTERVIEW_REMINDER` outbox events, queues notification processing after commit, and sends in-app reminders to calling managers. Horizon can be bounded with `INTERVIEW_REMINDER_HORIZON_HOURS` (1–168). The authenticated interview workspace caches the ward schedule in user/ward-scoped IndexedDB, refreshes it online, falls back to a clearly marked read-only saved copy offline, and disables create/status mutations without connection. Repository systemd service/timer units now cover interview and technology reminder runners; activation and real execution remain deployment verification tasks. External calendar subscription/webhook delivery remain deployment/product follow-up.
 
 ## Option 4D: Technology/streaming checklist
 

@@ -61,6 +61,7 @@ flowchart LR
   A5 -->|2| A12
   A6 -->|2| A12
   A6 -->|2| A23
+  A6 -->|2| A24
   A8 -->|2| A14
   A10 -->|2| A14
   A13 -->|2| A19
@@ -74,7 +75,6 @@ flowchart LR
   A6 -->|1| A10
   A6 -->|1| A17
   A6 -->|1| A19
-  A6 -->|1| A24
   A6 -->|1| A25
   A8 -->|1| A19
   A10 -->|1| A23
@@ -171,6 +171,7 @@ flowchart LR
 | `web:api` | `web:church-actions` | 2 |
 | `web:app` | `web:church-actions` | 2 |
 | `web:app` | `web:notifications` | 2 |
+| `web:app` | `web:offline` | 2 |
 | `web:auth` | `web:db` | 2 |
 | `web:calendar` | `web:db` | 2 |
 | `web:church-actions` | `web:church-actions` | 2 |
@@ -186,7 +187,6 @@ flowchart LR
 | `web:app` | `web:calendar` | 1 |
 | `web:app` | `web:imports` | 1 |
 | `web:app` | `web:lib` | 1 |
-| `web:app` | `web:offline` | 1 |
 | `web:app` | `web:reports` | 1 |
 | `web:audit` | `web:audit` | 1 |
 | `web:auth` | `web:lib` | 1 |
@@ -415,7 +415,7 @@ flowchart LR
 | `apps/web/app/imports/page.tsx` | `web:app` | 4 | 2 |
 | `apps/web/app/imports/sacrament-planner/page.tsx` | `web:app` | 5 | 2 |
 | `apps/web/app/imports/sacrament-planner/sacrament-planner-import-client.tsx` | `web:app` | 2 | 1 |
-| `apps/web/app/interviews/interviews-client.tsx` | `web:app` | 3 | 1 |
+| `apps/web/app/interviews/interviews-client.tsx` | `web:app` | 4 | 1 |
 | `apps/web/app/interviews/page.tsx` | `web:app` | 7 | 1 |
 | `apps/web/app/layout.tsx` | `web:app` | 6 | 1 |
 | `apps/web/app/login/login-form.tsx` | `web:app` | 2 | 2 |

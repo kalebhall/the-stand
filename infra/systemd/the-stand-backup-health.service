@@ -1,0 +1,15 @@
+[Unit]
+Description=The Stand backup health check
+After=local-fs.target
+
+[Service]
+Type=oneshot
+User=postgres
+Group=postgres
+EnvironmentFile=-/etc/the-stand/backup-health.env
+ExecStart=/opt/the-stand/app/infra/scripts/backup-health.sh
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadOnlyPaths=/opt/the-stand/backups

@@ -11,7 +11,7 @@ import { LEADERSHIP_MEETING_LABELS, type LeadershipMeetingType } from '@/src/lea
 import { BishopricWorkspaceClient } from './bishopric-workspace-client';
 
 type Meeting = { id: string; meeting_date: string; meeting_type: string; agenda_template: string; status: string; action_count: number; open_action_count: number };
-type Action = { id: string; bishopric_meeting_id: string; title: string; details: string | null; decision: string | null; owner_name: string | null; due_date: string | null; status: string; carry_forward: boolean; meeting_date: string };
+type Action = { id: string; bishopric_meeting_id: string; title: string; details: string | null; decision: string | null; owner_name: string | null; due_date: string | null; status: string; carry_forward: boolean; meeting_date: string; member_id: string | null; linked_member_name: string | null; calling_assignment_id: string | null; linked_calling_name: string | null; linked_membership_action_id: string | null };
 
 export default async function BishopricPage({ searchParams }: { searchParams: Promise<{ type?: string }> }) {
   const session = await requireAuthenticatedSession();
@@ -25,7 +25,7 @@ export default async function BishopricPage({ searchParams }: { searchParams: Pr
   try {
     await client.query('BEGIN'); await setDbContext(client, { userId: session.user.id, wardId: session.activeWardId });
     const meetingResult = await client.query(`SELECT bm.id, bm.meeting_date, bm.agenda_template, bm.status, COUNT(ba.id)::int AS action_count, COUNT(ba.id) FILTER (WHERE ba.status != 'COMPLETED')::int AS open_action_count FROM bishopric_meeting bm LEFT JOIN bishopric_action ba ON ba.bishopric_meeting_id = bm.id AND ba.ward_id = bm.ward_id WHERE bm.ward_id = $1::uuid AND bm.meeting_type = $2::text GROUP BY bm.id ORDER BY bm.meeting_date DESC`, [session.activeWardId, meetingType]);
-    const actionResult = await client.query(`SELECT ba.id, ba.bishopric_meeting_id, ba.title, ba.details, ba.decision, ba.owner_name, ba.due_date, ba.status, ba.carry_forward, bm.meeting_date FROM bishopric_action ba JOIN bishopric_meeting bm ON bm.id = ba.bishopric_meeting_id AND bm.ward_id = ba.ward_id WHERE ba.ward_id = $1::uuid AND bm.meeting_type = $2::text AND ba.status != 'COMPLETED' ORDER BY ba.due_date NULLS LAST, bm.meeting_date DESC, ba.created_at`, [session.activeWardId, meetingType]);
+    const actionResult = await client.query(`SELECT ba.id, ba.bishopric_meeting_id, ba.title, ba.details, ba.decision, ba.owner_name, ba.due_date, ba.status, ba.carry_forward, bm.meeting_date, ba.member_id, m.full_name AS linked_member_name, ba.calling_assignment_id, ca.calling_name AS linked_calling_name, ba.linked_membership_action_id FROM bishopric_action ba JOIN bishopric_meeting bm ON bm.id = ba.bishopric_meeting_id AND bm.ward_id = ba.ward_id LEFT JOIN member m ON m.id = ba.member_id AND m.ward_id = ba.ward_id LEFT JOIN calling_assignment ca ON ca.id = ba.calling_assignment_id AND ca.ward_id = ba.ward_id WHERE ba.ward_id = $1::uuid AND bm.meeting_type = $2::text AND ba.status != 'COMPLETED' ORDER BY ba.due_date NULLS LAST, bm.meeting_date DESC, ba.created_at`, [session.activeWardId, meetingType]);
     await client.query('COMMIT'); meetings = meetingResult.rows as Meeting[]; actions = actionResult.rows as Action[];
   } catch { await client.query('ROLLBACK'); } finally { client.release(); }
   return <main className="mx-auto w-full max-w-6xl space-y-6 p-4 sm:p-6 lg:p-8">
