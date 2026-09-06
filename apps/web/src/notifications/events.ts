@@ -71,7 +71,8 @@ export const NOTIFICATION_EVENT_TYPES = [
   'MEMBERSHIP_ORDINANCE_LCR_NEEDED_REMINDER',
   'ANNOUNCEMENT_EXPIRING_REMINDER',
   'CALENDAR_SYNC_OVERDUE_REMINDER',
-  'INTERVIEW_REMINDER'
+  'INTERVIEW_REMINDER',
+  'MEETING_TECHNOLOGY_REMINDER'
 ] as const;
 
 export type NotificationEventType = (typeof NOTIFICATION_EVENT_TYPES)[number];
@@ -409,6 +410,12 @@ const EVENT_DEFINITIONS: Record<NotificationEventType, NotificationEventDefiniti
   INTERVIEW_REMINDER: definition('INTERVIEW_REMINDER', {
     category: 'REMINDERS',
     label: 'Scheduled interview reminder',
+    defaultChannels: inApp,
+    severity: 'warning'
+  }),
+  MEETING_TECHNOLOGY_REMINDER: definition('MEETING_TECHNOLOGY_REMINDER', {
+    category: 'REMINDERS',
+    label: 'Meeting technology checklist reminder',
     defaultChannels: inApp,
     severity: 'warning'
   })

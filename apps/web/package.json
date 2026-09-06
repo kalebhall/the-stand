@@ -15,6 +15,7 @@
     "purge:raw-imports": "node --experimental-strip-types src/imports/purge-runner.ts",
     "purge:retention": "node src/maintenance/retention-runner.mjs",
     "remind:interviews": "node src/leadership/interview-reminder-runner.mjs",
+    "remind:technology": "node src/leadership/technology-reminder-runner.mjs",
     "worker": "node --experimental-strip-types src/notifications/worker-entry.ts",
     "test:e2e": "playwright test"
   },

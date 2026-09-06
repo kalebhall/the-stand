@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth/guards';
-import { canViewCallings, canViewMeetings, hasRole } from '@/src/auth/roles';
+import { canManageMeetings, canViewCallings, canViewMeetings, hasRole } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 
@@ -43,6 +43,7 @@ export default async function DashboardPage() {
   const wardSession = session.activeWardId ? { roles: session.user.roles, activeWardId: session.activeWardId } : null;
   const canAccessMeetings = wardSession ? canViewMeetings(wardSession, session.activeWardId!) : false;
   const canAccessCallings = wardSession ? canViewCallings(wardSession, session.activeWardId!) : false;
+  const canAccessTechnology = wardSession ? canManageMeetings(wardSession, session.activeWardId!) : false;
   const canAccessPortal = Boolean(session.activeWardId) && hasRole(session.user.roles, 'STAND_ADMIN');
   const showSupportCards = session.user.roles?.includes('SUPPORT_ADMIN') ?? false;
   let setApartQueueCount = 'Unavailable';
@@ -54,6 +55,7 @@ export default async function DashboardPage() {
   let officialRecordHandoffCount = 'Unavailable';
   let bishopricDueActionCount = 'Unavailable';
   let scheduledInterviewCount = 'Unavailable';
+  let technologyChecklistCount = 'Unavailable';
   let notificationHealthValue = 'No deliveries yet';
   let notificationHealthDetail = 'No notification attempts recorded for this ward yet.';
   let nextMeetingValue = 'No meetings scheduled';
@@ -120,6 +122,20 @@ export default async function DashboardPage() {
         [session.activeWardId]
       );
 
+      const technologyChecklistResult = canAccessTechnology
+        ? await client.query(
+            `SELECT COUNT(*)::int AS count
+               FROM meeting m
+               LEFT JOIN meeting_technology_checklist tc ON tc.meeting_id = m.id AND tc.ward_id = m.ward_id
+              WHERE m.ward_id = $1::uuid
+                AND m.meeting_date >= CURRENT_DATE
+                AND m.meeting_date <= CURRENT_DATE + 7
+                AND m.status != 'COMPLETED'
+                AND (tc.id IS NULL OR tc.room_ready = FALSE OR tc.audio_ready = FALSE OR tc.stream_ready = FALSE OR tc.accessibility_checked = FALSE OR tc.recording_deletion_reminder = FALSE)`,
+            [session.activeWardId]
+          )
+        : null;
+
       const notificationHealthResult = await client.query(
         `SELECT MAX(nd.attempted_at) AS last_delivery_at,
                 COUNT(*) FILTER (WHERE nd.delivery_status = 'failure')::int AS failure_count
@@ -176,6 +192,7 @@ export default async function DashboardPage() {
       officialRecordHandoffCount = `${actionQueue.official_record_handoff_count} waiting`;
       bishopricDueActionCount = `${(bishopricDueActionResult.rows[0] as { count: number }).count} overdue`;
       scheduledInterviewCount = `${(scheduledInterviewResult.rows[0] as { count: number }).count} scheduled`;
+      technologyChecklistCount = technologyChecklistResult ? `${(technologyChecklistResult.rows[0] as { count: number }).count} needing review` : 'Unavailable';
       const notificationHealth = notificationHealthResult.rows[0] as { last_delivery_at: string | null; failure_count: number };
       notificationHealthValue = notificationHealth.last_delivery_at ?? 'No deliveries yet';
       notificationHealthDetail = `${notificationHealth.failure_count} failed deliveries`;
@@ -340,6 +357,15 @@ export default async function DashboardPage() {
               { href: '/imports/members', label: 'Import members' },
               { href: '/imports/callings', label: 'Import callings' }
             ]}
+          />
+        ) : null}
+
+        {canAccessTechnology ? (
+          <DashboardCard
+            title="Technology readiness"
+            value={technologyChecklistCount}
+            detail="Upcoming meetings with incomplete room, audio, stream, accessibility, or recording checks."
+            actions={[{ href: '/technology', label: 'Open technology checklist' }]}
           />
         ) : null}
 

@@ -17,9 +17,13 @@ function asSafePayload(payload: unknown): SafePayload {
   return payload && typeof payload === 'object' && !Array.isArray(payload) ? (payload as SafePayload) : {};
 }
 
-function approvedTargetUrl(aggregateType: string, aggregateId: string, payload?: SafePayload): string | null {
+function approvedTargetUrl(aggregateType: string, aggregateId: string, payload?: SafePayload, eventType?: NotificationEventType): string | null {
   if (aggregateType === 'membership_ordinance' && typeof payload?.meetingId === 'string') {
     return `/meetings/${payload.meetingId}/edit`;
+  }
+
+  if (eventType === 'MEETING_TECHNOLOGY_REMINDER') {
+    return '/technology';
   }
 
   if (aggregateType === 'scheduled_interview') {
@@ -68,7 +72,7 @@ export function formatUserNotification(input: FormatEventInput): CreateUserNotif
     summary: safeSummary(definition, payload),
     details,
     severity: definition.severity as NotificationSeverity,
-    targetUrl: approvedTargetUrl(input.aggregateType, input.aggregateId, payload)
+    targetUrl: approvedTargetUrl(input.aggregateType, input.aggregateId, payload, input.eventType)
   };
 }
 

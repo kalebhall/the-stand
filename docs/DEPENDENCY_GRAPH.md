@@ -27,12 +27,12 @@ flowchart LR
   A15["web:hardening<br/>1 files"]
   A16["web:health.mjs<br/>1 files"]
   A17["web:imports<br/>19 files"]
-  A18["web:leadership<br/>9 files"]
+  A18["web:leadership<br/>12 files"]
   A19["web:lib<br/>9 files"]
   A20["web:maintenance<br/>4 files"]
   A21["web:meetings<br/>11 files"]
   A22["web:notes<br/>1 files"]
-  A23["web:notifications<br/>24 files"]
+  A23["web:notifications<br/>25 files"]
   A24["web:offline<br/>2 files"]
   A25["web:reports<br/>2 files"]
   A26["web:stand<br/>8 files"]
@@ -65,6 +65,7 @@ flowchart LR
   A10 -->|2| A14
   A13 -->|2| A19
   A14 -->|2| A8
+  A18 -->|2| A23
   A23 -->|2| A14
   A2 -->|1| A16
   A5 -->|1| A10
@@ -81,7 +82,6 @@ flowchart LR
   A13 -->|1| A16
   A16 -->|1| A30
   A17 -->|1| A14
-  A18 -->|1| A23
   A20 -->|1| A14
   A21 -->|1| A4
   A23 -->|1| A22
@@ -117,12 +117,12 @@ flowchart LR
 | `web:hardening` | 1 |
 | `web:health.mjs` | 1 |
 | `web:imports` | 19 |
-| `web:leadership` | 9 |
+| `web:leadership` | 12 |
 | `web:lib` | 9 |
 | `web:maintenance` | 4 |
 | `web:meetings` | 11 |
 | `web:notes` | 1 |
-| `web:notifications` | 24 |
+| `web:notifications` | 25 |
 | `web:offline` | 2 |
 | `web:reports` | 2 |
 | `web:stand` | 8 |
@@ -142,7 +142,7 @@ flowchart LR
 | `web:app` | `web:db` | 51 |
 | `web:app` | `web:app` | 45 |
 | `web:api` | `web:notifications` | 40 |
-| `web:notifications` | `web:notifications` | 35 |
+| `web:notifications` | `web:notifications` | 38 |
 | `web:ui` | `web:ui` | 27 |
 | `web:api` | `web:lib` | 23 |
 | `web:api` | `web:api` | 21 |
@@ -153,11 +153,11 @@ flowchart LR
 | `web:api` | `web:imports` | 11 |
 | `web:meetings` | `web:meetings` | 9 |
 | `web:auth` | `web:auth` | 8 |
+| `web:leadership` | `web:leadership` | 7 |
 | `web:stand` | `web:stand` | 6 |
 | `web:api` | `web:leadership` | 5 |
 | `web:api` | `web:meetings` | 5 |
 | `web:app` | `web:stand` | 5 |
-| `web:leadership` | `web:leadership` | 5 |
 | `web:app` | `web:callings` | 4 |
 | `web:callings` | `web:callings` | 4 |
 | `web:db` | `web:db` | 4 |
@@ -176,6 +176,7 @@ flowchart LR
 | `web:church-actions` | `web:church-actions` | 2 |
 | `web:config` | `web:lib` | 2 |
 | `web:db` | `web:auth` | 2 |
+| `web:leadership` | `web:notifications` | 2 |
 | `web:notifications` | `web:db` | 2 |
 | `root:other` | `web:health.mjs` | 1 |
 | `web:announcements` | `web:announcements` | 1 |
@@ -194,7 +195,6 @@ flowchart LR
 | `web:config` | `web:health.mjs` | 1 |
 | `web:health.mjs` | `web:version.mjs` | 1 |
 | `web:imports` | `web:db` | 1 |
-| `web:leadership` | `web:notifications` | 1 |
 | `web:maintenance` | `web:db` | 1 |
 | `web:meetings` | `web:announcements` | 1 |
 | `web:notifications` | `web:notes` | 1 |
@@ -221,16 +221,16 @@ flowchart LR
 | `web:api` | `vitest` | 20 |
 | `web:ui` | `next` | 14 |
 | `root:tooling` | `Node.js` | 12 |
-| `web:notifications` | `vitest` | 10 |
+| `web:notifications` | `vitest` | 11 |
 | `web:app` | `vitest` | 8 |
 | `web:notifications` | `pg` | 8 |
 | `web:api` | `zod` | 7 |
 | `web:imports` | `vitest` | 7 |
 | `web:auth` | `next-auth` | 6 |
+| `web:leadership` | `vitest` | 5 |
 | `web:meetings` | `vitest` | 5 |
 | `web:app` | `@testing-library/react` | 4 |
 | `web:auth` | `vitest` | 4 |
-| `web:leadership` | `vitest` | 4 |
 | `web:stand` | `vitest` | 4 |
 | `web:tooling` | `Node.js` | 4 |
 | `web:ui` | `next-auth` | 4 |
@@ -256,6 +256,7 @@ flowchart LR
 | `web:db` | `pg` | 2 |
 | `web:hardening` | `Node.js` | 2 |
 | `web:imports` | `Node.js` | 2 |
+| `web:leadership` | `pg` | 2 |
 | `web:notifications` | `bullmq` | 2 |
 | `web:tooling` | `pg` | 2 |
 | `package:shared` | `zod` | 1 |
@@ -282,7 +283,6 @@ flowchart LR
 | `web:imports` | `pdf-parse` | 1 |
 | `web:imports` | `pg` | 1 |
 | `web:imports` | `playwright` | 1 |
-| `web:leadership` | `pg` | 1 |
 | `web:lib` | `@sentry/nextjs` | 1 |
 | `web:lib` | `jspdf` | 1 |
 | `web:lib` | `qrcode` | 1 |
@@ -603,6 +603,9 @@ flowchart LR
 | `apps/web/src/leadership/interview-reminders.vitest.ts` | `web:leadership` | 1 | 1 |
 | `apps/web/src/leadership/interviews.ts` | `web:leadership` | 0 | 0 |
 | `apps/web/src/leadership/interviews.vitest.ts` | `web:leadership` | 1 | 1 |
+| `apps/web/src/leadership/technology-reminder-runner.mjs` | `web:leadership` | 2 | 1 |
+| `apps/web/src/leadership/technology-reminders.ts` | `web:leadership` | 0 | 0 |
+| `apps/web/src/leadership/technology-reminders.vitest.ts` | `web:leadership` | 1 | 1 |
 | `apps/web/src/lib/logger.ts` | `web:lib` | 0 | 0 |
 | `apps/web/src/lib/qr-pdf.ts` | `web:lib` | 0 | 2 |
 | `apps/web/src/lib/qr-pdf.vitest.ts` | `web:lib` | 1 | 1 |
@@ -647,6 +650,7 @@ flowchart LR
 | `apps/web/src/notifications/runner.vitest.ts` | `web:notifications` | 1 | 1 |
 | `apps/web/src/notifications/subscriptions.ts` | `web:notifications` | 1 | 1 |
 | `apps/web/src/notifications/subscriptions.vitest.ts` | `web:notifications` | 1 | 1 |
+| `apps/web/src/notifications/technology-reminder.vitest.ts` | `web:notifications` | 3 | 1 |
 | `apps/web/src/notifications/user-notifications.ts` | `web:notifications` | 1 | 1 |
 | `apps/web/src/notifications/user-notifications.vitest.ts` | `web:notifications` | 1 | 1 |
 | `apps/web/src/notifications/visibility.ts` | `web:notifications` | 1 | 0 |

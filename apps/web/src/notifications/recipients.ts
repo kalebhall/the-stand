@@ -80,7 +80,8 @@ const REMINDER_EVENTS = new Set<NotificationEventType>([
   'MEMBERSHIP_ORDINANCE_LCR_NEEDED_REMINDER',
   'ANNOUNCEMENT_EXPIRING_REMINDER',
   'CALENDAR_SYNC_OVERDUE_REMINDER',
-  'INTERVIEW_REMINDER'
+  'INTERVIEW_REMINDER',
+  'MEETING_TECHNOLOGY_REMINDER'
 ]);
 
 export function getRecipientPolicyKey(eventType: NotificationEventType): RecipientPolicyKey {

@@ -306,7 +306,7 @@ Do not store copied ordinance details or replace LCR status.
 
 **Tasks:** Add optional meeting checklist with owner, audio/room/stream readiness, authorized link, accessibility check, start/stop confirmation, and recording deletion reminder. Keep secrets outside The Stand.
 
-**Implementation status:** Protected `/technology` checklist now tracks owner, room/audio/stream/accessibility readiness, HTTPS authorized link, start/stop confirmation, and recording deletion reminder. Schema/API enforce ward scope and reject non-HTTPS links. Credentials and network secrets remain excluded. Dashboard shortcut, offline reference, and automatic reminders remain follow-up work.
+**Implementation status:** Protected `/technology` checklist now tracks owner, room/audio/stream/accessibility readiness, HTTPS authorized link, start/stop confirmation, and recording deletion reminder. Schema/API enforce ward scope and reject non-HTTPS links. Dashboard now shows authorized managers upcoming meetings with incomplete technology checks. Added deployable `remind:technology` runner: it finds incomplete checklists for meetings within the next seven days, creates idempotent ward-scoped `MEETING_TECHNOLOGY_REMINDER` outbox events, and queues private in-app reminders after commit. Credentials and network secrets remain excluded. Offline technology reference remains follow-up work.
 
 ---
 
