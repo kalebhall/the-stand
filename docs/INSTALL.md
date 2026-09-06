@@ -535,7 +535,86 @@ Logs contain counts and sanitized errors only. Keep `DATABASE_URL` in protected 
 
 ---
 
-## SECTION 10.4 — Legacy Raw Import Retention Purge
+## SECTION 10.4 — Scheduled Interview and Technology Reminders
+
+Reminder runners are separate from web requests and require the notification worker plus Redis. They create idempotent outbox events; the worker delivers private in-app notifications to authorized managers. Configure each runner as its own oneshot service so one failure does not hide the other.
+
+Create `/etc/systemd/system/the-stand-interview-reminders.service`:
+
+```
+[Unit]
+Description=The Stand scheduled interview reminders
+After=network.target postgresql.service the-stand-worker.service
+
+[Service]
+Type=oneshot
+User=the-stand
+Group=the-stand
+WorkingDirectory=/opt/the-stand/app
+EnvironmentFile=/opt/the-stand/app/.env
+ExecStart=/usr/bin/npm --workspace @the-stand/web run remind:interviews
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+```
+
+Create `/etc/systemd/system/the-stand-interview-reminders.timer`:
+
+```
+[Unit]
+Description=Run The Stand interview reminders hourly
+
+[Timer]
+OnCalendar=hourly
+Persistent=true
+RandomizedDelaySec=10m
+Unit=the-stand-interview-reminders.service
+
+[Install]
+WantedBy=timers.target
+```
+
+Create `/etc/systemd/system/the-stand-technology-reminders.service` with the same hardening settings, changing `Description` and `ExecStart`:
+
+```
+Description=The Stand technology checklist reminders
+ExecStart=/usr/bin/npm --workspace @the-stand/web run remind:technology
+```
+
+Create matching `the-stand-technology-reminders.timer`, changing only the description and service unit:
+
+```
+[Unit]
+Description=Run The Stand technology reminders daily
+
+[Timer]
+OnCalendar=*-*-* 07:00:00
+Persistent=true
+RandomizedDelaySec=15m
+Unit=the-stand-technology-reminders.service
+
+[Install]
+WantedBy=timers.target
+```
+
+Enable and verify execution:
+
+```
+sudo systemctl daemon-reload
+sudo systemctl enable --now the-stand-interview-reminders.timer the-stand-technology-reminders.timer
+sudo systemctl start the-stand-interview-reminders.service
+sudo systemctl start the-stand-technology-reminders.service
+sudo systemctl status the-stand-interview-reminders.timer the-stand-technology-reminders.timer --no-pager
+sudo journalctl -u the-stand-interview-reminders.service -n 20 --no-pager
+sudo journalctl -u the-stand-technology-reminders.service -n 20 --no-pager
+```
+
+Timer status proves scheduling only. Successful runner logs prove the query and outbox transaction completed. Verify notification delivery separately through `/notifications` or the notification diagnostics surface. Keep `DATABASE_URL` and `REDIS_URL` in protected environment files, never service units or repository.
+
+---
+
+## SECTION 10.5 — Legacy Raw Import Retention Purge
 
 Existing `the-stand-raw-import-purge.*` units remain supported for raw-only deployments. New deployments should use combined operational retention purge above. Do not run both timers, or raw purge runs twice unnecessarily.
 
