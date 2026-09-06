@@ -43,6 +43,25 @@ export type OfflineStandSnapshot = {
   savedAt: string;
 };
 
+export type OfflineInterview = {
+  id: string;
+  interview_type: string;
+  member_name: string;
+  interviewer_name: string;
+  scheduled_at: string;
+  status: string;
+  linked_action_id?: string | null;
+  linked_calling_id?: string | null;
+  completed_at?: string | null;
+};
+
+export type OfflineInterviewSnapshot = {
+  userId: string;
+  wardId: string;
+  interviews: OfflineInterview[];
+  savedAt: string;
+};
+
 export type OfflineMutation = {
   id: string;
   meetingId: string;
@@ -68,8 +87,9 @@ type OfflineContext = { id: 'current'; userId: string; wardId: string };
 
 export const OFFLINE_CACHE_NAME = 'the-stand-offline-v1';
 const DATABASE_NAME = 'the-stand-offline';
-const VERSION = 4;
+const VERSION = 5;
 const SNAPSHOT_STORE = 'stand-snapshots';
+const INTERVIEW_STORE = 'interview-snapshots';
 const MUTATION_STORE = 'stand-mutations';
 const CONTEXT_STORE = 'offline-context';
 
@@ -83,6 +103,7 @@ function openDatabase(): Promise<IDBDatabase> {
     request.onupgradeneeded = () => {
       const db = request.result;
       if (!db.objectStoreNames.contains(SNAPSHOT_STORE)) db.createObjectStore(SNAPSHOT_STORE, { keyPath: 'cacheKey' });
+      if (!db.objectStoreNames.contains(INTERVIEW_STORE)) db.createObjectStore(INTERVIEW_STORE, { keyPath: 'cacheKey' });
       if (!db.objectStoreNames.contains(MUTATION_STORE)) db.createObjectStore(MUTATION_STORE, { keyPath: 'id' });
       if (!db.objectStoreNames.contains(CONTEXT_STORE)) db.createObjectStore(CONTEXT_STORE, { keyPath: 'id' });
     };
@@ -112,8 +133,9 @@ export async function clearOfflineData(): Promise<void> {
   const db = await openDatabase();
   try {
     await new Promise<void>((resolve, reject) => {
-      const transaction = db.transaction([SNAPSHOT_STORE, MUTATION_STORE, CONTEXT_STORE], 'readwrite');
+      const transaction = db.transaction([SNAPSHOT_STORE, INTERVIEW_STORE, MUTATION_STORE, CONTEXT_STORE], 'readwrite');
       transaction.objectStore(SNAPSHOT_STORE).clear();
+      transaction.objectStore(INTERVIEW_STORE).clear();
       transaction.objectStore(MUTATION_STORE).clear();
       transaction.objectStore(CONTEXT_STORE).clear();
       transaction.oncomplete = () => resolve();
@@ -144,6 +166,20 @@ export async function loadOfflineSnapshot(userId: string, wardId: string, meetin
   return (
     (await storeRequest<OfflineStandSnapshot | undefined>(SNAPSHOT_STORE, 'readonly', (store) =>
       store.get(snapshotKey(userId, wardId, meetingId))
+    )) ?? null
+  );
+}
+
+export async function saveOfflineInterviewSnapshot(snapshot: OfflineInterviewSnapshot): Promise<void> {
+  await storeRequest(INTERVIEW_STORE, 'readwrite', (store) =>
+    store.put({ ...snapshot, cacheKey: `${snapshot.userId}:${snapshot.wardId}` })
+  );
+}
+
+export async function loadOfflineInterviewSnapshot(userId: string, wardId: string): Promise<OfflineInterviewSnapshot | null> {
+  return (
+    (await storeRequest<OfflineInterviewSnapshot | undefined>(INTERVIEW_STORE, 'readonly', (store) =>
+      store.get(`${userId}:${wardId}`)
     )) ?? null
   );
 }
