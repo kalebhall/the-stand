@@ -93,7 +93,7 @@ git diff --check
 
 **Priority:** P0
 
-**Implementation status:** Added isolated restore smoke validation with optional checksum verification, migration-state validation, core schema checks, representative row count, explicit temporary-database cleanup, and secret-free result metrics. Documented 14-day backup retention, RPO/RTO assumptions, quarterly drill procedure, and off-site-copy responsibility. Real deployment drill completed 2026-09-06 against latest backup `the_stand_20260905_072725.sql.gz`: restore succeeded, temporary database count returned 0 after cleanup, `/health` returned `{"status":"ok","db":"connected"}`, and `the-stand` remained active. Checksum sidecar was not reported by deployed script; checksum coverage remains conditional on sidecar presence.
+**Implementation status:** Added isolated restore smoke validation with optional checksum verification, migration-state validation, core schema checks, representative row count, explicit temporary-database cleanup, and secret-free result metrics. Added `infra/scripts/backup-health.sh` to monitor newest local backup age and checksum integrity with safe non-zero failure states. Documented 14-day backup retention, RPO/RTO assumptions, quarterly drill procedure, and off-site-copy responsibility. Real deployment drill completed 2026-09-06 against latest backup `the_stand_20260905_072725.sql.gz`: restore succeeded, temporary database count returned 0 after cleanup, `/health` returned `{"status":"ok","db":"connected"}`, and `the-stand` remained active. Checksum sidecar was not reported by deployed script; checksum coverage remains conditional on sidecar presence. Off-host replication and production monitor activation remain deployment responsibilities.
 
 **Files likely involved:**
 
