@@ -49,6 +49,7 @@ export function MembersManagerClient({
   canManageMembers: boolean;
 }) {
   const [search, setSearch] = useState('');
+  const [sortBy, setSortBy] = useState<'name' | 'age' | 'email'>('name');
   const [actionError, setActionError] = useState<string | null>(null);
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
   const [isSavingEditId, setIsSavingEditId] = useState<string | null>(null);
@@ -56,17 +57,24 @@ export function MembersManagerClient({
   const [editDrafts, setEditDrafts] = useState<Record<string, EditDraft>>({});
 
   const filteredMembers = useMemo(() => {
-    if (!search.trim()) return members;
-    const q = search.toLowerCase();
-    return members.filter(
-      (m) =>
-        m.full_name.toLowerCase().includes(q) ||
-        (m.first_name && m.first_name.toLowerCase().includes(q)) ||
-        (m.last_name && m.last_name.toLowerCase().includes(q)) ||
-        (m.email && m.email.toLowerCase().includes(q)) ||
-        (m.phone && m.phone.includes(q))
-    );
-  }, [members, search]);
+    const query = search.trim().toLowerCase();
+    const filtered = query
+      ? members.filter(
+          (member) =>
+            member.full_name.toLowerCase().includes(query) ||
+            Boolean(member.first_name?.toLowerCase().includes(query)) ||
+            Boolean(member.last_name?.toLowerCase().includes(query)) ||
+            Boolean(member.email?.toLowerCase().includes(query)) ||
+            Boolean(member.phone?.includes(query))
+        )
+      : members;
+
+    return [...filtered].sort((left, right) => {
+      if (sortBy === 'age') return (left.age ?? Number.POSITIVE_INFINITY) - (right.age ?? Number.POSITIVE_INFINITY);
+      if (sortBy === 'email') return (left.email ?? '').localeCompare(right.email ?? '');
+      return displayName(left).localeCompare(displayName(right));
+    });
+  }, [members, search, sortBy]);
 
   function startEdit(member: MemberRow) {
     setEditDrafts((prev) => ({
@@ -152,6 +160,14 @@ export function MembersManagerClient({
           onChange={(e) => setSearch(e.target.value)}
           className="w-full max-w-sm rounded-md border bg-background px-3 py-2 text-sm"
         />
+        <label className="flex items-center gap-2 text-sm text-muted-foreground">
+          Sort by
+          <select value={sortBy} onChange={(event) => setSortBy(event.target.value as typeof sortBy)} className="rounded-md border bg-background px-2 py-2 text-foreground">
+            <option value="name">Name</option>
+            <option value="age">Age</option>
+            <option value="email">Email</option>
+          </select>
+        </label>
         <div className="text-sm text-muted-foreground">
           Showing {filteredMembers.length} of {members.length} members
         </div>

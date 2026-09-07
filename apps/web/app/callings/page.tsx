@@ -22,6 +22,7 @@ import { setDbContext } from '@/src/db/context';
 type CallingQueueRow = {
   id: string;
   member_name: string;
+  organization: string | null;
   calling_name: string;
   status: string;
   sustained_date: string | null;
@@ -82,6 +83,26 @@ function nextTransition(status: string): { toStatus: CallingStatus; label: strin
   }
 
   return null;
+}
+
+type CallingSortRow = Pick<CallingQueueRow, 'member_name' | 'organization' | 'calling_name'>;
+
+function callingPriority(callingName: string): number {
+  const name = callingName.toLowerCase();
+  if (name.includes('president')) return 0;
+  if (name.includes('first counselor')) return 1;
+  if (name.includes('second counselor')) return 2;
+  if (name.includes('secretary')) return 3;
+  return 4;
+}
+
+function compareCallings(left: CallingSortRow, right: CallingSortRow): number {
+  const groupCompare = (left.organization ?? 'Other').localeCompare(right.organization ?? 'Other');
+  if (groupCompare !== 0) return groupCompare;
+  const priorityCompare = callingPriority(left.calling_name) - callingPriority(right.calling_name);
+  if (priorityCompare !== 0) return priorityCompare;
+  const callingCompare = left.calling_name.localeCompare(right.calling_name);
+  return callingCompare !== 0 ? callingCompare : left.member_name.localeCompare(right.member_name);
 }
 
 export default async function CallingsPage() {
@@ -188,11 +209,13 @@ export default async function CallingsPage() {
     const callingResult = await client.query(
       `SELECT ca.id,
               ca.member_name,
+              COALESCE(NULLIF(ca.organization, ''), sc.organization, 'Other') AS organization,
               ca.calling_name,
               latest.action_status AS status,
               ca.sustained_date,
               ca.created_at
          FROM calling_assignment ca
+         LEFT JOIN standard_calling sc ON sc.name = ca.calling_name
          JOIN LATERAL (
             SELECT action_status
               FROM calling_action
@@ -209,10 +232,12 @@ export default async function CallingsPage() {
     const setApartQueueResult = await client.query(
       `SELECT ca.id,
               ca.member_name,
+              COALESCE(NULLIF(ca.organization, ''), sc.organization, 'Other') AS organization,
               ca.calling_name,
               ca.sustained_date,
               ca.created_at
          FROM calling_assignment ca
+         LEFT JOIN standard_calling sc ON sc.name = ca.calling_name
          JOIN LATERAL (
             SELECT action_status
               FROM calling_action
@@ -232,6 +257,7 @@ export default async function CallingsPage() {
 
     const allCallings = callingResult.rows as CallingQueueRow[];
     const setApartQueue = setApartQueueResult.rows as Omit<CallingQueueRow, 'status'>[];
+    const sortedSetApartQueue = [...setApartQueue].sort(compareCallings);
 
     // Split callings into sections
     const proposedCallings = allCallings.filter((c) => c.status === 'PROPOSED');
@@ -289,6 +315,21 @@ export default async function CallingsPage() {
       );
     }
 
+    function CallingGroups({ callings, showRelease = true }: { callings: CallingQueueRow[]; showRelease?: boolean }) {
+      const groups = new Map<string, CallingQueueRow[]>();
+      for (const calling of [...callings].sort(compareCallings)) {
+        const group = calling.organization ?? 'Other';
+        groups.set(group, [...(groups.get(group) ?? []), calling]);
+      }
+
+      return <div className="space-y-4">{Array.from(groups, ([group, groupedCallings]) => (
+        <section key={group} className="space-y-2">
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{group}</h3>
+          <ul className="space-y-2">{groupedCallings.map((calling) => <CallingRow key={calling.id} calling={calling} showRelease={showRelease} />)}</ul>
+        </section>
+      ))}</div>;
+    }
+
     return (
       <main className="mx-auto w-full max-w-6xl space-y-6 p-4 sm:p-6">
         <section className="flex items-start justify-between gap-4">
@@ -326,11 +367,7 @@ export default async function CallingsPage() {
           <h2 className="text-lg font-semibold">Proposed</h2>
           <p className="mb-3 text-sm text-muted-foreground">Callings that have been proposed but not yet extended.</p>
           {proposedCallings.length ? (
-            <ul className="space-y-2">
-              {proposedCallings.map((calling) => (
-                <CallingRow key={calling.id} calling={calling} />
-              ))}
-            </ul>
+            <CallingGroups callings={proposedCallings} />
           ) : (
             <p className="text-sm text-muted-foreground">No proposed callings.</p>
           )}
@@ -343,11 +380,7 @@ export default async function CallingsPage() {
             Callings that have been extended — will appear on sacrament meeting ward business for sustaining.
           </p>
           {extendedCallings.length ? (
-            <ul className="space-y-2">
-              {extendedCallings.map((calling) => (
-                <CallingRow key={calling.id} calling={calling} />
-              ))}
-            </ul>
+            <CallingGroups callings={extendedCallings} />
           ) : (
             <p className="text-sm text-muted-foreground">No extended callings.</p>
           )}
@@ -360,11 +393,7 @@ export default async function CallingsPage() {
             Callings queued for release — will appear on sacrament meeting ward business. Delete permanently removes the record.
           </p>
           {toBeReleasedCallings.length ? (
-            <ul className="space-y-2">
-              {toBeReleasedCallings.map((calling) => (
-                <CallingRow key={calling.id} calling={calling} showRelease={false} />
-              ))}
-            </ul>
+            <CallingGroups callings={toBeReleasedCallings} showRelease={false} />
           ) : (
             <p className="text-sm text-muted-foreground">No callings queued for release.</p>
           )}
@@ -376,7 +405,7 @@ export default async function CallingsPage() {
           <p className="mb-3 text-sm text-muted-foreground">Sustained callings awaiting set apart action.</p>
           {setApartQueue.length ? (
             <ul className="space-y-2">
-              {setApartQueue.map((item) => (
+              {sortedSetApartQueue.map((item) => (
                 <li key={item.id} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
                   <span>
                     <span className="font-semibold">{item.member_name}</span> — {item.calling_name}
@@ -405,11 +434,7 @@ export default async function CallingsPage() {
         <section className="section-panel section-panel--service rounded-lg border bg-card p-4">
           <h2 className="text-lg font-semibold">Calling Assignments</h2>
           {activeCallings.length ? (
-            <ul className="mt-3 space-y-2">
-              {activeCallings.map((calling) => (
-                <CallingRow key={calling.id} calling={calling} />
-              ))}
-            </ul>
+            <div className="mt-3"><CallingGroups callings={activeCallings} /></div>
           ) : (
             <p className="mt-3 text-sm text-muted-foreground">No calling assignments yet.</p>
           )}

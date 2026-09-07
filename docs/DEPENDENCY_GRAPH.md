@@ -219,7 +219,7 @@ flowchart LR
 | `web:app` | `next` | 83 |
 | `web:api` | `next` | 64 |
 | `web:app` | `react` | 32 |
-| `web:ui` | `react` | 27 |
+| `web:ui` | `react` | 28 |
 | `web:api` | `vitest` | 20 |
 | `web:ui` | `next` | 14 |
 | `root:tooling` | `Node.js` | 12 |
@@ -232,6 +232,7 @@ flowchart LR
 | `web:auth` | `next-auth` | 6 |
 | `web:leadership` | `vitest` | 6 |
 | `web:app` | `@testing-library/react` | 4 |
+| `web:app` | `next-auth` | 4 |
 | `web:auth` | `vitest` | 4 |
 | `web:config` | `@playwright/test` | 4 |
 | `web:stand` | `vitest` | 4 |
@@ -240,7 +241,6 @@ flowchart LR
 | `web:api` | `Node.js` | 3 |
 | `web:app` | `@testing-library/user-event` | 3 |
 | `web:app` | `Node.js` | 3 |
-| `web:app` | `next-auth` | 3 |
 | `web:callings` | `vitest` | 3 |
 | `web:db` | `Node.js` | 3 |
 | `web:db` | `drizzle-orm` | 3 |
@@ -306,7 +306,7 @@ flowchart LR
 
 | File | Area | Internal imports | External imports |
 | --- | --- | ---: | ---: |
-| `apps/web/app/account/change-password/change-password-form.tsx` | `web:app` | 0 | 1 |
+| `apps/web/app/account/change-password/change-password-form.tsx` | `web:app` | 0 | 2 |
 | `apps/web/app/account/change-password/page.tsx` | `web:app` | 2 | 1 |
 | `apps/web/app/account/page.tsx` | `web:app` | 5 | 2 |
 | `apps/web/app/account/preferences/page.tsx` | `web:app` | 1 | 1 |
@@ -524,7 +524,7 @@ flowchart LR
 | `apps/web/components/notification-bell.vitest.tsx` | `web:ui` | 1 | 3 |
 | `apps/web/components/offline-stand-button.tsx` | `web:ui` | 2 | 2 |
 | `apps/web/components/public-portal/PublicLinkQrCard.tsx` | `web:ui` | 2 | 1 |
-| `apps/web/components/reports/report-view.tsx` | `web:ui` | 1 | 2 |
+| `apps/web/components/reports/report-view.tsx` | `web:ui` | 1 | 3 |
 | `apps/web/components/site-logo.tsx` | `web:ui` | 0 | 2 |
 | `apps/web/components/site-logo.vitest.tsx` | `web:ui` | 1 | 3 |
 | `apps/web/components/theme-provider.tsx` | `web:ui` | 0 | 2 |

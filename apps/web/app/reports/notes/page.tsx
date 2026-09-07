@@ -25,7 +25,7 @@ function optionalDate(value: string | undefined): string | null {
 export default async function NotesReportPage({
   searchParams
 }: {
-  searchParams: Promise<{ from?: string; to?: string; visibility?: string; target?: string }>;
+  searchParams: Promise<{ from?: string; to?: string; visibility?: string; target?: string; sort?: string }>;
 }) {
   const session = await requireAuthenticatedSession();
   enforcePasswordRotation(session);
@@ -40,6 +40,12 @@ export default async function NotesReportPage({
   const to = optionalDate(filters.to);
   const visibility = filters.visibility === 'LEADERSHIP' || filters.visibility === 'PRIVATE' ? filters.visibility : 'ALL';
   const target = filters.target === 'MEMBER' || filters.target === 'MEETING' || filters.target === 'PROGRAM_ITEM' ? filters.target : 'ALL';
+  const sort = filters.sort === 'subject' || filters.sort === 'author' ? filters.sort : 'date';
+  const orderBy = sort === 'subject'
+    ? "COALESCE(member.full_name, meeting.meeting_date::text, item.title, item.item_type, '') ASC, note.created_at DESC"
+    : sort === 'author'
+      ? "COALESCE(ua.email, '') ASC, note.created_at DESC"
+      : 'note.created_at DESC';
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -59,7 +65,7 @@ export default async function NotesReportPage({
           AND ($4::date IS NULL OR note.created_at < ($4::date + INTERVAL '1 day'))
           AND ($5::text = 'ALL' OR note.visibility = $5::text)
           AND ($6::text = 'ALL' OR ($6::text = 'MEMBER' AND note.member_id IS NOT NULL) OR ($6::text = 'MEETING' AND note.meeting_id IS NOT NULL) OR ($6::text = 'PROGRAM_ITEM' AND note.program_item_id IS NOT NULL))
-        ORDER BY note.created_at DESC LIMIT 500`,
+        ORDER BY ${orderBy} LIMIT 500`,
       [session.activeWardId, session.user.id, from, to, visibility, target]
     );
     await client.query('COMMIT');
@@ -97,6 +103,14 @@ export default async function NotesReportPage({
               <option value="MEMBER">Member</option>
               <option value="MEETING">Meeting</option>
               <option value="PROGRAM_ITEM">Meeting item</option>
+            </select>
+          </label>
+          <label className="text-sm">
+            Sort by
+            <select name="sort" defaultValue={sort} className="mt-1 w-full rounded-md border bg-background p-2">
+              <option value="date">Newest</option>
+              <option value="subject">Subject</option>
+              <option value="author">Author</option>
             </select>
           </label>
           <button type="submit" className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground sm:col-span-4">
