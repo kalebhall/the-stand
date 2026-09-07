@@ -18,18 +18,20 @@
 - Keep sensitive data minimal: store operational status, dates, responsible leader, and notes needed for coordination. Do not copy ordinance records or interview content from Church systems.
 - Use one action record across the workspace, meeting editor, and At-the-Stand. Do not create a second permanent workspace table.
 
-## First slice being implemented now
+## First slice completed
 
-- Add `/membership-ordinances` navigation for meeting-management roles.
-- Add a ward-scoped server page that lists current membership and priesthood actions.
-- Group records into **Needs attention**, **Upcoming**, and **Completed**.
-- Show member, action type, meeting/date, responsible leader, interview/LCR flags, and current status.
-- Link each record back to its meeting editor.
-- Preserve existing meeting and At-the-Stand controls unchanged.
+- `/membership-ordinances` navigation exists for meeting-management roles.
+- Ward-scoped server page lists current membership and priesthood actions.
+- Records group into **Needs attention**, **Upcoming**, and **Completed**.
+- Rows show member, action type, meeting/date, responsible leader, interview/LCR flags, and current status.
+- Each record links back to its meeting editor.
+- Meeting editor retains contextual display while creation is owned by this workspace; At-the-Stand remains presentation/read-only context.
 
 ## Follow-up slices
 
 ### Phase 2: Shared domain vocabulary
+
+**Status:** Implemented in `apps/web/src/church-actions/membership-ordinance.ts` and related types/tests.
 
 - Centralize action labels, status labels, interview labels, and LCR follow-up labels in `apps/web/src/church-actions/membership-ordinance.ts`.
 - Add pure helpers for grouping, overdue detection, and next-action labels.
@@ -44,10 +46,9 @@
 
 ### Phase 4: Edit and meeting integration
 
-- Make the meeting editor’s Membership & Ordinances section visually distinct from Ward & Stake Business and Callings.
-- Add a clear link from each meeting action section to the workspace.
-- Preserve action IDs and history during edits.
-- Keep private preparation fields out of print/public rendering.
+**Status:** Core ownership separation implemented. Membership/ordinance creation moved to `/membership-ordinances`; meeting editing passes `canCreate={false}` and retains contextual display. Private preparation fields remain excluded from print/public rendering.
+
+- Remaining: preserve/verify action IDs and history during future edits; expand contextual links where useful.
 
 ### Phase 5: Dashboard and notifications
 

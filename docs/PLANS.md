@@ -1,348 +1,84 @@
-# PLANS.md — The Stand (Master Implementation Plan)
+# PLANS.md — The Stand Current Roadmap
 
-This document defines the complete phased implementation plan for The Stand.
-It is the authoritative execution roadmap for developers and AI agents.
+This document tracks remaining product and operational work. Completed baseline phases are recorded for traceability, not as open implementation tasks.
 
-All development must follow milestone order unless explicitly revised.
-
-============================================================
-FOUNDATIONAL RULES
-============================================================
+## Non-negotiable boundaries
 
-1. Ward isolation is non-negotiable (API + RLS).
-2. Support Admin bootstrap (Option 1) must be implemented exactly as specified.
-3. Public endpoints never accept ward_id.
-4. No features outside SRS.md may be introduced.
-5. Every milestone must pass lint, typecheck, tests, and build before moving forward.
-6. Cross-ward access must be tested at DB level.
-7. All admin/support actions must be audited.
+- Ward isolation enforced at API and database/RLS layers.
+- The Stand supplements, never replaces, official Church systems.
+- Public routes expose published snapshots only and exclude private workflow data.
+- Official membership, ordinance, attendance, and record completion remain in Church systems.
+- Do not add secrets, credentials, or copied official records to application data.
+- Do not enable new offline mutations until authorization, idempotency, and conflict handling are tested.
 
-============================================================
-PHASE 0 — REPOSITORY FOUNDATION
-============================================================
+## Completed baseline
 
-Objective:
-Create stable monorepo structure and CI pipeline.
+- Repository, Next.js/TypeScript, workspace scripts, Vitest, build, and deployment documentation.
+- PostgreSQL schema, migrations, ward context, RLS, authentication, password rotation, roles, permissions, audit logging, and access requests.
+- Dashboard, meeting CRUD, templates, ordered program items, publish snapshots, print output, public portal, QR output, and At-the-Stand.
+- Callings lifecycle: proposed, extended, sustained, set apart, active assignment, release, and set-apart queue.
+- Membership/ordinance workspace, typed action vocabulary, LCR follow-up state, priesthood-office validation, and ward-scoped action routes.
+- Speaker lifecycle workspace with server-authoritative transitions and meeting readiness indicators.
+- Bishopric, Ward Council, and Missionary Coordination private workspaces with assignments, due dates, carry-forward, linked records, and restricted notes.
+- Scheduled interviews with protected schedule, reminders, ICS export, revocable calendar subscription, and read-only offline fallback.
+- Technology checklist with authorized HTTPS links, readiness fields, dashboard visibility, and reminder runner.
+- LCR/member/calling imports with review, dry-run, commit, idempotency, and raw-paste retention purge.
+- Notification center, event outbox, worker processing, subscriptions, delivery tracking, email/provider-neutral configuration, and diagnostics.
+- Public layout presets, print/public preview, published snapshots, accessible output, announcements, template classification, and text-first/QR output.
+- Offline authorization lifecycle, minimized snapshots, stale/read-only disclosures, local deletion, service-worker API exclusion, supported mutation idempotency, and conflict handling.
+- Health page, retention scheduler, backup restore smoke test, encrypted off-site replication, and operational runbooks.
+- Member, calling, report, and notes sorting controls.
 
-Tasks:
+## Remaining roadmap
 
-- Scaffold Next.js (App Router) + TypeScript app.
-- Add Tailwind + shadcn/ui.
-- Configure ESLint + Prettier.
-- Add Vitest test runner.
-- Add CI (lint, typecheck, test, build).
-- Create .env.example.
-- Add AGENTS.md, ARCHITECTURE.md, SCHEMA.md, API.md, UI.md, PERMISSIONS.md, ACCEPTANCE.md.
+### 1. Official-record boundary depth
 
-Acceptance Gate:
+- Add or finish operational LCR/Member Tools handoff checklist fields: responsible clerk/leader, handoff date, confirmation, certificate/form delivery, and source link where required.
+- Keep official records outside The Stand.
+- Preserve distinction between ordination and setting apart.
 
-- npm run build succeeds
-- CI passes
+### 2. Browser verification
 
-============================================================
-PHASE 1 — DATABASE & RLS FOUNDATION
-============================================================
+- Repair isolated authenticated Playwright bootstrap/auth callback.
+- Run protected coverage against dedicated E2E PostgreSQL, never production.
+- Cover authenticated filters, status controls, conflict dialogs, offline privacy state, public preview, and print preview.
 
-Objective:
-Establish tenancy isolation at DB layer.
+### 3. Operational follow-up
 
-Tasks:
+- Formalize backup success/failure alerting.
+- Assign quarterly restore-drill ownership and record RPO/RTO review.
+- Confirm production activation and ownership for all reminder runners.
+- Expand deployment-level worker/process monitoring where needed.
 
-- Install PostgreSQL locally.
-- Add Drizzle ORM + migration system.
-- Create base tables:
-  stake, ward, user_account, role, ward_user_role, audit_log.
-- Enable Row Level Security on ward tables.
-- Create RLS policies referencing current_setting('app.ward_id').
-- Implement DB context setter per request.
-- Write test proving cross-ward query fails.
+### 4. Workflow depth
 
-Acceptance Gate:
+- Dashboard-wide speaker readiness aggregation and browser-level reminder delivery.
+- Broader leadership note-history/read presentation if required.
+- Ward Youth Council only after validating actual need.
+- Additional Church-action requirements only when grounded in official Church guidance.
 
-- Cross-ward access blocked at DB level.
-- RLS verified in tests.
+### 5. Optional product extensions
 
-============================================================
-PHASE 2 — AUTHENTICATION & BOOTSTRAP
-============================================================
+- CSV/PDF report export.
+- Automated assignment recommendations.
+- Public reports, charts, and demographic scoring only after explicit product review.
+- Attendance reminder/link or clearly non-authoritative local headcount; never duplicate official attendance records by implication.
 
-Objective:
-Implement secure login and Support Admin bootstrap.
+## Verification gate for code changes
 
-Tasks:
+From repository root:
 
-- Integrate Auth.js with Google OAuth.
-- Add credentials provider (optional password).
-- Implement Argon2id hashing.
-- Implement bootstrap logic:
-  - Generate random password (≥24 chars)
-  - Print once to logs
-  - Set must_change_password = true
-- Implement forced change-password flow.
-- Implement rate limiting on login/reset endpoints.
-- Add /api/me endpoint.
+```bash
+npm run docs:dependencies
+npm run docs:dependencies:check
+npm test
+npm run typecheck
+npm run build
+git diff --check
+```
 
-Acceptance Gate:
+Deploy only after local verification, commit/push, deployment safety checks, and live health verification. Update this roadmap when scope changes; do not leave completed work listed as an open task.
 
-- Support Admin created automatically on first run.
-- Password forced rotation works.
-- Google login works.
-- Password endpoints rate limited.
+## Failure rule
 
-============================================================
-PHASE 3 — ROLE & PERMISSION MODEL
-============================================================
-
-Objective:
-Implement RBAC enforcement.
-
-Tasks:
-
-- Implement role → permission mapping.
-- Add requireRole/requirePermission helpers.
-- Protect all ward routes.
-- Implement Ward Admin user management UI.
-- Implement Support Admin console (stake/ward provisioning).
-- Audit all admin/support actions.
-
-Acceptance Gate:
-
-- Ward Admin cannot modify other wards.
-- Support Admin can provision wards.
-- All actions logged.
-
-============================================================
-PHASE 4 — DASHBOARD & CORE UI
-============================================================
-
-Objective:
-Implement post-login experience.
-
-Tasks:
-
-- Create /dashboard route.
-- Add role-aware dashboard cards.
-- Implement landing page + request access flow.
-- Implement logout page.
-
-Acceptance Gate:
-
-- Login → dashboard redirect works.
-- Access request stored in DB.
-
-============================================================
-PHASE 5 — MEETINGS MVP
-============================================================
-
-Objective:
-Enable meeting creation and publishing.
-
-Tasks:
-
-- Create meeting CRUD.
-- Add hymns (number + title snapshot).
-- Add ordered program items.
-- Implement publish action → immutable snapshot.
-- Implement republish versioning.
-- Implement printable view.
-- Implement meeting completion flow.
-
-Acceptance Gate:
-
-- Ward can create and publish meeting.
-- Snapshot immutable after publish.
-- Print view functional.
-
-============================================================
-PHASE 6 — AT THE STAND VIEW
-============================================================
-
-Objective:
-Tablet-friendly conducting interface.
-
-Tasks:
-
-- Implement /stand/{meeting_id}.
-- Add Formal Script mode.
-- Add Compact Labels mode.
-- Bold name + calling in sustain/release phrasing.
-- Add visitor-friendly welcome text.
-
-Acceptance Gate:
-
-- View loads under 2 seconds.
-- Formatting correct.
-- Tablet responsive.
-
-============================================================
-PHASE 7 — CALLINGS WORKFLOW
-============================================================
-
-Objective:
-Track proposed → extended → sustained → set apart.
-
-Tasks:
-
-- Create calling_assignment & calling_action tables.
-- Auto-add sustain/release business lines.
-- Implement Set Apart Queue.
-- Send notifications to bishopric and clerks.
-- Include explicit LCR instruction in notifications.
-
-Acceptance Gate:
-
-- Sustain triggers business line.
-- Completion triggers notification.
-- Set apart triggers clerk reminder.
-
-============================================================
-PHASE 8 — PUBLIC PROGRAM PORTAL
-============================================================
-
-Objective:
-Enable QR-accessible public program.
-
-Tasks:
-
-- Implement /p/{meeting_token}.
-- Implement stable ward portal token.
-- Ensure only published snapshots render.
-- Ensure no internal data exposed.
-- Add token rotation.
-
-Acceptance Gate:
-
-- QR link always routes to current meeting.
-- Unpublished meetings inaccessible publicly.
-
-============================================================
-PHASE 9 — ANNOUNCEMENTS & CALENDAR
-============================================================
-
-Objective:
-Integrate ICS feeds and announcement management.
-
-Tasks:
-
-- Add calendar_feed table.
-- Implement ICS refresh (login-triggered + manual).
-- Add cache pruning job.
-- Add copy-to-announcement feature via tag map.
-- Implement permanent announcement flag.
-
-Acceptance Gate:
-
-- Calendar imports correctly.
-- Announcements display correctly.
-
-============================================================
-PHASE 10 — IMPORT SYSTEM
-============================================================
-
-Objective:
-Support membership & calling paste imports.
-
-Tasks:
-
-- Enforce plain-text paste input.
-- Parse membership format.
-- Parse callings format.
-- Implement dry-run preview.
-- Implement conflict resolution.
-- Implement commit stage.
-- Purge raw paste after retention window.
-
-Acceptance Gate:
-
-- Import handles malformed spacing.
-- Dry run displays accurate preview.
-- Commit updates DB correctly.
-
-============================================================
-PHASE 11 — NOTIFICATIONS & OUTBOX
-============================================================
-
-Objective:
-Reliable event-driven notifications.
-
-Tasks:
-
-- Implement event_outbox table.
-- Implement notification_delivery tracking.
-- Implement dedupe constraint.
-- Add BullMQ worker (or DB poller).
-- Add webhook (n8n) integration.
-- Asynchronous email delivery with per-recipient status and deterministic provider failure.
-- Add diagnostics UI.
-
-Acceptance Gate:
-
-- Notifications retry on failure.
-- No duplicate sends.
-- Diagnostics visible.
-- Email content remains privacy-safe and email delivery is independently tracked.
-
-============================================================
-PHASE 12 — HARDENING & VALIDATION
-============================================================
-
-Objective:
-Production readiness.
-
-Tasks:
-
-- Implement /health endpoint.
-- Validate Nginx config.
-- Validate systemd service.
-- Confirm PostgreSQL local-only.
-- Confirm RLS enabled everywhere.
-- Configure backups + retention.
-- Perform restore test.
-- Validate rate limiting.
-- Review audit logging coverage.
-
-Acceptance Gate:
-
-- All ACCEPTANCE.md scenarios pass.
-- Security checklist complete.
-- Disaster recovery tested.
-
-============================================================
-PHASE 13 — RELEASE CANDIDATE
-============================================================
-
-Objective:
-Prepare production release.
-
-Tasks:
-
-- Tag version (v1.0.0).
-- Generate release notes.
-- Freeze schema.
-- Perform full regression test.
-- Verify bootstrap path again.
-- Document deployment checklist.
-
-Acceptance Gate:
-
-- Clean deploy on fresh Ubuntu VM.
-- Bootstrap flow verified.
-- Ward meeting successfully published and conducted.
-
-============================================================
-FAILURE RULE
-============================================================
-
-If any milestone introduces:
-
-- Cross-ward data leakage
-- Disabled RLS
-- Public exposure of internal data
-- Hardcoded secrets
-- Skipped audit logging
-
-Stop development and correct before proceeding.
-
-============================================================
-END OF PLANS.md
-============================================================
+Stop and correct before continuing if a change causes cross-ward leakage, disabled RLS, public exposure of private data, hardcoded secrets, missing audit coverage, or unverified destructive/offline behavior.

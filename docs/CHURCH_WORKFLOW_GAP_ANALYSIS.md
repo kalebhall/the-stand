@@ -8,13 +8,12 @@
 
 The Stand is strong as a ward meeting-preparation, conducting, public-program, calling, import, notification, and offline-readiness tool. It is not yet a complete ward operating system, and it should not try to become a replacement for LCR or Member Tools.
 
-The most important missing work is:
+The main remaining work is:
 
-1. **Protect offline private data more strongly.** The app stores private notes and meeting snapshots in browser IndexedDB for offline use. The Handbook says Church records are confidential and that electronic copies should be encrypted and password protected where possible.[3]
-2. **Separate meeting presentation from official ordinance completion more explicitly.** The Handbook identifies several business cases beyond the current four action types, and the official record must be created or updated in LCR after applicable ordinances.[1][2][3]
-3. **Add a proper meeting-workflow layer beyond sacrament-program editing.** Bishopric meetings, ward council, missionary coordination, interviews, and action follow-up are not currently first-class workflows.[1][4][5]
-4. **Close operational recovery gaps.** A backup script exists, but there is no visible restore drill, backup health check, alerting, or documented recovery objective.
-5. **Make policy-sensitive scripts and permissions safer.** Current templates are editable ward text, but the UI presents them close to scripts and does not consistently expose source classification, approval prerequisites, or the responsible priesthood leader.
+1. **Official-record boundary depth.** Some LCR/Member Tools handoff fields and policy-sensitive action requirements remain incomplete; priesthood-office typing is implemented.
+2. **Authenticated browser coverage.** Public/login/print renderer coverage exists, but protected page coverage is blocked by the isolated E2E authentication bootstrap.
+3. **Operational follow-up.** Backup alerting, quarterly restore-drill ownership, and some deployment-level monitoring still need formal completion.
+4. **Product extensions.** CSV/PDF report export, automated recommendations, and additional Church-action types remain optional or planned work.
 
 ## Already covered well
 
@@ -30,56 +29,33 @@ These capabilities are verified in the repository’s acceptance specification a
 
 ## Priority 0: privacy and security boundaries
 
-### P0.1 Encrypt or minimize offline private data
+### P0.1 Offline private data
 
-**Finding:** `src/offline/storage.ts` stores user-scoped private notes and meeting snapshots in IndexedDB. The key is scoped to user, ward, and meeting, which is good isolation, but browser storage is not encryption at rest. The offline page also caches the offline route shell.
+**Status:** Core mitigation implemented. Offline storage is user/ward scoped, payloads are minimized, authorization mismatch purges local data, explicit deletion exists, stale/read-only disclosures exist, and the service worker excludes `/api/*` responses. IndexedDB encryption at rest is not claimed.
 
 **Why it matters:** The Handbook says Church records are confidential, access should be limited to authorized users, and electronic copies should be encrypted and password protected where possible.[3][6]
 
-**Recommendation:**
+**Remaining:** Repair the isolated authenticated browser harness and run browser-level offline privacy coverage. Do not add encryption claims without a real key lifecycle.
 
-- Add a documented threat model for offline storage.
-- Prefer Web Crypto encryption with a key derived from a short-lived authenticated session secret or an explicit device unlock flow.
-- Clear or quarantine snapshots on logout, account change, ward change, password reset, or authorization refresh failure.
-- Add an explicit “This device contains private ward data” warning and a local-data delete control.
-- Never put private API responses in a generic service-worker cache.
-- Consider storing less: meeting/program content plus only the private notes needed for conducting.
+### P0.2 Data-retention and deletion policy
 
-**Acceptance tests:** user switch, ward switch, logout, expired session, revoked role, browser storage inspection, offline reload, and failed decryption must fail closed.
-
-### P0.2 Add a data-retention and deletion policy
-
-**Finding:** `src/imports/purge.ts` contains a 30-day raw import purge function, but no repository call site schedules it. Audit logs, offline mutation results, notes, and snapshots have no documented retention policy.
+**Status:** Implemented. Raw import and bounded audit-log retention run through the operational retention runner and daily systemd timer. Browser snapshots/private notes remain user or authorization lifecycle controlled.
 
 **Why it matters:** The Handbook says records should be kept only as long as needed and outdated records should be disposed of so they cannot be reconstructed.[3]
 
-**Recommendation:** Define retention by data class:
-
-- Raw import payloads: short retention, then purge.
-- Offline mutation ledger: retain only long enough to guarantee idempotent replay and support troubleshooting.
-- Private notes: user/ward policy with explicit deletion.
-- Audit events: longer retention with access controls.
-- Browser snapshots: delete on authorization change and provide user-controlled purge.
-
-Run the purge job from an actual scheduler or deployment job, emit metrics, and test that it ran.
+**Remaining:** Keep operational ownership and retention-period review current in deployment documentation.
 
 ### P0.3 Verify backup restoration, not only backup creation
 
 **Status:** Resolved in application and deployment runbook. `infra/scripts/restore-smoke-test.sh` now verifies optional checksum, migration state, core schema, representative row count, and cleanup. Latest deployment drill succeeded; off-site encryption/copy remains deployment responsibility, and checksum proof depends on sidecar presence.
 
-**Remaining deployment work:**
-
-- encrypted off-host backup storage;
-- backup success/failure monitoring;
-- scheduled quarterly restore drill ownership;
-- documented RPO/RTO review after production sizing;
-- test secrets/configuration needed after restore.
+**Remaining deployment work:** backup success/failure alerting, scheduled quarterly drill ownership, and documented RPO/RTO review after production sizing.
 
 ## Priority 1: official Church workflow coverage
 
 ### P1.1 Expand sacrament-meeting business types
 
-**Finding:** Current membership/ordinance types are welcome-new-member, baby blessing, priesthood ordination, and priesthood advancement. Handbook 29.2.1.1 also identifies:
+**Status:** Recognition of baptized children, baptism/confirmation follow-up, attendance handoff, welcome-new-member, baby blessing, priesthood ordination, and priesthood advancement are represented as distinct action types. Handbook 29.2.1.1 also identifies:
 
 - recognition of children who are members of record after baptism and confirmation;
 - confirmation of new converts;
@@ -87,20 +63,15 @@ Run the purge job from an actual scheduler or deployment job, emit metrics, and 
 - presenting Aaronic Priesthood ordinations;
 - sustain/release business.[1]
 
-The current calling flow covers sustain/release, and baby blessing is covered. Recognition of baptized children and confirmation of new converts are not first-class action types.
+The current calling flow covers sustain/release, and the action model keeps recognition and baptism/confirmation follow-up separate from welcome-new-member. Do not combine these actions; the Handbook distinguishes children who are baptized and confirmed from people being presented for ward welcome.[1]
 
-**Recommendation:** Add separate preparation records for:
-
-- `RECOGNIZE_BAPTIZED_CHILD`; and
-- `CONFIRM_NEW_CONVERT`.
-
-Do not automatically combine these with welcome-new-member. The Handbook explicitly distinguishes children who are baptized and confirmed from people being presented for ward welcome.[1]
+**Remaining:** Deeper official-record handoff fields and workflow validation.
 
 ### P1.2 Track the official-record handoff without copying LCR data
 
-**Finding:** The app tracks an LCR reminder state, but not the responsible clerk, required form/checklist, handoff date, or verification that the official Church record was updated. Handbook 18.6.3 identifies the Child Record Form, membership record creation, and Blessing Certificate for child blessings; Handbook 33.6 states that membership records are the official means of recording ordinances and that leaders should update them promptly in LCR.[2][3]
+**Status:** The app tracks operational LCR follow-up state and keeps official records outside The Stand. Handbook 18.6.3 identifies the Child Record Form, membership record creation, and Blessing Certificate for child blessings; Handbook 33.6 states that membership records are the official means of recording ordinances and that leaders should update them promptly in LCR.[2][3]
 
-**Recommendation:** Add a minimal operational handoff checklist, not an ordinance database:
+**Remaining:** Add a minimal operational handoff checklist, not an ordinance database:
 
 - record/form preparation needed;
 - responsible clerk or leader;
@@ -113,97 +84,59 @@ Do not store ordinance details copied from LCR.
 
 ### P1.3 Model priesthood ordination requirements more explicitly
 
-**Finding:** The UI accepts the office as free text in `details`. The API does not validate the office against the action family or distinguish Aaronic offices from Melchizedek offices. The Handbook says Aaronic ordinations are presented in sacrament meeting, while authority and approval requirements differ by office.[1][2]
+**Status:** Priesthood office is typed and validated for supported action families. The Handbook says Aaronic ordinations are presented in sacrament meeting, while authority and approval requirements differ by office.[1][2]
 
-**Recommendation:** Use a typed office field with allowed values and validation:
+**Remaining:** Add or verify explicit interview, approval, presenting-leader, performing-holder, planned-date, and LCR handoff fields where required:
 
-- Deacon, Teacher, Priest;
-- Elder, High Priest where applicable;
-- unknown/not selected only during planning.
-
-Add explicit fields for interview complete, approval confirmed, presenting leader, performing priesthood holder, planned ordinance date, and LCR handoff. Keep “setting apart” entirely separate from ordination.[2]
+Keep “setting apart” entirely separate from ordination.[2]
 
 ### P1.4 Classify templates as official instruction versus local prompt
 
-**Finding:** Stand templates contain a mixture of local wording, explanatory text, and Handbook references. Some are presented as a “formal script,” even though the Handbook often supplies required elements or examples rather than one universal fixed script.[2]
+**Status:** Template classification metadata, source links, editable ward-prompt warnings, and output tests are implemented. The Handbook often supplies required elements or examples rather than one universal fixed script.[2]
 
-**Recommendation:** Each template should declare one of:
+Each template declares one of:
 
 - `OFFICIAL_REQUIRED_ELEMENTS`;
 - `OFFICIAL_EXAMPLE`; or
 - `WARD_PROMPT`.
 
-Display the source link and a warning when a ward prompt is editable. Do not claim that The Stand authorizes, validates, or completes an ordinance.
+Do not claim that The Stand authorizes, validates, or completes an ordinance.
 
-## Priority 1: missing leadership workflows
+## Priority 1: leadership workflows
 
 ### P1.5 Bishopric meeting workspace
 
-**Finding:** The app has sacrament-meeting preparation but no first-class bishopric meeting agenda, recurring agenda sections, assignments, or carry-forward actions.
+**Status:** Implemented. `/bishopric` provides protected ward-scoped bishopric, Ward Council, and Missionary Coordination agendas with assignments, owners, due dates, carry-forward, lifecycle/history, linked records, and restricted action notes.
 
 **Why it matters:** Handbook 29.2.4 describes bishopric meetings as a regular place to counsel, make ward decisions, identify members preparing for ordinances, identify calling candidates, and review assignments.[1]
 
-**Recommendation:** Add a separate leadership-meeting workspace with:
-
-- meeting date and participants;
-- agenda templates;
-- linked church actions, callings, members, and meetings;
-- decisions and assignments;
-- due dates and owners;
-- private/leadership visibility;
-- carry-forward and completion history.
+**Remaining:** Broader note-history/read presentation and deployment-level monitoring remain follow-up.
 
 Migration `0053_restricted_leadership_notes.sql` adds action-targeted internal notes. Leadership notes accept only `LEADERSHIP` or `PRIVATE` visibility, require a ward-owned bishopric action, and remain excluded from public output and generic offline snapshots. Bishopric, Ward Council, and Missionary Coordination routes share restricted-note entry/history UI through the filtered workspace. Existing member, meeting, and program-item note targets remain unchanged.
 
 ### P1.6 Ward council and missionary coordination support
 
-**Finding:** There is no ward council or weekly missionary coordination workflow. Handbook 29.2.5 and chapter 23 describe regular coordination around members, new members, returning members, ordinances, ministering, and assignments.[1][4]
+**Status:** Implemented through the shared filtered leadership workspace. Handbook 29.2.5 and chapter 23 remain policy references.[1][4]
 
-**Recommendation:** Add lightweight meeting types and action linking before adding complex notes:
-
-- Ward Council;
-- Missionary Coordination;
-- Ward Youth Council if needed by the ward.
-
-Reuse the action/assignment engine, but keep sensitive notes permission-scoped and separate from meeting programs.
+**Remaining:** Ward Youth Council has not been added; sensitive notes remain permission-scoped and separate from meeting programs.
 
 ### P1.7 Interviews as scheduled operational work
 
-**Finding:** Priesthood actions have interview fields, and general interview scheduling now supports reminders, operational links, authenticated ICS export, a revocable ward-scoped calendar subscription, and a protected ward-scoped schedule. The schedule has an authenticated IndexedDB read-only offline fallback; offline create/update remains intentionally disabled. Handbook chapter 31 treats interviews and other meetings with members as a distinct leadership workflow.[5]
+**Status:** Implemented. Interview scheduling supports operational metadata, reminders, authenticated ICS export, revocable ward-scoped calendar subscription, protected schedule, and read-only offline fallback. Handbook chapter 31 remains the policy reference.[5]
 
-**Recommendation:** Add an interview record or generalized scheduled conversation record with only operational metadata:
-
-- interview type;
-- member;
-- leader/interviewer;
-- scheduled date;
-- completion state;
-- linked action/calling;
-- private note boundary.
-
-Do not store confidential interview content by default.
+**Remaining:** Offline create/update remains intentionally disabled. Confidential interview content remains excluded.
 
 ## Priority 1: meeting-program completeness
 
 ### P1.8 Speaker invitation and preparation lifecycle
 
-**Finding:** The editor stores speaker names and topics, but there is no invitation state, acceptance state, reminder, speaking date confirmation, or missing-topic warning surfaced as a workflow. Handbook 29.2.1.4 says the bishopric selects speakers and extends invitations well in advance.[1]
+**Status:** Core lifecycle implemented in dedicated Speaker Lifecycle workspace: `PLANNED → INVITED → ACCEPTED → CONFIRMED → COMPLETED`, server-authoritative transitions, required topic before confirmation, and readiness counts. Handbook 29.2.1.4 remains the policy reference.[1]
 
-**Recommendation:** Add optional speaker workflow states:
-
-`PLANNED -> INVITED -> ACCEPTED -> CONFIRMED -> COMPLETED`
-
-Keep this separate from the program item’s public text. Add reminders and a meeting readiness report for missing topic, hymn, prayer, or participant assignments.
+**Remaining:** Browser-level reminder delivery and dashboard-wide readiness aggregation.
 
 ### P1.9 Fast-and-testimony and special-meeting rules
 
-**Finding:** The app has a FAST_TESTIMONY template, but the editor still exposes generic program controls. The Handbook says fast-and-testimony meeting has no assigned speakers or special musical selections and normally includes member testimonies instead.[1]
-
-**Recommendation:** Make meeting-type rules visible and enforce them at the editor/API boundary. For example:
-
-- hide or warn on assigned speaker controls in fast-and-testimony meetings;
-- preserve the testimony section without treating it as an ordinary speaker lineup;
-- document exceptions for ward conference and stake/general conference.
+**Status:** Implemented. Meeting-type validation rejects assigned speakers and special hymns for fast-and-testimony meetings, preserves testimony content, and has focused default-program/API tests. Ward conference and stake/general conference remain explicit meeting types.[1]
 
 ### P1.10 Attendance and participation are absent
 
@@ -215,18 +148,9 @@ Keep this separate from the program item’s public text. Add reminders and a me
 
 ### P2.1 Streaming and technology-specialist handoff
 
-**Finding:** The official technology site includes resources for virtual meetings, meetinghouse technologies, internet, audio, broadcasts, and technology-specialist training.[8] The Stand has offline conducting support and public program links but no meeting streaming checklist, technology owner, preflight test, or post-meeting recording deletion reminder.
+**Status:** Implemented. Protected `/technology` checklist tracks owner, room/audio/stream/accessibility readiness, authorized HTTPS link, start/stop confirmation, and recording deletion reminder. The official technology site remains the policy/resource reference.[8]
 
-**Recommendation:** Add an optional meeting technology checklist:
-
-- technology specialist/owner;
-- room/audio/streaming readiness;
-- authorized stream link;
-- start/stop confirmation;
-- accessibility check;
-- recording deletion reminder.
-
-Do not store credentials or meetinghouse network secrets in The Stand.
+**Remaining:** Confirm production activation/ownership of the technology reminder runner. Credentials and network secrets remain excluded.
 
 ### P2.2 Church-tools handoff links
 
@@ -236,22 +160,18 @@ Do not store credentials or meetinghouse network secrets in The Stand.
 
 ## Priority 2: accessibility, usability, and resilience
 
-- Add keyboard and screen-reader tests for filters, status controls, conflict dialogs, offline indicators, and public/print views.
-- Add explicit stale-snapshot age and authorization status to offline mode.
-- Add a “delete local offline data” control.
-- Add a deployment health page showing database, queue, backup, and notification-worker status.
-- Add audit-log views for membership/ordinance transitions with before/after state, actor, source, and timestamp.
-- Add a restore/runbook link for administrators.
+- Public layout controls, public output landmarks/labels, login/access-request accessibility, and print renderer media behavior are covered.
+- Offline stale age, authorization status, read-only state, and local-data deletion are implemented; authenticated browser coverage remains blocked by the E2E auth harness.
+- Deployment health page, retention runner, backup restore smoke test, off-site encrypted replication, and audit retention are implemented.
+- Remaining: broader authenticated browser coverage, backup alerting, quarterly restore-drill ownership, and deeper audit-history presentation.
 
 ## Recommended implementation order
 
-1. **Security/privacy:** encrypted or minimized offline storage, authorization revocation handling, retention scheduler, local-data deletion.
-2. **Official-record boundary:** LCR handoff checklist, source links, typed priesthood office, template classification.
-3. **Meeting readiness:** speaker invitation state, missing-field warnings, fast-and-testimony constraints.
-4. **Leadership workflows:** bishopric meeting and ward council action workspace.
-5. **Membership coverage:** baptized-child recognition and new-convert confirmation tracking.
-6. **Technology operations:** streaming/audio/preflight checklist and post-meeting cleanup.
-7. **Optional reporting:** attendance reminder or clearly non-authoritative local headcount.
+1. **Official-record boundary:** LCR handoff checklist, typed priesthood office, and policy-sensitive action requirements.
+2. **Authenticated browser coverage:** repair isolated auth/bootstrap, then exercise protected workflows.
+3. **Operational follow-up:** backup alerting, quarterly restore-drill ownership, and deployment monitoring.
+4. **Membership coverage:** additional Church-action types and related official-record handoff depth.
+5. **Optional reporting:** attendance reminder or clearly non-authoritative local headcount.
 
 ## What not to build
 

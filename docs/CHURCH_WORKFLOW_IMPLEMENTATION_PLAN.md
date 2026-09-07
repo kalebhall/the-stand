@@ -52,17 +52,7 @@ git diff --check
 - new migration only if server-side device/session metadata is needed
 - focused offline tests
 
-**Tasks:**
-
-1. Document threat model and classify offline fields as public meeting content, conducting content, private notes, or sensitive follow-up.
-2. Minimize snapshot payload to fields needed for conducting and explicitly approved read-only reference data.
-3. Add Web Crypto encryption for private offline fields, with key invalidation on logout, user change, ward change, expired session, or authorization refresh failure.
-4. Add “Delete offline data” control and confirmation.
-5. Add visible warning that device contains private ward data.
-6. Ensure generic service-worker caches never contain private API responses.
-7. Add tests for user switch, ward switch, logout, failed decryption, expired authorization, offline reload, and delete control.
-
-**Acceptance:** Unauthorized or undecryptable local data is not rendered. Public meeting content can still be used offline only when explicitly permitted.
+**Implementation status:** Threat model, minimized payload, authorization mismatch purge, explicit deletion, privacy disclosures, service-worker API exclusion, and focused tests are implemented. IndexedDB encryption at rest is not claimed. Authenticated browser coverage remains blocked by the isolated E2E auth harness.
 
 ## Option 0B: Retention and purge scheduler
 
@@ -78,16 +68,7 @@ git diff --check
 - admin health/status page
 - retention documentation and tests
 
-**Tasks:**
-
-1. Define retention by data class: raw imports, offline mutation ledger, private notes, audit events, and browser snapshots.
-2. Add scheduled purge invocation with idempotent behavior.
-3. Emit structured success/failure metrics without logging private payloads.
-4. Add dry-run/admin diagnostic mode.
-5. Add tests proving expired data is removed and current data remains.
-6. Document recovery and retention assumptions.
-
-**Acceptance:** A scheduled job runs in deployment, reports result, and can be verified without inspecting private content.
+**Implementation status:** Completed. Scheduled retention runner, dry-run counts, structured sanitized metrics, tests, systemd timer, and deployment execution are implemented. Operational ownership and alerting remain deployment follow-up.
 
 ## Option 0C: Backup restore drill
 
@@ -102,16 +83,7 @@ git diff --check
 - deployment/cron/monitoring configuration
 - `docs/OPERATIONS.md` or equivalent runbook
 
-**Tasks:**
-
-1. Add encrypted off-host backup target using deployment-provided credentials only.
-2. Add isolated restore smoke test.
-3. Validate schema, migration state, row counts, and a non-secret application health query after restore.
-4. Add backup success/failure alerting.
-5. Document RPO, RTO, restore steps, and required configuration.
-6. Run one real restore drill and record result.
-
-**Acceptance:** Restore drill produces a verified isolated database; secrets never appear in logs or committed files.
+**Implementation status:** Restore smoke test, schema/migration/row-count/health validation, encrypted Proxmox restic replication, retention, runbook, and a real restore drill are implemented. Backup alerting, quarterly drill ownership, and RPO/RTO review remain deployment follow-up.
 
 ---
 
@@ -144,7 +116,7 @@ git diff --check
 
 Do not store copied ordinance details or replace LCR status.
 
-**Tasks:** Add migration/schema, validate API transitions, add workspace controls, show pending handoff in dashboard, render read-only summary offline, audit each transition, and test ward isolation/repeated updates.
+**Implementation status:** Operational handoff fields, transition validation, workspace controls, dashboard queues, offline read-only display, audit coverage, and ward-scoped tests are implemented.
 
 ## Option 1B: Typed priesthood office
 
@@ -154,27 +126,13 @@ Do not store copied ordinance details or replace LCR status.
 
 **Allowed values:** Deacon, Teacher, Priest, Elder, High Priest where applicable, plus temporary unknown during planning. In a ward sacrament meeting, ward workflows must not sustain or set apart Elders or High Priests; those responsibilities belong to stake leadership.
 
-**Tasks:**
-
-1. Add nullable typed office field through schema/API/domain/UI.
-2. Reject office/action combinations that do not make sense.
-3. Add fields for interview complete, approval confirmed, presenting leader, performing priesthood holder, planned ordinance date, and LCR handoff.
-4. Keep setting apart outside this action family.
-5. Update editor, meeting rendering, dashboard, offline read-only display, and tests.
+**Implementation status:** Typed office validation, action-family checks, preparation/handoff fields, separate setting-apart boundary, editor/dashboard/rendering/offline integration, and tests are implemented.
 
 ## Option 1C: Template classification
 
 **Priority:** P1
 
-**Implementation status:** Added typed classification registry and forward migration `0051_stand_template_classification.sql`. Stand-script settings now show each editable template as a ward prompt, sample sustaining wording, or Handbook instruction with current Church source links. Classification metadata remains separate from editable text; prompts do not claim to authorize or complete ordinances.
-
-**Tasks:**
-
-1. Add template classification metadata.
-2. Add source URL and source label.
-3. Display editable warning for ward prompts.
-4. Keep official text unchanged when exact wording is required.
-5. Add tests for formal, compact, print, public, and offline output.
+**Implementation status:** Completed. Typed classification registry and forward migration `0051_stand_template_classification.sql` add source links, editable ward-prompt warnings, and output tests. Classification metadata remains separate from editable text; prompts do not claim to authorize or complete ordinances.
 
 ---
 
@@ -186,7 +144,7 @@ Do not store copied ordinance details or replace LCR status.
 
 **Outcome:** Recognition of baptized children is distinct from welcoming a new member.
 
-**Tasks:** Add `RECOGNIZE_BAPTIZED_CHILD` action, validation, editor fields, follow-up state, dashboard queue, meeting presentation rendering, print/public filtering, offline read-only display, and tests.
+**Implementation status:** `RECOGNIZE_BAPTIZED_CHILD` action, validation, editor fields, follow-up state, dashboard queue, meeting rendering, print/public filtering, offline read-only display, and tests are implemented.
 
 ## Option 2B: Baptism and confirmation follow-up
 
@@ -204,13 +162,7 @@ Do not store copied ordinance details or replace LCR status.
 - LCR handoff reminder
 - No default sacrament-meeting program item for confirmation
 
-**Tasks:**
-
-1. Audit existing confirmation strings, action types, defaults, imports, and renderers.
-2. Remove or migrate any confirmation item incorrectly attached to sacrament meeting.
-3. Add baptism workflow relation for confirmation follow-up.
-4. Add tests proving sacrament defaults do not include confirmation.
-5. Render only the meeting presentation elements that actually belong in the meeting; do not claim The Stand completes the ordinance.
+**Implementation status:** Baptism/confirmation follow-up action, validation, meeting-safe rendering, and tests are implemented. Confirmation is not added as a sacrament-meeting default program item.
 
 ## Option 2C: Church-action source and status safety
 
@@ -218,7 +170,7 @@ Do not store copied ordinance details or replace LCR status.
 
 **Outcome:** Meeting announcement, underlying action completion, interview completion, and official-record update remain separate states.[1][2][3]
 
-**Tasks:** Centralize transition validation, block LCR completion before underlying action completion, record actor/timestamp, add invalid-order tests, and expose official-system handoff wording.
+**Implementation status:** Transition validation, ordering guards, actor/timestamp audit behavior, invalid-order tests, and official-system handoff wording are implemented.
 
 ---
 
@@ -230,15 +182,7 @@ Do not store copied ordinance details or replace LCR status.
 
 **States:** `PLANNED → INVITED → ACCEPTED → CONFIRMED → COMPLETED`
 
-**Tasks:**
-
-1. Add speaker workflow metadata without mixing it into public text.
-2. Add invitation/acceptance/confirmation controls.
-3. Add reminder and missing-topic indicators.
-4. Add meeting readiness summary for speakers, hymns, prayers, and required participants.
-5. Update editor, dashboard, print/public output, and tests.
-
-**Implementation status:** Speaker topics and lifecycle controls are present in meeting editing, and server-side updates now enforce sequential `PLANNED → INVITED → ACCEPTED → CONFIRMED → COMPLETED` transitions with a topic required before confirmation. Meeting editor now shows readiness counts for speakers, hymns, prayers, and required participants. Browser-level reminder delivery and dashboard-wide readiness aggregation remain follow-up.
+**Implementation status:** Speaker lifecycle is now owned by the dedicated Speaker Lifecycle workspace. Server-side updates enforce sequential `PLANNED → INVITED → ACCEPTED → CONFIRMED → COMPLETED` transitions with a topic required before confirmation. Meeting editor shows readiness counts for speakers, hymns, prayers, and required participants. Browser-level reminder delivery and dashboard-wide readiness aggregation remain follow-up.
 
 ## Option 3B: Fast-and-testimony and special-meeting rules
 
@@ -246,21 +190,13 @@ Do not store copied ordinance details or replace LCR status.
 
 **Outcome:** Meeting type controls behavior, not only initial defaults.
 
-**Tasks:**
-
-1. Define allowed/forbidden item types by meeting type.
-2. Hide or warn on assigned speakers and special musical selections for fast-and-testimony meetings.
-3. Enforce rules at API boundary.
-4. Preserve explicit exceptions for ward conference and stake/general conference.
-5. Add template replacement and exact-order tests.
+**Implementation status:** Meeting-type rules, API enforcement, conference exceptions, template replacement, and focused tests are implemented.
 
 ## Option 3C: Attendance handoff
 
 **Priority:** P2
 
-**Recommendation:** Start with an official-tool reminder/link, not duplicate attendance storage.
-
-**Tasks:** Add “Record attendance in LCR/Member Tools” action, source link, optional completion reminder, and no-authoritative-record disclaimer. Reconsider local headcount only after retention/privacy review.
+**Implementation status:** `ATTENDANCE_LCR_HANDOFF` action and official-tool wording are implemented. The app does not store authoritative attendance. Local headcount remains out of scope.
 
 ---
 
@@ -274,8 +210,6 @@ Do not store copied ordinance details or replace LCR status.
 
 **Data:** Meeting date, participants, agenda template, linked actions/callings/members, decisions, assignments, due dates, owners, visibility, carry-forward, completion history.
 
-**Tasks:** Add meeting type and protected route, agenda templates, action links, private visibility rules, assignment lifecycle, dashboard due items, and tests for ward isolation/public exclusion.
-
 **Implementation status:** Core bishopric workspace delivered in `0045_bishopric_workspace.sql`: protected ward-scoped route, private agenda meetings, action assignments with owners/due dates/carry-forward, completion history, lifecycle validation, dashboard overdue count, and public-program exclusion. Migration `0052_leadership_linked_records.sql` now links private actions to ward members, active calling assignments, or membership/ordinance follow-up records. Migration `0053_restricted_leadership_notes.sql` adds ward-scoped action-targeted `LEADERSHIP`/`PRIVATE` notes with shared API authorization and bishopric UI entry. Reads join linked labels without exposing private action data publicly. Broader note history/read UI and restricted-note presentation for other coordination workspaces remain follow-up.
 
 ## Option 4B: Ward council and missionary coordination
@@ -283,8 +217,6 @@ Do not store copied ordinance details or replace LCR status.
 **Priority:** P1
 
 **Outcome:** Lightweight coordination workflows exist without storing unnecessary confidential counseling content.[4][6]
-
-**Tasks:** Add Ward Council and Missionary Coordination meeting types, reusable assignments, member/action links, restricted notes, carry-forward, and dashboard due items. Add Ward Youth Council only after validating need.
 
 **Implementation status:** Coordination types now reuse protected private leadership meetings/actions. Routes `/ward-council` and `/missionary-coordination` redirect into same filtered workspace component, so linked records and restricted action-note history/entry are available without duplicating UI or privacy logic. Shared leadership due-action count now includes all three coordination types with accurate dashboard labeling. The leadership collection GET accepts validated `type` filtering, preserving ward scope while preventing type-specific consumers from loading other coordination agendas. Ward Youth Council not added.
 
@@ -296,8 +228,6 @@ Do not store copied ordinance details or replace LCR status.
 
 **Data:** Interview type, member, interviewer, date, completion state, linked action/calling, private-note boundary.
 
-**Tasks:** Add schema/API, calendar/reminder integration, permission checks, dashboard view, offline read-only reference only, and tests.
-
 **Implementation status:** Scheduled interviews now support authenticated ward-scoped ICS export at `/api/w/[wardId]/interviews/calendar`, limited to scheduled records and marked private/no-store. Export includes operational metadata only; confidential interview content remains excluded. Added a revocable ward-scoped bearer subscription at `/api/calendar/interviews/[token]`; only a SHA-256 token hash is stored, rotation revokes the previous URL, and the feed is private/no-store. Authorized managers can create, rotate, and revoke the URL from the interview workspace. Added deployable `remind:interviews` runner: it finds scheduled interviews in next 24 hours, creates idempotent ward-scoped `INTERVIEW_REMINDER` outbox events, queues notification processing after commit, and sends in-app reminders to calling managers. Horizon can be bounded with `INTERVIEW_REMINDER_HORIZON_HOURS` (1–168). The authenticated interview workspace caches the ward schedule in user/ward-scoped IndexedDB, refreshes it online, falls back to a clearly marked read-only saved copy offline, and disables create/status mutations without connection. Repository systemd service/timer units cover interview and technology reminder runners; production activation and execution are verified. Confidential interview content remains excluded from exports, subscriptions, notifications, and offline cache.
 
 ## Option 4D: Technology/streaming checklist
@@ -305,8 +235,6 @@ Do not store copied ordinance details or replace LCR status.
 **Priority:** P2
 
 **Outcome:** Meeting technology readiness is trackable without storing credentials or network secrets.[8]
-
-**Tasks:** Add optional meeting checklist with owner, audio/room/stream readiness, authorized link, accessibility check, start/stop confirmation, and recording deletion reminder. Keep secrets outside The Stand.
 
 **Implementation status:** Protected `/technology` checklist now tracks owner, room/audio/stream/accessibility readiness, HTTPS authorized link, start/stop confirmation, and recording deletion reminder. Schema/API enforce ward scope and reject non-HTTPS links. Dashboard now shows authorized managers upcoming meetings with incomplete technology checks. Added deployable `remind:technology` runner: it finds incomplete checklists for meetings within the next seven days, creates idempotent ward-scoped `MEETING_TECHNOLOGY_REMINDER` outbox events, and queues private in-app reminders after commit. At-the-Stand offline snapshots now include a read-only technology checklist reference and authorized link when present. Credentials and network secrets remain excluded. Runner deployment through systemd/cron remains operational follow-up.
 
@@ -429,9 +357,7 @@ Date-active filtering must use one shared helper across editor, public, print, a
 
 ## Option 5E: Public program publishing
 
-Add draft/published states for public layout settings.
-
-**Implementation status:** Public layout configuration, draft/print rendering, accessible public output, stable published snapshots, and QR output are implemented. Added authenticated `/meetings/[meetingId]/public-preview` draft preview that bypasses published snapshots and uses same normalized renderer/layout path as print output, so authorized users can inspect current public-shaped content before publish. Browser-level print-preview exercise remains open.
+**Implementation status:** Public layout configuration, draft/print rendering, accessible public output, stable published snapshots, QR output, and authenticated draft preview are implemented. Browser-level print-preview coverage is implemented and verified.
 
 **Completed tasks:**
 
@@ -444,7 +370,7 @@ Add draft/published states for public layout settings.
 7. Stable public URL QR output.
 8. Private-field, empty-section, escaping, layout, and announcement tests.
 
-**Remaining:** Deterministic renderer fixtures and browser-level print-preview exercise.
+**Remaining:** None for this option.
 
 ## Recommended first public-program release
 
@@ -478,18 +404,17 @@ Defer custom freeform layout until real ward usage shows need.
 
 # Phase 6 — Accessibility, health, and audit
 
-**Implementation status:** Public layout controls now expose explicit labels, grouped options, keyboard-friendly native controls, live save status, failure recovery, and disabled save state. Public program output has a labelled main landmark and accessible QR link/SVG labels. Added Playwright browser coverage for login and access-request pages, including landmarks, headings, labelled controls, input semantics, and keyboard focus order. Broader authenticated filters, status controls, conflict dialogs, offline state, public pages, and print preview remain open pending seeded E2E fixtures and browser execution.
+**Implementation status:** Public layout controls now expose explicit labels, grouped options, keyboard-friendly native controls, live save status, failure recovery, and disabled save state. Public program output has a labelled main landmark and accessible QR link/SVG labels. Login/access-request and print renderer browser coverage is verified. Broader authenticated filters, status controls, conflict dialogs, offline state, public pages, and protected print preview remain open pending repair of seeded E2E authentication.
 
 ## Option 6A: Accessibility coverage
 
 Add keyboard/screen-reader tests for filters, status controls, conflict dialogs, offline state, public pages, print preview, and layout controls. Add large-print/full-page preset.
 
-**Progress:** Browser tests now cover login/access-request semantics and shared print renderer media behavior for bifold, tri-fold, and full-page presets. Authenticated page-level print/public preview remains open pending seeded E2E fixtures.
+**Progress:** Browser tests cover login/access-request semantics and shared print renderer media behavior for bifold, tri-fold, and full-page presets. Authenticated page-level print/public preview remains open pending seeded E2E authentication.
 
 ## Option 6B: Deployment health page
 
 **Implementation status:** Added authenticated Support/System Admin deployment health page at `/settings/health`. It reports safe database, Redis queue, backup-directory, raw-import purge, and notification-delivery checks without displaying secrets or private payloads. Worker process liveness, scheduling, and restore drills remain deployment-level responsibilities.
-Show database, queue, backup, purge, and notification-worker state to authorized administrators. Do not expose secrets or private payloads.
 
 ## Option 6C: Audit improvements
 

@@ -1,72 +1,39 @@
-# Offline Privacy Hardening Implementation Plan
+# Offline Privacy Hardening — Current Status
 
-> **For Hermes:** Implement task-by-task with strict TDD and verify each completed slice.
+**Status:** Core implementation complete; authenticated browser coverage remains blocked by the test harness.
 
-**Goal:** Reduce the risk of exposing confidential ward coordination data from browser offline storage while preserving the existing read-only/offline workflow.
+## Implemented
 
-**Architecture:** Keep IndexedDB as a minimized, user-and-ward-scoped cache. Treat the server session as the authorization authority whenever online, clear all local stores and the named service-worker cache on identity/ward mismatch or explicit deletion, and show clear stale/offline/privacy state in the UI. Do not claim IndexedDB encryption at rest without a real key lifecycle.
+- User/ward authorization context matching with fail-closed behavior
+- Purge on identity, ward, or authorization mismatch
+- Explicit local offline-data deletion
+- Saved-copy age and 24-hour stale threshold
+- Offline/read-only and confidential-device disclosures
+- Minimized offline snapshot payload
+- Service-worker cache version `the-stand-offline-v2`
+- Cleanup of older offline cache versions
+- No generic service-worker caching of `/api/*` responses
+- Offline mutation idempotency and revision-conflict handling for supported business-line/private-note operations
+- Unsupported publishing, deletion, permission, calling-lifecycle, and membership/ordinance-status writes remain online-only
 
-**Tech Stack:** Next.js/React, TypeScript, IndexedDB, service worker cache, Vitest/jsdom, Playwright with isolated PostgreSQL.
+The application does **not** claim IndexedDB encryption at rest.
 
----
+## Verification completed
 
-## Scope and constraints
+- Offline storage tests passed
+- Service-worker privacy tests passed
+- Full suite: **308 passed, 1 skipped**
+- Typecheck passed
+- Production build passed
+- Dependency graph generation/check passed
+- `git diff --check` passed
 
-- The Stand remains a coordination layer, not the official Church record.
-- Offline writes remain limited to already-supported private notes and non-authoritative conducting progress; publishing, deletion, permissions, calling lifecycle, and membership/ordinance status remain online-only.
-- Private notes, leadership data, interview substance, credentials, tokens, and official-record payloads must not enter generic service-worker caches.
-- Every cache read must be scoped to the authenticated user and active ward.
-- Explicit deletion must clear IndexedDB snapshots, interview snapshots, queued mutations, context metadata, and `the-stand-offline-v1`.
+## Remaining work
 
-## Implementation order
+- Repair isolated authenticated Playwright bootstrap/auth callback path.
+- Run browser coverage for offline warning, stale state, deletion, read-only restrictions, and authorization-loss behavior.
+- Keep browser tests pointed at the isolated E2E database, never production.
 
-### Task 1: Authorization lifecycle contract
+## Constraints
 
-- Files: `apps/web/src/offline/storage.ts`, `apps/web/src/offline/storage.vitest.ts`
-- Add pure, tested decisions for matching cached context and determining whether online session context is authorized.
-- Preserve fail-closed behavior for missing identity/ward data.
-- Verify focused storage tests fail first, then pass.
-
-### Task 2: Online authorization refresh and revocation purge
-
-- Files: `apps/web/components/offline-stand-button.tsx`, `apps/web/app/stand/[meetingId]/offline/offline-stand-page.tsx`
-- Refresh `/api/me` on initial load, visibility return, reconnect, and before saving a snapshot.
-- If the authenticated identity or active ward changes, clear local offline data before loading or saving.
-- If the server denies the session, clear local data and show a privacy-safe signed-out/re-authentication state.
-- Add focused component tests where existing test infrastructure supports the path.
-
-### Task 3: Staleness and privacy disclosure
-
-- Files: `apps/web/src/offline/storage.ts`, offline UI components, component tests
-- Add a shared age formatter and stale threshold contract.
-- Show saved timestamp, age, read-only/offline state, authorization context, and explicit confidential-device warning.
-- Keep wording factual: browser storage is minimized but not claimed encrypted.
-
-### Task 4: Cache minimization and service-worker review
-
-- Files: snapshot API/mapper, `public/sw.js`, storage tests
-- Remove unnecessary fields from offline payloads, especially sensitive workflow metadata not needed for conducting.
-- Confirm generic service-worker caching never stores private API responses.
-- Add regression tests for forbidden fields and cache names.
-
-### Task 5: Authenticated browser coverage
-
-- Files: `apps/web/e2e/offline-privacy.spec.ts`, Playwright fixtures
-- Seed an isolated meeting and authorized user.
-- Verify privacy warning, stale/offline indicator, deletion control, and read-only restrictions.
-- Verify no production database or credentials are used.
-
-### Task 6: Operational verification and documentation
-
-- Update `docs/CHURCH_WORKFLOW_IMPLEMENTATION_PLAN.md` and dependency graph.
-- Run focused tests, full tests, typecheck, build, dependency checks, and diff check.
-- Deploy only after local gates pass; verify production health and the authenticated path separately.
-
-## Acceptance criteria
-
-- Context mismatch cannot load or retain another user’s or ward’s cached data.
-- Online authorization loss clears all local offline data and the named cache.
-- Explicit deletion clears all local stores and visibly returns the UI to a safe state.
-- Offline UI identifies saved age, offline/read-only status, and confidential local-data risk.
-- No UI or documentation claims IndexedDB is encrypted at rest.
-- Existing offline read-only and supported note-sync behavior remains intact.
+Private leadership data, interview substance, credentials, tokens, and official-record payloads must not enter generic service-worker caches. The Stand remains a coordination layer, not the official Church record.

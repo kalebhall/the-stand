@@ -13,7 +13,7 @@
 ## Domain rules
 
 - **Callings** retain their existing lifecycle: proposed, extended, sustained, set apart, active assignment, and release.
-- **Membership actions** cover welcome-new-member and baby-blessing preparation/follow-up.
+- **Membership actions** cover welcome-new-member, baptized-child recognition, baptism/confirmation follow-up, attendance handoff, and baby-blessing preparation/follow-up.
 - **Priesthood actions** cover ordination and advancement preparation/follow-up.
 - Priesthood ordination is not labeled “set apart.” Setting apart remains a calling action.
 - Interviews track only operational facts: needed, scheduled, completed, interviewer, and date. Do not store interview content.
@@ -61,17 +61,15 @@ Priesthood-specific behavior:
 
 ### Phase 1: Domain foundation
 
-1. Add shared TypeScript types for action families, statuses, interview state, and LCR follow-up state.
-2. Add pure transition helpers with explicit allowed transitions for each family.
-3. Add tests for valid/invalid transitions and the ordination-versus-setting-apart distinction.
+**Status:** Implemented. Shared action-family types, statuses, transition helpers, and ordination-versus-setting-apart tests exist.
+
+Completed scope: shared TypeScript types, pure transition helpers, and valid/invalid transition tests.
 
 ### Phase 2: Expand membership/ordinance persistence
 
-1. Add nullable planning fields to `meeting_membership_ordinance`: planned date, interview status/date/interviewer, responsible user, LCR follow-up status/date, and completed-by metadata where needed.
-2. Preserve the existing meeting presentation relationship; do not create a second permanent ordinance table.
-3. Add API boundary validation for action type, office, dates, interview state, and LCR state.
-4. Add append-only action history or audit events for planning, interview completion, announcement, LCR reminder, and completion.
-5. Add focused route tests, including ward isolation and invalid payloads.
+**Status:** Implemented. Planning, interview, responsible-leader, priesthood-office, official-record handoff, and completion fields are persisted and validated through ward-scoped routes with focused tests.
+
+Completed scope: nullable planning/handoff fields, one meeting presentation relationship, API validation, audit/history behavior, and focused ward-isolation/invalid-payload tests.
 
 ### Phase 3: Calling and membership actions workspace
 
