@@ -30,7 +30,7 @@ export function SpeakerLifecycleWorkspace({ wardId, speakers }: { wardId: string
       {error ? <p className="rounded-md border border-destructive p-3 text-sm text-destructive" role="alert">{error}</p> : null}
       {rows.length ? rows.map((speaker, index) => {
         const currentIndex = SPEAKER_STATUSES.indexOf(speaker.status);
-        const allowedStatuses = SPEAKER_STATUSES.slice(0, Math.min(currentIndex + 2, SPEAKER_STATUSES.length));
+        const allowedStatuses = SPEAKER_STATUSES.slice(currentIndex, Math.min(currentIndex + 2, SPEAKER_STATUSES.length));
         return (
           <article key={speaker.id} className="rounded-lg border bg-card p-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
