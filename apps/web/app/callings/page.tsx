@@ -18,6 +18,9 @@ import { STANDARD_CALLINGS } from '@/src/callings/standard-callings';
 import { appendCallingStatus, fetchCurrentCallingStatus } from '@/src/callings/transition';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
+import { getCallingNotificationEventType } from '@/src/notifications/calling-events';
+import { enqueueNotificationOutboxEvent, insertNotificationOutboxEvent } from '@/src/notifications/outbox';
+import { enqueueOutboxNotificationJob } from '@/src/notifications/queue';
 
 type CallingQueueRow = {
   id: string;
@@ -177,7 +180,23 @@ export default async function CallingsPage() {
         [actionSession.activeWardId, actionSession.user.id, `CALLING_${toStatus}`, callingId, toStatus]
       );
 
+      const notificationEventType = getCallingNotificationEventType(toStatus);
+      const eventOutboxId = notificationEventType
+        ? await insertNotificationOutboxEvent(client, {
+            wardId: actionSession.activeWardId,
+            aggregateType: 'calling_assignment',
+            aggregateId: callingId,
+            eventType: notificationEventType,
+            payload: {
+              actorUserId: actionSession.user.id,
+              callingAssignmentId: callingId,
+              status: toStatus
+            }
+          })
+        : null;
+
       await client.query('COMMIT');
+      enqueueNotificationOutboxEvent(enqueueOutboxNotificationJob, actionSession.activeWardId, eventOutboxId);
     } catch (err) {
       await client.query('ROLLBACK');
       console.error('[callings transitionCalling]', err instanceof Error ? err.message : String(err));

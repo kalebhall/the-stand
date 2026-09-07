@@ -32,7 +32,7 @@ flowchart LR
   A20["web:maintenance<br/>4 files"]
   A21["web:meetings<br/>14 files"]
   A22["web:notes<br/>1 files"]
-  A23["web:notifications<br/>25 files"]
+  A23["web:notifications<br/>29 files"]
   A24["web:offline<br/>3 files"]
   A25["web:reports<br/>2 files"]
   A26["web:stand<br/>8 files"]
@@ -53,21 +53,21 @@ flowchart LR
   A5 -->|11| A17
   A5 -->|8| A18
   A5 -->|6| A21
+  A6 -->|5| A23
   A6 -->|5| A26
   A6 -->|4| A11
   A5 -->|3| A4
   A6 -->|3| A4
   A6 -->|3| A18
+  A23 -->|3| A14
   A5 -->|2| A12
   A6 -->|2| A12
-  A6 -->|2| A23
   A6 -->|2| A24
   A8 -->|2| A14
   A10 -->|2| A14
   A13 -->|2| A19
   A14 -->|2| A8
   A18 -->|2| A23
-  A23 -->|2| A14
   A2 -->|1| A16
   A5 -->|1| A10
   A5 -->|1| A22
@@ -85,6 +85,7 @@ flowchart LR
   A17 -->|1| A14
   A20 -->|1| A14
   A21 -->|1| A4
+  A23 -->|1| A11
   A23 -->|1| A22
   A26 -->|1| A21
   A29 -->|1| A8
@@ -123,7 +124,7 @@ flowchart LR
 | `web:maintenance` | 4 |
 | `web:meetings` | 14 |
 | `web:notes` | 1 |
-| `web:notifications` | 25 |
+| `web:notifications` | 29 |
 | `web:offline` | 3 |
 | `web:reports` | 2 |
 | `web:stand` | 8 |
@@ -142,8 +143,8 @@ flowchart LR
 | `web:app` | `web:auth` | 86 |
 | `web:app` | `web:db` | 53 |
 | `web:app` | `web:app` | 47 |
+| `web:notifications` | `web:notifications` | 42 |
 | `web:api` | `web:notifications` | 40 |
-| `web:notifications` | `web:notifications` | 38 |
 | `web:ui` | `web:ui` | 27 |
 | `web:api` | `web:lib` | 23 |
 | `web:api` | `web:api` | 21 |
@@ -158,6 +159,7 @@ flowchart LR
 | `web:leadership` | `web:leadership` | 8 |
 | `web:api` | `web:meetings` | 6 |
 | `web:stand` | `web:stand` | 6 |
+| `web:app` | `web:notifications` | 5 |
 | `web:app` | `web:stand` | 5 |
 | `web:app` | `web:callings` | 4 |
 | `web:callings` | `web:callings` | 4 |
@@ -168,10 +170,10 @@ flowchart LR
 | `web:calendar` | `web:calendar` | 3 |
 | `web:lib` | `web:lib` | 3 |
 | `web:maintenance` | `web:maintenance` | 3 |
+| `web:notifications` | `web:db` | 3 |
 | `package:shared` | `package:shared` | 2 |
 | `web:api` | `web:church-actions` | 2 |
 | `web:app` | `web:church-actions` | 2 |
-| `web:app` | `web:notifications` | 2 |
 | `web:app` | `web:offline` | 2 |
 | `web:auth` | `web:db` | 2 |
 | `web:calendar` | `web:db` | 2 |
@@ -179,7 +181,6 @@ flowchart LR
 | `web:config` | `web:lib` | 2 |
 | `web:db` | `web:auth` | 2 |
 | `web:leadership` | `web:notifications` | 2 |
-| `web:notifications` | `web:db` | 2 |
 | `root:other` | `web:health.mjs` | 1 |
 | `web:announcements` | `web:announcements` | 1 |
 | `web:api` | `web:calendar` | 1 |
@@ -199,6 +200,7 @@ flowchart LR
 | `web:imports` | `web:db` | 1 |
 | `web:maintenance` | `web:db` | 1 |
 | `web:meetings` | `web:announcements` | 1 |
+| `web:notifications` | `web:callings` | 1 |
 | `web:notifications` | `web:notes` | 1 |
 | `web:offline` | `web:offline` | 1 |
 | `web:reports` | `web:reports` | 1 |
@@ -222,10 +224,10 @@ flowchart LR
 | `web:ui` | `react` | 28 |
 | `web:api` | `vitest` | 20 |
 | `web:ui` | `next` | 14 |
+| `web:notifications` | `vitest` | 13 |
 | `root:tooling` | `Node.js` | 12 |
-| `web:notifications` | `vitest` | 11 |
+| `web:notifications` | `pg` | 9 |
 | `web:app` | `vitest` | 8 |
-| `web:notifications` | `pg` | 8 |
 | `web:api` | `zod` | 7 |
 | `web:imports` | `vitest` | 7 |
 | `web:meetings` | `vitest` | 7 |
@@ -404,7 +406,7 @@ flowchart LR
 | `apps/web/app/bishopric/page.tsx` | `web:app` | 8 | 1 |
 | `apps/web/app/callings/error.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/callings/loading.tsx` | `web:app` | 0 | 0 |
-| `apps/web/app/callings/page.tsx` | `web:app` | 14 | 3 |
+| `apps/web/app/callings/page.tsx` | `web:app` | 17 | 3 |
 | `apps/web/app/callings/standard/page.tsx` | `web:app` | 4 | 2 |
 | `apps/web/app/dashboard/error.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/dashboard/loading.tsx` | `web:app` | 0 | 0 |
@@ -648,6 +650,8 @@ flowchart LR
 | `apps/web/src/meetings/technology.vitest.ts` | `web:meetings` | 1 | 1 |
 | `apps/web/src/meetings/types.ts` | `web:meetings` | 0 | 0 |
 | `apps/web/src/notes/types.ts` | `web:notes` | 0 | 0 |
+| `apps/web/src/notifications/calling-events.ts` | `web:notifications` | 2 | 0 |
+| `apps/web/src/notifications/calling-events.vitest.ts` | `web:notifications` | 1 | 1 |
 | `apps/web/src/notifications/diagnostics.ts` | `web:notifications` | 0 | 1 |
 | `apps/web/src/notifications/digests.ts` | `web:notifications` | 2 | 1 |
 | `apps/web/src/notifications/email-preferences.ts` | `web:notifications` | 0 | 1 |
@@ -663,6 +667,8 @@ flowchart LR
 | `apps/web/src/notifications/queue.ts` | `web:notifications` | 1 | 1 |
 | `apps/web/src/notifications/recipients.ts` | `web:notifications` | 1 | 1 |
 | `apps/web/src/notifications/recipients.vitest.ts` | `web:notifications` | 1 | 1 |
+| `apps/web/src/notifications/recovery.ts` | `web:notifications` | 1 | 1 |
+| `apps/web/src/notifications/recovery.vitest.ts` | `web:notifications` | 1 | 1 |
 | `apps/web/src/notifications/runner.ts` | `web:notifications` | 8 | 1 |
 | `apps/web/src/notifications/runner.vitest.ts` | `web:notifications` | 1 | 1 |
 | `apps/web/src/notifications/subscriptions.ts` | `web:notifications` | 1 | 1 |
@@ -672,7 +678,7 @@ flowchart LR
 | `apps/web/src/notifications/user-notifications.vitest.ts` | `web:notifications` | 1 | 1 |
 | `apps/web/src/notifications/visibility.ts` | `web:notifications` | 1 | 0 |
 | `apps/web/src/notifications/visibility.vitest.ts` | `web:notifications` | 1 | 1 |
-| `apps/web/src/notifications/worker-entry.ts` | `web:notifications` | 5 | 1 |
+| `apps/web/src/notifications/worker-entry.ts` | `web:notifications` | 6 | 1 |
 | `apps/web/src/offline/service-worker.vitest.ts` | `web:offline` | 0 | 3 |
 | `apps/web/src/offline/storage.ts` | `web:offline` | 0 | 0 |
 | `apps/web/src/offline/storage.vitest.ts` | `web:offline` | 1 | 1 |

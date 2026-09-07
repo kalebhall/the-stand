@@ -83,7 +83,7 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
       aggregateType: 'calling_assignment',
       aggregateId: callingId,
       eventType: 'CALLING_SUSTAINED',
-      payload: { callingAssignmentId: callingId, status: CALLING_STATUS.SUSTAINED }
+      payload: { actorUserId: session.user.id, callingAssignmentId: callingId, status: CALLING_STATUS.SUSTAINED }
     });
 
     await client.query('COMMIT');

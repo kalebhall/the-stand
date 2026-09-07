@@ -86,6 +86,7 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
         wardId,
         callingId,
         JSON.stringify({
+          actorUserId: session.user.id,
           callingAssignmentId: callingId,
           instruction: 'Please record this set apart action in LCR.'
         })

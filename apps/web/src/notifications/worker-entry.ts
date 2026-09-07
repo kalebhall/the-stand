@@ -3,7 +3,8 @@ import { Worker } from 'bullmq';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 import { processNotificationDigest } from '@/src/notifications/digests';
-import { enqueueDigestNotificationJob, NOTIFICATION_QUEUE_NAME, type NotificationQueueJob } from '@/src/notifications/queue';
+import { enqueueDigestNotificationJob, enqueueOutboxNotificationJob, NOTIFICATION_QUEUE_NAME, type NotificationQueueJob } from '@/src/notifications/queue';
+import { findPendingOutboxEvents } from '@/src/notifications/recovery';
 import { processOutboxEvent } from '@/src/notifications/runner';
 
 const DEFAULT_REDIS_URL = 'redis://127.0.0.1:6379';
@@ -55,6 +56,31 @@ const worker = new Worker<NotificationQueueJob>(
   }
 );
 
+async function recoverPendingOutboxEvents(): Promise<void> {
+  const client = await pool.connect();
+  try {
+    const events = await findPendingOutboxEvents(client);
+    for (const event of events) {
+      await enqueueOutboxNotificationJob(event);
+    }
+    if (events.length > 0) {
+      console.info(`[notifications-worker] re-enqueued ${events.length} pending outbox event(s)`);
+    }
+  } catch (error) {
+    console.error('[notifications-worker] pending outbox recovery failed', {
+      error: error instanceof Error ? error.message : String(error)
+    });
+  } finally {
+    client.release();
+  }
+}
+
+const recoveryTimer = setInterval(() => {
+  void recoverPendingOutboxEvents();
+}, 10_000);
+recoveryTimer.unref();
+void recoverPendingOutboxEvents();
+
 worker.on('ready', () => {
   console.info(`[notifications-worker] ready on queue ${NOTIFICATION_QUEUE_NAME}`);
 });
@@ -77,6 +103,7 @@ worker.on('error', (error) => {
 
 for (const signal of ['SIGINT', 'SIGTERM']) {
   process.on(signal, async () => {
+    clearInterval(recoveryTimer);
     await worker.close();
     await pool.end();
     process.exit(0);

@@ -32,7 +32,7 @@ function approvedTargetUrl(aggregateType: string, aggregateId: string, payload?:
 
   const targets: Record<string, string> = {
     meeting: `/meetings/${aggregateId}/edit`,
-    calling: `/callings/${aggregateId}`,
+    calling: '/callings',
     member: `/members/${aggregateId}`,
     internal_note: '/notes',
     note: '/notes',
