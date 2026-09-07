@@ -12,6 +12,6 @@ ExecStart=/usr/local/bin/the-stand-offsite-backup.sh
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=full
-ProtectHome=true
+ProtectHome=read-only
 ReadWritePaths=/root/.cache/restic
 ReadOnlyPaths=/opt/the-stand/backups /etc/the-stand/offsite-restic-password /root/.ssh/the-stand-backup-replication /root/.ssh/config
