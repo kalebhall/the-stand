@@ -9,6 +9,7 @@ import {
   listOfflineMutations,
   loadOfflineSnapshot,
   OFFLINE_CACHE_NAME,
+  parseOfflineAuthorization,
   saveOfflineSnapshot,
   type OfflineStandSnapshot
 } from '@/src/offline/storage';
@@ -46,6 +47,22 @@ export function OfflineStandButton({ userId, wardId, meetingId }: { userId: stri
     setStatus('saving');
     try {
       await ensureOfflineContext(userId, wardId);
+      const authorizationResponse = await fetch('/api/me', { cache: 'no-store' });
+      if (!authorizationResponse.ok) {
+        await clearOfflineData();
+        setSavedAt(null);
+        setPending(0);
+        setStatus('error');
+        return;
+      }
+      const authorization = parseOfflineAuthorization(await authorizationResponse.json());
+      if (!authorization || authorization.userId !== userId || authorization.wardId !== wardId) {
+        await clearOfflineData();
+        setSavedAt(null);
+        setPending(0);
+        setStatus('error');
+        return;
+      }
       const response = await fetch(`/api/w/${wardId}/meetings/${meetingId}/offline-snapshot`, {
         cache: 'no-store'
       });

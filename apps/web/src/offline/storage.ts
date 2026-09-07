@@ -106,6 +106,18 @@ export function isOfflineAuthorizationMatch(
   return isOfflineContextMatch(context, authorization.userId, authorization.wardId);
 }
 
+export function parseOfflineAuthorization(value: unknown): OfflineAuthorization | undefined {
+  if (!isRecord(value)) return undefined;
+  const body = value;
+  if (!body.user || typeof body.user !== 'object' || typeof body.activeWardId !== 'string' && body.activeWardId !== null) return undefined;
+  const user = body.user;
+  return isRecord(user) && typeof user.id === 'string' ? { userId: user.id, wardId: body.activeWardId } : undefined;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object';
+}
+
 function openDatabase(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(DATABASE_NAME, VERSION);
