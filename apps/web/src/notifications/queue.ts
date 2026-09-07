@@ -35,6 +35,17 @@ export async function enqueueOutboxNotificationJob(payload: { wardId: string; ev
   const queue = await createBullMqQueue();
 
   try {
+    const jobId = `outbox:${payload.wardId}:${payload.eventOutboxId}`;
+    const existingJob = await queue.getJob(jobId);
+    if (existingJob) {
+      const state = await existingJob.getState();
+      if (state === 'failed' || state === 'completed') {
+        await existingJob.remove();
+      } else {
+        return;
+      }
+    }
+
     await queue.add(
       'process-outbox-event',
       {
@@ -43,7 +54,7 @@ export async function enqueueOutboxNotificationJob(payload: { wardId: string; ev
         eventOutboxId: payload.eventOutboxId
       },
       {
-        jobId: `outbox:${payload.wardId}:${payload.eventOutboxId}`,
+        jobId,
         removeOnComplete: 1000,
         removeOnFail: 5000,
         attempts: 5,
