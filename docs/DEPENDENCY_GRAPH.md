@@ -14,8 +14,8 @@ flowchart LR
   A2["root:other<br/>1 files"]
   A3["root:tooling<br/>6 files"]
   A4["web:announcements<br/>2 files"]
-  A5["web:api<br/>84 files"]
-  A6["web:app<br/>109 files"]
+  A5["web:api<br/>85 files"]
+  A6["web:app<br/>111 files"]
   A7["web:audit<br/>2 files"]
   A8["web:auth<br/>11 files"]
   A9["web:bootstrap.mjs<br/>1 files"]
@@ -40,19 +40,19 @@ flowchart LR
   A28["web:types<br/>2 files"]
   A29["web:ui<br/>30 files"]
   A30["web:version.mjs<br/>1 files"]
-  A5 -->|117| A8
-  A5 -->|109| A14
-  A6 -->|108| A29
-  A6 -->|84| A8
-  A6 -->|51| A14
+  A5 -->|119| A8
+  A5 -->|111| A14
+  A6 -->|109| A29
+  A6 -->|86| A8
+  A6 -->|53| A14
   A5 -->|40| A23
   A5 -->|23| A19
   A5 -->|19| A7
   A5 -->|15| A11
-  A6 -->|13| A21
+  A6 -->|14| A21
   A5 -->|11| A17
   A5 -->|8| A18
-  A5 -->|5| A21
+  A5 -->|6| A21
   A6 -->|5| A26
   A6 -->|4| A11
   A5 -->|3| A4
@@ -105,8 +105,8 @@ flowchart LR
 | `root:other` | 1 |
 | `root:tooling` | 6 |
 | `web:announcements` | 2 |
-| `web:api` | 84 |
-| `web:app` | 109 |
+| `web:api` | 85 |
+| `web:app` | 111 |
 | `web:audit` | 2 |
 | `web:auth` | 11 |
 | `web:bootstrap.mjs` | 1 |
@@ -136,12 +136,12 @@ flowchart LR
 
 | Importing area | Imported area | Imports |
 | --- | --- | ---: |
-| `web:api` | `web:auth` | 117 |
-| `web:api` | `web:db` | 109 |
-| `web:app` | `web:ui` | 108 |
-| `web:app` | `web:auth` | 84 |
-| `web:app` | `web:db` | 51 |
-| `web:app` | `web:app` | 46 |
+| `web:api` | `web:auth` | 119 |
+| `web:api` | `web:db` | 111 |
+| `web:app` | `web:ui` | 109 |
+| `web:app` | `web:auth` | 86 |
+| `web:app` | `web:db` | 53 |
+| `web:app` | `web:app` | 47 |
 | `web:api` | `web:notifications` | 40 |
 | `web:notifications` | `web:notifications` | 38 |
 | `web:ui` | `web:ui` | 27 |
@@ -149,15 +149,15 @@ flowchart LR
 | `web:api` | `web:api` | 21 |
 | `web:api` | `web:audit` | 19 |
 | `web:api` | `web:callings` | 15 |
+| `web:app` | `web:meetings` | 14 |
 | `web:imports` | `web:imports` | 14 |
-| `web:app` | `web:meetings` | 13 |
 | `web:meetings` | `web:meetings` | 12 |
 | `web:api` | `web:imports` | 11 |
 | `web:api` | `web:leadership` | 8 |
 | `web:auth` | `web:auth` | 8 |
 | `web:leadership` | `web:leadership` | 8 |
+| `web:api` | `web:meetings` | 6 |
 | `web:stand` | `web:stand` | 6 |
-| `web:api` | `web:meetings` | 5 |
 | `web:app` | `web:stand` | 5 |
 | `web:app` | `web:callings` | 4 |
 | `web:callings` | `web:callings` | 4 |
@@ -216,9 +216,9 @@ flowchart LR
 
 | Importing area | Package/runtime | Imports |
 | --- | --- | ---: |
-| `web:app` | `next` | 82 |
-| `web:api` | `next` | 63 |
-| `web:app` | `react` | 31 |
+| `web:app` | `next` | 83 |
+| `web:api` | `next` | 64 |
+| `web:app` | `react` | 32 |
 | `web:ui` | `react` | 27 |
 | `web:api` | `vitest` | 20 |
 | `web:ui` | `next` | 14 |
@@ -396,6 +396,7 @@ flowchart LR
 | `apps/web/app/api/w/[wardId]/portal/route.ts` | `web:api` | 4 | 2 |
 | `apps/web/app/api/w/[wardId]/public-layout/route.ts` | `web:api` | 6 | 1 |
 | `apps/web/app/api/w/[wardId]/public-layout/route.vitest.ts` | `web:api` | 2 | 1 |
+| `apps/web/app/api/w/[wardId]/speakers/[programItemId]/route.ts` | `web:api` | 5 | 1 |
 | `apps/web/app/api/w/[wardId]/users/[userId]/roles/[roleId]/route.ts` | `web:api` | 7 | 1 |
 | `apps/web/app/api/w/[wardId]/users/[userId]/roles/route.ts` | `web:api` | 7 | 1 |
 | `apps/web/app/api/w/[wardId]/users/route.ts` | `web:api` | 4 | 1 |
@@ -439,7 +440,7 @@ flowchart LR
 | `apps/web/app/meetings/page.tsx` | `web:app` | 8 | 2 |
 | `apps/web/app/members/members-manager-client.tsx` | `web:app` | 3 | 2 |
 | `apps/web/app/members/page.tsx` | `web:app` | 7 | 2 |
-| `apps/web/app/membership-ordinances/page.tsx` | `web:app` | 8 | 2 |
+| `apps/web/app/membership-ordinances/page.tsx` | `web:app` | 9 | 2 |
 | `apps/web/app/membership-ordinances/workspace-controls.tsx` | `web:app` | 2 | 1 |
 | `apps/web/app/missionary-coordination/page.tsx` | `web:app` | 0 | 1 |
 | `apps/web/app/notifications/error.tsx` | `web:app` | 0 | 0 |
@@ -480,6 +481,8 @@ flowchart LR
 | `apps/web/app/settings/users/loading.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/settings/users/page.tsx` | `web:app` | 3 | 2 |
 | `apps/web/app/settings/users/ward-users-manager.tsx` | `web:app` | 2 | 1 |
+| `apps/web/app/speakers/page.tsx` | `web:app` | 5 | 1 |
+| `apps/web/app/speakers/speaker-lifecycle-workspace.tsx` | `web:app` | 1 | 1 |
 | `apps/web/app/stand/[meetingId]/offline/offline-stand-page.tsx` | `web:app` | 2 | 2 |
 | `apps/web/app/stand/[meetingId]/offline/page.tsx` | `web:app` | 1 | 0 |
 | `apps/web/app/stand/[meetingId]/page.tsx` | `web:app` | 14 | 2 |

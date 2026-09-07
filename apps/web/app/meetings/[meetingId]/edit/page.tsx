@@ -215,7 +215,7 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ me
           standAnnouncements={standAnnouncements}
         />
 
-        <MembershipOrdinanceSection wardId={session.activeWardId} meetingId={meeting.id} actions={membershipActions} canManage />
+        <MembershipOrdinanceSection wardId={session.activeWardId} meetingId={meeting.id} actions={membershipActions} canManage canCreate={false} />
 
         <InternalNotesPanel
           wardId={session.activeWardId}

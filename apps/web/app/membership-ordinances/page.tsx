@@ -20,6 +20,7 @@ import {
 } from '@/src/church-actions/membership-ordinance';
 
 import { MembershipOrdinanceWorkspaceControls } from './workspace-controls';
+import { MembershipOrdinanceSection } from '@/components/MembershipOrdinanceSection';
 
 const GROUPS: Array<{ key: MembershipOrdinanceActionGroup; title: string; description: string }> = [
   { key: 'needs_attention', title: 'Needs attention', description: 'Actions with follow-up, interview, LCR, or overdue work.' },
@@ -55,6 +56,8 @@ type ActionQueryRow = {
   official_system_follow_up_status: MembershipOrdinanceActionRow['officialSystemFollowUpStatus'];
   official_system_reference_url: string | null;
 };
+
+type MeetingOptionRow = { id: string; meeting_date: string; meeting_type: string };
 
 function displayDate(value: string | null): string {
   if (!value) return 'No date set';
@@ -149,6 +152,10 @@ export default async function MembershipOrdinancesPage({ searchParams }: { searc
         ORDER BY COALESCE(a.planned_date, m.meeting_date) ASC, a.created_at ASC`,
       [session.activeWardId]
     );
+    const meetingsResult = await client.query(
+      'SELECT id, meeting_date, meeting_type FROM meeting WHERE ward_id = $1::uuid ORDER BY meeting_date DESC',
+      [session.activeWardId]
+    );
     await client.query('COMMIT');
 
     const today = new Date().toISOString().slice(0, 10);
@@ -179,6 +186,10 @@ export default async function MembershipOrdinancesPage({ searchParams }: { searc
       certificateOrFormDelivered: row.certificate_or_form_delivered,
       officialSystemFollowUpStatus: row.official_system_follow_up_status,
       officialSystemReferenceUrl: row.official_system_reference_url
+    }));
+    const meetingOptions = (meetingsResult.rows as MeetingOptionRow[]).map((meeting) => ({
+      id: meeting.id,
+      label: `${displayDate(meeting.meeting_date)} · ${displayMeetingType(meeting.meeting_type)}`
     }));
     const actions = allActions.filter((action) => matchesMembershipOrdinanceFilters(action, {
       query: filters.q,
@@ -233,6 +244,15 @@ export default async function MembershipOrdinancesPage({ searchParams }: { searc
           </form>
           <p className="mt-3 text-xs text-muted-foreground">Showing {actions.length} of {allActions.length} actions.</p>
         </section>
+
+        <MembershipOrdinanceSection
+          wardId={session.activeWardId}
+          meetingId=""
+          meetingOptions={meetingOptions}
+          actions={[]}
+          canManage
+          createOnly
+        />
 
         {GROUPS.map((group) => {
           const groupActions = grouped.get(group.key) ?? [];

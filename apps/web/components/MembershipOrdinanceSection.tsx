@@ -35,8 +35,11 @@ export type MembershipOrdinanceAction = {
 type Props = {
   wardId: string;
   meetingId: string;
+  meetingOptions?: Array<{ id: string; label: string }>;
   actions: MembershipOrdinanceAction[];
   canManage: boolean;
+  canCreate?: boolean;
+  createOnly?: boolean;
   templates?: Partial<Record<MembershipOrdinanceAction['action_type'], string>>;
 };
 
@@ -58,7 +61,8 @@ function fillTemplate(template: string, action: MembershipOrdinanceAction) {
     .replaceAll('{callingName}', action.details?.trim() || 'the assigned office');
 }
 
-export function MembershipOrdinanceSection({ wardId, meetingId, actions, canManage, templates = {} }: Props) {
+export function MembershipOrdinanceSection({ wardId, meetingId, meetingOptions = [], actions, canManage, canCreate = true, createOnly = false, templates = {} }: Props) {
+  const [selectedMeetingId, setSelectedMeetingId] = useState(meetingId || meetingOptions[0]?.id || '');
   const [actionType, setActionType] = useState<(typeof OPTIONS)[number][0]>('WELCOME_NEW_MEMBER');
   const [memberName, setMemberName] = useState('');
   const [reason, setReason] = useState('');
@@ -82,7 +86,7 @@ export function MembershipOrdinanceSection({ wardId, meetingId, actions, canMana
   async function createAction() {
     setBusy(true);
     setError(null);
-    const response = await fetch(`/api/w/${wardId}/meetings/${meetingId}/membership-ordinances`, {
+    const response = await fetch(`/api/w/${wardId}/meetings/${selectedMeetingId}/membership-ordinances`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ actionType, memberName, reason, details, priesthoodOffice: priesthoodOffice || null, plannedDate, interviewDate, interviewerName, approvalConfirmed, presentingLeader, performingPriesthoodHolder, ordinanceDate, baptismDate, confirmationDate, baptismStatus, confirmationStatus, responsibleLeader })
@@ -119,13 +123,20 @@ export function MembershipOrdinanceSection({ wardId, meetingId, actions, canMana
           <h2 className="text-lg font-semibold">Membership and Ordinances</h2>
           <p className="text-sm text-muted-foreground">Welcome, blessing, and priesthood actions for this meeting.</p>
         </div>
-        <Link href="/membership-ordinances" className="text-sm font-medium underline underline-offset-4">
-          Open workspace
-        </Link>
+        {!createOnly ? <Link href="/membership-ordinances" className="text-sm font-medium underline underline-offset-4">Open workspace</Link> : null}
       </div>
-      {canManage ? (
+      {canManage && canCreate ? (
         <div className="grid gap-3 rounded-md border bg-background p-3 sm:grid-cols-2">
           <p className="sm:col-span-2 text-xs text-muted-foreground">Ward sacrament meetings do not sustain or set apart elders or high priests. Those actions belong to stake leadership.</p>
+          {createOnly ? (
+            <label className="space-y-1 text-sm sm:col-span-2">
+              <span className="font-medium">Meeting</span>
+              <select className="w-full rounded-md border px-3 py-2" value={selectedMeetingId} onChange={(event) => setSelectedMeetingId(event.target.value)}>
+                <option value="">Select meeting</option>
+                {meetingOptions.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
+              </select>
+            </label>
+          ) : null}
           <label className="space-y-1 text-sm">
             <span className="font-medium">Action</span>
             <select
@@ -251,14 +262,14 @@ export function MembershipOrdinanceSection({ wardId, meetingId, actions, canMana
             />
           </label>
           <div className="flex items-end">
-            <Button type="button" disabled={busy || !memberName.trim()} onClick={() => void createAction()}>
+            <Button type="button" disabled={busy || !memberName.trim() || !selectedMeetingId} onClick={() => void createAction()}>
               Add action
             </Button>
           </div>
         </div>
       ) : null}
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
-      {actions.length ? (
+      {!createOnly && actions.length ? (
         <ul className="space-y-2">
           {actions.map((action) => (
             <li key={action.id} className="rounded-md border p-3">
@@ -323,9 +334,9 @@ export function MembershipOrdinanceSection({ wardId, meetingId, actions, canMana
             </li>
           ))}
         </ul>
-      ) : (
+      ) : !createOnly ? (
         <p className="text-sm text-muted-foreground">No membership or ordinance actions added.</p>
-      )}
+      ) : null}
     </section>
   );
 }

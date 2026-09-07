@@ -13,7 +13,6 @@ import {
   getProgramItemLabel,
   INTRODUCTION_ITEM_TYPE,
   MEETING_TYPES,
-  SPEAKER_STATUSES,
   validateProgramItemsForMeetingType,
   type IntroductionRoles,
   type ProgramItemInput,
@@ -620,34 +619,7 @@ export function MeetingForm({
                 </div>
               ) : null}
 
-              {item.itemType === 'SPEAKER' ? (
-                <>
-                  <label className="space-y-1 text-sm">
-                    <span className="font-medium">Speaking topic</span>
-                    <input
-                      className="w-full rounded-md border px-3 py-2"
-                      value={item.topic ?? ''}
-                      onChange={(event) => updateProgramItem(index, 'topic', event.target.value)}
-                      placeholder="Optional topic"
-                    />
-                  </label>
-                  <label className="space-y-1 text-sm">
-                    <span className="font-medium">Invitation status</span>
-                    <select
-                      className="w-full rounded-md border px-3 py-2"
-                      value={item.speakerStatus ?? 'PLANNED'}
-                      onChange={(event) => updateProgramItem(index, 'speakerStatus', event.target.value)}
-                    >
-                      {SPEAKER_STATUSES.map((status) => (
-                        <option key={status} value={status}>
-                          {status.charAt(0) + status.slice(1).toLowerCase()}
-                        </option>
-                      ))}
-                    </select>
-                    {!item.topic?.trim() ? <p className="text-xs text-amber-700">Add topic before marking speaker confirmed.</p> : null}
-                  </label>
-                </>
-              ) : null}
+
             </div>
 
             {canUseInternalNotes && item.id ? (
