@@ -773,11 +773,12 @@ Install the runner and units from the deployed repository:
 sudo install -o root -g root -m 0750 /opt/the-stand/app/infra/scripts/offsite-backup.sh /usr/local/bin/the-stand-offsite-backup.sh
 sudo install -o root -g root -m 0644 /opt/the-stand/app/infra/systemd/the-stand-offsite-backup.service /etc/systemd/system/
 sudo install -o root -g root -m 0644 /opt/the-stand/app/infra/systemd/the-stand-offsite-backup.timer /etc/systemd/system/
+sudo install -d -o root -g root -m 0700 /var/cache/the-stand-restic
 sudo install -d -o root -g root -m 0700 /root/.ssh
 sudo install -o root -g root -m 0600 /root/.ssh/the-stand-backup-replication /root/.ssh/the-stand-backup-replication
 sudo install -o root -g root -m 0600 /root/.ssh/config /root/.ssh/config
 sudo install -d -o root -g root -m 0700 /etc/the-stand
-sudo sh -c 'printf "%s\\n" "BACKUP_DIR=/opt/the-stand/backups" "RESTIC_REPOSITORY=sftp:proxmox-backup:/mnt/pve/ProxBackup/the-stand-restic" "RESTIC_PASSWORD_FILE=/etc/the-stand/offsite-restic-password" > /etc/the-stand/offsite-backup.env'
+sudo sh -c 'printf "%s\\n" "BACKUP_DIR=/opt/the-stand/backups" "RESTIC_REPOSITORY=sftp:proxmox-backup:/mnt/pve/ProxBackup/the-stand-restic" "RESTIC_PASSWORD_FILE=/etc/the-stand/offsite-restic-password" "RESTIC_CACHE_DIR=/var/cache/the-stand-restic" > /etc/the-stand/offsite-backup.env'
 sudo chown root:root /etc/the-stand/offsite-backup.env
 sudo chmod 0600 /etc/the-stand/offsite-backup.env
 sudo systemctl daemon-reload

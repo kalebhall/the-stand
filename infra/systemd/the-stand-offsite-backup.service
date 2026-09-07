@@ -13,5 +13,5 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=full
 ProtectHome=read-only
-ReadWritePaths=/root/.cache/restic
+ReadWritePaths=/var/cache/the-stand-restic
 ReadOnlyPaths=/opt/the-stand/backups /etc/the-stand/offsite-restic-password /root/.ssh/the-stand-backup-replication /root/.ssh/config
