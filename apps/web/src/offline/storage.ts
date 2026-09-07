@@ -87,6 +87,7 @@ export type OfflineContext = { id: 'current'; userId: string; wardId: string };
 export type OfflineAuthorization = { userId: string; wardId: string | null };
 
 export const OFFLINE_CACHE_NAME = 'the-stand-offline-v1';
+export const OFFLINE_SNAPSHOT_STALE_AFTER_MS = 24 * 60 * 60 * 1000;
 const DATABASE_NAME = 'the-stand-offline';
 const VERSION = 5;
 const SNAPSHOT_STORE = 'stand-snapshots';
@@ -112,6 +113,25 @@ export function parseOfflineAuthorization(value: unknown): OfflineAuthorization 
   if (!body.user || typeof body.user !== 'object' || typeof body.activeWardId !== 'string' && body.activeWardId !== null) return undefined;
   const user = body.user;
   return isRecord(user) && typeof user.id === 'string' ? { userId: user.id, wardId: body.activeWardId } : undefined;
+}
+
+export function getOfflineSnapshotAge(savedAt: string, now = Date.now()): { ageMs: number; isStale: boolean } {
+  const savedAtMs = Date.parse(savedAt);
+  if (!Number.isFinite(savedAtMs)) return { ageMs: 0, isStale: true };
+  const ageMs = Math.max(0, now - savedAtMs);
+  return { ageMs, isStale: ageMs >= OFFLINE_SNAPSHOT_STALE_AFTER_MS };
+}
+
+export function formatOfflineAge(savedAt: string, now = Date.now()): string {
+  if (!Number.isFinite(Date.parse(savedAt))) return 'unknown age';
+  const { ageMs } = getOfflineSnapshotAge(savedAt, now);
+  const minutes = Math.floor(ageMs / 60_000);
+  if (minutes < 1) return 'less than a minute ago';
+  if (minutes < 60) return `${minutes} minute${minutes === 1 ? '' : 's'} ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} hour${hours === 1 ? '' : 's'} ago`;
+  const days = Math.floor(hours / 24);
+  return `${days} day${days === 1 ? '' : 's'} ago`;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

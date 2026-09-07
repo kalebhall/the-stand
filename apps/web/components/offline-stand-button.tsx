@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import {
   clearOfflineData,
   ensureOfflineContext,
+  formatOfflineAge,
+  getOfflineSnapshotAge,
   listOfflineMutations,
   loadOfflineSnapshot,
   OFFLINE_CACHE_NAME,
@@ -143,6 +145,11 @@ export function OfflineStandButton({ userId, wardId, meetingId }: { userId: stri
         {statusLabel(status, pending)}
       </span>
       {savedAt ? <span className="text-xs text-muted-foreground">Saved {new Date(savedAt).toLocaleString()}</span> : null}
+      {savedAt ? (
+        <span className="text-xs text-muted-foreground" aria-label={`Offline copy age: ${formatOfflineAge(savedAt)}`}>
+          {getOfflineSnapshotAge(savedAt).isStale ? 'Stale offline copy' : formatOfflineAge(savedAt)}
+        </span>
+      ) : null}
       {status === 'error' ? (
         <Button type="button" size="sm" variant="outline" onClick={() => void saveForOffline()}>
           Retry

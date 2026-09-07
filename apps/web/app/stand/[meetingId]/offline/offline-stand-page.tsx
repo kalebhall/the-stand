@@ -5,6 +5,8 @@ import { useSession } from 'next-auth/react';
 import type { StandRow } from '@/src/stand/render';
 import {
   clearOfflineData,
+  formatOfflineAge,
+  getOfflineSnapshotAge,
   ensureOfflineContext,
   loadOfflineSnapshot,
   queueOfflineMutation,
@@ -443,9 +445,13 @@ export default function OfflineStandPage({ meetingId }: { meetingId: string }) {
           </div>
           <span className="rounded-full border px-3 py-1 text-sm">{navigator.onLine ? 'Online' : 'Offline'}</span>
         </div>
-        <p className="mt-2 text-xs text-muted-foreground">
-          Saved {new Date(snapshot.savedAt).toLocaleString()} · {pending} pending {pending === 1 ? 'change' : 'changes'}
+        <p className="mt-2 text-xs text-muted-foreground" aria-live="polite">
+          Saved {new Date(snapshot.savedAt).toLocaleString()} ({formatOfflineAge(snapshot.savedAt)}) · {pending} pending {pending === 1 ? 'change' : 'changes'}
           {syncing ? ' · Syncing…' : ''}
+        </p>
+        <p className={`mt-2 rounded-md border p-3 text-sm ${getOfflineSnapshotAge(snapshot.savedAt).isStale ? 'border-amber-500/50 bg-amber-500/10' : 'bg-muted/30'}`} role="status">
+          {navigator.onLine ? 'Read-only saved copy. Online changes require the connected meeting view.' : 'Offline — showing saved meeting. Changes are limited to supported local actions until reconnect.'}
+          {getOfflineSnapshotAge(snapshot.savedAt).isStale ? ' This copy is older than 24 hours; verify current information when online.' : ''}
         </p>
         <div className="mt-3 flex gap-2">
           <button className="rounded-md border px-3 py-1 text-sm" onClick={() => setMode('formal')}>
@@ -456,7 +462,7 @@ export default function OfflineStandPage({ meetingId }: { meetingId: string }) {
           </button>
         </div>
         <p className="mt-3 text-xs text-muted-foreground">
-          This device contains private ward data. Delete it when finished or before handing device to another user.
+          This device contains confidential ward coordination data. Browser storage is minimized but is not claimed to be encrypted at rest. Delete it when finished or before handing the device to another user.
         </p>
         <button type="button" className="mt-2 rounded-md border px-3 py-1 text-sm" onClick={() => void deleteOfflineData()} disabled={clearing}>
           {clearing ? 'Deleting offline data…' : 'Delete offline data'}
