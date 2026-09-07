@@ -20,6 +20,10 @@ export function getNavigationItems(roles: string[] | undefined): AppNavItem[] {
   }
 
   if (hasAnyRole(roles, CLERK_OR_BISHOPRIC_ROLES) || hasRole(roles, 'STAND_ADMIN')) {
+    items.push({ href: '/bishopric', label: 'Bishopric Agenda' });
+  }
+
+  if (hasAnyRole(roles, CLERK_OR_BISHOPRIC_ROLES) || hasRole(roles, 'STAND_ADMIN')) {
     items.push({ href: '/members', label: 'Members' });
     items.push({ href: '/callings', label: 'Callings' });
     items.push({ href: '/speakers', label: 'Speaker Lifecycle' });

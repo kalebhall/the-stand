@@ -13,6 +13,7 @@ describe('getNavigationItems', () => {
     expect(items).toContainEqual({ href: '/members', label: 'Members' });
     expect(items).toContainEqual({ href: '/callings', label: 'Callings' });
     expect(items).toContainEqual({ href: '/speakers', label: 'Speaker Lifecycle' });
+    expect(items).toContainEqual({ href: '/bishopric', label: 'Bishopric Agenda' });
     expect(items).toContainEqual({ href: '/membership-ordinances', label: 'Membership & Ordinances' });
     expect(items).toContainEqual({ href: '/notifications', label: 'Notifications' });
 
