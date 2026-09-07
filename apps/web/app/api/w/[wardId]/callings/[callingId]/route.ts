@@ -6,6 +6,8 @@ import { canManageCallings } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { createLogger } from '@/src/lib/logger';
 import { setDbContext } from '@/src/db/context';
+import { enqueueNotificationOutboxEvent, insertNotificationOutboxEvent } from '@/src/notifications/outbox';
+import { enqueueOutboxNotificationJob } from '@/src/notifications/queue';
 
 const logger = createLogger('callings');
 
@@ -69,7 +71,22 @@ export async function DELETE(_request: Request, context: { params: Promise<{ war
       severity: 'notice'
     });
 
+    const eventOutboxId = await insertNotificationOutboxEvent(client, {
+      wardId,
+      aggregateType: 'calling_assignment',
+      aggregateId: callingId,
+      eventType: 'CALLING_ASSIGNMENT_CHANGED',
+      payload: {
+        actorUserId: session.user.id,
+        callingAssignmentId: callingId,
+        status: 'DELETED',
+        memberName: row.member_name,
+        callingName: row.calling_name
+      }
+    });
+
     await client.query('COMMIT');
+    enqueueNotificationOutboxEvent(enqueueOutboxNotificationJob, wardId, eventOutboxId);
 
     return NextResponse.json({ success: true });
   } catch (err) {

@@ -1,13 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { authMock, canManageCallingsMock, setDbContextMock, connectMock, releaseMock, queryMock, loggerErrorMock } = vi.hoisted(() => ({
+const { authMock, canManageCallingsMock, setDbContextMock, connectMock, releaseMock, queryMock, loggerErrorMock, insertNotificationOutboxEventMock, enqueueNotificationOutboxEventMock } = vi.hoisted(() => ({
   authMock: vi.fn(),
   canManageCallingsMock: vi.fn(),
   setDbContextMock: vi.fn(),
   connectMock: vi.fn(),
   releaseMock: vi.fn(),
   queryMock: vi.fn(),
-  loggerErrorMock: vi.fn()
+  loggerErrorMock: vi.fn(),
+  insertNotificationOutboxEventMock: vi.fn(),
+  enqueueNotificationOutboxEventMock: vi.fn()
 }));
 
 vi.mock('@/src/auth/auth', () => ({ auth: authMock }));
@@ -21,6 +23,11 @@ vi.mock('@/src/db/client', () => ({
 vi.mock('@/src/lib/logger', () => ({
   createLogger: () => ({ error: loggerErrorMock })
 }));
+vi.mock('@/src/notifications/outbox', () => ({
+  insertNotificationOutboxEvent: insertNotificationOutboxEventMock,
+  enqueueNotificationOutboxEvent: enqueueNotificationOutboxEventMock
+}));
+vi.mock('@/src/notifications/queue', () => ({ enqueueOutboxNotificationJob: vi.fn() }));
 
 import { DELETE } from './route';
 
@@ -30,6 +37,7 @@ describe('DELETE /api/w/[wardId]/callings/[callingId]', () => {
 
     authMock.mockResolvedValue({ user: { id: 'user-1', roles: ['STAND_ADMIN'] }, activeWardId: 'ward-1' });
     canManageCallingsMock.mockReturnValue(true);
+    insertNotificationOutboxEventMock.mockResolvedValue('event-1');
     connectMock.mockResolvedValue({
       query: queryMock,
       release: releaseMock
