@@ -80,7 +80,7 @@ export type OfflineMutation = {
 export type OfflineContext = { id: 'current'; userId: string; wardId: string };
 export type OfflineAuthorization = { userId: string; wardId: string | null };
 
-export const OFFLINE_CACHE_NAME = 'the-stand-offline-v1';
+export const OFFLINE_CACHE_NAME = 'the-stand-offline-v2';
 export const OFFLINE_SNAPSHOT_STALE_AFTER_MS = 24 * 60 * 60 * 1000;
 const DATABASE_NAME = 'the-stand-offline';
 const VERSION = 5;

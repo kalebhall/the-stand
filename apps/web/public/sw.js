@@ -1,7 +1,14 @@
-const CACHE_NAME = 'the-stand-offline-v1';
+const CACHE_NAME = 'the-stand-offline-v2';
 
 self.addEventListener('install', () => self.skipWaiting());
-self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim()));
+self.addEventListener('activate', (event) =>
+  event.waitUntil(
+    caches
+      .keys()
+      .then((keys) => Promise.all(keys.filter((key) => key.startsWith('the-stand-offline-') && key !== CACHE_NAME).map((key) => caches.delete(key))))
+      .then(() => self.clients.claim())
+  )
+);
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
@@ -17,6 +24,7 @@ self.addEventListener('fetch', (event) => {
   }
   const cacheable =
     url.origin === self.location.origin &&
+    !url.pathname.startsWith('/api/') &&
     (url.pathname.startsWith('/_next/static/') ||
       url.pathname === '/sw.js' ||
       (url.pathname.startsWith('/stand/') && url.pathname.endsWith('/offline')));
