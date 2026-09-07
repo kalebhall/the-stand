@@ -83,7 +83,8 @@ export type OfflineMutation = {
   serverRevision?: string;
 };
 
-type OfflineContext = { id: 'current'; userId: string; wardId: string };
+export type OfflineContext = { id: 'current'; userId: string; wardId: string };
+export type OfflineAuthorization = { userId: string; wardId: string | null };
 
 export const OFFLINE_CACHE_NAME = 'the-stand-offline-v1';
 const DATABASE_NAME = 'the-stand-offline';
@@ -95,6 +96,14 @@ const CONTEXT_STORE = 'offline-context';
 
 export function isOfflineContextMatch(context: OfflineContext | undefined, userId: string, wardId: string): boolean {
   return context?.userId === userId && context.wardId === wardId;
+}
+
+export function isOfflineAuthorizationMatch(
+  context: OfflineContext | undefined,
+  authorization: OfflineAuthorization | undefined
+): boolean {
+  if (!authorization?.wardId) return false;
+  return isOfflineContextMatch(context, authorization.userId, authorization.wardId);
 }
 
 function openDatabase(): Promise<IDBDatabase> {
