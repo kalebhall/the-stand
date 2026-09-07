@@ -24,12 +24,6 @@ export type OfflineStandSnapshot = {
     status: string;
     plannedDate?: string | null;
     interviewStatus?: string;
-    interviewDate?: string | null;
-    interviewerName?: string | null;
-    approvalConfirmed?: boolean;
-    presentingLeader?: string | null;
-    performingPriesthoodHolder?: string | null;
-    ordinanceDate?: string | null;
     baptismDate?: string | null;
     confirmationDate?: string | null;
     baptismStatus?: string | null;
