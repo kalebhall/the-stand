@@ -763,7 +763,40 @@ Verify oneshot result and logs separately from timer activation:
 sudo journalctl -u the-stand-backup-health.service -n 20 --no-pager
 ```
 
-13.2 Restore from Backup
+13.2 Encrypted Proxmox off-host replication
+
+The production host replicates local PostgreSQL backup artifacts to the encrypted restic repository at `/mnt/pve/ProxBackup/the-stand-restic` on the Proxmox host. The repository password stays only in `/etc/the-stand/offsite-restic-password` on production. The dedicated SSH key is SFTP-only and must not be reused for administration.
+
+Install the runner and units from the deployed repository:
+
+```bash
+sudo install -o root -g root -m 0750 /opt/the-stand/app/infra/scripts/offsite-backup.sh /usr/local/bin/the-stand-offsite-backup.sh
+sudo install -o root -g root -m 0644 /opt/the-stand/app/infra/systemd/the-stand-offsite-backup.service /etc/systemd/system/
+sudo install -o root -g root -m 0644 /opt/the-stand/app/infra/systemd/the-stand-offsite-backup.timer /etc/systemd/system/
+sudo install -d -o root -g root -m 0700 /root/.ssh
+sudo install -o root -g root -m 0600 /root/.ssh/the-stand-backup-replication /root/.ssh/the-stand-backup-replication
+sudo install -o root -g root -m 0600 /root/.ssh/config /root/.ssh/config
+sudo install -d -o root -g root -m 0700 /etc/the-stand
+sudo sh -c 'printf "%s\\n" "BACKUP_DIR=/opt/the-stand/backups" "RESTIC_REPOSITORY=sftp:proxmox-backup:/mnt/pve/ProxBackup/the-stand-restic" "RESTIC_PASSWORD_FILE=/etc/the-stand/offsite-restic-password" > /etc/the-stand/offsite-backup.env'
+sudo chown root:root /etc/the-stand/offsite-backup.env
+sudo chmod 0600 /etc/the-stand/offsite-backup.env
+sudo systemctl daemon-reload
+sudo systemctl enable --now the-stand-offsite-backup.timer
+sudo systemctl start the-stand-offsite-backup.service
+sudo systemctl status the-stand-offsite-backup.service --no-pager
+```
+
+Verify the oneshot result and timer separately:
+
+```bash
+sudo systemctl show the-stand-offsite-backup.service -p Result -p ExecMainStatus
+sudo journalctl -u the-stand-offsite-backup.service -n 20 --no-pager
+sudo restic -r sftp:proxmox-backup:/mnt/pve/ProxBackup/the-stand-restic snapshots
+```
+
+The current operating targets are a daily off-host copy, 14 days of daily snapshots, 8 weekly snapshots, and 12 monthly snapshots. The working RPO is one day plus the backup/replication schedule. The initial restore target is four hours, subject to quarterly drill measurement. The IT manager owns scheduler and alert review; the bishopric administrator owns application-data recovery decisions. A quarterly restore drill must use `infra/scripts/restore-smoke-test.sh` against an isolated database, never the production database.
+
+13.3 Restore from Backup
 
 Use the restore script included in the repository (`infra/scripts/restore.sh`) only when restoring into a deliberately selected database. It is destructive to the target database.
 

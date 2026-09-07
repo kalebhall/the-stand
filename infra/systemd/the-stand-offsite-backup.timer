@@ -1,0 +1,11 @@
+[Unit]
+Description=Run The Stand offsite backup replication daily
+
+[Timer]
+OnCalendar=*-*-* 03:45:00
+Persistent=true
+RandomizedDelaySec=15m
+Unit=the-stand-offsite-backup.service
+
+[Install]
+WantedBy=timers.target
