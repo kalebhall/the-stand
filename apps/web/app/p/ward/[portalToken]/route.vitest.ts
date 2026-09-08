@@ -57,4 +57,23 @@ describe('GET /p/ward/[portalToken]', () => {
     expect(response.status).toBe(404);
     await expect(response.json()).resolves.toEqual({ error: 'Not found', code: 'NOT_FOUND' });
   });
+
+  it('shows an empty state when portal has no posted program', async () => {
+    queryMock
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ ward_id: 'ward-1' }] })
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({ rowCount: 0, rows: [] })
+      .mockResolvedValueOnce({});
+
+    const response = await GET(new Request('http://localhost/p/ward/portal-1'), {
+      params: Promise.resolve({ portalToken: 'portal-1' })
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-type')).toContain('text/html');
+    await expect(response.text()).resolves.toContain('No program available');
+    expect(queryMock).toHaveBeenLastCalledWith('COMMIT');
+  });
 });
