@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-import { auth } from '@/src/auth/auth';
+import { auth, unstable_update } from '@/src/auth/auth';
 import { hashPassword, verifyPassword } from '@/src/auth/password';
 import { pool } from '@/src/db/client';
 import { enforceRateLimit } from '@/src/lib/rate-limit';
@@ -63,6 +63,14 @@ export async function POST(request: Request) {
      VALUES (NULL, $1, 'ACCOUNT_PASSWORD_CHANGED', jsonb_build_object('source', 'self_service'))`,
     [session.user.id]
   );
+
+  const refreshedSession = await unstable_update({});
+  if (!refreshedSession || refreshedSession.user.mustChangePassword) {
+    return NextResponse.json(
+      { error: 'Password changed, but session refresh failed. Reload the page to continue.', code: 'SESSION_REFRESH_FAILED' },
+      { status: 500 }
+    );
+  }
 
   return NextResponse.json({ success: true });
 }

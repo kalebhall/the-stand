@@ -234,7 +234,6 @@ flowchart LR
 | `web:auth` | `next-auth` | 6 |
 | `web:leadership` | `vitest` | 6 |
 | `web:app` | `@testing-library/react` | 4 |
-| `web:app` | `next-auth` | 4 |
 | `web:auth` | `vitest` | 4 |
 | `web:config` | `@playwright/test` | 4 |
 | `web:stand` | `vitest` | 4 |
@@ -243,6 +242,7 @@ flowchart LR
 | `web:api` | `Node.js` | 3 |
 | `web:app` | `@testing-library/user-event` | 3 |
 | `web:app` | `Node.js` | 3 |
+| `web:app` | `next-auth` | 3 |
 | `web:callings` | `vitest` | 3 |
 | `web:db` | `Node.js` | 3 |
 | `web:db` | `drizzle-orm` | 3 |
@@ -308,7 +308,7 @@ flowchart LR
 
 | File | Area | Internal imports | External imports |
 | --- | --- | ---: | ---: |
-| `apps/web/app/account/change-password/change-password-form.tsx` | `web:app` | 0 | 2 |
+| `apps/web/app/account/change-password/change-password-form.tsx` | `web:app` | 0 | 1 |
 | `apps/web/app/account/change-password/page.tsx` | `web:app` | 2 | 1 |
 | `apps/web/app/account/page.tsx` | `web:app` | 5 | 2 |
 | `apps/web/app/account/preferences/page.tsx` | `web:app` | 1 | 1 |

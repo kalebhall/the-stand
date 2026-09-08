@@ -119,7 +119,7 @@ async function ensureUserAccountForGoogleLogin(email: string, displayName: strin
   );
 }
 
-export const { auth, handlers } = NextAuth({
+export const { auth, handlers, unstable_update } = NextAuth({
   trustHost: true,
   session: { strategy: 'jwt' },
   pages: {
