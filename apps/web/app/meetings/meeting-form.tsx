@@ -494,7 +494,7 @@ export function MeetingForm({
                         ['chorister', 'Chorister']
                       ] as const
                     ).map(([role, label]) => (
-                      <label key={role} className="space-y-1 text-sm">
+                      <div key={role} className="space-y-1 text-sm">
                         <span className="font-medium">{label}</span>
                         <MemberAutocomplete
                           wardId={wardId}
@@ -504,7 +504,7 @@ export function MeetingForm({
                           placeholder="Name"
                           leadershipOnly={role === 'presiding' || role === 'conducting'}
                         />
-                      </label>
+                      </div>
                     ))}
                   </div>
                   <div className="space-y-2 sm:col-span-2">
@@ -545,7 +545,7 @@ export function MeetingForm({
                   </div>
                 </div>
               ) : !HYMN_ITEM_TYPES.has(item.itemType) && item.itemType !== BUSINESS_ITEM_TYPE ? (
-                <label className="space-y-1 text-sm">
+                <div className="space-y-1 text-sm">
                   <span className="font-medium">{getItemTitleLabel(item.itemType)}</span>
                   {PERSON_ITEM_TYPES.has(item.itemType) ? (
                     <MemberAutocomplete
@@ -590,7 +590,7 @@ export function MeetingForm({
                       onChange={(event) => updateProgramItem(index, 'title', event.target.value)}
                     />
                   )}
-                </label>
+                </div>
               ) : null}
 
               {HYMN_ITEM_TYPES.has(item.itemType) ? (
