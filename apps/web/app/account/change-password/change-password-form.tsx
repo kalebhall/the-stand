@@ -15,7 +15,8 @@ export function ChangePasswordForm() {
     setSuccess(null);
     setIsSubmitting(true);
 
-    const formData = new FormData(event.currentTarget);
+    const form = event.currentTarget;
+    const formData = new FormData(form);
     const currentPassword = String(formData.get('currentPassword') ?? '');
     const newPassword = String(formData.get('newPassword') ?? '');
 
@@ -34,7 +35,7 @@ export function ChangePasswordForm() {
     }
 
     setSuccess('Password changed successfully. You can now access the rest of the application.');
-    event.currentTarget.reset();
+    form.reset();
     setIsSubmitting(false);
 
     try {
