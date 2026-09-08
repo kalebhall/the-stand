@@ -312,7 +312,7 @@ export const bishopricMeeting = pgTable('bishopric_meeting', {
   agendaTemplate: text('agenda_template').notNull().default('BISHOPRIC'),
   meetingType: text('meeting_type').notNull().default('BISHOPRIC'),
   status: text('status').notNull().default('OPEN'),
-  createdByUserId: uuid('created_by_user_id').notNull().references(() => userAccount.id, { onDelete: 'restrict' }),
+  createdByUserId: uuid('created_by_user_id').references(() => userAccount.id, { onDelete: 'set null' }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
 });
@@ -350,7 +350,7 @@ export const scheduledInterview = pgTable('scheduled_interview', {
   linkedCallingId: uuid('linked_calling_id').references(() => callingAssignment.id, { onDelete: 'set null' }),
   privateNote: text('private_note'),
   completedAt: timestamp('completed_at', { withTimezone: true }),
-  createdByUserId: uuid('created_by_user_id').notNull().references(() => userAccount.id, { onDelete: 'restrict' }),
+  createdByUserId: uuid('created_by_user_id').references(() => userAccount.id, { onDelete: 'set null' }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
 });
@@ -457,9 +457,7 @@ export const interviewCalendarSubscription = pgTable(
       .notNull()
       .references(() => ward.id, { onDelete: 'cascade' }),
     tokenHash: text('token_hash').notNull().unique(),
-    createdByUserId: uuid('created_by_user_id')
-      .notNull()
-      .references(() => userAccount.id, { onDelete: 'restrict' }),
+    createdByUserId: uuid('created_by_user_id').references(() => userAccount.id, { onDelete: 'set null' }),
     revokedAt: timestamp('revoked_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
   },
@@ -716,9 +714,7 @@ export const internalNote = pgTable('internal_note', {
   bishopricActionId: uuid('bishopric_action_id').references(() => bishopricAction.id, { onDelete: 'cascade' }),
   visibility: text('visibility').notNull(),
   noteText: text('note_text').notNull(),
-  createdByUserId: uuid('created_by_user_id')
-    .notNull()
-    .references(() => userAccount.id, { onDelete: 'restrict' }),
+  createdByUserId: uuid('created_by_user_id').references(() => userAccount.id, { onDelete: 'set null' }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
 });

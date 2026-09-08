@@ -15,7 +15,7 @@ flowchart LR
   A3["root:tooling<br/>6 files"]
   A4["web:announcements<br/>2 files"]
   A5["web:api<br/>85 files"]
-  A6["web:app<br/>111 files"]
+  A6["web:app<br/>112 files"]
   A7["web:audit<br/>2 files"]
   A8["web:auth<br/>11 files"]
   A9["web:bootstrap.mjs<br/>1 files"]
@@ -107,7 +107,7 @@ flowchart LR
 | `root:tooling` | 6 |
 | `web:announcements` | 2 |
 | `web:api` | 85 |
-| `web:app` | 111 |
+| `web:app` | 112 |
 | `web:audit` | 2 |
 | `web:auth` | 11 |
 | `web:bootstrap.mjs` | 1 |
@@ -142,7 +142,7 @@ flowchart LR
 | `web:app` | `web:ui` | 109 |
 | `web:app` | `web:auth` | 86 |
 | `web:app` | `web:db` | 53 |
-| `web:app` | `web:app` | 47 |
+| `web:app` | `web:app` | 48 |
 | `web:api` | `web:notifications` | 42 |
 | `web:notifications` | `web:notifications` | 42 |
 | `web:ui` | `web:ui` | 27 |
@@ -226,8 +226,8 @@ flowchart LR
 | `web:ui` | `next` | 14 |
 | `web:notifications` | `vitest` | 13 |
 | `root:tooling` | `Node.js` | 12 |
+| `web:app` | `vitest` | 9 |
 | `web:notifications` | `pg` | 9 |
-| `web:app` | `vitest` | 8 |
 | `web:api` | `zod` | 7 |
 | `web:imports` | `vitest` | 7 |
 | `web:meetings` | `vitest` | 7 |
@@ -498,6 +498,7 @@ flowchart LR
 | `apps/web/app/support/provisioning/page.tsx` | `web:app` | 7 | 2 |
 | `apps/web/app/support/users/UserAdminManager.tsx` | `web:app` | 3 | 1 |
 | `apps/web/app/support/users/actions.ts` | `web:app` | 4 | 2 |
+| `apps/web/app/support/users/actions.vitest.ts` | `web:app` | 1 | 1 |
 | `apps/web/app/support/users/page.tsx` | `web:app` | 7 | 2 |
 | `apps/web/app/support/users/support-grants.ts` | `web:app` | 0 | 0 |
 | `apps/web/app/support/users/support-grants.vitest.ts` | `web:app` | 1 | 1 |
