@@ -96,17 +96,28 @@ export async function deleteUser(formData: FormData) {
     return;
   }
 
-  const deleted = await pool.query(`DELETE FROM user_account WHERE id = $1 RETURNING id, email`, [userId]);
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const deleted = await client.query(`DELETE FROM user_account WHERE id = $1::uuid RETURNING id, email`, [userId]);
 
-  if (!deleted.rowCount) {
-    return;
+    if (!deleted.rowCount) {
+      await client.query('ROLLBACK');
+      return;
+    }
+
+    await client.query(
+      `INSERT INTO audit_log (ward_id, user_id, action, details)
+       VALUES (NULL, $1::uuid, 'SUPPORT_USER_DELETED', jsonb_build_object('targetUserId', $2::text, 'email', $3::text))`,
+      [actingSession.user.id, deleted.rows[0].id as string, deleted.rows[0].email as string]
+    );
+    await client.query('COMMIT');
+  } catch {
+    await client.query('ROLLBACK');
+    throw new Error('Failed to delete user');
+  } finally {
+    client.release();
   }
-
-  await pool.query(
-    `INSERT INTO audit_log (ward_id, user_id, action, details)
-     VALUES (NULL, $1, 'SUPPORT_USER_DELETED', jsonb_build_object('targetUserId', $2::text, 'email', $3::text))`,
-    [actingSession.user.id, deleted.rows[0].id as string, deleted.rows[0].email as string]
-  );
 
   revalidatePath('/support/users');
 }
