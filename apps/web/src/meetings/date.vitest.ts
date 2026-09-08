@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { formatMeetingDateForDisplay, getNextSunday, toYyyyMmDd } from './date';
+import { formatDateTimeForDisplay, formatMeetingDateForDisplay, getNextSunday, toYyyyMmDd } from './date';
 
 describe('meetings date helpers', () => {
   it('toYyyyMmDd formats dates consistently', () => {
@@ -26,5 +26,9 @@ describe('meetings date helpers', () => {
 
   it('formatMeetingDateForDisplay formats strings or dates', () => {
     expect(formatMeetingDateForDisplay('2026-08-23')).toBe('2026-08-23');
+  });
+
+  it('formatDateTimeForDisplay is deterministic across server and browser locales', () => {
+    expect(formatDateTimeForDisplay('2026-08-23T15:30:00.000Z')).toBe('Aug 23, 2026, 3:30 PM');
   });
 });

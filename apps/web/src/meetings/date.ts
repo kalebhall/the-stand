@@ -44,3 +44,13 @@ export function formatMeetingDateForDisplay(value: unknown): string {
 
   return value == null ? '' : String(value);
 }
+
+export function formatDateTimeForDisplay(value: unknown): string {
+  const date = value instanceof Date ? value : typeof value === 'string' ? new Date(value) : null;
+  if (!date || Number.isNaN(date.getTime())) return value == null ? '' : String(value);
+  return new Intl.DateTimeFormat('en-US', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+    timeZone: 'UTC'
+  }).format(date);
+}

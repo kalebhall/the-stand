@@ -12,6 +12,7 @@ import { isAnnouncementActiveForDate } from '@/src/announcements/types';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 import type { IntroductionRoles, ProgramItemInput } from '@/src/meetings/types';
+import { formatDateTimeForDisplay } from '@/src/meetings/date';
 
 import { MeetingForm } from '../../meeting-form';
 
@@ -184,7 +185,7 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ me
                 <li key={version.version} className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-3 text-sm">
                   <div>
                     <p className="font-medium">Version {version.version}</p>
-                    <p className="text-xs text-muted-foreground">Published {new Date(version.created_at).toLocaleString()}</p>
+                    <p className="text-xs text-muted-foreground">Published {formatDateTimeForDisplay(version.created_at)}</p>
                   </div>
                   <Link
                     href={`/meetings/${meeting.id}/print?version=${version.version}`}

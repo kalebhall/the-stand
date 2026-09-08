@@ -4,6 +4,7 @@ import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import type { NoteTarget, NoteVisibility } from '@/src/notes/types';
+import { formatDateTimeForDisplay } from '@/src/meetings/date';
 
 export type InternalNoteRow = {
   id: string;
@@ -200,7 +201,7 @@ export function InternalNotesPanel({ wardId, target, notes, title = 'Notes' }: I
                   {note.visibility === 'PUBLIC' ? 'Public program' : note.visibility === 'PRIVATE' ? 'Personal' : 'Bishopric / Clerk'}
                 </span>
                 <span>
-                  {note.created_by_email ?? 'Unknown author'} · {new Date(note.created_at).toLocaleString()}
+                  {note.created_by_email ?? 'Unknown author'} · {formatDateTimeForDisplay(note.created_at)}
                 </span>
               </div>
               {editingNoteId === note.id ? (

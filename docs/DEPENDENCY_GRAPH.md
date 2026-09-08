@@ -49,7 +49,7 @@ flowchart LR
   A5 -->|23| A19
   A5 -->|19| A7
   A5 -->|15| A11
-  A6 -->|14| A21
+  A6 -->|15| A21
   A5 -->|11| A17
   A5 -->|8| A18
   A5 -->|6| A21
@@ -92,6 +92,7 @@ flowchart LR
   A29 -->|1| A12
   A29 -->|1| A17
   A29 -->|1| A19
+  A29 -->|1| A21
   A29 -->|1| A22
   A29 -->|1| A24
   A29 -->|1| A25
@@ -150,7 +151,7 @@ flowchart LR
 | `web:api` | `web:api` | 21 |
 | `web:api` | `web:audit` | 19 |
 | `web:api` | `web:callings` | 15 |
-| `web:app` | `web:meetings` | 14 |
+| `web:app` | `web:meetings` | 15 |
 | `web:imports` | `web:imports` | 14 |
 | `web:meetings` | `web:meetings` | 12 |
 | `web:api` | `web:imports` | 11 |
@@ -209,6 +210,7 @@ flowchart LR
 | `web:ui` | `web:church-actions` | 1 |
 | `web:ui` | `web:imports` | 1 |
 | `web:ui` | `web:lib` | 1 |
+| `web:ui` | `web:meetings` | 1 |
 | `web:ui` | `web:notes` | 1 |
 | `web:ui` | `web:offline` | 1 |
 | `web:ui` | `web:reports` | 1 |
@@ -431,7 +433,7 @@ flowchart LR
 | `apps/web/app/login/page.tsx` | `web:app` | 2 | 1 |
 | `apps/web/app/logout/logout-form.tsx` | `web:app` | 2 | 2 |
 | `apps/web/app/logout/page.tsx` | `web:app` | 1 | 0 |
-| `apps/web/app/meetings/[meetingId]/edit/page.tsx` | `web:app` | 12 | 2 |
+| `apps/web/app/meetings/[meetingId]/edit/page.tsx` | `web:app` | 13 | 2 |
 | `apps/web/app/meetings/[meetingId]/print/page.tsx` | `web:app` | 7 | 1 |
 | `apps/web/app/meetings/[meetingId]/public-preview/page.tsx` | `web:app` | 1 | 0 |
 | `apps/web/app/meetings/delete-meeting-button.tsx` | `web:app` | 1 | 2 |
@@ -511,7 +513,7 @@ flowchart LR
 | `apps/web/components/CallingDeleteButton.tsx` | `web:ui` | 1 | 2 |
 | `apps/web/components/CallingReleaseButton.tsx` | `web:ui` | 1 | 2 |
 | `apps/web/components/HymnAutocomplete.tsx` | `web:ui` | 0 | 1 |
-| `apps/web/components/InternalNotesPanel.tsx` | `web:ui` | 2 | 1 |
+| `apps/web/components/InternalNotesPanel.tsx` | `web:ui` | 3 | 1 |
 | `apps/web/components/MembershipOrdinanceSection.tsx` | `web:ui` | 3 | 2 |
 | `apps/web/components/StandardCallingsManager.tsx` | `web:ui` | 1 | 2 |
 | `apps/web/components/WardBusinessSection.tsx` | `web:ui` | 2 | 2 |
