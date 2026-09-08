@@ -18,6 +18,7 @@ export function AppShell({ session, children }: { session: Session | null; child
   const pathname = usePathname();
   const { isConductingMode, toggleConductingMode } = useConductingMode();
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+  const isDevelopmentSite = process.env.NEXT_PUBLIC_APP_ENV === 'development';
 
   useEffect(() => {
     setIsMobileNavOpen(false);
@@ -35,7 +36,10 @@ export function AppShell({ session, children }: { session: Session | null; child
       {/* Desktop Left Navigation Sidebar (hidden on mobile) */}
       <aside className={cn('hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 z-30 border-r border-[#c8d7de] bg-card/95 backdrop-blur', isConductingMode && 'md:hidden')}>
         <div className="flex h-16 shrink-0 items-center justify-between border-b border-[#c8d7de] px-6">
-          <SiteLogo className="text-lg text-primary" />
+          <div className="flex items-center gap-2">
+            <SiteLogo className="text-lg text-primary" />
+            {isDevelopmentSite ? <span className="rounded-full border border-amber-500/40 bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold tracking-[0.16em] text-amber-800 dark:text-amber-200" aria-label="Development site">DEV</span> : null}
+          </div>
           <NotificationBell wardId={session.activeWardId} />
         </div>
 
@@ -114,7 +118,10 @@ export function AppShell({ session, children }: { session: Session | null; child
             >
               <span aria-hidden="true">☰</span>
             </button>
-            <SiteLogo className="text-base text-primary" iconClassName="h-6 w-6" />
+            <div className="flex items-center gap-2">
+              <SiteLogo className="text-base text-primary" iconClassName="h-6 w-6" />
+              {isDevelopmentSite ? <span className="rounded-full border border-amber-500/40 bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold tracking-[0.16em] text-amber-800 dark:text-amber-200" aria-label="Development site">DEV</span> : null}
+            </div>
           </div>
 
           <div className="flex items-center gap-2">
@@ -144,7 +151,10 @@ export function AppShell({ session, children }: { session: Session | null; child
               aria-label="Mobile Navigation"
             >
               <div className="flex h-16 shrink-0 items-center justify-between border-b px-5">
-                <SiteLogo className="text-lg text-primary" />
+                <div className="flex items-center gap-2">
+                  <SiteLogo className="text-lg text-primary" />
+                  {isDevelopmentSite ? <span className="rounded-full border border-amber-500/40 bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold tracking-[0.16em] text-amber-800 dark:text-amber-200" aria-label="Development site">DEV</span> : null}
+                </div>
                 <button
                   type="button"
                   onClick={() => setIsMobileNavOpen(false)}
