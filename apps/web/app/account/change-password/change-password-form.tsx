@@ -1,10 +1,8 @@
 'use client';
 
 import { FormEvent, useState } from 'react';
-import { useSession } from 'next-auth/react';
 
 export function ChangePasswordForm() {
-  const { update } = useSession();
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -37,19 +35,6 @@ export function ChangePasswordForm() {
     setSuccess('Password changed successfully. You can now access the rest of the application.');
     form.reset();
     setIsSubmitting(false);
-
-    try {
-      const refreshedSession = await update();
-      if (!refreshedSession || refreshedSession.user.mustChangePassword) {
-        setError('Password changed, but session refresh failed. Reload the page to continue.');
-        setIsSubmitting(false);
-        return;
-      }
-    } catch {
-      setError('Password changed, but session refresh failed. Reload the page to continue.');
-      setIsSubmitting(false);
-      return;
-    }
 
     window.location.href = '/dashboard';
   }
