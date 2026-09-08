@@ -24,6 +24,10 @@ export function LoginForm({ callbackUrl }: LoginFormProps) {
     return callbackUrl;
   }, [callbackUrl]);
 
+  function getCallbackUrl() {
+    return new URL(safeCallbackUrl, window.location.origin).toString();
+  }
+
   async function onCredentialsSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setIsSubmitting(true);
@@ -32,7 +36,7 @@ export function LoginForm({ callbackUrl }: LoginFormProps) {
     const result = await signIn('credentials', {
       email,
       password,
-      callbackUrl: safeCallbackUrl,
+      callbackUrl: getCallbackUrl(),
       redirect: false
     });
 
@@ -47,7 +51,7 @@ export function LoginForm({ callbackUrl }: LoginFormProps) {
   }
 
   function onGoogleSignIn() {
-    void signIn('google', { callbackUrl: safeCallbackUrl });
+    void signIn('google', { callbackUrl: getCallbackUrl() });
   }
 
   return (

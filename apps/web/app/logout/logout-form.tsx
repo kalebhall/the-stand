@@ -14,7 +14,8 @@ export function LogoutForm() {
     setIsSubmitting(true);
     setError(null);
     try {
-      await signOut({ callbackUrl: '/login' });
+      const loginUrl = new URL('/login', window.location.origin).toString();
+      await signOut({ callbackUrl: loginUrl });
     } catch {
       setIsSubmitting(false);
       setError('Unable to log out. Check your connection and try again.');
