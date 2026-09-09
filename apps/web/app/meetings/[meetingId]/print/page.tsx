@@ -99,7 +99,7 @@ export default async function PrintMeetingPage({
       await client.query('COMMIT');
       return (
         <>
-          <main dangerouslySetInnerHTML={{ __html: publishedRender.render_html }} />
+          <div dangerouslySetInnerHTML={{ __html: publishedRender.render_html }} />
           <p className="mx-auto max-w-3xl px-4 pb-8 text-right text-xs text-muted-foreground sm:px-8">
             Published version {publishedRender.version}
           </p>
@@ -168,7 +168,7 @@ export default async function PrintMeetingPage({
 
     return (
       <>
-        <main dangerouslySetInnerHTML={{ __html: renderHtml }} />
+        <div dangerouslySetInnerHTML={{ __html: renderHtml }} />
         {meeting.status === 'PUBLISHED' ? (
           <p className="mx-auto max-w-3xl px-4 pb-8 text-right text-xs text-muted-foreground sm:px-8">
             Published snapshot unavailable; showing current draft layout.
