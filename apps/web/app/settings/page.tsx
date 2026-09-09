@@ -4,7 +4,7 @@ import { ChangePasswordForm } from '@/app/account/change-password/change-passwor
 import { ThemeToggle } from '@/app/account/preferences/theme-toggle';
 import { NotificationTimezoneSetting } from '@/app/settings/notification-timezone';
 import { requireAuthenticatedSession } from '@/src/auth/guards';
-import { canRunImports, hasRole } from '@/src/auth/roles';
+import { canManageMeetings, canRunImports, hasRole } from '@/src/auth/roles';
 
 export default async function SettingsPage() {
   const session = await requireAuthenticatedSession();
@@ -17,6 +17,7 @@ export default async function SettingsPage() {
         hasRole(session.user.roles, role)
       ));
   const canViewActivityLog = wardId ? canRunImports({ roles: session.user.roles, activeWardId: wardId }, wardId) : false;
+  const canManageProgramLayout = wardId ? canManageMeetings({ roles: session.user.roles, activeWardId: wardId }, wardId) : false;
 
   return (
     <main className="mx-auto max-w-4xl space-y-8 p-6">
@@ -52,6 +53,7 @@ export default async function SettingsPage() {
           <div className="grid gap-3 sm:grid-cols-2">
             {isStandAdmin && <SettingsLink href="/settings/users" label="Ward user management" />}
             {isStandAdmin && <SettingsLink href="/settings/stand-script" label="Stand script templates" />}
+            {canManageProgramLayout && <SettingsLink href="/settings/public-layout" label="Printed program layout" />}
             {isStandAdmin && <SettingsLink href="/settings/public-portal" label="Public portal" />}
             {canManageNotifications && <SettingsLink href="/settings/notifications" label="Notification settings" />}
             {canViewActivityLog && <SettingsLink href="/settings/audit-log" label="Activity log" />}
