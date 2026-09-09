@@ -34,7 +34,7 @@ flowchart LR
   A22["web:notes<br/>1 files"]
   A23["web:notifications<br/>29 files"]
   A24["web:offline<br/>3 files"]
-  A25["web:reports<br/>2 files"]
+  A25["web:reports<br/>3 files"]
   A26["web:stand<br/>8 files"]
   A27["web:tooling<br/>2 files"]
   A28["web:types<br/>2 files"]
@@ -63,11 +63,13 @@ flowchart LR
   A5 -->|2| A12
   A6 -->|2| A12
   A6 -->|2| A24
+  A6 -->|2| A25
   A8 -->|2| A14
   A10 -->|2| A14
   A13 -->|2| A19
   A14 -->|2| A8
   A18 -->|2| A23
+  A29 -->|2| A25
   A2 -->|1| A16
   A5 -->|1| A10
   A5 -->|1| A22
@@ -75,7 +77,6 @@ flowchart LR
   A6 -->|1| A10
   A6 -->|1| A17
   A6 -->|1| A19
-  A6 -->|1| A25
   A8 -->|1| A19
   A10 -->|1| A23
   A13 -->|1| A9
@@ -95,7 +96,6 @@ flowchart LR
   A29 -->|1| A21
   A29 -->|1| A22
   A29 -->|1| A24
-  A29 -->|1| A25
   A29 -->|1| A26
 ```
 
@@ -127,7 +127,7 @@ flowchart LR
 | `web:notes` | 1 |
 | `web:notifications` | 29 |
 | `web:offline` | 3 |
-| `web:reports` | 2 |
+| `web:reports` | 3 |
 | `web:stand` | 8 |
 | `web:tooling` | 2 |
 | `web:types` | 2 |
@@ -176,12 +176,14 @@ flowchart LR
 | `web:api` | `web:church-actions` | 2 |
 | `web:app` | `web:church-actions` | 2 |
 | `web:app` | `web:offline` | 2 |
+| `web:app` | `web:reports` | 2 |
 | `web:auth` | `web:db` | 2 |
 | `web:calendar` | `web:db` | 2 |
 | `web:church-actions` | `web:church-actions` | 2 |
 | `web:config` | `web:lib` | 2 |
 | `web:db` | `web:auth` | 2 |
 | `web:leadership` | `web:notifications` | 2 |
+| `web:ui` | `web:reports` | 2 |
 | `root:other` | `web:health.mjs` | 1 |
 | `web:announcements` | `web:announcements` | 1 |
 | `web:api` | `web:calendar` | 1 |
@@ -190,7 +192,6 @@ flowchart LR
 | `web:app` | `web:calendar` | 1 |
 | `web:app` | `web:imports` | 1 |
 | `web:app` | `web:lib` | 1 |
-| `web:app` | `web:reports` | 1 |
 | `web:audit` | `web:audit` | 1 |
 | `web:auth` | `web:lib` | 1 |
 | `web:calendar` | `web:notifications` | 1 |
@@ -213,7 +214,6 @@ flowchart LR
 | `web:ui` | `web:meetings` | 1 |
 | `web:ui` | `web:notes` | 1 |
 | `web:ui` | `web:offline` | 1 |
-| `web:ui` | `web:reports` | 1 |
 | `web:ui` | `web:stand` | 1 |
 
 ## External dependencies
@@ -457,7 +457,7 @@ flowchart LR
 | `apps/web/app/p/ward/[portalToken]/route.ts` | `web:app` | 1 | 1 |
 | `apps/web/app/p/ward/[portalToken]/route.vitest.ts` | `web:app` | 1 | 1 |
 | `apps/web/app/page.tsx` | `web:app` | 4 | 1 |
-| `apps/web/app/reports/[report]/page.tsx` | `web:app` | 6 | 2 |
+| `apps/web/app/reports/[report]/page.tsx` | `web:app` | 7 | 2 |
 | `apps/web/app/reports/notes/page.tsx` | `web:app` | 4 | 2 |
 | `apps/web/app/reports/page.tsx` | `web:app` | 3 | 1 |
 | `apps/web/app/request-access/page.tsx` | `web:app` | 1 | 0 |
@@ -529,7 +529,7 @@ flowchart LR
 | `apps/web/components/notification-bell.vitest.tsx` | `web:ui` | 1 | 3 |
 | `apps/web/components/offline-stand-button.tsx` | `web:ui` | 2 | 2 |
 | `apps/web/components/public-portal/PublicLinkQrCard.tsx` | `web:ui` | 2 | 1 |
-| `apps/web/components/reports/report-view.tsx` | `web:ui` | 1 | 3 |
+| `apps/web/components/reports/report-view.tsx` | `web:ui` | 2 | 3 |
 | `apps/web/components/site-logo.tsx` | `web:ui` | 0 | 2 |
 | `apps/web/components/site-logo.vitest.tsx` | `web:ui` | 1 | 3 |
 | `apps/web/components/theme-provider.tsx` | `web:ui` | 0 | 2 |
@@ -687,6 +687,7 @@ flowchart LR
 | `apps/web/src/offline/storage.vitest.ts` | `web:offline` | 1 | 1 |
 | `apps/web/src/reports/aggregations.ts` | `web:reports` | 0 | 1 |
 | `apps/web/src/reports/aggregations.vitest.ts` | `web:reports` | 1 | 1 |
+| `apps/web/src/reports/pages.ts` | `web:reports` | 0 | 0 |
 | `apps/web/src/stand/default-template.ts` | `web:stand` | 0 | 0 |
 | `apps/web/src/stand/default-template.vitest.ts` | `web:stand` | 1 | 1 |
 | `apps/web/src/stand/member-display.ts` | `web:stand` | 0 | 0 |
