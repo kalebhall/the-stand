@@ -5,7 +5,7 @@ import { auth } from '@/src/auth/auth';
 import { canManageMeetings } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
-import { BISHOPRIC_AGENDA_TEMPLATES, LEADERSHIP_MEETING_TYPES, type LeadershipMeetingType } from '@/src/leadership/bishopric';
+import { isValidLeadershipMeetingPayload, LEADERSHIP_MEETING_TYPES, type LeadershipMeetingType } from '@/src/leadership/bishopric';
 
 const text = (value: unknown) => typeof value === 'string' ? value.trim() : '';
 
@@ -71,7 +71,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
   const meetingDate = text(body?.meetingDate);
   const meetingType = text(body?.meetingType) || 'BISHOPRIC';
   const agendaTemplate = text(body?.agendaTemplate) || meetingType;
-  if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(meetingDate) || !LEADERSHIP_MEETING_TYPES.includes(meetingType as LeadershipMeetingType) || !BISHOPRIC_AGENDA_TEMPLATES.includes(agendaTemplate as (typeof BISHOPRIC_AGENDA_TEMPLATES)[number])) {
+  if (!isValidLeadershipMeetingPayload({ meetingDate, meetingType, agendaTemplate })) {
     return NextResponse.json({ error: 'Invalid bishopric meeting payload', code: 'BAD_REQUEST' }, { status: 400 });
   }
   const client = await pool.connect();

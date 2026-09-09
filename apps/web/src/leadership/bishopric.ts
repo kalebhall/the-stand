@@ -10,6 +10,16 @@ export const LEADERSHIP_MEETING_LABELS: Record<LeadershipMeetingType, string> = 
 export const BISHOPRIC_AGENDA_TEMPLATES = ['BISHOPRIC', 'BISHOPRIC_AND_COUNCIL', 'WARD_COUNCIL', 'MISSIONARY_COORDINATION'] as const;
 export type BishopricAgendaTemplate = (typeof BISHOPRIC_AGENDA_TEMPLATES)[number];
 
+export function isValidLeadershipMeetingPayload(value: {
+  meetingDate: string;
+  meetingType: string;
+  agendaTemplate: string;
+}): boolean {
+  return /^\d{4}-\d{2}-\d{2}$/.test(value.meetingDate)
+    && LEADERSHIP_MEETING_TYPES.includes(value.meetingType as LeadershipMeetingType)
+    && BISHOPRIC_AGENDA_TEMPLATES.includes(value.agendaTemplate as BishopricAgendaTemplate);
+}
+
 export const BISHOPRIC_ACTION_STATUSES = ['PENDING', 'IN_PROGRESS', 'COMPLETED'] as const;
 export type BishopricActionStatus = (typeof BISHOPRIC_ACTION_STATUSES)[number];
 
