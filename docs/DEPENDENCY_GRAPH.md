@@ -15,7 +15,7 @@ flowchart LR
   A3["root:tooling<br/>6 files"]
   A4["web:announcements<br/>2 files"]
   A5["web:api<br/>85 files"]
-  A6["web:app<br/>113 files"]
+  A6["web:app<br/>114 files"]
   A7["web:audit<br/>2 files"]
   A8["web:auth<br/>11 files"]
   A9["web:bootstrap.mjs<br/>1 files"]
@@ -108,7 +108,7 @@ flowchart LR
 | `root:tooling` | 6 |
 | `web:announcements` | 2 |
 | `web:api` | 85 |
-| `web:app` | 113 |
+| `web:app` | 114 |
 | `web:audit` | 2 |
 | `web:auth` | 11 |
 | `web:bootstrap.mjs` | 1 |
@@ -143,7 +143,7 @@ flowchart LR
 | `web:api` | `web:db` | 111 |
 | `web:app` | `web:auth` | 86 |
 | `web:app` | `web:db` | 53 |
-| `web:app` | `web:app` | 48 |
+| `web:app` | `web:app` | 49 |
 | `web:api` | `web:notifications` | 42 |
 | `web:notifications` | `web:notifications` | 42 |
 | `web:ui` | `web:ui` | 27 |
@@ -228,21 +228,21 @@ flowchart LR
 | `web:ui` | `next` | 14 |
 | `web:notifications` | `vitest` | 13 |
 | `root:tooling` | `Node.js` | 12 |
-| `web:app` | `vitest` | 9 |
+| `web:app` | `vitest` | 10 |
 | `web:notifications` | `pg` | 9 |
 | `web:api` | `zod` | 7 |
 | `web:imports` | `vitest` | 7 |
 | `web:meetings` | `vitest` | 7 |
 | `web:auth` | `next-auth` | 6 |
 | `web:leadership` | `vitest` | 6 |
-| `web:app` | `@testing-library/react` | 4 |
+| `web:app` | `@testing-library/react` | 5 |
+| `web:app` | `@testing-library/user-event` | 4 |
 | `web:auth` | `vitest` | 4 |
 | `web:config` | `@playwright/test` | 4 |
 | `web:stand` | `vitest` | 4 |
 | `web:tooling` | `Node.js` | 4 |
 | `web:ui` | `next-auth` | 4 |
 | `web:api` | `Node.js` | 3 |
-| `web:app` | `@testing-library/user-event` | 3 |
 | `web:app` | `Node.js` | 3 |
 | `web:app` | `next-auth` | 3 |
 | `web:callings` | `vitest` | 3 |
@@ -311,6 +311,7 @@ flowchart LR
 | File | Area | Internal imports | External imports |
 | --- | --- | ---: | ---: |
 | `apps/web/app/account/change-password/change-password-form.tsx` | `web:app` | 0 | 1 |
+| `apps/web/app/account/change-password/change-password-form.vitest.tsx` | `web:app` | 1 | 3 |
 | `apps/web/app/account/change-password/page.tsx` | `web:app` | 2 | 1 |
 | `apps/web/app/account/page.tsx` | `web:app` | 5 | 2 |
 | `apps/web/app/account/preferences/page.tsx` | `web:app` | 1 | 1 |
