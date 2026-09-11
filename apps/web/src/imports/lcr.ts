@@ -422,7 +422,7 @@ export async function importFromLcr(credentials: LcrImportCredentials): Promise<
       // → LCR sets session cookie → redirects to LCR root.
       // Using a fixed 1 s wait caused the next goto() to interrupt the callback
       // before the session cookie was set, sending the browser back to Okta.
-      await page.waitForURL((url) => !url.hostname.includes('id.churchofjesuschrist.org'), { timeout: 30_000 }).catch(() => {});
+      await page.waitForURL((url) => url.hostname !== 'id.churchofjesuschrist.org', { timeout: 30_000 }).catch(() => {});
       // Wait for any remaining network activity (callback → cookie → redirect).
       await page.waitForLoadState('networkidle', { timeout: 15_000 }).catch(() => {});
     }
@@ -432,7 +432,7 @@ export async function importFromLcr(credentials: LcrImportCredentials): Promise<
     if (/id\.churchofjesuschrist\.org/.test(page.url())) {
       await completeChurchAuthIfPrompted(page, credentials);
       // Same URL-based wait for the retry path.
-      await page.waitForURL((url) => !url.hostname.includes('id.churchofjesuschrist.org'), { timeout: 30_000 }).catch(() => {});
+      await page.waitForURL((url) => url.hostname !== 'id.churchofjesuschrist.org', { timeout: 30_000 }).catch(() => {});
       await page.waitForLoadState('networkidle', { timeout: 15_000 }).catch(() => {});
       await page.goto(MEMBER_LIST_URL, { waitUntil: 'domcontentloaded', timeout: 90_000 });
     }

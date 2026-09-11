@@ -5,6 +5,7 @@ import { getLcrBookmarkletHref, LCR_DOM_EXTRACTOR_SCRIPT } from './bookmarklet';
 describe('LCR bookmarklet', () => {
   it('produces an encoded javascript bookmarklet', () => {
     const href = getLcrBookmarkletHref();
+    // lgtm[js/incomplete-url-scheme-check] -- this is a test assertion verifying the bookmarklet format
     expect(href.startsWith('javascript:')).toBe(true);
     expect(decodeURIComponent(href.slice('javascript:'.length))).toBe(LCR_DOM_EXTRACTOR_SCRIPT);
   });
