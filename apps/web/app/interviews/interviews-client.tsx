@@ -107,11 +107,30 @@ export function InterviewsClient({ wardId, userId, initial }: { wardId: string; 
   async function create(event: React.FormEvent) {
     event.preventDefault();
     if (!online) return;
+
+    const missingFields = [
+      !type.trim() ? 'interview type' : null,
+      !member.trim() ? 'member' : null,
+      !interviewer.trim() ? 'interviewer' : null,
+      !when ? 'interview date and time' : null
+    ].filter((field): field is string => field !== null);
+
+    if (missingFields.length > 0) {
+      setError(`Complete required fields: ${missingFields.join(', ')}.`);
+      return;
+    }
+
+    const scheduledAt = new Date(when);
+    if (Number.isNaN(scheduledAt.getTime())) {
+      setError('Enter a valid interview date and time.');
+      return;
+    }
+
     setError('');
     const response = await fetch(`/api/w/${wardId}/interviews`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ interviewType: type, memberName: member, interviewerName: interviewer, scheduledAt: new Date(when).toISOString() })
+      body: JSON.stringify({ interviewType: type, memberName: member, interviewerName: interviewer, scheduledAt: scheduledAt.toISOString() })
     });
     const body = await response.json();
     if (!response.ok) {
@@ -162,7 +181,7 @@ export function InterviewsClient({ wardId, userId, initial }: { wardId: string; 
     </section>
     <section className="rounded-lg border bg-card p-5 shadow-sm">
       <h2 className="text-lg font-semibold">Schedule interview</h2>
-      <form onSubmit={create} className="mt-3 grid gap-2 sm:grid-cols-2">
+      <form onSubmit={create} noValidate className="mt-3 grid gap-2 sm:grid-cols-2">
         <input required disabled={!online} value={type} onChange={(e) => setType(e.target.value)} placeholder="Interview type" className="rounded-md border bg-background px-3 py-2 text-sm" />
         <MemberAutocomplete
           wardId={wardId}
@@ -176,7 +195,7 @@ export function InterviewsClient({ wardId, userId, initial }: { wardId: string; 
         <input required disabled={!online} type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)} className="rounded-md border bg-background px-3 py-2 text-sm" aria-label="Interview date and time" />
         <button disabled={!online} className={cn(buttonVariants({ size: 'sm' }))}>Schedule</button>
       </form>
-      {error ? <p className="mt-2 text-sm text-destructive">{error}</p> : null}
+      {error ? <p role="alert" className="mt-2 text-sm text-destructive">{error}</p> : null}
     </section>
     <section className="space-y-3">
       <h2 className="text-lg font-semibold">Interview schedule</h2>

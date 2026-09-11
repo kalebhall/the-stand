@@ -18,6 +18,27 @@ export function ChangePasswordForm() {
     const currentPassword = String(formData.get('currentPassword') ?? '');
     const newPassword = String(formData.get('newPassword') ?? '');
 
+    if (!currentPassword && !newPassword) {
+      setError('Enter your current password and a new password.');
+      setIsSubmitting(false);
+      return;
+    }
+    if (!currentPassword) {
+      setError('Enter your current password.');
+      setIsSubmitting(false);
+      return;
+    }
+    if (!newPassword) {
+      setError('Enter a new password.');
+      setIsSubmitting(false);
+      return;
+    }
+    if (newPassword.length < 12) {
+      setError('New password must be at least 12 characters.');
+      setIsSubmitting(false);
+      return;
+    }
+
     const response = await fetch('/api/account/change-password', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -40,26 +61,32 @@ export function ChangePasswordForm() {
   }
 
   return (
-    <form className="mt-6 flex max-w-md flex-col gap-4" onSubmit={onSubmit}>
-      <label className="flex flex-col gap-1 text-sm font-medium">
+    <form noValidate className="mt-6 flex max-w-md flex-col gap-4" onSubmit={onSubmit}>
+      <label htmlFor="current-password" className="flex flex-col gap-1 text-sm font-medium">
         Current password
         <input
+          id="current-password"
           required
           minLength={12}
           autoComplete="current-password"
           name="currentPassword"
           type="password"
+          aria-describedby={error ? 'password-form-error' : undefined}
+          aria-invalid={Boolean(error)}
           className="rounded-md border bg-background px-3 py-2"
         />
       </label>
-      <label className="flex flex-col gap-1 text-sm font-medium">
+      <label htmlFor="new-password" className="flex flex-col gap-1 text-sm font-medium">
         New password
         <input
+          id="new-password"
           required
           minLength={12}
           autoComplete="new-password"
           name="newPassword"
           type="password"
+          aria-describedby={error ? 'password-form-error' : undefined}
+          aria-invalid={Boolean(error)}
           className="rounded-md border bg-background px-3 py-2"
         />
       </label>
@@ -70,7 +97,7 @@ export function ChangePasswordForm() {
       >
         {isSubmitting ? 'Saving...' : 'Change password'}
       </button>
-      {error ? <p className="text-sm text-red-600">{error}</p> : null}
+      {error ? <p id="password-form-error" role="alert" className="text-sm text-red-600">{error}</p> : null}
       {success ? <p className="text-sm text-green-700">{success}</p> : null}
     </form>
   );
