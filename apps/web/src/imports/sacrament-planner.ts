@@ -71,6 +71,7 @@ function parseHymn(value: string): Pick<HistoricalProgramItem, 'hymnNumber' | 'h
 
 export function parseSacramentPlannerHtml(html: string, cutoffDate = '2026-08-30'): HistoricalMeeting[] {
   if (typeof DOMParser === 'undefined') throw new Error('HTML parsing is only available in a browser');
+  // lgtm[js/xss-through-dom] -- HTML is parsed into an isolated document; only .textContent is read, never injected into the real DOM
   const document = new DOMParser().parseFromString(html, 'text/html');
   const table = document.querySelector('table');
   if (!table) throw new Error('No spreadsheet table found');
