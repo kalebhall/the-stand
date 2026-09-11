@@ -29,5 +29,9 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     if (!links.rows[0].member_ok || !links.rows[0].calling_ok || !links.rows[0].membership_ok) { await client.query('ROLLBACK'); return NextResponse.json({ error: 'Linked record not found in this ward', code: 'LINKED_RECORD_NOT_FOUND' }, { status: 422 }); }
     const result = await client.query(`INSERT INTO bishopric_action (ward_id, bishopric_meeting_id, title, details, decision, owner_name, due_date, carry_forward, member_id, calling_assignment_id, linked_membership_action_id) VALUES ($1::uuid, $2::uuid, $3::text, NULLIF($4::text, ''), NULLIF($5::text, ''), NULLIF($6::text, ''), NULLIF($7::text, '')::date, $8::boolean, NULLIF($9::text, '')::uuid, NULLIF($10::text, '')::uuid, NULLIF($11::text, '')::uuid) RETURNING *`, [wardId, meetingId, title, text(body?.details), text(body?.decision), text(body?.ownerName), dueDate, Boolean(body?.carryForward), memberId, callingAssignmentId, linkedMembershipActionId]);
     await client.query('COMMIT'); return NextResponse.json({ action: result.rows[0] }, { status: 201 });
-  } catch { await client.query('ROLLBACK'); return NextResponse.json({ error: 'Failed to create bishopric action', code: 'INTERNAL_ERROR' }, { status: 500 }); } finally { client.release(); }
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('bishopric_action_create_failed', { wardId, meetingId, userId: session.user.id, error });
+    return NextResponse.json({ error: 'Failed to create bishopric action', code: 'INTERNAL_ERROR' }, { status: 500 });
+  } finally { client.release(); }
 }

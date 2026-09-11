@@ -1,5 +1,6 @@
 import './globals.css';
 
+import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 
 import { AppShell } from '@/components/app-shell';
@@ -8,6 +9,14 @@ import { ConductingModeProvider } from '@/components/conducting-mode-context';
 import { ThemeProvider } from '@/components/theme-provider';
 import { auth } from '@/src/auth/auth';
 import { ensureSupportAdminBootstrap } from '@/src/db/bootstrap-support-admin';
+
+export const metadata: Metadata = {
+  title: {
+    default: 'The Stand',
+    template: '%s | The Stand'
+  },
+  description: 'Prepare, conduct, and share ward sacrament meeting programs.'
+};
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
   await ensureSupportAdminBootstrap();

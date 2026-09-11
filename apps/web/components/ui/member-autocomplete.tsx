@@ -17,9 +17,10 @@ type MemberAutocompleteProps = {
   className?: string;
   minAge?: number;
   leadershipOnly?: boolean;
+  disabled?: boolean;
 };
 
-export function MemberAutocomplete({ wardId, value, onChange, placeholder, className, minAge, leadershipOnly }: MemberAutocompleteProps) {
+export function MemberAutocomplete({ wardId, value, onChange, placeholder, className, minAge, leadershipOnly, disabled = false }: MemberAutocompleteProps) {
   const [members, setMembers] = useState<Member[]>([]);
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
@@ -55,6 +56,7 @@ export function MemberAutocomplete({ wardId, value, onChange, placeholder, class
   }
 
   function handleFocus() {
+    if (disabled) return;
     void fetchMembers(value);
     setOpen(true);
     setActiveIndex(-1);
@@ -110,6 +112,7 @@ export function MemberAutocomplete({ wardId, value, onChange, placeholder, class
     <div ref={containerRef} className="relative" onBlur={handleBlur}>
       <input
         className={className}
+        disabled={disabled}
         value={value}
         onChange={(e) => {
           onChange(e.target.value);
