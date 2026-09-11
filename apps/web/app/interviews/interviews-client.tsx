@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { buttonVariants } from '@/components/ui/button';
+import { MemberAutocomplete } from '@/components/ui/member-autocomplete';
 import { cn } from '@/lib/utils';
 import { INTERVIEW_STATUSES } from '@/src/leadership/interviews';
 import {
@@ -163,7 +164,14 @@ export function InterviewsClient({ wardId, userId, initial }: { wardId: string; 
       <h2 className="text-lg font-semibold">Schedule interview</h2>
       <form onSubmit={create} className="mt-3 grid gap-2 sm:grid-cols-2">
         <input required disabled={!online} value={type} onChange={(e) => setType(e.target.value)} placeholder="Interview type" className="rounded-md border bg-background px-3 py-2 text-sm" />
-        <input required disabled={!online} value={member} onChange={(e) => setMember(e.target.value)} placeholder="Member" className="rounded-md border bg-background px-3 py-2 text-sm" />
+        <MemberAutocomplete
+          wardId={wardId}
+          value={member}
+          onChange={setMember}
+          placeholder="Search member"
+          disabled={!online}
+          className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+        />
         <input required disabled={!online} value={interviewer} onChange={(e) => setInterviewer(e.target.value)} placeholder="Interviewer" className="rounded-md border bg-background px-3 py-2 text-sm" />
         <input required disabled={!online} type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)} className="rounded-md border bg-background px-3 py-2 text-sm" aria-label="Interview date and time" />
         <button disabled={!online} className={cn(buttonVariants({ size: 'sm' }))}>Schedule</button>

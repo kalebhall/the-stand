@@ -234,7 +234,7 @@ export function AppShell({ session, children }: { session: Session | null; child
         ) : null}
 
         {/* Page Content */}
-        <main className="flex-1 pb-8">{children}</main>
+        <div className="flex-1 pb-8">{children}</div>
       </div>
     </div>
   );
