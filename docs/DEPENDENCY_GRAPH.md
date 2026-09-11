@@ -15,7 +15,7 @@ flowchart LR
   A3["root:tooling<br/>6 files"]
   A4["web:announcements<br/>2 files"]
   A5["web:api<br/>85 files"]
-  A6["web:app<br/>112 files"]
+  A6["web:app<br/>113 files"]
   A7["web:audit<br/>2 files"]
   A8["web:auth<br/>11 files"]
   A9["web:bootstrap.mjs<br/>1 files"]
@@ -41,8 +41,8 @@ flowchart LR
   A29["web:ui<br/>30 files"]
   A30["web:version.mjs<br/>1 files"]
   A5 -->|119| A8
+  A6 -->|112| A29
   A5 -->|111| A14
-  A6 -->|110| A29
   A6 -->|86| A8
   A6 -->|53| A14
   A5 -->|42| A23
@@ -108,7 +108,7 @@ flowchart LR
 | `root:tooling` | 6 |
 | `web:announcements` | 2 |
 | `web:api` | 85 |
-| `web:app` | 112 |
+| `web:app` | 113 |
 | `web:audit` | 2 |
 | `web:auth` | 11 |
 | `web:bootstrap.mjs` | 1 |
@@ -139,8 +139,8 @@ flowchart LR
 | Importing area | Imported area | Imports |
 | --- | --- | ---: |
 | `web:api` | `web:auth` | 119 |
+| `web:app` | `web:ui` | 112 |
 | `web:api` | `web:db` | 111 |
-| `web:app` | `web:ui` | 110 |
 | `web:app` | `web:auth` | 86 |
 | `web:app` | `web:db` | 53 |
 | `web:app` | `web:app` | 48 |
@@ -220,7 +220,7 @@ flowchart LR
 
 | Importing area | Package/runtime | Imports |
 | --- | --- | ---: |
-| `web:app` | `next` | 84 |
+| `web:app` | `next` | 85 |
 | `web:api` | `next` | 64 |
 | `web:app` | `react` | 32 |
 | `web:ui` | `react` | 28 |
@@ -447,6 +447,7 @@ flowchart LR
 | `apps/web/app/membership-ordinances/page.tsx` | `web:app` | 9 | 2 |
 | `apps/web/app/membership-ordinances/workspace-controls.tsx` | `web:app` | 2 | 1 |
 | `apps/web/app/missionary-coordination/page.tsx` | `web:app` | 0 | 1 |
+| `apps/web/app/not-found.tsx` | `web:app` | 2 | 1 |
 | `apps/web/app/notifications/error.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/notifications/loading.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/notifications/notification-center.tsx` | `web:app` | 1 | 1 |
