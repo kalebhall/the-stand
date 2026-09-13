@@ -71,7 +71,7 @@ export function CallingAutocomplete({
   const showDropdown = open && filtered.length > 0;
 
   return (
-    <div ref={containerRef} className="relative" onBlur={handleBlur}>
+    <div ref={containerRef} className={`relative ${open ? 'z-50' : ''}`} onBlur={handleBlur}>
       <input
         name={name}
         required={required}
@@ -92,7 +92,7 @@ export function CallingAutocomplete({
       {showDropdown ? (
         <ul
           ref={listRef}
-          className="absolute z-50 mt-1 max-h-52 w-full overflow-auto rounded-md border bg-popover text-sm shadow-md"
+          className="absolute z-[1000] mt-1 max-h-52 w-full overflow-auto rounded-md border bg-popover text-sm shadow-md"
           role="listbox"
         >
           {filtered.map((calling, index) => (

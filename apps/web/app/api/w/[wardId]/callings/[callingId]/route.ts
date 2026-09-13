@@ -31,7 +31,18 @@ export async function DELETE(_request: Request, context: { params: Promise<{ war
     await setDbContext(client, { userId: session.user.id, wardId });
 
     const callingResult = await client.query(
-      'SELECT id, member_name, member_id, calling_name, organization FROM calling_assignment WHERE id = $1 AND ward_id = $2',
+      `SELECT ca.id, ca.member_name, ca.member_id, ca.calling_name, ca.organization,
+              latest.action_status AS status
+         FROM calling_assignment ca
+         JOIN LATERAL (
+           SELECT action_status
+             FROM calling_action
+            WHERE calling_assignment_id = ca.id
+              AND ward_id = ca.ward_id
+            ORDER BY created_at DESC
+            LIMIT 1
+         ) latest ON TRUE
+        WHERE ca.id = $1 AND ca.ward_id = $2`,
       [callingId, wardId]
     );
 
@@ -41,6 +52,14 @@ export async function DELETE(_request: Request, context: { params: Promise<{ war
     }
 
     const row = callingResult.rows[0];
+
+    if (row.status !== 'PROPOSED' && row.status !== 'EXTENDED' && row.status !== 'TO_BE_RELEASED') {
+      await client.query('ROLLBACK');
+      return NextResponse.json(
+        { error: 'Only proposed, extended, or released callings can be deleted', code: 'INVALID_STATUS' },
+        { status: 409 }
+      );
+    }
 
     await client.query('DELETE FROM calling_assignment WHERE id = $1 AND ward_id = $2', [callingId, wardId]);
 

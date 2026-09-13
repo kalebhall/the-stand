@@ -47,7 +47,7 @@ describe('DELETE /api/w/[wardId]/callings/[callingId]', () => {
   it('deletes a calling and writes an audit log entry', async () => {
     queryMock
       .mockResolvedValueOnce({})
-      .mockResolvedValueOnce({ rowCount: 1, rows: [{ member_name: 'Jane Doe', calling_name: 'Primary Teacher' }] })
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ member_name: 'Jane Doe', calling_name: 'Primary Teacher', status: 'PROPOSED' }] })
       .mockResolvedValueOnce({})
       .mockResolvedValueOnce({})
       .mockResolvedValueOnce({});
@@ -65,6 +65,20 @@ describe('DELETE /api/w/[wardId]/callings/[callingId]', () => {
     expect(releaseMock).toHaveBeenCalled();
   });
 
+  it('rejects deletion for a calling that already passed proposal and extension', async () => {
+    queryMock.mockResolvedValueOnce({}).mockResolvedValueOnce({ rowCount: 1, rows: [{ status: 'SUSTAINED' }] }).mockResolvedValueOnce({});
+
+    const response = await DELETE(new Request('http://localhost'), {
+      params: Promise.resolve({ wardId: 'ward-1', callingId: 'sustained-calling' })
+    });
+
+    expect(response.status).toBe(409);
+    expect(await response.json()).toEqual({
+      error: 'Only proposed, extended, or released callings can be deleted',
+      code: 'INVALID_STATUS'
+    });
+    expect(queryMock.mock.calls.some(([sql]) => String(sql).includes('DELETE FROM calling_assignment'))).toBe(false);
+  });
   it('returns 404 when the calling does not exist', async () => {
     queryMock.mockResolvedValueOnce({}).mockResolvedValueOnce({ rowCount: 0, rows: [] }).mockResolvedValueOnce({});
 
