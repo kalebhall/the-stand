@@ -115,9 +115,9 @@ export async function queueCallingBusinessLine(
 
   // 4. Insert the business line
   await client.query(
-    `INSERT INTO meeting_business_line (ward_id, meeting_id, member_name, calling_name, action_type, status)
-     VALUES ($1::uuid, $2::uuid, $3::text, $4::text, $5::text, 'pending')`,
-    [wardId, meetingId, assignment.member_name, assignment.calling_name, actionType]
+    `INSERT INTO meeting_business_line (ward_id, meeting_id, calling_assignment_id, member_name, calling_name, action_type, status)
+     VALUES ($1::uuid, $2::uuid, $3::uuid, $4::text, $5::text, $6::text, 'pending')`,
+    [wardId, meetingId, callingId, assignment.member_name, assignment.calling_name, actionType]
   );
 
   return meetingId;

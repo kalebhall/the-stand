@@ -1,5 +1,6 @@
 import { DEFAULT_STAND_RELEASE_TEMPLATE, DEFAULT_STAND_SUSTAIN_TEMPLATE, DEFAULT_STAND_WELCOME_TEXT } from './default-template';
 import { formatAtStandMemberName, type MemberDisplayInfo } from './member-display';
+import { buildHymnUrl } from './hymn-links';
 import type { IntroductionRoles } from '../meetings/types';
 
 export type StandProgramItem = {
@@ -37,6 +38,7 @@ export type StandRow =
       programNotes?: string | null;
       label: string;
       details: string;
+      hymnUrl?: string;
     }
   | {
       kind: 'sustain' | 'release';
@@ -195,6 +197,7 @@ export function buildStandRows(
     }
 
     const hymnBits = [item.hymnNumber?.trim(), item.hymnTitle?.trim()].filter(Boolean).join(' — ');
+    const isHymn = normalizedType.includes('HYMN');
     const details = item.title?.trim()
       ? isPersonItem(normalizedType)
         ? [
@@ -211,6 +214,7 @@ export function buildStandRows(
       programItemId: item.id,
       label,
       details,
+      ...(isHymn ? { hymnUrl: buildHymnUrl(item.hymnNumber, item.hymnTitle) ?? undefined } : {}),
       ...(item.programNotes?.trim() ? { programNotes: item.programNotes } : {})
     });
   }

@@ -14,7 +14,7 @@ export type OfflineStandSnapshot = {
   wardId: string;
   meeting: { id: string; meetingDate: string; meetingType: string };
   standRows: Array<Record<string, unknown>>;
-  businessLines: Array<{ id: string; memberName: string; callingName: string; actionType: string; status: string; updatedAt?: string }>;
+  businessLines: Array<{ id: string; memberName: string; callingName: string; actionType: string; status: string; carriedForward?: boolean; updatedAt?: string }>;
   technology?: { ownerName: string | null; roomReady: boolean; audioReady: boolean; streamReady: boolean; accessibilityChecked: boolean; authorizedLink: string | null; recordingDeletionReminder: boolean; startConfirmedAt: string | null; stopConfirmedAt: string | null } | null;
   membershipActions?: Array<{
     id: string;
@@ -30,6 +30,7 @@ export type OfflineStandSnapshot = {
     confirmationStatus?: string | null;
     responsibleLeader?: string | null;
     lcrFollowUpStatus?: string;
+    carriedForward?: boolean;
     lcrUpdatedAt?: string | null;
   }>;
   notes?: OfflineNote[];

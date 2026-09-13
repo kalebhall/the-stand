@@ -13,6 +13,7 @@ export type BusinessLine = {
   calling_name: string;
   action_type: 'SUSTAIN' | 'RELEASE';
   status: 'pending' | 'announced';
+  carried_forward?: boolean;
 };
 
 export type MembershipOrdinanceSummary = {
@@ -30,6 +31,7 @@ export type MembershipOrdinanceSummary = {
   responsible_leader?: string | null;
   interview_status?: string | null;
   lcr_follow_up_status?: string | null;
+  carried_forward?: boolean;
 };
 
 type WardBusinessSectionProps = {
@@ -76,6 +78,7 @@ function MembershipOrdinanceRow({ action }: { action: MembershipOrdinanceSummary
         <div>
           <p className="text-xs uppercase tracking-wide text-muted-foreground">
             {MEMBERSHIP_ACTION_LABELS[action.action_type] ?? action.action_type.replaceAll('_', ' ')}
+            {action.carried_forward ? ' · Carried forward' : ''}
           </p>
           <p className="font-semibold">{action.member_name}</p>
           {action.priesthood_office ? <p className="text-sm text-muted-foreground">Office: {action.priesthood_office}</p> : null}
@@ -188,7 +191,7 @@ function BusinessLineRow({
       {scriptSegments ? (
         /* Scripted (formal) mode: full phrasing with bold segments + actions below */
         <div className="flex flex-col gap-3 p-4">
-          <p className="text-sm uppercase tracking-wide text-muted-foreground">{ACTION_LABELS[line.action_type] ?? line.action_type}</p>
+          <p className="text-xs uppercase tracking-wide text-muted-foreground">{ACTION_LABELS[line.action_type] ?? line.action_type}{line.carried_forward ? ' · Carried forward' : ''}</p>
           <p className="text-lg leading-relaxed sm:text-xl">
             {scriptSegments.map((seg, i) => (seg.bold ? <strong key={i}>{seg.text}</strong> : <span key={i}>{seg.text}</span>))}
           </p>
@@ -233,6 +236,7 @@ function BusinessLineRow({
               <span className="rounded-full border px-2 py-0.5 text-xs font-medium">
                 {ACTION_LABELS[line.action_type] ?? line.action_type}
               </span>
+              {line.carried_forward ? <span className="text-xs text-muted-foreground">Carried forward</span> : null}
               <span className="text-xs text-muted-foreground">{STATUS_LABELS[line.status] ?? line.status}</span>
             </div>
           </div>

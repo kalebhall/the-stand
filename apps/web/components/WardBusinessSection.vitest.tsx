@@ -37,6 +37,19 @@ describe('WardBusinessSection', () => {
     expect(screen.getByText('Ward and Stake Business').closest('details')).not.toHaveAttribute('open');
   });
 
+  it('labels carried-forward business items', () => {
+    render(
+      <WardBusinessSection
+        wardId="ward-1"
+        meetingId="meeting-2"
+        lines={[{ ...baseLine, status: 'pending' as const, carried_forward: true }]}
+        canManage={false}
+      />
+    );
+
+    expect(screen.getByText(/Carried forward/)).toBeVisible();
+  });
+
   it('keeps membership and ordinance items inside ward and stake business without edit controls', () => {
     render(
       <WardBusinessSection

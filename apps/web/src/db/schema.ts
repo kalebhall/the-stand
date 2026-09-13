@@ -256,6 +256,7 @@ export const meetingBusinessLine = pgTable('meeting_business_line', {
   meetingId: uuid('meeting_id')
     .notNull()
     .references(() => meeting.id, { onDelete: 'cascade' }),
+  callingAssignmentId: uuid('calling_assignment_id').references(() => callingAssignment.id, { onDelete: 'cascade' }),
   memberName: text('member_name').notNull(),
   callingName: text('calling_name').notNull(),
   actionType: text('action_type').notNull(),

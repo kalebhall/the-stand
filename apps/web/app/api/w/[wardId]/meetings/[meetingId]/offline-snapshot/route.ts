@@ -48,20 +48,33 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
       [wardId]
     );
     const business = await client.query(
-      `SELECT b.id, b.member_name, b.calling_name, b.action_type, b.status, b.updated_at,
-              m.first_name, m.last_name, m.gender
+      `SELECT b.id, b.member_name, b.calling_name, b.action_type,
+              CASE WHEN b.meeting_id <> $1::uuid THEN 'pending' ELSE b.status END AS status,
+              b.updated_at, (b.meeting_id <> $1::uuid) AS carried_forward
          FROM meeting_business_line b
-         LEFT JOIN member m ON m.ward_id = b.ward_id AND m.full_name = b.member_name AND m.archived_at IS NULL
-        WHERE b.meeting_id = $1::uuid AND b.ward_id = $2::uuid
+         JOIN meeting source_meeting ON source_meeting.id = b.meeting_id AND source_meeting.ward_id = b.ward_id
+         LEFT JOIN LATERAL (
+           SELECT action_status FROM calling_action ca
+            WHERE ca.calling_assignment_id = b.calling_assignment_id AND ca.ward_id = b.ward_id
+            ORDER BY ca.created_at DESC LIMIT 1
+         ) latest_calling ON TRUE
+        WHERE b.ward_id = $2::uuid
+          AND (b.action_type <> 'SUSTAIN' OR b.calling_assignment_id IS NULL OR latest_calling.action_status = 'EXTENDED')
+          AND (b.meeting_id = $1::uuid OR (b.action_type = 'SUSTAIN' AND b.calling_assignment_id IS NOT NULL AND source_meeting.meeting_date <= $3::date AND latest_calling.action_status = 'EXTENDED'))
         ORDER BY b.created_at ASC`,
-      [meetingId, wardId]
+      [meetingId, wardId, meeting.rows[0].meeting_date]
     );
     const membershipActions = await client.query(
-      `SELECT id, member_name, action_type, priesthood_office, status, planned_date, interview_status, baptism_date, confirmation_date, baptism_status, confirmation_status, responsible_leader, lcr_follow_up_status
-         FROM meeting_membership_ordinance
-        WHERE meeting_id = $1::uuid AND ward_id = $2::uuid
-        ORDER BY created_at ASC`,
-      [meetingId, wardId]
+      `SELECT a.id, a.member_name, a.action_type, a.priesthood_office,
+              CASE WHEN a.meeting_id <> $1::uuid AND a.status = 'pending' THEN 'action_needed' ELSE a.status END AS status,
+              a.planned_date, a.interview_status, a.baptism_date, a.confirmation_date, a.baptism_status, a.confirmation_status, a.responsible_leader, a.lcr_follow_up_status,
+              (a.meeting_id <> $1::uuid) AS carried_forward
+         FROM meeting_membership_ordinance a
+         JOIN meeting source_meeting ON source_meeting.id = a.meeting_id AND source_meeting.ward_id = a.ward_id
+        WHERE a.ward_id = $2::uuid
+          AND (a.meeting_id = $1::uuid OR (source_meeting.meeting_date <= $3::date AND a.status <> 'completed'))
+        ORDER BY a.created_at ASC`,
+      [meetingId, wardId, meeting.rows[0].meeting_date]
     );
     const technology = technologyEnabled ? await client.query(
       `SELECT owner_name, room_ready, audio_ready, stream_ready, accessibility_checked, authorized_link, start_confirmed_at, stop_confirmed_at, recording_deletion_reminder
@@ -119,6 +132,7 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
         callingName: line.calling_name,
         actionType: line.action_type,
         status: line.status,
+        carriedForward: line.carried_forward ?? false,
         updatedAt: line.updated_at
       })),
       membershipActions: membershipActions.rows.map((action) => ({
@@ -130,7 +144,8 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
         plannedDate: action.planned_date,
         interviewStatus: action.interview_status,
         responsibleLeader: action.responsible_leader,
-        lcrFollowUpStatus: action.lcr_follow_up_status
+        lcrFollowUpStatus: action.lcr_follow_up_status,
+        carriedForward: action.carried_forward ?? false
       })),
       technology: technology.rows[0]
         ? {

@@ -109,7 +109,7 @@ export function MemberAutocomplete({ wardId, value, onChange, placeholder, class
   const showDropdown = open && filtered.length > 0;
 
   return (
-    <div ref={containerRef} className="relative" onBlur={handleBlur}>
+    <div ref={containerRef} className={`relative ${open ? 'z-50' : ''}`} onBlur={handleBlur}>
       <input
         className={className}
         disabled={disabled}
@@ -127,7 +127,7 @@ export function MemberAutocomplete({ wardId, value, onChange, placeholder, class
       {showDropdown ? (
         <ul
           ref={listRef}
-          className="absolute z-[100] mt-1 max-h-52 w-full overflow-auto rounded-md border bg-popover text-sm shadow-md"
+          className="absolute z-[1000] mt-1 max-h-52 w-full overflow-auto rounded-md border bg-popover text-sm shadow-md"
           role="listbox"
         >
           {filtered.map((member, index) => (

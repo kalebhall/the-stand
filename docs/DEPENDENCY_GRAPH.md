@@ -36,7 +36,7 @@ flowchart LR
   A24["web:notifications<br/>29 files"]
   A25["web:offline<br/>3 files"]
   A26["web:reports<br/>3 files"]
-  A27["web:stand<br/>8 files"]
+  A27["web:stand<br/>10 files"]
   A28["web:tooling<br/>2 files"]
   A29["web:types<br/>2 files"]
   A30["web:ui<br/>30 files"]
@@ -135,7 +135,7 @@ flowchart LR
 | `web:notifications` | 29 |
 | `web:offline` | 3 |
 | `web:reports` | 3 |
-| `web:stand` | 8 |
+| `web:stand` | 10 |
 | `web:tooling` | 2 |
 | `web:types` | 2 |
 | `web:ui` | 30 |
@@ -165,11 +165,11 @@ flowchart LR
 | `web:api` | `web:imports` | 11 |
 | `web:auth` | `web:auth` | 8 |
 | `web:leadership` | `web:leadership` | 8 |
+| `web:stand` | `web:stand` | 8 |
 | `web:api` | `web:leadership` | 7 |
 | `web:app` | `web:features` | 7 |
 | `web:api` | `web:meetings` | 6 |
 | `web:app` | `web:notifications` | 6 |
-| `web:stand` | `web:stand` | 6 |
 | `web:app` | `web:stand` | 5 |
 | `web:app` | `web:callings` | 4 |
 | `web:callings` | `web:callings` | 4 |
@@ -249,10 +249,10 @@ flowchart LR
 | `web:auth` | `next-auth` | 6 |
 | `web:leadership` | `vitest` | 6 |
 | `web:app` | `@testing-library/react` | 5 |
+| `web:stand` | `vitest` | 5 |
 | `web:app` | `@testing-library/user-event` | 4 |
 | `web:auth` | `vitest` | 4 |
 | `web:config` | `@playwright/test` | 4 |
-| `web:stand` | `vitest` | 4 |
 | `web:tooling` | `Node.js` | 4 |
 | `web:ui` | `next-auth` | 4 |
 | `web:api` | `Node.js` | 3 |
@@ -712,9 +712,11 @@ flowchart LR
 | `apps/web/src/reports/pages.ts` | `web:reports` | 0 | 0 |
 | `apps/web/src/stand/default-template.ts` | `web:stand` | 0 | 0 |
 | `apps/web/src/stand/default-template.vitest.ts` | `web:stand` | 1 | 1 |
+| `apps/web/src/stand/hymn-links.ts` | `web:stand` | 0 | 0 |
+| `apps/web/src/stand/hymn-links.vitest.ts` | `web:stand` | 1 | 1 |
 | `apps/web/src/stand/member-display.ts` | `web:stand` | 0 | 0 |
 | `apps/web/src/stand/member-display.vitest.ts` | `web:stand` | 1 | 1 |
-| `apps/web/src/stand/render.ts` | `web:stand` | 3 | 0 |
+| `apps/web/src/stand/render.ts` | `web:stand` | 4 | 0 |
 | `apps/web/src/stand/render.vitest.ts` | `web:stand` | 1 | 1 |
 | `apps/web/src/stand/template-classification.ts` | `web:stand` | 0 | 0 |
 | `apps/web/src/stand/template-classification.vitest.ts` | `web:stand` | 1 | 1 |

@@ -321,7 +321,7 @@ export default async function CallingsPage() {
                 callingName={calling.calling_name}
               />
             ) : null}
-            {canManage && calling.status === 'TO_BE_RELEASED' ? (
+            {canManage && (calling.status === 'PROPOSED' || calling.status === 'EXTENDED' || calling.status === 'TO_BE_RELEASED') ? (
               <CallingDeleteButton
                 wardId={wardId}
                 callingId={calling.id}
