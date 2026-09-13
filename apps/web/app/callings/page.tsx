@@ -164,9 +164,9 @@ export default async function CallingsPage() {
         return;
       }
 
-      if (toStatus === 'SUSTAINED') {
-        // Queue a SUSTAIN ward business line. If no future meeting exists, a DRAFT
-        // SACRAMENT meeting is auto-created for the next Sunday.
+      if (toStatus === 'EXTENDED') {
+        // Queue the sustain line when the calling is extended. The later SUSTAINED transition
+        // must not create a duplicate line.
         await queueCallingBusinessLine(client, {
           wardId: actionSession.activeWardId,
           callingId,
