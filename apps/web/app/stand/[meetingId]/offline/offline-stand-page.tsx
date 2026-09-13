@@ -74,7 +74,14 @@ function OfflineRow({ row, done, onToggle }: { row: StandRow; done: boolean; onT
     ) : row.kind === 'standard' ? (
       <>
         <p className="text-sm uppercase tracking-wide text-muted-foreground">{row.label}</p>
-        <p className="mt-1 whitespace-pre-wrap text-lg font-medium">{row.details}</p>
+        {row.hymnUrl ? (
+          <a className="mt-1 block whitespace-pre-wrap text-lg font-medium text-primary underline underline-offset-4" href={row.hymnUrl} target="_blank" rel="noreferrer">
+            {row.details}
+            <span className="ml-2 text-sm font-normal">Open hymn</span>
+          </a>
+        ) : (
+          <p className="mt-1 whitespace-pre-wrap text-lg font-medium">{row.details}</p>
+        )}
       </>
     ) : (
       <>

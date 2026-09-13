@@ -60,7 +60,13 @@ describe('buildStandRows', () => {
     );
 
     expect(rows[0]).toEqual({ kind: 'welcome', text: 'Welcome friends.' });
-    expect(rows[1]).toEqual({ kind: 'standard', programItemId: 'item-opening', label: 'Opening Hymn', details: '1 — The Morning Breaks' });
+    expect(rows[1]).toEqual({
+      kind: 'standard',
+      programItemId: 'item-opening',
+      label: 'Opening Hymn',
+      details: '1 — The Morning Breaks',
+      hymnUrl: 'https://www.churchofjesuschrist.org/study/manual/hymns/the-morning-breaks?lang=eng'
+    });
 
     expect(rows[2]).toMatchObject({ kind: 'release', summary: 'President John Doe — Elders Quorum President' });
     if (rows[2].kind === 'release') {
@@ -109,7 +115,13 @@ describe('buildStandRows', () => {
         label: 'Announcement',
         details: 'Stake Conference: Saturday and Sunday sessions'
       },
-      { kind: 'standard', programItemId: 'item-opening', label: 'Opening Hymn', details: '1 — The Morning Breaks' }
+      {
+        kind: 'standard',
+        programItemId: 'item-opening',
+        label: 'Opening Hymn',
+        details: '1 — The Morning Breaks',
+        hymnUrl: 'https://www.churchofjesuschrist.org/study/manual/hymns/the-morning-breaks?lang=eng'
+      }
     ]);
   });
 
@@ -135,7 +147,13 @@ describe('buildStandRows', () => {
 
     expect(rows).toEqual([
       { kind: 'welcome', text: 'Welcome to The Church of Jesus Christ of Latter-day Saints.' },
-      { kind: 'standard', programItemId: 'item-opening', label: 'Opening Hymn', details: '1 — The Morning Breaks' }
+      {
+        kind: 'standard',
+        programItemId: 'item-opening',
+        label: 'Opening Hymn',
+        details: '1 — The Morning Breaks',
+        hymnUrl: 'https://www.churchofjesuschrist.org/study/manual/hymns/the-morning-breaks?lang=eng'
+      }
     ]);
   });
 
@@ -251,7 +269,8 @@ describe('buildStandRows', () => {
       kind: 'standard',
       programItemId: 'hymn',
       label: 'Sacrament Hymn',
-      details: '169 — As Now We Take the Sacrament'
+      details: '169 — As Now We Take the Sacrament',
+      hymnUrl: 'https://www.churchofjesuschrist.org/study/manual/hymns/as-now-we-take-the-sacrament?lang=eng'
     });
     expect(rows[2]).toEqual({ kind: 'sacrament', programItemId: 'sacrament' });
   });

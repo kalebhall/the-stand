@@ -292,7 +292,6 @@ export default async function StandViewPage({
           <OfflineStandButton userId={session.user.id} wardId={activeWardId} meetingId={meetingId} />
         </section>
 
-
         <section className="grid gap-3">
           {selectedMode === 'formal'
             ? standRows.map((row, index) => {
@@ -308,7 +307,19 @@ export default async function StandViewPage({
                   return (
                     <article key={`row-${index}`} className="rounded-lg border bg-card p-4 sm:p-5">
                       <p className="text-sm uppercase tracking-wide text-muted-foreground">{row.label}</p>
-                      <p className="whitespace-pre-wrap text-lg font-medium sm:text-xl">{row.details}</p>
+                      {row.hymnUrl ? (
+                        <a
+                          className="block whitespace-pre-wrap text-lg font-medium text-primary underline underline-offset-4"
+                          href={row.hymnUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          {row.details}
+                          <span className="ml-2 text-sm font-normal">Open hymn</span>
+                        </a>
+                      ) : (
+                        <p className="whitespace-pre-wrap text-lg font-medium sm:text-xl">{row.details}</p>
+                      )}
                       {row.programNotes?.trim() ? (
                         <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">{row.programNotes}</p>
                       ) : null}
@@ -387,7 +398,19 @@ export default async function StandViewPage({
                   return (
                     <article key={`compact-${index}`} className="rounded-lg border bg-card p-4 sm:p-5">
                       <p className="text-sm uppercase tracking-wide text-muted-foreground">{row.label}</p>
-                      <p className="whitespace-pre-wrap text-base font-medium sm:text-lg">{row.details}</p>
+                      {row.hymnUrl ? (
+                        <a
+                          className="block whitespace-pre-wrap text-base font-medium text-primary underline underline-offset-4 sm:text-lg"
+                          href={row.hymnUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          {row.details}
+                          <span className="ml-2 text-xs font-normal">Open hymn</span>
+                        </a>
+                      ) : (
+                        <p className="whitespace-pre-wrap text-base font-medium sm:text-lg">{row.details}</p>
+                      )}
                       {row.programNotes?.trim() ? (
                         <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">{row.programNotes}</p>
                       ) : null}
