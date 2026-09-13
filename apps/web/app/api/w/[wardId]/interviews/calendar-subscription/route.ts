@@ -11,7 +11,7 @@ import { hashInterviewCalendarToken, interviewCalendarFeedUrl } from '@/src/lead
 async function authorize(wardId: string) {
   const session = await auth();
   if (!session?.user?.id) return { response: NextResponse.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, { status: 401 }) };
-  if (!canManageMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId) || !(await isWardFeatureEnabled(wardId, 'SCHEDULED_INTERVIEWS'))) {
+  if (!canManageMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId) || !(await isWardFeatureEnabled(wardId, session.user.id, 'SCHEDULED_INTERVIEWS'))) {
     return { response: NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 }) };
   }
   return { session };

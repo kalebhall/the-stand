@@ -13,7 +13,7 @@ const text = (value: unknown) => typeof value === 'string' ? value.trim() : '';
 async function getAccess(wardId: string) {
   const session = await auth();
   if (!session?.user?.id) return { response: NextResponse.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, { status: 401 }) };
-  if (!canManageMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId) || !(await isWardFeatureEnabled(wardId, 'BISHOPRIC_AGENDA'))) return { response: NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 }) };
+  if (!canManageMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId) || !(await isWardFeatureEnabled(wardId, session.user.id, 'BISHOPRIC_AGENDA'))) return { response: NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 }) };
   return { session };
 }
 

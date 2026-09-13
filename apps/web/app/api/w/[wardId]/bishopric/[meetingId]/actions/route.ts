@@ -12,7 +12,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
   const session = await auth();
   const { wardId, meetingId } = await context.params;
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, { status: 401 });
-  if (!canManageMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId) || !(await isWardFeatureEnabled(wardId, 'BISHOPRIC_AGENDA'))) return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
+  if (!canManageMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId) || !(await isWardFeatureEnabled(wardId, session.user.id, 'BISHOPRIC_AGENDA'))) return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
   const body = await request.json().catch(() => null) as { title?: string; details?: string; decision?: string; ownerName?: string; dueDate?: string; carryForward?: boolean; memberId?: string; callingAssignmentId?: string; linkedMembershipActionId?: string } | null;
   const title = text(body?.title);
   const dueDate = text(body?.dueDate);

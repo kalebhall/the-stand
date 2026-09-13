@@ -54,8 +54,8 @@ flowchart LR
   A5 -->|11| A15
   A5 -->|11| A18
   A5 -->|7| A19
+  A6 -->|7| A15
   A5 -->|6| A22
-  A6 -->|6| A15
   A6 -->|5| A24
   A6 -->|5| A27
   A6 -->|4| A11
@@ -166,8 +166,8 @@ flowchart LR
 | `web:auth` | `web:auth` | 8 |
 | `web:leadership` | `web:leadership` | 8 |
 | `web:api` | `web:leadership` | 7 |
+| `web:app` | `web:features` | 7 |
 | `web:api` | `web:meetings` | 6 |
-| `web:app` | `web:features` | 6 |
 | `web:stand` | `web:stand` | 6 |
 | `web:app` | `web:notifications` | 5 |
 | `web:app` | `web:stand` | 5 |
@@ -428,7 +428,7 @@ flowchart LR
 | `apps/web/app/callings/standard/page.tsx` | `web:app` | 4 | 2 |
 | `apps/web/app/dashboard/error.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/dashboard/loading.tsx` | `web:app` | 0 | 0 |
-| `apps/web/app/dashboard/page.tsx` | `web:app` | 6 | 1 |
+| `apps/web/app/dashboard/page.tsx` | `web:app` | 7 | 1 |
 | `apps/web/app/global-error.tsx` | `web:app` | 1 | 1 |
 | `apps/web/app/health/route.ts` | `web:app` | 1 | 1 |
 | `apps/web/app/health/route.vitest.ts` | `web:app` | 1 | 1 |

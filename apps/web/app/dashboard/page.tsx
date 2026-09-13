@@ -42,7 +42,7 @@ export default async function DashboardPage() {
   enforcePasswordRotation(session);
 
   const wardSession = session.activeWardId ? { roles: session.user.roles, activeWardId: session.activeWardId } : null;
-  const featureFlags = session.activeWardId ? await getWardFeatureFlags(session.activeWardId) : null;
+  const featureFlags = session.activeWardId ? await getWardFeatureFlags(session.activeWardId, session.user.id) : null;
   const canAccessMeetings = wardSession ? canViewMeetings(wardSession, session.activeWardId!) : false;
   const canAccessCallings = wardSession ? canViewCallings(wardSession, session.activeWardId!) : false;
   const canAccessTechnology = wardSession ? canManageMeetings(wardSession, session.activeWardId!) : false;
