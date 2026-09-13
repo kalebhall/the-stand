@@ -36,4 +36,22 @@ describe('WardBusinessSection', () => {
     expect(screen.getByText('1 announced')).toBeVisible();
     expect(screen.getByText('Ward and Stake Business').closest('details')).not.toHaveAttribute('open');
   });
+
+  it('keeps membership and ordinance items inside ward and stake business without edit controls', () => {
+    render(
+      <WardBusinessSection
+        wardId="ward-1"
+        meetingId="meeting-1"
+        lines={[]}
+        membershipActions={[{ id: 'action-1', member_name: 'Brother John Smith', action_type: 'BABY_BLESSING', status: 'pending' }]}
+        canManage={true}
+      />
+    );
+
+    expect(screen.getByText('Ward and Stake Business')).toBeVisible();
+    expect(screen.getByText('Baby blessing')).toBeVisible();
+    expect(screen.getByText('Brother John Smith')).toBeVisible();
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+  });
+
 });

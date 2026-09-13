@@ -214,7 +214,7 @@ const EVENT_DEFINITIONS: Record<NotificationEventType, NotificationEventDefiniti
   MEETING_UPDATED: definition('MEETING_UPDATED', {
     category: 'MEETINGS',
     label: 'Meeting changed',
-    defaultChannels: inApp,
+    defaultChannels: inAppAndEmail,
     severity: 'info'
   }),
   MEETING_PUBLISHED: definition('MEETING_PUBLISHED', {
@@ -238,13 +238,13 @@ const EVENT_DEFINITIONS: Record<NotificationEventType, NotificationEventDefiniti
   MEETING_PROGRAM_ITEM_CHANGED: definition('MEETING_PROGRAM_ITEM_CHANGED', {
     category: 'MEETINGS',
     label: 'Meeting program item changed',
-    defaultChannels: inApp,
+    defaultChannels: inAppAndEmail,
     severity: 'info'
   }),
   MEETING_BUSINESS_LINE_ADDED: definition('MEETING_BUSINESS_LINE_ADDED', {
     category: 'MEETINGS',
     label: 'Meeting business added',
-    defaultChannels: inApp,
+    defaultChannels: inAppAndEmail,
     severity: 'info'
   }),
   MEETING_MISSING_REQUIRED_INFORMATION: definition('MEETING_MISSING_REQUIRED_INFORMATION', {
@@ -386,13 +386,13 @@ const EVENT_DEFINITIONS: Record<NotificationEventType, NotificationEventDefiniti
   MEMBERSHIP_ORDINANCE_ACTION_NEEDED_REMINDER: definition('MEMBERSHIP_ORDINANCE_ACTION_NEEDED_REMINDER', {
     category: 'REMINDERS',
     label: 'Membership or ordinance action needs attention',
-    defaultChannels: inApp,
+    defaultChannels: inAppAndEmail,
     severity: 'warning'
   }),
   MEMBERSHIP_ORDINANCE_LCR_NEEDED_REMINDER: definition('MEMBERSHIP_ORDINANCE_LCR_NEEDED_REMINDER', {
     category: 'REMINDERS',
     label: 'Priesthood action needs LCR update',
-    defaultChannels: inApp,
+    defaultChannels: inAppAndEmail,
     severity: 'warning'
   }),
   ANNOUNCEMENT_EXPIRING_REMINDER: definition('ANNOUNCEMENT_EXPIRING_REMINDER', {

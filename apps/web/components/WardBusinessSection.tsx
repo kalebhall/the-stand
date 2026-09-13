@@ -15,10 +15,28 @@ export type BusinessLine = {
   status: 'pending' | 'announced';
 };
 
+export type MembershipOrdinanceSummary = {
+  id: string;
+  member_name: string;
+  action_type: string;
+  priesthood_office?: string | null;
+  reason?: string | null;
+  details?: string | null;
+  status: string;
+  baptism_status?: string | null;
+  baptism_date?: string | null;
+  confirmation_status?: string | null;
+  confirmation_date?: string | null;
+  responsible_leader?: string | null;
+  interview_status?: string | null;
+  lcr_follow_up_status?: string | null;
+};
+
 type WardBusinessSectionProps = {
   wardId: string;
   meetingId: string;
   lines: BusinessLine[];
+  membershipActions?: MembershipOrdinanceSummary[];
   canManage: boolean;
   /** When true, shows "Mark Announced" button for pending lines (stand-view mode). */
   showAnnounce?: boolean;
@@ -40,6 +58,43 @@ const STATUS_LABELS: Record<string, string> = {
   pending: 'Pending',
   announced: 'Announced'
 };
+
+const MEMBERSHIP_ACTION_LABELS: Record<string, string> = {
+  WELCOME_NEW_MEMBER: 'Welcome new member',
+  RECOGNIZE_BAPTIZED_CHILD: 'Recognize baptized child',
+  BAPTISM_CONFIRMATION_FOLLOW_UP: 'Baptism and confirmation follow-up',
+  ATTENDANCE_LCR_HANDOFF: 'Record attendance in LCR / Member Tools',
+  BABY_BLESSING: 'Baby blessing',
+  PRIESTHOOD_ORDINATION: 'Priesthood ordination',
+  PRIESTHOOD_ADVANCEMENT: 'Priesthood advancement'
+};
+
+function MembershipOrdinanceRow({ action }: { action: MembershipOrdinanceSummary }) {
+  return (
+    <li className="rounded-md border p-3">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-xs uppercase tracking-wide text-muted-foreground">
+            {MEMBERSHIP_ACTION_LABELS[action.action_type] ?? action.action_type.replaceAll('_', ' ')}
+          </p>
+          <p className="font-semibold">{action.member_name}</p>
+          {action.priesthood_office ? <p className="text-sm text-muted-foreground">Office: {action.priesthood_office}</p> : null}
+          {action.reason ? <p className="text-sm text-muted-foreground">{action.reason === 'RECORDS_RECEIVED' ? 'Records received' : 'Recent convert'}</p> : null}
+          {action.details ? <p className="text-sm text-muted-foreground">{action.details}</p> : null}
+          {action.baptism_status || action.confirmation_status ? (
+            <p className="text-sm text-muted-foreground">
+              Baptism: {action.baptism_status ?? 'planned'}{action.baptism_date ? ` (${action.baptism_date})` : ''} · Confirmation: {action.confirmation_status ?? 'planned'}{action.confirmation_date ? ` (${action.confirmation_date})` : ''}
+            </p>
+          ) : null}
+          {action.responsible_leader ? <p className="text-sm text-muted-foreground">Responsible: {action.responsible_leader}</p> : null}
+          {action.interview_status && action.interview_status !== 'not_required' ? <p className="text-sm text-muted-foreground">Interview: {action.interview_status.replaceAll('_', ' ')}</p> : null}
+          {action.lcr_follow_up_status === 'needed' ? <p className="text-sm font-medium text-amber-700">LCR update needed</p> : null}
+        </div>
+        <span className="rounded-full border px-2 py-1 text-xs">{action.status === 'action_needed' ? 'Action needed' : action.status[0]?.toUpperCase() + action.status.slice(1)}</span>
+      </div>
+    </li>
+  );
+}
 
 function parseBoldSegments(text: string): Array<{ text: string; bold: boolean }> {
   return text
@@ -216,6 +271,7 @@ export function WardBusinessSection({
   wardId,
   meetingId,
   lines,
+  membershipActions = [],
   canManage,
   showAnnounce = false,
   showScript = false,
@@ -226,7 +282,7 @@ export function WardBusinessSection({
 }: WardBusinessSectionProps) {
   const router = useRouter();
 
-  if (!lines.length) {
+  if (!lines.length && !membershipActions.length) {
     return (
       <section className="rounded-lg border bg-card p-4">
         <h2 className="text-lg font-semibold">Ward and Stake Business</h2>
@@ -241,6 +297,14 @@ export function WardBusinessSection({
   const content = (
     <>
       {programNotes?.trim() ? <p className="mb-3 whitespace-pre-wrap text-sm text-muted-foreground">{programNotes}</p> : null}
+      {membershipActions.length ? (
+        <div className="mb-3 space-y-2">
+          <p className="text-sm font-medium">Membership and ordinance follow-up</p>
+          <ul className="space-y-2">
+            {membershipActions.map((action) => <MembershipOrdinanceRow key={action.id} action={action} />)}
+          </ul>
+        </div>
+      ) : null}
       <ul className="space-y-2">
         {lines.map((line) => (
           <BusinessLineRow

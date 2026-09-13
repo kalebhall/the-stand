@@ -42,8 +42,8 @@ flowchart LR
   A30["web:ui<br/>30 files"]
   A31["web:version.mjs<br/>1 files"]
   A5 -->|121| A8
-  A6 -->|114| A30
   A5 -->|113| A14
+  A6 -->|113| A30
   A6 -->|86| A8
   A6 -->|53| A14
   A5 -->|42| A24
@@ -146,8 +146,8 @@ flowchart LR
 | Importing area | Imported area | Imports |
 | --- | --- | ---: |
 | `web:api` | `web:auth` | 121 |
-| `web:app` | `web:ui` | 114 |
 | `web:api` | `web:db` | 113 |
+| `web:app` | `web:ui` | 113 |
 | `web:app` | `web:auth` | 86 |
 | `web:app` | `web:db` | 53 |
 | `web:app` | `web:app` | 50 |
@@ -507,7 +507,7 @@ flowchart LR
 | `apps/web/app/speakers/speaker-lifecycle-workspace.tsx` | `web:app` | 1 | 1 |
 | `apps/web/app/stand/[meetingId]/offline/offline-stand-page.tsx` | `web:app` | 2 | 2 |
 | `apps/web/app/stand/[meetingId]/offline/page.tsx` | `web:app` | 1 | 0 |
-| `apps/web/app/stand/[meetingId]/page.tsx` | `web:app` | 14 | 2 |
+| `apps/web/app/stand/[meetingId]/page.tsx` | `web:app` | 13 | 2 |
 | `apps/web/app/support/access-requests/page.tsx` | `web:app` | 5 | 3 |
 | `apps/web/app/support/audit-log/AuditLogViewer.tsx` | `web:app` | 1 | 1 |
 | `apps/web/app/support/audit-log/page.tsx` | `web:app` | 7 | 2 |
