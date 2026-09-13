@@ -28,7 +28,6 @@ export type HymnReportRow = {
 
 export type PrayerReportRow = {
   personName: string;
-  prayerType: string;
   assignmentCount: number;
   lastAssignmentDate: string;
 };
@@ -115,7 +114,6 @@ export async function loadReportData(client: PoolClient, filters: ReportFilters)
     ),
     client.query(
       `SELECT COALESCE(NULLIF(trim(i.title), ''), 'Unassigned') AS person_name,
-              i.item_type AS prayer_type,
               COUNT(*)::int AS count,
               MAX(m.meeting_date)::text AS last_assignment_date
          FROM meeting_program_item i
@@ -124,7 +122,7 @@ export async function loadReportData(client: PoolClient, filters: ReportFilters)
           AND i.item_type IN ('INVOCATION', 'BENEDICTION', 'OPENING_PRAYER', 'CLOSING_PRAYER')
           AND ($2::date IS NULL OR m.meeting_date >= $2::date)
           AND ($3::date IS NULL OR m.meeting_date <= $3::date)
-        GROUP BY COALESCE(NULLIF(trim(i.title), ''), 'Unassigned'), i.item_type
+        GROUP BY COALESCE(NULLIF(trim(i.title), ''), 'Unassigned')
         ORDER BY MAX(m.meeting_date) DESC, COUNT(*) DESC`,
       params
     ),
@@ -178,7 +176,6 @@ export async function loadReportData(client: PoolClient, filters: ReportFilters)
     })),
     prayers: prayerResult.rows.map((row) => ({
       personName: text(row, 'person_name'),
-      prayerType: text(row, 'prayer_type'),
       assignmentCount: count(row),
       lastAssignmentDate: text(row, 'last_assignment_date')
     })),

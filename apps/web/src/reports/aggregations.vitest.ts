@@ -25,10 +25,12 @@ describe('loadReportData', () => {
       speakers: [{ speakerName: 'Jane Doe', talkCount: 2, lastTalkDate: '2026-08-30' }],
       topics: [{ topic: 'Faith in Christ', speakerName: 'Jane Doe', meetingDate: '2026-08-30' }],
       hymns: [{ hymnNumber: '2', hymnTitle: 'The Spirit of God', position: 'OPENING_HYMN', useCount: 3, lastUsedDate: '2026-08-23' }],
-      prayers: [{ personName: 'John Doe', prayerType: 'INVOCATION', assignmentCount: 2, lastAssignmentDate: '2026-08-16' }],
+      prayers: [{ personName: 'John Doe', assignmentCount: 2, lastAssignmentDate: '2026-08-16' }],
       completeness: [{ meetingDate: '2026-08-09', itemType: 'SPEAKER', title: 'Unassigned speaker', issue: 'Speaker topic missing' }]
     });
     expect(query).toHaveBeenCalledTimes(5);
     expect(query).toHaveBeenCalledWith(expect.stringContaining('$1::uuid'), ['ward-1', '2026-08-01', '2026-08-31']);
+    expect(query.mock.calls[3]?.[0]).toContain("GROUP BY COALESCE(NULLIF(trim(i.title), ''), 'Unassigned')");
+    expect(query.mock.calls[3]?.[0]).not.toContain('prayer_type');
   });
 });
