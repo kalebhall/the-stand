@@ -15,7 +15,7 @@ flowchart LR
   A3["root:tooling<br/>6 files"]
   A4["web:announcements<br/>2 files"]
   A5["web:api<br/>86 files"]
-  A6["web:app<br/>115 files"]
+  A6["web:app<br/>116 files"]
   A7["web:audit<br/>2 files"]
   A8["web:auth<br/>11 files"]
   A9["web:bootstrap.mjs<br/>1 files"]
@@ -42,10 +42,10 @@ flowchart LR
   A30["web:ui<br/>30 files"]
   A31["web:version.mjs<br/>1 files"]
   A5 -->|121| A8
+  A6 -->|116| A30
   A5 -->|113| A14
-  A6 -->|113| A30
-  A6 -->|86| A8
-  A6 -->|53| A14
+  A6 -->|88| A8
+  A6 -->|55| A14
   A5 -->|42| A24
   A5 -->|23| A20
   A5 -->|20| A7
@@ -56,7 +56,7 @@ flowchart LR
   A5 -->|7| A19
   A6 -->|7| A15
   A5 -->|6| A22
-  A6 -->|5| A24
+  A6 -->|6| A24
   A6 -->|5| A27
   A6 -->|4| A11
   A5 -->|3| A4
@@ -114,7 +114,7 @@ flowchart LR
 | `root:tooling` | 6 |
 | `web:announcements` | 2 |
 | `web:api` | 86 |
-| `web:app` | 115 |
+| `web:app` | 116 |
 | `web:audit` | 2 |
 | `web:auth` | 11 |
 | `web:bootstrap.mjs` | 1 |
@@ -146,10 +146,10 @@ flowchart LR
 | Importing area | Imported area | Imports |
 | --- | --- | ---: |
 | `web:api` | `web:auth` | 121 |
+| `web:app` | `web:ui` | 116 |
 | `web:api` | `web:db` | 113 |
-| `web:app` | `web:ui` | 113 |
-| `web:app` | `web:auth` | 86 |
-| `web:app` | `web:db` | 53 |
+| `web:app` | `web:auth` | 88 |
+| `web:app` | `web:db` | 55 |
 | `web:app` | `web:app` | 50 |
 | `web:api` | `web:notifications` | 42 |
 | `web:notifications` | `web:notifications` | 42 |
@@ -168,8 +168,8 @@ flowchart LR
 | `web:api` | `web:leadership` | 7 |
 | `web:app` | `web:features` | 7 |
 | `web:api` | `web:meetings` | 6 |
+| `web:app` | `web:notifications` | 6 |
 | `web:stand` | `web:stand` | 6 |
-| `web:app` | `web:notifications` | 5 |
 | `web:app` | `web:stand` | 5 |
 | `web:app` | `web:callings` | 4 |
 | `web:callings` | `web:callings` | 4 |
@@ -233,7 +233,7 @@ flowchart LR
 
 | Importing area | Package/runtime | Imports |
 | --- | --- | ---: |
-| `web:app` | `next` | 85 |
+| `web:app` | `next` | 88 |
 | `web:api` | `next` | 65 |
 | `web:app` | `react` | 33 |
 | `web:ui` | `react` | 28 |
@@ -464,11 +464,12 @@ flowchart LR
 | `apps/web/app/membership-ordinances/workspace-controls.tsx` | `web:app` | 2 | 1 |
 | `apps/web/app/missionary-coordination/page.tsx` | `web:app` | 0 | 1 |
 | `apps/web/app/not-found.tsx` | `web:app` | 2 | 1 |
+| `apps/web/app/notifications/diagnostics/page.tsx` | `web:app` | 7 | 2 |
 | `apps/web/app/notifications/error.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/notifications/loading.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/notifications/notification-center.tsx` | `web:app` | 1 | 1 |
 | `apps/web/app/notifications/notification-center.vitest.tsx` | `web:app` | 1 | 4 |
-| `apps/web/app/notifications/page.tsx` | `web:app` | 3 | 1 |
+| `apps/web/app/notifications/page.tsx` | `web:app` | 4 | 2 |
 | `apps/web/app/p/[meetingToken]/route.ts` | `web:app` | 1 | 1 |
 | `apps/web/app/p/[meetingToken]/route.vitest.ts` | `web:app` | 1 | 1 |
 | `apps/web/app/p/ward/[portalToken]/route.ts` | `web:app` | 1 | 1 |

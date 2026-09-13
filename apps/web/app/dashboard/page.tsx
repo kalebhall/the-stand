@@ -142,7 +142,8 @@ export default async function DashboardPage() {
         `SELECT MAX(nd.attempted_at) AS last_delivery_at,
                 COUNT(*) FILTER (WHERE nd.delivery_status = 'failure')::int AS failure_count
            FROM notification_delivery nd
-          WHERE nd.ward_id = $1`,
+          WHERE nd.ward_id = $1
+            AND nd.channel IN ('IN_APP', 'EMAIL')`,
         [session.activeWardId]
       );
 
@@ -346,7 +347,7 @@ export default async function DashboardPage() {
             title="Notification health"
             value={notificationHealthValue}
             detail={notificationHealthDetail}
-            actions={[{ href: '/notifications', label: 'Open diagnostics' }]}
+            actions={[{ href: '/notifications/diagnostics', label: 'Open diagnostics' }]}
           />
         ) : null}
 

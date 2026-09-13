@@ -1,5 +1,7 @@
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
+import { buttonVariants } from '@/components/ui/button';
 import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth/guards';
 import { canViewCallings } from '@/src/auth/roles';
 import { NotificationCenter } from './notification-center';
@@ -15,6 +17,9 @@ export default async function NotificationsPage() {
       <section className="space-y-2">
         <h1 className="text-2xl font-semibold tracking-tight">Notifications</h1>
         <p className="text-sm text-muted-foreground">Updates and reminders for your active ward.</p>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/notifications/diagnostics" className={buttonVariants({ variant: 'outline', size: 'sm' })}>Delivery diagnostics</Link>
+        </div>
       </section>
       <NotificationCenter wardId={session.activeWardId} />
     </main>
