@@ -4,6 +4,7 @@ import { recordAuditEvent } from '@/src/audit/service';
 import { auth } from '@/src/auth/auth';
 import { canManageMeetings } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
+import { isWardFeatureEnabled } from '@/src/features/flags';
 import { setDbContext } from '@/src/db/context';
 import { BISHOPRIC_ACTION_STATUSES, validateBishopricActionTransition, type BishopricActionStatus } from '@/src/leadership/bishopric';
 
@@ -12,7 +13,7 @@ const text = (value: unknown) => typeof value === 'string' ? value.trim() : '';
 async function getAccess(wardId: string) {
   const session = await auth();
   if (!session?.user?.id) return { response: NextResponse.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, { status: 401 }) };
-  if (!canManageMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) return { response: NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 }) };
+  if (!canManageMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId) || !(await isWardFeatureEnabled(wardId, 'BISHOPRIC_AGENDA'))) return { response: NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 }) };
   return { session };
 }
 

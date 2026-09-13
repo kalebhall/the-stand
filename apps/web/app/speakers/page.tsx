@@ -4,12 +4,13 @@ import { requireAuthenticatedSession, enforcePasswordRotation } from '@/src/auth
 import { canManageMeetings } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
+import { isWardFeatureEnabled } from '@/src/features/flags';
 import { SpeakerLifecycleWorkspace } from './speaker-lifecycle-workspace';
 
 export default async function SpeakersPage() {
   const session = await requireAuthenticatedSession();
   enforcePasswordRotation(session);
-  if (!session.activeWardId || !canManageMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId)) redirect('/dashboard');
+  if (!session.activeWardId || !canManageMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId) || !(await isWardFeatureEnabled(session.activeWardId, 'SPEAKER_LIFECYCLE'))) redirect('/dashboard');
 
   const client = await pool.connect();
   try {

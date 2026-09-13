@@ -3,8 +3,10 @@ import Link from 'next/link';
 import { ChangePasswordForm } from '@/app/account/change-password/change-password-form';
 import { ThemeToggle } from '@/app/account/preferences/theme-toggle';
 import { NotificationTimezoneSetting } from '@/app/settings/notification-timezone';
+import { FeatureSettings } from '@/app/settings/feature-settings';
 import { requireAuthenticatedSession } from '@/src/auth/guards';
 import { canManageMeetings, canRunImports, hasRole } from '@/src/auth/roles';
+import { getWardFeatureFlags } from '@/src/features/flags';
 
 export default async function SettingsPage() {
   const session = await requireAuthenticatedSession();
@@ -18,6 +20,7 @@ export default async function SettingsPage() {
       ));
   const canViewActivityLog = wardId ? canRunImports({ roles: session.user.roles, activeWardId: wardId }, wardId) : false;
   const canManageProgramLayout = wardId ? canManageMeetings({ roles: session.user.roles, activeWardId: wardId }, wardId) : false;
+  const featureFlags = wardId && isStandAdmin ? await getWardFeatureFlags(wardId) : null;
 
   return (
     <main className="mx-auto max-w-4xl space-y-8 p-6">
@@ -58,6 +61,7 @@ export default async function SettingsPage() {
             {canManageNotifications && <SettingsLink href="/settings/notifications" label="Notification settings" />}
             {canViewActivityLog && <SettingsLink href="/settings/audit-log" label="Activity log" />}
           </div>
+          {featureFlags ? <FeatureSettings wardId={wardId} initial={featureFlags} /> : null}
           {canManageNotifications && (
             <div className="border-t pt-4">
               <NotificationTimezoneSetting wardId={wardId} />

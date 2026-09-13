@@ -372,6 +372,16 @@ export const meetingTechnologyChecklist = pgTable('meeting_technology_checklist'
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
 });
 
+export const wardFeatureSettings = pgTable('ward_feature_settings', {
+  wardId: uuid('ward_id').primaryKey().references(() => ward.id, { onDelete: 'cascade' }),
+  bishopricAgenda: boolean('bishopric_agenda').notNull().default(true),
+  scheduledInterviews: boolean('scheduled_interviews').notNull().default(true),
+  technologyChecklist: boolean('technology_checklist').notNull().default(true),
+  speakerLifecycle: boolean('speaker_lifecycle').notNull().default(true),
+  updatedByUserId: uuid('updated_by_user_id').references(() => userAccount.id, { onDelete: 'set null' }),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
+});
+
 export const publicProgramLayout = pgTable('public_program_layout', {
   id: uuid('id').defaultRandom().primaryKey(),
   wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),

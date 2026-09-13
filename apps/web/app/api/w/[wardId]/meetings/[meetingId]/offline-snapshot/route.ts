@@ -4,6 +4,7 @@ import { auth } from '@/src/auth/auth';
 import { canViewMeetings } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
+import { isWardFeatureEnabled } from '@/src/features/flags';
 import { isAnnouncementActiveForDate } from '@/src/announcements/types';
 import { buildStandRows } from '@/src/stand/render';
 
@@ -14,6 +15,7 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
   if (!canViewMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) {
     return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
   }
+  const technologyEnabled = await isWardFeatureEnabled(wardId, 'TECHNOLOGY_CHECKLIST');
 
   const client = await pool.connect();
   try {
@@ -61,13 +63,13 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
         ORDER BY created_at ASC`,
       [meetingId, wardId]
     );
-    const technology = await client.query(
+    const technology = technologyEnabled ? await client.query(
       `SELECT owner_name, room_ready, audio_ready, stream_ready, accessibility_checked, authorized_link, start_confirmed_at, stop_confirmed_at, recording_deletion_reminder
          FROM meeting_technology_checklist
         WHERE meeting_id = $1::uuid AND ward_id = $2::uuid
         LIMIT 1`,
       [meetingId, wardId]
-    );
+    ) : { rows: [] };
     const notes = await client.query(
       `SELECT note.id, note.visibility, note.note_text, note.created_at, note.updated_at
          FROM internal_note note
