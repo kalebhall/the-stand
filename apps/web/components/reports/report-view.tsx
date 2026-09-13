@@ -98,15 +98,15 @@ export function ReportView({ slug, data }: { slug: string; data: ReportData }) {
   }
   if (slug === 'prayers') {
     return (
-      <ReportSection title="Prayer frequency" count={`${data.prayers.length} assignments`} empty="No recorded prayers match filters." controls={<ReportSortControl value={sortBy} onChange={setSortBy} options={[{ value: 'name', label: 'Person' }, { value: 'count', label: 'Assignment count' }, { value: 'date', label: 'Last assigned' }]} />}>
+      <ReportSection title="Prayer frequency" count={`${data.prayers.length} people`} empty="No recorded prayers match filters." controls={<ReportSortControl value={sortBy} onChange={setSortBy} options={[{ value: 'name', label: 'Person' }, { value: 'count', label: 'Assignment count' }, { value: 'date', label: 'Last assigned' }]} />}>
         {prayers.map((prayer) => (
           <li
-            key={`${prayer.personName}-${prayer.prayerType}`}
+            key={prayer.personName}
             className="flex items-center justify-between gap-3 rounded-md border bg-background/60 px-3 py-2"
           >
             <span>
               <span className="font-medium">{prayer.personName}</span>
-              <span className="block text-xs text-muted-foreground">{prayer.prayerType.replaceAll('_', ' ')}</span>
+
             </span>
             <span className="text-right text-xs text-muted-foreground">
               {prayer.assignmentCount} assignments · last {reportDate(prayer.lastAssignmentDate)}
