@@ -30,20 +30,31 @@ describe('notification recipients', () => {
     ).toEqual(['user-2']);
   });
 
-  it('resolves active, unrevoked recipients within the requested ward', async () => {
-    const query = vi.fn().mockResolvedValue({ rows: [{ user_id: 'user-2' }, { user_id: 'user-3' }] });
+  it('includes calling actor among active, unrevoked calling recipients', async () => {
+    const query = vi.fn().mockResolvedValue({ rows: [{ user_id: 'user-1' }, { user_id: 'user-2' }, { user_id: 'user-3' }] });
     const result = await resolveNotificationRecipients(
       { query },
       { wardId: 'ward-1', eventType: 'CALLING_SUGGESTED', actorUserId: 'user-1' }
     );
 
-    expect(result).toEqual(['user-2', 'user-3']);
+    expect(result).toEqual(['user-1', 'user-2', 'user-3']);
     const [sql, values] = query.mock.calls[0] as [string, unknown[]];
     expect(sql).toContain('wur.ward_id = $1::uuid');
     expect(sql).toContain('wur.revoked_at IS NULL');
     expect(sql).toContain('wur.expires_at > now()');
-    expect(sql).toContain('wur.user_id <>');
+    expect(sql).not.toContain('wur.user_id <>');
     expect(values[0]).toBe('ward-1');
+  });
+
+  it('still excludes actor from non-calling notifications', async () => {
+    const query = vi.fn().mockResolvedValue({ rows: [{ user_id: 'user-2' }] });
+    const result = await resolveNotificationRecipients(
+      { query },
+      { wardId: 'ward-1', eventType: 'MEETING_UPDATED', actorUserId: 'user-1' }
+    );
+
+    expect(result).toEqual(['user-2']);
+    expect(query.mock.calls[0]?.[0]).toContain('wur.user_id <>');
   });
 
   it('rejects unknown event names before resolving recipients', () => {

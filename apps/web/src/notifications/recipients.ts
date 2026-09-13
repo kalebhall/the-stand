@@ -142,11 +142,11 @@ export async function resolveNotificationRecipients(client: DbClient, context: R
   if (explicitPlaceholders.length > 0) {
     conditions.push(`wur.user_id IN (${explicitPlaceholders.join(', ')})`);
   }
-  if (context.actorUserId) {
+  if (context.actorUserId && !CALLING_EVENTS.has(context.eventType)) {
     values.push(context.actorUserId);
   }
 
-  const actorCondition = context.actorUserId ? `AND wur.user_id <> $${values.length}::uuid` : '';
+  const actorCondition = context.actorUserId && !CALLING_EVENTS.has(context.eventType) ? `AND wur.user_id <> $${values.length}::uuid` : '';
   const result = await client.query(
     `SELECT DISTINCT wur.user_id
        FROM ward_user_role wur
