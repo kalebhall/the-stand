@@ -35,13 +35,12 @@ describe('notification event registry', () => {
     });
   });
 
-  it('defines independent channel defaults for ordinary meeting changes', () => {
+  it('uses email defaults for ordinary meeting changes', () => {
     const definition = getNotificationEventDefinition('MEETING_UPDATED');
     const channels: NotificationChannel[] = definition.defaultChannels;
 
     expect(definition.category).toBe('MEETINGS');
-    expect(channels).toEqual(['IN_APP']);
-    expect(channels).not.toContain('EMAIL');
+    expect(channels).toEqual(['IN_APP', 'EMAIL']);
   });
 
   it('rejects unknown event types at runtime', () => {

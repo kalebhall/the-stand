@@ -2,8 +2,7 @@ import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 
 import { buttonVariants } from '@/components/ui/button';
-import { WardBusinessSection, type BusinessLine } from '@/components/WardBusinessSection';
-import { MembershipOrdinanceSection, type MembershipOrdinanceAction } from '@/components/MembershipOrdinanceSection';
+import { WardBusinessSection, type BusinessLine, type MembershipOrdinanceSummary } from '@/components/WardBusinessSection';
 import { InternalNotesPanel, type InternalNoteRow } from '@/components/InternalNotesPanel';
 import { cn } from '@/lib/utils';
 import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth/guards';
@@ -223,7 +222,7 @@ export default async function StandViewPage({
         line.calling_name
       )
     }));
-    const membershipActions = membershipActionsResult.rows as MembershipOrdinanceAction[];
+    const membershipActions = membershipActionsResult.rows as MembershipOrdinanceSummary[];
     const notes = notesResult.rows as Array<InternalNoteRow & { program_item_id: string }>;
     const canUseNotes = canUseInternalNotes({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId);
     const canManage = canManageCallings({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId);
@@ -269,19 +268,6 @@ export default async function StandViewPage({
           <OfflineStandButton userId={session.user.id} wardId={activeWardId} meetingId={meetingId} />
         </section>
 
-        <MembershipOrdinanceSection
-          wardId={activeWardId}
-          meetingId={meetingId}
-          actions={membershipActions}
-          canManage={canManage}
-          templates={{
-            WELCOME_NEW_MEMBER: template?.welcome_new_member_template,
-            RECOGNIZE_BAPTIZED_CHILD: template?.recognize_baptized_child_template,
-            BABY_BLESSING: template?.baby_blessing_template,
-            PRIESTHOOD_ORDINATION: template?.priesthood_ordination_template,
-            PRIESTHOOD_ADVANCEMENT: template?.priesthood_advancement_template
-          }}
-        />
 
         <section className="grid gap-3">
           {selectedMode === 'formal'
@@ -327,6 +313,7 @@ export default async function StandViewPage({
                       wardId={activeWardId}
                       meetingId={meetingId}
                       lines={businessLines}
+                      membershipActions={membershipActions}
                       canManage={canManage}
                       showAnnounce={true}
                       showScript={true}
@@ -405,6 +392,7 @@ export default async function StandViewPage({
                       wardId={activeWardId}
                       meetingId={meetingId}
                       lines={businessLines}
+                      membershipActions={membershipActions}
                       canManage={canManage}
                       showAnnounce={true}
                       showScript={false}

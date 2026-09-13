@@ -37,7 +37,7 @@ describe('notification subscriptions', () => {
       eventType: 'MEETING_UPDATED',
       category: 'MEETINGS',
       channel: 'EMAIL',
-      enabled: false
+      enabled: true
     });
   });
 
@@ -51,7 +51,8 @@ describe('notification subscriptions', () => {
 
     expect(client.query).toHaveBeenCalledTimes(1);
     const [query, values] = client.query.mock.calls[0] as [string, unknown[]];
-    expect(query).toContain('ON CONFLICT (ward_id, user_id, event_type, channel) DO NOTHING');
+    expect(query).toContain('ON CONFLICT (ward_id, user_id, event_type, channel)');
+    expect(query).toContain('WHERE notification_subscription.updated_at = notification_subscription.created_at');
     expect(query).toContain('$1::uuid');
     expect(query).toContain('$2::uuid');
     expect(values.slice(0, 2)).toEqual(['ward-1', 'user-1']);

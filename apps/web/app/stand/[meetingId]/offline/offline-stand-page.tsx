@@ -563,8 +563,8 @@ export default function OfflineStandPage({ meetingId }: { meetingId: string }) {
         </div>
       )}
       <section className="rounded-lg border bg-card p-4">
-        <h2 className="font-semibold">Membership and Ordinances</h2>
-        <p className="mt-1 text-sm text-muted-foreground">Read-only conducting reference. Status changes require an online connection.</p>
+        <h2 className="font-semibold">Ward and Stake Business</h2>
+        <p className="mt-1 text-sm text-muted-foreground">Membership and ordinance items are read-only here. Use connected meeting management to change them.</p>
         {snapshot.membershipActions?.length ? (
           <ul className="mt-3 space-y-2 text-sm">
             {snapshot.membershipActions.map((action) => (
@@ -574,13 +574,9 @@ export default function OfflineStandPage({ meetingId }: { meetingId: string }) {
                     <p className="text-xs uppercase tracking-wide text-muted-foreground">{membershipActionLabel(action.actionType)}</p>
                     <p className="font-medium">{action.memberName}</p>
                     {priesthoodOfficeLabel(action.priesthoodOffice) ? <p className="text-muted-foreground">Office: {priesthoodOfficeLabel(action.priesthoodOffice)}</p> : null}
-                    {action.actionType === 'BAPTISM_CONFIRMATION_FOLLOW_UP' ? (
-                      <p className="text-muted-foreground">Baptism: {action.baptismStatus ?? 'planned'}{action.baptismDate ? ` (${action.baptismDate})` : ''} · Confirmation: {action.confirmationStatus ?? 'planned'}{action.confirmationDate ? ` (${action.confirmationDate})` : ''}</p>
-                    ) : null}
+                    {action.actionType === 'BAPTISM_CONFIRMATION_FOLLOW_UP' ? <p className="text-muted-foreground">Baptism: {action.baptismStatus ?? 'planned'}{action.baptismDate ? ` (${action.baptismDate})` : ''} · Confirmation: {action.confirmationStatus ?? 'planned'}{action.confirmationDate ? ` (${action.confirmationDate})` : ''}</p> : null}
                     {action.responsibleLeader ? <p className="text-muted-foreground">Responsible: {action.responsibleLeader}</p> : null}
-                    {action.interviewStatus && action.interviewStatus !== 'not_required' ? (
-                      <p className="text-muted-foreground">Interview: {action.interviewStatus.replaceAll('_', ' ')}</p>
-                    ) : null}
+                    {action.interviewStatus && action.interviewStatus !== 'not_required' ? <p className="text-muted-foreground">Interview: {action.interviewStatus.replaceAll('_', ' ')}</p> : null}
                   </div>
                   <span className="rounded-full border px-2 py-1 text-xs">{membershipStatusLabel(action.status)}</span>
                 </div>
@@ -588,12 +584,7 @@ export default function OfflineStandPage({ meetingId }: { meetingId: string }) {
               </li>
             ))}
           </ul>
-        ) : (
-          <p className="mt-2 text-sm text-muted-foreground">No membership or ordinance actions for this meeting.</p>
-        )}
-      </section>
-      <section className="rounded-lg border bg-card p-4">
-        <h2 className="font-semibold">Ward and Stake Business</h2>
+        ) : null}
         <ul className="mt-2 space-y-2 text-sm">
           {snapshot.businessLines.map((line) => (
             <li key={line.id} className="flex flex-wrap items-center justify-between gap-2 rounded border p-2">

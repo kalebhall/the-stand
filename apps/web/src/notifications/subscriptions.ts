@@ -82,7 +82,12 @@ export async function ensureDefaultNotificationSubscriptions(client: DbClient, p
     `INSERT INTO notification_subscription
        (ward_id, user_id, category, event_type, channel, enabled)
      VALUES ${rows.join(', ')}
-     ON CONFLICT (ward_id, user_id, event_type, channel) DO NOTHING`,
+     ON CONFLICT (ward_id, user_id, event_type, channel)
+     DO UPDATE SET
+       category = EXCLUDED.category,
+       enabled = EXCLUDED.enabled,
+       updated_at = now()
+     WHERE notification_subscription.updated_at = notification_subscription.created_at`,
     values
   );
 }
