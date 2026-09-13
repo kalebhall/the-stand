@@ -97,7 +97,7 @@ async function checkPurge(): Promise<HealthCheck> {
 
 async function checkNotifications(): Promise<HealthCheck> {
   try {
-    const result = await pool.query("SELECT COUNT(*) FILTER (WHERE delivery_status = 'failure')::int AS failures, MAX(attempted_at) AS last_attempt FROM notification_delivery");
+    const result = await pool.query("SELECT COUNT(*) FILTER (WHERE delivery_status = 'failure')::int AS failures, MAX(attempted_at) AS last_attempt FROM notification_delivery WHERE channel IN ('IN_APP', 'EMAIL')");
     const row = result.rows[0] as { failures?: number; last_attempt?: string | null } | undefined;
     const failures = Number(row?.failures ?? 0);
     const lastAttempt = row?.last_attempt ? new Date(row.last_attempt).toISOString() : 'none recorded';

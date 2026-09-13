@@ -6,6 +6,7 @@ export type NotificationDiagnosticRow = {
   eventType: string;
   aggregateType: string;
   aggregateId: string;
+  channel: string;
   deliveryStatus: string;
   attemptedAt: string | null;
   errorMessage: string | null;
@@ -24,6 +25,7 @@ export async function fetchNotificationDiagnostics(
             eo.event_type,
             eo.aggregate_type,
             eo.aggregate_id,
+            nd.channel,
             nd.delivery_status,
             nd.attempted_at,
             nd.error_message,
@@ -45,6 +47,7 @@ export async function fetchNotificationDiagnostics(
     eventType: row.event_type as string,
     aggregateType: row.aggregate_type as string,
     aggregateId: row.aggregate_id as string,
+    channel: row.channel as string,
     deliveryStatus: row.delivery_status as string,
     attemptedAt: row.attempted_at ? new Date(row.attempted_at as string).toISOString() : null,
     errorMessage: (row.error_message as string | null) ?? null,
