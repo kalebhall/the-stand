@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth/guards';
 import { canManageMeetings, canViewCallings, canViewMeetings, hasRole } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
+import { getWardFeatureFlags } from '@/src/features/flags';
 import { setDbContext } from '@/src/db/context';
 
 function DashboardCard({
@@ -41,6 +42,7 @@ export default async function DashboardPage() {
   enforcePasswordRotation(session);
 
   const wardSession = session.activeWardId ? { roles: session.user.roles, activeWardId: session.activeWardId } : null;
+  const featureFlags = session.activeWardId ? await getWardFeatureFlags(session.activeWardId) : null;
   const canAccessMeetings = wardSession ? canViewMeetings(wardSession, session.activeWardId!) : false;
   const canAccessCallings = wardSession ? canViewCallings(wardSession, session.activeWardId!) : false;
   const canAccessTechnology = wardSession ? canManageMeetings(wardSession, session.activeWardId!) : false;
@@ -294,7 +296,7 @@ export default async function DashboardPage() {
           />
         ) : null}
 
-        {canAccessMeetings ? (
+        {canAccessMeetings && featureFlags?.BISHOPRIC_AGENDA ? (
           <DashboardCard
             title="Leadership due actions"
             value={bishopricDueActionCount}
@@ -303,7 +305,7 @@ export default async function DashboardPage() {
           />
         ) : null}
 
-        {canAccessMeetings ? (
+        {canAccessMeetings && featureFlags?.SCHEDULED_INTERVIEWS ? (
           <DashboardCard
             title="Scheduled interviews"
             value={scheduledInterviewCount}
@@ -360,7 +362,7 @@ export default async function DashboardPage() {
           />
         ) : null}
 
-        {canAccessTechnology ? (
+        {canAccessTechnology && featureFlags?.TECHNOLOGY_CHECKLIST ? (
           <DashboardCard
             title="Technology readiness"
             value={technologyChecklistCount}
