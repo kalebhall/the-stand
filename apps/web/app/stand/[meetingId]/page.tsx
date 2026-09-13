@@ -143,20 +143,44 @@ export default async function StandViewPage({
 
     const businessLinesResult = await client.query(
       `SELECT b.id, b.member_name, b.calling_name, b.action_type, b.status,
+              b.meeting_id AS source_meeting_id, b.calling_assignment_id,
+              (b.meeting_id <> $1::uuid) AS carried_forward,
               m.first_name, m.last_name, m.gender
          FROM meeting_business_line b
+         JOIN meeting source_meeting ON source_meeting.id = b.meeting_id AND source_meeting.ward_id = b.ward_id
          LEFT JOIN member m ON m.ward_id = b.ward_id AND m.full_name = b.member_name AND m.archived_at IS NULL
-        WHERE b.meeting_id = $1::uuid AND b.ward_id = $2::uuid
+         LEFT JOIN LATERAL (
+           SELECT action_status
+             FROM calling_action ca
+            WHERE ca.calling_assignment_id = b.calling_assignment_id
+              AND ca.ward_id = b.ward_id
+            ORDER BY ca.created_at DESC
+            LIMIT 1
+         ) latest_calling ON TRUE
+        WHERE b.ward_id = $2::uuid
+          AND (b.action_type <> 'SUSTAIN' OR b.calling_assignment_id IS NULL OR latest_calling.action_status = 'EXTENDED')
+          AND (b.meeting_id = $1::uuid OR (
+            b.action_type = 'SUSTAIN'
+            AND b.calling_assignment_id IS NOT NULL
+            AND source_meeting.meeting_date <= $3::date
+            AND latest_calling.action_status = 'EXTENDED'
+          ))
         ORDER BY b.created_at ASC`,
-      [meetingId, session.activeWardId]
+      [meetingId, session.activeWardId, meetingDate]
     );
 
     const membershipActionsResult = await client.query(
-      `SELECT id, member_name, action_type, priesthood_office, reason, details, status, approval_confirmed, presenting_leader, performing_priesthood_holder, ordinance_date, baptism_date, confirmation_date, baptism_status, confirmation_status
-         FROM meeting_membership_ordinance
-        WHERE meeting_id = $1::uuid AND ward_id = $2::uuid
-        ORDER BY created_at ASC`,
-      [meetingId, session.activeWardId]
+      `SELECT a.id, a.member_name, a.action_type, a.priesthood_office, a.reason, a.details,
+              CASE WHEN a.meeting_id <> $1::uuid AND a.status = 'pending' THEN 'action_needed' ELSE a.status END AS status,
+              a.approval_confirmed, a.presenting_leader, a.performing_priesthood_holder, a.ordinance_date, a.baptism_date, a.confirmation_date, a.baptism_status, a.confirmation_status,
+              m.meeting_date AS source_meeting_date,
+              (a.meeting_id <> $1::uuid) AS carried_forward
+         FROM meeting_membership_ordinance a
+         JOIN meeting m ON m.id = a.meeting_id AND m.ward_id = a.ward_id
+        WHERE a.ward_id = $2::uuid
+          AND (a.meeting_id = $1::uuid OR (m.meeting_date <= $3::date AND a.status <> 'completed'))
+        ORDER BY a.created_at ASC`,
+      [meetingId, session.activeWardId, meetingDate]
     );
 
     const notesResult = await client.query(

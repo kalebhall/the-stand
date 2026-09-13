@@ -571,7 +571,7 @@ export default function OfflineStandPage({ meetingId }: { meetingId: string }) {
               <li key={action.id} className="rounded border p-3">
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
-                    <p className="text-xs uppercase tracking-wide text-muted-foreground">{membershipActionLabel(action.actionType)}</p>
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground">{membershipActionLabel(action.actionType)}{action.carriedForward ? ' · Carried forward' : ''}</p>
                     <p className="font-medium">{action.memberName}</p>
                     {priesthoodOfficeLabel(action.priesthoodOffice) ? <p className="text-muted-foreground">Office: {priesthoodOfficeLabel(action.priesthoodOffice)}</p> : null}
                     {action.actionType === 'BAPTISM_CONFIRMATION_FOLLOW_UP' ? <p className="text-muted-foreground">Baptism: {action.baptismStatus ?? 'planned'}{action.baptismDate ? ` (${action.baptismDate})` : ''} · Confirmation: {action.confirmationStatus ?? 'planned'}{action.confirmationDate ? ` (${action.confirmationDate})` : ''}</p> : null}
@@ -589,7 +589,7 @@ export default function OfflineStandPage({ meetingId }: { meetingId: string }) {
           {snapshot.businessLines.map((line) => (
             <li key={line.id} className="flex flex-wrap items-center justify-between gap-2 rounded border p-2">
               <span>
-                {line.memberName} — {line.callingName} ({line.status})
+                {line.memberName} — {line.callingName} ({line.status}{line.carriedForward ? ', carried forward' : ''})
               </span>
               {line.status === 'pending' ? (
                 <button

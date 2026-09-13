@@ -32,9 +32,9 @@ export async function PATCH(_request: Request, context: RouteContext) {
     const result = await client.query(
       `UPDATE meeting_business_line
           SET status = 'announced', updated_at = now()
-        WHERE id = $1::uuid AND meeting_id = $2::uuid AND ward_id = $3::uuid AND status = 'pending'
+        WHERE id = $1::uuid AND ward_id = $2::uuid AND status IN ('pending', 'announced')
         RETURNING id`,
-      [lineId, meetingId, wardId]
+      [lineId, wardId]
     );
 
     if (!result.rowCount) {
@@ -85,9 +85,9 @@ export async function DELETE(_request: Request, context: RouteContext) {
 
     const result = await client.query(
       `DELETE FROM meeting_business_line
-        WHERE id = $1::uuid AND meeting_id = $2::uuid AND ward_id = $3::uuid
+        WHERE id = $1::uuid AND ward_id = $2::uuid
         RETURNING id`,
-      [lineId, meetingId, wardId]
+      [lineId, wardId]
     );
 
     if (!result.rowCount) {

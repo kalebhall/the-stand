@@ -30,6 +30,7 @@ describe('meeting business queueing', () => {
     expect(query).toHaveBeenNthCalledWith(3, expect.stringContaining('INSERT INTO meeting_business_line'), [
       'ward-1',
       'meeting-1',
+      'calling-1',
       'Doe, Jane',
       'Primary President',
       'SUSTAIN'

@@ -28,9 +28,9 @@ export async function PATCH(request: Request, context: { params: Promise<{ wardI
     const current = await client.query(
       `SELECT status, interview_status, lcr_follow_up_status, record_form_needed, official_system_follow_up_status
          FROM meeting_membership_ordinance
-        WHERE id = $1::uuid AND meeting_id = $2::uuid AND ward_id = $3::uuid
+        WHERE id = $1::uuid AND ward_id = $2::uuid
         FOR UPDATE`,
-      [actionId, meetingId, wardId]
+      [actionId, wardId]
     );
     if (!current.rowCount) {
       await client.query('ROLLBACK');
@@ -61,30 +61,30 @@ export async function PATCH(request: Request, context: { params: Promise<{ wardI
       status === 'announced'
         ? await client.query(
             `UPDATE meeting_membership_ordinance SET status = 'action_needed', announced_at = COALESCE(announced_at, now()), updated_at = now()
-           WHERE id = $1::uuid AND meeting_id = $2::uuid AND ward_id = $3::uuid AND status = 'pending'
+           WHERE id = $1::uuid AND ward_id = $2::uuid AND status = 'pending'
            RETURNING id, status`,
-            [actionId, meetingId, wardId]
+            [actionId, wardId]
           )
         : status === 'completed'
           ? await client.query(
               `UPDATE meeting_membership_ordinance SET status = 'completed', completed_at = now(), completed_by_user_id = $1::uuid, updated_at = now()
-             WHERE id = $2::uuid AND meeting_id = $3::uuid AND ward_id = $4::uuid AND status = 'action_needed'
+             WHERE id = $2::uuid AND ward_id = $3::uuid AND status = 'action_needed'
              RETURNING id, status, member_name, action_type, lcr_follow_up_status`,
-              [session.user.id, actionId, meetingId, wardId]
+              [session.user.id, actionId, wardId]
             )
           : status === 'lcr_completed'
             ? await client.query(
                 `UPDATE meeting_membership_ordinance SET lcr_follow_up_status = 'completed', lcr_updated_at = now(), updated_at = now()
-               WHERE id = $1::uuid AND meeting_id = $2::uuid AND ward_id = $3::uuid AND status = 'completed' AND lcr_follow_up_status = 'needed'
+               WHERE id = $1::uuid AND ward_id = $2::uuid AND status = 'completed' AND lcr_follow_up_status = 'needed'
                RETURNING id, status, member_name, action_type, lcr_follow_up_status`,
-                [actionId, meetingId, wardId]
+                [actionId, wardId]
               )
             : status === 'interview_completed'
               ? await client.query(
               `UPDATE meeting_membership_ordinance SET interview_status = 'completed', updated_at = now()
-               WHERE id = $1::uuid AND meeting_id = $2::uuid AND ward_id = $3::uuid AND interview_status IN ('needed', 'scheduled')
+               WHERE id = $1::uuid AND ward_id = $2::uuid AND interview_status IN ('needed', 'scheduled')
                RETURNING id, status, member_name, action_type, lcr_follow_up_status`,
-              [actionId, meetingId, wardId]
+              [actionId, wardId]
               )
               : await client.query(
                 `UPDATE meeting_membership_ordinance
@@ -94,9 +94,9 @@ export async function PATCH(request: Request, context: { params: Promise<{ wardI
                         official_system_reference_url = COALESCE($4::text, official_system_reference_url),
                         certificate_or_form_delivered = CASE WHEN $5::boolean THEN TRUE ELSE certificate_or_form_delivered END,
                         updated_at = now()
-                  WHERE id = $6::uuid AND meeting_id = $7::uuid AND ward_id = $8::uuid
+                  WHERE id = $6::uuid AND ward_id = $7::uuid
                   RETURNING id, status, member_name, action_type, lcr_follow_up_status`,
-                [status === 'official_record_started' ? 'in_progress' : 'completed', body?.officialRecordUpdatedBy ?? null, body?.handoffDate ?? null, body?.officialSystemReferenceUrl ?? null, status === 'certificate_delivered', actionId, meetingId, wardId]
+                [status === 'official_record_started' ? 'in_progress' : 'completed', body?.officialRecordUpdatedBy ?? null, body?.handoffDate ?? null, body?.officialSystemReferenceUrl ?? null, status === 'certificate_delivered', actionId, wardId]
               );
     if (!result.rowCount) {
       await client.query('ROLLBACK');
@@ -174,8 +174,8 @@ export async function DELETE(_request: Request, context: { params: Promise<{ war
     await client.query('BEGIN');
     await setDbContext(client, { userId: session.user.id, wardId });
     const result = await client.query(
-      'DELETE FROM meeting_membership_ordinance WHERE id = $1::uuid AND meeting_id = $2::uuid AND ward_id = $3::uuid RETURNING id, member_name, action_type, status, interview_status, lcr_follow_up_status, official_system_follow_up_status',
-      [actionId, meetingId, wardId]
+      'DELETE FROM meeting_membership_ordinance WHERE id = $1::uuid AND ward_id = $2::uuid RETURNING id, member_name, action_type, status, interview_status, lcr_follow_up_status, official_system_follow_up_status',
+      [actionId, wardId]
     );
     if (!result.rowCount) {
       await client.query('ROLLBACK');
