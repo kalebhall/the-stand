@@ -14,8 +14,8 @@ flowchart LR
   A2["root:other<br/>1 files"]
   A3["root:tooling<br/>6 files"]
   A4["web:announcements<br/>2 files"]
-  A5["web:api<br/>85 files"]
-  A6["web:app<br/>114 files"]
+  A5["web:api<br/>86 files"]
+  A6["web:app<br/>115 files"]
   A7["web:audit<br/>2 files"]
   A8["web:auth<br/>11 files"]
   A9["web:bootstrap.mjs<br/>1 files"]
@@ -24,79 +24,85 @@ flowchart LR
   A12["web:church-actions<br/>4 files"]
   A13["web:config<br/>15 files"]
   A14["web:db<br/>7 files"]
-  A15["web:hardening<br/>1 files"]
-  A16["web:health.mjs<br/>1 files"]
-  A17["web:imports<br/>19 files"]
-  A18["web:leadership<br/>14 files"]
-  A19["web:lib<br/>9 files"]
-  A20["web:maintenance<br/>4 files"]
-  A21["web:meetings<br/>14 files"]
-  A22["web:notes<br/>1 files"]
-  A23["web:notifications<br/>29 files"]
-  A24["web:offline<br/>3 files"]
-  A25["web:reports<br/>3 files"]
-  A26["web:stand<br/>8 files"]
-  A27["web:tooling<br/>2 files"]
-  A28["web:types<br/>2 files"]
-  A29["web:ui<br/>30 files"]
-  A30["web:version.mjs<br/>1 files"]
-  A5 -->|119| A8
-  A6 -->|112| A29
-  A5 -->|111| A14
+  A15["web:features<br/>3 files"]
+  A16["web:hardening<br/>1 files"]
+  A17["web:health.mjs<br/>1 files"]
+  A18["web:imports<br/>19 files"]
+  A19["web:leadership<br/>14 files"]
+  A20["web:lib<br/>9 files"]
+  A21["web:maintenance<br/>4 files"]
+  A22["web:meetings<br/>14 files"]
+  A23["web:notes<br/>1 files"]
+  A24["web:notifications<br/>29 files"]
+  A25["web:offline<br/>3 files"]
+  A26["web:reports<br/>3 files"]
+  A27["web:stand<br/>8 files"]
+  A28["web:tooling<br/>2 files"]
+  A29["web:types<br/>2 files"]
+  A30["web:ui<br/>30 files"]
+  A31["web:version.mjs<br/>1 files"]
+  A5 -->|121| A8
+  A6 -->|114| A30
+  A5 -->|113| A14
   A6 -->|86| A8
   A6 -->|53| A14
-  A5 -->|42| A23
-  A5 -->|23| A19
-  A5 -->|19| A7
+  A5 -->|42| A24
+  A5 -->|23| A20
+  A5 -->|20| A7
   A5 -->|15| A11
-  A6 -->|15| A21
-  A5 -->|11| A17
-  A5 -->|8| A18
-  A5 -->|6| A21
-  A6 -->|5| A23
-  A6 -->|5| A26
+  A6 -->|15| A22
+  A5 -->|11| A15
+  A5 -->|11| A18
+  A5 -->|7| A19
+  A5 -->|6| A22
+  A6 -->|6| A15
+  A6 -->|5| A24
+  A6 -->|5| A27
   A6 -->|4| A11
   A5 -->|3| A4
   A6 -->|3| A4
-  A6 -->|3| A18
-  A23 -->|3| A14
+  A6 -->|3| A19
+  A24 -->|3| A14
   A5 -->|2| A12
   A6 -->|2| A12
-  A6 -->|2| A24
   A6 -->|2| A25
+  A6 -->|2| A26
   A8 -->|2| A14
   A10 -->|2| A14
-  A13 -->|2| A19
+  A13 -->|2| A20
   A14 -->|2| A8
-  A18 -->|2| A23
-  A29 -->|2| A25
-  A2 -->|1| A16
+  A19 -->|2| A24
+  A30 -->|2| A26
+  A2 -->|1| A17
   A5 -->|1| A10
-  A5 -->|1| A22
-  A5 -->|1| A26
+  A5 -->|1| A23
+  A5 -->|1| A27
   A6 -->|1| A10
-  A6 -->|1| A17
-  A6 -->|1| A19
-  A8 -->|1| A19
-  A10 -->|1| A23
+  A6 -->|1| A18
+  A6 -->|1| A20
+  A8 -->|1| A15
+  A8 -->|1| A20
+  A10 -->|1| A24
   A13 -->|1| A9
-  A13 -->|1| A16
-  A13 -->|1| A21
-  A16 -->|1| A30
-  A17 -->|1| A14
-  A20 -->|1| A14
-  A21 -->|1| A4
-  A23 -->|1| A11
-  A23 -->|1| A22
-  A26 -->|1| A21
-  A29 -->|1| A8
-  A29 -->|1| A12
-  A29 -->|1| A17
-  A29 -->|1| A19
-  A29 -->|1| A21
-  A29 -->|1| A22
-  A29 -->|1| A24
-  A29 -->|1| A26
+  A13 -->|1| A17
+  A13 -->|1| A22
+  A15 -->|1| A14
+  A17 -->|1| A31
+  A18 -->|1| A14
+  A21 -->|1| A14
+  A22 -->|1| A4
+  A24 -->|1| A11
+  A24 -->|1| A23
+  A27 -->|1| A22
+  A30 -->|1| A8
+  A30 -->|1| A12
+  A30 -->|1| A15
+  A30 -->|1| A18
+  A30 -->|1| A20
+  A30 -->|1| A22
+  A30 -->|1| A23
+  A30 -->|1| A25
+  A30 -->|1| A27
 ```
 
 ## Area inventory
@@ -107,8 +113,8 @@ flowchart LR
 | `root:other` | 1 |
 | `root:tooling` | 6 |
 | `web:announcements` | 2 |
-| `web:api` | 85 |
-| `web:app` | 114 |
+| `web:api` | 86 |
+| `web:app` | 115 |
 | `web:audit` | 2 |
 | `web:auth` | 11 |
 | `web:bootstrap.mjs` | 1 |
@@ -117,6 +123,7 @@ flowchart LR
 | `web:church-actions` | 4 |
 | `web:config` | 15 |
 | `web:db` | 7 |
+| `web:features` | 3 |
 | `web:hardening` | 1 |
 | `web:health.mjs` | 1 |
 | `web:imports` | 19 |
@@ -138,33 +145,36 @@ flowchart LR
 
 | Importing area | Imported area | Imports |
 | --- | --- | ---: |
-| `web:api` | `web:auth` | 119 |
-| `web:app` | `web:ui` | 112 |
-| `web:api` | `web:db` | 111 |
+| `web:api` | `web:auth` | 121 |
+| `web:app` | `web:ui` | 114 |
+| `web:api` | `web:db` | 113 |
 | `web:app` | `web:auth` | 86 |
 | `web:app` | `web:db` | 53 |
-| `web:app` | `web:app` | 49 |
+| `web:app` | `web:app` | 50 |
 | `web:api` | `web:notifications` | 42 |
 | `web:notifications` | `web:notifications` | 42 |
 | `web:ui` | `web:ui` | 27 |
 | `web:api` | `web:lib` | 23 |
 | `web:api` | `web:api` | 21 |
-| `web:api` | `web:audit` | 19 |
+| `web:api` | `web:audit` | 20 |
 | `web:api` | `web:callings` | 15 |
 | `web:app` | `web:meetings` | 15 |
 | `web:imports` | `web:imports` | 14 |
 | `web:meetings` | `web:meetings` | 12 |
+| `web:api` | `web:features` | 11 |
 | `web:api` | `web:imports` | 11 |
-| `web:api` | `web:leadership` | 8 |
 | `web:auth` | `web:auth` | 8 |
 | `web:leadership` | `web:leadership` | 8 |
+| `web:api` | `web:leadership` | 7 |
 | `web:api` | `web:meetings` | 6 |
+| `web:app` | `web:features` | 6 |
 | `web:stand` | `web:stand` | 6 |
 | `web:app` | `web:notifications` | 5 |
 | `web:app` | `web:stand` | 5 |
 | `web:app` | `web:callings` | 4 |
 | `web:callings` | `web:callings` | 4 |
 | `web:db` | `web:db` | 4 |
+| `web:features` | `web:features` | 4 |
 | `web:api` | `web:announcements` | 3 |
 | `web:app` | `web:announcements` | 3 |
 | `web:app` | `web:leadership` | 3 |
@@ -193,11 +203,13 @@ flowchart LR
 | `web:app` | `web:imports` | 1 |
 | `web:app` | `web:lib` | 1 |
 | `web:audit` | `web:audit` | 1 |
+| `web:auth` | `web:features` | 1 |
 | `web:auth` | `web:lib` | 1 |
 | `web:calendar` | `web:notifications` | 1 |
 | `web:config` | `web:bootstrap.mjs` | 1 |
 | `web:config` | `web:health.mjs` | 1 |
 | `web:config` | `web:meetings` | 1 |
+| `web:features` | `web:db` | 1 |
 | `web:health.mjs` | `web:version.mjs` | 1 |
 | `web:imports` | `web:db` | 1 |
 | `web:maintenance` | `web:db` | 1 |
@@ -209,6 +221,7 @@ flowchart LR
 | `web:stand` | `web:meetings` | 1 |
 | `web:ui` | `web:auth` | 1 |
 | `web:ui` | `web:church-actions` | 1 |
+| `web:ui` | `web:features` | 1 |
 | `web:ui` | `web:imports` | 1 |
 | `web:ui` | `web:lib` | 1 |
 | `web:ui` | `web:meetings` | 1 |
@@ -221,8 +234,8 @@ flowchart LR
 | Importing area | Package/runtime | Imports |
 | --- | --- | ---: |
 | `web:app` | `next` | 85 |
-| `web:api` | `next` | 64 |
-| `web:app` | `react` | 32 |
+| `web:api` | `next` | 65 |
+| `web:app` | `react` | 33 |
 | `web:ui` | `react` | 28 |
 | `web:api` | `vitest` | 20 |
 | `web:ui` | `next` | 14 |
@@ -286,6 +299,7 @@ flowchart LR
 | `web:config` | `typescript-eslint` | 1 |
 | `web:config` | `vitest` | 1 |
 | `web:db` | `module` | 1 |
+| `web:features` | `vitest` | 1 |
 | `web:hardening` | `vitest` | 1 |
 | `web:imports` | `@playwright/test` | 1 |
 | `web:imports` | `pdf-parse` | 1 |
@@ -339,9 +353,9 @@ flowchart LR
 | `apps/web/app/api/w/[wardId]/announcements/route.ts` | `web:api` | 9 | 1 |
 | `apps/web/app/api/w/[wardId]/announcements/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/audit-log/route.ts` | `web:api` | 5 | 1 |
-| `apps/web/app/api/w/[wardId]/bishopric/[meetingId]/actions/[actionId]/route.ts` | `web:api` | 6 | 1 |
-| `apps/web/app/api/w/[wardId]/bishopric/[meetingId]/actions/route.ts` | `web:api` | 4 | 1 |
-| `apps/web/app/api/w/[wardId]/bishopric/route.ts` | `web:api` | 6 | 1 |
+| `apps/web/app/api/w/[wardId]/bishopric/[meetingId]/actions/[actionId]/route.ts` | `web:api` | 7 | 1 |
+| `apps/web/app/api/w/[wardId]/bishopric/[meetingId]/actions/route.ts` | `web:api` | 5 | 1 |
+| `apps/web/app/api/w/[wardId]/bishopric/route.ts` | `web:api` | 7 | 1 |
 | `apps/web/app/api/w/[wardId]/calendar/refresh/route.ts` | `web:api` | 3 | 1 |
 | `apps/web/app/api/w/[wardId]/calendar/route.ts` | `web:api` | 4 | 1 |
 | `apps/web/app/api/w/[wardId]/callings/[callingId]/assign/route.ts` | `web:api` | 10 | 1 |
@@ -356,6 +370,7 @@ flowchart LR
 | `apps/web/app/api/w/[wardId]/callings/[callingId]/sustain/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/callings/route.ts` | `web:api` | 8 | 1 |
 | `apps/web/app/api/w/[wardId]/callings/route.vitest.ts` | `web:api` | 1 | 1 |
+| `apps/web/app/api/w/[wardId]/feature-flags/route.ts` | `web:api` | 6 | 1 |
 | `apps/web/app/api/w/[wardId]/imports/callings/route.ts` | `web:api` | 12 | 2 |
 | `apps/web/app/api/w/[wardId]/imports/callings/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/imports/lcr/[jobId]/route.ts` | `web:api` | 3 | 1 |
@@ -365,9 +380,9 @@ flowchart LR
 | `apps/web/app/api/w/[wardId]/imports/sacrament-planner/reviews/[reviewId]/route.ts` | `web:api` | 4 | 1 |
 | `apps/web/app/api/w/[wardId]/imports/sacrament-planner/reviews/route.ts` | `web:api` | 4 | 1 |
 | `apps/web/app/api/w/[wardId]/imports/sacrament-planner/route.ts` | `web:api` | 5 | 1 |
-| `apps/web/app/api/w/[wardId]/interviews/[interviewId]/route.ts` | `web:api` | 5 | 1 |
-| `apps/web/app/api/w/[wardId]/interviews/calendar-subscription/route.ts` | `web:api` | 5 | 2 |
-| `apps/web/app/api/w/[wardId]/interviews/calendar/route.ts` | `web:api` | 5 | 1 |
+| `apps/web/app/api/w/[wardId]/interviews/[interviewId]/route.ts` | `web:api` | 6 | 1 |
+| `apps/web/app/api/w/[wardId]/interviews/calendar-subscription/route.ts` | `web:api` | 6 | 2 |
+| `apps/web/app/api/w/[wardId]/interviews/calendar/route.ts` | `web:api` | 6 | 1 |
 | `apps/web/app/api/w/[wardId]/interviews/route.ts` | `web:api` | 5 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/business/[lineId]/route.ts` | `web:api` | 5 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/complete/route.ts` | `web:api` | 7 | 1 |
@@ -375,12 +390,12 @@ flowchart LR
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/membership-ordinances/[actionId]/route.ts` | `web:api` | 8 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/membership-ordinances/[actionId]/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/membership-ordinances/route.ts` | `web:api` | 5 | 1 |
-| `apps/web/app/api/w/[wardId]/meetings/[meetingId]/offline-snapshot/route.ts` | `web:api` | 6 | 1 |
+| `apps/web/app/api/w/[wardId]/meetings/[meetingId]/offline-snapshot/route.ts` | `web:api` | 7 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/offline-sync/route.ts` | `web:api` | 5 | 2 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/publish/route.ts` | `web:api` | 8 | 2 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/publish/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/route.ts` | `web:api` | 9 | 1 |
-| `apps/web/app/api/w/[wardId]/meetings/[meetingId]/technology/route.ts` | `web:api` | 4 | 1 |
+| `apps/web/app/api/w/[wardId]/meetings/[meetingId]/technology/route.ts` | `web:api` | 5 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/route.ts` | `web:api` | 8 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/members/[memberId]/route.ts` | `web:api` | 5 | 1 |
@@ -401,12 +416,12 @@ flowchart LR
 | `apps/web/app/api/w/[wardId]/portal/route.ts` | `web:api` | 4 | 2 |
 | `apps/web/app/api/w/[wardId]/public-layout/route.ts` | `web:api` | 6 | 1 |
 | `apps/web/app/api/w/[wardId]/public-layout/route.vitest.ts` | `web:api` | 2 | 1 |
-| `apps/web/app/api/w/[wardId]/speakers/[programItemId]/route.ts` | `web:api` | 5 | 1 |
+| `apps/web/app/api/w/[wardId]/speakers/[programItemId]/route.ts` | `web:api` | 6 | 1 |
 | `apps/web/app/api/w/[wardId]/users/[userId]/roles/[roleId]/route.ts` | `web:api` | 7 | 1 |
 | `apps/web/app/api/w/[wardId]/users/[userId]/roles/route.ts` | `web:api` | 7 | 1 |
 | `apps/web/app/api/w/[wardId]/users/route.ts` | `web:api` | 4 | 1 |
 | `apps/web/app/bishopric/bishopric-workspace-client.tsx` | `web:app` | 3 | 1 |
-| `apps/web/app/bishopric/page.tsx` | `web:app` | 8 | 1 |
+| `apps/web/app/bishopric/page.tsx` | `web:app` | 9 | 1 |
 | `apps/web/app/callings/error.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/callings/loading.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/callings/page.tsx` | `web:app` | 17 | 3 |
@@ -428,7 +443,7 @@ flowchart LR
 | `apps/web/app/imports/sacrament-planner/page.tsx` | `web:app` | 5 | 2 |
 | `apps/web/app/imports/sacrament-planner/sacrament-planner-import-client.tsx` | `web:app` | 2 | 1 |
 | `apps/web/app/interviews/interviews-client.tsx` | `web:app` | 5 | 1 |
-| `apps/web/app/interviews/page.tsx` | `web:app` | 7 | 1 |
+| `apps/web/app/interviews/page.tsx` | `web:app` | 8 | 1 |
 | `apps/web/app/layout.tsx` | `web:app` | 6 | 2 |
 | `apps/web/app/login/login-form.tsx` | `web:app` | 2 | 2 |
 | `apps/web/app/login/page.tsx` | `web:app` | 2 | 1 |
@@ -467,13 +482,14 @@ flowchart LR
 | `apps/web/app/sentry-example-page/page.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/settings/audit-log/WardAuditLogClient.tsx` | `web:app` | 1 | 1 |
 | `apps/web/app/settings/audit-log/page.tsx` | `web:app` | 8 | 2 |
+| `apps/web/app/settings/feature-settings.tsx` | `web:app` | 3 | 1 |
 | `apps/web/app/settings/health/page.tsx` | `web:app` | 3 | 4 |
 | `apps/web/app/settings/notification-timezone.tsx` | `web:app` | 0 | 1 |
 | `apps/web/app/settings/notification-timezone.vitest.tsx` | `web:app` | 1 | 4 |
 | `apps/web/app/settings/notifications/notification-subscription-settings.tsx` | `web:app` | 1 | 1 |
 | `apps/web/app/settings/notifications/notification-subscription-settings.vitest.tsx` | `web:app` | 1 | 4 |
 | `apps/web/app/settings/notifications/page.tsx` | `web:app` | 2 | 1 |
-| `apps/web/app/settings/page.tsx` | `web:app` | 5 | 1 |
+| `apps/web/app/settings/page.tsx` | `web:app` | 7 | 1 |
 | `apps/web/app/settings/public-layout/page.tsx` | `web:app` | 7 | 1 |
 | `apps/web/app/settings/public-layout/public-layout-client.tsx` | `web:app` | 3 | 1 |
 | `apps/web/app/settings/public-layout/public-layout-client.vitest.tsx` | `web:app` | 1 | 2 |
@@ -487,7 +503,7 @@ flowchart LR
 | `apps/web/app/settings/users/loading.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/settings/users/page.tsx` | `web:app` | 3 | 2 |
 | `apps/web/app/settings/users/ward-users-manager.tsx` | `web:app` | 2 | 1 |
-| `apps/web/app/speakers/page.tsx` | `web:app` | 5 | 1 |
+| `apps/web/app/speakers/page.tsx` | `web:app` | 6 | 1 |
 | `apps/web/app/speakers/speaker-lifecycle-workspace.tsx` | `web:app` | 1 | 1 |
 | `apps/web/app/stand/[meetingId]/offline/offline-stand-page.tsx` | `web:app` | 2 | 2 |
 | `apps/web/app/stand/[meetingId]/offline/page.tsx` | `web:app` | 1 | 0 |
@@ -506,7 +522,7 @@ flowchart LR
 | `apps/web/app/support/users/page.tsx` | `web:app` | 7 | 2 |
 | `apps/web/app/support/users/support-grants.ts` | `web:app` | 0 | 0 |
 | `apps/web/app/support/users/support-grants.vitest.ts` | `web:app` | 1 | 1 |
-| `apps/web/app/technology/page.tsx` | `web:app` | 7 | 1 |
+| `apps/web/app/technology/page.tsx` | `web:app` | 8 | 1 |
 | `apps/web/app/technology/technology-client.tsx` | `web:app` | 2 | 1 |
 | `apps/web/app/ward-council/page.tsx` | `web:app` | 0 | 1 |
 | `apps/web/components/AddCallingForm.tsx` | `web:ui` | 3 | 1 |
@@ -521,7 +537,7 @@ flowchart LR
 | `apps/web/components/WardBusinessSection.tsx` | `web:ui` | 2 | 2 |
 | `apps/web/components/WardBusinessSection.vitest.tsx` | `web:ui` | 1 | 3 |
 | `apps/web/components/app-navigation.tsx` | `web:ui` | 1 | 0 |
-| `apps/web/components/app-shell.tsx` | `web:ui` | 8 | 4 |
+| `apps/web/components/app-shell.tsx` | `web:ui` | 9 | 4 |
 | `apps/web/components/auth-session-provider.tsx` | `web:ui` | 0 | 3 |
 | `apps/web/components/auth-session-refresh.tsx` | `web:ui` | 0 | 3 |
 | `apps/web/components/conducting-mode-context.tsx` | `web:ui` | 0 | 1 |
@@ -560,7 +576,7 @@ flowchart LR
 | `apps/web/src/audit/service.vitest.ts` | `web:audit` | 1 | 1 |
 | `apps/web/src/auth/auth.ts` | `web:auth` | 5 | 3 |
 | `apps/web/src/auth/guards.ts` | `web:auth` | 1 | 2 |
-| `apps/web/src/auth/navigation.ts` | `web:auth` | 1 | 0 |
+| `apps/web/src/auth/navigation.ts` | `web:auth` | 2 | 0 |
 | `apps/web/src/auth/navigation.vitest.ts` | `web:auth` | 1 | 1 |
 | `apps/web/src/auth/password.ts` | `web:auth` | 0 | 1 |
 | `apps/web/src/auth/password.vitest.ts` | `web:auth` | 1 | 1 |
@@ -592,6 +608,9 @@ flowchart LR
 | `apps/web/src/db/context.vitest.ts` | `web:db` | 1 | 1 |
 | `apps/web/src/db/schema.ts` | `web:db` | 0 | 2 |
 | `apps/web/src/db/ward-user-role-rls.vitest.ts` | `web:db` | 0 | 2 |
+| `apps/web/src/features/flags.ts` | `web:features` | 3 | 0 |
+| `apps/web/src/features/flags.vitest.ts` | `web:features` | 2 | 1 |
+| `apps/web/src/features/types.ts` | `web:features` | 0 | 0 |
 | `apps/web/src/hardening/production-readiness.vitest.ts` | `web:hardening` | 0 | 3 |
 | `apps/web/src/health.mjs` | `web:health.mjs` | 1 | 0 |
 | `apps/web/src/imports/bookmarklet.ts` | `web:imports` | 0 | 0 |

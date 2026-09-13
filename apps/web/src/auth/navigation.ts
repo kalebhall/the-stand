@@ -1,4 +1,5 @@
 import { hasRole } from '@/src/auth/roles';
+import { DEFAULT_WARD_FEATURE_FLAGS, type WardFeatureFlags } from '@/src/features/types';
 
 export type AppNavItem = {
   href: string;
@@ -12,7 +13,7 @@ function hasAnyRole(roles: string[] | undefined, roleNames: readonly string[]): 
   return roleNames.some((roleName) => hasRole(roles, roleName));
 }
 
-export function getNavigationItems(roles: string[] | undefined): AppNavItem[] {
+export function getNavigationItems(roles: string[] | undefined, features: WardFeatureFlags = DEFAULT_WARD_FEATURE_FLAGS): AppNavItem[] {
   const items: AppNavItem[] = [{ href: '/dashboard', label: 'Dashboard' }];
 
   if (hasAnyRole(roles, MEETING_VIEW_ROLES) || hasRole(roles, 'STAND_ADMIN')) {
@@ -20,15 +21,15 @@ export function getNavigationItems(roles: string[] | undefined): AppNavItem[] {
   }
 
   if (hasAnyRole(roles, CLERK_OR_BISHOPRIC_ROLES) || hasRole(roles, 'STAND_ADMIN')) {
-    items.push({ href: '/bishopric', label: 'Bishopric Agenda' });
-    items.push({ href: '/interviews', label: 'Scheduled Interviews' });
-    items.push({ href: '/technology', label: 'Technology Checklist' });
+    if (features.BISHOPRIC_AGENDA) items.push({ href: '/bishopric', label: 'Bishopric Agenda' });
+    if (features.SCHEDULED_INTERVIEWS) items.push({ href: '/interviews', label: 'Scheduled Interviews' });
+    if (features.TECHNOLOGY_CHECKLIST) items.push({ href: '/technology', label: 'Technology Checklist' });
   }
 
   if (hasAnyRole(roles, CLERK_OR_BISHOPRIC_ROLES) || hasRole(roles, 'STAND_ADMIN')) {
     items.push({ href: '/members', label: 'Members' });
     items.push({ href: '/callings', label: 'Callings' });
-    items.push({ href: '/speakers', label: 'Speaker Lifecycle' });
+    if (features.SPEAKER_LIFECYCLE) items.push({ href: '/speakers', label: 'Speaker Lifecycle' });
     items.push({ href: '/membership-ordinances', label: 'Membership & Ordinances' });
     items.push({ href: '/notifications', label: 'Notifications' });
     items.push({ href: '/announcements', label: 'Announcements' });

@@ -13,22 +13,34 @@ import { DeploymentWatcher } from '@/components/deployment-watcher';
 import { SiteLogo } from '@/components/site-logo';
 import { NotificationBell } from '@/components/notification-bell';
 import { AuthSessionRefresh } from '@/components/auth-session-refresh';
+import { DEFAULT_WARD_FEATURE_FLAGS, type WardFeatureFlags } from '@/src/features/types';
 
 export function AppShell({ session, children }: { session: Session | null; children: ReactNode }) {
   const pathname = usePathname();
   const { isConductingMode, toggleConductingMode } = useConductingMode();
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+  const [featureFlags, setFeatureFlags] = useState<WardFeatureFlags>(DEFAULT_WARD_FEATURE_FLAGS);
   const isDevelopmentSite = process.env.NEXT_PUBLIC_APP_ENV === 'development';
 
   useEffect(() => {
     setIsMobileNavOpen(false);
   }, [pathname]);
 
+  useEffect(() => {
+    if (!session?.activeWardId) return;
+    let cancelled = false;
+    void fetch(`/api/w/${session.activeWardId}/feature-flags`, { cache: 'no-store' })
+      .then((response) => response.ok ? response.json() as Promise<{ features?: WardFeatureFlags }> : null)
+      .then((body) => { if (!cancelled && body?.features) setFeatureFlags(body.features); })
+      .catch(() => undefined);
+    return () => { cancelled = true; };
+  }, [session?.activeWardId]);
+
   if (!session?.user?.id) {
     return <>{children}</>;
   }
 
-  const navItems = getNavigationItems(session.user.roles);
+  const navItems = getNavigationItems(session.user.roles, featureFlags);
 
   return (
     <div className="flex min-h-screen bg-background text-foreground">

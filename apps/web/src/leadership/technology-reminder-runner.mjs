@@ -26,9 +26,11 @@ async function main() {
     const meetings = await client.query(
       `SELECT m.id, m.ward_id, m.meeting_date, m.meeting_type
          FROM meeting m
+         LEFT JOIN ward_feature_settings wfs ON wfs.ward_id = m.ward_id
          LEFT JOIN meeting_technology_checklist tc
            ON tc.meeting_id = m.id AND tc.ward_id = m.ward_id
         WHERE m.meeting_date >= CURRENT_DATE
+          AND COALESCE(wfs.technology_checklist, true)
           AND m.meeting_date <= $1::date
           AND m.status != 'COMPLETED'
           AND (

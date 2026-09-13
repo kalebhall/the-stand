@@ -41,6 +41,20 @@ describe('getNavigationItems', () => {
       label: 'Support Console'
     });
   });
+
+  it('hides disabled optional features', () => {
+    const items = getNavigationItems(['STAND_ADMIN'], {
+      BISHOPRIC_AGENDA: false,
+      SCHEDULED_INTERVIEWS: false,
+      TECHNOLOGY_CHECKLIST: true,
+      SPEAKER_LIFECYCLE: false
+    });
+    const hrefs = items.map((item) => item.href);
+    expect(hrefs).toContain('/technology');
+    expect(hrefs).not.toContain('/bishopric');
+    expect(hrefs).not.toContain('/interviews');
+    expect(hrefs).not.toContain('/speakers');
+  });
 });
 
 describe('canViewDashboardPublicPortalStatus', () => {

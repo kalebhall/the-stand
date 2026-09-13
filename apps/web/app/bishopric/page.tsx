@@ -6,6 +6,7 @@ import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth
 import { canManageMeetings } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
+import { isWardFeatureEnabled } from '@/src/features/flags';
 import { LEADERSHIP_MEETING_LABELS, type LeadershipMeetingType } from '@/src/leadership/bishopric';
 
 import { BishopricWorkspaceClient } from './bishopric-workspace-client';
@@ -16,7 +17,7 @@ type Action = { id: string; bishopric_meeting_id: string; title: string; details
 export default async function BishopricPage({ searchParams }: { searchParams: Promise<{ type?: string }> }) {
   const session = await requireAuthenticatedSession();
   enforcePasswordRotation(session);
-  if (!session.activeWardId || !canManageMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId)) redirect('/dashboard');
+  if (!session.activeWardId || !canManageMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId) || !(await isWardFeatureEnabled(session.activeWardId, 'BISHOPRIC_AGENDA'))) redirect('/dashboard');
   const requestedType = (await searchParams).type;
   const meetingType: LeadershipMeetingType = requestedType === 'WARD_COUNCIL' || requestedType === 'MISSIONARY_COORDINATION' ? requestedType : 'BISHOPRIC';
   const client = await pool.connect();

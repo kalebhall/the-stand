@@ -26,11 +26,13 @@ async function main() {
     await client.query('BEGIN');
     const interviews = await client.query(
       `SELECT id, ward_id, interview_type, member_name, interviewer_name, scheduled_at
-         FROM scheduled_interview
-        WHERE status = 'SCHEDULED'
-          AND scheduled_at >= $1::timestamptz
-          AND scheduled_at <= $2::timestamptz
-        ORDER BY scheduled_at ASC`,
+         FROM scheduled_interview si
+         LEFT JOIN ward_feature_settings wfs ON wfs.ward_id = si.ward_id
+        WHERE si.status = 'SCHEDULED'
+          AND si.scheduled_at >= $1::timestamptz
+          AND si.scheduled_at <= $2::timestamptz
+          AND COALESCE(wfs.scheduled_interviews, true)
+        ORDER BY si.scheduled_at ASC`,
       [window.startsAt, window.endsAt]
     );
 
