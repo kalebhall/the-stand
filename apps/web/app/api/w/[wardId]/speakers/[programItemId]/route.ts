@@ -10,7 +10,7 @@ import { SPEAKER_STATUSES, validateSpeakerStatusTransition, type SpeakerStatus }
 export async function PATCH(request: Request, context: { params: Promise<{ wardId: string; programItemId: string }> }) {
   const session = await auth();
   const { wardId, programItemId } = await context.params;
-  if (!session?.user?.id || !session.activeWardId || session.activeWardId !== wardId || !canManageMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId) || !(await isWardFeatureEnabled(wardId, 'SPEAKER_LIFECYCLE'))) {
+  if (!session?.user?.id || !session.activeWardId || session.activeWardId !== wardId || !canManageMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId) || !(await isWardFeatureEnabled(wardId, session.user.id, 'SPEAKER_LIFECYCLE'))) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 

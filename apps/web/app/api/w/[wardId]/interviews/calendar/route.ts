@@ -11,7 +11,7 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
   const { wardId } = await context.params;
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  if (!canManageMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId) || !(await isWardFeatureEnabled(wardId, 'SCHEDULED_INTERVIEWS'))) {
+  if (!canManageMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId) || !(await isWardFeatureEnabled(wardId, session.user.id, 'SCHEDULED_INTERVIEWS'))) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 

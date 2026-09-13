@@ -20,7 +20,7 @@ export default async function SettingsPage() {
       ));
   const canViewActivityLog = wardId ? canRunImports({ roles: session.user.roles, activeWardId: wardId }, wardId) : false;
   const canManageProgramLayout = wardId ? canManageMeetings({ roles: session.user.roles, activeWardId: wardId }, wardId) : false;
-  const featureFlags = wardId && isStandAdmin ? await getWardFeatureFlags(wardId) : null;
+  const featureFlags = wardId && isStandAdmin ? await getWardFeatureFlags(wardId, session.user.id) : null;
 
   return (
     <main className="mx-auto max-w-4xl space-y-8 p-6">

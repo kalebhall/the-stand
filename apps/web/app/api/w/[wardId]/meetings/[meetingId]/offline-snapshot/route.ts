@@ -15,7 +15,7 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
   if (!canViewMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) {
     return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
   }
-  const technologyEnabled = await isWardFeatureEnabled(wardId, 'TECHNOLOGY_CHECKLIST');
+  const technologyEnabled = await isWardFeatureEnabled(wardId, session.user.id, 'TECHNOLOGY_CHECKLIST');
 
   const client = await pool.connect();
   try {

@@ -10,7 +10,7 @@ import { SpeakerLifecycleWorkspace } from './speaker-lifecycle-workspace';
 export default async function SpeakersPage() {
   const session = await requireAuthenticatedSession();
   enforcePasswordRotation(session);
-  if (!session.activeWardId || !canManageMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId) || !(await isWardFeatureEnabled(session.activeWardId, 'SPEAKER_LIFECYCLE'))) redirect('/dashboard');
+  if (!session.activeWardId || !canManageMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId) || !(await isWardFeatureEnabled(session.activeWardId, session.user.id, 'SPEAKER_LIFECYCLE'))) redirect('/dashboard');
 
   const client = await pool.connect();
   try {

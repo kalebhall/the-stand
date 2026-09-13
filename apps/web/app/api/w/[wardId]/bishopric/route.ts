@@ -16,7 +16,7 @@ async function authorize(wardId: string) {
   if (!canManageMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) {
     return { response: NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 }) };
   }
-  if (!(await isWardFeatureEnabled(wardId, 'BISHOPRIC_AGENDA'))) return { response: NextResponse.json({ error: 'Bishopric agenda feature is disabled', code: 'FEATURE_DISABLED' }, { status: 403 }) };
+  if (!(await isWardFeatureEnabled(wardId, session.user.id, 'BISHOPRIC_AGENDA'))) return { response: NextResponse.json({ error: 'Bishopric agenda feature is disabled', code: 'FEATURE_DISABLED' }, { status: 403 }) };
   return { session };
 }
 
