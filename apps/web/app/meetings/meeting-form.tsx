@@ -434,6 +434,7 @@ export function MeetingForm({
 
         {programItems.map((item, index) => (
           <article
+            key={`${item.itemType}-${index}`}
             className={cn('program-item space-y-3 rounded-md border p-3', getProgramItemAccentClass(item.itemType))}
             draggable={!PROTECTED_ITEM_TYPES.has(item.itemType)}
             onDragStart={

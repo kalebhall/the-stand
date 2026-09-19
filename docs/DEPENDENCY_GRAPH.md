@@ -15,7 +15,7 @@ flowchart LR
   A3["root:tooling<br/>7 files"]
   A4["web:announcements<br/>2 files"]
   A5["web:api<br/>90 files"]
-  A6["web:app<br/>119 files"]
+  A6["web:app<br/>121 files"]
   A7["web:audit<br/>2 files"]
   A8["web:auth<br/>11 files"]
   A9["web:bootstrap.mjs<br/>1 files"]
@@ -40,7 +40,7 @@ flowchart LR
   A28["web:stand<br/>10 files"]
   A29["web:tooling<br/>2 files"]
   A30["web:types<br/>2 files"]
-  A31["web:ui<br/>31 files"]
+  A31["web:ui<br/>33 files"]
   A32["web:version.mjs<br/>1 files"]
   A5 -->|124| A8
   A6 -->|118| A31
@@ -119,7 +119,7 @@ flowchart LR
 | `root:tooling` | 7 |
 | `web:announcements` | 2 |
 | `web:api` | 90 |
-| `web:app` | 119 |
+| `web:app` | 121 |
 | `web:audit` | 2 |
 | `web:auth` | 11 |
 | `web:bootstrap.mjs` | 1 |
@@ -144,7 +144,7 @@ flowchart LR
 | `web:stand` | 10 |
 | `web:tooling` | 2 |
 | `web:types` | 2 |
-| `web:ui` | 31 |
+| `web:ui` | 33 |
 | `web:version.mjs` | 1 |
 
 ## Internal dependencies
@@ -156,10 +156,10 @@ flowchart LR
 | `web:api` | `web:db` | 115 |
 | `web:app` | `web:auth` | 90 |
 | `web:app` | `web:db` | 56 |
+| `web:app` | `web:app` | 54 |
 | `web:notifications` | `web:notifications` | 53 |
-| `web:app` | `web:app` | 52 |
 | `web:api` | `web:notifications` | 46 |
-| `web:ui` | `web:ui` | 28 |
+| `web:ui` | `web:ui` | 30 |
 | `web:api` | `web:api` | 23 |
 | `web:api` | `web:lib` | 23 |
 | `web:api` | `web:audit` | 20 |
@@ -246,30 +246,30 @@ flowchart LR
 | --- | --- | ---: |
 | `web:app` | `next` | 91 |
 | `web:api` | `next` | 67 |
-| `web:app` | `react` | 35 |
-| `web:ui` | `react` | 29 |
+| `web:app` | `react` | 37 |
+| `web:ui` | `react` | 31 |
 | `web:api` | `vitest` | 22 |
 | `web:notifications` | `vitest` | 16 |
 | `root:tooling` | `Node.js` | 14 |
 | `web:ui` | `next` | 14 |
 | `web:notifications` | `pg` | 13 |
-| `web:app` | `vitest` | 10 |
+| `web:app` | `vitest` | 12 |
+| `web:app` | `next-intl` | 11 |
 | `web:api` | `zod` | 9 |
-| `web:app` | `next-intl` | 9 |
+| `web:ui` | `next-intl` | 8 |
+| `web:app` | `@testing-library/react` | 7 |
 | `web:imports` | `vitest` | 7 |
 | `web:meetings` | `vitest` | 7 |
 | `web:auth` | `next-auth` | 6 |
 | `web:leadership` | `vitest` | 6 |
-| `web:ui` | `next-intl` | 6 |
-| `web:app` | `@testing-library/react` | 5 |
+| `web:ui` | `@testing-library/react` | 6 |
+| `web:ui` | `vitest` | 6 |
 | `web:stand` | `vitest` | 5 |
 | `web:app` | `@testing-library/user-event` | 4 |
 | `web:auth` | `vitest` | 4 |
 | `web:config` | `@playwright/test` | 4 |
 | `web:tooling` | `Node.js` | 4 |
-| `web:ui` | `@testing-library/react` | 4 |
 | `web:ui` | `next-auth` | 4 |
-| `web:ui` | `vitest` | 4 |
 | `web:api` | `Node.js` | 3 |
 | `web:app` | `Node.js` | 3 |
 | `web:app` | `next-auth` | 3 |
@@ -475,9 +475,11 @@ flowchart LR
 | `apps/web/app/meetings/[meetingId]/print/page.tsx` | `web:app` | 7 | 1 |
 | `apps/web/app/meetings/[meetingId]/public-preview/page.tsx` | `web:app` | 1 | 0 |
 | `apps/web/app/meetings/delete-meeting-button.tsx` | `web:app` | 1 | 3 |
+| `apps/web/app/meetings/delete-meeting-button.vitest.tsx` | `web:app` | 1 | 4 |
 | `apps/web/app/meetings/error.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/meetings/loading.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/meetings/meeting-form.tsx` | `web:app` | 11 | 3 |
+| `apps/web/app/meetings/meeting-form.vitest.tsx` | `web:app` | 1 | 4 |
 | `apps/web/app/meetings/new/page.tsx` | `web:app` | 3 | 1 |
 | `apps/web/app/meetings/page.tsx` | `web:app` | 8 | 2 |
 | `apps/web/app/members/members-manager-client.tsx` | `web:app` | 3 | 2 |
@@ -557,7 +559,9 @@ flowchart LR
 | `apps/web/components/CallingDeleteButton.tsx` | `web:ui` | 1 | 2 |
 | `apps/web/components/CallingReleaseButton.tsx` | `web:ui` | 1 | 2 |
 | `apps/web/components/HymnAutocomplete.tsx` | `web:ui` | 0 | 2 |
+| `apps/web/components/HymnAutocomplete.vitest.tsx` | `web:ui` | 1 | 4 |
 | `apps/web/components/InternalNotesPanel.tsx` | `web:ui` | 3 | 2 |
+| `apps/web/components/InternalNotesPanel.vitest.tsx` | `web:ui` | 1 | 4 |
 | `apps/web/components/MembershipOrdinanceSection.tsx` | `web:ui` | 3 | 3 |
 | `apps/web/components/MembershipOrdinanceSection.vitest.tsx` | `web:ui` | 1 | 4 |
 | `apps/web/components/StandardCallingsManager.tsx` | `web:ui` | 1 | 2 |

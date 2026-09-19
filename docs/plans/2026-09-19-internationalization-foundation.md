@@ -68,8 +68,8 @@ Phase 1 builds the localization seam. It does not translate the whole applicatio
 
 - Added semantic catalogs for meeting-form, business, notes, hymn, and delete-meeting controls.
 - Localized core child controls and added provider-backed component coverage.
-- Catalog validation currently covers 286 keys across English, Spanish, and pseudo-locale catalogs.
-- Remaining: add rendered language-switching tests for MeetingForm, InternalNotesPanel, HymnAutocomplete, and DeleteMeetingButton; review authored/template content; native Spanish review.
+- Catalog validation currently covers 299 keys across English, Spanish, and pseudo-locale catalogs.
+- Remaining: review authored/template content, broaden loading/empty/error/offline/print-state coverage, and native Spanish review.
 
 ## Verification gates
 

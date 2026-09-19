@@ -83,11 +83,11 @@ Implemented in this slice:
 - Localized InternalNotesPanel and HymnAutocomplete controls.
 - Localized delete-meeting confirmation and state labels.
 - Localized MembershipOrdinanceSection controls, status labels, Church-source handoff labels, and Spanish component coverage.
-- Expanded pseudo-locale coverage to 286 validated message keys.
+- Added Spanish rendered component coverage for MeetingForm, InternalNotesPanel, HymnAutocomplete, and DeleteMeetingButton.
+- Expanded pseudo-locale coverage to 299 validated message keys.
 
 Remaining in Phase 2:
 
-- Add rendered language-switching tests for MeetingForm, InternalNotesPanel, HymnAutocomplete, and DeleteMeetingButton.
 - Review remaining hard-coded authored/template content and decide whether it should remain source-language content.
 - Native-speaker review of all new Spanish terminology; untranslated fallback values are not production-ready.
 
