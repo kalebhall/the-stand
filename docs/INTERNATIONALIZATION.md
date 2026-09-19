@@ -82,13 +82,13 @@ Implemented in this slice:
 - Localized WardBusinessSection action labels and added provider-backed component test coverage.
 - Localized InternalNotesPanel and HymnAutocomplete controls.
 - Localized delete-meeting confirmation and state labels.
-- Expanded pseudo-locale coverage to 218 validated message keys.
+- Localized MembershipOrdinanceSection controls, status labels, Church-source handoff labels, and Spanish component coverage.
+- Expanded pseudo-locale coverage to 286 validated message keys.
 
 Remaining in Phase 2:
 
-- Translate the remaining MeetingForm field labels and validation text.
-- Translate MembershipOrdinanceSection and remaining related workflow controls.
-- Add rendered language-switching tests for these client components.
+- Add rendered language-switching tests for MeetingForm, InternalNotesPanel, HymnAutocomplete, and DeleteMeetingButton.
+- Review remaining hard-coded authored/template content and decide whether it should remain source-language content.
 - Native-speaker review of all new Spanish terminology; untranslated fallback values are not production-ready.
 
 

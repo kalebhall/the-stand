@@ -40,7 +40,7 @@ flowchart LR
   A28["web:stand<br/>10 files"]
   A29["web:tooling<br/>2 files"]
   A30["web:types<br/>2 files"]
-  A31["web:ui<br/>30 files"]
+  A31["web:ui<br/>31 files"]
   A32["web:version.mjs<br/>1 files"]
   A5 -->|124| A8
   A6 -->|118| A31
@@ -144,7 +144,7 @@ flowchart LR
 | `web:stand` | 10 |
 | `web:tooling` | 2 |
 | `web:types` | 2 |
-| `web:ui` | 30 |
+| `web:ui` | 31 |
 | `web:version.mjs` | 1 |
 
 ## Internal dependencies
@@ -159,7 +159,7 @@ flowchart LR
 | `web:notifications` | `web:notifications` | 53 |
 | `web:app` | `web:app` | 52 |
 | `web:api` | `web:notifications` | 46 |
-| `web:ui` | `web:ui` | 27 |
+| `web:ui` | `web:ui` | 28 |
 | `web:api` | `web:api` | 23 |
 | `web:api` | `web:lib` | 23 |
 | `web:api` | `web:audit` | 20 |
@@ -247,7 +247,7 @@ flowchart LR
 | `web:app` | `next` | 91 |
 | `web:api` | `next` | 67 |
 | `web:app` | `react` | 35 |
-| `web:ui` | `react` | 28 |
+| `web:ui` | `react` | 29 |
 | `web:api` | `vitest` | 22 |
 | `web:notifications` | `vitest` | 16 |
 | `root:tooling` | `Node.js` | 14 |
@@ -260,14 +260,16 @@ flowchart LR
 | `web:meetings` | `vitest` | 7 |
 | `web:auth` | `next-auth` | 6 |
 | `web:leadership` | `vitest` | 6 |
+| `web:ui` | `next-intl` | 6 |
 | `web:app` | `@testing-library/react` | 5 |
 | `web:stand` | `vitest` | 5 |
 | `web:app` | `@testing-library/user-event` | 4 |
 | `web:auth` | `vitest` | 4 |
 | `web:config` | `@playwright/test` | 4 |
 | `web:tooling` | `Node.js` | 4 |
+| `web:ui` | `@testing-library/react` | 4 |
 | `web:ui` | `next-auth` | 4 |
-| `web:ui` | `next-intl` | 4 |
+| `web:ui` | `vitest` | 4 |
 | `web:api` | `Node.js` | 3 |
 | `web:app` | `Node.js` | 3 |
 | `web:app` | `next-auth` | 3 |
@@ -276,8 +278,6 @@ flowchart LR
 | `web:db` | `drizzle-orm` | 3 |
 | `web:db` | `vitest` | 3 |
 | `web:lib` | `vitest` | 3 |
-| `web:ui` | `@testing-library/react` | 3 |
-| `web:ui` | `vitest` | 3 |
 | `package:shared` | `vitest` | 2 |
 | `root:other` | `Node.js` | 2 |
 | `web:api` | `pg` | 2 |
@@ -558,7 +558,8 @@ flowchart LR
 | `apps/web/components/CallingReleaseButton.tsx` | `web:ui` | 1 | 2 |
 | `apps/web/components/HymnAutocomplete.tsx` | `web:ui` | 0 | 2 |
 | `apps/web/components/InternalNotesPanel.tsx` | `web:ui` | 3 | 2 |
-| `apps/web/components/MembershipOrdinanceSection.tsx` | `web:ui` | 3 | 2 |
+| `apps/web/components/MembershipOrdinanceSection.tsx` | `web:ui` | 3 | 3 |
+| `apps/web/components/MembershipOrdinanceSection.vitest.tsx` | `web:ui` | 1 | 4 |
 | `apps/web/components/StandardCallingsManager.tsx` | `web:ui` | 1 | 2 |
 | `apps/web/components/WardBusinessSection.tsx` | `web:ui` | 2 | 3 |
 | `apps/web/components/WardBusinessSection.vitest.tsx` | `web:ui` | 1 | 4 |
