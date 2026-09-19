@@ -25,6 +25,7 @@ export const userAccount = pgTable('user_account', {
   mustChangePassword: boolean('must_change_password').notNull().default(false),
   lastPasswordChangeAt: timestamp('last_password_change_at', { withTimezone: true }),
   isActive: boolean('is_active').notNull().default(true),
+  preferredLocale: text('preferred_locale'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 });
 

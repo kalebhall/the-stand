@@ -2,9 +2,13 @@
 
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { useState, type ChangeEvent } from 'react';
+import { useEffect, useState, type ChangeEvent } from 'react';
 
-import { SUPPORTED_LOCALES, type Locale } from '@/src/i18n/config';
+import { SUPPORTED_LOCALES, isSupportedLocale, type Locale } from '@/src/i18n/config';
+
+function setLocaleCookie(locale: Locale) {
+  document.cookie = `NEXT_LOCALE=${encodeURIComponent(locale)}; Path=/; Max-Age=31536000; SameSite=Lax`;
+}
 
 export function LanguagePreference({ currentLocale }: { currentLocale: Locale }) {
   const router = useRouter();
@@ -12,15 +16,58 @@ export function LanguagePreference({ currentLocale }: { currentLocale: Locale })
   const [selectedLocale, setSelectedLocale] = useState<Locale>(currentLocale);
   const [status, setStatus] = useState('');
 
-  function handleChange(event: ChangeEvent<HTMLSelectElement>) {
+  useEffect(() => {
+    let cancelled = false;
+
+    void fetch('/api/account/preferences', { cache: 'no-store' })
+      .then(async (response) => {
+        if (!response.ok) return null;
+        const body: unknown = await response.json();
+        if (!body || typeof body !== 'object' || !('locale' in body)) return null;
+        const locale = body.locale;
+        return typeof locale === 'string' && isSupportedLocale(locale) ? locale : null;
+      })
+      .then((locale) => {
+        if (cancelled || !locale || locale === selectedLocale) return;
+        setSelectedLocale(locale);
+        setLocaleCookie(locale);
+        router.refresh();
+      })
+      .catch(() => {
+        if (!cancelled) setStatus(t('loadFailed'));
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [router, selectedLocale, t]);
+
+  async function handleChange(event: ChangeEvent<HTMLSelectElement>) {
     const nextLocale = event.target.value;
     if (!SUPPORTED_LOCALES.includes(nextLocale as Locale)) return;
 
     const locale = nextLocale as Locale;
-    document.cookie = `NEXT_LOCALE=${encodeURIComponent(locale)}; Path=/; Max-Age=31536000; SameSite=Lax`;
-    setSelectedLocale(locale);
-    setStatus(t('saved'));
-    router.refresh();
+    setStatus(t('saving'));
+
+    try {
+      const response = await fetch('/api/account/preferences', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ locale })
+      });
+
+      if (!response.ok) {
+        setStatus(t('saveFailed'));
+        return;
+      }
+
+      setLocaleCookie(locale);
+      setSelectedLocale(locale);
+      setStatus(t('saved'));
+      router.refresh();
+    } catch {
+      setStatus(t('saveFailed'));
+    }
   }
 
   return (

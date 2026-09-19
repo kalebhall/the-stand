@@ -52,21 +52,26 @@ Implemented:
 
 - `next-intl` dependency and request configuration.
 - Supported-locale registry.
-- English message catalog.
+- English, Spanish, and pseudo-locale catalogs.
 - Root `NextIntlClientProvider`.
 - `html[lang]` derived from resolved locale.
-- Settings language selector using a local preference cookie.
-- Translation used in the settings language preference surface.
+- Authenticated language preference persistence with cookie synchronization.
+- Settings language selector with loading, saving, and failure states.
+- Translation catalog validation with missing/extra-key and ICU checks.
+- CI validation step for translation catalogs.
+- Stable error codes added to speaker lifecycle API boundary.
+- Translated dashboard and meeting editor/At-the-Stand page-shell workflow surfaces.
 - Implementation plan and follow-up boundaries.
 
-Remaining in Phase 1:
+Operational limitation:
 
-- Persist `preferred_locale` on `user_account`.
-- Replace cookie-only preference with authenticated user preference plus cookie fallback.
-- Add CI check for missing/extra keys and invalid ICU messages.
-- Add `en-XA` pseudo-locale.
-- Convert API errors to stable translatable error codes.
-- Migrate the first complete workflow rather than translating isolated labels.
+- Migration execution was not run locally because `DATABASE_URL` is unset in this environment. Deployment migration must run before the persisted preference is used against a live database.
+
+Remaining after Phase 1:
+
+- Native-speaker review of Spanish terminology.
+- Translate deeper child components inside `MeetingForm`, `WardBusinessSection`, and related workflow controls.
+- Add Portuguese (Brazil) and Tagalog catalogs after native reviewers are available.
 
 ## Translation review
 

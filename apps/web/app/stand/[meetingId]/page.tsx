@@ -1,3 +1,4 @@
+import { getTranslations } from 'next-intl/server';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 
@@ -88,6 +89,7 @@ export default async function StandViewPage({
   searchParams: Promise<{ mode?: string }>;
 }) {
   const session = await requireAuthenticatedSession();
+  const t = await getTranslations('stand');
   enforcePasswordRotation(session);
 
   if (!session.activeWardId || !canViewMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId)) {
@@ -274,19 +276,19 @@ export default async function StandViewPage({
     return (
       <main className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-5xl flex-col gap-6 p-4 sm:p-6 lg:p-8">
         <section className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-card p-3 sm:p-4">
-          <h1 className="text-xl font-semibold sm:text-2xl">At the Stand</h1>
-          <div className="flex gap-2" role="tablist" aria-label="Stand view mode">
+          <h1 className="text-xl font-semibold sm:text-2xl">{t('title')}</h1>
+          <div className="flex gap-2" role="tablist" aria-label={t('viewMode')}>
             <Link
               href={`/stand/${meetingId}?mode=formal`}
               className={cn(buttonVariants({ variant: selectedMode === 'formal' ? 'default' : 'outline', size: 'sm' }))}
             >
-              Formal Script
+              {t('formalScript')}
             </Link>
             <Link
               href={`/stand/${meetingId}?mode=compact`}
               className={cn(buttonVariants({ variant: selectedMode === 'compact' ? 'default' : 'outline', size: 'sm' }))}
             >
-              Compact Labels
+              {t('compactLabels')}
             </Link>
           </div>
           <OfflineStandButton userId={session.user.id} wardId={activeWardId} meetingId={meetingId} />
@@ -315,7 +317,7 @@ export default async function StandViewPage({
                           rel="noreferrer"
                         >
                           {row.details}
-                          <span className="ml-2 text-sm font-normal">Open hymn</span>
+                          <span className="ml-2 text-sm font-normal">{t('openHymn')}</span>
                         </a>
                       ) : (
                         <p className="whitespace-pre-wrap text-lg font-medium sm:text-xl">{row.details}</p>
@@ -329,7 +331,7 @@ export default async function StandViewPage({
                             wardId={activeWardId}
                             target={{ type: 'PROGRAM_ITEM', programItemId: row.programItemId }}
                             notes={notes.filter((note) => note.program_item_id === row.programItemId)}
-                            title="Item notes"
+                            title={t('itemNotes')}
                           />
                         </div>
                       ) : null}
@@ -378,7 +380,7 @@ export default async function StandViewPage({
                           wardId={activeWardId}
                           target={{ type: 'PROGRAM_ITEM', programItemId: row.programItemId }}
                           notes={notes.filter((note) => note.program_item_id === row.programItemId)}
-                          title="Item notes"
+                          title={t('itemNotes')}
                         />
                       </div>
                     ) : null}
@@ -406,7 +408,7 @@ export default async function StandViewPage({
                           rel="noreferrer"
                         >
                           {row.details}
-                          <span className="ml-2 text-xs font-normal">Open hymn</span>
+                          <span className="ml-2 text-xs font-normal">{t('openHymn')}</span>
                         </a>
                       ) : (
                         <p className="whitespace-pre-wrap text-base font-medium sm:text-lg">{row.details}</p>
@@ -420,7 +422,7 @@ export default async function StandViewPage({
                             wardId={activeWardId}
                             target={{ type: 'PROGRAM_ITEM', programItemId: row.programItemId }}
                             notes={notes.filter((note) => note.program_item_id === row.programItemId)}
-                            title="Item notes"
+                            title={t('itemNotes')}
                           />
                         </div>
                       ) : null}
@@ -454,7 +456,7 @@ export default async function StandViewPage({
                 return (
                   <article key={`compact-${index}`} className="rounded-lg border bg-card p-4 sm:p-5">
                     <p className="text-sm uppercase tracking-wide text-muted-foreground">
-                      {row.kind === 'sustain' ? 'Sustain' : 'Release'}
+                      {row.kind === 'sustain' ? t('sustain') : t('release')}
                     </p>
                     <p className="text-base font-medium sm:text-lg">{row.summary}</p>
                     {row.programNotes?.trim() ? (
@@ -466,7 +468,7 @@ export default async function StandViewPage({
                           wardId={activeWardId}
                           target={{ type: 'PROGRAM_ITEM', programItemId: row.programItemId }}
                           notes={notes.filter((note) => note.program_item_id === row.programItemId)}
-                          title="Item notes"
+                          title={t('itemNotes')}
                         />
                       </div>
                     ) : null}

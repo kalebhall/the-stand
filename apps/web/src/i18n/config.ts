@@ -13,6 +13,10 @@ export function resolveLocale(value: string | undefined | null): Locale {
   return isSupportedLocale(value) ? value : DEFAULT_LOCALE;
 }
 
+export function resolveActiveLocale(persistedLocale: string | undefined | null, cookieLocale: string | undefined | null): Locale {
+  return resolveLocale(persistedLocale ?? cookieLocale);
+}
+
 export const LOCALE_LABELS: Record<Locale, string> = {
   'en-US': 'English',
   es: 'Español'
