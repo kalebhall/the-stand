@@ -27,6 +27,36 @@ export type MeetingRenderInput = {
     coverImageUrl?: string | null;
     coverImageAltText?: string | null;
   };
+  labels?: MeetingRenderLabels;
+};
+
+export type MeetingRenderLabels = {
+  programTitle: string;
+  announcements: string;
+  introduction: string;
+  presiding: string;
+  conducting: string;
+  organistPianist: string;
+  chorister: string;
+  sacramentPrayers: string;
+  qrDigitalProgram: string;
+  qrCode: string;
+  itemLabels: Record<string, string>;
+  meetingTypeLabel?: string;
+};
+
+const DEFAULT_RENDER_LABELS: MeetingRenderLabels = {
+  programTitle: 'Sacrament Meeting Program',
+  announcements: 'Announcements',
+  introduction: 'Introduction',
+  presiding: 'Presiding',
+  conducting: 'Conducting',
+  organistPianist: 'Organist / Pianist',
+  chorister: 'Chorister',
+  sacramentPrayers: 'Sacrament Prayers',
+  qrDigitalProgram: 'Open digital program',
+  qrCode: 'QR code for digital program',
+  itemLabels: {}
 };
 
 const SACRAMENT_PRAYERS = [
@@ -50,20 +80,22 @@ function displayTopic(item: MeetingRenderItem) {
   return item.itemType.toUpperCase() === 'SPEAKER' && item.topic?.trim() ? item.topic.trim() : '';
 }
 
-function renderQrCode(url: string | undefined) {
+function renderQrCode(url: string | undefined, labels: MeetingRenderLabels) {
   if (!url) return '';
   const qr = QRCode.create(url, { errorCorrectionLevel: 'M' });
   const size = qr.modules.size;
-  const cells = Array.from(qr.modules.data).map((dark, index) => dark ? `<rect x="${index % size}" y="${Math.floor(index / size)}" width="1" height="1" />` : '').join('');
-  return `<a href="${escapeHtml(url)}" class="public-program__qr" aria-label="Open digital program"><svg viewBox="0 0 ${size} ${size}" role="img" aria-label="QR code for digital program" shape-rendering="crispEdges">${cells}</svg></a>`;
+  const cells = Array.from(qr.modules.data)
+    .map((dark, index) => (dark ? `<rect x="${index % size}" y="${Math.floor(index / size)}" width="1" height="1" />` : ''))
+    .join('');
+  return `<a href="${escapeHtml(url)}" class="public-program__qr" aria-label="${escapeHtml(labels.qrDigitalProgram)}"><svg viewBox="0 0 ${size} ${size}" role="img" aria-label="${escapeHtml(labels.qrCode)}" shape-rendering="crispEdges">${cells}</svg></a>`;
 }
 
-function renderAnnouncementBlock(items: AnnouncementRenderItem[]) {
+function renderAnnouncementBlock(items: AnnouncementRenderItem[], labels: MeetingRenderLabels) {
   if (!items.length) {
     return '';
   }
 
-  return `<section class="space-y-2"><h2 class="text-base font-semibold">Announcements</h2>${items
+  return `<section class="space-y-2"><h2 class="text-base font-semibold">${escapeHtml(labels.announcements)}</h2>${items
     .map((item) => {
       const body = item.body ? `<p class="text-sm text-muted-foreground">${escapeHtml(item.body)}</p>` : '';
       return `<article class="rounded border p-3"><p class="text-sm font-medium">${escapeHtml(item.title)}</p>${body}</article>`;
@@ -71,32 +103,46 @@ function renderAnnouncementBlock(items: AnnouncementRenderItem[]) {
     .join('')}</section>`;
 }
 
-export function buildMeetingRenderHtml({ meetingDate, meetingType, programItems, announcements = [], publicUrl, layout }: MeetingRenderInput) {
+export function buildMeetingRenderHtml({
+  meetingDate,
+  meetingType,
+  programItems,
+  announcements = [],
+  publicUrl,
+  layout,
+  labels: providedLabels
+}: MeetingRenderInput) {
+  const labels = providedLabels ?? DEFAULT_RENDER_LABELS;
   const selectedLayout = layout ?? { preset: 'FULL_PAGE' as const, announcementMode: 'AFTER_PROGRAM' as const, coverMode: 'NONE' as const };
   const escapedDate = escapeHtml(meetingDate);
-  const escapedType = escapeHtml(meetingType.replaceAll('_', ' '));
+  const escapedType = escapeHtml(labels.meetingTypeLabel ?? meetingType.replaceAll('_', ' '));
   const layoutClass = `public-program public-program--${selectedLayout.preset.toLowerCase()}`;
   const foldGuide = selectedLayout.preset === 'FULL_PAGE' ? '' : '<div class="print-fold-guides" aria-hidden="true"></div>';
   const printStyles = `<style>@media print { .public-program { max-width: none !important; color: #000 !important; } .public-program--single_sheet_bifold, .public-program--tri_fold_bulletin { column-gap: 0.25in; column-fill: auto; height: 10in; } .public-program--single_sheet_bifold { column-count: 2; } .public-program--tri_fold_bulletin { column-count: 3; } .public-program--single_sheet_bifold .public-program__cover, .public-program--tri_fold_bulletin .public-program__cover { column-span: all; } .public-program--single_sheet_bifold article, .public-program--tri_fold_bulletin article, .print-fold-guides { break-inside: avoid; } .public-program--single_sheet_bifold section, .public-program--tri_fold_bulletin section { break-inside: avoid; } .print-fold-guides { position: absolute; inset: 0; pointer-events: none; border-left: 1px dashed #999; border-right: 1px dashed #999; } .public-program--single_sheet_bifold .print-fold-guides { left: 50%; right: 50%; } .public-program--tri_fold_bulletin .print-fold-guides { left: 33.333%; right: 33.333%; } .public-program__qr { display: inline-block; width: 1.25in; height: 1.25in; } .public-program__qr svg { width: 100%; height: 100%; background: #fff; fill: #000; padding: 0.08in; } .public-program--full_page { column-count: 1; } } @media screen { .print-fold-guides { display: none; } }</style>`;
-  const cover = selectedLayout.coverMode === 'AUTHORIZED_IMAGE' && selectedLayout.coverImageUrl && selectedLayout.coverImageAltText
-    ? `<img src="${escapeHtml(selectedLayout.coverImageUrl)}" alt="${escapeHtml(selectedLayout.coverImageAltText)}" class="mx-auto max-h-48 max-w-full object-contain" />`
-    : '';
+  const cover =
+    selectedLayout.coverMode === 'AUTHORIZED_IMAGE' && selectedLayout.coverImageUrl && selectedLayout.coverImageAltText
+      ? `<img src="${escapeHtml(selectedLayout.coverImageUrl)}" alt="${escapeHtml(selectedLayout.coverImageAltText)}" class="mx-auto max-h-48 max-w-full object-contain" />`
+      : '';
 
   const activeAnnouncements = announcements
     .filter((item) => item.includeInProgram !== false)
     .filter((item) => isAnnouncementActiveForDate(item, meetingDate));
-  const topAnnouncements = selectedLayout.announcementMode === 'NONE' ? [] : activeAnnouncements.filter((item) => item.placement === 'PROGRAM_TOP');
-  const bottomAnnouncements = selectedLayout.announcementMode === 'NONE' ? [] : activeAnnouncements.filter((item) => selectedLayout.announcementMode === 'BACK_PANEL' || item.placement === 'PROGRAM_BOTTOM');
+  const topAnnouncements =
+    selectedLayout.announcementMode === 'NONE' ? [] : activeAnnouncements.filter((item) => item.placement === 'PROGRAM_TOP');
+  const bottomAnnouncements =
+    selectedLayout.announcementMode === 'NONE'
+      ? []
+      : activeAnnouncements.filter((item) => selectedLayout.announcementMode === 'BACK_PANEL' || item.placement === 'PROGRAM_BOTTOM');
 
   const itemsHtml = programItems
     .map((item) => {
       if (item.itemType.toUpperCase() === INTRODUCTION_ITEM_TYPE) {
         const roles = item.introductionRoles ?? { presiding: '', conducting: '', organist: '', chorister: '' };
         const roleRows = [
-          ['Presiding', roles.presiding],
-          ['Conducting', roles.conducting],
-          ['Organist / Pianist', roles.organist],
-          ['Chorister', roles.chorister]
+          [labels.presiding, roles.presiding],
+          [labels.conducting, roles.conducting],
+          [labels.organistPianist, roles.organist],
+          [labels.chorister, roles.chorister]
         ]
           .map(
             ([role, name]) =>
@@ -105,9 +151,9 @@ export function buildMeetingRenderHtml({ meetingDate, meetingType, programItems,
           .join('');
         const notes = item.programNotes?.trim() || item.notes?.trim();
         const notesHtml = notes ? `<p class="text-xs text-muted-foreground">${escapeHtml(notes)}</p>` : '';
-        return `<article class="space-y-1"><h2 class="border-b pb-1 text-base font-semibold">Introduction</h2>${roleRows}${notesHtml}</article>`;
+        return `<article class="space-y-1"><h2 class="border-b pb-1 text-base font-semibold">${escapeHtml(labels.introduction)}</h2>${roleRows}${notesHtml}</article>`;
       }
-      const label = escapeHtml(getProgramItemLabel(item.itemType));
+      const label = escapeHtml(labels.itemLabels[item.itemType.toUpperCase()] ?? getProgramItemLabel(item.itemType));
       const value = escapeHtml(displayHymn(item) || '—');
       const topic = displayTopic(item);
       const topicHtml = topic ? `<p class="text-sm text-muted-foreground">${escapeHtml(topic)}</p>` : '';
@@ -124,5 +170,5 @@ export function buildMeetingRenderHtml({ meetingDate, meetingType, programItems,
     (line) => `<p class="text-xs leading-relaxed text-muted-foreground">${escapeHtml(line)}</p>`
   ).join('');
 
-  return `${printStyles}<main class="${layoutClass} mx-auto max-w-3xl space-y-6 p-4 sm:p-8" aria-labelledby="public-program-title" data-layout-preset="${selectedLayout.preset}" data-announcement-mode="${selectedLayout.announcementMode}"><header class="public-program__cover space-y-2 border-b pb-4 text-center"><h1 id="public-program-title" class="text-2xl font-semibold">Sacrament Meeting Program</h1><p class="text-sm text-muted-foreground">${escapedDate}</p><p class="text-sm text-muted-foreground">${escapedType}</p>${cover}</header>${foldGuide}${renderAnnouncementBlock(topAnnouncements)}<section class="space-y-2">${itemsHtml}</section>${renderAnnouncementBlock(bottomAnnouncements)}<section class="space-y-2"><h2 class="text-base font-semibold">Sacrament Prayers</h2>${prayersHtml}</section>${renderQrCode(publicUrl)}</main>`;
+  return `${printStyles}<main class="${layoutClass} mx-auto max-w-3xl space-y-6 p-4 sm:p-8" aria-labelledby="public-program-title" data-layout-preset="${selectedLayout.preset}" data-announcement-mode="${selectedLayout.announcementMode}"><header class="public-program__cover space-y-2 border-b pb-4 text-center"><h1 id="public-program-title" class="text-2xl font-semibold">${escapeHtml(labels.programTitle)}</h1><p class="text-sm text-muted-foreground">${escapedDate}</p><p class="text-sm text-muted-foreground">${escapedType}</p>${cover}</header>${foldGuide}${renderAnnouncementBlock(topAnnouncements, labels)}<section class="space-y-2">${itemsHtml}</section>${renderAnnouncementBlock(bottomAnnouncements, labels)}<section class="space-y-2"><h2 class="text-base font-semibold">${escapeHtml(labels.sacramentPrayers)}</h2>${prayersHtml}</section>${renderQrCode(publicUrl, labels)}</main>`;
 }

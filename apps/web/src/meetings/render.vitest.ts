@@ -147,14 +147,49 @@ describe('buildMeetingRenderHtml', () => {
     expect(html).toContain('Finding peace through prayer');
   });
 
+  it('uses localized labels while preserving authored program content', () => {
+    const html = buildMeetingRenderHtml({
+      meetingDate: '2026-01-04',
+      meetingType: 'SACRAMENT',
+      programItems: [{ itemType: 'OPENING_HYMN', title: null, notes: null, hymnNumber: '2', hymnTitle: 'The Spirit of God' }],
+      labels: {
+        programTitle: 'Programa de la reunión sacramental',
+        announcements: 'Anuncios',
+        introduction: 'Introducción',
+        presiding: 'Preside',
+        conducting: 'Dirige',
+        organistPianist: 'Organista / pianista',
+        chorister: 'Director de música',
+        sacramentPrayers: 'Oraciones sacramentales',
+        qrDigitalProgram: 'Abrir programa digital',
+        qrCode: 'Código QR del programa digital',
+        meetingTypeLabel: 'Reunión sacramental',
+        itemLabels: { OPENING_HYMN: 'Himno de apertura' }
+      }
+    });
+
+    expect(html).toContain('Programa de la reunión sacramental');
+    expect(html).toContain('Reunión sacramental');
+    expect(html).toContain('Himno de apertura');
+    expect(html).toContain('The Spirit of God');
+    expect(html).toContain('O God, the Eternal Father');
+  });
   it('applies selected preset and announcement mode to output', () => {
     const html = buildMeetingRenderHtml({
       meetingDate: '2026-01-04',
       meetingType: 'SACRAMENT',
       programItems: [],
-      announcements: [{ title: 'Hidden by layout', body: null, startDate: null, endDate: null, isPermanent: true, placement: 'PROGRAM_TOP' }],
+      announcements: [
+        { title: 'Hidden by layout', body: null, startDate: null, endDate: null, isPermanent: true, placement: 'PROGRAM_TOP' }
+      ],
       publicUrl: 'https://thestand.app/p/sample-token',
-      layout: { preset: 'TRI_FOLD_BULLETIN', announcementMode: 'NONE', coverMode: 'AUTHORIZED_IMAGE', coverImageUrl: 'https://cdn.example.test/ward.jpg', coverImageAltText: 'Ward meetinghouse' }
+      layout: {
+        preset: 'TRI_FOLD_BULLETIN',
+        announcementMode: 'NONE',
+        coverMode: 'AUTHORIZED_IMAGE',
+        coverImageUrl: 'https://cdn.example.test/ward.jpg',
+        coverImageAltText: 'Ward meetinghouse'
+      }
     });
 
     expect(html).toContain('public-program--tri_fold_bulletin');

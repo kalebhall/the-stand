@@ -249,7 +249,7 @@ flowchart LR
 | `web:app` | `react` | 39 |
 | `web:ui` | `react` | 31 |
 | `web:api` | `vitest` | 22 |
-| `web:app` | `next-intl` | 16 |
+| `web:app` | `next-intl` | 17 |
 | `web:notifications` | `vitest` | 16 |
 | `root:tooling` | `Node.js` | 14 |
 | `web:app` | `vitest` | 14 |
@@ -472,7 +472,7 @@ flowchart LR
 | `apps/web/app/logout/logout-form.tsx` | `web:app` | 2 | 2 |
 | `apps/web/app/logout/page.tsx` | `web:app` | 1 | 0 |
 | `apps/web/app/meetings/[meetingId]/edit/page.tsx` | `web:app` | 13 | 3 |
-| `apps/web/app/meetings/[meetingId]/print/page.tsx` | `web:app` | 7 | 1 |
+| `apps/web/app/meetings/[meetingId]/print/page.tsx` | `web:app` | 7 | 2 |
 | `apps/web/app/meetings/[meetingId]/public-preview/page.tsx` | `web:app` | 1 | 0 |
 | `apps/web/app/meetings/delete-meeting-button.tsx` | `web:app` | 1 | 3 |
 | `apps/web/app/meetings/delete-meeting-button.vitest.tsx` | `web:app` | 1 | 4 |

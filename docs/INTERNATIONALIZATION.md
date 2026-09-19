@@ -83,11 +83,13 @@ Implemented in this slice:
 - Localized InternalNotesPanel and HymnAutocomplete controls.
 - Localized delete-meeting confirmation and state labels.
 - Localized MembershipOrdinanceSection controls, status labels, Church-source handoff labels, and Spanish component coverage.
-- Added Spanish rendered coverage for MeetingForm, InternalNotesPanel, HymnAutocomplete, DeleteMeetingButton, and meeting loading/error states.
-- Expanded pseudo-locale coverage to 322 validated message keys.
+- Localized print renderer labels for draft print views, including announcements, program item labels, role labels, QR labels, and snapshot status.
+- Added rendered-label regression coverage while preserving user-authored program content and official prayer wording.
+- Expanded pseudo-locale coverage to 346 validated message keys.
 
 Remaining in Phase 2:
 
+- Translate public published-snapshot generation and At-the-Stand labels.
 - Review remaining hard-coded authored/template content and decide whether it should remain source-language content.
 - Native-speaker review of all new Spanish terminology; untranslated fallback values are not production-ready.
 

@@ -1,3 +1,4 @@
+import { getTranslations } from 'next-intl/server';
 import { notFound, redirect } from 'next/navigation';
 
 import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth/guards';
@@ -48,6 +49,29 @@ type LayoutRow = {
   cover_image_alt_text: string | null;
 };
 
+const PRINT_ITEM_KEYS = {
+  INTRODUCTION: 'item_INTRODUCTION',
+  ANNOUNCEMENT: 'item_ANNOUNCEMENT',
+  OPENING_HYMN: 'item_OPENING_HYMN',
+  INVOCATION: 'item_INVOCATION',
+  WARD_AND_STAKE_BUSINESS: 'item_WARD_AND_STAKE_BUSINESS',
+  SACRAMENT_HYMN: 'item_SACRAMENT_HYMN',
+  SACRAMENT: 'item_SACRAMENT',
+  SPEAKER: 'item_SPEAKER',
+  REST_HYMN: 'item_REST_HYMN',
+  CLOSING_HYMN: 'item_CLOSING_HYMN',
+  BENEDICTION: 'item_BENEDICTION',
+  TESTIMONIES: 'item_TESTIMONIES'
+} as const;
+
+const MEETING_TYPE_KEYS = {
+  SACRAMENT: 'type_SACRAMENT',
+  FAST_TESTIMONY: 'type_FAST_TESTIMONY',
+  WARD_CONFERENCE: 'type_WARD_CONFERENCE',
+  STAKE_CONFERENCE: 'type_STAKE_CONFERENCE',
+  GENERAL_CONFERENCE: 'type_GENERAL_CONFERENCE'
+} as const;
+
 export default async function PrintMeetingPage({
   params,
   searchParams
@@ -56,6 +80,8 @@ export default async function PrintMeetingPage({
   searchParams: Promise<{ version?: string; draft?: string }>;
 }) {
   const session = await requireAuthenticatedSession();
+  const tPrint = await getTranslations('print');
+  const tMeetings = await getTranslations('meetings');
   enforcePasswordRotation(session);
 
   if (!session.activeWardId || !canViewMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId)) {
@@ -82,17 +108,18 @@ export default async function PrintMeetingPage({
       notFound();
     }
 
-    const renderResult = draft === '1'
-      ? { rowCount: 0, rows: [] }
-      : requestedVersion
-      ? await client.query(
-          'SELECT render_html, version FROM meeting_program_render WHERE meeting_id = $1::uuid AND ward_id = $2::uuid AND version = $3::int LIMIT 1',
-          [meetingId, session.activeWardId, requestedVersion]
-        )
-      : await client.query(
-          'SELECT render_html, version FROM meeting_program_render WHERE meeting_id = $1::uuid AND ward_id = $2::uuid ORDER BY version DESC LIMIT 1',
-          [meetingId, session.activeWardId]
-        );
+    const renderResult =
+      draft === '1'
+        ? { rowCount: 0, rows: [] }
+        : requestedVersion
+          ? await client.query(
+              'SELECT render_html, version FROM meeting_program_render WHERE meeting_id = $1::uuid AND ward_id = $2::uuid AND version = $3::int LIMIT 1',
+              [meetingId, session.activeWardId, requestedVersion]
+            )
+          : await client.query(
+              'SELECT render_html, version FROM meeting_program_render WHERE meeting_id = $1::uuid AND ward_id = $2::uuid ORDER BY version DESC LIMIT 1',
+              [meetingId, session.activeWardId]
+            );
 
     if (renderResult.rowCount) {
       const publishedRender = renderResult.rows[0] as RenderRow;
@@ -101,7 +128,7 @@ export default async function PrintMeetingPage({
         <>
           <div dangerouslySetInnerHTML={{ __html: publishedRender.render_html }} />
           <p className="mx-auto max-w-3xl px-4 pb-8 text-right text-xs text-muted-foreground sm:px-8">
-            Published version {publishedRender.version}
+            {tPrint('publishedVersion', { version: publishedRender.version })}
           </p>
         </>
       );
@@ -131,7 +158,28 @@ export default async function PrintMeetingPage({
       'SELECT preset, announcement_mode, cover_mode, cover_image_url, cover_image_alt_text FROM public_program_layout WHERE ward_id = $1::uuid LIMIT 1',
       [session.activeWardId]
     );
-    const layout = (layoutResult.rows?.[0] as LayoutRow | undefined) ?? { preset: 'FULL_PAGE' as const, announcement_mode: 'AFTER_PROGRAM' as const, cover_mode: 'NONE' as const, cover_image_url: null, cover_image_alt_text: null };
+    const layout = (layoutResult.rows?.[0] as LayoutRow | undefined) ?? {
+      preset: 'FULL_PAGE' as const,
+      announcement_mode: 'AFTER_PROGRAM' as const,
+      cover_mode: 'NONE' as const,
+      cover_image_url: null,
+      cover_image_alt_text: null
+    };
+
+    const renderLabels = {
+      programTitle: tPrint('programTitle'),
+      announcements: tPrint('announcements'),
+      introduction: tPrint('introduction'),
+      presiding: tPrint('presiding'),
+      conducting: tPrint('conducting'),
+      organistPianist: tPrint('organistPianist'),
+      chorister: tPrint('chorister'),
+      sacramentPrayers: tPrint('sacramentPrayers'),
+      qrDigitalProgram: tPrint('qrDigitalProgram'),
+      qrCode: tPrint('qrCode'),
+      meetingTypeLabel: tMeetings(MEETING_TYPE_KEYS[meeting.meeting_type as keyof typeof MEETING_TYPE_KEYS] ?? 'type_UNKNOWN'),
+      itemLabels: Object.fromEntries(Object.entries(PRINT_ITEM_KEYS).map(([itemType, key]) => [itemType, tPrint(key)]))
+    };
 
     const renderHtml = buildMeetingRenderHtml({
       meetingDate,
@@ -161,7 +209,8 @@ export default async function PrintMeetingPage({
         coverMode: layout.cover_mode,
         coverImageUrl: layout.cover_image_url,
         coverImageAltText: layout.cover_image_alt_text
-      }
+      },
+      labels: renderLabels
     });
 
     await client.query('COMMIT');
@@ -170,9 +219,7 @@ export default async function PrintMeetingPage({
       <>
         <div dangerouslySetInnerHTML={{ __html: renderHtml }} />
         {meeting.status === 'PUBLISHED' ? (
-          <p className="mx-auto max-w-3xl px-4 pb-8 text-right text-xs text-muted-foreground sm:px-8">
-            Published snapshot unavailable; showing current draft layout.
-          </p>
+          <p className="mx-auto max-w-3xl px-4 pb-8 text-right text-xs text-muted-foreground sm:px-8">{tPrint('snapshotUnavailable')}</p>
         ) : null}
       </>
     );
