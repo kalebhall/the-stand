@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 
 type Hymn = {
   id: string;
@@ -19,9 +20,9 @@ function hymnLabel(hymn: Hymn): string {
   return `${hymn.hymnNumber} — ${hymn.title}`;
 }
 
-function bookBadge(book: string): string {
-  if (book === 'NEW') return 'New';
-  if (book === 'CHILDRENS') return "Children's";
+function bookBadge(book: string, labels: { new: string; childrens: string }): string {
+  if (book === 'NEW') return labels.new;
+  if (book === 'CHILDRENS') return labels.childrens;
   return '';
 }
 
@@ -32,6 +33,7 @@ function buildDisplayValue(hymnNumber: string, hymnTitle: string): string {
 }
 
 export function HymnAutocomplete({ hymnNumber, hymnTitle, onChange }: HymnAutocompleteProps) {
+  const t = useTranslations('hymn');
   const [hymns, setHymns] = useState<Hymn[]>([]);
   const [loading, setLoading] = useState(true);
   const [inputValue, setInputValue] = useState('');
@@ -107,7 +109,7 @@ export function HymnAutocomplete({ hymnNumber, hymnTitle, onChange }: HymnAutoco
         type="text"
         className="w-full rounded-md border px-3 py-2 text-sm"
         value={inputValue}
-        placeholder={loading ? 'Loading hymns…' : 'Search by number or title, or type freely…'}
+        placeholder={loading ? t('loading') : t('search')}
         disabled={loading}
         onChange={(e) => handleInputChange(e.target.value)}
         onFocus={() => setOpen(true)}
@@ -119,7 +121,7 @@ export function HymnAutocomplete({ hymnNumber, hymnTitle, onChange }: HymnAutoco
       {open && !loading && filtered.length > 0 && (
         <ul className="absolute z-[100] mt-1 max-h-64 w-full overflow-y-auto rounded-md border bg-popover text-popover-foreground shadow-lg">
           {filtered.map((hymn) => {
-            const badge = bookBadge(hymn.book);
+            const badge = bookBadge(hymn.book, { new: t('new'), childrens: t('childrens') });
             return (
               <li
                 key={hymn.id}

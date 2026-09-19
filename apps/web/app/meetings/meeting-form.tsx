@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -44,14 +45,6 @@ const ITEM_TYPE_TO_HYMN_POSITION: Record<string, string> = {
   REST_HYMN: 'REST',
   SPECIAL_HYMN: 'SPECIAL'
 };
-function getItemTitleLabel(itemType: string) {
-  if (HYMN_ITEM_TYPES.has(itemType) || itemType === BUSINESS_ITEM_TYPE) {
-    return 'Title';
-  }
-
-  return 'Name';
-}
-
 function getProgramItemAccentClass(itemType: string) {
   if (HYMN_ITEM_TYPES.has(itemType)) return 'program-item--hymn';
   if (itemType === 'INVOCATION' || itemType === 'BENEDICTION') return 'program-item--prayer';
@@ -115,7 +108,9 @@ export function MeetingForm({
   canManageBusiness = false,
   standAnnouncements = []
 }: MeetingFormProps) {
+  const t = useTranslations('meetingForm');
   const router = useRouter();
+  const itemTitleLabel = (itemType: string) => (HYMN_ITEM_TYPES.has(itemType) || itemType === BUSINESS_ITEM_TYPE ? t('title') : t('name'));
   const [meetingDate, setMeetingDate] = useState(toYyyyMmDd(initialMeetingDate));
   const [meetingType, setMeetingType] = useState(initialMeetingType);
   const [programItems, setProgramItems] = useState<ProgramItemInput[]>(
@@ -159,13 +154,13 @@ export function MeetingForm({
           });
           if (!response.ok) {
             setAutosaveStatus('error');
-            setError('Unable to save meeting changes.');
+            setError(t('saveChangesFailed'));
             return;
           }
           setAutosaveStatus('saved');
         } catch {
           setAutosaveStatus('error');
-          setError('Unable to save meeting changes.');
+          setError(t('saveChangesFailed'));
         }
       })();
     }, 600);
@@ -272,7 +267,7 @@ export function MeetingForm({
     event.preventDefault();
     if (mode === 'edit') return;
     if (!canSave) {
-      setError('Meeting date and meeting type are required.');
+      setError(t('meetingRequired'));
       return;
     }
 
@@ -294,7 +289,7 @@ export function MeetingForm({
 
     if (!response.ok) {
       setSaving(false);
-      setError('Unable to save meeting.');
+      setError(t('saveFailed'));
       return;
     }
 
@@ -326,9 +321,9 @@ export function MeetingForm({
       setPublishing(false);
       try {
         const errBody = (await response.json()) as { error?: string; detail?: string };
-        setError(errBody.detail ?? errBody.error ?? 'Unable to publish meeting.');
+        setError(errBody.detail ?? errBody.error ?? t('publishFailed'));
       } catch {
-        setError('Unable to publish meeting.');
+        setError(t('publishFailed'));
       }
       return;
     }
@@ -344,7 +339,7 @@ export function MeetingForm({
       <section className="grid gap-4 rounded-lg border bg-card p-4 sm:grid-cols-2">
         {mode === 'create' ? (
           <label className="space-y-2 text-sm">
-            <span className="font-medium">Meeting date</span>
+            <span className="font-medium">{t('meetingDate')}</span>
             <input
               type="date"
               className="w-full rounded-md border px-3 py-2"
@@ -355,17 +350,17 @@ export function MeetingForm({
           </label>
         ) : (
           <div className="space-y-1 text-sm">
-            <span className="font-medium">Meeting date</span>
-            <p className="rounded-md border bg-muted px-3 py-2" aria-label="Meeting date, cannot be changed">
+            <span className="font-medium">{t('meetingDate')}</span>
+            <p className="rounded-md border bg-muted px-3 py-2" aria-label={t('cannotChangeDate')}>
               {meetingDate}
             </p>
-            <p className="text-xs text-muted-foreground">Date cannot be changed after creation.</p>
+            <p className="text-xs text-muted-foreground">{t('dateAfterCreation')}</p>
           </div>
         )}
 
         {mode === 'create' ? (
           <label className="space-y-2 text-sm">
-            <span className="font-medium">Meeting type</span>
+            <span className="font-medium">{t('meetingType')}</span>
             <select
               className="w-full rounded-md border px-3 py-2"
               value={meetingType}
@@ -381,18 +376,18 @@ export function MeetingForm({
           </label>
         ) : (
           <div className="space-y-1 text-sm">
-            <span className="font-medium">Meeting type</span>
-            <p className="rounded-md border bg-muted px-3 py-2" aria-label="Meeting type, cannot be changed">
+            <span className="font-medium">{t('meetingType')}</span>
+            <p className="rounded-md border bg-muted px-3 py-2" aria-label={t('cannotChangeType')}>
               {meetingType.replaceAll('_', ' ')}
             </p>
-            <p className="text-xs text-muted-foreground">Type cannot be changed after creation.</p>
+            <p className="text-xs text-muted-foreground">{t('typeAfterCreation')}</p>
           </div>
         )}
       </section>
 
       <section key={mode === 'create' ? meetingType : 'edit'} className="space-y-3 rounded-lg border bg-card p-4">
         <div className="flex items-end justify-between gap-3">
-          <h2 className="text-lg font-semibold">Program items</h2>
+          <h2 className="text-lg font-semibold">{t('programItems')}</h2>
           <div className="flex items-center gap-2">
             <label className="space-y-1 text-sm">
               <span className="font-medium"></span>
@@ -409,22 +404,31 @@ export function MeetingForm({
               variant="outline"
               onClick={() => setProgramItems((current) => [...current, { itemType: newItemType, ...DEFAULT_PROGRAM_ITEM }])}
             >
-              Add item
+              {t('addItem')}
             </Button>
           </div>
         </div>
         {validateProgramItemsForMeetingType(meetingType, programItems) ? (
           <p className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900" role="alert">
-            Fast-and-testimony meetings use testimony participation rather than assigned speakers or special musical selections. Save blocked until those items are removed.
+            {t('validationWarning')}
           </p>
         ) : null}
-        <aside className="rounded-md border bg-background/60 p-3 text-sm" aria-label="Meeting readiness summary">
-          <h3 className="font-semibold">Meeting readiness</h3>
+        <aside className="rounded-md border bg-background/60 p-3 text-sm" aria-label={t('readiness')}>
+          <h3 className="font-semibold">{t('readiness')}</h3>
           <ul className="mt-2 grid gap-1 sm:grid-cols-2">
-            <li>Speakers: {readiness.speakers.ready}/{readiness.speakers.total} topics; {readiness.speakers.pending} pending</li>
-            <li>Hymns: {readiness.hymns.missing ? `${readiness.hymns.missing} missing` : 'complete'}</li>
-            <li>Prayers: {readiness.prayers.missing ? `${readiness.prayers.missing} missing` : 'complete'}</li>
-            <li>Required participants: {readiness.requiredParticipants.missing ? `${readiness.requiredParticipants.missing} missing` : 'complete'}</li>
+            <li>{t('speakers', readiness.speakers)}</li>
+            <li>
+              {t('hymns')}: {readiness.hymns.missing ? t('missingCount', { count: readiness.hymns.missing }) : t('complete')}
+            </li>
+            <li>
+              {t('prayers')}: {readiness.prayers.missing ? t('missingCount', { count: readiness.prayers.missing }) : t('complete')}
+            </li>
+            <li>
+              {t('requiredParticipants')}:{' '}
+              {readiness.requiredParticipants.missing
+                ? t('missingCount', { count: readiness.requiredParticipants.missing })
+                : t('complete')}
+            </li>
           </ul>
         </aside>
 
@@ -457,7 +461,7 @@ export function MeetingForm({
                 <span
                   className={cn('text-muted-foreground', PROTECTED_ITEM_TYPES.has(item.itemType) ? 'opacity-0' : 'cursor-grab')}
                   aria-hidden="true"
-                  title={PROTECTED_ITEM_TYPES.has(item.itemType) ? undefined : 'Drag to reorder'}
+                  title={PROTECTED_ITEM_TYPES.has(item.itemType) ? undefined : t('dragToReorder')}
                 >
                   ⋮⋮
                 </span>
@@ -470,16 +474,16 @@ export function MeetingForm({
                   size="sm"
                   className="h-7 w-7 p-0"
                   onClick={() => {
-                    if (window.confirm('Delete this program section?')) {
+                    if (window.confirm(t('deleteProgramSection'))) {
                       setProgramItems((current) => current.filter((_, itemIndex) => itemIndex !== index));
                     }
                   }}
-                  aria-label="Delete program section"
+                  aria-label={t('deleteProgramSection')}
                 >
                   ×
                 </Button>
               ) : (
-                <span className="text-xs text-muted-foreground">Required</span>
+                <span className="text-xs text-muted-foreground">{t('required')}</span>
               )}
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
@@ -488,10 +492,10 @@ export function MeetingForm({
                   <div className="grid gap-3 sm:grid-cols-2">
                     {(
                       [
-                        ['presiding', 'Presiding'],
-                        ['conducting', 'Conducting'],
-                        ['organist', 'Organist / Pianist'],
-                        ['chorister', 'Chorister']
+                        ['presiding', t('presiding')],
+                        ['conducting', t('conducting')],
+                        ['organist', t('organistPianist')],
+                        ['chorister', t('chorister')]
                       ] as const
                     ).map(([role, label]) => (
                       <div key={role} className="space-y-1 text-sm">
@@ -501,7 +505,7 @@ export function MeetingForm({
                           value={item.introductionRoles?.[role] ?? ''}
                           onChange={(value) => updateIntroductionRole(index, role, value)}
                           className="w-full rounded-md border px-3 py-2"
-                          placeholder="Name"
+                          placeholder={t('name')}
                           leadershipOnly={role === 'presiding' || role === 'conducting'}
                         />
                       </div>
@@ -509,34 +513,34 @@ export function MeetingForm({
                   </div>
                   <div className="space-y-2 sm:col-span-2">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="font-medium">Visiting stake leaders</span>
+                      <span className="font-medium">{t('visitingStakeLeaders')}</span>
                       <Button type="button" variant="outline" size="sm" onClick={() => addVisitingLeader(index)}>
-                        Add leader
+                        {t('addLeader')}
                       </Button>
                     </div>
-                    <p className="text-xs text-muted-foreground">For the bishopric and At-the-Stand only. These names are not published.</p>
+                    <p className="text-xs text-muted-foreground">{t('privateVisitingLeaders')}</p>
                     {(item.introductionRoles?.visitingLeaders ?? []).map((leader, leaderIndex) => (
                       <div key={leaderIndex} className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
                         <input
                           className="rounded-md border px-3 py-2"
                           value={leader.name}
                           onChange={(event) => updateVisitingLeader(index, leaderIndex, 'name', event.target.value)}
-                          placeholder="Name"
-                          aria-label={`Visiting leader ${leaderIndex + 1} name`}
+                          placeholder={t('name')}
+                          aria-label={t('visitingLeaderName', { number: leaderIndex + 1 })}
                         />
                         <input
                           className="rounded-md border px-3 py-2"
                           value={leader.calling}
                           onChange={(event) => updateVisitingLeader(index, leaderIndex, 'calling', event.target.value)}
-                          placeholder="Calling or role"
-                          aria-label={`Visiting leader ${leaderIndex + 1} calling`}
+                          placeholder={t('callingOrRole')}
+                          aria-label={t('visitingLeaderCalling', { number: leaderIndex + 1 })}
                         />
                         <Button
                           type="button"
                           variant="ghost"
                           size="sm"
                           onClick={() => removeVisitingLeader(index, leaderIndex)}
-                          aria-label={`Remove visiting leader ${leaderIndex + 1}`}
+                          aria-label={t('removeVisitingLeader', { number: leaderIndex + 1 })}
                         >
                           ×
                         </Button>
@@ -546,22 +550,20 @@ export function MeetingForm({
                 </div>
               ) : !HYMN_ITEM_TYPES.has(item.itemType) && item.itemType !== BUSINESS_ITEM_TYPE ? (
                 <div className="space-y-1 text-sm">
-                  <span className="font-medium">{getItemTitleLabel(item.itemType)}</span>
+                  <span className="font-medium">{itemTitleLabel(item.itemType)}</span>
                   {PERSON_ITEM_TYPES.has(item.itemType) ? (
                     <MemberAutocomplete
                       wardId={wardId}
                       value={item.title}
                       onChange={(value) => updateProgramItem(index, 'title', value)}
                       className="w-full rounded-md border px-3 py-2"
-                      placeholder="Name"
+                      placeholder={t('name')}
                       minAge={item.itemType === 'SPEAKER' ? 11 : undefined}
                       leadershipOnly={false}
                     />
                   ) : item.itemType === ANNOUNCEMENT_ITEM_TYPE ? (
                     <div className="rounded-md border bg-muted p-3 text-sm">
-                      <p className="mb-2 text-muted-foreground">
-                        Announcements marked “Include in At the Stand” appear here automatically.
-                      </p>
+                      <p className="mb-2 text-muted-foreground">{t('announcementsAuto')}</p>
                       {standAnnouncements.length ? (
                         <ul className="space-y-2">
                           {standAnnouncements.map((announcement) => (
@@ -574,13 +576,13 @@ export function MeetingForm({
                           ))}
                         </ul>
                       ) : (
-                        <p className="text-muted-foreground">No active announcements marked for At the Stand.</p>
+                        <p className="text-muted-foreground">{t('noActiveAnnouncements')}</p>
                       )}
                     </div>
                   ) : PLACEHOLDER_ITEM_TYPES.has(item.itemType) ? (
                     <input
                       className="w-full rounded-md border px-3 py-2 bg-muted"
-                      value={item.itemType === 'SACRAMENT' ? 'Sacrament (placeholder)' : 'Testimonies (placeholder)'}
+                      value={item.itemType === 'SACRAMENT' ? t('sacramentPlaceholder') : t('testimoniesPlaceholder')}
                       readOnly
                     />
                   ) : (
@@ -595,7 +597,7 @@ export function MeetingForm({
 
               {HYMN_ITEM_TYPES.has(item.itemType) ? (
                 <div className="space-y-1 text-sm sm:col-span-2">
-                  <span className="font-medium">Hymn</span>
+                  <span className="font-medium">{t('hymn')}</span>
                   <div className="space-y-2">
                     {ITEM_TYPE_TO_HYMN_POSITION[item.itemType] ? (
                       <select
@@ -603,11 +605,11 @@ export function MeetingForm({
                         value={ITEM_TYPE_TO_HYMN_POSITION[item.itemType]}
                         onChange={(event) => updateHymnPosition(index, event.target.value)}
                       >
-                        <option value="OPENING">Opening</option>
-                        <option value="SACRAMENT">Sacrament</option>
-                        <option value="CLOSING">Closing</option>
-                        <option value="REST">Rest</option>
-                        <option value="SPECIAL">Special</option>
+                        <option value="OPENING">{t('opening')}</option>
+                        <option value="SACRAMENT">{t('sacrament')}</option>
+                        <option value="CLOSING">{t('closing')}</option>
+                        <option value="REST">{t('rest')}</option>
+                        <option value="SPECIAL">{t('special')}</option>
                       </select>
                     ) : null}
                     <HymnAutocomplete
@@ -618,8 +620,6 @@ export function MeetingForm({
                   </div>
                 </div>
               ) : null}
-
-
             </div>
 
             {canUseInternalNotes && item.id ? (
@@ -627,7 +627,7 @@ export function MeetingForm({
                 wardId={wardId}
                 target={{ type: 'PROGRAM_ITEM', programItemId: item.id }}
                 notes={internalNotes.filter((note) => note.program_item_id === item.id)}
-                title="Internal notes"
+                title={t('internalNotes')}
               />
             ) : null}
             {item.itemType === BUSINESS_ITEM_TYPE ? (
@@ -654,7 +654,7 @@ export function MeetingForm({
                       )
                     }
                   />
-                  Includes stake business
+                  {t('includesStakeBusiness')}
                 </label>
               </div>
             ) : null}
@@ -667,22 +667,22 @@ export function MeetingForm({
       <div className="flex flex-wrap gap-2">
         {mode === 'create' ? (
           <Button type="submit" disabled={saving || !canSave}>
-            Create meeting
+            {t('createMeeting')}
           </Button>
         ) : (
           <span className="self-center text-sm text-muted-foreground" role="status" aria-live="polite">
             {autosaveStatus === 'saving'
-              ? 'Saving changes...'
+              ? t('savingChanges')
               : autosaveStatus === 'saved'
-                ? 'Changes saved'
+                ? t('changesSaved')
                 : autosaveStatus === 'error'
-                  ? 'Changes not saved'
-                  : 'Changes save automatically'}
+                  ? t('changesNotSaved')
+                  : t('saveAutomatically')}
           </span>
         )}
         {mode === 'edit' ? (
           <Button type="button" variant="outline" onClick={onPublish} disabled={publishing || !meetingId}>
-            {publishing ? 'Publishing...' : publishedCount ? 'Republish' : 'Publish'}
+            {publishing ? t('publishing') : publishedCount ? t('republish') : t('publish')}
           </Button>
         ) : null}
         {mode === 'edit' && meetingId ? <DeleteMeetingButton wardId={wardId} meetingId={meetingId} /> : null}

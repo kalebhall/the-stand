@@ -64,6 +64,12 @@ Phase 1 builds the localization seam. It does not translate the whole applicatio
 - Convert API errors to stable error codes before translating them.
 - Test loading, empty, error, permission, offline, print, and success states.
 
+### Phase 2: Complete first workflow translation — Initial vertical slice complete
+
+- Added semantic catalogs for meeting-form, business, notes, hymn, and delete-meeting controls.
+- Localized core child controls and added provider-backed component coverage.
+- Remaining: complete `MembershipOrdinanceSection`, remaining MeetingForm labels, rendered language-switching tests, and native Spanish review.
+
 ## Verification gates
 
 From repository root:

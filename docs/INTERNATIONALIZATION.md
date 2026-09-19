@@ -73,7 +73,24 @@ Remaining after Phase 1:
 - Translate deeper child components inside `MeetingForm`, `WardBusinessSection`, and related workflow controls.
 - Add Portuguese (Brazil) and Tagalog catalogs after native reviewers are available.
 
-## Translation review
+## Phase 2: Complete first workflow translation — initial vertical slice
+
+Implemented in this slice:
+
+- Added semantic catalogs for meeting-form, business, notes, hymn, and delete-meeting controls.
+- Localized core MeetingForm labels, readiness text, save/publish states, and related controls.
+- Localized WardBusinessSection action labels and added provider-backed component test coverage.
+- Localized InternalNotesPanel and HymnAutocomplete controls.
+- Localized delete-meeting confirmation and state labels.
+- Expanded pseudo-locale coverage to 205 validated message keys.
+
+Remaining in Phase 2:
+
+- Translate the remaining MeetingForm field labels and validation text.
+- Translate MembershipOrdinanceSection and remaining related workflow controls.
+- Add rendered language-switching tests for these client components.
+- Native-speaker review of all new Spanish terminology; untranslated fallback values are not production-ready.
+
 
 Every non-English locale requires native-speaker review for:
 

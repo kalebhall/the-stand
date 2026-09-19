@@ -255,7 +255,7 @@ flowchart LR
 | `web:notifications` | `pg` | 13 |
 | `web:app` | `vitest` | 10 |
 | `web:api` | `zod` | 9 |
-| `web:app` | `next-intl` | 7 |
+| `web:app` | `next-intl` | 9 |
 | `web:imports` | `vitest` | 7 |
 | `web:meetings` | `vitest` | 7 |
 | `web:auth` | `next-auth` | 6 |
@@ -267,6 +267,7 @@ flowchart LR
 | `web:config` | `@playwright/test` | 4 |
 | `web:tooling` | `Node.js` | 4 |
 | `web:ui` | `next-auth` | 4 |
+| `web:ui` | `next-intl` | 4 |
 | `web:api` | `Node.js` | 3 |
 | `web:app` | `Node.js` | 3 |
 | `web:app` | `next-auth` | 3 |
@@ -473,10 +474,10 @@ flowchart LR
 | `apps/web/app/meetings/[meetingId]/edit/page.tsx` | `web:app` | 13 | 3 |
 | `apps/web/app/meetings/[meetingId]/print/page.tsx` | `web:app` | 7 | 1 |
 | `apps/web/app/meetings/[meetingId]/public-preview/page.tsx` | `web:app` | 1 | 0 |
-| `apps/web/app/meetings/delete-meeting-button.tsx` | `web:app` | 1 | 2 |
+| `apps/web/app/meetings/delete-meeting-button.tsx` | `web:app` | 1 | 3 |
 | `apps/web/app/meetings/error.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/meetings/loading.tsx` | `web:app` | 0 | 0 |
-| `apps/web/app/meetings/meeting-form.tsx` | `web:app` | 11 | 2 |
+| `apps/web/app/meetings/meeting-form.tsx` | `web:app` | 11 | 3 |
 | `apps/web/app/meetings/new/page.tsx` | `web:app` | 3 | 1 |
 | `apps/web/app/meetings/page.tsx` | `web:app` | 8 | 2 |
 | `apps/web/app/members/members-manager-client.tsx` | `web:app` | 3 | 2 |
@@ -555,12 +556,12 @@ flowchart LR
 | `apps/web/components/CallingAssignButton.tsx` | `web:ui` | 1 | 2 |
 | `apps/web/components/CallingDeleteButton.tsx` | `web:ui` | 1 | 2 |
 | `apps/web/components/CallingReleaseButton.tsx` | `web:ui` | 1 | 2 |
-| `apps/web/components/HymnAutocomplete.tsx` | `web:ui` | 0 | 1 |
-| `apps/web/components/InternalNotesPanel.tsx` | `web:ui` | 3 | 1 |
+| `apps/web/components/HymnAutocomplete.tsx` | `web:ui` | 0 | 2 |
+| `apps/web/components/InternalNotesPanel.tsx` | `web:ui` | 3 | 2 |
 | `apps/web/components/MembershipOrdinanceSection.tsx` | `web:ui` | 3 | 2 |
 | `apps/web/components/StandardCallingsManager.tsx` | `web:ui` | 1 | 2 |
-| `apps/web/components/WardBusinessSection.tsx` | `web:ui` | 2 | 2 |
-| `apps/web/components/WardBusinessSection.vitest.tsx` | `web:ui` | 1 | 3 |
+| `apps/web/components/WardBusinessSection.tsx` | `web:ui` | 2 | 3 |
+| `apps/web/components/WardBusinessSection.vitest.tsx` | `web:ui` | 1 | 4 |
 | `apps/web/components/app-navigation.tsx` | `web:ui` | 1 | 0 |
 | `apps/web/components/app-shell.tsx` | `web:ui` | 9 | 4 |
 | `apps/web/components/auth-session-provider.tsx` | `web:ui` | 0 | 3 |
