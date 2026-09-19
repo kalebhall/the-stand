@@ -429,5 +429,9 @@
     "keepBoth": "Conservar ambos",
     "notAvailable": "no disponible",
     "title": "En la reunión"
+  },
+  "publicProgram": {
+    "title": "No hay ningún programa disponible",
+    "body": "Todavía no se ha publicado el programa de ninguna reunión."
   }
 }

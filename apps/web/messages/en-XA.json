@@ -429,5 +429,9 @@
     "keepBoth": "[Keep both]",
     "notAvailable": "[not available]",
     "title": "[At the Stand]"
+  },
+  "publicProgram": {
+    "title": "[No program available]",
+    "body": "[No meeting program has been posted yet.]"
   }
 }

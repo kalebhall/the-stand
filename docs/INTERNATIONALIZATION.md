@@ -85,7 +85,8 @@ Implemented in this slice:
 - Localized MembershipOrdinanceSection controls, status labels, Church-source handoff labels, and Spanish component coverage.
 - Localized authenticated At-the-Stand display labels and sacrament headings through injected render labels, preserving authored names, topics, notes, templates, and official prayer text.
 - Added offline At-the-Stand shell translations for loading, saved-copy status, deletion, privacy disclosure, and core action labels.
-- Expanded pseudo-locale coverage to 403 validated message keys.
+- Added locale-aware public portal empty-state rendering from the `NEXT_LOCALE` cookie, with Spanish regression coverage.
+- Expanded pseudo-locale coverage to 405 validated message keys.
 
 Remaining in Phase 2:
 
