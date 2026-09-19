@@ -1,3 +1,4 @@
+import { getTranslations } from 'next-intl/server';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
@@ -18,7 +19,22 @@ type MeetingRow = {
   status: string;
 };
 
+const MEETING_STATUS_KEYS = {
+  DRAFT: 'status_DRAFT',
+  PUBLISHED: 'status_PUBLISHED',
+  COMPLETED: 'status_COMPLETED'
+} as const;
+
+const MEETING_TYPE_KEYS = {
+  SACRAMENT: 'type_SACRAMENT',
+  FAST_TESTIMONY: 'type_FAST_TESTIMONY',
+  WARD_CONFERENCE: 'type_WARD_CONFERENCE',
+  STAKE_CONFERENCE: 'type_STAKE_CONFERENCE',
+  GENERAL_CONFERENCE: 'type_GENERAL_CONFERENCE'
+} as const;
+
 export default async function MeetingsPage() {
+  const t = await getTranslations('meetings');
   const session = await requireAuthenticatedSession();
   enforcePasswordRotation(session);
 
@@ -47,12 +63,12 @@ export default async function MeetingsPage() {
       <main className="mx-auto w-full max-w-6xl space-y-6 p-4 sm:p-6">
         <section className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Meetings</h1>
-            <p className="text-sm text-muted-foreground">Upcoming and past ward meetings.</p>
+            <h1 className="text-2xl font-semibold tracking-tight">{t('title')}</h1>
+            <p className="text-sm text-muted-foreground">{t('description')}</p>
           </div>
           {canManage ? (
             <Link href="/meetings/new" className={cn(buttonVariants())}>
-              Create meeting
+              {t('create')}
             </Link>
           ) : null}
         </section>
@@ -66,21 +82,25 @@ export default async function MeetingsPage() {
               >
                 <div>
                   <p className="text-base font-semibold">{formatMeetingDateForDisplay(meeting.meeting_date)}</p>
-                  <p className="text-sm text-muted-foreground">{meeting.meeting_type.replaceAll('_', ' ')}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {t(MEETING_TYPE_KEYS[meeting.meeting_type as keyof typeof MEETING_TYPE_KEYS] ?? 'type_UNKNOWN')}
+                  </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="rounded-full border px-2 py-1 text-xs font-medium">{meeting.status}</span>
+                  <span className="rounded-full border px-2 py-1 text-xs font-medium">
+                    {t(MEETING_STATUS_KEYS[meeting.status as keyof typeof MEETING_STATUS_KEYS] ?? 'status_UNKNOWN')}
+                  </span>
                   {canManage ? (
                     <Link href={`/meetings/${meeting.id}/edit`} className={cn(buttonVariants({ size: 'sm', variant: 'outline' }))}>
-                      Edit
+                      {t('edit')}
                     </Link>
                   ) : null}
                   {canManage ? <DeleteMeetingButton wardId={wardId} meetingId={meeting.id} /> : null}
                   <Link href={`/stand/${meeting.id}`} className={cn(buttonVariants({ size: 'sm', variant: 'outline' }))}>
-                    At the Stand
+                    {t('atStand')}
                   </Link>
                   <Link href={`/meetings/${meeting.id}/print`} className={cn(buttonVariants({ size: 'sm', variant: 'outline' }))}>
-                    Print view
+                    {t('print')}
                   </Link>
                 </div>
               </article>
@@ -88,11 +108,11 @@ export default async function MeetingsPage() {
           </section>
         ) : (
           <section className="section-panel rounded-lg border bg-card p-8 text-center">
-            <h2 className="text-lg font-semibold">No meetings scheduled</h2>
-            <p className="mt-2 text-sm text-muted-foreground">Create your first meeting to begin building programs and print layouts.</p>
+            <h2 className="text-lg font-semibold">{t('noScheduled')}</h2>
+            <p className="mt-2 text-sm text-muted-foreground">{t('noScheduledDetail')}</p>
             {canManage ? (
               <Link href="/meetings/new" className={cn(buttonVariants({ className: 'mt-4' }))}>
-                Create first meeting
+                {t('createFirst')}
               </Link>
             ) : null}
           </section>

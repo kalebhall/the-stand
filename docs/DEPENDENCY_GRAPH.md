@@ -15,7 +15,7 @@ flowchart LR
   A3["root:tooling<br/>7 files"]
   A4["web:announcements<br/>2 files"]
   A5["web:api<br/>90 files"]
-  A6["web:app<br/>121 files"]
+  A6["web:app<br/>123 files"]
   A7["web:audit<br/>2 files"]
   A8["web:auth<br/>11 files"]
   A9["web:bootstrap.mjs<br/>1 files"]
@@ -119,7 +119,7 @@ flowchart LR
 | `root:tooling` | 7 |
 | `web:announcements` | 2 |
 | `web:api` | 90 |
-| `web:app` | 121 |
+| `web:app` | 123 |
 | `web:audit` | 2 |
 | `web:auth` | 11 |
 | `web:bootstrap.mjs` | 1 |
@@ -155,8 +155,8 @@ flowchart LR
 | `web:app` | `web:ui` | 118 |
 | `web:api` | `web:db` | 115 |
 | `web:app` | `web:auth` | 90 |
+| `web:app` | `web:app` | 56 |
 | `web:app` | `web:db` | 56 |
-| `web:app` | `web:app` | 54 |
 | `web:notifications` | `web:notifications` | 53 |
 | `web:api` | `web:notifications` | 46 |
 | `web:ui` | `web:ui` | 30 |
@@ -246,18 +246,18 @@ flowchart LR
 | --- | --- | ---: |
 | `web:app` | `next` | 91 |
 | `web:api` | `next` | 67 |
-| `web:app` | `react` | 37 |
+| `web:app` | `react` | 39 |
 | `web:ui` | `react` | 31 |
 | `web:api` | `vitest` | 22 |
+| `web:app` | `next-intl` | 16 |
 | `web:notifications` | `vitest` | 16 |
 | `root:tooling` | `Node.js` | 14 |
+| `web:app` | `vitest` | 14 |
 | `web:ui` | `next` | 14 |
 | `web:notifications` | `pg` | 13 |
-| `web:app` | `vitest` | 12 |
-| `web:app` | `next-intl` | 11 |
 | `web:api` | `zod` | 9 |
+| `web:app` | `@testing-library/react` | 9 |
 | `web:ui` | `next-intl` | 8 |
-| `web:app` | `@testing-library/react` | 7 |
 | `web:imports` | `vitest` | 7 |
 | `web:meetings` | `vitest` | 7 |
 | `web:auth` | `next-auth` | 6 |
@@ -476,12 +476,14 @@ flowchart LR
 | `apps/web/app/meetings/[meetingId]/public-preview/page.tsx` | `web:app` | 1 | 0 |
 | `apps/web/app/meetings/delete-meeting-button.tsx` | `web:app` | 1 | 3 |
 | `apps/web/app/meetings/delete-meeting-button.vitest.tsx` | `web:app` | 1 | 4 |
-| `apps/web/app/meetings/error.tsx` | `web:app` | 0 | 0 |
-| `apps/web/app/meetings/loading.tsx` | `web:app` | 0 | 0 |
+| `apps/web/app/meetings/error.tsx` | `web:app` | 0 | 1 |
+| `apps/web/app/meetings/error.vitest.tsx` | `web:app` | 1 | 4 |
+| `apps/web/app/meetings/loading.tsx` | `web:app` | 0 | 1 |
+| `apps/web/app/meetings/loading.vitest.tsx` | `web:app` | 1 | 4 |
 | `apps/web/app/meetings/meeting-form.tsx` | `web:app` | 11 | 3 |
 | `apps/web/app/meetings/meeting-form.vitest.tsx` | `web:app` | 1 | 4 |
 | `apps/web/app/meetings/new/page.tsx` | `web:app` | 3 | 1 |
-| `apps/web/app/meetings/page.tsx` | `web:app` | 8 | 2 |
+| `apps/web/app/meetings/page.tsx` | `web:app` | 8 | 3 |
 | `apps/web/app/members/members-manager-client.tsx` | `web:app` | 3 | 2 |
 | `apps/web/app/members/page.tsx` | `web:app` | 7 | 2 |
 | `apps/web/app/membership-ordinances/page.tsx` | `web:app` | 9 | 2 |
