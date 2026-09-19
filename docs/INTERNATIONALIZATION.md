@@ -82,7 +82,7 @@ Implemented in this slice:
 - Localized WardBusinessSection action labels and added provider-backed component test coverage.
 - Localized InternalNotesPanel and HymnAutocomplete controls.
 - Localized delete-meeting confirmation and state labels.
-- Expanded pseudo-locale coverage to 205 validated message keys.
+- Expanded pseudo-locale coverage to 218 validated message keys.
 
 Remaining in Phase 2:
 
