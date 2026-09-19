@@ -1,0 +1,15 @@
+{
+  "language": {
+    "label": "Idioma",
+    "description": "Elige el idioma de la interfaz de la aplicación.",
+    "saved": "Preferencia de idioma guardada localmente.",
+    "english": "Inglés",
+    "spanish": "Español"
+  },
+  "settings": {
+    "title": "Configuración",
+    "description": "Administra tus preferencias, notificaciones y configuración de la unidad.",
+    "appearance": "Apariencia",
+    "themePreference": "Preferencia de tema"
+  }
+}

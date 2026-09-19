@@ -1,0 +1,17 @@
+{
+  "language": {
+    "label": "Language",
+    "description": "Choose the language used for the application interface.",
+    "saved": "Language preference saved locally.",
+    "english": "English",
+    "spanish": "Spanish",
+    "portugueseBrazil": "Portuguese (Brazil)",
+    "tagalog": "Tagalog"
+  },
+  "settings": {
+    "title": "Settings",
+    "description": "Manage your preferences, notifications, and ward settings.",
+    "appearance": "Appearance",
+    "themePreference": "Theme preference"
+  }
+}

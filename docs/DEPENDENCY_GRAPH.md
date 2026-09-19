@@ -15,7 +15,7 @@ flowchart LR
   A3["root:tooling<br/>6 files"]
   A4["web:announcements<br/>2 files"]
   A5["web:api<br/>88 files"]
-  A6["web:app<br/>118 files"]
+  A6["web:app<br/>119 files"]
   A7["web:audit<br/>2 files"]
   A8["web:auth<br/>11 files"]
   A9["web:bootstrap.mjs<br/>1 files"]
@@ -27,82 +27,84 @@ flowchart LR
   A15["web:features<br/>3 files"]
   A16["web:hardening<br/>1 files"]
   A17["web:health.mjs<br/>1 files"]
-  A18["web:imports<br/>19 files"]
-  A19["web:leadership<br/>14 files"]
-  A20["web:lib<br/>9 files"]
-  A21["web:maintenance<br/>4 files"]
-  A22["web:meetings<br/>14 files"]
-  A23["web:notes<br/>1 files"]
-  A24["web:notifications<br/>36 files"]
-  A25["web:offline<br/>3 files"]
-  A26["web:reports<br/>3 files"]
-  A27["web:stand<br/>10 files"]
-  A28["web:tooling<br/>2 files"]
-  A29["web:types<br/>2 files"]
-  A30["web:ui<br/>30 files"]
-  A31["web:version.mjs<br/>1 files"]
+  A18["web:i18n<br/>3 files"]
+  A19["web:imports<br/>19 files"]
+  A20["web:leadership<br/>14 files"]
+  A21["web:lib<br/>9 files"]
+  A22["web:maintenance<br/>4 files"]
+  A23["web:meetings<br/>14 files"]
+  A24["web:notes<br/>1 files"]
+  A25["web:notifications<br/>36 files"]
+  A26["web:offline<br/>3 files"]
+  A27["web:reports<br/>3 files"]
+  A28["web:stand<br/>10 files"]
+  A29["web:tooling<br/>2 files"]
+  A30["web:types<br/>2 files"]
+  A31["web:ui<br/>30 files"]
+  A32["web:version.mjs<br/>1 files"]
   A5 -->|123| A8
-  A6 -->|118| A30
+  A6 -->|118| A31
   A5 -->|114| A14
   A6 -->|90| A8
   A6 -->|56| A14
-  A5 -->|46| A24
-  A5 -->|23| A20
+  A5 -->|46| A25
+  A5 -->|23| A21
   A5 -->|20| A7
   A5 -->|15| A11
-  A6 -->|15| A22
+  A6 -->|15| A23
   A5 -->|11| A15
-  A5 -->|11| A18
-  A6 -->|8| A24
-  A5 -->|7| A19
+  A5 -->|11| A19
+  A6 -->|8| A25
+  A5 -->|7| A20
   A6 -->|7| A15
-  A5 -->|6| A22
-  A6 -->|5| A27
+  A5 -->|6| A23
+  A6 -->|5| A28
   A6 -->|4| A11
   A5 -->|3| A4
   A6 -->|3| A4
-  A6 -->|3| A19
-  A24 -->|3| A14
+  A6 -->|3| A20
+  A25 -->|3| A14
   A5 -->|2| A12
   A6 -->|2| A12
-  A6 -->|2| A25
+  A6 -->|2| A18
   A6 -->|2| A26
+  A6 -->|2| A27
   A8 -->|2| A14
   A10 -->|2| A14
-  A13 -->|2| A20
+  A13 -->|2| A21
   A14 -->|2| A8
-  A19 -->|2| A24
-  A30 -->|2| A26
+  A20 -->|2| A25
+  A31 -->|2| A27
   A2 -->|1| A17
   A5 -->|1| A10
-  A5 -->|1| A23
-  A5 -->|1| A27
+  A5 -->|1| A24
+  A5 -->|1| A28
   A6 -->|1| A10
-  A6 -->|1| A18
-  A6 -->|1| A20
+  A6 -->|1| A19
+  A6 -->|1| A21
   A8 -->|1| A15
-  A8 -->|1| A20
-  A10 -->|1| A24
+  A8 -->|1| A21
+  A10 -->|1| A25
   A13 -->|1| A9
   A13 -->|1| A17
-  A13 -->|1| A22
+  A13 -->|1| A23
   A15 -->|1| A14
-  A17 -->|1| A31
-  A18 -->|1| A14
-  A21 -->|1| A14
-  A22 -->|1| A4
-  A24 -->|1| A11
-  A24 -->|1| A23
-  A27 -->|1| A22
-  A30 -->|1| A8
-  A30 -->|1| A12
-  A30 -->|1| A15
-  A30 -->|1| A18
-  A30 -->|1| A20
-  A30 -->|1| A22
-  A30 -->|1| A23
-  A30 -->|1| A25
-  A30 -->|1| A27
+  A17 -->|1| A32
+  A19 -->|1| A14
+  A22 -->|1| A14
+  A23 -->|1| A4
+  A25 -->|1| A11
+  A25 -->|1| A24
+  A28 -->|1| A23
+  A31 -->|1| A8
+  A31 -->|1| A12
+  A31 -->|1| A15
+  A31 -->|1| A19
+  A31 -->|1| A21
+  A31 -->|1| A23
+  A31 -->|1| A24
+  A31 -->|1| A26
+  A31 -->|1| A28
 ```
 
 ## Area inventory
@@ -114,7 +116,7 @@ flowchart LR
 | `root:tooling` | 6 |
 | `web:announcements` | 2 |
 | `web:api` | 88 |
-| `web:app` | 118 |
+| `web:app` | 119 |
 | `web:audit` | 2 |
 | `web:auth` | 11 |
 | `web:bootstrap.mjs` | 1 |
@@ -126,6 +128,7 @@ flowchart LR
 | `web:features` | 3 |
 | `web:hardening` | 1 |
 | `web:health.mjs` | 1 |
+| `web:i18n` | 3 |
 | `web:imports` | 19 |
 | `web:leadership` | 14 |
 | `web:lib` | 9 |
@@ -151,7 +154,7 @@ flowchart LR
 | `web:app` | `web:auth` | 90 |
 | `web:app` | `web:db` | 56 |
 | `web:notifications` | `web:notifications` | 53 |
-| `web:app` | `web:app` | 51 |
+| `web:app` | `web:app` | 52 |
 | `web:api` | `web:notifications` | 46 |
 | `web:ui` | `web:ui` | 27 |
 | `web:api` | `web:lib` | 23 |
@@ -185,6 +188,7 @@ flowchart LR
 | `package:shared` | `package:shared` | 2 |
 | `web:api` | `web:church-actions` | 2 |
 | `web:app` | `web:church-actions` | 2 |
+| `web:app` | `web:i18n` | 2 |
 | `web:app` | `web:offline` | 2 |
 | `web:app` | `web:reports` | 2 |
 | `web:auth` | `web:db` | 2 |
@@ -192,6 +196,7 @@ flowchart LR
 | `web:church-actions` | `web:church-actions` | 2 |
 | `web:config` | `web:lib` | 2 |
 | `web:db` | `web:auth` | 2 |
+| `web:i18n` | `web:i18n` | 2 |
 | `web:leadership` | `web:notifications` | 2 |
 | `web:ui` | `web:reports` | 2 |
 | `root:other` | `web:health.mjs` | 1 |
@@ -233,9 +238,9 @@ flowchart LR
 
 | Importing area | Package/runtime | Imports |
 | --- | --- | ---: |
-| `web:app` | `next` | 90 |
+| `web:app` | `next` | 91 |
 | `web:api` | `next` | 66 |
-| `web:app` | `react` | 34 |
+| `web:app` | `react` | 35 |
 | `web:ui` | `react` | 28 |
 | `web:api` | `vitest` | 21 |
 | `web:notifications` | `vitest` | 16 |
@@ -251,6 +256,7 @@ flowchart LR
 | `web:app` | `@testing-library/react` | 5 |
 | `web:stand` | `vitest` | 5 |
 | `web:app` | `@testing-library/user-event` | 4 |
+| `web:app` | `next-intl` | 4 |
 | `web:auth` | `vitest` | 4 |
 | `web:config` | `@playwright/test` | 4 |
 | `web:tooling` | `Node.js` | 4 |
@@ -295,12 +301,16 @@ flowchart LR
 | `web:config` | `drizzle-kit` | 1 |
 | `web:config` | `fs` | 1 |
 | `web:config` | `next` | 1 |
+| `web:config` | `next-intl` | 1 |
 | `web:config` | `path` | 1 |
 | `web:config` | `typescript-eslint` | 1 |
 | `web:config` | `vitest` | 1 |
 | `web:db` | `module` | 1 |
 | `web:features` | `vitest` | 1 |
 | `web:hardening` | `vitest` | 1 |
+| `web:i18n` | `next` | 1 |
+| `web:i18n` | `next-intl` | 1 |
+| `web:i18n` | `vitest` | 1 |
 | `web:imports` | `@playwright/test` | 1 |
 | `web:imports` | `pdf-parse` | 1 |
 | `web:imports` | `pg` | 1 |
@@ -446,7 +456,7 @@ flowchart LR
 | `apps/web/app/imports/sacrament-planner/sacrament-planner-import-client.tsx` | `web:app` | 2 | 1 |
 | `apps/web/app/interviews/interviews-client.tsx` | `web:app` | 5 | 1 |
 | `apps/web/app/interviews/page.tsx` | `web:app` | 8 | 1 |
-| `apps/web/app/layout.tsx` | `web:app` | 6 | 2 |
+| `apps/web/app/layout.tsx` | `web:app` | 6 | 4 |
 | `apps/web/app/login/login-form.tsx` | `web:app` | 2 | 2 |
 | `apps/web/app/login/page.tsx` | `web:app` | 2 | 1 |
 | `apps/web/app/logout/logout-form.tsx` | `web:app` | 2 | 2 |
@@ -487,12 +497,13 @@ flowchart LR
 | `apps/web/app/settings/audit-log/page.tsx` | `web:app` | 8 | 2 |
 | `apps/web/app/settings/feature-settings.tsx` | `web:app` | 3 | 1 |
 | `apps/web/app/settings/health/page.tsx` | `web:app` | 3 | 4 |
+| `apps/web/app/settings/language-preference.tsx` | `web:app` | 1 | 3 |
 | `apps/web/app/settings/notification-timezone.tsx` | `web:app` | 0 | 1 |
 | `apps/web/app/settings/notification-timezone.vitest.tsx` | `web:app` | 1 | 4 |
 | `apps/web/app/settings/notifications/notification-subscription-settings.tsx` | `web:app` | 1 | 1 |
 | `apps/web/app/settings/notifications/notification-subscription-settings.vitest.tsx` | `web:app` | 1 | 4 |
 | `apps/web/app/settings/notifications/page.tsx` | `web:app` | 2 | 1 |
-| `apps/web/app/settings/page.tsx` | `web:app` | 7 | 1 |
+| `apps/web/app/settings/page.tsx` | `web:app` | 9 | 2 |
 | `apps/web/app/settings/public-layout/page.tsx` | `web:app` | 7 | 1 |
 | `apps/web/app/settings/public-layout/public-layout-client.tsx` | `web:app` | 3 | 1 |
 | `apps/web/app/settings/public-layout/public-layout-client.vitest.tsx` | `web:app` | 1 | 2 |
@@ -568,7 +579,7 @@ flowchart LR
 | `apps/web/instrumentation.ts` | `web:config` | 1 | 0 |
 | `apps/web/lib/utils.ts` | `web:ui` | 0 | 2 |
 | `apps/web/next-env.d.ts` | `web:config` | 0 | 0 |
-| `apps/web/next.config.ts` | `web:config` | 0 | 4 |
+| `apps/web/next.config.ts` | `web:config` | 0 | 5 |
 | `apps/web/playwright.config.ts` | `web:config` | 0 | 1 |
 | `apps/web/postcss.config.mjs` | `web:config` | 0 | 0 |
 | `apps/web/public/sw.js` | `web:config` | 0 | 0 |
@@ -618,6 +629,9 @@ flowchart LR
 | `apps/web/src/features/types.ts` | `web:features` | 0 | 0 |
 | `apps/web/src/hardening/production-readiness.vitest.ts` | `web:hardening` | 0 | 3 |
 | `apps/web/src/health.mjs` | `web:health.mjs` | 1 | 0 |
+| `apps/web/src/i18n/config.ts` | `web:i18n` | 0 | 0 |
+| `apps/web/src/i18n/config.vitest.ts` | `web:i18n` | 1 | 1 |
+| `apps/web/src/i18n/request.ts` | `web:i18n` | 1 | 2 |
 | `apps/web/src/imports/bookmarklet.ts` | `web:imports` | 0 | 0 |
 | `apps/web/src/imports/bookmarklet.vitest.ts` | `web:imports` | 1 | 1 |
 | `apps/web/src/imports/callings.ts` | `web:imports` | 1 | 0 |
