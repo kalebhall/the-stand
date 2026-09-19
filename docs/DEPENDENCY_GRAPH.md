@@ -249,7 +249,7 @@ flowchart LR
 | `web:app` | `react` | 39 |
 | `web:ui` | `react` | 31 |
 | `web:api` | `vitest` | 22 |
-| `web:app` | `next-intl` | 17 |
+| `web:app` | `next-intl` | 18 |
 | `web:notifications` | `vitest` | 16 |
 | `root:tooling` | `Node.js` | 14 |
 | `web:app` | `vitest` | 14 |
@@ -533,7 +533,7 @@ flowchart LR
 | `apps/web/app/settings/users/ward-users-manager.tsx` | `web:app` | 2 | 1 |
 | `apps/web/app/speakers/page.tsx` | `web:app` | 6 | 1 |
 | `apps/web/app/speakers/speaker-lifecycle-workspace.tsx` | `web:app` | 1 | 1 |
-| `apps/web/app/stand/[meetingId]/offline/offline-stand-page.tsx` | `web:app` | 2 | 2 |
+| `apps/web/app/stand/[meetingId]/offline/offline-stand-page.tsx` | `web:app` | 2 | 3 |
 | `apps/web/app/stand/[meetingId]/offline/page.tsx` | `web:app` | 1 | 0 |
 | `apps/web/app/stand/[meetingId]/page.tsx` | `web:app` | 13 | 3 |
 | `apps/web/app/support/access-requests/page.tsx` | `web:app` | 5 | 3 |

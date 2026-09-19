@@ -55,8 +55,31 @@ const DEFAULT_TEMPLATE: StandTemplate = {
   releaseTemplate: DEFAULT_STAND_RELEASE_TEMPLATE
 };
 
-function toDisplayLabel(itemType: string): string {
-  if (itemType.toUpperCase() === 'ORGANIST_PIANIST') return 'Organist / Pianist';
+export type StandRenderLabels = {
+  itemLabels?: Record<string, string>;
+  introduction: string;
+  presiding: string;
+  conducting: string;
+  organistPianist: string;
+  chorister: string;
+  unassigned: string;
+  visitingStakeLeader: string;
+};
+
+const DEFAULT_RENDER_LABELS: StandRenderLabels = {
+  introduction: 'Introduction',
+  presiding: 'Presiding',
+  conducting: 'Conducting',
+  organistPianist: 'Organist / Pianist',
+  chorister: 'Chorister',
+  unassigned: 'Unassigned',
+  visitingStakeLeader: 'Visiting stake leader'
+};
+
+function toDisplayLabel(itemType: string, labels: StandRenderLabels = DEFAULT_RENDER_LABELS): string {
+  const normalizedType = itemType.toUpperCase();
+  if (labels.itemLabels?.[normalizedType]) return labels.itemLabels[normalizedType];
+  if (normalizedType === 'ORGANIST_PIANIST') return labels.organistPianist;
 
   return itemType
     .split('_')
@@ -77,9 +100,12 @@ function parseBoldSegments(text: string): Array<{ text: string; bold: boolean }>
     });
 }
 
-function getMemberAndCalling(item: StandProgramItem): { memberName: string; callingName: string } {
+function getMemberAndCalling(
+  item: StandProgramItem,
+  labels: StandRenderLabels = DEFAULT_RENDER_LABELS
+): { memberName: string; callingName: string } {
   const memberName = item.title?.trim() ? formatAtStandMemberName(item.title, item.member, item.notes ?? undefined) : 'the member';
-  const callingName = item.notes?.trim() || toDisplayLabel(item.itemType);
+  const callingName = item.notes?.trim() || toDisplayLabel(item.itemType, labels);
   return { memberName, callingName };
 }
 
@@ -106,7 +132,8 @@ export type StandAnnouncementItem = {
 export function buildStandRows(
   items: StandProgramItem[],
   templateOverrides?: Partial<StandTemplate>,
-  announcements?: StandAnnouncementItem[]
+  announcements?: StandAnnouncementItem[],
+  labels: StandRenderLabels = DEFAULT_RENDER_LABELS
 ): StandRow[] {
   const template: StandTemplate = {
     welcomeText: templateOverrides?.welcomeText ?? DEFAULT_TEMPLATE.welcomeText,
@@ -120,27 +147,27 @@ export function buildStandRows(
 
   for (const item of items) {
     const normalizedType = item.itemType.toUpperCase();
-    const label = toDisplayLabel(normalizedType);
+    const label = toDisplayLabel(normalizedType, labels);
 
     if (normalizedType === 'INTRODUCTION') {
       const roles = item.introductionRoles ?? { presiding: '', conducting: '', organist: '', chorister: '' };
       const details = [
-        ['Presiding', roles.presiding],
-        ['Conducting', roles.conducting],
-        ['Organist / Pianist', roles.organist],
-        ['Chorister', roles.chorister]
+        [labels.presiding, roles.presiding],
+        [labels.conducting, roles.conducting],
+        [labels.organistPianist, roles.organist],
+        [labels.chorister, roles.chorister]
       ]
-        .map(([role, name]) => `${role}: ${name || 'Unassigned'}`)
+        .map(([role, name]) => `${role}: ${name || labels.unassigned}`)
         .concat(
           (roles.visitingLeaders ?? []).map(
-            (leader) => `Visiting stake leader: ${leader.name || 'Unassigned'}${leader.calling ? ` (${leader.calling})` : ''}`
+            (leader) => `${labels.visitingStakeLeader}: ${leader.name || labels.unassigned}${leader.calling ? ` (${leader.calling})` : ''}`
           )
         )
         .join('\n');
       rows.push({
         kind: 'standard',
         programItemId: item.id,
-        label: 'Introduction',
+        label: labels.introduction,
         details,
         ...(item.programNotes?.trim() ? { programNotes: item.programNotes } : {})
       });
@@ -148,7 +175,7 @@ export function buildStandRows(
     }
 
     if (normalizedType.includes('SUSTAIN')) {
-      const values = getMemberAndCalling(item);
+      const values = getMemberAndCalling(item, labels);
       rows.push({
         kind: 'sustain',
         programItemId: item.id,
@@ -159,7 +186,7 @@ export function buildStandRows(
     }
 
     if (normalizedType.includes('RELEASE')) {
-      const values = getMemberAndCalling(item);
+      const values = getMemberAndCalling(item, labels);
       rows.push({
         kind: 'release',
         programItemId: item.id,

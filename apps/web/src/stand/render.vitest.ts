@@ -126,24 +126,28 @@ describe('buildStandRows', () => {
   });
 
   it('omits the announcement row when no announcements are selected for the stand', () => {
-    const rows = buildStandRows([
-      {
-        id: 'item-announcement',
-        itemType: 'ANNOUNCEMENT',
-        title: '',
-        notes: '',
-        hymnNumber: null,
-        hymnTitle: null
-      },
-      {
-        id: 'item-opening',
-        itemType: 'OPENING_HYMN',
-        title: '',
-        notes: '',
-        hymnNumber: '1',
-        hymnTitle: 'The Morning Breaks'
-      }
-    ], {}, [{ title: 'Program only', body: null, includeInStand: false }]);
+    const rows = buildStandRows(
+      [
+        {
+          id: 'item-announcement',
+          itemType: 'ANNOUNCEMENT',
+          title: '',
+          notes: '',
+          hymnNumber: null,
+          hymnTitle: null
+        },
+        {
+          id: 'item-opening',
+          itemType: 'OPENING_HYMN',
+          title: '',
+          notes: '',
+          hymnNumber: '1',
+          hymnTitle: 'The Morning Breaks'
+        }
+      ],
+      {},
+      [{ title: 'Program only', body: null, includeInStand: false }]
+    );
 
     expect(rows).toEqual([
       { kind: 'welcome', text: 'Welcome to The Church of Jesus Christ of Latter-day Saints.' },
@@ -273,5 +277,40 @@ describe('buildStandRows', () => {
       hymnUrl: 'https://www.churchofjesuschrist.org/study/manual/hymns/as-now-we-take-the-sacrament?lang=eng'
     });
     expect(rows[2]).toEqual({ kind: 'sacrament', programItemId: 'sacrament' });
+  });
+
+  it('uses injected localized display labels without changing authored details', () => {
+    const rows = buildStandRows(
+      [
+        {
+          id: 'intro',
+          itemType: 'INTRODUCTION',
+          title: null,
+          notes: null,
+          introductionRoles: { presiding: 'Bishop', conducting: 'Counselor', organist: '', chorister: '' },
+          hymnNumber: null,
+          hymnTitle: null
+        },
+        { id: 'hymn', itemType: 'OPENING_HYMN', title: null, notes: null, hymnNumber: '2', hymnTitle: 'The Spirit of God' }
+      ],
+      {},
+      [],
+      {
+        introduction: 'Introducción',
+        presiding: 'Preside',
+        conducting: 'Dirige',
+        organistPianist: 'Organista / pianista',
+        chorister: 'Director de música',
+        unassigned: 'Sin asignar',
+        visitingStakeLeader: 'Líder de estaca visitante',
+        itemLabels: { OPENING_HYMN: 'Himno de apertura' }
+      }
+    );
+
+    expect(rows[1]).toMatchObject({
+      label: 'Introducción',
+      details: 'Preside: Bishop\nDirige: Counselor\nOrganista / pianista: Sin asignar\nDirector de música: Sin asignar'
+    });
+    expect(rows[2]).toMatchObject({ label: 'Himno de apertura', details: '2 — The Spirit of God' });
   });
 });

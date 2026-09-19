@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useSession } from 'next-auth/react';
 import type { StandRow } from '@/src/stand/render';
 import {
@@ -20,17 +21,28 @@ import {
 } from '@/src/offline/storage';
 
 function membershipActionLabel(actionType: string): string {
-  return {
-    WELCOME_NEW_MEMBER: 'Welcome new member',
-    RECOGNIZE_BAPTIZED_CHILD: 'Recognize baptized child',
-    BABY_BLESSING: 'Baby blessing',
-    PRIESTHOOD_ORDINATION: 'Priesthood ordination',
-    PRIESTHOOD_ADVANCEMENT: 'Priesthood advancement'
-  }[actionType] ?? actionType.replaceAll('_', ' ');
+  return (
+    {
+      WELCOME_NEW_MEMBER: 'Welcome new member',
+      RECOGNIZE_BAPTIZED_CHILD: 'Recognize baptized child',
+      BABY_BLESSING: 'Baby blessing',
+      PRIESTHOOD_ORDINATION: 'Priesthood ordination',
+      PRIESTHOOD_ADVANCEMENT: 'Priesthood advancement'
+    }[actionType] ?? actionType.replaceAll('_', ' ')
+  );
 }
 
 function priesthoodOfficeLabel(office: string | null | undefined): string | null {
-  return { DEACON: 'Deacon', TEACHER: 'Teacher', PRIEST: 'Priest', ELDER: 'Elder', HIGH_PRIEST: 'High priest', UNKNOWN: 'Unknown during planning' }[office ?? ''] ?? null;
+  return (
+    {
+      DEACON: 'Deacon',
+      TEACHER: 'Teacher',
+      PRIEST: 'Priest',
+      ELDER: 'Elder',
+      HIGH_PRIEST: 'High priest',
+      UNKNOWN: 'Unknown during planning'
+    }[office ?? ''] ?? null
+  );
 }
 
 function membershipStatusLabel(status: string): string {
@@ -38,6 +50,7 @@ function membershipStatusLabel(status: string): string {
 }
 
 function OfflineRow({ row, done, onToggle }: { row: StandRow; done: boolean; onToggle: () => void }) {
+  const t = useTranslations('offline');
   const programNotes = 'programNotes' in row ? row.programNotes : null;
   const content =
     row.kind === 'welcome' ? (
@@ -75,7 +88,12 @@ function OfflineRow({ row, done, onToggle }: { row: StandRow; done: boolean; onT
       <>
         <p className="text-sm uppercase tracking-wide text-muted-foreground">{row.label}</p>
         {row.hymnUrl ? (
-          <a className="mt-1 block whitespace-pre-wrap text-lg font-medium text-primary underline underline-offset-4" href={row.hymnUrl} target="_blank" rel="noreferrer">
+          <a
+            className="mt-1 block whitespace-pre-wrap text-lg font-medium text-primary underline underline-offset-4"
+            href={row.hymnUrl}
+            target="_blank"
+            rel="noreferrer"
+          >
             {row.details}
             <span className="ml-2 text-sm font-normal">Open hymn</span>
           </a>
@@ -101,7 +119,7 @@ function OfflineRow({ row, done, onToggle }: { row: StandRow; done: boolean; onT
           {programNotes?.trim() ? <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">{programNotes}</p> : null}
         </div>
         <button type="button" className="shrink-0 rounded-md border px-2 py-1 text-xs" onClick={onToggle}>
-          {done ? 'Completed' : 'Mark complete'}
+          {done ? t('completed') : t('markComplete')}
         </button>
       </div>
     </article>
@@ -109,6 +127,7 @@ function OfflineRow({ row, done, onToggle }: { row: StandRow; done: boolean; onT
 }
 
 export default function OfflineStandPage({ meetingId }: { meetingId: string }) {
+  const t = useTranslations('offline');
   const { data: session } = useSession();
   const userId = session?.user?.id;
   const activeWardId = session?.activeWardId;
@@ -436,7 +455,7 @@ export default function OfflineStandPage({ meetingId }: { meetingId: string }) {
   if (!snapshot)
     return (
       <main className="mx-auto max-w-3xl p-6">
-        <p>Loading offline copy…</p>
+        <p>{t('loading')}</p>
       </main>
     );
   return (
@@ -444,8 +463,8 @@ export default function OfflineStandPage({ meetingId }: { meetingId: string }) {
       <section className="rounded-lg border bg-card p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <p className="text-xs uppercase tracking-wide text-muted-foreground">Offline copy</p>
-            <h1 className="text-2xl font-semibold">At the Stand</h1>
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">{t('copy')}</p>
+            <h1 className="text-2xl font-semibold">{t('title')}</h1>
             <p className="text-sm text-muted-foreground">
               {snapshot.meeting.meetingDate} · {snapshot.meeting.meetingType}
             </p>
@@ -453,12 +472,20 @@ export default function OfflineStandPage({ meetingId }: { meetingId: string }) {
           <span className="rounded-full border px-3 py-1 text-sm">{navigator.onLine ? 'Online' : 'Offline'}</span>
         </div>
         <p className="mt-2 text-xs text-muted-foreground" aria-live="polite">
-          Saved {new Date(snapshot.savedAt).toLocaleString()} ({formatOfflineAge(snapshot.savedAt)}) · {pending} pending {pending === 1 ? 'change' : 'changes'}
+          Saved {new Date(snapshot.savedAt).toLocaleString()} ({formatOfflineAge(snapshot.savedAt)}) · {pending} pending{' '}
+          {pending === 1 ? 'change' : 'changes'}
           {syncing ? ' · Syncing…' : ''}
         </p>
-        <p className={`mt-2 rounded-md border p-3 text-sm ${getOfflineSnapshotAge(snapshot.savedAt).isStale ? 'border-amber-500/50 bg-amber-500/10' : 'bg-muted/30'}`} role="status">
-          {navigator.onLine ? 'Read-only saved copy. Online changes require the connected meeting view.' : 'Offline — showing saved meeting. Changes are limited to supported local actions until reconnect.'}
-          {getOfflineSnapshotAge(snapshot.savedAt).isStale ? ' This copy is older than 24 hours; verify current information when online.' : ''}
+        <p
+          className={`mt-2 rounded-md border p-3 text-sm ${getOfflineSnapshotAge(snapshot.savedAt).isStale ? 'border-amber-500/50 bg-amber-500/10' : 'bg-muted/30'}`}
+          role="status"
+        >
+          {navigator.onLine
+            ? 'Read-only saved copy. Online changes require the connected meeting view.'
+            : 'Offline — showing saved meeting. Changes are limited to supported local actions until reconnect.'}
+          {getOfflineSnapshotAge(snapshot.savedAt).isStale
+            ? ' This copy is older than 24 hours; verify current information when online.'
+            : ''}
         </p>
         <div className="mt-3 flex gap-2">
           <button className="rounded-md border px-3 py-1 text-sm" onClick={() => setMode('formal')}>
@@ -469,18 +496,33 @@ export default function OfflineStandPage({ meetingId }: { meetingId: string }) {
           </button>
         </div>
         <p className="mt-3 text-xs text-muted-foreground">
-          This device contains confidential ward coordination data. Browser storage is minimized but is not claimed to be encrypted at rest. Delete it when finished or before handing the device to another user.
+          This device contains confidential ward coordination data. Browser storage is minimized but is not claimed to be encrypted at rest.
+          Delete it when finished or before handing the device to another user.
         </p>
-        <button type="button" className="mt-2 rounded-md border px-3 py-1 text-sm" onClick={() => void deleteOfflineData()} disabled={clearing}>
+        <button
+          type="button"
+          className="mt-2 rounded-md border px-3 py-1 text-sm"
+          onClick={() => void deleteOfflineData()}
+          disabled={clearing}
+        >
           {clearing ? 'Deleting offline data…' : 'Delete offline data'}
         </button>
       </section>
       {snapshot.technology ? (
         <section className="rounded-lg border bg-card p-4">
           <h2 className="font-semibold">Technology checklist reference</h2>
-          <p className="mt-1 text-sm text-muted-foreground">Read-only saved checklist. Update checklist while online at <a className="underline" href="/technology">Technology</a>.</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Read-only saved checklist. Update checklist while online at{' '}
+            <a className="underline" href="/technology">
+              Technology
+            </a>
+            .
+          </p>
           <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
-            <div><dt className="text-muted-foreground">Owner</dt><dd>{snapshot.technology.ownerName || 'Unassigned'}</dd></div>
+            <div>
+              <dt className="text-muted-foreground">Owner</dt>
+              <dd>{snapshot.technology.ownerName || 'Unassigned'}</dd>
+            </div>
             {[
               ['Room ready', snapshot.technology.roomReady],
               ['Audio ready', snapshot.technology.audioReady],
@@ -489,9 +531,20 @@ export default function OfflineStandPage({ meetingId }: { meetingId: string }) {
               ['Recording deletion reminder', snapshot.technology.recordingDeletionReminder],
               ['Start confirmed', Boolean(snapshot.technology.startConfirmedAt)],
               ['Stop confirmed', Boolean(snapshot.technology.stopConfirmedAt)]
-            ].map(([label, value]) => <div key={String(label)}><dt className="text-muted-foreground">{String(label)}</dt><dd>{value ? 'Complete' : 'Needs attention'}</dd></div>)}
+            ].map(([label, value]) => (
+              <div key={String(label)}>
+                <dt className="text-muted-foreground">{String(label)}</dt>
+                <dd>{value ? 'Complete' : 'Needs attention'}</dd>
+              </div>
+            ))}
           </dl>
-          {snapshot.technology.authorizedLink ? <p className="mt-3 text-sm"><a className="underline" href={snapshot.technology.authorizedLink} target="_blank" rel="noreferrer">Open authorized technology link</a></p> : null}
+          {snapshot.technology.authorizedLink ? (
+            <p className="mt-3 text-sm">
+              <a className="underline" href={snapshot.technology.authorizedLink} target="_blank" rel="noreferrer">
+                Open authorized technology link
+              </a>
+            </p>
+          ) : null}
         </section>
       ) : null}
       {snapshot.notes?.length || noteComposerOpen ? (
@@ -571,23 +624,40 @@ export default function OfflineStandPage({ meetingId }: { meetingId: string }) {
       )}
       <section className="rounded-lg border bg-card p-4">
         <h2 className="font-semibold">Ward and Stake Business</h2>
-        <p className="mt-1 text-sm text-muted-foreground">Membership and ordinance items are read-only here. Use connected meeting management to change them.</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Membership and ordinance items are read-only here. Use connected meeting management to change them.
+        </p>
         {snapshot.membershipActions?.length ? (
           <ul className="mt-3 space-y-2 text-sm">
             {snapshot.membershipActions.map((action) => (
               <li key={action.id} className="rounded border p-3">
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
-                    <p className="text-xs uppercase tracking-wide text-muted-foreground">{membershipActionLabel(action.actionType)}{action.carriedForward ? ' · Carried forward' : ''}</p>
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                      {membershipActionLabel(action.actionType)}
+                      {action.carriedForward ? ' · Carried forward' : ''}
+                    </p>
                     <p className="font-medium">{action.memberName}</p>
-                    {priesthoodOfficeLabel(action.priesthoodOffice) ? <p className="text-muted-foreground">Office: {priesthoodOfficeLabel(action.priesthoodOffice)}</p> : null}
-                    {action.actionType === 'BAPTISM_CONFIRMATION_FOLLOW_UP' ? <p className="text-muted-foreground">Baptism: {action.baptismStatus ?? 'planned'}{action.baptismDate ? ` (${action.baptismDate})` : ''} · Confirmation: {action.confirmationStatus ?? 'planned'}{action.confirmationDate ? ` (${action.confirmationDate})` : ''}</p> : null}
+                    {priesthoodOfficeLabel(action.priesthoodOffice) ? (
+                      <p className="text-muted-foreground">Office: {priesthoodOfficeLabel(action.priesthoodOffice)}</p>
+                    ) : null}
+                    {action.actionType === 'BAPTISM_CONFIRMATION_FOLLOW_UP' ? (
+                      <p className="text-muted-foreground">
+                        Baptism: {action.baptismStatus ?? 'planned'}
+                        {action.baptismDate ? ` (${action.baptismDate})` : ''} · Confirmation: {action.confirmationStatus ?? 'planned'}
+                        {action.confirmationDate ? ` (${action.confirmationDate})` : ''}
+                      </p>
+                    ) : null}
                     {action.responsibleLeader ? <p className="text-muted-foreground">Responsible: {action.responsibleLeader}</p> : null}
-                    {action.interviewStatus && action.interviewStatus !== 'not_required' ? <p className="text-muted-foreground">Interview: {action.interviewStatus.replaceAll('_', ' ')}</p> : null}
+                    {action.interviewStatus && action.interviewStatus !== 'not_required' ? (
+                      <p className="text-muted-foreground">Interview: {action.interviewStatus.replaceAll('_', ' ')}</p>
+                    ) : null}
                   </div>
                   <span className="rounded-full border px-2 py-1 text-xs">{membershipStatusLabel(action.status)}</span>
                 </div>
-                {action.lcrFollowUpStatus === 'needed' ? <p className="mt-2 text-xs font-medium text-amber-700">LCR update needed</p> : null}
+                {action.lcrFollowUpStatus === 'needed' ? (
+                  <p className="mt-2 text-xs font-medium text-amber-700">LCR update needed</p>
+                ) : null}
               </li>
             ))}
           </ul>
@@ -596,7 +666,8 @@ export default function OfflineStandPage({ meetingId }: { meetingId: string }) {
           {snapshot.businessLines.map((line) => (
             <li key={line.id} className="flex flex-wrap items-center justify-between gap-2 rounded border p-2">
               <span>
-                {line.memberName} — {line.callingName} ({line.status}{line.carriedForward ? ', carried forward' : ''})
+                {line.memberName} — {line.callingName} ({line.status}
+                {line.carriedForward ? ', carried forward' : ''})
               </span>
               {line.status === 'pending' ? (
                 <button

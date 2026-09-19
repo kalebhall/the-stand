@@ -44,13 +44,21 @@ type TemplateRow = {
 
 const SACRAMENT_SCRIPTURE_URL = 'https://www.churchofjesuschrist.org/study/scriptures/dc-testament/dc/20?lang=eng#p77';
 
-function SacramentPrayers({ compact, programNotes }: { compact: boolean; programNotes?: string | null }) {
+function SacramentPrayers({
+  compact,
+  programNotes,
+  labels
+}: {
+  compact: boolean;
+  programNotes?: string | null;
+  labels: { sacrament: string; breadPrayer: string; waterPrayer: string; scripture: string };
+}) {
   return (
     <article className="rounded-lg border bg-card p-4 sm:p-5">
-      <p className="text-sm uppercase tracking-wide text-muted-foreground">Sacrament</p>
+      <p className="text-sm uppercase tracking-wide text-muted-foreground">{labels.sacrament}</p>
       <div className={cn('mt-3 space-y-4', compact ? 'text-sm sm:text-base' : 'text-base leading-relaxed sm:text-lg')}>
         <section>
-          <h2 className="font-semibold">Bread prayer</h2>
+          <h2 className="font-semibold">{labels.breadPrayer}</h2>
           <p className="mt-1">
             O God, the Eternal Father, we ask thee in the name of thy Son, Jesus Christ, to bless and sanctify this bread to the souls of
             all those who partake of it, that they may eat in remembrance of the body of thy Son, and witness unto thee, O God, the Eternal
@@ -59,7 +67,7 @@ function SacramentPrayers({ compact, programNotes }: { compact: boolean; program
           </p>
         </section>
         <section>
-          <h2 className="font-semibold">Water prayer</h2>
+          <h2 className="font-semibold">{labels.waterPrayer}</h2>
           <p className="mt-1">
             O God, the Eternal Father, we ask thee in the name of thy Son, Jesus Christ, to bless and sanctify this water to the souls of
             all those who drink of it, that they may do it in remembrance of the blood of thy Son, which was shed for them; that they may
@@ -75,7 +83,7 @@ function SacramentPrayers({ compact, programNotes }: { compact: boolean; program
         target="_blank"
         rel="noreferrer"
       >
-        Doctrine and Covenants 20:77, 79
+        {labels.scripture}
       </a>
     </article>
   );
@@ -252,6 +260,29 @@ export default async function StandViewPage({
     const notes = notesResult.rows as Array<InternalNoteRow & { program_item_id: string }>;
     const canUseNotes = canUseInternalNotes({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId);
     const canManage = canManageCallings({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId);
+    const renderLabels = {
+      introduction: t('introduction'),
+      presiding: t('presiding'),
+      conducting: t('conducting'),
+      organistPianist: t('organistPianist'),
+      chorister: t('chorister'),
+      unassigned: t('unassigned'),
+      visitingStakeLeader: t('visitingStakeLeader'),
+      sacrament: t('sacrament'),
+      breadPrayer: t('breadPrayer'),
+      waterPrayer: t('waterPrayer'),
+      scripture: t('scripture'),
+      itemLabels: {
+        OPENING_HYMN: t('item_OPENING_HYMN'),
+        CLOSING_HYMN: t('item_CLOSING_HYMN'),
+        SPEAKER: t('item_SPEAKER'),
+        INVOCATION: t('item_INVOCATION'),
+        BENEDICTION: t('item_BENEDICTION'),
+        SPECIAL_MUSICAL_NUMBER: t('item_SPECIAL_MUSICAL_NUMBER'),
+        ANNOUNCEMENT: t('item_ANNOUNCEMENT'),
+        WARD_AND_STAKE_BUSINESS: t('item_WARD_AND_STAKE_BUSINESS')
+      }
+    };
     const standRows = buildStandRows(
       (programResult.rows as ProgramItemRow[]).map((item) => ({
         id: item.id,
@@ -270,7 +301,8 @@ export default async function StandViewPage({
         sustainTemplate: template?.sustain_template,
         releaseTemplate: template?.release_template
       },
-      activeStandAnnouncements
+      activeStandAnnouncements,
+      renderLabels
     );
 
     return (
@@ -340,7 +372,7 @@ export default async function StandViewPage({
                 }
 
                 if (row.kind === 'sacrament') {
-                  return <SacramentPrayers key={`row-${index}`} programNotes={row.programNotes} compact={false} />;
+                  return <SacramentPrayers key={`row-${index}`} programNotes={row.programNotes} compact={false} labels={renderLabels} />;
                 }
 
                 if (row.kind === 'ward_business') {
@@ -431,7 +463,7 @@ export default async function StandViewPage({
                 }
 
                 if (row.kind === 'sacrament') {
-                  return <SacramentPrayers key={`compact-${index}`} programNotes={row.programNotes} compact={true} />;
+                  return <SacramentPrayers key={`compact-${index}`} programNotes={row.programNotes} compact={true} labels={renderLabels} />;
                 }
 
                 if (row.kind === 'ward_business') {

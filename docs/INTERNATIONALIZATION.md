@@ -83,9 +83,9 @@ Implemented in this slice:
 - Localized InternalNotesPanel and HymnAutocomplete controls.
 - Localized delete-meeting confirmation and state labels.
 - Localized MembershipOrdinanceSection controls, status labels, Church-source handoff labels, and Spanish component coverage.
-- Localized print renderer labels for draft print views, including announcements, program item labels, role labels, QR labels, and snapshot status.
-- Added rendered-label regression coverage while preserving user-authored program content and official prayer wording.
-- Expanded pseudo-locale coverage to 346 validated message keys.
+- Localized authenticated At-the-Stand display labels and sacrament headings through injected render labels, preserving authored names, topics, notes, templates, and official prayer text.
+- Added offline At-the-Stand shell translations for loading, saved-copy status, deletion, privacy disclosure, and core action labels.
+- Expanded pseudo-locale coverage to 403 validated message keys.
 
 Remaining in Phase 2:
 
