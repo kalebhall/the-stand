@@ -174,6 +174,41 @@ describe('buildMeetingRenderHtml', () => {
     expect(html).toContain('The Spirit of God');
     expect(html).toContain('O God, the Eternal Father');
   });
+  it('escapes localized renderer labels', () => {
+    const html = buildMeetingRenderHtml({
+      meetingDate: '2026-01-04',
+      meetingType: 'SACRAMENT',
+      programItems: [
+        {
+          itemType: 'INTRODUCTION',
+          title: null,
+          notes: null,
+          introductionRoles: { presiding: 'Bishop', conducting: 'First Counselor', organist: 'Organist', chorister: 'Chorister' },
+          hymnNumber: null,
+          hymnTitle: null
+        }
+      ],
+      labels: {
+        programTitle: 'Programa <b>seguro</b>',
+        announcements: 'Anuncios',
+        introduction: 'Introducción',
+        presiding: '<img src=x onerror=alert(1)>',
+        conducting: 'Dirige',
+        organistPianist: 'Organista / pianista',
+        chorister: 'Director de música',
+        sacramentPrayers: 'Oraciones sacramentales',
+        qrDigitalProgram: 'Abrir programa digital',
+        qrCode: 'Código QR del programa digital',
+        meetingTypeLabel: 'Reunión sacramental',
+        itemLabels: {}
+      }
+    });
+
+    expect(html).not.toContain('<img src=x onerror=alert(1)>');
+    expect(html).toContain('&lt;img src=x onerror=alert(1)&gt;');
+    expect(html).toContain('Programa &lt;b&gt;seguro&lt;/b&gt;');
+  });
+
   it('applies selected preset and announcement mode to output', () => {
     const html = buildMeetingRenderHtml({
       meetingDate: '2026-01-04',

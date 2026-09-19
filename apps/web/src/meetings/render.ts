@@ -146,7 +146,7 @@ export function buildMeetingRenderHtml({
         ]
           .map(
             ([role, name]) =>
-              `<div class="grid grid-cols-[10rem_1fr] gap-3 border-b py-2"><p class="text-sm font-medium">${role}</p><p class="text-sm">${escapeHtml(name || '—')}</p></div>`
+              `<div class="grid grid-cols-[10rem_1fr] gap-3 border-b py-2"><p class="text-sm font-medium">${escapeHtml(role)}</p><p class="text-sm">${escapeHtml(name || '—')}</p></div>`
           )
           .join('');
         const notes = item.programNotes?.trim() || item.notes?.trim();
