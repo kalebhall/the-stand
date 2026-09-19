@@ -55,6 +55,11 @@ export const NOTIFICATION_EVENT_TYPES = [
   'CALENDAR_EVENT_CHANGED',
   'CALENDAR_IMPORT_FAILED',
   'ACCESS_REQUEST_SUBMITTED',
+  'SUPPORT_REQUEST_CREATED',
+  'USER_REQUIRES_ASSIGNMENT',
+  'SUPPORT_REQUEST_ASSIGNED',
+  'SUPPORT_REQUEST_STATUS_CHANGED',
+  'SUPPORT_REQUEST_REMINDER',
   'ACCESS_REQUEST_APPROVED',
   'ACCESS_REQUEST_DENIED',
   'WARD_ACCESS_GRANTED',
@@ -310,6 +315,36 @@ const EVENT_DEFINITIONS: Record<NotificationEventType, NotificationEventDefiniti
     label: 'Access request submitted',
     defaultChannels: inAppAndEmail,
     severity: 'info'
+  }),
+  SUPPORT_REQUEST_CREATED: definition('SUPPORT_REQUEST_CREATED', {
+    category: 'ACCESS',
+    label: 'Support request created',
+    defaultChannels: inAppAndEmail,
+    severity: 'info'
+  }),
+  USER_REQUIRES_ASSIGNMENT: definition('USER_REQUIRES_ASSIGNMENT', {
+    category: 'ACCESS',
+    label: 'User requires assignment',
+    defaultChannels: inAppAndEmail,
+    severity: 'warning'
+  }),
+  SUPPORT_REQUEST_ASSIGNED: definition('SUPPORT_REQUEST_ASSIGNED', {
+    category: 'ACCESS',
+    label: 'Support request assigned',
+    defaultChannels: inApp,
+    severity: 'info'
+  }),
+  SUPPORT_REQUEST_STATUS_CHANGED: definition('SUPPORT_REQUEST_STATUS_CHANGED', {
+    category: 'ACCESS',
+    label: 'Support request status changed',
+    defaultChannels: inApp,
+    severity: 'info'
+  }),
+  SUPPORT_REQUEST_REMINDER: definition('SUPPORT_REQUEST_REMINDER', {
+    category: 'REMINDERS',
+    label: 'Support request reminder',
+    defaultChannels: inAppAndEmail,
+    severity: 'warning'
   }),
   ACCESS_REQUEST_APPROVED: definition('ACCESS_REQUEST_APPROVED', {
     category: 'ACCESS',

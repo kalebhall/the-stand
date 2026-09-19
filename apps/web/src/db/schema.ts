@@ -117,6 +117,92 @@ export const accessRequest = pgTable('access_request', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 });
 
+export const supportWorkItem = pgTable(
+  'support_work_item',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    sourceType: text('source_type').notNull(),
+    sourceId: uuid('source_id').notNull(),
+    status: text('status').notNull().default('UNASSIGNED'),
+    assignedToUserId: uuid('assigned_to_user_id').references(() => userAccount.id, { onDelete: 'set null' }),
+    claimedAt: timestamp('claimed_at', { withTimezone: true }),
+    resolvedAt: timestamp('resolved_at', { withTimezone: true }),
+    reminderCount: integer('reminder_count').notNull().default(0),
+    lastRemindedAt: timestamp('last_reminded_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
+  },
+  (table) => ({
+    supportWorkItemSourceUnique: unique().on(table.sourceType, table.sourceId),
+    supportWorkItemQueueIdx: index('support_work_item_queue_idx').on(table.status, table.createdAt),
+    supportWorkItemAssigneeIdx: index('support_work_item_assignee_idx').on(table.assignedToUserId, table.status, table.updatedAt)
+  })
+);
+
+export const globalEventOutbox = pgTable(
+  'global_event_outbox',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    aggregateType: text('aggregate_type').notNull(),
+    aggregateId: uuid('aggregate_id').notNull(),
+    eventType: text('event_type').notNull(),
+    payload: jsonb('payload').notNull().default({}),
+    status: text('status').notNull().default('pending'),
+    attempts: integer('attempts').notNull().default(0),
+    availableAt: timestamp('available_at', { withTimezone: true }).notNull().defaultNow(),
+    lastError: text('last_error'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
+  },
+  (table) => ({
+    globalEventOutboxDedupeUnique: unique().on(table.eventType, table.aggregateId),
+    globalEventOutboxPendingIdx: index('global_event_outbox_pending_idx').on(table.status, table.availableAt, table.createdAt)
+  })
+);
+
+export const globalUserNotification = pgTable(
+  'global_user_notification',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    recipientUserId: uuid('recipient_user_id').notNull().references(() => userAccount.id, { onDelete: 'cascade' }),
+    sourceEventId: uuid('source_event_id').notNull().references(() => globalEventOutbox.id, { onDelete: 'cascade' }),
+    eventType: text('event_type').notNull(),
+    aggregateType: text('aggregate_type').notNull(),
+    aggregateId: uuid('aggregate_id').notNull(),
+    title: text('title').notNull(),
+    summary: text('summary').notNull(),
+    details: jsonb('details'),
+    severity: text('severity').notNull().default('info'),
+    targetUrl: text('target_url'),
+    readAt: timestamp('read_at', { withTimezone: true }),
+    dismissedAt: timestamp('dismissed_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+  },
+  (table) => ({
+    globalUserNotificationRecipientEventUnique: unique().on(table.recipientUserId, table.sourceEventId),
+    globalUserNotificationRecipientCreatedIdx: index('global_user_notification_recipient_created_idx').on(table.recipientUserId, table.createdAt)
+  })
+);
+
+export const globalNotificationDelivery = pgTable(
+  'global_notification_delivery',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    globalEventOutboxId: uuid('global_event_outbox_id').notNull().references(() => globalEventOutbox.id, { onDelete: 'cascade' }),
+    recipientUserId: uuid('recipient_user_id').references(() => userAccount.id, { onDelete: 'cascade' }),
+    channel: text('channel').notNull(),
+    deliveryStatus: text('delivery_status').notNull().default('pending'),
+    externalId: text('external_id'),
+    errorMessage: text('error_message'),
+    attemptedAt: timestamp('attempted_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
+  },
+  (table) => ({
+    globalNotificationDeliveryUnique: unique().on(table.globalEventOutboxId, table.recipientUserId, table.channel),
+    globalNotificationDeliveryStatusIdx: index('global_notification_delivery_status_idx').on(table.deliveryStatus, table.updatedAt)
+  })
+);
 export const meeting = pgTable('meeting', {
   id: uuid('id').defaultRandom().primaryKey(),
   wardId: uuid('ward_id')

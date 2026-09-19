@@ -85,6 +85,11 @@ function escapeHtml(value: string): string {
   return value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;');
 }
 
+export function emailProviderConfigured(): boolean {
+  const provider = process.env.NOTIFICATION_EMAIL_PROVIDER?.trim().toLowerCase();
+  return provider === 'smtp' || provider === 'webhook' || (!provider && Boolean(process.env.NOTIFICATION_EMAIL_WEBHOOK_URL));
+}
+
 export async function deliverNotificationEmail(message: NotificationEmailMessage): Promise<{ externalId?: string }> {
   const provider = configuredProvider();
   if (provider === 'disabled') {

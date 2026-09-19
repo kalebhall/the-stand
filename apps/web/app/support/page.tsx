@@ -5,8 +5,15 @@ import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { auth } from '@/src/auth/auth';
 import { hasRole } from '@/src/auth/roles';
+import { pool } from '@/src/db/client';
 
 const sections = [
+  {
+    title: 'Support Assignment Queue',
+    description: 'Claim, assign, and track global support work without granting ward access.',
+    href: '/support/queue',
+    action: 'Open assignment queue'
+  },
   {
     title: 'User Administration',
     description:
@@ -59,6 +66,13 @@ export default async function SupportConsolePage() {
     redirect('/dashboard');
   }
 
+  const queueCount = await pool.query(
+    `SELECT COUNT(*)::int AS count
+       FROM support_work_item
+      WHERE status = 'UNASSIGNED'`
+  );
+  const unassignedCount = Number(queueCount.rows[0]?.count ?? 0);
+
   return (
     <main className="mx-auto w-full max-w-6xl space-y-6 p-4 sm:p-6">
       <section className="space-y-2">
@@ -66,6 +80,7 @@ export default async function SupportConsolePage() {
         <p className="text-muted-foreground">
           Centralized administration for support staff. Use the sections below to manage users, provisioning, and intake requests.
         </p>
+        <p className="text-sm font-medium">Unassigned support work: {unassignedCount}</p>
       </section>
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
