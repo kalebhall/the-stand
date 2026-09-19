@@ -27,7 +27,7 @@ flowchart LR
   A15["web:features<br/>3 files"]
   A16["web:hardening<br/>1 files"]
   A17["web:health.mjs<br/>1 files"]
-  A18["web:i18n<br/>4 files"]
+  A18["web:i18n<br/>5 files"]
   A19["web:imports<br/>19 files"]
   A20["web:leadership<br/>14 files"]
   A21["web:lib<br/>9 files"]
@@ -61,6 +61,7 @@ flowchart LR
   A6 -->|5| A28
   A6 -->|4| A11
   A5 -->|3| A4
+  A5 -->|3| A18
   A6 -->|3| A4
   A6 -->|3| A18
   A6 -->|3| A20
@@ -73,11 +74,11 @@ flowchart LR
   A10 -->|2| A14
   A13 -->|2| A21
   A14 -->|2| A8
+  A18 -->|2| A23
   A20 -->|2| A25
   A31 -->|2| A27
   A2 -->|1| A17
   A5 -->|1| A10
-  A5 -->|1| A18
   A5 -->|1| A24
   A5 -->|1| A28
   A6 -->|1| A10
@@ -131,7 +132,7 @@ flowchart LR
 | `web:features` | 3 |
 | `web:hardening` | 1 |
 | `web:health.mjs` | 1 |
-| `web:i18n` | 4 |
+| `web:i18n` | 5 |
 | `web:imports` | 19 |
 | `web:leadership` | 14 |
 | `web:lib` | 9 |
@@ -181,12 +182,13 @@ flowchart LR
 | `web:callings` | `web:callings` | 4 |
 | `web:db` | `web:db` | 4 |
 | `web:features` | `web:features` | 4 |
+| `web:i18n` | `web:i18n` | 4 |
 | `web:api` | `web:announcements` | 3 |
+| `web:api` | `web:i18n` | 3 |
 | `web:app` | `web:announcements` | 3 |
 | `web:app` | `web:i18n` | 3 |
 | `web:app` | `web:leadership` | 3 |
 | `web:calendar` | `web:calendar` | 3 |
-| `web:i18n` | `web:i18n` | 3 |
 | `web:lib` | `web:lib` | 3 |
 | `web:maintenance` | `web:maintenance` | 3 |
 | `web:notifications` | `web:db` | 3 |
@@ -200,12 +202,12 @@ flowchart LR
 | `web:church-actions` | `web:church-actions` | 2 |
 | `web:config` | `web:lib` | 2 |
 | `web:db` | `web:auth` | 2 |
+| `web:i18n` | `web:meetings` | 2 |
 | `web:leadership` | `web:notifications` | 2 |
 | `web:ui` | `web:reports` | 2 |
 | `root:other` | `web:health.mjs` | 1 |
 | `web:announcements` | `web:announcements` | 1 |
 | `web:api` | `web:calendar` | 1 |
-| `web:api` | `web:i18n` | 1 |
 | `web:api` | `web:notes` | 1 |
 | `web:api` | `web:stand` | 1 |
 | `web:app` | `web:calendar` | 1 |
@@ -287,6 +289,7 @@ flowchart LR
 | `web:config` | `Node.js` | 2 |
 | `web:db` | `pg` | 2 |
 | `web:hardening` | `Node.js` | 2 |
+| `web:i18n` | `vitest` | 2 |
 | `web:imports` | `Node.js` | 2 |
 | `web:leadership` | `pg` | 2 |
 | `web:notifications` | `bullmq` | 2 |
@@ -318,7 +321,6 @@ flowchart LR
 | `web:hardening` | `vitest` | 1 |
 | `web:i18n` | `next` | 1 |
 | `web:i18n` | `next-intl` | 1 |
-| `web:i18n` | `vitest` | 1 |
 | `web:imports` | `@playwright/test` | 1 |
 | `web:imports` | `pdf-parse` | 1 |
 | `web:imports` | `pg` | 1 |
@@ -414,7 +416,7 @@ flowchart LR
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/membership-ordinances/route.ts` | `web:api` | 5 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/offline-snapshot/route.ts` | `web:api` | 7 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/offline-sync/route.ts` | `web:api` | 5 | 2 |
-| `apps/web/app/api/w/[wardId]/meetings/[meetingId]/publish/route.ts` | `web:api` | 8 | 2 |
+| `apps/web/app/api/w/[wardId]/meetings/[meetingId]/publish/route.ts` | `web:api` | 10 | 2 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/publish/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/route.ts` | `web:api` | 9 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/technology/route.ts` | `web:api` | 5 | 1 |
@@ -648,7 +650,8 @@ flowchart LR
 | `apps/web/src/health.mjs` | `web:health.mjs` | 1 | 0 |
 | `apps/web/src/i18n/config.ts` | `web:i18n` | 0 | 0 |
 | `apps/web/src/i18n/config.vitest.ts` | `web:i18n` | 1 | 1 |
-| `apps/web/src/i18n/public-program.ts` | `web:i18n` | 1 | 0 |
+| `apps/web/src/i18n/public-program.ts` | `web:i18n` | 2 | 0 |
+| `apps/web/src/i18n/public-program.vitest.ts` | `web:i18n` | 2 | 1 |
 | `apps/web/src/i18n/request.ts` | `web:i18n` | 3 | 2 |
 | `apps/web/src/imports/bookmarklet.ts` | `web:imports` | 0 | 0 |
 | `apps/web/src/imports/bookmarklet.vitest.ts` | `web:imports` | 1 | 1 |

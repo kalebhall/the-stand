@@ -7,6 +7,8 @@ import { canManageMeetings } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 import { buildMeetingRenderHtml } from '@/src/meetings/render';
+import { getPublicProgramRenderLabels } from '@/src/i18n/public-program';
+import { resolveLocale } from '@/src/i18n/config';
 import type { IntroductionRoles } from '@/src/meetings/types';
 import { enqueueOutboxNotificationJob } from '@/src/notifications/queue';
 
@@ -99,9 +101,18 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
       'SELECT preset, announcement_mode, cover_mode, cover_image_url, cover_image_alt_text FROM public_program_layout WHERE ward_id = $1::uuid LIMIT 1',
       [wardId]
     );
-    const layout = (layoutResult.rows?.[0] as LayoutRow | undefined) ?? { preset: 'FULL_PAGE' as const, announcement_mode: 'AFTER_PROGRAM' as const, cover_mode: 'NONE' as const, cover_image_url: null, cover_image_alt_text: null };
+    const layout = (layoutResult.rows?.[0] as LayoutRow | undefined) ?? {
+      preset: 'FULL_PAGE' as const,
+      announcement_mode: 'AFTER_PROGRAM' as const,
+      cover_mode: 'NONE' as const,
+      cover_image_url: null,
+      cover_image_alt_text: null
+    };
 
-    const shareTokenResult = await client.query('SELECT token FROM public_program_share WHERE meeting_id = $1::uuid AND ward_id = $2::uuid LIMIT 1', [meetingId, wardId]);
+    const shareTokenResult = await client.query(
+      'SELECT token FROM public_program_share WHERE meeting_id = $1::uuid AND ward_id = $2::uuid LIMIT 1',
+      [meetingId, wardId]
+    );
     const shareToken = shareTokenResult.rows?.[0]?.token ?? generatePublicToken();
 
     const versionResult = await client.query(
@@ -111,6 +122,10 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
 
     const nextVersion = Number(versionResult.rows[0].latest_version) + 1;
     const meeting = meetingResult.rows[0] as MeetingRow;
+    const localeResult = await client.query('SELECT preferred_locale FROM user_account WHERE id = $1::uuid AND is_active = true LIMIT 1', [
+      session.user.id
+    ]);
+    const locale = resolveLocale(localeResult.rows[0]?.preferred_locale);
     const programItems = (programResult.rows as ProgramItemRow[]).map((item) => ({
       itemType: item.item_type,
       title: item.title,
@@ -141,7 +156,8 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
         coverMode: layout.cover_mode,
         coverImageUrl: layout.cover_image_url,
         coverImageAltText: layout.cover_image_alt_text
-      }
+      },
+      labels: getPublicProgramRenderLabels(locale, meeting.meeting_type)
     });
 
     await client.query(
