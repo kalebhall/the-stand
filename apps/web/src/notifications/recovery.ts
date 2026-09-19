@@ -11,6 +11,41 @@ export type PendingOutboxEvent = {
   eventOutboxId: string;
 };
 
+export type PendingGlobalOutboxEvent = {
+  globalEventOutboxId: string;
+};
+
+export type PendingGlobalEmailDelivery = {
+  globalNotificationDeliveryId: string;
+};
+
+export async function findPendingGlobalEmailDeliveries(client: DbClient, limit = 50): Promise<PendingGlobalEmailDelivery[]> {
+  const result = await client.query(
+    `SELECT id
+       FROM global_notification_delivery
+      WHERE channel = 'EMAIL'
+        AND delivery_status = 'pending'
+      ORDER BY created_at
+      LIMIT $1::int`,
+    [limit]
+  );
+  return (result.rows as Array<{ id: string }>).map((row) => ({ globalNotificationDeliveryId: row.id }));
+}
+export async function findPendingGlobalOutboxEvents(client: DbClient, limit = 50): Promise<PendingGlobalOutboxEvent[]> {
+  const result = await client.query(
+    `SELECT id
+       FROM global_event_outbox
+      WHERE status = 'pending'
+        AND available_at <= now()
+      ORDER BY created_at
+      LIMIT $1::int`,
+    [limit]
+  );
+
+  return (result.rows as Array<{ id: string }>).map((row) => ({ globalEventOutboxId: row.id }));
+}
+
+
 /**
  * Re-discovers pending events whose enqueue call was lost after commit.
  * Each ward is read inside its own RLS context; no cross-ward event data is returned.

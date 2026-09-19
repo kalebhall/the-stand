@@ -7,6 +7,8 @@ import { auth } from '@/src/auth/auth';
 import { hashPassword } from '@/src/auth/password';
 import { hasRole } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
+import { enqueueGlobalNotificationEvent } from '@/src/notifications/global-outbox';
+import { enqueueGlobalNotificationJob } from '@/src/notifications/queue';
 
 async function requireSupportAdmin() {
   const session = await auth();
@@ -43,11 +45,28 @@ export async function createUser(formData: FormData) {
   const passwordHash = googleOnly ? null : await hashPassword(password);
 
   const inserted = await pool.query(
-    `INSERT INTO user_account (email, display_name, password_hash, must_change_password)
-     VALUES ($1, $2, $3, $4)
-     ON CONFLICT (email)
-     DO NOTHING
-     RETURNING id, email`,
+    `WITH inserted_user AS (
+       INSERT INTO user_account (email, display_name, password_hash, must_change_password)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (email)
+       DO NOTHING
+       RETURNING id, email
+     ), inserted_work_item AS (
+       INSERT INTO support_work_item (source_type, source_id)
+       SELECT 'USER_ACCOUNT', id
+         FROM inserted_user
+       ON CONFLICT (source_type, source_id) DO NOTHING
+       RETURNING id, source_id
+     ), inserted_event AS (
+       INSERT INTO global_event_outbox (aggregate_type, aggregate_id, event_type, payload)
+       SELECT 'SUPPORT_WORK_ITEM', id, 'USER_REQUIRES_ASSIGNMENT',
+              jsonb_build_object('sourceType', 'USER_ACCOUNT', 'sourceId', source_id::text)
+         FROM inserted_work_item
+       ON CONFLICT (event_type, aggregate_id)
+       DO UPDATE SET payload = EXCLUDED.payload, updated_at = now(), status = 'pending'
+       RETURNING id
+     )
+     SELECT id, email, (SELECT id FROM inserted_event) AS global_event_id FROM inserted_user`,
     [email, displayName, passwordHash, !googleOnly]
   );
 
@@ -60,6 +79,8 @@ export async function createUser(formData: FormData) {
      VALUES (NULL, $1, 'SUPPORT_USER_CREATED', jsonb_build_object('targetUserId', $2::text, 'email', $3::text, 'hasPassword', $4::boolean, 'googleOnly', $5::boolean))`,
     [actingSession.user.id, inserted.rows[0].id as string, inserted.rows[0].email as string, !googleOnly, googleOnly]
   );
+
+  enqueueGlobalNotificationEvent(enqueueGlobalNotificationJob, (inserted.rows[0].global_event_id as string | null | undefined) ?? null);
 
   revalidatePath('/support/users');
 }

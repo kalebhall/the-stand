@@ -18,7 +18,17 @@ export type NotificationDigestQueueJob = {
   runAt: string;
 };
 
-export type NotificationQueueJob = OutboxNotificationQueueJob | NotificationDigestQueueJob;
+export type GlobalOutboxNotificationQueueJob = {
+  kind: 'global-outbox-event';
+  globalEventOutboxId: string;
+};
+
+export type GlobalEmailDeliveryQueueJob = {
+  kind: 'global-email-delivery';
+  globalNotificationDeliveryId: string;
+};
+
+export type NotificationQueueJob = OutboxNotificationQueueJob | GlobalOutboxNotificationQueueJob | GlobalEmailDeliveryQueueJob | NotificationDigestQueueJob;
 
 function getRedisConnectionUrl(): string {
   return process.env.REDIS_URL ?? DEFAULT_REDIS_URL;
@@ -64,6 +74,54 @@ export async function enqueueOutboxNotificationJob(payload: { wardId: string; ev
         }
       }
     );
+  } finally {
+    await queue.close();
+  }
+}
+
+export async function enqueueGlobalNotificationJob(payload: { globalEventOutboxId: string }): Promise<void> {
+  const queue = await createBullMqQueue();
+
+  try {
+    const jobId = `global-outbox:${payload.globalEventOutboxId}`;
+    const existingJob = await queue.getJob(jobId);
+    if (existingJob) {
+      const state = await existingJob.getState();
+      if (state === 'failed' || state === 'completed') {
+        await existingJob.remove();
+      } else {
+        return;
+      }
+    }
+
+    await queue.add('process-global-outbox-event', { kind: 'global-outbox-event', globalEventOutboxId: payload.globalEventOutboxId }, {
+      jobId,
+      removeOnComplete: 1000,
+      removeOnFail: 5000,
+      attempts: 5,
+      backoff: { type: 'exponential', delay: 5000 }
+    });
+  } finally {
+    await queue.close();
+  }
+}
+export async function enqueueGlobalEmailDeliveryJob(payload: { globalNotificationDeliveryId: string }): Promise<void> {
+  const queue = await createBullMqQueue();
+  try {
+    const jobId = `global-email:${payload.globalNotificationDeliveryId}`;
+    const existingJob = await queue.getJob(jobId);
+    if (existingJob) {
+      const state = await existingJob.getState();
+      if (state === 'failed' || state === 'completed') await existingJob.remove();
+      else return;
+    }
+    await queue.add('process-global-email-delivery', { kind: 'global-email-delivery', globalNotificationDeliveryId: payload.globalNotificationDeliveryId }, {
+      jobId,
+      removeOnComplete: 1000,
+      removeOnFail: 5000,
+      attempts: 3,
+      backoff: { type: 'exponential', delay: 60000 }
+    });
   } finally {
     await queue.close();
   }

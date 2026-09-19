@@ -14,6 +14,8 @@ vi.mock('@/src/db/client', () => ({
 vi.mock('@/src/lib/rate-limit', () => ({
   enforceRateLimit
 }));
+vi.mock('@/src/notifications/global-outbox', () => ({ enqueueGlobalNotificationEvent: vi.fn() }));
+vi.mock('@/src/notifications/queue', () => ({ enqueueGlobalNotificationJob: vi.fn() }));
 
 import { POST } from './route';
 
@@ -24,7 +26,7 @@ describe('POST /api/public/access-requests', () => {
   });
 
   it('creates an access request', async () => {
-    poolQuery.mockResolvedValue({ rowCount: 1 });
+    poolQuery.mockResolvedValue({ rowCount: 1, rows: [{ request_id: 'request-1', global_event_id: 'event-1' }] });
 
     const response = await POST(
       new Request('http://localhost/api/public/access-requests', {
@@ -53,6 +55,7 @@ describe('POST /api/public/access-requests', () => {
       'Example Ward',
       'Please grant access'
     ]);
+    expect(poolQuery.mock.calls[0]?.[0]).toContain('INSERT INTO support_work_item');
   });
 
   it('accepts honeypot submissions but does not store', async () => {
