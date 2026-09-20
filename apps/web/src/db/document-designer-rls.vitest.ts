@@ -18,9 +18,7 @@ describe('document designer RLS isolation', () => {
   it.skipIf(!shouldRun)('isolates meeting documents and ward settings by current ward', () => {
     const sql = String.raw`
 BEGIN;
-\i drizzle/0000_init.sql
-\i drizzle/0063_program_editor_role.sql
-\i drizzle/0064_document_designer_foundation.sql
+-- The database is provisioned by the migration setup before this test runs.
 TRUNCATE TABLE meeting_document, ward_document_settings, document_template_version, document_template, meeting, ward, stake RESTART IDENTITY CASCADE;
 
 DO $$
@@ -37,10 +35,10 @@ BEGIN
   INSERT INTO ward (stake_id, name, unit_number) VALUES (stake_id, 'Designer Ward A', 'A') RETURNING id INTO ward_a;
   INSERT INTO ward (stake_id, name, unit_number) VALUES (stake_id, 'Designer Ward B', 'B') RETURNING id INTO ward_b;
   INSERT INTO user_account (email) VALUES ('designer@example.test') RETURNING id INTO user_a;
-  INSERT INTO meeting (ward_id, meeting_date, meeting_type) VALUES (ward_a, '2026-09-20', 'SACRAMENT') RETURNING id INTO meeting_a;
-
   PERFORM set_config('app.user_id', user_a::text, true);
   PERFORM set_config('app.ward_id', ward_a::text, true);
+  INSERT INTO meeting (ward_id, meeting_date, meeting_type) VALUES (ward_a, '2026-09-20', 'SACRAMENT') RETURNING id INTO meeting_a;
+
   INSERT INTO meeting_document (ward_id, meeting_id, document_type, schema_version, layout_json, theme_json, updated_by_user_id)
   VALUES (ward_a, meeting_a, 'SACRAMENT_PROGRAM', 1, '{}'::jsonb, '{}'::jsonb, user_a);
   INSERT INTO ward_document_settings (ward_id, allow_advanced_program_designer, updated_by_user_id)
