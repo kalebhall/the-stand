@@ -26,6 +26,7 @@ vi.mock('@/src/notifications/outbox', () => ({
 }));
 
 import { POST } from './route';
+import { adaptLegacyLayoutToDocument } from '@/src/document-designer/legacy-layout-adapter';
 
 describe('POST /api/w/[wardId]/meetings', () => {
   beforeEach(() => {
@@ -49,6 +50,9 @@ describe('POST /api/w/[wardId]/meetings', () => {
       .mockResolvedValueOnce({}) // INSERT program item 2
       .mockResolvedValueOnce({}) // INSERT program item 3
       .mockResolvedValueOnce({}) // INSERT program item 4
+      .mockResolvedValueOnce({ rows: [{ default_sacrament_template_id: 'template-1' }] }) // SELECT ward default template
+      .mockResolvedValueOnce({ rows: [{ id: 'template-1', version: 2, layout_json: adaptLegacyLayoutToDocument({ preset: 'FULL_PAGE', announcementMode: 'AFTER_PROGRAM', coverMode: 'NONE' }) }] }) // SELECT published template
+      .mockResolvedValueOnce({}) // INSERT inherited meeting document
       .mockResolvedValueOnce({}) // INSERT audit_log
       .mockResolvedValueOnce({}); // COMMIT
   });
@@ -109,6 +113,7 @@ describe('POST /api/w/[wardId]/meetings', () => {
       null,
       'PLANNED'
     ]);
+    expect(queryMock).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO meeting_document'), expect.arrayContaining(['template-1', 2]));
     expect(queryMock).toHaveBeenCalledWith(
       expect.stringContaining('INSERT INTO audit_log'),
       expect.arrayContaining(['ward-1', 'user-1', 'MEETING_CREATED'])

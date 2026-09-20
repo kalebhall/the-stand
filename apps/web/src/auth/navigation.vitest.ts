@@ -7,6 +7,14 @@ describe('getNavigationItems', () => {
     expect(getNavigationItems([])).toContainEqual({ href: '/dashboard', label: 'Dashboard' });
   });
 
+  it('shows Programs to program users but excludes unrelated workflows', () => {
+    const items = getNavigationItems(['PROGRAM_EDITOR']);
+    expect(items).toContainEqual({ href: '/programs', label: 'Programs' });
+    expect(items).not.toContainEqual({ href: '/callings', label: 'Callings' });
+    expect(items).not.toContainEqual({ href: '/members', label: 'Members' });
+    expect(items).not.toContainEqual({ href: '/imports', label: 'Imports' });
+  });
+
   it('includes ward management links for stand admin but keeps settings in settings', () => {
     const items = getNavigationItems(['STAND_ADMIN']);
 

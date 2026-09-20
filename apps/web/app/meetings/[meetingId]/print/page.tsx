@@ -3,6 +3,9 @@ import { notFound, redirect } from 'next/navigation';
 
 import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth/guards';
 import { canViewMeetings } from '@/src/auth/roles';
+import { resolveDocumentData } from '@/src/document-designer/data-resolver';
+import { renderDocumentHtml } from '@/src/document-designer/renderer';
+import { COMPATIBILITY_PUBLIC_BLOCK_TYPES } from '@/src/document-designer/legacy-layout-adapter';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 import { toYyyyMmDd } from '@/src/meetings/date';
@@ -13,6 +16,8 @@ type MeetingRow = {
   meeting_date: string;
   meeting_type: string;
   status: string;
+  ward_name: string;
+  location: string | null;
 };
 
 type ProgramItemRow = {
@@ -99,7 +104,7 @@ export default async function PrintMeetingPage({
     await setDbContext(client, { userId: session.user.id, wardId: session.activeWardId });
 
     const meetingResult = await client.query(
-      'SELECT meeting_date, meeting_type, status FROM meeting WHERE id = $1::uuid AND ward_id = $2::uuid LIMIT 1',
+      'SELECT m.meeting_date, m.meeting_type, m.status, w.name AS ward_name, m.location FROM meeting m JOIN ward w ON w.id = m.ward_id WHERE m.id = $1::uuid AND m.ward_id = $2::uuid LIMIT 1',
       [meetingId, session.activeWardId]
     );
 
@@ -150,8 +155,16 @@ export default async function PrintMeetingPage({
       `SELECT title, body, start_date, end_date, is_permanent, placement, include_in_program
          FROM announcement
         WHERE ward_id = $1::uuid
+          AND include_in_program = TRUE
+          AND (
+            is_permanent = TRUE
+            OR (
+              (start_date IS NULL OR start_date <= $2::date)
+              AND (end_date IS NULL OR end_date >= $2::date)
+            )
+          )
         ORDER BY created_at DESC`,
-      [session.activeWardId]
+      [session.activeWardId, meeting.meeting_date]
     );
 
     const layoutResult = await client.query(
@@ -165,6 +178,42 @@ export default async function PrintMeetingPage({
       cover_image_url: null,
       cover_image_alt_text: null
     };
+
+    const meetingDocumentResult = await client.query(
+      'SELECT layout_json FROM meeting_document WHERE meeting_id = $1::uuid AND ward_id = $2::uuid AND document_type = \'SACRAMENT_PROGRAM\' LIMIT 1',
+      [meetingId, session.activeWardId]
+    );
+    const meetingDocumentLayout = meetingDocumentResult.rows?.[0]?.layout_json as unknown;
+
+    if (meetingDocumentLayout) {
+      const { layout: documentLayout, data } = resolveDocumentData(
+        meetingDocumentLayout,
+        {
+          meetingDate,
+          meetingType: meeting.meeting_type,
+          wardName: meeting.ward_name,
+          location: meeting.location,
+          programItems: (programResult.rows as ProgramItemRow[]).map((item, order) => ({
+            order,
+            label: item.title ?? item.hymn_title ?? item.item_type,
+            details: item.topic ?? item.program_notes ?? item.notes
+          })),
+          publicValues: {
+            ANNOUNCEMENTS: (announcementResult.rows as AnnouncementRow[]).map((item) => item.title).join(' · ')
+          }
+        },
+        { public: true, explicitPublicBlockTypes: COMPATIBILITY_PUBLIC_BLOCK_TYPES }
+      );
+      const compatibilityHtml = renderDocumentHtml({
+        layout: documentLayout,
+        data,
+        target: 'PRINT',
+        public: true,
+        explicitPublicBlockTypes: COMPATIBILITY_PUBLIC_BLOCK_TYPES
+      }).html;
+      await client.query('COMMIT');
+      return <div dangerouslySetInnerHTML={{ __html: compatibilityHtml }} />;
+    }
 
     const renderLabels = {
       programTitle: tPrint('programTitle'),
@@ -224,7 +273,7 @@ export default async function PrintMeetingPage({
       </>
     );
   } catch (error) {
-    await client.query('ROLLBACK');
+    await client.query('ROLLBACK').catch(() => undefined);
     console.error('[Fatal Print View Error]', error);
     throw new Error('Failed to load print view', { cause: error });
   } finally {

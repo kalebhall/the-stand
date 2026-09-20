@@ -7,7 +7,15 @@ import {
   canUseInternalNotes,
   canViewCallings,
   canViewMeetings,
-  hasRole
+  canViewProgramDesigner,
+  canEditProgramDesign,
+  canManageProgramMedia,
+  canPublishProgram,
+  canUseAdvancedProgramDesigner,
+  canManageWardProgramTemplates,
+  canRunImports,
+  hasRole,
+  WARD_ROLES
 } from './roles';
 
 describe('canManageWardUsers', () => {
@@ -49,6 +57,32 @@ describe('meeting permissions', () => {
   it('restricts meeting management to editor/admin roles', () => {
     expect(canManageMeetings({ roles: ['BISHOPRIC_EDITOR'], activeWardId: 'ward-a' }, 'ward-a')).toBe(true);
     expect(canManageMeetings({ roles: ['CONDUCTOR_VIEW'], activeWardId: 'ward-a' }, 'ward-a')).toBe(false);
+  });
+});
+
+describe('program permissions', () => {
+  it('declares PROGRAM_EDITOR as a ward-scoped role', () => {
+    expect(WARD_ROLES).toContain('PROGRAM_EDITOR');
+  });
+
+  const active = { roles: ['PROGRAM_EDITOR'], activeWardId: 'ward-a' };
+
+  it('limits PROGRAM_EDITOR to the active ward and program helpers', () => {
+    expect(canViewProgramDesigner(active, 'ward-a')).toBe(true);
+    expect(canEditProgramDesign(active, 'ward-a')).toBe(true);
+    expect(canManageProgramMedia(active, 'ward-a')).toBe(true);
+    expect(canViewProgramDesigner(active, 'ward-b')).toBe(false);
+    expect(canManageMeetings(active, 'ward-a')).toBe(false);
+    expect(canUseInternalNotes(active, 'ward-a')).toBe(false);
+    expect(canRunImports(active, 'ward-a')).toBe(false);
+  });
+
+  it('keeps publishing, advanced design, and template creation independently controlled', () => {
+    expect(canPublishProgram(active, 'ward-a')).toBe(false);
+    expect(canUseAdvancedProgramDesigner(active, 'ward-a')).toBe(false);
+    expect(canPublishProgram(active, 'ward-a', { allowProgramEditorPublish: true })).toBe(true);
+    expect(canUseAdvancedProgramDesigner(active, 'ward-a', { allowAdvancedProgramDesigner: true })).toBe(true);
+    expect(canManageWardProgramTemplates(active, 'ward-a', { allowProgramEditorCreateTemplates: true })).toBe(true);
   });
 });
 

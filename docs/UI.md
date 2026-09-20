@@ -466,5 +466,25 @@ If UI exposes:
 Stop and correct before proceeding.
 
 ====================================================================
+PROGRAM DESIGNER — SIMPLE MODE
+====================================================================
+
+/programs/{meetingId}
+--------------------------------------------------
+
+Authenticated PROGRAM_EDITOR, bishopric editor, or administrator users may
+open the meeting's Simple Mode designer. The left sidebar lists approved
+blocks and keyboard reorder controls. The center canvas switches between Edit,
+digital, phone, and print-oriented previews. The properties panel exposes only
+safe visibility, content, and curated theme settings.
+
+Every change is debounced into an accessible Saving/Saved/error status. A
+revision conflict preserves the local draft and offers an explicit reload;
+there is no silent overwrite and no offline durable draft claim. Public preview
+uses the same public-safe renderer boundary as publication and never publishes.
+The meeting editor links to this workflow instead of duplicating its controls.
+Advanced Mode, media, and PDF controls remain deferred.
+
+====================================================================
 END OF UI.md
 ====================================================================

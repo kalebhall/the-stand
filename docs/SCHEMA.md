@@ -381,5 +381,50 @@ If any table that contains ward data:
 The migration is invalid and must be corrected.
 
 ====================================================================
+PROGRAM DESIGNER FOUNDATION (MILESTONE 1)
+====================================================================
+
+The foundation is implemented by migrations 0063_program_editor_role.sql and
+0064_document_designer_foundation.sql.
+
+Tables:
+
+- document_template
+- document_template_version
+- meeting_document
+- ward_document_settings
+
+All ward-scoped designer rows use ward_id, RLS, and app.current_ward_id().
+The layout and theme are validated JSONB; meeting_document has a unique
+(ward_id, meeting_id, document_type) key and revision field for optimistic
+concurrency. PROGRAM_EDITOR is a ward-scoped role and is not included in
+canManageMeetings().
+
+====================================================================
+MILESTONE 2 COMPATIBILITY MODEL
+====================================================================
+
+`meeting_document.layout_json` is the validated source for new document-model
+rendering when a row exists. Legacy `public_program_layout` remains active as
+the fallback and is not rewritten by the adapter. Immutable published output
+continues to use `meeting_program_render.render_html`; public routes do not
+read live `meeting_document` drafts.
+
+====================================================================
+MILESTONE 3 TEMPLATE MODEL
+====================================================================
+
+`0065_program_designer_builtin_templates.sql` adds nullable `template_key`
+with a partial unique index and installs eight idempotent SYSTEM templates.
+The application catalog remains the canonical validated definition and exposes
+the same stable keys to the gallery. SYSTEM/STAKE templates are readable but
+immutable to ward users. Ward and PERSONAL_DRAFT templates retain `scope_id`
+for RLS isolation; personal drafts additionally require the creating user.
+
+Meeting creation stores the selected published template ID/version and a
+validated copied layout in `meeting_document`, so later template publishing
+does not mutate existing meetings.
+
+====================================================================
 END OF SCHEMA.md
 ====================================================================

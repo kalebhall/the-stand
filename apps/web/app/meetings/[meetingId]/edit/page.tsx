@@ -8,7 +8,7 @@ import { MembershipOrdinanceSection, type MembershipOrdinanceAction } from '@/co
 import type { BusinessLine } from '@/components/WardBusinessSection';
 import { cn } from '@/lib/utils';
 import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth/guards';
-import { canManageMeetings, canUseInternalNotes } from '@/src/auth/roles';
+import { canManageMeetings, canUseInternalNotes, canViewProgramDesigner } from '@/src/auth/roles';
 import { isAnnouncementActiveForDate } from '@/src/announcements/types';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
@@ -198,6 +198,7 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ me
             <p className="text-sm text-muted-foreground">{t('description')}</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            {canViewProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId) ? <Link href={`/programs/${meeting.id}`} className={cn(buttonVariants({ variant: 'default' }))}>Program Designer</Link> : null}
             <Link href="/manual#meeting-editor" className="text-sm font-medium underline underline-offset-4">
               Editor help
             </Link>

@@ -3,9 +3,12 @@ import { randomBytes } from 'node:crypto';
 
 import { recordAuditEvent } from '@/src/audit/service';
 import { auth } from '@/src/auth/auth';
-import { canManageMeetings } from '@/src/auth/roles';
+import { canPublishProgram, canRepublishProgram, canViewProgramDesigner } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
+import { resolveDocumentData } from '@/src/document-designer/data-resolver';
+import { renderDocumentHtml } from '@/src/document-designer/renderer';
+import { COMPATIBILITY_PUBLIC_BLOCK_TYPES } from '@/src/document-designer/legacy-layout-adapter';
 import { buildMeetingRenderHtml } from '@/src/meetings/render';
 import { getPublicProgramRenderLabels } from '@/src/i18n/public-program';
 import { resolveLocale } from '@/src/i18n/config';
@@ -17,12 +20,15 @@ type MeetingRow = {
   meeting_date: string;
   meeting_type: string;
   status: string;
+  ward_name: string;
+  location: string | null;
 };
 
 type ProgramItemRow = {
   item_type: string;
   title: string | null;
   notes: string | null;
+  topic: string | null;
   program_notes: string | null;
   hymn_number: string | null;
   hymn_title: string | null;
@@ -57,7 +63,7 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
   }
 
   const { wardId, meetingId } = await context.params;
-  if (!canManageMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) {
+  if (!canViewProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) {
     return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
   }
 
@@ -68,9 +74,10 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
     await setDbContext(client, { userId: session.user.id, wardId });
 
     const meetingResult = await client.query(
-      `SELECT id, meeting_date, meeting_type, status
-         FROM meeting
-        WHERE id = $1::uuid AND ward_id = $2::uuid
+      `SELECT m.id, m.meeting_date, m.meeting_type, m.status, w.name AS ward_name, m.location
+         FROM meeting m
+         JOIN ward w ON w.id = m.ward_id
+        WHERE m.id = $1::uuid AND m.ward_id = $2::uuid
         LIMIT 1
         FOR UPDATE`,
       [meetingId, wardId]
@@ -82,7 +89,7 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
     }
 
     const programResult = await client.query(
-      `SELECT item_type, title, notes, program_notes, hymn_number, hymn_title, introduction_roles
+      `SELECT item_type, title, notes, topic, program_notes, hymn_number, hymn_title, introduction_roles
          FROM meeting_program_item
         WHERE meeting_id = $1::uuid AND ward_id = $2::uuid
         ORDER BY sequence ASC`,
@@ -93,8 +100,16 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
       `SELECT title, body, start_date, end_date, is_permanent, placement, include_in_program
          FROM announcement
         WHERE ward_id = $1::uuid
+          AND include_in_program = TRUE
+          AND (
+            is_permanent = TRUE
+            OR (
+              (start_date IS NULL OR start_date <= $2::date)
+              AND (end_date IS NULL OR end_date >= $2::date)
+            )
+          )
         ORDER BY created_at DESC`,
-      [wardId]
+      [wardId, meetingResult.rows[0].meeting_date]
     );
 
     const layoutResult = await client.query(
@@ -109,6 +124,12 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
       cover_image_alt_text: null
     };
 
+    const meetingDocumentResult = await client.query(
+      'SELECT layout_json FROM meeting_document WHERE meeting_id = $1::uuid AND ward_id = $2::uuid AND document_type = \'SACRAMENT_PROGRAM\' LIMIT 1',
+      [meetingId, wardId]
+    );
+    const meetingDocumentLayout = meetingDocumentResult.rows?.[0]?.layout_json as unknown;
+
     const shareTokenResult = await client.query(
       'SELECT token FROM public_program_share WHERE meeting_id = $1::uuid AND ward_id = $2::uuid LIMIT 1',
       [meetingId, wardId]
@@ -116,12 +137,35 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
     const shareToken = shareTokenResult.rows?.[0]?.token ?? generatePublicToken();
 
     const versionResult = await client.query(
-      'SELECT COALESCE(MAX(version), 0)::int AS latest_version FROM meeting_program_render WHERE meeting_id = $1::uuid',
-      [meetingId]
+      'SELECT COALESCE(MAX(version), 0)::int AS latest_version FROM meeting_program_render WHERE meeting_id = $1::uuid AND ward_id = $2::uuid',
+      [meetingId, wardId]
     );
 
-    const nextVersion = Number(versionResult.rows[0].latest_version) + 1;
     const meeting = meetingResult.rows[0] as MeetingRow;
+    const settingsResult = await client.query(
+      `SELECT allow_program_editor_publish, allow_program_editor_republish
+         FROM ward_document_settings
+        WHERE ward_id = $1::uuid
+        LIMIT 1`,
+      [wardId]
+    );
+    const settings = settingsResult.rows[0] ?? {
+      allow_program_editor_publish: false,
+      allow_program_editor_republish: false
+    };
+    const permissionProfile = {
+      allowProgramEditorPublish: settings.allow_program_editor_publish === true,
+      allowProgramEditorRepublish: settings.allow_program_editor_republish === true
+    };
+    const allowed = meeting.status === 'PUBLISHED'
+      ? canRepublishProgram(session.user, wardId, permissionProfile)
+      : canPublishProgram(session.user, wardId, permissionProfile);
+    if (!allowed) {
+      await client.query('ROLLBACK');
+      return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
+    }
+
+    const nextVersion = Number(versionResult.rows[0].latest_version) + 1;
     const localeResult = await client.query('SELECT preferred_locale FROM user_account WHERE id = $1::uuid AND is_active = true LIMIT 1', [
       session.user.id
     ]);
@@ -130,13 +174,38 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
       itemType: item.item_type,
       title: item.title,
       notes: item.notes,
+      topic: item.topic,
       programNotes: item.program_notes,
       hymnNumber: item.hymn_number,
       hymnTitle: item.hymn_title,
       introductionRoles: item.introduction_roles
     }));
 
-    const renderHtml = buildMeetingRenderHtml({
+    const renderHtml = meetingDocumentLayout
+      ? renderDocumentHtml({
+          ...resolveDocumentData(
+            meetingDocumentLayout,
+            {
+              meetingDate: meeting.meeting_date,
+              meetingType: meeting.meeting_type,
+              wardName: meeting.ward_name,
+              location: meeting.location,
+              publicUrl: `${process.env.NEXTAUTH_URL ?? 'http://localhost:3000'}/p/${shareToken}`,
+              programItems: programItems.map((item, order) => ({
+                order,
+                label: item.title ?? item.hymnTitle ?? item.itemType,
+                details: item.topic ?? item.programNotes ?? item.notes
+              })),
+              publicValues: {
+                ANNOUNCEMENTS: (announcementResult.rows as AnnouncementRow[]).map((item) => item.title).join(' · ')
+              }
+            },
+            { public: true, explicitPublicBlockTypes: COMPATIBILITY_PUBLIC_BLOCK_TYPES }
+          ),
+          public: true,
+          explicitPublicBlockTypes: COMPATIBILITY_PUBLIC_BLOCK_TYPES
+        }).html
+      : buildMeetingRenderHtml({
       publicUrl: `${process.env.NEXTAUTH_URL ?? 'http://localhost:3000'}/p/${shareToken}`,
       meetingDate: meeting.meeting_date,
       meetingType: meeting.meeting_type,
@@ -236,10 +305,9 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
 
     return NextResponse.json({ success: true, meetingId, version: nextVersion, status: 'PUBLISHED' });
   } catch (error) {
-    await client.query('ROLLBACK');
+    await client.query('ROLLBACK').catch(() => undefined);
     console.error('[publish] Failed to publish meeting', error);
-    const message = error instanceof Error ? error.message : String(error);
-    return NextResponse.json({ error: 'Failed to publish meeting', code: 'INTERNAL_ERROR', detail: message }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to publish meeting', code: 'INTERNAL_ERROR' }, { status: 500 });
   } finally {
     client.release();
   }
