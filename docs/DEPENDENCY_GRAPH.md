@@ -15,7 +15,7 @@ flowchart LR
   A3["root:tooling<br/>7 files"]
   A4["web:announcements<br/>2 files"]
   A5["web:api<br/>90 files"]
-  A6["web:app<br/>123 files"]
+  A6["web:app<br/>124 files"]
   A7["web:audit<br/>2 files"]
   A8["web:auth<br/>11 files"]
   A9["web:bootstrap.mjs<br/>1 files"]
@@ -120,7 +120,7 @@ flowchart LR
 | `root:tooling` | 7 |
 | `web:announcements` | 2 |
 | `web:api` | 90 |
-| `web:app` | 123 |
+| `web:app` | 124 |
 | `web:audit` | 2 |
 | `web:auth` | 11 |
 | `web:bootstrap.mjs` | 1 |
@@ -156,7 +156,7 @@ flowchart LR
 | `web:app` | `web:ui` | 118 |
 | `web:api` | `web:db` | 115 |
 | `web:app` | `web:auth` | 90 |
-| `web:app` | `web:app` | 56 |
+| `web:app` | `web:app` | 57 |
 | `web:app` | `web:db` | 56 |
 | `web:notifications` | `web:notifications` | 53 |
 | `web:api` | `web:notifications` | 46 |
@@ -248,17 +248,17 @@ flowchart LR
 | --- | --- | ---: |
 | `web:app` | `next` | 91 |
 | `web:api` | `next` | 67 |
-| `web:app` | `react` | 39 |
+| `web:app` | `react` | 40 |
 | `web:ui` | `react` | 31 |
 | `web:api` | `vitest` | 22 |
-| `web:app` | `next-intl` | 18 |
+| `web:app` | `next-intl` | 19 |
 | `web:notifications` | `vitest` | 16 |
+| `web:app` | `vitest` | 15 |
 | `root:tooling` | `Node.js` | 14 |
-| `web:app` | `vitest` | 14 |
 | `web:ui` | `next` | 14 |
 | `web:notifications` | `pg` | 13 |
+| `web:app` | `@testing-library/react` | 10 |
 | `web:api` | `zod` | 9 |
-| `web:app` | `@testing-library/react` | 9 |
 | `web:ui` | `next-intl` | 9 |
 | `web:imports` | `vitest` | 7 |
 | `web:meetings` | `vitest` | 7 |
@@ -536,6 +536,7 @@ flowchart LR
 | `apps/web/app/speakers/page.tsx` | `web:app` | 6 | 1 |
 | `apps/web/app/speakers/speaker-lifecycle-workspace.tsx` | `web:app` | 1 | 1 |
 | `apps/web/app/stand/[meetingId]/offline/offline-stand-page.tsx` | `web:app` | 2 | 3 |
+| `apps/web/app/stand/[meetingId]/offline/offline-stand-page.vitest.tsx` | `web:app` | 1 | 4 |
 | `apps/web/app/stand/[meetingId]/offline/page.tsx` | `web:app` | 1 | 0 |
 | `apps/web/app/stand/[meetingId]/page.tsx` | `web:app` | 13 | 3 |
 | `apps/web/app/support/access-requests/page.tsx` | `web:app` | 5 | 3 |
