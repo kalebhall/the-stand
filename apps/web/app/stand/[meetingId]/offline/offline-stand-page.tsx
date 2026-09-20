@@ -377,6 +377,11 @@ export default function OfflineStandPage({ meetingId }: { meetingId: string }) {
     setConflict(null);
     setPending(0);
     setError(null);
+    setSyncing(false);
+    setNoteText('');
+    setEditingNoteId(null);
+    setEditingText('');
+    setNoteComposerOpen(false);
   }, [activeWardId, meetingId, userId]);
 
   useEffect(() => {
@@ -386,9 +391,11 @@ export default function OfflineStandPage({ meetingId }: { meetingId: string }) {
       setConflict(null);
       setPending(0);
       setError(null);
+      setSyncing(false);
       setNoteText('');
       setEditingNoteId(null);
       setEditingText('');
+      setNoteComposerOpen(false);
     };
     const onStorage = (event: StorageEvent) => {
       if (event.key === 'the-stand-offline-deletion-pending') clearRenderedOfflineState();
@@ -429,6 +436,11 @@ export default function OfflineStandPage({ meetingId }: { meetingId: string }) {
     setConflict(null);
     setPending(0);
     setError(null);
+    setSyncing(false);
+    setNoteText('');
+    setEditingNoteId(null);
+    setEditingText('');
+    setNoteComposerOpen(false);
     setClearing(true);
     try {
       await clearOfflineData();
@@ -660,6 +672,14 @@ export default function OfflineStandPage({ meetingId }: { meetingId: string }) {
     }
   }
 
+  const snapshotMatchesContext =
+    snapshot && snapshot.userId === userId && snapshot.wardId === activeWardId && snapshot.meeting.id === meetingId;
+  if (snapshot && !snapshotMatchesContext)
+    return (
+      <main className="mx-auto max-w-3xl p-6">
+        <p>{t('loading')}</p>
+      </main>
+    );
   if (error && !snapshot)
     return (
       <main className="mx-auto max-w-3xl p-6">

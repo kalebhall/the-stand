@@ -36,9 +36,19 @@ describe('OfflineStandPage', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    auth.useSession.mockReset();
+    offline.clearOfflineData.mockReset().mockResolvedValue(undefined);
+    offline.ensureOfflineContext.mockReset().mockResolvedValue(undefined);
+    offline.formatOfflineAge.mockReset().mockReturnValue('30 minutes ago');
+    offline.getOfflineSnapshotAge.mockReset().mockReturnValue({ ageMs: 1_800_000, isStale: false });
+    offline.getOfflineWriteEpoch.mockReset().mockReturnValue(1);
+    offline.listOfflineMutations.mockReset().mockResolvedValue([]);
+    offline.loadOfflineSnapshot.mockReset().mockResolvedValue(null);
+    offline.queueOfflineMutation.mockReset().mockResolvedValue(undefined);
+    offline.removeOfflineMutation.mockReset().mockResolvedValue(undefined);
+    offline.saveOfflineSnapshot.mockReset().mockResolvedValue(undefined);
+    offline.updateOfflineMutation.mockReset().mockResolvedValue(undefined);
     auth.useSession.mockReturnValue({ data: { user: { id: 'user-1' }, activeWardId: 'ward-1' } });
-    offline.ensureOfflineContext.mockResolvedValue(undefined);
-    offline.loadOfflineSnapshot.mockResolvedValue(null);
     Object.defineProperty(navigator, 'onLine', { configurable: true, value: true });
   });
 
@@ -252,6 +262,75 @@ describe('OfflineStandPage', () => {
 
     resolveClear?.();
     await waitFor(() => expect(offline.clearOfflineData).toHaveBeenCalledTimes(1));
+  });
+
+  it('clears private rendered data when the authenticated ward context changes', async () => {
+    offline.loadOfflineSnapshot.mockResolvedValue({
+      userId: 'user-1',
+      wardId: 'ward-1',
+      meeting: { id: 'meeting-1', meetingDate: '2026-09-20', meetingType: 'SACRAMENT' },
+      standRows: [],
+      businessLines: [],
+      membershipActions: [],
+      notes: [{ id: 'note-1', visibility: 'PRIVATE', noteText: 'Private note', createdAt: '2026-09-20T10:00:00.000Z' }],
+      progress: {},
+      savedAt: '2026-09-20T10:00:00.000Z'
+    } as never);
+
+    const view = renderPage();
+    await waitFor(() => expect(screen.getByText('Private note')).toBeVisible());
+
+    auth.useSession.mockReturnValue({ data: { user: { id: 'user-2' }, activeWardId: 'ward-2' } });
+    view.rerender(
+      <NextIntlClientProvider locale="en-US" messages={messages}>
+        <OfflineStandPage meetingId="meeting-1" />
+      </NextIntlClientProvider>
+    );
+
+    expect(screen.queryByText('Private note')).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByText('Private note')).not.toBeInTheDocument());
+    expect(screen.getByText('Loading offline copy…')).toBeVisible();
+    expect(offline.ensureOfflineContext).toHaveBeenCalledWith('user-2', 'ward-2');
+  });
+
+  it('clears an unsaved private-note draft when the authenticated context changes', async () => {
+    const firstSnapshot = {
+      userId: 'user-1',
+      wardId: 'ward-1',
+      meeting: { id: 'meeting-1', meetingDate: '2026-09-20', meetingType: 'SACRAMENT' },
+      standRows: [],
+      businessLines: [],
+      membershipActions: [],
+      notes: [],
+      progress: {},
+      savedAt: '2026-09-20T10:00:00.000Z'
+    };
+    const secondSnapshot = {
+      ...firstSnapshot,
+      userId: 'user-2',
+      wardId: 'ward-2',
+      meeting: { ...firstSnapshot.meeting, id: 'meeting-2' }
+    };
+    offline.loadOfflineSnapshot.mockImplementation(
+      (async (requestedUserId: string) => (requestedUserId === 'user-1' ? firstSnapshot : secondSnapshot)) as never
+    );
+
+    const view = renderPage();
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Add note' })).toBeVisible());
+    fireEvent.click(screen.getByRole('button', { name: 'Add note' }));
+    const draft = screen.getByPlaceholderText('Write a private note…');
+    fireEvent.change(draft, { target: { value: 'Do not carry this draft forward' } });
+
+    auth.useSession.mockReturnValue({ data: { user: { id: 'user-2' }, activeWardId: 'ward-2' } });
+    view.rerender(
+      <NextIntlClientProvider locale="en-US" messages={messages}>
+        <OfflineStandPage meetingId="meeting-2" />
+      </NextIntlClientProvider>
+    );
+
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Add note' })).toBeVisible());
+    expect(screen.queryByDisplayValue('Do not carry this draft forward')).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText('Write a private note…')).not.toBeInTheDocument();
   });
 
 });
