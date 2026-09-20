@@ -197,7 +197,10 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ me
             <h1 className="text-2xl font-semibold tracking-tight">{t('title')}</h1>
             <p className="text-sm text-muted-foreground">{t('description')}</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <Link href="/manual#meeting-editor" className="text-sm font-medium underline underline-offset-4">
+              Editor help
+            </Link>
             <Link href={`/stand/${meeting.id}`} className={cn(buttonVariants({ variant: 'outline' }))}>
               {t('atStand')}
             </Link>

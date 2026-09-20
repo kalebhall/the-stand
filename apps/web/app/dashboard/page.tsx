@@ -246,9 +246,14 @@ export default async function DashboardPage() {
 
   return (
     <main className="mx-auto w-full max-w-6xl space-y-6 p-4 sm:p-6">
-      <section className="space-y-2">
-        <h1 className="text-2xl font-semibold tracking-tight">{t('title')}</h1>
-        <p className="text-muted-foreground">{t('welcome', { name: session.user.name ?? session.user.email ?? '' })}</p>
+      <section className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">{t('title')}</h1>
+          <p className="text-muted-foreground">{t('welcome', { name: session.user.name ?? session.user.email ?? '' })}</p>
+        </div>
+        <Link href="/manual#dashboard" className="text-sm font-medium underline underline-offset-4">
+          Help with the Dashboard
+        </Link>
       </section>
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">

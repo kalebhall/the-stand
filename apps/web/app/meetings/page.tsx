@@ -66,11 +66,16 @@ export default async function MeetingsPage() {
             <h1 className="text-2xl font-semibold tracking-tight">{t('title')}</h1>
             <p className="text-sm text-muted-foreground">{t('description')}</p>
           </div>
-          {canManage ? (
-            <Link href="/meetings/new" className={cn(buttonVariants())}>
-              {t('create')}
+          <div className="flex flex-wrap items-center gap-3">
+            <Link href="/manual#meetings" className="text-sm font-medium underline underline-offset-4">
+              Meeting help
             </Link>
-          ) : null}
+            {canManage ? (
+              <Link href="/meetings/new" className={cn(buttonVariants())}>
+                {t('create')}
+              </Link>
+            ) : null}
+          </div>
         </section>
 
         {meetings.length ? (

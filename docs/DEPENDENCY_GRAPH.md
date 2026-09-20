@@ -15,7 +15,7 @@ flowchart LR
   A3["root:tooling<br/>7 files"]
   A4["web:announcements<br/>2 files"]
   A5["web:api<br/>90 files"]
-  A6["web:app<br/>124 files"]
+  A6["web:app<br/>125 files"]
   A7["web:audit<br/>2 files"]
   A8["web:auth<br/>11 files"]
   A9["web:bootstrap.mjs<br/>1 files"]
@@ -43,7 +43,7 @@ flowchart LR
   A31["web:ui<br/>33 files"]
   A32["web:version.mjs<br/>1 files"]
   A5 -->|124| A8
-  A6 -->|118| A31
+  A6 -->|121| A31
   A5 -->|115| A14
   A6 -->|90| A8
   A6 -->|56| A14
@@ -120,7 +120,7 @@ flowchart LR
 | `root:tooling` | 7 |
 | `web:announcements` | 2 |
 | `web:api` | 90 |
-| `web:app` | 124 |
+| `web:app` | 125 |
 | `web:audit` | 2 |
 | `web:auth` | 11 |
 | `web:bootstrap.mjs` | 1 |
@@ -153,7 +153,7 @@ flowchart LR
 | Importing area | Imported area | Imports |
 | --- | --- | ---: |
 | `web:api` | `web:auth` | 124 |
-| `web:app` | `web:ui` | 118 |
+| `web:app` | `web:ui` | 121 |
 | `web:api` | `web:db` | 115 |
 | `web:app` | `web:auth` | 90 |
 | `web:app` | `web:app` | 57 |
@@ -246,7 +246,7 @@ flowchart LR
 
 | Importing area | Package/runtime | Imports |
 | --- | --- | ---: |
-| `web:app` | `next` | 91 |
+| `web:app` | `next` | 93 |
 | `web:api` | `next` | 67 |
 | `web:app` | `react` | 40 |
 | `web:ui` | `react` | 31 |
@@ -473,6 +473,7 @@ flowchart LR
 | `apps/web/app/login/page.tsx` | `web:app` | 2 | 1 |
 | `apps/web/app/logout/logout-form.tsx` | `web:app` | 2 | 2 |
 | `apps/web/app/logout/page.tsx` | `web:app` | 1 | 0 |
+| `apps/web/app/manual/page.tsx` | `web:app` | 3 | 1 |
 | `apps/web/app/meetings/[meetingId]/edit/page.tsx` | `web:app` | 13 | 3 |
 | `apps/web/app/meetings/[meetingId]/print/page.tsx` | `web:app` | 7 | 2 |
 | `apps/web/app/meetings/[meetingId]/public-preview/page.tsx` | `web:app` | 1 | 0 |
@@ -535,7 +536,7 @@ flowchart LR
 | `apps/web/app/settings/users/ward-users-manager.tsx` | `web:app` | 2 | 1 |
 | `apps/web/app/speakers/page.tsx` | `web:app` | 6 | 1 |
 | `apps/web/app/speakers/speaker-lifecycle-workspace.tsx` | `web:app` | 1 | 1 |
-| `apps/web/app/stand/[meetingId]/offline/offline-stand-page.tsx` | `web:app` | 2 | 3 |
+| `apps/web/app/stand/[meetingId]/offline/offline-stand-page.tsx` | `web:app` | 2 | 4 |
 | `apps/web/app/stand/[meetingId]/offline/offline-stand-page.vitest.tsx` | `web:app` | 1 | 4 |
 | `apps/web/app/stand/[meetingId]/offline/page.tsx` | `web:app` | 1 | 0 |
 | `apps/web/app/stand/[meetingId]/page.tsx` | `web:app` | 13 | 3 |

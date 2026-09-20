@@ -30,10 +30,14 @@ export function AppShell({ session, children }: { session: Session | null; child
     if (!session?.activeWardId) return;
     let cancelled = false;
     void fetch(`/api/w/${session.activeWardId}/feature-flags`, { cache: 'no-store' })
-      .then((response) => response.ok ? response.json() as Promise<{ features?: WardFeatureFlags }> : null)
-      .then((body) => { if (!cancelled && body?.features) setFeatureFlags(body.features); })
+      .then((response) => (response.ok ? (response.json() as Promise<{ features?: WardFeatureFlags }>) : null))
+      .then((body) => {
+        if (!cancelled && body?.features) setFeatureFlags(body.features);
+      })
       .catch(() => undefined);
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [session?.activeWardId]);
 
   if (!session?.user?.id) {
@@ -46,11 +50,23 @@ export function AppShell({ session, children }: { session: Session | null; child
     <div className="flex min-h-screen bg-background text-foreground">
       <AuthSessionRefresh />
       {/* Desktop Left Navigation Sidebar (hidden on mobile) */}
-      <aside className={cn('hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 z-30 border-r border-[#c8d7de] bg-card/95 backdrop-blur', isConductingMode && 'md:hidden')}>
+      <aside
+        className={cn(
+          'hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 z-30 border-r border-[#c8d7de] bg-card/95 backdrop-blur',
+          isConductingMode && 'md:hidden'
+        )}
+      >
         <div className="flex h-16 shrink-0 items-center justify-between border-b border-[#c8d7de] px-6">
           <div className="flex items-center gap-2">
             <SiteLogo className="text-lg text-primary" />
-            {isDevelopmentSite ? <span className="rounded-full border border-amber-500/40 bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold tracking-[0.16em] text-amber-800 dark:text-amber-200" aria-label="Development site">DEV</span> : null}
+            {isDevelopmentSite ? (
+              <span
+                className="rounded-full border border-amber-500/40 bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold tracking-[0.16em] text-amber-800 dark:text-amber-200"
+                aria-label="Development site"
+              >
+                DEV
+              </span>
+            ) : null}
           </div>
           <NotificationBell wardId={session.activeWardId} />
         </div>
@@ -103,6 +119,9 @@ export function AppShell({ session, children }: { session: Session | null; child
                 {session.user.email}
               </Link>
               <div className="flex items-center justify-between px-2 pt-1">
+                <Link href="/manual" className="text-[11px] hover:text-foreground hover:underline">
+                  Help / Manual
+                </Link>
                 <Link href="/settings" className="hover:text-foreground text-[11px] underline-offset-2 hover:underline">
                   Settings
                 </Link>
@@ -118,7 +137,12 @@ export function AppShell({ session, children }: { session: Session | null; child
       {/* Main Content Area */}
       <div className={cn('flex flex-1 flex-col', !isConductingMode && 'md:pl-64')}>
         {/* Mobile top bar */}
-        <header className={cn('sticky top-0 z-20 flex h-14 items-center justify-between border-b bg-background/95 px-4 backdrop-blur', !isConductingMode && 'md:hidden')}>
+        <header
+          className={cn(
+            'sticky top-0 z-20 flex h-14 items-center justify-between border-b bg-background/95 px-4 backdrop-blur',
+            !isConductingMode && 'md:hidden'
+          )}
+        >
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -132,7 +156,14 @@ export function AppShell({ session, children }: { session: Session | null; child
             </button>
             <div className="flex items-center gap-2">
               <SiteLogo className="text-base text-primary" iconClassName="h-6 w-6" />
-              {isDevelopmentSite ? <span className="rounded-full border border-amber-500/40 bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold tracking-[0.16em] text-amber-800 dark:text-amber-200" aria-label="Development site">DEV</span> : null}
+              {isDevelopmentSite ? (
+                <span
+                  className="rounded-full border border-amber-500/40 bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold tracking-[0.16em] text-amber-800 dark:text-amber-200"
+                  aria-label="Development site"
+                >
+                  DEV
+                </span>
+              ) : null}
             </div>
           </div>
 
@@ -159,13 +190,23 @@ export function AppShell({ session, children }: { session: Session | null; child
             />
             <aside
               id="mobile-navigation"
-              className={cn('fixed inset-y-0 left-0 z-40 flex w-72 max-w-[85vw] flex-col border-r bg-card shadow-xl', !isConductingMode && 'md:hidden')}
+              className={cn(
+                'fixed inset-y-0 left-0 z-40 flex w-72 max-w-[85vw] flex-col border-r bg-card shadow-xl',
+                !isConductingMode && 'md:hidden'
+              )}
               aria-label="Mobile Navigation"
             >
               <div className="flex h-16 shrink-0 items-center justify-between border-b px-5">
                 <div className="flex items-center gap-2">
                   <SiteLogo className="text-lg text-primary" />
-                  {isDevelopmentSite ? <span className="rounded-full border border-amber-500/40 bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold tracking-[0.16em] text-amber-800 dark:text-amber-200" aria-label="Development site">DEV</span> : null}
+                  {isDevelopmentSite ? (
+                    <span
+                      className="rounded-full border border-amber-500/40 bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold tracking-[0.16em] text-amber-800 dark:text-amber-200"
+                      aria-label="Development site"
+                    >
+                      DEV
+                    </span>
+                  ) : null}
                 </div>
                 <button
                   type="button"
@@ -224,6 +265,13 @@ export function AppShell({ session, children }: { session: Session | null; child
                     {session.user.email}
                   </Link>
                   <div className="flex items-center justify-between px-2 text-xs text-muted-foreground">
+                    <Link
+                      href="/manual"
+                      onClick={() => setIsMobileNavOpen(false)}
+                      className="text-[11px] hover:text-foreground hover:underline"
+                    >
+                      Help / Manual
+                    </Link>
                     <Link
                       href="/settings"
                       onClick={() => setIsMobileNavOpen(false)}

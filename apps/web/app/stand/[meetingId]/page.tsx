@@ -313,21 +313,26 @@ export default async function StandViewPage({
       <main className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-5xl flex-col gap-6 p-4 sm:p-6 lg:p-8">
         <section className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-card p-3 sm:p-4">
           <h1 className="text-xl font-semibold sm:text-2xl">{t('title')}</h1>
-          <div className="flex gap-2" role="tablist" aria-label={t('viewMode')}>
-            <Link
-              href={`/stand/${meetingId}?mode=formal`}
-              className={cn(buttonVariants({ variant: selectedMode === 'formal' ? 'default' : 'outline', size: 'sm' }))}
-            >
-              {t('formalScript')}
+          <div className="flex flex-wrap items-center gap-2">
+            <Link href="/manual#at-the-stand" className="text-sm font-medium underline underline-offset-4">
+              Stand help
             </Link>
-            <Link
-              href={`/stand/${meetingId}?mode=compact`}
-              className={cn(buttonVariants({ variant: selectedMode === 'compact' ? 'default' : 'outline', size: 'sm' }))}
-            >
-              {t('compactLabels')}
-            </Link>
+            <div className="flex gap-2" role="tablist" aria-label={t('viewMode')}>
+              <Link
+                href={`/stand/${meetingId}?mode=formal`}
+                className={cn(buttonVariants({ variant: selectedMode === 'formal' ? 'default' : 'outline', size: 'sm' }))}
+              >
+                {t('formalScript')}
+              </Link>
+              <Link
+                href={`/stand/${meetingId}?mode=compact`}
+                className={cn(buttonVariants({ variant: selectedMode === 'compact' ? 'default' : 'outline', size: 'sm' }))}
+              >
+                {t('compactLabels')}
+              </Link>
+            </div>
+            <OfflineStandButton userId={session.user.id} wardId={activeWardId} meetingId={meetingId} />
           </div>
-          <OfflineStandButton userId={session.user.id} wardId={activeWardId} meetingId={meetingId} />
         </section>
 
         <section className="grid gap-3">
