@@ -87,11 +87,11 @@ Implemented in this slice:
 - Added offline At-the-Stand shell translations for loading, saved-copy status, deletion, privacy disclosure, core action labels, technology reference, private notes, business labels, and conflict controls.
 - Added locale-aware public portal empty-state rendering from the `NEXT_LOCALE` cookie, with Spanish regression coverage.
 - Localized published public-program snapshots at publish time using the authenticated user's persisted locale, preserving authored program content and official prayer text.
-- Expanded pseudo-locale coverage to 457 validated message keys.
+- Expanded pseudo-locale coverage to 482 validated message keys, including localized offline age formatting.
 
 Remaining in Phase 2:
 
-- Complete offline/permission state coverage and remaining offline data/conflict labels.
+- Complete any remaining offline/permission state coverage discovered during native-speaker review.
 - Review remaining hard-coded authored/template content and decide whether it should remain source-language content.
 - Native-speaker review of all new Spanish terminology; untranslated fallback values are not production-ready.
 

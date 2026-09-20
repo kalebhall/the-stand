@@ -16,6 +16,7 @@ import {
   removeOfflineMutation,
   saveOfflineSnapshot,
   updateOfflineMutation,
+  type OfflineAgeLabels,
   type OfflineMutation,
   type OfflineNote,
   type OfflineStandSnapshot
@@ -151,6 +152,16 @@ function OfflineRow({ row, done, onToggle }: { row: StandRow; done: boolean; onT
 
 export default function OfflineStandPage({ meetingId }: { meetingId: string }) {
   const t = useTranslations('offline');
+  const offlineAgeLabels: OfflineAgeLabels = {
+    unknownAge: t('unknownAge'),
+    lessThanMinuteAgo: t('lessThanMinuteAgo'),
+    minuteAgo: (count) => t('minuteAgo', { count }),
+    minutesAgo: (count) => t('minutesAgo', { count }),
+    hourAgo: (count) => t('hourAgo', { count }),
+    hoursAgo: (count) => t('hoursAgo', { count }),
+    dayAgo: (count) => t('dayAgo', { count }),
+    daysAgo: (count) => t('daysAgo', { count }),
+  };
   const { data: session } = useSession();
   const userId = session?.user?.id;
   const activeWardId = session?.activeWardId;
@@ -675,7 +686,7 @@ export default function OfflineStandPage({ meetingId }: { meetingId: string }) {
           <span className="rounded-full border px-3 py-1 text-sm">{navigator.onLine ? t('online') : t('offline')}</span>
         </div>
         <p className="mt-2 text-xs text-muted-foreground" aria-live="polite">
-          {t('savedAt', { date: new Date(snapshot.savedAt).toLocaleString() })} ({formatOfflineAge(snapshot.savedAt)}) · {pending}{' '}
+          {t('savedAt', { date: new Date(snapshot.savedAt).toLocaleString() })} ({formatOfflineAge(snapshot.savedAt, Date.now(), offlineAgeLabels)}) · {pending}{' '}
           {t(pending === 1 ? 'change' : 'changes')}
           {syncing ? ` · ${t('syncing')}` : ''}
         </p>

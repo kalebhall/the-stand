@@ -152,16 +152,38 @@ export function getOfflineSnapshotAge(savedAt: string, now = Date.now()): { ageM
   return { ageMs, isStale: ageMs >= OFFLINE_SNAPSHOT_STALE_AFTER_MS };
 }
 
-export function formatOfflineAge(savedAt: string, now = Date.now()): string {
-  if (!Number.isFinite(Date.parse(savedAt))) return 'unknown age';
+export type OfflineAgeLabels = {
+  unknownAge: string;
+  lessThanMinuteAgo: string;
+  minuteAgo: (count: number) => string;
+  minutesAgo: (count: number) => string;
+  hourAgo: (count: number) => string;
+  hoursAgo: (count: number) => string;
+  dayAgo: (count: number) => string;
+  daysAgo: (count: number) => string;
+};
+
+const ENGLISH_OFFLINE_AGE_LABELS: OfflineAgeLabels = {
+  unknownAge: 'unknown age',
+  lessThanMinuteAgo: 'less than a minute ago',
+  minuteAgo: (count) => `${count} minute ago`,
+  minutesAgo: (count) => `${count} minutes ago`,
+  hourAgo: (count) => `${count} hour ago`,
+  hoursAgo: (count) => `${count} hours ago`,
+  dayAgo: (count) => `${count} day ago`,
+  daysAgo: (count) => `${count} days ago`,
+};
+
+export function formatOfflineAge(savedAt: string, now = Date.now(), labels: OfflineAgeLabels = ENGLISH_OFFLINE_AGE_LABELS): string {
+  if (!Number.isFinite(Date.parse(savedAt))) return labels.unknownAge;
   const { ageMs } = getOfflineSnapshotAge(savedAt, now);
   const minutes = Math.floor(ageMs / 60_000);
-  if (minutes < 1) return 'less than a minute ago';
-  if (minutes < 60) return `${minutes} minute${minutes === 1 ? '' : 's'} ago`;
+  if (minutes < 1) return labels.lessThanMinuteAgo;
+  if (minutes < 60) return minutes === 1 ? labels.minuteAgo(minutes) : labels.minutesAgo(minutes);
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours} hour${hours === 1 ? '' : 's'} ago`;
+  if (hours < 24) return hours === 1 ? labels.hourAgo(hours) : labels.hoursAgo(hours);
   const days = Math.floor(hours / 24);
-  return `${days} day${days === 1 ? '' : 's'} ago`;
+  return days === 1 ? labels.dayAgo(days) : labels.daysAgo(days);
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
