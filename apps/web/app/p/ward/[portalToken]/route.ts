@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { pool } from '@/src/db/client';
+import { buildPublicProgramEmptyHtml, resolvePublicLocale } from '@/src/i18n/public-program';
 
 type PortalRow = {
   ward_id: string;
@@ -10,12 +11,17 @@ type PublicRenderRow = {
   render_html: string;
 };
 
-const NO_PROGRAM_HTML =
-  '<main class="public-program mx-auto max-w-3xl space-y-2 p-4 sm:p-8" aria-labelledby="public-program-title"><h1 id="public-program-title" class="text-2xl font-semibold">No program available</h1><p class="text-sm text-muted-foreground">No meeting program has been posted yet.</p></main>';
-
-export async function GET(_: Request, context: { params: Promise<{ portalToken: string }> }) {
+export async function GET(request: Request, context: { params: Promise<{ portalToken: string }> }) {
   const { portalToken } = await context.params;
   const token = portalToken.trim();
+  const cookieLocale = request.headers.get('cookie')?.match(/(?:^|;\s*)NEXT_LOCALE=([^;]+)/)?.[1];
+  let decodedLocale: string | undefined;
+  try {
+    decodedLocale = cookieLocale ? decodeURIComponent(cookieLocale) : undefined;
+  } catch {
+    decodedLocale = undefined;
+  }
+  const publicLocale = resolvePublicLocale(decodedLocale);
 
   if (!token) {
     return NextResponse.json({ error: 'Not found', code: 'NOT_FOUND' }, { status: 404 });
@@ -53,7 +59,7 @@ export async function GET(_: Request, context: { params: Promise<{ portalToken: 
 
     if (!renderResult.rowCount) {
       await client.query('COMMIT');
-      return new NextResponse(NO_PROGRAM_HTML, {
+      return new NextResponse(buildPublicProgramEmptyHtml(publicLocale), {
         status: 200,
         headers: {
           'content-type': 'text/html; charset=utf-8'

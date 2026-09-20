@@ -36,4 +36,33 @@ describe('meeting business queueing', () => {
       'SUSTAIN'
     ]);
   });
+
+  it('moves an existing conference Sunday to a new eligible meeting', async () => {
+    const query = vi
+      .fn()
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ member_name: 'Doe, Jane', calling_name: 'Primary President' }] })
+      .mockResolvedValueOnce({ rowCount: 0, rows: [] })
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({ rows: [{ next_sunday: '2026-10-04' }] })
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'conference-meeting', meeting_type: 'STAKE_CONFERENCE' }] })
+      .mockResolvedValueOnce({ rows: [{ meeting_date: '2026-10-11' }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'replacement-meeting' }] })
+      .mockResolvedValueOnce({});
+
+    const meetingId = await queueCallingBusinessLine({ query } as never, {
+      wardId: 'ward-1',
+      callingId: 'calling-1',
+      actionType: 'SUSTAIN'
+    });
+
+    expect(meetingId).toBe('replacement-meeting');
+    expect(query).toHaveBeenNthCalledWith(3, expect.stringContaining('pg_advisory_xact_lock'), ['ward-1:business-fallback']);
+    expect(query).toHaveBeenNthCalledWith(4, expect.stringContaining('next_sunday'));
+    expect(query).toHaveBeenNthCalledWith(5, expect.stringContaining('SELECT id, meeting_type FROM meeting'), ['ward-1', '2026-10-04']);
+    expect(query).toHaveBeenNthCalledWith(6, expect.stringContaining('generate_series'), ['2026-10-04', 'ward-1']);
+    expect(query).toHaveBeenNthCalledWith(7, expect.stringContaining("INSERT INTO meeting (ward_id, meeting_date, meeting_type, status)"), [
+      'ward-1',
+      '2026-10-11'
+    ]);
+  });
 });

@@ -1,3 +1,4 @@
+import { getTranslations } from 'next-intl/server';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 
@@ -43,13 +44,21 @@ type TemplateRow = {
 
 const SACRAMENT_SCRIPTURE_URL = 'https://www.churchofjesuschrist.org/study/scriptures/dc-testament/dc/20?lang=eng#p77';
 
-function SacramentPrayers({ compact, programNotes }: { compact: boolean; programNotes?: string | null }) {
+function SacramentPrayers({
+  compact,
+  programNotes,
+  labels
+}: {
+  compact: boolean;
+  programNotes?: string | null;
+  labels: { sacrament: string; breadPrayer: string; waterPrayer: string; scripture: string };
+}) {
   return (
     <article className="rounded-lg border bg-card p-4 sm:p-5">
-      <p className="text-sm uppercase tracking-wide text-muted-foreground">Sacrament</p>
+      <p className="text-sm uppercase tracking-wide text-muted-foreground">{labels.sacrament}</p>
       <div className={cn('mt-3 space-y-4', compact ? 'text-sm sm:text-base' : 'text-base leading-relaxed sm:text-lg')}>
         <section>
-          <h2 className="font-semibold">Bread prayer</h2>
+          <h2 className="font-semibold">{labels.breadPrayer}</h2>
           <p className="mt-1">
             O God, the Eternal Father, we ask thee in the name of thy Son, Jesus Christ, to bless and sanctify this bread to the souls of
             all those who partake of it, that they may eat in remembrance of the body of thy Son, and witness unto thee, O God, the Eternal
@@ -58,7 +67,7 @@ function SacramentPrayers({ compact, programNotes }: { compact: boolean; program
           </p>
         </section>
         <section>
-          <h2 className="font-semibold">Water prayer</h2>
+          <h2 className="font-semibold">{labels.waterPrayer}</h2>
           <p className="mt-1">
             O God, the Eternal Father, we ask thee in the name of thy Son, Jesus Christ, to bless and sanctify this water to the souls of
             all those who drink of it, that they may do it in remembrance of the blood of thy Son, which was shed for them; that they may
@@ -74,7 +83,7 @@ function SacramentPrayers({ compact, programNotes }: { compact: boolean; program
         target="_blank"
         rel="noreferrer"
       >
-        Doctrine and Covenants 20:77, 79
+        {labels.scripture}
       </a>
     </article>
   );
@@ -88,6 +97,7 @@ export default async function StandViewPage({
   searchParams: Promise<{ mode?: string }>;
 }) {
   const session = await requireAuthenticatedSession();
+  const t = await getTranslations('stand');
   enforcePasswordRotation(session);
 
   if (!session.activeWardId || !canViewMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId)) {
@@ -106,7 +116,7 @@ export default async function StandViewPage({
     await client.query('BEGIN');
     await setDbContext(client, { userId: session.user.id, wardId: session.activeWardId });
 
-    const meetingResult = await client.query('SELECT id, meeting_date FROM meeting WHERE id = $1 AND ward_id = $2 LIMIT 1', [
+    const meetingResult = await client.query('SELECT id, meeting_date, meeting_type FROM meeting WHERE id = $1 AND ward_id = $2 LIMIT 1', [
       meetingId,
       session.activeWardId
     ]);
@@ -158,6 +168,8 @@ export default async function StandViewPage({
             LIMIT 1
          ) latest_calling ON TRUE
         WHERE b.ward_id = $2::uuid
+          AND source_meeting.meeting_type NOT IN ('STAKE_CONFERENCE', 'GENERAL_CONFERENCE')
+          AND EXISTS (SELECT 1 FROM meeting route_meeting WHERE route_meeting.id = $1::uuid AND route_meeting.meeting_type NOT IN ('STAKE_CONFERENCE', 'GENERAL_CONFERENCE'))
           AND (b.action_type <> 'SUSTAIN' OR b.calling_assignment_id IS NULL OR latest_calling.action_status = 'EXTENDED')
           AND (b.meeting_id = $1::uuid OR (
             b.action_type = 'SUSTAIN'
@@ -178,6 +190,8 @@ export default async function StandViewPage({
          FROM meeting_membership_ordinance a
          JOIN meeting m ON m.id = a.meeting_id AND m.ward_id = a.ward_id
         WHERE a.ward_id = $2::uuid
+          AND m.meeting_type NOT IN ('STAKE_CONFERENCE', 'GENERAL_CONFERENCE')
+          AND EXISTS (SELECT 1 FROM meeting route_meeting WHERE route_meeting.id = $1::uuid AND route_meeting.meeting_type NOT IN ('STAKE_CONFERENCE', 'GENERAL_CONFERENCE'))
           AND (a.meeting_id = $1::uuid OR (m.meeting_date <= $3::date AND a.status <> 'completed'))
         ORDER BY a.created_at ASC`,
       [meetingId, session.activeWardId, meetingDate]
@@ -250,6 +264,29 @@ export default async function StandViewPage({
     const notes = notesResult.rows as Array<InternalNoteRow & { program_item_id: string }>;
     const canUseNotes = canUseInternalNotes({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId);
     const canManage = canManageCallings({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId);
+    const renderLabels = {
+      introduction: t('introduction'),
+      presiding: t('presiding'),
+      conducting: t('conducting'),
+      organistPianist: t('organistPianist'),
+      chorister: t('chorister'),
+      unassigned: t('unassigned'),
+      visitingStakeLeader: t('visitingStakeLeader'),
+      sacrament: t('sacrament'),
+      breadPrayer: t('breadPrayer'),
+      waterPrayer: t('waterPrayer'),
+      scripture: t('scripture'),
+      itemLabels: {
+        OPENING_HYMN: t('item_OPENING_HYMN'),
+        CLOSING_HYMN: t('item_CLOSING_HYMN'),
+        SPEAKER: t('item_SPEAKER'),
+        INVOCATION: t('item_INVOCATION'),
+        BENEDICTION: t('item_BENEDICTION'),
+        SPECIAL_MUSICAL_NUMBER: t('item_SPECIAL_MUSICAL_NUMBER'),
+        ANNOUNCEMENT: t('item_ANNOUNCEMENT'),
+        WARD_AND_STAKE_BUSINESS: t('item_WARD_AND_STAKE_BUSINESS')
+      }
+    };
     const standRows = buildStandRows(
       (programResult.rows as ProgramItemRow[]).map((item) => ({
         id: item.id,
@@ -268,25 +305,26 @@ export default async function StandViewPage({
         sustainTemplate: template?.sustain_template,
         releaseTemplate: template?.release_template
       },
-      activeStandAnnouncements
+      activeStandAnnouncements,
+      renderLabels
     );
 
     return (
       <main className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-5xl flex-col gap-6 p-4 sm:p-6 lg:p-8">
         <section className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-card p-3 sm:p-4">
-          <h1 className="text-xl font-semibold sm:text-2xl">At the Stand</h1>
-          <div className="flex gap-2" role="tablist" aria-label="Stand view mode">
+          <h1 className="text-xl font-semibold sm:text-2xl">{t('title')}</h1>
+          <div className="flex gap-2" role="tablist" aria-label={t('viewMode')}>
             <Link
               href={`/stand/${meetingId}?mode=formal`}
               className={cn(buttonVariants({ variant: selectedMode === 'formal' ? 'default' : 'outline', size: 'sm' }))}
             >
-              Formal Script
+              {t('formalScript')}
             </Link>
             <Link
               href={`/stand/${meetingId}?mode=compact`}
               className={cn(buttonVariants({ variant: selectedMode === 'compact' ? 'default' : 'outline', size: 'sm' }))}
             >
-              Compact Labels
+              {t('compactLabels')}
             </Link>
           </div>
           <OfflineStandButton userId={session.user.id} wardId={activeWardId} meetingId={meetingId} />
@@ -315,7 +353,7 @@ export default async function StandViewPage({
                           rel="noreferrer"
                         >
                           {row.details}
-                          <span className="ml-2 text-sm font-normal">Open hymn</span>
+                          <span className="ml-2 text-sm font-normal">{t('openHymn')}</span>
                         </a>
                       ) : (
                         <p className="whitespace-pre-wrap text-lg font-medium sm:text-xl">{row.details}</p>
@@ -329,7 +367,7 @@ export default async function StandViewPage({
                             wardId={activeWardId}
                             target={{ type: 'PROGRAM_ITEM', programItemId: row.programItemId }}
                             notes={notes.filter((note) => note.program_item_id === row.programItemId)}
-                            title="Item notes"
+                            title={t('itemNotes')}
                           />
                         </div>
                       ) : null}
@@ -338,7 +376,7 @@ export default async function StandViewPage({
                 }
 
                 if (row.kind === 'sacrament') {
-                  return <SacramentPrayers key={`row-${index}`} programNotes={row.programNotes} compact={false} />;
+                  return <SacramentPrayers key={`row-${index}`} programNotes={row.programNotes} compact={false} labels={renderLabels} />;
                 }
 
                 if (row.kind === 'ward_business') {
@@ -378,7 +416,7 @@ export default async function StandViewPage({
                           wardId={activeWardId}
                           target={{ type: 'PROGRAM_ITEM', programItemId: row.programItemId }}
                           notes={notes.filter((note) => note.program_item_id === row.programItemId)}
-                          title="Item notes"
+                          title={t('itemNotes')}
                         />
                       </div>
                     ) : null}
@@ -406,7 +444,7 @@ export default async function StandViewPage({
                           rel="noreferrer"
                         >
                           {row.details}
-                          <span className="ml-2 text-xs font-normal">Open hymn</span>
+                          <span className="ml-2 text-xs font-normal">{t('openHymn')}</span>
                         </a>
                       ) : (
                         <p className="whitespace-pre-wrap text-base font-medium sm:text-lg">{row.details}</p>
@@ -420,7 +458,7 @@ export default async function StandViewPage({
                             wardId={activeWardId}
                             target={{ type: 'PROGRAM_ITEM', programItemId: row.programItemId }}
                             notes={notes.filter((note) => note.program_item_id === row.programItemId)}
-                            title="Item notes"
+                            title={t('itemNotes')}
                           />
                         </div>
                       ) : null}
@@ -429,7 +467,7 @@ export default async function StandViewPage({
                 }
 
                 if (row.kind === 'sacrament') {
-                  return <SacramentPrayers key={`compact-${index}`} programNotes={row.programNotes} compact={true} />;
+                  return <SacramentPrayers key={`compact-${index}`} programNotes={row.programNotes} compact={true} labels={renderLabels} />;
                 }
 
                 if (row.kind === 'ward_business') {
@@ -454,7 +492,7 @@ export default async function StandViewPage({
                 return (
                   <article key={`compact-${index}`} className="rounded-lg border bg-card p-4 sm:p-5">
                     <p className="text-sm uppercase tracking-wide text-muted-foreground">
-                      {row.kind === 'sustain' ? 'Sustain' : 'Release'}
+                      {row.kind === 'sustain' ? t('sustain') : t('release')}
                     </p>
                     <p className="text-base font-medium sm:text-lg">{row.summary}</p>
                     {row.programNotes?.trim() ? (
@@ -466,7 +504,7 @@ export default async function StandViewPage({
                           wardId={activeWardId}
                           target={{ type: 'PROGRAM_ITEM', programItemId: row.programItemId }}
                           notes={notes.filter((note) => note.program_item_id === row.programItemId)}
-                          title="Item notes"
+                          title={t('itemNotes')}
                         />
                       </div>
                     ) : null}

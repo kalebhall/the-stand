@@ -1,3 +1,4 @@
+import { getTranslations } from 'next-intl/server';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 
@@ -51,6 +52,7 @@ type AnnouncementRow = {
 
 export default async function EditMeetingPage({ params }: { params: Promise<{ meetingId: string }> }) {
   const session = await requireAuthenticatedSession();
+  const t = await getTranslations('meetingEditor');
   enforcePasswordRotation(session);
 
   if (
@@ -107,6 +109,8 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ me
             LIMIT 1
          ) latest_calling ON TRUE
         WHERE b.ward_id = $2::uuid
+          AND source_meeting.meeting_type NOT IN ('STAKE_CONFERENCE', 'GENERAL_CONFERENCE')
+          AND (SELECT meeting_type FROM meeting WHERE id = $1::uuid AND ward_id = $2::uuid) NOT IN ('STAKE_CONFERENCE', 'GENERAL_CONFERENCE')
           AND (b.action_type <> 'SUSTAIN' OR b.calling_assignment_id IS NULL OR latest_calling.action_status = 'EXTENDED')
           AND (b.meeting_id = $1::uuid OR (
             b.action_type = 'SUSTAIN'
@@ -126,6 +130,8 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ me
          FROM meeting_membership_ordinance a
          JOIN meeting m ON m.id = a.meeting_id AND m.ward_id = a.ward_id
         WHERE a.ward_id = $2::uuid
+          AND m.meeting_type NOT IN ('STAKE_CONFERENCE', 'GENERAL_CONFERENCE')
+          AND (SELECT meeting_type FROM meeting WHERE id = $1::uuid AND ward_id = $2::uuid) NOT IN ('STAKE_CONFERENCE', 'GENERAL_CONFERENCE')
           AND (a.meeting_id = $1::uuid OR (m.meeting_date <= $3::date AND a.status <> 'completed'))
         ORDER BY a.created_at ASC`,
       [meetingId, session.activeWardId, meetingResult.rows[0].meeting_date]
@@ -188,43 +194,45 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ me
       <main className="mx-auto w-full max-w-4xl space-y-6 p-4 sm:p-6">
         <section className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Edit meeting</h1>
-            <p className="text-sm text-muted-foreground">Update meeting details, hymns, and program order.</p>
+            <h1 className="text-2xl font-semibold tracking-tight">{t('title')}</h1>
+            <p className="text-sm text-muted-foreground">{t('description')}</p>
           </div>
           <div className="flex gap-2">
             <Link href={`/stand/${meeting.id}`} className={cn(buttonVariants({ variant: 'outline' }))}>
-              At the Stand
+              {t('atStand')}
             </Link>
             <Link href={`/meetings/${meeting.id}/print`} className={cn(buttonVariants({ variant: 'outline' }))}>
-              Open print view
+              {t('printView')}
             </Link>
             <Link href={`/meetings/${meeting.id}/public-preview`} className={cn(buttonVariants({ variant: 'outline' }))}>
-              Preview public program
+              {t('publicPreview')}
             </Link>
           </div>
         </section>
 
         <section className="rounded-lg border bg-card p-4">
-          <h2 className="text-base font-semibold">Published versions</h2>
+          <h2 className="text-base font-semibold">{t('publishedVersions')}</h2>
           {versions.length ? (
             <ul className="mt-3 space-y-2">
               {versions.map((version) => (
                 <li key={version.version} className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-3 text-sm">
                   <div>
-                    <p className="font-medium">Version {version.version}</p>
-                    <p className="text-xs text-muted-foreground">Published {formatDateTimeForDisplay(version.created_at)}</p>
+                    <p className="font-medium">{t('version', { version: version.version })}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {t('published', { date: formatDateTimeForDisplay(version.created_at) })}
+                    </p>
                   </div>
                   <Link
                     href={`/meetings/${meeting.id}/print?version=${version.version}`}
                     className={cn(buttonVariants({ size: 'sm', variant: 'outline' }))}
                   >
-                    View snapshot
+                    {t('viewSnapshot')}
                   </Link>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="mt-2 text-sm text-muted-foreground">No published versions yet.</p>
+            <p className="mt-2 text-sm text-muted-foreground">{t('noPublishedVersions')}</p>
           )}
         </section>
 
@@ -243,13 +251,19 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ me
           standAnnouncements={standAnnouncements}
         />
 
-        <MembershipOrdinanceSection wardId={session.activeWardId} meetingId={meeting.id} actions={membershipActions} canManage canCreate={false} />
+        <MembershipOrdinanceSection
+          wardId={session.activeWardId}
+          meetingId={meeting.id}
+          actions={membershipActions}
+          canManage
+          canCreate={false}
+        />
 
         <InternalNotesPanel
           wardId={session.activeWardId}
           target={{ type: 'MEETING', meetingId }}
           notes={notes.filter((note) => !note.program_item_id)}
-          title="Meeting notes"
+          title={t('meetingNotes')}
         />
       </main>
     );

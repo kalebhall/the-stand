@@ -10,14 +10,22 @@ import { SPEAKER_STATUSES, validateSpeakerStatusTransition, type SpeakerStatus }
 export async function PATCH(request: Request, context: { params: Promise<{ wardId: string; programItemId: string }> }) {
   const session = await auth();
   const { wardId, programItemId } = await context.params;
-  if (!session?.user?.id || !session.activeWardId || session.activeWardId !== wardId || !canManageMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId) || !(await isWardFeatureEnabled(wardId, session.user.id, 'SPEAKER_LIFECYCLE'))) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  if (
+    !session?.user?.id ||
+    !session.activeWardId ||
+    session.activeWardId !== wardId ||
+    !canManageMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId) ||
+    !(await isWardFeatureEnabled(wardId, session.user.id, 'SPEAKER_LIFECYCLE'))
+  ) {
+    return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
   }
 
   const body = (await request.json().catch(() => null)) as { topic?: unknown; speakerStatus?: unknown } | null;
   const topic = typeof body?.topic === 'string' ? body.topic.trim() : '';
   const nextStatus = body?.speakerStatus;
-  if (!SPEAKER_STATUSES.includes(nextStatus as SpeakerStatus)) return NextResponse.json({ error: 'Invalid speaker status.' }, { status: 400 });
+  if (!SPEAKER_STATUSES.includes(nextStatus as SpeakerStatus)) {
+    return NextResponse.json({ error: 'Invalid speaker status.', code: 'INVALID_SPEAKER_STATUS' }, { status: 400 });
+  }
 
   const client = await pool.connect();
   try {
@@ -29,13 +37,13 @@ export async function PATCH(request: Request, context: { params: Promise<{ wardI
     );
     if (!currentResult.rowCount) {
       await client.query('ROLLBACK');
-      return NextResponse.json({ error: 'Speaker not found.' }, { status: 404 });
+      return NextResponse.json({ error: 'Speaker not found.', code: 'SPEAKER_NOT_FOUND' }, { status: 404 });
     }
     const currentStatus = (currentResult.rows[0].speaker_status ?? 'PLANNED') as SpeakerStatus;
     const error = validateSpeakerStatusTransition(currentStatus, nextStatus as SpeakerStatus, topic || currentResult.rows[0].topic);
     if (error) {
       await client.query('ROLLBACK');
-      return NextResponse.json({ error }, { status: 400 });
+      return NextResponse.json({ error, code: 'INVALID_SPEAKER_TRANSITION' }, { status: 400 });
     }
     await client.query(
       `UPDATE meeting_program_item SET topic = $1::text, speaker_status = $2::text WHERE id = $3::uuid AND ward_id = $4::uuid`,
@@ -45,7 +53,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ wardI
     return NextResponse.json({ ok: true, topic, speakerStatus: nextStatus });
   } catch {
     await client.query('ROLLBACK').catch(() => undefined);
-    return NextResponse.json({ error: 'Unable to update speaker.' }, { status: 500 });
+    return NextResponse.json({ error: 'Unable to update speaker.', code: 'SPEAKER_UPDATE_FAILED' }, { status: 500 });
   } finally {
     client.release();
   }

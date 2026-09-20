@@ -1,3 +1,4 @@
+import { getTranslations } from 'next-intl/server';
 import Link from 'next/link';
 
 import { buttonVariants } from '@/components/ui/button';
@@ -39,6 +40,7 @@ function DashboardCard({
 
 export default async function DashboardPage() {
   const session = await requireAuthenticatedSession();
+  const t = await getTranslations('dashboard');
   enforcePasswordRotation(session);
 
   const wardSession = session.activeWardId ? { roles: session.user.roles, activeWardId: session.activeWardId } : null;
@@ -58,13 +60,13 @@ export default async function DashboardPage() {
   let bishopricDueActionCount = 'Unavailable';
   let scheduledInterviewCount = 'Unavailable';
   let technologyChecklistCount = 'Unavailable';
-  let notificationHealthValue = 'No deliveries yet';
-  let notificationHealthDetail = 'No notification attempts recorded for this ward yet.';
-  let nextMeetingValue = 'No meetings scheduled';
-  let nextMeetingDetail = 'Create a meeting to unlock edit, stand, and print quick links.';
-  let nextMeetingActions: { href: string; label: string }[] = [{ href: '/meetings', label: 'Create first meeting' }];
-  let draftCountValue = '0 drafts';
-  let draftCountDetail = 'No draft meetings yet.';
+  let notificationHealthValue = t('noDeliveries');
+  let notificationHealthDetail = t('noDeliveryDetail');
+  let nextMeetingValue = t('noMeetings');
+  let nextMeetingDetail = t('createMeetingDetail');
+  let nextMeetingActions: { href: string; label: string }[] = [{ href: '/meetings', label: t('createFirstMeeting') }];
+  let draftCountValue = t('drafts', { count: 0 });
+  let draftCountDetail = t('noDrafts');
   let importSummaryValue = 'No imports yet';
   let importSummaryDetail = 'Use the imports page to import membership or calling data.';
   let portalStatusValue = 'Not configured';
@@ -195,7 +197,9 @@ export default async function DashboardPage() {
       officialRecordHandoffCount = `${actionQueue.official_record_handoff_count} waiting`;
       bishopricDueActionCount = `${(bishopricDueActionResult.rows[0] as { count: number }).count} overdue`;
       scheduledInterviewCount = `${(scheduledInterviewResult.rows[0] as { count: number }).count} scheduled`;
-      technologyChecklistCount = technologyChecklistResult ? `${(technologyChecklistResult.rows[0] as { count: number }).count} needing review` : 'Unavailable';
+      technologyChecklistCount = technologyChecklistResult
+        ? `${(technologyChecklistResult.rows[0] as { count: number }).count} needing review`
+        : 'Unavailable';
       const notificationHealth = notificationHealthResult.rows[0] as { last_delivery_at: string | null; failure_count: number };
       notificationHealthValue = notificationHealth.last_delivery_at ?? 'No deliveries yet';
       notificationHealthDetail = `${notificationHealth.failure_count} failed deliveries`;
@@ -205,15 +209,15 @@ export default async function DashboardPage() {
         nextMeetingValue = `${nextMeeting.meeting_date} (${nextMeeting.meeting_type.replaceAll('_', ' ')})`;
         nextMeetingDetail = `Status: ${nextMeeting.status}`;
         nextMeetingActions = [
-          { href: `/meetings/${nextMeeting.id}/edit`, label: 'Edit' },
-          { href: `/stand/${nextMeeting.id}`, label: 'Stand' },
-          { href: `/meetings/${nextMeeting.id}/print`, label: 'Print' }
+          { href: `/meetings/${nextMeeting.id}/edit`, label: t('edit') },
+          { href: `/stand/${nextMeeting.id}`, label: t('stand') },
+          { href: `/meetings/${nextMeeting.id}/print`, label: t('print') }
         ];
       }
 
       const draftCount = (draftCountResult.rows[0] as { count: number }).count;
-      draftCountValue = `${draftCount} draft${draftCount === 1 ? '' : 's'}`;
-      draftCountDetail = draftCount > 0 ? `${draftCount} meeting${draftCount === 1 ? '' : 's'} in draft status.` : 'No draft meetings yet.';
+      draftCountValue = t('drafts', { count: draftCount });
+      draftCountDetail = draftCount > 0 ? t('draftStatus', { count: draftCount }) : t('noDrafts');
 
       if (importSummaryResult.rowCount) {
         const importRun = importSummaryResult.rows[0] as {
@@ -243,8 +247,8 @@ export default async function DashboardPage() {
   return (
     <main className="mx-auto w-full max-w-6xl space-y-6 p-4 sm:p-6">
       <section className="space-y-2">
-        <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground">Welcome back, {session.user.name ?? session.user.email}.</p>
+        <h1 className="text-2xl font-semibold tracking-tight">{t('title')}</h1>
+        <p className="text-muted-foreground">{t('welcome', { name: session.user.name ?? session.user.email ?? '' })}</p>
       </section>
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -254,97 +258,97 @@ export default async function DashboardPage() {
 
         {canAccessMeetings ? (
           <DashboardCard
-            title="Draft count"
+            title={t('draftCount')}
             value={draftCountValue}
             detail={draftCountDetail}
-            actions={[{ href: '/meetings', label: 'View meetings' }]}
+            actions={[{ href: '/meetings', label: t('viewMeetings') }]}
           />
         ) : null}
 
         {canAccessMeetings ? (
           <DashboardCard
-            title="Membership and ordinance follow-up"
+            title={t('membershipFollowUp')}
             value={membershipActionQueueCount}
-            detail="Announced actions still needing completion."
-            actions={[{ href: '/membership-ordinances?status=action_needed&queue=needs_attention', label: 'Open action queue' }]}
+            detail={t('announcedActions')}
+            actions={[{ href: '/membership-ordinances?status=action_needed&queue=needs_attention', label: t('openQueue') }]}
           />
         ) : null}
 
         {canAccessMeetings ? (
           <DashboardCard
-            title="Priesthood preparation"
+            title={t('priesthoodPreparation')}
             value={priesthoodPreparationCount}
-            detail="Ordination actions missing a typed office or confirmed approval."
-            actions={[{ href: '/membership-ordinances?action=PRIESTHOOD_ORDINATION&queue=needs_attention', label: 'Review preparation' }]}
+            detail={t('priesthoodDetail')}
+            actions={[{ href: '/membership-ordinances?action=PRIESTHOOD_ORDINATION&queue=needs_attention', label: t('reviewPreparation') }]}
           />
         ) : null}
 
         {canAccessMeetings ? (
           <DashboardCard
-            title="Interview follow-up"
+            title={t('interviewFollowUp')}
             value={actionInterviewQueueCount}
-            detail="Actions needing an interview."
+            detail={t('interviewDetail')}
             actions={[{ href: '/membership-ordinances?followup=interview&queue=needs_attention', label: 'Review interviews' }]}
           />
         ) : null}
 
         {canAccessMeetings ? (
           <DashboardCard
-            title="Overdue planned actions"
+            title={t('overdueActions')}
             value={overdueActionCount}
-            detail="Planned actions past their date and not completed."
+            detail={t('overdueDetail')}
             actions={[{ href: '/membership-ordinances?followup=overdue&queue=needs_attention', label: 'Review overdue work' }]}
           />
         ) : null}
 
         {canAccessMeetings && featureFlags?.BISHOPRIC_AGENDA ? (
           <DashboardCard
-            title="Leadership due actions"
+            title={t('leadershipDue')}
             value={bishopricDueActionCount}
-            detail="Private bishopric, ward council, and missionary coordination assignments past due."
+            detail={t('leadershipDetail')}
             actions={[{ href: '/bishopric', label: 'Open leadership workspace' }]}
           />
         ) : null}
 
         {canAccessMeetings && featureFlags?.SCHEDULED_INTERVIEWS ? (
           <DashboardCard
-            title="Scheduled interviews"
+            title={t('scheduledInterviews')}
             value={scheduledInterviewCount}
-            detail="Operational interviews awaiting completion."
+            detail={t('scheduledInterviewDetail')}
             actions={[{ href: '/interviews', label: 'Open interview schedule' }]}
           />
         ) : null}
 
         {canAccessMeetings ? (
           <DashboardCard
-            title="LCR follow-up"
+            title={t('lcrFollowUp')}
             value={lcrFollowUpCount}
-            detail="Completed actions still needing LCR entry."
+            detail={t('lcrDetail')}
             actions={[{ href: '/membership-ordinances?followup=lcr&queue=needs_attention', label: 'Review LCR work' }]}
           />
         ) : null}
 
         {canAccessMeetings ? (
           <DashboardCard
-            title="Official-record handoff"
+            title={t('officialHandoff')}
             value={officialRecordHandoffCount}
-            detail="Record or form follow-up still needs completion in the official Church system."
+            detail={t('officialHandoffDetail')}
             actions={[{ href: '/membership-ordinances?followup=official-record&queue=needs_attention', label: 'Review handoffs' }]}
           />
         ) : null}
 
         {canAccessCallings ? (
           <DashboardCard
-            title="Set apart queue count"
+            title={t('setApartQueue')}
             value={setApartQueueCount}
-            detail="Sustained callings awaiting set apart action."
+            detail={t('setApartDetail')}
             actions={[{ href: '/callings', label: 'Open callings queue' }]}
           />
         ) : null}
 
         {canAccessCallings ? (
           <DashboardCard
-            title="Notification health"
+            title={t('notificationHealth')}
             value={notificationHealthValue}
             detail={notificationHealthDetail}
             actions={[{ href: '/notifications/diagnostics', label: 'Open diagnostics' }]}
@@ -353,7 +357,7 @@ export default async function DashboardPage() {
 
         {canAccessCallings ? (
           <DashboardCard
-            title="Last import summary"
+            title={t('lastImport')}
             value={importSummaryValue}
             detail={importSummaryDetail}
             actions={[
@@ -365,16 +369,16 @@ export default async function DashboardPage() {
 
         {canAccessTechnology && featureFlags?.TECHNOLOGY_CHECKLIST ? (
           <DashboardCard
-            title="Technology readiness"
+            title={t('technologyReadiness')}
             value={technologyChecklistCount}
-            detail="Upcoming meetings with incomplete room, audio, stream, accessibility, or recording checks."
+            detail={t('technologyDetail')}
             actions={[{ href: '/technology', label: 'Open technology checklist' }]}
           />
         ) : null}
 
         {canAccessPortal ? (
           <DashboardCard
-            title="Public portal status"
+            title={t('publicPortal')}
             value={portalStatusValue}
             detail={portalStatusDetail}
             actions={[{ href: '/settings/public-portal', label: 'Manage portal' }]}

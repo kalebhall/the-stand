@@ -1,5 +1,7 @@
 import './globals.css';
 
+import { NextIntlClientProvider } from 'next-intl';
+import { getLocale, getMessages } from 'next-intl/server';
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 
@@ -22,18 +24,22 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   await ensureSupportAdminBootstrap();
 
   const session = await auth();
+  const locale = await getLocale();
+  const messages = await getMessages();
   const shouldShowNavigation = Boolean(session?.user?.id) && !(session?.user.mustChangePassword && session.user.hasPassword);
 
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang={locale} suppressHydrationWarning>
       <body className="min-h-screen bg-background text-foreground antialiased">
-        <AuthSessionProvider session={session}>
-          <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-            <ConductingModeProvider>
-              {shouldShowNavigation ? <AppShell session={session}>{children}</AppShell> : children}
-            </ConductingModeProvider>
-          </ThemeProvider>
-        </AuthSessionProvider>
+        <NextIntlClientProvider locale={locale} messages={messages}>
+          <AuthSessionProvider session={session}>
+            <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+              <ConductingModeProvider>
+                {shouldShowNavigation ? <AppShell session={session}>{children}</AppShell> : children}
+              </ConductingModeProvider>
+            </ThemeProvider>
+          </AuthSessionProvider>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

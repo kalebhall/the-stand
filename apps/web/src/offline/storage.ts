@@ -59,6 +59,7 @@ export type OfflineInterviewSnapshot = {
 
 export type OfflineMutation = {
   id: string;
+  userId: string;
   meetingId: string;
   wardId: string;
   operation: 'CREATE_PRIVATE_NOTE' | 'UPDATE_PRIVATE_NOTE' | 'MARK_BUSINESS_ANNOUNCED';
@@ -68,6 +69,7 @@ export type OfflineMutation = {
     lineId?: string;
     target?: { type: 'MEETING' | 'PROGRAM_ITEM'; meetingId?: string; programItemId?: string };
     noteText: string;
+    previousNoteText?: string;
     baseRevision?: string;
   };
   createdAt: string;
@@ -89,6 +91,39 @@ const SNAPSHOT_STORE = 'stand-snapshots';
 const INTERVIEW_STORE = 'interview-snapshots';
 const MUTATION_STORE = 'stand-mutations';
 const CONTEXT_STORE = 'offline-context';
+const DELETION_MARKER_KEY = 'the-stand-offline-deletion-pending';
+let contextTransition: Promise<void> = Promise.resolve();
+let offlineWriteEpoch = 0;
+let offlineDeletionRequests = 0;
+
+function getDeletionMarker(): string | null {
+  if (typeof localStorage === 'undefined') return null;
+  try {
+    return localStorage.getItem(DELETION_MARKER_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function setDeletionMarker(value: string | null): void {
+  if (typeof localStorage === 'undefined') return;
+  try {
+    if (value) localStorage.setItem(DELETION_MARKER_KEY, value);
+    else localStorage.removeItem(DELETION_MARKER_KEY);
+  } catch {
+    // Same-realm barrier remains active when localStorage is unavailable.
+  }
+}
+
+function isPendingDeletionMarker(value: string | null): boolean {
+  return value?.startsWith('pending:') ?? false;
+}
+
+function serializeContextTransition<T>(operation: () => Promise<T>): Promise<T> {
+  const next = contextTransition.then(operation, operation);
+  contextTransition = next.then(() => undefined, () => undefined);
+  return next;
+}
 
 export function isOfflineContextMatch(context: OfflineContext | undefined, userId: string, wardId: string): boolean {
   return context?.userId === userId && context.wardId === wardId;
@@ -117,16 +152,38 @@ export function getOfflineSnapshotAge(savedAt: string, now = Date.now()): { ageM
   return { ageMs, isStale: ageMs >= OFFLINE_SNAPSHOT_STALE_AFTER_MS };
 }
 
-export function formatOfflineAge(savedAt: string, now = Date.now()): string {
-  if (!Number.isFinite(Date.parse(savedAt))) return 'unknown age';
+export type OfflineAgeLabels = {
+  unknownAge: string;
+  lessThanMinuteAgo: string;
+  minuteAgo: (count: number) => string;
+  minutesAgo: (count: number) => string;
+  hourAgo: (count: number) => string;
+  hoursAgo: (count: number) => string;
+  dayAgo: (count: number) => string;
+  daysAgo: (count: number) => string;
+};
+
+const ENGLISH_OFFLINE_AGE_LABELS: OfflineAgeLabels = {
+  unknownAge: 'unknown age',
+  lessThanMinuteAgo: 'less than a minute ago',
+  minuteAgo: (count) => `${count} minute ago`,
+  minutesAgo: (count) => `${count} minutes ago`,
+  hourAgo: (count) => `${count} hour ago`,
+  hoursAgo: (count) => `${count} hours ago`,
+  dayAgo: (count) => `${count} day ago`,
+  daysAgo: (count) => `${count} days ago`,
+};
+
+export function formatOfflineAge(savedAt: string, now = Date.now(), labels: OfflineAgeLabels = ENGLISH_OFFLINE_AGE_LABELS): string {
+  if (!Number.isFinite(Date.parse(savedAt))) return labels.unknownAge;
   const { ageMs } = getOfflineSnapshotAge(savedAt, now);
   const minutes = Math.floor(ageMs / 60_000);
-  if (minutes < 1) return 'less than a minute ago';
-  if (minutes < 60) return `${minutes} minute${minutes === 1 ? '' : 's'} ago`;
+  if (minutes < 1) return labels.lessThanMinuteAgo;
+  if (minutes < 60) return minutes === 1 ? labels.minuteAgo(minutes) : labels.minutesAgo(minutes);
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours} hour${hours === 1 ? '' : 's'} ago`;
+  if (hours < 24) return hours === 1 ? labels.hourAgo(hours) : labels.hoursAgo(hours);
   const days = Math.floor(hours / 24);
-  return `${days} day${days === 1 ? '' : 's'} ago`;
+  return days === 1 ? labels.dayAgo(days) : labels.daysAgo(days);
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -165,7 +222,7 @@ function snapshotKey(userId: string, wardId: string, meetingId: string): string 
   return `${userId}:${wardId}:${meetingId}`;
 }
 
-export async function clearOfflineData(): Promise<void> {
+async function clearOfflineDataInternal(): Promise<void> {
   const db = await openDatabase();
   try {
     await new Promise<void>((resolve, reject) => {
@@ -184,54 +241,143 @@ export async function clearOfflineData(): Promise<void> {
   if ('caches' in globalThis) await caches.delete(OFFLINE_CACHE_NAME);
 }
 
-export async function ensureOfflineContext(userId: string, wardId: string): Promise<void> {
-  const context = await storeRequest<OfflineContext | undefined>(CONTEXT_STORE, 'readonly', (store) => store.get('current'));
-  if (isOfflineContextMatch(context, userId, wardId)) return;
-
-  await clearOfflineData();
-  await storeRequest(CONTEXT_STORE, 'readwrite', (store) => store.put({ id: 'current', userId, wardId } satisfies OfflineContext));
+async function notifyServiceWorkerCacheClear(): Promise<void> {
+  if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
+  const message = { type: 'CLEAR_OFFLINE_CACHE' };
+  navigator.serviceWorker.controller?.postMessage(message);
+  try {
+    const registration = await navigator.serviceWorker.getRegistration();
+    registration?.active?.postMessage(message);
+  } catch {
+    // Cache deletion below remains authoritative when no active registration is available.
+  }
 }
 
-export async function saveOfflineSnapshot(snapshot: OfflineStandSnapshot): Promise<void> {
-  await storeRequest(SNAPSHOT_STORE, 'readwrite', (store) =>
-    store.put({ ...snapshot, cacheKey: snapshotKey(snapshot.userId, snapshot.wardId, snapshot.meeting.id) })
-  );
+export function clearOfflineData(): Promise<void> {
+  offlineWriteEpoch += 1;
+  offlineDeletionRequests += 1;
+  const deletionMarker = `${Date.now()}-${Math.random()}`;
+  setDeletionMarker(`pending:${deletionMarker}`);
+  return serializeContextTransition(async () => {
+    try {
+      await clearOfflineDataInternal();
+      await notifyServiceWorkerCacheClear();
+      if (typeof window !== 'undefined') window.dispatchEvent(new Event('offline-data-cleared'));
+    } finally {
+      offlineDeletionRequests = Math.max(0, offlineDeletionRequests - 1);
+      if (getDeletionMarker() === `pending:${deletionMarker}`) setDeletionMarker(`complete:${deletionMarker}`);
+    }
+  });
+}
+
+export function isOfflineDeletionPending(): boolean {
+  return offlineDeletionRequests > 0 || isPendingDeletionMarker(getDeletionMarker());
+}
+
+export function ensureOfflineContext(userId: string, wardId: string): Promise<void> {
+  return serializeContextTransition(async () => {
+    const context = await storeRequest<OfflineContext | undefined>(CONTEXT_STORE, 'readonly', (store) => store.get('current'));
+    if (isOfflineContextMatch(context, userId, wardId) && !isOfflineDeletionPending()) return;
+    offlineWriteEpoch += 1;
+    offlineDeletionRequests += 1;
+    const deletionMarker = `${Date.now()}-${Math.random()}`;
+    setDeletionMarker(`pending:${deletionMarker}`);
+    try {
+      await clearOfflineDataInternal();
+      await notifyServiceWorkerCacheClear();
+      await storeRequest(CONTEXT_STORE, 'readwrite', (store) => store.put({ id: 'current', userId, wardId } satisfies OfflineContext));
+    } finally {
+      offlineDeletionRequests = Math.max(0, offlineDeletionRequests - 1);
+      if (getDeletionMarker() === `pending:${deletionMarker}`) setDeletionMarker(`complete:${deletionMarker}`);
+    }
+  });
+}
+
+export function saveOfflineSnapshot(snapshot: OfflineStandSnapshot): Promise<void> {
+  const deletionMarker = getDeletionMarker();
+  if (offlineDeletionRequests > 0 || isPendingDeletionMarker(deletionMarker)) return Promise.resolve();
+  const writeEpoch = offlineWriteEpoch;
+  return serializeContextTransition(async () => {
+    if (writeEpoch !== offlineWriteEpoch || isPendingDeletionMarker(getDeletionMarker()) || getDeletionMarker() !== deletionMarker) return;
+    await storeRequest(SNAPSHOT_STORE, 'readwrite', (store) =>
+      store.put({ ...snapshot, cacheKey: snapshotKey(snapshot.userId, snapshot.wardId, snapshot.meeting.id) })
+    );
+  });
 }
 
 export async function loadOfflineSnapshot(userId: string, wardId: string, meetingId: string): Promise<OfflineStandSnapshot | null> {
-  return (
-    (await storeRequest<OfflineStandSnapshot | undefined>(SNAPSHOT_STORE, 'readonly', (store) =>
-      store.get(snapshotKey(userId, wardId, meetingId))
-    )) ?? null
-  );
+  if (isOfflineDeletionPending()) return null;
+  const snapshot = (await storeRequest<OfflineStandSnapshot | undefined>(SNAPSHOT_STORE, 'readonly', (store) =>
+    store.get(snapshotKey(userId, wardId, meetingId))
+  )) ?? null;
+  if (isOfflineDeletionPending()) return null;
+  if (snapshot && ['STAKE_CONFERENCE', 'GENERAL_CONFERENCE'].includes(snapshot.meeting.meetingType)) {
+    return { ...snapshot, businessLines: [], membershipActions: [] };
+  }
+  return snapshot;
 }
 
 export async function saveOfflineInterviewSnapshot(snapshot: OfflineInterviewSnapshot): Promise<void> {
-  await storeRequest(INTERVIEW_STORE, 'readwrite', (store) =>
-    store.put({ ...snapshot, cacheKey: `${snapshot.userId}:${snapshot.wardId}` })
-  );
+  const deletionMarker = getDeletionMarker();
+  if (offlineDeletionRequests > 0 || isPendingDeletionMarker(deletionMarker)) return;
+  const writeEpoch = offlineWriteEpoch;
+  await serializeContextTransition(async () => {
+    if (writeEpoch !== offlineWriteEpoch || isPendingDeletionMarker(getDeletionMarker()) || getDeletionMarker() !== deletionMarker) return;
+    await storeRequest(INTERVIEW_STORE, 'readwrite', (store) =>
+      store.put({ ...snapshot, cacheKey: `${snapshot.userId}:${snapshot.wardId}` })
+    );
+  });
 }
 
 export async function loadOfflineInterviewSnapshot(userId: string, wardId: string): Promise<OfflineInterviewSnapshot | null> {
-  return (
-    (await storeRequest<OfflineInterviewSnapshot | undefined>(INTERVIEW_STORE, 'readonly', (store) =>
-      store.get(`${userId}:${wardId}`)
-    )) ?? null
-  );
+  if (isOfflineDeletionPending()) return null;
+  const snapshot = (await storeRequest<OfflineInterviewSnapshot | undefined>(INTERVIEW_STORE, 'readonly', (store) =>
+    store.get(`${userId}:${wardId}`)
+  )) ?? null;
+  return isOfflineDeletionPending() ? null : snapshot;
 }
 
-export async function queueOfflineMutation(mutation: OfflineMutation): Promise<void> {
-  await storeRequest(MUTATION_STORE, 'readwrite', (store) => store.put(mutation));
+export function queueOfflineMutation(mutation: OfflineMutation): Promise<void> {
+  const deletionMarker = getDeletionMarker();
+  if (offlineDeletionRequests > 0 || isPendingDeletionMarker(deletionMarker)) return Promise.resolve();
+  const writeEpoch = offlineWriteEpoch;
+  return serializeContextTransition(async () => {
+    if (writeEpoch !== offlineWriteEpoch || isPendingDeletionMarker(getDeletionMarker()) || getDeletionMarker() !== deletionMarker) return;
+    await storeRequest(MUTATION_STORE, 'readwrite', (store) => store.put(mutation));
+  });
 }
 
 export async function listOfflineMutations(): Promise<OfflineMutation[]> {
   return (await storeRequest<OfflineMutation[]>(MUTATION_STORE, 'readonly', (store) => store.getAll())) ?? [];
 }
 
-export async function removeOfflineMutation(id: string): Promise<void> {
-  await storeRequest(MUTATION_STORE, 'readwrite', (store) => store.delete(id));
+export function cacheOfflinePage(meetingId: string, expectedEpoch = offlineWriteEpoch): Promise<void> {
+  const deletionMarker = getDeletionMarker();
+  if (offlineDeletionRequests > 0 || isPendingDeletionMarker(deletionMarker)) return Promise.resolve();
+  return serializeContextTransition(async () => {
+    if (offlineDeletionRequests > 0 || isPendingDeletionMarker(getDeletionMarker()) || getDeletionMarker() !== deletionMarker || expectedEpoch !== offlineWriteEpoch || !('caches' in globalThis)) return;
+    const cache = await caches.open(OFFLINE_CACHE_NAME);
+    if (expectedEpoch !== offlineWriteEpoch || isPendingDeletionMarker(getDeletionMarker()) || getDeletionMarker() !== deletionMarker) return;
+    await cache.add(`/stand/${meetingId}/offline`);
+    if (expectedEpoch !== offlineWriteEpoch || isPendingDeletionMarker(getDeletionMarker()) || getDeletionMarker() !== deletionMarker) {
+      await caches.delete(OFFLINE_CACHE_NAME);
+    }
+  });
 }
 
-export async function updateOfflineMutation(mutation: OfflineMutation): Promise<void> {
+export async function removeOfflineMutation(id: string, expectedEpoch = offlineWriteEpoch): Promise<void> {
+  const deletionMarker = getDeletionMarker();
+  await serializeContextTransition(async () => {
+    if (offlineDeletionRequests > 0 || isPendingDeletionMarker(getDeletionMarker()) || getDeletionMarker() !== deletionMarker || expectedEpoch !== offlineWriteEpoch) return;
+    await storeRequest(MUTATION_STORE, 'readwrite', (store) => store.delete(id));
+  });
+}
+
+export function getOfflineWriteEpoch(): number {
+  return offlineWriteEpoch;
+}
+
+export async function updateOfflineMutation(mutation: OfflineMutation, expectedEpoch = offlineWriteEpoch): Promise<void> {
+  if (offlineDeletionRequests > 0 || isPendingDeletionMarker(getDeletionMarker()) || expectedEpoch !== offlineWriteEpoch) return;
   await queueOfflineMutation(mutation);
 }

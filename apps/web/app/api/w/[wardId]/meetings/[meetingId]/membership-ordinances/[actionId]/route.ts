@@ -26,11 +26,13 @@ export async function PATCH(request: Request, context: { params: Promise<{ wardI
     await client.query('BEGIN');
     await setDbContext(client, { userId: session.user.id, wardId });
     const current = await client.query(
-      `SELECT status, interview_status, lcr_follow_up_status, record_form_needed, official_system_follow_up_status
-         FROM meeting_membership_ordinance
-        WHERE id = $1::uuid AND ward_id = $2::uuid
+      `SELECT a.status, a.interview_status, a.lcr_follow_up_status, a.record_form_needed, a.official_system_follow_up_status
+         FROM meeting_membership_ordinance a
+         JOIN meeting m ON m.id = a.meeting_id AND m.ward_id = a.ward_id
+        WHERE a.id = $1::uuid AND a.ward_id = $2::uuid AND a.meeting_id = $3::uuid
+          AND m.meeting_type NOT IN ('STAKE_CONFERENCE', 'GENERAL_CONFERENCE')
         FOR UPDATE`,
-      [actionId, wardId]
+      [actionId, wardId, meetingId]
     );
     if (!current.rowCount) {
       await client.query('ROLLBACK');
@@ -174,8 +176,13 @@ export async function DELETE(_request: Request, context: { params: Promise<{ war
     await client.query('BEGIN');
     await setDbContext(client, { userId: session.user.id, wardId });
     const result = await client.query(
-      'DELETE FROM meeting_membership_ordinance WHERE id = $1::uuid AND ward_id = $2::uuid RETURNING id, member_name, action_type, status, interview_status, lcr_follow_up_status, official_system_follow_up_status',
-      [actionId, wardId]
+      `DELETE FROM meeting_membership_ordinance a
+        USING meeting m
+        WHERE a.id = $1::uuid AND a.ward_id = $2::uuid AND a.meeting_id = $3::uuid
+          AND m.id = a.meeting_id AND m.ward_id = a.ward_id
+          AND m.meeting_type NOT IN ('STAKE_CONFERENCE', 'GENERAL_CONFERENCE')
+        RETURNING a.id, a.member_name, a.action_type, a.status, a.interview_status, a.lcr_follow_up_status, a.official_system_follow_up_status`,
+      [actionId, wardId, meetingId]
     );
     if (!result.rowCount) {
       await client.query('ROLLBACK');

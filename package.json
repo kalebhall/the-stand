@@ -14,6 +14,7 @@
     "test:e2e": "npm --workspace @the-stand/web run test:e2e",
     "docs:dependencies": "node scripts/dependency-graph.mjs",
     "docs:dependencies:check": "node scripts/dependency-graph.mjs --check",
+    "i18n:validate": "node scripts/i18n-validate.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },

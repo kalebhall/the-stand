@@ -31,5 +31,29 @@ describe('offline storage context isolation', () => {
     expect(formatOfflineAge('2026-09-05T12:00:00.000Z', now)).toBe('2 days ago');
     expect(getOfflineSnapshotAge('2026-09-07T13:00:00.000Z', now)).toEqual({ ageMs: 0, isStale: false });
     expect(formatOfflineAge('not-a-date', now)).toBe('unknown age');
+    expect(
+      formatOfflineAge('2026-09-07T11:59:30.000Z', now, {
+        unknownAge: 'edad desconocida',
+        lessThanMinuteAgo: 'hace menos de un minuto',
+        minuteAgo: (count) => `hace ${count} minuto`,
+        minutesAgo: (count) => `hace ${count} minutos`,
+        hourAgo: (count) => `hace ${count} hora`,
+        hoursAgo: (count) => `hace ${count} horas`,
+        dayAgo: (count) => `hace ${count} día`,
+        daysAgo: (count) => `hace ${count} días`,
+      }),
+    ).toBe('hace menos de un minuto');
+    expect(
+      formatOfflineAge('2026-09-07T09:00:00.000Z', now, {
+        unknownAge: 'edad desconocida',
+        lessThanMinuteAgo: 'hace menos de un minuto',
+        minuteAgo: (count) => `hace ${count} minuto`,
+        minutesAgo: (count) => `hace ${count} minutos`,
+        hourAgo: (count) => `hace ${count} hora`,
+        hoursAgo: (count) => `hace ${count} horas`,
+        dayAgo: (count) => `hace ${count} día`,
+        daysAgo: (count) => `hace ${count} días`,
+      }),
+    ).toBe('hace 3 horas');
   });
 });

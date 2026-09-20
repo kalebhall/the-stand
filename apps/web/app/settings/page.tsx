@@ -2,8 +2,11 @@ import Link from 'next/link';
 
 import { ChangePasswordForm } from '@/app/account/change-password/change-password-form';
 import { ThemeToggle } from '@/app/account/preferences/theme-toggle';
+import { LanguagePreference } from '@/app/settings/language-preference';
 import { NotificationTimezoneSetting } from '@/app/settings/notification-timezone';
 import { FeatureSettings } from '@/app/settings/feature-settings';
+import { getLocale } from 'next-intl/server';
+import { resolveLocale } from '@/src/i18n/config';
 import { requireAuthenticatedSession } from '@/src/auth/guards';
 import { canManageMeetings, canRunImports, hasRole } from '@/src/auth/roles';
 import { getWardFeatureFlags } from '@/src/features/flags';
@@ -11,6 +14,7 @@ import { getWardFeatureFlags } from '@/src/features/flags';
 export default async function SettingsPage() {
   const session = await requireAuthenticatedSession();
   const wardId = session.activeWardId;
+  const locale = resolveLocale(await getLocale());
   const isStandAdmin = hasRole(session.user.roles, 'STAND_ADMIN');
   const canManageNotifications =
     Boolean(wardId) &&
@@ -28,6 +32,11 @@ export default async function SettingsPage() {
         <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
         <p className="mt-2 text-muted-foreground">Manage your preferences, notifications, and ward settings.</p>
       </div>
+
+      <section className="space-y-4 rounded-lg border bg-card p-5">
+        <h2 className="border-b pb-2 text-xl font-medium">Language</h2>
+        <LanguagePreference currentLocale={locale} />
+      </section>
 
       <section className="space-y-4 rounded-lg border bg-card p-5">
         <h2 className="border-b pb-2 text-xl font-medium">Appearance</h2>

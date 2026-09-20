@@ -82,6 +82,10 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
       await client.query('ROLLBACK');
       return NextResponse.json({ error: 'Meeting not found.', code: 'NOT_FOUND' }, { status: 404 });
     }
+    if (['STAKE_CONFERENCE', 'GENERAL_CONFERENCE'].includes(meeting.rows[0].meeting_type)) {
+      await client.query('ROLLBACK');
+      return NextResponse.json({ error: 'Membership and ordinance actions are not available for conference meetings.', code: 'CONFERENCE_NOT_ALLOWED' }, { status: 422 });
+    }
     if (actionType.startsWith('PRIESTHOOD_') && !isWardSacramentPriesthoodActionAllowed(meeting.rows[0].meeting_type, priesthoodOffice as PriesthoodOffice | null)) {
       await client.query('ROLLBACK');
       return NextResponse.json({ error: 'Elder and high priest sustainings or setting-apart actions belong to stake leadership, not a ward sacrament meeting.', code: 'STAKE_SCOPE_REQUIRED' }, { status: 422 });
