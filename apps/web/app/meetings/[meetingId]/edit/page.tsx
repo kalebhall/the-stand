@@ -109,6 +109,8 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ me
             LIMIT 1
          ) latest_calling ON TRUE
         WHERE b.ward_id = $2::uuid
+          AND source_meeting.meeting_type NOT IN ('STAKE_CONFERENCE', 'GENERAL_CONFERENCE')
+          AND (SELECT meeting_type FROM meeting WHERE id = $1::uuid AND ward_id = $2::uuid) NOT IN ('STAKE_CONFERENCE', 'GENERAL_CONFERENCE')
           AND (b.action_type <> 'SUSTAIN' OR b.calling_assignment_id IS NULL OR latest_calling.action_status = 'EXTENDED')
           AND (b.meeting_id = $1::uuid OR (
             b.action_type = 'SUSTAIN'
@@ -128,6 +130,8 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ me
          FROM meeting_membership_ordinance a
          JOIN meeting m ON m.id = a.meeting_id AND m.ward_id = a.ward_id
         WHERE a.ward_id = $2::uuid
+          AND m.meeting_type NOT IN ('STAKE_CONFERENCE', 'GENERAL_CONFERENCE')
+          AND (SELECT meeting_type FROM meeting WHERE id = $1::uuid AND ward_id = $2::uuid) NOT IN ('STAKE_CONFERENCE', 'GENERAL_CONFERENCE')
           AND (a.meeting_id = $1::uuid OR (m.meeting_date <= $3::date AND a.status <> 'completed'))
         ORDER BY a.created_at ASC`,
       [meetingId, session.activeWardId, meetingResult.rows[0].meeting_date]

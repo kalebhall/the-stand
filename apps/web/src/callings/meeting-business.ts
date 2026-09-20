@@ -69,6 +69,7 @@ export async function queueCallingBusinessLine(
     // 3. No eligible upcoming meeting — create a DRAFT SACRAMENT meeting for the
     // next upcoming Sunday.  If today is Sunday we schedule 7 days out so we
     // don't attach to a meeting that may already be in progress.
+    await client.query('SELECT pg_advisory_xact_lock(hashtextextended($1::text, 0))', [`${wardId}:business-fallback`]);
     const nextSundayResult = await client.query(
       `SELECT (CURRENT_DATE + CASE
          WHEN EXTRACT(DOW FROM CURRENT_DATE)::int = 0 THEN 7
@@ -80,7 +81,7 @@ export async function queueCallingBusinessLine(
 
     // Check if any meeting already exists on that Sunday (concurrent insert guard).
     const existingResult = await client.query(
-      `SELECT id FROM meeting WHERE ward_id = $1::uuid AND meeting_date = $2::date ORDER BY created_at ASC LIMIT 1 FOR UPDATE`,
+      `SELECT id, meeting_type FROM meeting WHERE ward_id = $1::uuid AND meeting_date = $2::date ORDER BY (meeting_type IN ('STAKE_CONFERENCE', 'GENERAL_CONFERENCE')) ASC, created_at ASC LIMIT 1 FOR UPDATE`,
       [wardId, nextSunday]
     );
 
@@ -88,13 +89,20 @@ export async function queueCallingBusinessLine(
       const existing = existingResult.rows[0] as { id: string; meeting_type?: string };
       if (isConferenceMeetingType(existing.meeting_type ?? '')) {
         // The only existing meeting on that Sunday is a conference — advance one more week.
-        const nextNextSundayResult = await client.query(`SELECT ($1::date + 7)::text AS next_sunday`, [nextSunday]);
-        const nextNextSunday = (nextNextSundayResult.rows[0] as { next_sunday: string }).next_sunday;
+        const replacementDateResult = await client.query(
+          `SELECT day::text AS meeting_date
+             FROM generate_series($1::date, $1::date + 364, interval '7 days') AS days(day)
+            WHERE NOT EXISTS (SELECT 1 FROM meeting m WHERE m.ward_id = $2::uuid AND m.meeting_date = days.day::date)
+            ORDER BY day ASC
+            LIMIT 1`,
+          [nextSunday, wardId]
+        );
+        const replacementDate = (replacementDateResult.rows[0] as { meeting_date: string }).meeting_date;
         const insertedMeeting = await client.query(
           `INSERT INTO meeting (ward_id, meeting_date, meeting_type, status)
            VALUES ($1::uuid, $2::date, 'SACRAMENT', 'DRAFT')
            RETURNING id`,
-          [wardId, nextNextSunday]
+          [wardId, replacementDate]
         );
         meetingId = (insertedMeeting.rows[0] as { id: string }).id;
       } else {
@@ -176,6 +184,7 @@ export async function migrateBusinessLinesOffConference(
   if (!nextMeetingResult.rowCount) {
     // No eligible meeting after the conference — create one for the next Sunday
     // after the conference date.
+    await client.query('SELECT pg_advisory_xact_lock(hashtextextended($1::text, 0))', [`${wardId}:business-fallback`]);
     const nextSundayResult = await client.query(`SELECT ($1::date + (7 - EXTRACT(DOW FROM $1::date)::int) % 7 + 7)::text AS next_sunday`, [
       newMeetingDate
     ]);
@@ -186,7 +195,8 @@ export async function migrateBusinessLinesOffConference(
     const existingResult = await client.query(
       `SELECT id, meeting_type FROM meeting
         WHERE ward_id = $1::uuid AND meeting_date = $2::date
-        ORDER BY created_at ASC LIMIT 1 FOR UPDATE`,
+        ORDER BY (meeting_type IN ('STAKE_CONFERENCE', 'GENERAL_CONFERENCE')) ASC, created_at ASC
+        LIMIT 1 FOR UPDATE`,
       [wardId, nextSunday]
     );
 
@@ -194,13 +204,20 @@ export async function migrateBusinessLinesOffConference(
       const existing = existingResult.rows[0] as { id: string; meeting_type: string };
       if (isConferenceMeetingType(existing.meeting_type)) {
         // That Sunday is also a conference — go one more week.
-        const nextNextSundayResult = await client.query(`SELECT ($1::date + 7)::text AS next_sunday`, [nextSunday]);
-        const nextNextSunday = (nextNextSundayResult.rows[0] as { next_sunday: string }).next_sunday;
+        const replacementDateResult = await client.query(
+          `SELECT day::text AS meeting_date
+             FROM generate_series($1::date, $1::date + 364, interval '7 days') AS days(day)
+            WHERE NOT EXISTS (SELECT 1 FROM meeting m WHERE m.ward_id = $2::uuid AND m.meeting_date = days.day::date)
+            ORDER BY day ASC
+            LIMIT 1`,
+          [nextSunday, wardId]
+        );
+        const replacementDate = (replacementDateResult.rows[0] as { meeting_date: string }).meeting_date;
         const inserted = await client.query(
           `INSERT INTO meeting (ward_id, meeting_date, meeting_type, status)
            VALUES ($1::uuid, $2::date, 'SACRAMENT', 'DRAFT')
            RETURNING id`,
-          [wardId, nextNextSunday]
+          [wardId, replacementDate]
         );
         targetMeetingId = (inserted.rows[0] as { id: string }).id;
       } else {

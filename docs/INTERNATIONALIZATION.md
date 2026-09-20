@@ -84,10 +84,10 @@ Implemented in this slice:
 - Localized delete-meeting confirmation and state labels.
 - Localized MembershipOrdinanceSection controls, status labels, Church-source handoff labels, and Spanish component coverage.
 - Localized authenticated At-the-Stand display labels and sacrament headings through injected render labels, preserving authored names, topics, notes, templates, and official prayer text.
-- Added offline At-the-Stand shell translations for loading, saved-copy status, deletion, privacy disclosure, and core action labels.
+- Added offline At-the-Stand shell translations for loading, saved-copy status, deletion, privacy disclosure, core action labels, technology reference, private notes, business labels, and conflict controls.
 - Added locale-aware public portal empty-state rendering from the `NEXT_LOCALE` cookie, with Spanish regression coverage.
 - Localized published public-program snapshots at publish time using the authenticated user's persisted locale, preserving authored program content and official prayer text.
-- Expanded pseudo-locale coverage to 405 validated message keys.
+- Expanded pseudo-locale coverage to 457 validated message keys.
 
 Remaining in Phase 2:
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { buttonVariants } from '@/components/ui/button';
 import { MemberAutocomplete } from '@/components/ui/member-autocomplete';
 import { cn } from '@/lib/utils';
@@ -31,33 +31,41 @@ export function InterviewsClient({ wardId, userId, initial }: { wardId: string; 
   const [subscriptionActive, setSubscriptionActive] = useState(false);
   const [feedUrl, setFeedUrl] = useState<string | null>(null);
   const [subscriptionMessage, setSubscriptionMessage] = useState('');
+  const contextGeneration = useRef(0);
 
   const load = useCallback(async () => {
+    const generation = contextGeneration.current;
+    const isCurrent = () => contextGeneration.current === generation;
     setOnline(navigator.onLine);
     await ensureOfflineContext(userId, wardId);
+    if (!isCurrent()) return;
     if (navigator.onLine) {
       try {
         const response = await fetch(`/api/w/${wardId}/interviews`, { cache: 'no-store' });
         if (!response.ok) throw new Error('Unable to load interviews');
         const body = (await response.json()) as { interviews: Interview[] };
+        if (!isCurrent()) return;
         const subscriptionResponse = await fetch(`/api/w/${wardId}/interviews/calendar-subscription`, { cache: 'no-store' });
         if (subscriptionResponse.ok) {
           const subscriptionBody = (await subscriptionResponse.json()) as { subscription: { id: string } | null };
+          if (!isCurrent()) return;
           setSubscriptionActive(Boolean(subscriptionBody.subscription));
         }
         const next = sortInterviews(body.interviews);
         const snapshot = { userId, wardId, interviews: next, savedAt: new Date().toISOString() };
+        if (!isCurrent()) return;
         setItems(next);
         setSavedAt(snapshot.savedAt);
         setLoadedOffline(false);
         await saveOfflineInterviewSnapshot(snapshot);
         return;
       } catch {
-        setError('Live interview schedule unavailable. Showing saved copy.');
+        if (isCurrent()) setError('Live interview schedule unavailable. Showing saved copy.');
       }
     }
     const cached = await loadOfflineInterviewSnapshot(userId, wardId);
-    if (cached) {
+    if (!isCurrent()) return;
+    if (cached && cached.userId === userId && cached.wardId === wardId) {
       setItems(sortInterviews(cached.interviews));
       setSavedAt(cached.savedAt);
       setLoadedOffline(true);
@@ -67,21 +75,53 @@ export function InterviewsClient({ wardId, userId, initial }: { wardId: string; 
   }, [userId, wardId]);
 
   useEffect(() => {
+    contextGeneration.current += 1;
+    setItems([]);
+    setSavedAt(null);
+    setLoadedOffline(false);
+    setSubscriptionActive(false);
+    setFeedUrl(null);
+    setSubscriptionMessage('');
+    setError('');
+    const clear = () => {
+      contextGeneration.current += 1;
+      setItems([]);
+      setSavedAt(null);
+      setLoadedOffline(false);
+      setSubscriptionActive(false);
+      setFeedUrl(null);
+      setSubscriptionMessage('');
+      setError('');
+      setMember('');
+      setInterviewer('');
+      setWhen('');
+    };
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === 'the-stand-offline-deletion-pending') clear();
+    };
+    contextGeneration.current += 1;
     void load();
     const refresh = () => void load();
     window.addEventListener('online', refresh);
     window.addEventListener('offline', refresh);
+    window.addEventListener('offline-data-cleared', clear);
+    window.addEventListener('storage', onStorage);
     return () => {
       window.removeEventListener('online', refresh);
       window.removeEventListener('offline', refresh);
+      window.removeEventListener('offline-data-cleared', clear);
+      window.removeEventListener('storage', onStorage);
     };
   }, [load]);
 
   async function createSubscription() {
+    const generation = contextGeneration.current;
+    const isCurrent = () => contextGeneration.current === generation;
     if (!online) return;
     setSubscriptionMessage('');
     const response = await fetch(`/api/w/${wardId}/interviews/calendar-subscription`, { method: 'POST' });
     const body = await response.json();
+    if (!isCurrent()) return;
     if (!response.ok) {
       setSubscriptionMessage(body.error ?? 'Could not create calendar subscription');
       return;
@@ -92,13 +132,17 @@ export function InterviewsClient({ wardId, userId, initial }: { wardId: string; 
   }
 
   async function revokeSubscription() {
+    const generation = contextGeneration.current;
+    const isCurrent = () => contextGeneration.current === generation;
     if (!online) return;
     const response = await fetch(`/api/w/${wardId}/interviews/calendar-subscription`, { method: 'DELETE' });
     if (!response.ok) {
       const body = await response.json();
+      if (!isCurrent()) return;
       setSubscriptionMessage(body.error ?? 'Could not revoke calendar subscription');
       return;
     }
+    if (!isCurrent()) return;
     setSubscriptionActive(false);
     setFeedUrl(null);
     setSubscriptionMessage('Calendar subscription revoked.');
@@ -106,6 +150,8 @@ export function InterviewsClient({ wardId, userId, initial }: { wardId: string; 
 
   async function create(event: React.FormEvent) {
     event.preventDefault();
+    const generation = contextGeneration.current;
+    const isCurrent = () => contextGeneration.current === generation;
     if (!online) return;
 
     const missingFields = [
@@ -133,6 +179,7 @@ export function InterviewsClient({ wardId, userId, initial }: { wardId: string; 
       body: JSON.stringify({ interviewType: type, memberName: member, interviewerName: interviewer, scheduledAt: scheduledAt.toISOString() })
     });
     const body = await response.json();
+    if (!isCurrent()) return;
     if (!response.ok) {
       setError(body.error ?? 'Could not schedule interview');
       return;
@@ -145,9 +192,12 @@ export function InterviewsClient({ wardId, userId, initial }: { wardId: string; 
     const snapshot = { userId, wardId, interviews: next, savedAt: new Date().toISOString() };
     setSavedAt(snapshot.savedAt);
     await saveOfflineInterviewSnapshot(snapshot);
+    if (!isCurrent()) return;
   }
 
   async function update(item: Interview, status: string) {
+    const generation = contextGeneration.current;
+    const isCurrent = () => contextGeneration.current === generation;
     if (!online) return;
     const response = await fetch(`/api/w/${wardId}/interviews/${item.id}`, {
       method: 'PATCH',
@@ -155,6 +205,7 @@ export function InterviewsClient({ wardId, userId, initial }: { wardId: string; 
       body: JSON.stringify({ status })
     });
     const body = await response.json();
+    if (!isCurrent()) return;
     if (!response.ok) {
       setError(body.error ?? 'Could not update interview');
       return;

@@ -259,7 +259,7 @@ flowchart LR
 | `web:notifications` | `pg` | 13 |
 | `web:api` | `zod` | 9 |
 | `web:app` | `@testing-library/react` | 9 |
-| `web:ui` | `next-intl` | 8 |
+| `web:ui` | `next-intl` | 9 |
 | `web:imports` | `vitest` | 7 |
 | `web:meetings` | `vitest` | 7 |
 | `web:auth` | `next-auth` | 6 |
@@ -580,7 +580,7 @@ flowchart LR
 | `apps/web/components/lcr-extractor-instructions.tsx` | `web:ui` | 2 | 1 |
 | `apps/web/components/notification-bell.tsx` | `web:ui` | 0 | 2 |
 | `apps/web/components/notification-bell.vitest.tsx` | `web:ui` | 1 | 3 |
-| `apps/web/components/offline-stand-button.tsx` | `web:ui` | 2 | 2 |
+| `apps/web/components/offline-stand-button.tsx` | `web:ui` | 2 | 3 |
 | `apps/web/components/public-portal/PublicLinkQrCard.tsx` | `web:ui` | 2 | 1 |
 | `apps/web/components/reports/report-view.tsx` | `web:ui` | 2 | 3 |
 | `apps/web/components/site-logo.tsx` | `web:ui` | 0 | 2 |

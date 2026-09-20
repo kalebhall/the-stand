@@ -32,9 +32,19 @@ export async function PATCH(_request: Request, context: RouteContext) {
     const result = await client.query(
       `UPDATE meeting_business_line
           SET status = 'announced', updated_at = now()
-        WHERE id = $1::uuid AND ward_id = $2::uuid AND status IN ('pending', 'announced')
+        WHERE id = $1::uuid AND ward_id = $2::uuid
+          AND status IN ('pending', 'announced')
+          AND EXISTS (SELECT 1 FROM meeting route_meeting WHERE route_meeting.id = $3::uuid AND route_meeting.ward_id = $2::uuid AND route_meeting.meeting_type NOT IN ('STAKE_CONFERENCE', 'GENERAL_CONFERENCE'))
+          AND (meeting_id = $3::uuid OR (action_type = 'SUSTAIN' AND calling_assignment_id IS NOT NULL AND EXISTS (
+            SELECT 1 FROM meeting source_meeting
+             WHERE source_meeting.id = meeting_business_line.meeting_id
+               AND source_meeting.ward_id = $2::uuid
+               AND source_meeting.meeting_type NOT IN ('STAKE_CONFERENCE', 'GENERAL_CONFERENCE')
+               AND source_meeting.meeting_date <= (SELECT meeting_date FROM meeting WHERE id = $3::uuid AND ward_id = $2::uuid)
+               AND (SELECT ca.action_status FROM calling_action ca WHERE ca.calling_assignment_id = meeting_business_line.calling_assignment_id AND ca.ward_id = $2::uuid ORDER BY ca.created_at DESC LIMIT 1) = 'EXTENDED'
+          )))
         RETURNING id`,
-      [lineId, wardId]
+      [lineId, wardId, meetingId]
     );
 
     if (!result.rowCount) {
@@ -86,8 +96,17 @@ export async function DELETE(_request: Request, context: RouteContext) {
     const result = await client.query(
       `DELETE FROM meeting_business_line
         WHERE id = $1::uuid AND ward_id = $2::uuid
+          AND EXISTS (SELECT 1 FROM meeting route_meeting WHERE route_meeting.id = $3::uuid AND route_meeting.ward_id = $2::uuid AND route_meeting.meeting_type NOT IN ('STAKE_CONFERENCE', 'GENERAL_CONFERENCE'))
+          AND (meeting_id = $3::uuid OR (action_type = 'SUSTAIN' AND calling_assignment_id IS NOT NULL AND EXISTS (
+            SELECT 1 FROM meeting source_meeting
+             WHERE source_meeting.id = meeting_business_line.meeting_id
+               AND source_meeting.ward_id = $2::uuid
+               AND source_meeting.meeting_type NOT IN ('STAKE_CONFERENCE', 'GENERAL_CONFERENCE')
+               AND source_meeting.meeting_date <= (SELECT meeting_date FROM meeting WHERE id = $3::uuid AND ward_id = $2::uuid)
+               AND (SELECT ca.action_status FROM calling_action ca WHERE ca.calling_assignment_id = meeting_business_line.calling_assignment_id AND ca.ward_id = $2::uuid ORDER BY ca.created_at DESC LIMIT 1) = 'EXTENDED'
+          )))
         RETURNING id`,
-      [lineId, wardId]
+      [lineId, wardId, meetingId]
     );
 
     if (!result.rowCount) {

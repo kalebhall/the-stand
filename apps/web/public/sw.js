@@ -1,4 +1,6 @@
 const CACHE_NAME = 'the-stand-offline-v2';
+let cacheGeneration = 0;
+let cacheWrites = Promise.resolve();
 
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (event) =>
@@ -9,6 +11,16 @@ self.addEventListener('activate', (event) =>
       .then(() => self.clients.claim())
   )
 );
+
+self.addEventListener('message', (event) => {
+  if (event.data?.type !== 'CLEAR_OFFLINE_CACHE') return;
+  cacheGeneration += 1;
+  event.waitUntil(
+    cacheWrites
+      .catch(() => undefined)
+      .then(() => caches.delete(CACHE_NAME))
+  );
+});
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
@@ -29,14 +41,19 @@ self.addEventListener('fetch', (event) => {
       url.pathname === '/sw.js' ||
       (url.pathname.startsWith('/stand/') && url.pathname.endsWith('/offline')));
   if (!cacheable) return;
+  const requestGeneration = cacheGeneration;
   event.respondWith(
     fetch(event.request)
       .then((response) => {
         const copy = response.clone();
-        caches
-          .open(CACHE_NAME)
-          .then((cache) => cache.put(event.request, copy))
-          .catch(() => undefined);
+        const write = cacheWrites.then(async () => {
+          if (requestGeneration !== cacheGeneration) return;
+          const cache = await caches.open(CACHE_NAME);
+          await cache.put(event.request, copy);
+          if (requestGeneration !== cacheGeneration) await caches.delete(CACHE_NAME);
+        });
+        cacheWrites = write.catch(() => undefined);
+        event.waitUntil(cacheWrites);
         return response;
       })
       .catch(() => caches.match(event.request).then((cached) => cached ?? new Response('Offline copy unavailable.', { status: 503 })))

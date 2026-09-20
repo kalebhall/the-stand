@@ -13,6 +13,8 @@ const targetSchema = z.discriminatedUnion('type', [
 ]);
 const mutationSchema = z.object({
   id: z.string().uuid(),
+  userId: z.string().uuid(),
+  wardId: z.string().uuid(),
   operation: z.enum(['CREATE_PRIVATE_NOTE', 'UPDATE_PRIVATE_NOTE', 'MARK_BUSINESS_ANNOUNCED']),
   payload: z.object({
     target: targetSchema.optional(),
@@ -51,7 +53,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
   try {
     await client.query('BEGIN');
     await setDbContext(client, { userId: session.user.id, wardId });
-    const meetingCheck = await client.query('SELECT id FROM meeting WHERE id = $1::uuid AND ward_id = $2::uuid LIMIT 1', [
+    const meetingCheck = await client.query('SELECT id, meeting_date, meeting_type FROM meeting WHERE id = $1::uuid AND ward_id = $2::uuid LIMIT 1', [
       meetingId,
       wardId
     ]);
@@ -61,22 +63,63 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     }
     const results: StoredResponse[] = [];
     for (const mutation of parsed.data.mutations) {
-      const existing = await client.query(
-        'SELECT response FROM offline_mutation WHERE mutation_id = $1::uuid AND ward_id = $2::uuid AND user_id = $3::uuid LIMIT 1',
+      if (mutation.userId !== session.user.id || mutation.wardId !== wardId) {
+        results.push({ mutationId: mutation.id, status: 'rejected', error: 'Mutation context mismatch' });
+        continue;
+      }
+      await client.query(
+        'SELECT pg_advisory_xact_lock(hashtextextended($1::text, 0))',
+        [mutation.id]
+      );
+      const ledger = await client.query(
+        'SELECT meeting_id, operation, request_payload, response FROM offline_mutation WHERE mutation_id = $1::uuid AND ward_id = $2::uuid AND user_id = $3::uuid LIMIT 1',
         [mutation.id, wardId, session.user.id]
       );
-      if (existing.rowCount) {
-        const stored = existing.rows[0].response as StoredResponse;
+      if (ledger.rowCount) {
+        const storedRow = ledger.rows[0] as { meeting_id: string | null; operation: string; request_payload: unknown; response: StoredResponse };
+        const storedRequest = storedRow.request_payload;
+        const hasRequestIdentity = storedRequest && typeof storedRequest === 'object' && Object.keys(storedRequest).length > 0;
+        if (storedRow.meeting_id !== meetingId || storedRow.operation !== mutation.operation || (hasRequestIdentity && JSON.stringify(storedRequest) !== JSON.stringify(mutation.payload))) {
+          results.push({ mutationId: mutation.id, status: 'rejected', error: 'Mutation ID collision' });
+          continue;
+        }
+        const stored = storedRow.response;
+        results.push({ ...stored, status: stored.status === 'applied' ? 'duplicate' : stored.status });
+        continue;
+      }
+      const reservation = await client.query(
+        'INSERT INTO offline_mutation (mutation_id, ward_id, user_id, meeting_id, operation, request_payload, status, response) VALUES ($1::uuid, $2::uuid, $3::uuid, $4::uuid, $5::text, $6::jsonb, $7::text, $8::jsonb) ON CONFLICT (mutation_id) DO NOTHING RETURNING mutation_id',
+        [mutation.id, wardId, session.user.id, meetingId, mutation.operation, JSON.stringify(mutation.payload), 'REJECTED', JSON.stringify({ mutationId: mutation.id, status: 'rejected', error: 'Processing' })]
+      );
+      if (!reservation.rowCount) {
+        const duplicate = await client.query(
+          'SELECT ward_id, user_id, meeting_id, operation, request_payload, response FROM offline_mutation WHERE mutation_id = $1::uuid LIMIT 1',
+          [mutation.id]
+        );
+        if (!duplicate.rowCount || duplicate.rows[0].ward_id !== wardId || duplicate.rows[0].user_id !== session.user.id || duplicate.rows[0].meeting_id !== meetingId) {
+          results.push({ mutationId: mutation.id, status: 'rejected', error: 'Mutation ID collision' });
+          continue;
+        }
+        const duplicateRequest = duplicate.rows[0].request_payload;
+        const hasRequestIdentity = duplicateRequest && typeof duplicateRequest === 'object' && Object.keys(duplicateRequest).length > 0;
+        if (
+          duplicate.rows[0].operation !== mutation.operation ||
+          (hasRequestIdentity && JSON.stringify(duplicateRequest) !== JSON.stringify(mutation.payload))
+        ) {
+          results.push({ mutationId: mutation.id, status: 'rejected', error: 'Mutation ID collision' });
+          continue;
+        }
+        const stored = duplicate.rows[0].response as StoredResponse;
         results.push({ ...stored, status: stored.status === 'applied' ? 'duplicate' : stored.status });
         continue;
       }
       let result: StoredResponse;
       if (mutation.operation === 'MARK_BUSINESS_ANNOUNCED' && mutation.payload.lineId) {
-        if (!canManage) result = { mutationId: mutation.id, status: 'rejected', error: 'Forbidden' };
+        if (!canManage || ['STAKE_CONFERENCE', 'GENERAL_CONFERENCE'].includes(meetingCheck.rows[0].meeting_type)) result = { mutationId: mutation.id, status: 'rejected', error: 'Forbidden' };
         else {
           const updated = await client.query(
-            "UPDATE meeting_business_line SET status = 'announced', updated_at = now() WHERE id = $1::uuid AND meeting_id = $2::uuid AND ward_id = $3::uuid AND status = 'pending' AND updated_at = $4::timestamptz RETURNING id, updated_at",
-            [mutation.payload.lineId, meetingId, wardId, mutation.payload.baseRevision]
+            "UPDATE meeting_business_line b SET status = 'announced', updated_at = now() WHERE b.id = $1::uuid AND b.ward_id = $2::uuid AND b.status = 'pending' AND b.updated_at = $5::timestamptz AND (b.meeting_id = $3::uuid OR (b.action_type = 'SUSTAIN' AND b.calling_assignment_id IS NOT NULL AND EXISTS (SELECT 1 FROM meeting sm WHERE sm.id = b.meeting_id AND sm.ward_id = b.ward_id AND sm.meeting_date <= $4::date AND sm.meeting_type NOT IN ('STAKE_CONFERENCE', 'GENERAL_CONFERENCE') AND NOT EXISTS (SELECT 1 FROM meeting route_meeting WHERE route_meeting.id = $3::uuid AND route_meeting.meeting_type IN ('STAKE_CONFERENCE', 'GENERAL_CONFERENCE')) AND (SELECT ca.action_status FROM calling_action ca WHERE ca.calling_assignment_id = b.calling_assignment_id AND ca.ward_id = b.ward_id ORDER BY ca.created_at DESC LIMIT 1) = 'EXTENDED')) RETURNING b.id, b.updated_at",
+            [mutation.payload.lineId, wardId, meetingId, meetingCheck.rows[0].meeting_date, mutation.payload.baseRevision]
           );
           if (updated.rowCount) {
             await recordAuditEvent(client, {
@@ -97,8 +140,8 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
             };
           } else {
             const exists = await client.query(
-              'SELECT id, status, updated_at FROM meeting_business_line WHERE id = $1::uuid AND meeting_id = $2::uuid AND ward_id = $3::uuid LIMIT 1',
-              [mutation.payload.lineId, meetingId, wardId]
+              `SELECT b.id, b.status, b.updated_at FROM meeting_business_line b WHERE b.id = $1::uuid AND b.ward_id = $2::uuid AND (b.meeting_id = $3::uuid OR (b.action_type = 'SUSTAIN' AND b.calling_assignment_id IS NOT NULL AND EXISTS (SELECT 1 FROM meeting sm WHERE sm.id = b.meeting_id AND sm.ward_id = b.ward_id AND sm.meeting_date <= $4::date AND sm.meeting_type NOT IN ('STAKE_CONFERENCE', 'GENERAL_CONFERENCE') AND NOT EXISTS (SELECT 1 FROM meeting route_meeting WHERE route_meeting.id = $3::uuid AND route_meeting.meeting_type IN ('STAKE_CONFERENCE', 'GENERAL_CONFERENCE')) AND (SELECT ca.action_status FROM calling_action ca WHERE ca.calling_assignment_id = b.calling_assignment_id AND ca.ward_id = b.ward_id ORDER BY ca.created_at DESC LIMIT 1) = 'EXTENDED')) LIMIT 1`,
+              [mutation.payload.lineId, wardId, meetingId, meetingCheck.rows[0].meeting_date]
             );
             result = exists.rowCount
               ? {
@@ -121,7 +164,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
           const targetId = target.type === 'MEETING' ? target.meetingId : target.programItemId;
           const targetCheck =
             target.type === 'MEETING'
-              ? await client.query('SELECT id FROM meeting WHERE id = $1::uuid AND ward_id = $2::uuid LIMIT 1', [targetId, wardId])
+              ? await client.query('SELECT id FROM meeting WHERE id = $1::uuid AND ward_id = $2::uuid AND id = $3::uuid LIMIT 1', [targetId, wardId, meetingId])
               : await client.query(
                   'SELECT id FROM meeting_program_item WHERE id = $1::uuid AND ward_id = $2::uuid AND meeting_id = $3::uuid LIMIT 1',
                   [targetId, wardId, meetingId]
@@ -153,6 +196,20 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
       } else if (mutation.operation === 'UPDATE_PRIVATE_NOTE' && mutation.payload.noteId) {
         if (!canUseNotes) result = { mutationId: mutation.id, status: 'rejected', error: 'Forbidden' };
         else {
+          const noteScope = await client.query(
+            `SELECT n.id
+               FROM internal_note n
+               LEFT JOIN meeting_program_item pi ON pi.id = n.program_item_id AND pi.ward_id = n.ward_id
+              WHERE n.id = $1::uuid
+                AND n.ward_id = $2::uuid
+                AND n.created_by_user_id = $3::uuid
+                AND n.visibility = 'PRIVATE'
+                AND (n.meeting_id = $4::uuid OR pi.meeting_id = $4::uuid)
+              LIMIT 1`,
+            [mutation.payload.noteId, wardId, session.user.id, meetingId]
+          );
+          if (!noteScope.rowCount) result = { mutationId: mutation.id, status: 'rejected', error: 'Private note not found' };
+          else {
           const updated = await client.query(
             "UPDATE internal_note SET note_text = $1::text, updated_at = now() WHERE id = $2::uuid AND ward_id = $3::uuid AND created_by_user_id = $4::uuid AND visibility = 'PRIVATE' AND updated_at = $5::timestamptz RETURNING id, updated_at",
             [mutation.payload.noteText, mutation.payload.noteId, wardId, session.user.id, mutation.payload.baseRevision]
@@ -181,17 +238,11 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
               : { mutationId: mutation.id, status: 'rejected', error: 'Private note not found' };
           }
         }
+        }
       } else result = { mutationId: mutation.id, status: 'rejected', error: 'Invalid offline mutation' };
       await client.query(
-        'INSERT INTO offline_mutation (mutation_id, ward_id, user_id, operation, status, response) VALUES ($1::uuid, $2::uuid, $3::uuid, $4::text, $5::text, $6::jsonb)',
-        [
-          mutation.id,
-          wardId,
-          session.user.id,
-          mutation.operation,
-          result.status === 'applied' ? 'APPLIED' : result.status === 'conflict' ? 'CONFLICT' : 'REJECTED',
-          JSON.stringify(result)
-        ]
+        'UPDATE offline_mutation SET status = $2::text, response = $3::jsonb WHERE mutation_id = $1::uuid AND ward_id = $4::uuid AND user_id = $5::uuid',
+        [mutation.id, result.status === 'applied' ? 'APPLIED' : result.status === 'conflict' ? 'CONFLICT' : 'REJECTED', JSON.stringify(result), wardId, session.user.id]
       );
       results.push(result);
     }
