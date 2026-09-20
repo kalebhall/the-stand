@@ -11,12 +11,32 @@ const features = [
     body: 'Prepare sacrament meetings, then use a tablet-friendly stand view during the meeting.'
   },
   {
-    title: 'Published snapshots',
-    body: 'Share public-safe program snapshots without exposing internal ward-only data.'
+    title: 'Automatic offline access',
+    body: 'Keep the latest authorized meeting and private notes available when connectivity is unreliable, then sync changes when you reconnect.'
   },
   {
-    title: 'Clerk workflow support',
-    body: 'Track sustainings and set-aparts, then follow up with clear LCR reminder steps.'
+    title: 'Ward and stake business',
+    body: 'Track sustainings, releases, membership and ordinance follow-up, interviews, and official-system handoffs.'
+  },
+  {
+    title: 'Leadership workspaces',
+    body: 'Coordinate bishopric, Ward Council, missionary, interview, and technology workflows in private ward-scoped workspaces.'
+  },
+  {
+    title: 'Published snapshots and portals',
+    body: 'Share public-safe program snapshots through public meeting links and ward portals without exposing internal data.'
+  },
+  {
+    title: 'Notifications and reminders',
+    body: 'Monitor operational follow-up and receive in-app or email notifications for subscribed events.'
+  },
+  {
+    title: 'Imports and reports',
+    body: 'Preview and import membership, calling, and historical program data, then review useful ward reports.'
+  },
+  {
+    title: 'Privacy and accountability',
+    body: 'Use ward isolation, audit history, role-aware access, and clear boundaries around official Church systems.'
   }
 ];
 
@@ -37,6 +57,9 @@ export default async function Home() {
           <Link className={cn(buttonVariants({ variant: 'outline' }))} href="/request-access">
             Request Access
           </Link>
+          <Link className={cn(buttonVariants({ variant: 'outline' }))} href="/manual">
+            Read the User Manual
+          </Link>
         </div>
       </section>
 
@@ -56,6 +79,28 @@ export default async function Home() {
           <li>The Stand does not write to LCR or Church systems.</li>
           <li>Public routes show published snapshot content only.</li>
         </ul>
+      </section>
+
+      <section className="flex flex-wrap items-center justify-between gap-4 rounded-lg border bg-card p-6 text-card-foreground">
+        <div>
+          <h2 className="text-xl font-semibold">Learn more or contribute</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Read the manual for workflow guidance or review the source and report issues on GitHub.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-3">
+          <Link className={cn(buttonVariants({ variant: 'outline' }))} href="/manual">
+            User manual
+          </Link>
+          <a
+            className={cn(buttonVariants({ variant: 'outline' }))}
+            href="https://github.com/kalebhall/the-stand"
+            target="_blank"
+            rel="noreferrer"
+          >
+            GitHub repository
+          </a>
+        </div>
       </section>
     </main>
   );

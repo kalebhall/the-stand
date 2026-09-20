@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { useSession } from 'next-auth/react';
 import type { StandRow } from '@/src/stand/render';
@@ -160,7 +161,7 @@ export default function OfflineStandPage({ meetingId }: { meetingId: string }) {
     hourAgo: (count) => t('hourAgo', { count }),
     hoursAgo: (count) => t('hoursAgo', { count }),
     dayAgo: (count) => t('dayAgo', { count }),
-    daysAgo: (count) => t('daysAgo', { count }),
+    daysAgo: (count) => t('daysAgo', { count })
   };
   const { data: session } = useSession();
   const userId = session?.user?.id;
@@ -703,11 +704,16 @@ export default function OfflineStandPage({ meetingId }: { meetingId: string }) {
               {snapshot.meeting.meetingDate} · {snapshot.meeting.meetingType}
             </p>
           </div>
-          <span className="rounded-full border px-3 py-1 text-sm">{navigator.onLine ? t('online') : t('offline')}</span>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link href="/manual#offline" className="text-sm font-medium underline underline-offset-4">
+              Offline help
+            </Link>
+            <span className="rounded-full border px-3 py-1 text-sm">{navigator.onLine ? t('online') : t('offline')}</span>
+          </div>
         </div>
         <p className="mt-2 text-xs text-muted-foreground" aria-live="polite">
-          {t('savedAt', { date: new Date(snapshot.savedAt).toLocaleString() })} ({formatOfflineAge(snapshot.savedAt, Date.now(), offlineAgeLabels)}) · {pending}{' '}
-          {t(pending === 1 ? 'change' : 'changes')}
+          {t('savedAt', { date: new Date(snapshot.savedAt).toLocaleString() })} (
+          {formatOfflineAge(snapshot.savedAt, Date.now(), offlineAgeLabels)}) · {pending} {t(pending === 1 ? 'change' : 'changes')}
           {syncing ? ` · ${t('syncing')}` : ''}
         </p>
         <p
@@ -871,7 +877,8 @@ export default function OfflineStandPage({ meetingId }: { meetingId: string }) {
                     {action.actionType === 'BAPTISM_CONFIRMATION_FOLLOW_UP' ? (
                       <p className="text-muted-foreground">
                         {t('baptism')}: {membershipDetailStatusLabel(action.baptismStatus ?? 'planned', t)}
-                        {action.baptismDate ? ` (${action.baptismDate})` : ''} · {t('confirmation')}: {membershipDetailStatusLabel(action.confirmationStatus ?? 'planned', t)}
+                        {action.baptismDate ? ` (${action.baptismDate})` : ''} · {t('confirmation')}:{' '}
+                        {membershipDetailStatusLabel(action.confirmationStatus ?? 'planned', t)}
                         {action.confirmationDate ? ` (${action.confirmationDate})` : ''}
                       </p>
                     ) : null}
