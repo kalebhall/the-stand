@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { NextIntlClientProvider } from 'next-intl';
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import messages from '../../../../messages/en-US.json';
@@ -28,7 +28,11 @@ vi.mock('@/src/offline/storage', () => offline);
 import OfflineStandPage from './offline-stand-page';
 
 describe('OfflineStandPage', () => {
-  afterEach(() => cleanup());
+  afterEach(() => {
+    cleanup();
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -89,5 +93,127 @@ describe('OfflineStandPage', () => {
     expect(screen.getByText('Baby blessing').closest('li')).not.toHaveTextContent('Mark announced');
     expect(screen.getByText(/Sister Jane Smith/)).toBeVisible();
     expect(screen.getByRole('button', { name: 'Mark announced' })).toBeVisible();
+  });
+
+  it('rolls back a rejected business announcement and shows the localized sync error', async () => {
+    const mutationId = 'mutation-rejected';
+    let queuedMutation: unknown;
+    const snapshot = {
+      userId: 'user-1',
+      wardId: 'ward-1',
+      meeting: { id: 'meeting-1', meetingDate: '2026-09-20', meetingType: 'SACRAMENT' },
+      standRows: [],
+      businessLines: [
+        {
+          id: 'line-1',
+          memberName: 'Sister Jane Smith',
+          callingName: 'Relief Society President',
+          actionType: 'SUSTAIN',
+          status: 'pending',
+          updatedAt: 'revision-1'
+        }
+      ],
+      membershipActions: [],
+      notes: [],
+      progress: {},
+      savedAt: '2026-09-20T10:00:00.000Z'
+    };
+    offline.loadOfflineSnapshot.mockResolvedValue(snapshot as never);
+    offline.listOfflineMutations.mockImplementation(async () => (queuedMutation ? [queuedMutation] : []) as never);
+    offline.queueOfflineMutation.mockImplementation(((mutation: unknown) => {
+      queuedMutation = mutation;
+    }) as never);
+    vi.spyOn(crypto, 'randomUUID').mockReturnValue(mutationId);
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({
+        ok: true,
+        json: async () => ({ results: [{ mutationId, status: 'rejected', error: 'FORBIDDEN' }] })
+      }))
+    );
+
+    Object.defineProperty(navigator, 'onLine', { configurable: true, value: false });
+    renderPage();
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Mark announced' })).toBeVisible());
+    fireEvent.click(screen.getByRole('button', { name: 'Mark announced' }));
+    await waitFor(() => expect(offline.queueOfflineMutation).toHaveBeenCalled());
+    Object.defineProperty(navigator, 'onLine', { configurable: true, value: true });
+    window.dispatchEvent(new Event('online'));
+
+    await waitFor(() => expect(screen.getByText('Unable to sync offline changes.')).toBeVisible());
+    expect(screen.getByRole('button', { name: 'Mark announced' })).toBeVisible();
+    expect(offline.updateOfflineMutation).toHaveBeenCalledWith(expect.objectContaining({ status: 'failed', error: 'FORBIDDEN' }), 1);
+    expect(offline.saveOfflineSnapshot).toHaveBeenCalledWith(
+      expect.objectContaining({ businessLines: [expect.objectContaining({ id: 'line-1', status: 'pending' })] })
+    );
+  });
+
+  it('renders the conflict dialog for a revision-conflicted business announcement', async () => {
+    const mutationId = 'mutation-conflict';
+    let queuedMutation: unknown;
+    const snapshot = {
+      userId: 'user-1',
+      wardId: 'ward-1',
+      meeting: { id: 'meeting-1', meetingDate: '2026-09-20', meetingType: 'SACRAMENT' },
+      standRows: [],
+      businessLines: [
+        {
+          id: 'line-1',
+          memberName: 'Sister Jane Smith',
+          callingName: 'Relief Society President',
+          actionType: 'SUSTAIN',
+          status: 'pending',
+          updatedAt: 'revision-1'
+        }
+      ],
+      membershipActions: [],
+      notes: [],
+      progress: {},
+      savedAt: '2026-09-20T10:00:00.000Z'
+    };
+    offline.loadOfflineSnapshot.mockResolvedValue(snapshot as never);
+    offline.listOfflineMutations.mockImplementation(async () => (queuedMutation ? [queuedMutation] : []) as never);
+    offline.queueOfflineMutation.mockImplementation(((mutation: unknown) => {
+      queuedMutation = mutation;
+    }) as never);
+    vi.spyOn(crypto, 'randomUUID').mockReturnValue(mutationId);
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({
+        ok: true,
+        json: async () => ({
+          results: [
+            {
+              mutationId,
+              status: 'conflict',
+              error: 'REVISION_CONFLICT',
+              lineId: 'line-1',
+              serverStatus: 'announced',
+              serverRevision: 'revision-2'
+            }
+          ]
+        })
+      }))
+    );
+
+    Object.defineProperty(navigator, 'onLine', { configurable: true, value: false });
+    renderPage();
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Mark announced' })).toBeVisible());
+    fireEvent.click(screen.getByRole('button', { name: 'Mark announced' }));
+    await waitFor(() => expect(offline.queueOfflineMutation).toHaveBeenCalled());
+    Object.defineProperty(navigator, 'onLine', { configurable: true, value: true });
+    window.dispatchEvent(new Event('online'));
+
+    await waitFor(() => expect(screen.getByRole('dialog')).toBeVisible());
+    expect(screen.getByText('Resolve offline conflict')).toBeVisible();
+    expect(screen.getByText('Server change')).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Keep server' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Keep my change' })).toBeVisible();
+    fireEvent.click(screen.getByRole('button', { name: 'Keep server' }));
+    await waitFor(() => expect(offline.removeOfflineMutation).toHaveBeenCalledWith(mutationId, 1));
+    expect(offline.saveOfflineSnapshot).toHaveBeenCalledWith(
+      expect.objectContaining({ businessLines: [expect.objectContaining({ id: 'line-1', status: 'announced', updatedAt: 'revision-2' })] })
+    );
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
 });
