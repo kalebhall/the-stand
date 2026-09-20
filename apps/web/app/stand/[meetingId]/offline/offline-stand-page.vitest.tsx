@@ -216,4 +216,42 @@ describe('OfflineStandPage', () => {
     );
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
+
+  it('requires confirmation and clears rendered offline state while deleting local data', async () => {
+    let resolveClear: (() => void) | undefined;
+    offline.loadOfflineSnapshot.mockResolvedValue({
+      userId: 'user-1',
+      wardId: 'ward-1',
+      meeting: { id: 'meeting-1', meetingDate: '2026-09-20', meetingType: 'SACRAMENT' },
+      standRows: [],
+      businessLines: [],
+      membershipActions: [],
+      notes: [{ id: 'note-1', visibility: 'PRIVATE', noteText: 'Private note', createdAt: '2026-09-20T10:00:00.000Z' }],
+      progress: {},
+      savedAt: '2026-09-20T10:00:00.000Z'
+    } as never);
+    offline.clearOfflineData.mockImplementation(
+      (() =>
+        new Promise<undefined>((resolve) => {
+          resolveClear = () => resolve(undefined);
+        })) as never
+    );
+    vi.spyOn(window, 'confirm').mockReturnValueOnce(false).mockReturnValueOnce(true);
+
+    renderPage();
+    await waitFor(() => expect(screen.getByText('Private note')).toBeVisible());
+    const deleteButton = screen.getByRole('button', { name: 'Delete offline data' });
+
+    fireEvent.click(deleteButton);
+    expect(offline.clearOfflineData).not.toHaveBeenCalled();
+
+    fireEvent.click(deleteButton);
+    await waitFor(() => expect(offline.clearOfflineData).toHaveBeenCalledTimes(1));
+    expect(screen.queryByText('Private note')).not.toBeInTheDocument();
+    expect(screen.getByText('Loading offline copy…')).toBeVisible();
+
+    resolveClear?.();
+    await waitFor(() => expect(offline.clearOfflineData).toHaveBeenCalledTimes(1));
+  });
+
 });
