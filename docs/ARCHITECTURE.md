@@ -399,5 +399,34 @@ If any implementation decision risks:
 STOP and correct the design.
 
 ============================================================
+MILESTONE 2 DOCUMENT RENDERING COMPATIBILITY
+============================================================
+
+The document-designer renderer resolves a validated DocumentLayout into
+semantic digital or print-oriented HTML. Public rendering passes through the
+server-side public-safety boundary; internal-only blocks are rejected and
+explicit-field blocks require an allowlist. The legacy SINGLE_SHEET_BIFOLD,
+TRI_FOLD_BULLETIN, and FULL_PAGE presets are adapted without rewriting
+public_program_layout.
+
+When a meeting_document exists, authenticated print and publication use its
+validated layout. When it does not, both paths retain the existing legacy
+renderer. Publication still stores immutable meeting_program_render snapshots
+and stable public_program_share tokens; public routes do not render live drafts.
+
+============================================================
+MILESTONE 4 SIMPLE MODE EDITOR
+============================================================
+
+The authenticated `/programs/{meetingId}` page edits the existing
+`meeting_document` JSONB source of truth. Server-side Simple Mode validation
+preserves document/page/block identity, enforces block locks and exposure, and
+increments `meeting_document.revision` transactionally. Autosave never mutates
+meeting program-item rows. Draft digital/phone/print previews use the shared
+renderer; public preview first applies public-safety validation and resolves
+only safe meeting/program data. Offline drafts, media, PDF binaries, Advanced
+Mode, and live-public draft rendering remain outside this boundary.
+
+============================================================
 END OF ARCHITECTURE.md
 ============================================================

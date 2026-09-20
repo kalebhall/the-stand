@@ -3,6 +3,8 @@ import { NextResponse } from 'next/server';
 import { recordAuditEvent } from '@/src/audit/service';
 import { auth } from '@/src/auth/auth';
 import { canManageMeetings, canViewMeetings } from '@/src/auth/roles';
+import { BUILT_IN_TEMPLATES } from '@/src/document-designer/built-in-templates';
+import { inheritTemplate } from '@/src/document-designer/inheritance';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 import { INTRODUCTION_ITEM_TYPE, isMeetingType, SPEAKER_STATUSES, validateProgramItemsForMeetingType, type IntroductionRoles, type ProgramItemInput } from '@/src/meetings/types';
@@ -185,6 +187,37 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     );
 
     await insertProgramItems(client, wardId, inserted.rows[0].id, programItems);
+
+    const settingsResult = await client.query(
+      'SELECT default_sacrament_template_id FROM ward_document_settings WHERE ward_id = $1::uuid LIMIT 1',
+      [wardId]
+    );
+    const defaultTemplateId = (settingsResult.rows?.[0] as { default_sacrament_template_id?: string | null } | undefined)?.default_sacrament_template_id ?? null;
+    let sourceTemplateId: string | null = null;
+    let sourceTemplateVersion: number | null = null;
+    let sourceLayout: unknown = BUILT_IN_TEMPLATES.find((template) => template.key === 'full-page-standard')?.layout;
+    if (defaultTemplateId) {
+      const templateResult = await client.query(
+        `SELECT t.id, v.version, v.layout_json
+           FROM document_template t
+           JOIN document_template_version v ON v.id = t.current_published_version_id
+          WHERE t.id = $1::uuid AND t.scope_type = 'WARD' AND t.scope_id = $2::uuid AND t.status = 'PUBLISHED'
+          LIMIT 1`,
+        [defaultTemplateId, wardId]
+      );
+      const template = templateResult.rows?.[0] as { id: string; version: number; layout_json: unknown } | undefined;
+      if (template) {
+        sourceTemplateId = template.id;
+        sourceTemplateVersion = Number(template.version);
+        sourceLayout = template.layout_json;
+      }
+    }
+    const inherited = inheritTemplate(sourceLayout, sourceTemplateId, sourceTemplateVersion);
+    await client.query(
+      `INSERT INTO meeting_document (ward_id, meeting_id, document_type, source_template_id, source_template_version, schema_version, layout_json, theme_json, revision, updated_by_user_id)
+       VALUES ($1::uuid, $2::uuid, 'SACRAMENT_PROGRAM', $3::uuid, $4::int, $5::int, $6::jsonb, $7::jsonb, 1, $8::uuid)`,
+      [wardId, inserted.rows[0].id, inherited.sourceTemplateId, inherited.sourceTemplateVersion, inherited.layout.schemaVersion, JSON.stringify(inherited.layout), JSON.stringify(inherited.theme), session.user.id]
+    );
 
     await recordAuditEvent(client, {
       wardId,

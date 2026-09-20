@@ -16,6 +16,10 @@ function hasAnyRole(roles: string[] | undefined, roleNames: readonly string[]): 
 export function getNavigationItems(roles: string[] | undefined, features: WardFeatureFlags = DEFAULT_WARD_FEATURE_FLAGS): AppNavItem[] {
   const items: AppNavItem[] = [{ href: '/dashboard', label: 'Dashboard' }];
 
+  if (hasRole(roles, 'PROGRAM_EDITOR') || hasRole(roles, 'BISHOPRIC_EDITOR') || hasRole(roles, 'STAND_ADMIN')) {
+    items.push({ href: '/programs', label: 'Programs' });
+  }
+
   if (hasAnyRole(roles, MEETING_VIEW_ROLES) || hasRole(roles, 'STAND_ADMIN')) {
     items.push({ href: '/meetings', label: 'Meetings' });
   }

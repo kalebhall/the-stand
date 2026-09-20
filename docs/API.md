@@ -356,5 +356,82 @@ If any route:
 It must be corrected immediately.
 
 ====================================================================
-END OF API.md
+PROGRAM DESIGNER FOUNDATION ROUTES (MILESTONE 1)
 ====================================================================
+
+GET /api/w/{wardId}/program-settings
+
+Requires an active ward and program-designer view permission. Returns the
+persisted program permission profile, defaulting safely to false when no
+ward_document_settings row exists.
+
+PATCH /api/w/{wardId}/program-settings
+
+Requires STAND_ADMIN, validates boolean program settings, persists them under
+RLS, and writes PROGRAM_SETTINGS_UPDATED to audit_log. Database failures return
+INTERNAL_ERROR without exposing provider details.
+
+PROGRAM_EDITOR is intentionally excluded from general meeting-management
+permissions. Program-specific helpers enforce designer, media, template,
+advanced-mode, publish, republish, and rollback boundaries.
+
+====================================================================
+PROGRAM DESIGNER COMPATIBILITY RENDERING (MILESTONE 2)
+====================================================================
+
+Authenticated draft print and publication resolve `meeting_document.layout_json`
+when present. The layout is validated and rendered through the generic
+Document Designer renderer. If no meeting document exists, the existing
+`public_program_layout` presets remain the fallback.
+
+Publication still writes immutable `meeting_program_render` snapshots and
+reuses `public_program_share` tokens. Public portal/token routes continue to
+serve stored snapshots and never render a live draft. Internal-only document
+blocks are rejected by the server-side public-safety boundary.
+
+====================================================================
+PROGRAM DESIGNER TEMPLATES AND PROGRAMS (MILESTONE 3)
+====================================================================
+
+GET /api/w/{wardId}/document-templates
+
+Returns validated built-in templates plus published stake/ward templates and
+current-user personal drafts visible in the active ward. Built-ins are read-only
+and use stable string keys.
+
+POST /api/w/{wardId}/document-templates
+
+Creates a ward or personal draft for an authorized template manager. The full
+layout is parsed before persistence, version 1 is created in the same
+transaction, and database failures return INTERNAL_ERROR.
+
+GET /api/w/{wardId}/document-templates/{templateId}
+POST /api/w/{wardId}/document-templates/{templateId}/duplicate
+GET|POST /api/w/{wardId}/document-templates/{templateId}/versions
+POST /api/w/{wardId}/document-templates/{templateId}/publish
+
+These routes enforce source scope and active-ward authorization. Duplication
+never grants write access to the source. Versions are append-only; publishing
+moves the template pointer to a selected immutable version and records an audit
+event. System/stake templates cannot be edited or published by ward users.
+
+`/programs` is the authenticated upcoming-program landing page and
+`/programs/templates` is the role-gated template gallery. Meeting creation
+copies the selected published ward template version into `meeting_document`,
+with Full Page Standard as the no-default fallback.
+
+====================================================================
+PROGRAM DESIGNER SIMPLE MODE (MILESTONE 4)
+====================================================================
+
+`/programs/{meetingId}` is the authenticated Simple Mode editor. It exposes
+only approved block visibility/order/content and curated theme controls. The
+editor uses `GET/PUT/POST /api/w/{wardId}/meetings/{meetingId}/program-design`.
+PUT requires `expectedRevision`, validates the complete layout, and updates
+only `meeting_document`; stale revisions return `REVISION_CONFLICT`. POST
+validates a draft and public safety without publishing. Autosave is debounced
+and in-memory only. Advanced Mode, media, PDF generation, and publication
+enhancements remain deferred.
+
+====================================================================
+END OF API.md

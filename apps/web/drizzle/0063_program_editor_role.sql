@@ -1,0 +1,3 @@
+INSERT INTO role (name, scope)
+VALUES ('PROGRAM_EDITOR', 'WARD')
+ON CONFLICT (name) DO UPDATE SET scope = EXCLUDED.scope;

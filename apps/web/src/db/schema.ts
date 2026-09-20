@@ -868,3 +868,79 @@ export const standardCalling = pgTable('standard_calling', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
 });
+
+export const documentTemplate = pgTable(
+  'document_template',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    scopeType: text('scope_type').notNull(),
+    scopeId: uuid('scope_id'),
+    templateKey: text('template_key'),
+    documentType: text('document_type').notNull(),
+    name: text('name').notNull(),
+    description: text('description'),
+    status: text('status').notNull().default('DRAFT'),
+    currentPublishedVersionId: uuid('current_published_version_id'),
+    createdByUserId: uuid('created_by_user_id').references(() => userAccount.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
+  },
+  (table) => ({
+    documentTemplateScopeStatusTypeIdx: index('document_template_scope_status_type_idx').on(table.scopeType, table.scopeId, table.status, table.documentType)
+  })
+);
+
+export const documentTemplateVersion = pgTable(
+  'document_template_version',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    templateId: uuid('template_id').notNull().references(() => documentTemplate.id, { onDelete: 'cascade' }),
+    version: integer('version').notNull(),
+    schemaVersion: integer('schema_version').notNull(),
+    layoutJson: jsonb('layout_json').notNull(),
+    themeJson: jsonb('theme_json').notNull(),
+    lockJson: jsonb('lock_json').notNull().default({}),
+    createdByUserId: uuid('created_by_user_id').references(() => userAccount.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+  },
+  (table) => ({
+    documentTemplateVersionUnique: unique().on(table.templateId, table.version),
+    documentTemplateVersionCreatedIdx: index('document_template_version_template_created_idx').on(table.templateId, table.createdAt)
+  })
+);
+
+export const meetingDocument = pgTable(
+  'meeting_document',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
+    meetingId: uuid('meeting_id').notNull().references(() => meeting.id, { onDelete: 'cascade' }),
+    documentType: text('document_type').notNull(),
+    sourceTemplateId: uuid('source_template_id').references(() => documentTemplate.id, { onDelete: 'set null' }),
+    sourceTemplateVersion: integer('source_template_version'),
+    schemaVersion: integer('schema_version').notNull(),
+    layoutJson: jsonb('layout_json').notNull(),
+    themeJson: jsonb('theme_json').notNull(),
+    revision: integer('revision').notNull().default(1),
+    updatedByUserId: uuid('updated_by_user_id').references(() => userAccount.id, { onDelete: 'set null' }),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
+  },
+  (table) => ({
+    meetingDocumentUnique: unique().on(table.wardId, table.meetingId, table.documentType),
+    meetingDocumentWardMeetingIdx: index('meeting_document_ward_meeting_idx').on(table.wardId, table.meetingId, table.documentType)
+  })
+);
+
+export const wardDocumentSettings = pgTable('ward_document_settings', {
+  wardId: uuid('ward_id').primaryKey().references(() => ward.id, { onDelete: 'cascade' }),
+  defaultSacramentTemplateId: uuid('default_sacrament_template_id').references(() => documentTemplate.id, { onDelete: 'set null' }),
+  allowAdvancedProgramDesigner: boolean('allow_advanced_program_designer').notNull().default(false),
+  allowProgramEditorPublish: boolean('allow_program_editor_publish').notNull().default(false),
+  allowProgramEditorRepublish: boolean('allow_program_editor_republish').notNull().default(false),
+  allowProgramEditorRollback: boolean('allow_program_editor_rollback').notNull().default(false),
+  allowProgramEditorCreateTemplates: boolean('allow_program_editor_create_templates').notNull().default(false),
+  allowProgramEditorDeleteMedia: boolean('allow_program_editor_delete_media').notNull().default(false),
+  publicProgramExpirationDays: integer('public_program_expiration_days'),
+  updatedByUserId: uuid('updated_by_user_id').references(() => userAccount.id, { onDelete: 'set null' }),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
+});
