@@ -64,6 +64,26 @@ export function validateSimpleModeDraft(input: unknown, currentInput: unknown): 
   if (layout.id !== current.id || layout.pages.some((page, pageIndex) => page.id !== current.pages[pageIndex].id)) {
     throw new SimpleModeValidationError('STRUCTURE_LOCKED', 'Document and page identities are locked');
   }
+  if (json(current.lock) !== json(layout.lock)) throw new SimpleModeValidationError('PROPERTY_LOCKED', 'Document lock metadata cannot be changed');
+  for (const [pageIndex, previousPage] of current.pages.entries()) {
+    const nextPage = layout.pages[pageIndex];
+    if (json(previousPage.lock) !== json(nextPage.lock)) throw new SimpleModeValidationError('PROPERTY_LOCKED', 'Page lock metadata cannot be changed');
+    for (const [regionIndex, previousRegion] of previousPage.regions.entries()) {
+      const nextRegion = nextPage.regions[regionIndex];
+      if (json(previousRegion.lock) !== json(nextRegion.lock)) throw new SimpleModeValidationError('PROPERTY_LOCKED', 'Region lock metadata cannot be changed');
+      if (hasLock(previousRegion.lock, 'POSITION') && json(previousRegion.blocks.map((block) => block.id)) !== json(nextRegion.blocks.map((block) => block.id))) throw new SimpleModeValidationError('PROPERTY_LOCKED', 'Region block positions are locked');
+      if (hasLock(previousRegion.lock, 'SIZE') && json({ ratio: previousRegion.ratio, gutter: previousRegion.gutter }) !== json({ ratio: nextRegion.ratio, gutter: nextRegion.gutter })) throw new SimpleModeValidationError('PROPERTY_LOCKED', 'Region size is locked');
+      if (hasLock(previousRegion.lock, 'CONTENT') && json(previousRegion.blocks.map((block) => block.config)) !== json(nextRegion.blocks.map((block) => block.config))) throw new SimpleModeValidationError('PROPERTY_LOCKED', 'Region content is locked');
+      if (hasLock(previousRegion.lock, 'STYLE') && json(previousRegion.blocks.map((block) => ({ width: block.width, printBehavior: block.printBehavior, digitalBehavior: block.digitalBehavior }))) !== json(nextRegion.blocks.map((block) => ({ width: block.width, printBehavior: block.printBehavior, digitalBehavior: block.digitalBehavior })))) throw new SimpleModeValidationError('PROPERTY_LOCKED', 'Region style is locked');
+      if (hasLock(previousRegion.lock, 'VISIBILITY') && json(previousRegion.blocks.map((block) => block.visibility)) !== json(nextRegion.blocks.map((block) => block.visibility))) throw new SimpleModeValidationError('PROPERTY_LOCKED', 'Region visibility is locked');
+    }
+  }
+  const currentBlocksInOrder = allBlocks(current);
+  const nextBlocksInOrder = allBlocks(layout);
+  if (hasLock(current.lock, 'POSITION') && json(currentBlocksInOrder.map((block) => block.id)) !== json(nextBlocksInOrder.map((block) => block.id))) throw new SimpleModeValidationError('PROPERTY_LOCKED', 'Document positions are locked');
+  if (hasLock(current.lock, 'CONTENT') && json(currentBlocksInOrder.map((block) => block.config)) !== json(nextBlocksInOrder.map((block) => block.config))) throw new SimpleModeValidationError('PROPERTY_LOCKED', 'Document content is locked');
+  if (hasLock(current.lock, 'VISIBILITY') && json(currentBlocksInOrder.map((block) => block.visibility)) !== json(nextBlocksInOrder.map((block) => block.visibility))) throw new SimpleModeValidationError('PROPERTY_LOCKED', 'Document visibility is locked');
+  if (hasLock(current.lock, 'SIZE') && json([current.paper, current.orientation, current.fold]) !== json([layout.paper, layout.orientation, layout.fold])) throw new SimpleModeValidationError('PROPERTY_LOCKED', 'Document size is locked');
   if (hasLock(current.lock, 'STYLE') && json(layout.theme) !== json(current.theme)) {
     throw new SimpleModeValidationError('PROPERTY_LOCKED', 'The document theme is locked');
   }
@@ -71,6 +91,7 @@ export function validateSimpleModeDraft(input: unknown, currentInput: unknown): 
   for (const nextBlock of allBlocks(layout)) {
     const previous = currentBlocks.get(nextBlock.id);
     if (!previous || previous.type !== nextBlock.type) throw new SimpleModeValidationError('STRUCTURE_LOCKED', 'Block identities and types are locked');
+    if (json(previous.lock) !== json(nextBlock.lock)) throw new SimpleModeValidationError('PROPERTY_LOCKED', `${nextBlock.type} lock metadata cannot be changed`);
     const definition = getRegisteredBlockDefinition(layout.documentType, nextBlock.type);
     if (definition.exposure === 'ADVANCED' && json(previous) !== json(nextBlock)) {
       throw new SimpleModeValidationError('ADVANCED_BLOCK', `${nextBlock.type} is managed by Advanced Mode`);

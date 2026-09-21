@@ -196,13 +196,13 @@ export default async function PrintMeetingPage({
           programItems: (programResult.rows as ProgramItemRow[]).map((item, order) => ({
             order,
             label: item.title ?? item.hymn_title ?? item.item_type,
-            details: item.topic ?? item.program_notes ?? item.notes
+            details: item.topic ?? null
           })),
           publicValues: {
             ANNOUNCEMENTS: (announcementResult.rows as AnnouncementRow[]).map((item) => item.title).join(' · ')
           }
         },
-        { public: true, explicitPublicBlockTypes: COMPATIBILITY_PUBLIC_BLOCK_TYPES }
+        { public: true, target: 'PRINT', explicitPublicBlockTypes: COMPATIBILITY_PUBLIC_BLOCK_TYPES }
       );
       const compatibilityHtml = renderDocumentHtml({
         layout: documentLayout,

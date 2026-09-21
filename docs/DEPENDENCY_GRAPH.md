@@ -24,7 +24,7 @@ flowchart LR
   A12["web:church-actions<br/>4 files"]
   A13["web:config<br/>15 files"]
   A14["web:db<br/>8 files"]
-  A15["web:document-designer<br/>30 files"]
+  A15["web:document-designer<br/>36 files"]
   A16["web:features<br/>3 files"]
   A17["web:hardening<br/>1 files"]
   A18["web:health.mjs<br/>1 files"]
@@ -50,13 +50,13 @@ flowchart LR
   A6 -->|58| A14
   A5 -->|46| A26
   A5 -->|26| A7
-  A5 -->|23| A15
+  A5 -->|25| A15
   A5 -->|23| A22
   A5 -->|15| A11
   A6 -->|15| A24
   A5 -->|11| A16
   A5 -->|11| A20
-  A6 -->|8| A15
+  A6 -->|11| A15
   A6 -->|8| A26
   A5 -->|7| A21
   A6 -->|7| A16
@@ -134,7 +134,7 @@ flowchart LR
 | `web:church-actions` | 4 |
 | `web:config` | 15 |
 | `web:db` | 8 |
-| `web:document-designer` | 30 |
+| `web:document-designer` | 36 |
 | `web:features` | 3 |
 | `web:hardening` | 1 |
 | `web:health.mjs` | 1 |
@@ -161,8 +161,8 @@ flowchart LR
 | `web:api` | `web:auth` | 138 |
 | `web:api` | `web:db` | 129 |
 | `web:app` | `web:ui` | 123 |
+| `web:document-designer` | `web:document-designer` | 99 |
 | `web:app` | `web:auth` | 96 |
-| `web:document-designer` | `web:document-designer` | 78 |
 | `web:app` | `web:app` | 66 |
 | `web:app` | `web:db` | 58 |
 | `web:notifications` | `web:notifications` | 53 |
@@ -170,7 +170,7 @@ flowchart LR
 | `web:ui` | `web:ui` | 30 |
 | `web:api` | `web:api` | 27 |
 | `web:api` | `web:audit` | 26 |
-| `web:api` | `web:document-designer` | 23 |
+| `web:api` | `web:document-designer` | 25 |
 | `web:api` | `web:lib` | 23 |
 | `web:api` | `web:callings` | 15 |
 | `web:app` | `web:meetings` | 15 |
@@ -178,7 +178,7 @@ flowchart LR
 | `web:meetings` | `web:meetings` | 12 |
 | `web:api` | `web:features` | 11 |
 | `web:api` | `web:imports` | 11 |
-| `web:app` | `web:document-designer` | 8 |
+| `web:app` | `web:document-designer` | 11 |
 | `web:app` | `web:notifications` | 8 |
 | `web:auth` | `web:auth` | 8 |
 | `web:leadership` | `web:leadership` | 8 |
@@ -269,13 +269,13 @@ flowchart LR
 | `root:tooling` | `Node.js` | 14 |
 | `web:ui` | `next` | 14 |
 | `web:app` | `@testing-library/react` | 13 |
+| `web:document-designer` | `vitest` | 13 |
 | `web:notifications` | `pg` | 13 |
-| `web:document-designer` | `vitest` | 12 |
 | `web:ui` | `next-intl` | 9 |
+| `web:document-designer` | `zod` | 7 |
 | `web:imports` | `vitest` | 7 |
 | `web:meetings` | `vitest` | 7 |
 | `web:auth` | `next-auth` | 6 |
-| `web:document-designer` | `zod` | 6 |
 | `web:leadership` | `vitest` | 6 |
 | `web:ui` | `@testing-library/react` | 6 |
 | `web:ui` | `vitest` | 6 |
@@ -436,7 +436,7 @@ flowchart LR
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/membership-ordinances/route.ts` | `web:api` | 5 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/offline-snapshot/route.ts` | `web:api` | 7 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/offline-sync/route.ts` | `web:api` | 5 | 2 |
-| `apps/web/app/api/w/[wardId]/meetings/[meetingId]/program-design/route.ts` | `web:api` | 11 | 2 |
+| `apps/web/app/api/w/[wardId]/meetings/[meetingId]/program-design/route.ts` | `web:api` | 13 | 2 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/program-design/route.vitest.ts` | `web:api` | 2 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/program-design/validate/route.ts` | `web:api` | 1 | 0 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/publish/route.ts` | `web:api` | 13 | 2 |
@@ -532,7 +532,7 @@ flowchart LR
 | `apps/web/app/programs/[meetingId]/designer-state.ts` | `web:app` | 1 | 0 |
 | `apps/web/app/programs/[meetingId]/designer-state.vitest.ts` | `web:app` | 2 | 1 |
 | `apps/web/app/programs/[meetingId]/page.tsx` | `web:app` | 3 | 1 |
-| `apps/web/app/programs/[meetingId]/program-designer-client.tsx` | `web:app` | 3 | 2 |
+| `apps/web/app/programs/[meetingId]/program-designer-client.tsx` | `web:app` | 6 | 2 |
 | `apps/web/app/programs/[meetingId]/program-designer-client.vitest.tsx` | `web:app` | 2 | 2 |
 | `apps/web/app/programs/page.tsx` | `web:app` | 7 | 1 |
 | `apps/web/app/programs/programs-client.tsx` | `web:app` | 0 | 1 |
@@ -682,16 +682,22 @@ flowchart LR
 | `apps/web/src/db/document-designer-rls.vitest.ts` | `web:db` | 0 | 2 |
 | `apps/web/src/db/schema.ts` | `web:db` | 0 | 2 |
 | `apps/web/src/db/ward-user-role-rls.vitest.ts` | `web:db` | 0 | 2 |
+| `apps/web/src/document-designer/advanced-designer.vitest.ts` | `web:document-designer` | 7 | 1 |
+| `apps/web/src/document-designer/advanced-schema.ts` | `web:document-designer` | 4 | 1 |
+| `apps/web/src/document-designer/advanced-validation.ts` | `web:document-designer` | 2 | 0 |
 | `apps/web/src/document-designer/block-renderers.ts` | `web:document-designer` | 2 | 0 |
 | `apps/web/src/document-designer/built-in-templates.ts` | `web:document-designer` | 3 | 0 |
 | `apps/web/src/document-designer/compatibility-render.vitest.ts` | `web:document-designer` | 4 | 1 |
 | `apps/web/src/document-designer/constants.ts` | `web:document-designer` | 0 | 0 |
-| `apps/web/src/document-designer/data-resolver.ts` | `web:document-designer` | 4 | 0 |
+| `apps/web/src/document-designer/data-resolver.ts` | `web:document-designer` | 5 | 0 |
 | `apps/web/src/document-designer/data-resolver.vitest.ts` | `web:document-designer` | 2 | 1 |
+| `apps/web/src/document-designer/history.ts` | `web:document-designer` | 1 | 0 |
 | `apps/web/src/document-designer/inheritance.ts` | `web:document-designer` | 2 | 0 |
 | `apps/web/src/document-designer/inheritance.vitest.ts` | `web:document-designer` | 2 | 1 |
+| `apps/web/src/document-designer/layout-operations.ts` | `web:document-designer` | 4 | 0 |
 | `apps/web/src/document-designer/legacy-layout-adapter.ts` | `web:document-designer` | 4 | 0 |
 | `apps/web/src/document-designer/legacy-layout-adapter.vitest.ts` | `web:document-designer` | 1 | 1 |
+| `apps/web/src/document-designer/lock-enforcement.ts` | `web:document-designer` | 2 | 0 |
 | `apps/web/src/document-designer/meeting-document-service.ts` | `web:document-designer` | 4 | 0 |
 | `apps/web/src/document-designer/meeting-document-service.vitest.ts` | `web:document-designer` | 2 | 1 |
 | `apps/web/src/document-designer/persistence.ts` | `web:document-designer` | 1 | 0 |

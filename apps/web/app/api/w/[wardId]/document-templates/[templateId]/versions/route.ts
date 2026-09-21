@@ -15,7 +15,7 @@ async function loadTemplate(client: Awaited<ReturnType<typeof pool.connect>>, te
     `SELECT id, template_key, scope_type, scope_id, document_type, name, description, status, current_published_version_id, created_by_user_id
        FROM document_template
       WHERE id = $1::uuid AND document_type = 'SACRAMENT_PROGRAM'
-        AND ((scope_type = 'STAKE' AND status = 'PUBLISHED') OR (scope_type = 'WARD' AND scope_id = $2::uuid) OR (scope_type = 'PERSONAL_DRAFT' AND scope_id = $2::uuid AND created_by_user_id = $3::uuid))
+        AND ((scope_type = 'STAKE' AND status = 'PUBLISHED' AND scope_id = (SELECT stake_id FROM ward WHERE id = $2::uuid)) OR (scope_type = 'WARD' AND scope_id = $2::uuid) OR (scope_type = 'PERSONAL_DRAFT' AND scope_id = $2::uuid AND created_by_user_id = $3::uuid))
       LIMIT 1`,
     [templateId, wardId, userId]
   );

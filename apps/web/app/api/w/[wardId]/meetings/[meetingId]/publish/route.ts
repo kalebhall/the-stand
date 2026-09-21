@@ -194,7 +194,7 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
               programItems: programItems.map((item, order) => ({
                 order,
                 label: item.title ?? item.hymnTitle ?? item.itemType,
-                details: item.topic ?? item.programNotes ?? item.notes
+                details: item.topic ?? null
               })),
               publicValues: {
                 ANNOUNCEMENTS: (announcementResult.rows as AnnouncementRow[]).map((item) => item.title).join(' · ')

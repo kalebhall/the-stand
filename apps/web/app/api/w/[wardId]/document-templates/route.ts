@@ -55,7 +55,7 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
          FROM document_template
         WHERE document_type = 'SACRAMENT_PROGRAM'
           AND status <> 'ARCHIVED'
-          AND ((scope_type = 'STAKE' AND status = 'PUBLISHED')
+          AND ((scope_type = 'STAKE' AND status = 'PUBLISHED' AND scope_id = (SELECT stake_id FROM ward WHERE id = $1::uuid))
             OR (scope_type = 'WARD' AND scope_id = $1::uuid AND status = 'PUBLISHED' AND current_published_version_id IS NOT NULL)
             OR (scope_type = 'PERSONAL_DRAFT' AND scope_id = $1::uuid AND created_by_user_id = $2::uuid AND status = 'PUBLISHED' AND current_published_version_id IS NOT NULL))
         ORDER BY name ASC`,

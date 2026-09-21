@@ -430,7 +430,7 @@ editor uses `GET/PUT/POST /api/w/{wardId}/meetings/{meetingId}/program-design`.
 PUT requires `expectedRevision`, validates the complete layout, and updates
 only `meeting_document`; stale revisions return `REVISION_CONFLICT`. POST
 validates a draft and public safety without publishing. Autosave is debounced
-and in-memory only. Advanced Mode, media, PDF generation, and publication
+and in-memory only. Advanced Mode now adds capability-gated schema-v2 layout operations, server-enforced locks, and revision-safe persistence. Media and deterministic PDF generation remain deferred.
 enhancements remain deferred.
 
 ====================================================================

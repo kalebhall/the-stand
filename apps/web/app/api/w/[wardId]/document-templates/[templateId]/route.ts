@@ -42,7 +42,7 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
          LEFT JOIN document_template_version v ON v.id = t.current_published_version_id
         WHERE t.id = $1::uuid
           AND t.document_type = 'SACRAMENT_PROGRAM'
-          AND ((t.scope_type = 'STAKE' AND t.status = 'PUBLISHED')
+          AND ((t.scope_type = 'STAKE' AND t.status = 'PUBLISHED' AND t.scope_id = (SELECT stake_id FROM ward WHERE id = $2::uuid))
             OR (t.scope_type = 'WARD' AND t.scope_id = $2::uuid)
             OR (t.scope_type = 'PERSONAL_DRAFT' AND t.scope_id = $2::uuid AND t.created_by_user_id = $3::uuid))
         LIMIT 1`,

@@ -25,7 +25,7 @@ This document tracks remaining product and operational work. Completed baseline 
 - LCR/member/calling imports with review, dry-run, commit, idempotency, and raw-paste retention purge.
 - Notification center, event outbox, worker processing, subscriptions, delivery tracking, email/provider-neutral configuration, and diagnostics.
 - Public layout presets, print/public preview, published snapshots, accessible output, announcements, template classification, and text-first/QR output.
-- Document Designer Milestones 1–4: typed document persistence/RLS, public-safe compatibility rendering, built-in templates, Programs gallery, meeting inheritance, and authenticated Simple Mode autosave editor with revision conflict protection. Advanced Mode, media, PDF, and publication enhancements remain deferred.
+- Document Designer Milestones 1–5: typed document persistence/RLS, public-safe compatibility rendering, built-in templates, Programs gallery, meeting inheritance, authenticated Simple Mode autosave, and Advanced Mode layout operations with schema v2, lock enforcement, history, and capability-gated editing. Media and deterministic PDF work remain deferred.
 - Offline authorization lifecycle, minimized snapshots, stale/read-only disclosures, local deletion, service-worker API exclusion, supported mutation idempotency, and conflict handling.
 - Health page, retention scheduler, backup restore smoke test, encrypted off-site replication, and operational runbooks.
 - Member, calling, report, and notes sorting controls.

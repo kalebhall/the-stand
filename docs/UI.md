@@ -483,7 +483,7 @@ revision conflict preserves the local draft and offers an explicit reload;
 there is no silent overwrite and no offline durable draft claim. Public preview
 uses the same public-safe renderer boundary as publication and never publishes.
 The meeting editor links to this workflow instead of duplicating its controls.
-Advanced Mode, media, and PDF controls remain deferred.
+Advanced Mode is now capability-gated and provides schema-v2 layout operations, columns, block add/remove/resize, lock enforcement, and undo/redo. Media and PDF controls remain deferred.
 
 ====================================================================
 END OF UI.md
