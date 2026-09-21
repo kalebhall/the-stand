@@ -1,6 +1,12 @@
 -- Milestone 6: database-side archive authorization and published-reference delivery.
 -- The archive function is intentionally invokable by the database runtime role, but
 -- authorization is enforced inside the SECURITY DEFINER function itself.
+-- Function installation references meeting_program_render while that table is
+-- FORCE RLS. Temporarily disabling RLS inside this transaction keeps migration
+-- execution compatible with the documented database owner/migration role; the
+-- table is restored to FORCE RLS before the migration commits.
+ALTER TABLE public.meeting_program_render DISABLE ROW LEVEL SECURITY;
+
 CREATE OR REPLACE FUNCTION public.media_asset_archive(
   p_ward_id UUID, p_asset_id UUID
 )
@@ -82,3 +88,6 @@ $$;
 
 REVOKE ALL ON FUNCTION public.lookup_public_media_asset(TEXT) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.lookup_public_media_asset(TEXT) TO PUBLIC;
+
+ALTER TABLE public.meeting_program_render ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.meeting_program_render FORCE ROW LEVEL SECURITY;
