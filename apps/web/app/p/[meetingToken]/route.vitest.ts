@@ -37,7 +37,8 @@ describe('GET /p/[meetingToken]', () => {
 
     expect(response.status).toBe(200);
     expect(response.headers.get('content-type')).toContain('text/html');
-    expect(await response.text()).toBe('<main>Published</main>');
+    expect(await response.text()).toBe('<meta name="robots" content="noindex,nofollow"><main>Published</main>');
+    expect(response.headers.get('X-Robots-Tag')).toBe('noindex, nofollow');
     expect(queryMock).toHaveBeenCalledWith('SELECT set_config($1, $2, true)', ['app.public_meeting_token', 'token-1']);
   });
 

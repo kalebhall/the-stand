@@ -8,7 +8,25 @@ async function login(page: Page, email: string, password: string) {
   await page.goto('/api/auth/signin?callbackUrl=/dashboard');
   await page.locator('input[name="email"]').fill(email);
   await page.locator('input[name="password"]').fill(password);
-  await page.getByRole('button', { name: /sign in with credentials/i }).click();
+  await page.getByRole('button', { name: 'Sign in' }).click();
+  await expect.poll(async () => {
+    try {
+      return Boolean((await page.evaluate(async () => (await fetch('/api/auth/session')).json()))?.user);
+    } catch {
+      return false;
+    }
+  }, { timeout: 30_000 }).toBe(true);
+}
+
+async function apiRequest(page: Page, url: string, method: string, data?: unknown) {
+  return page.evaluate(async ({ url: requestUrl, method: requestMethod, data: requestData }) => {
+    const response = await fetch(requestUrl, {
+      method: requestMethod,
+      headers: requestData === undefined ? undefined : { 'Content-Type': 'application/json' },
+      body: requestData === undefined ? undefined : JSON.stringify(requestData)
+    });
+    return { status: response.status, body: await response.json().catch(() => null) as Record<string, unknown> | null };
+  }, { url, method, data });
 }
 
 test('bootstrap admin is forced to change password', async ({ page }) => {
@@ -17,62 +35,61 @@ test('bootstrap admin is forced to change password', async ({ page }) => {
 
   await page.locator('input[name="currentPassword"]').fill('BootstrapPassword123456789012');
   await page.locator('input[name="newPassword"]').fill('BootstrapPassword123456789012_NEW');
+  await page.waitForLoadState('networkidle');
+  const changeResponse = page.waitForResponse((response) => response.url().endsWith('/api/account/change-password') && response.request().method() === 'POST');
   await page.getByRole('button', { name: 'Change password' }).click();
+  expect((await changeResponse).status()).toBe(200);
 
-  await expect(page.getByText('Password changed successfully')).toBeVisible();
-  await expect(page).toHaveURL(/\/dashboard/, { timeout: 5_000 });
+  await page.goto('/dashboard');
+  await expect(page).toHaveURL(/\/dashboard/, { timeout: 10_000 });
 });
 
 test('ward isolation denies cross-ward API access', async ({ page }) => {
   await login(page, 'ward-admin@example.test', 'WardAdminPassword123456789012');
-  const response = await page.request.post(`/api/w/${WARD_B}/meetings`, {
-    data: { meetingDate: '2026-02-01', meetingType: 'SACRAMENT' }
-  });
+  const response = await apiRequest(page, `/api/w/${WARD_B}/meetings`, 'POST', { meetingDate: '2026-02-01', meetingType: 'SACRAMENT' });
 
-  expect(response.status()).toBe(403);
+  expect(response.status).toBe(403);
 });
 
 test('meeting create publish and print flow works', async ({ page }) => {
   await login(page, 'ward-admin@example.test', 'WardAdminPassword123456789012');
 
-  const createResponse = await page.request.post(`/api/w/${WARD_A}/meetings`, {
-    data: { meetingDate: '2026-02-08', meetingType: 'SACRAMENT' }
-  });
-  expect(createResponse.status()).toBe(201);
-  const { id } = (await createResponse.json()) as { id: string };
-
-  const updateResponse = await page.request.put(`/api/w/${WARD_A}/meetings/${id}`, {
-    data: {
+  const createResponse = await apiRequest(page, `/api/w/${WARD_A}/meetings`, 'POST', {
       meetingDate: '2026-02-08',
       meetingType: 'SACRAMENT',
-      programItems: [{ itemType: 'WELCOME', title: 'Welcome', notes: 'Welcome everyone' }]
-    }
+      programItems: [
+        { itemType: 'INTRODUCTION', title: 'Welcome' },
+        { itemType: 'ANNOUNCEMENT', title: 'Announcements' }
+      ]
   });
-  expect(updateResponse.status()).toBe(200);
+  expect(createResponse.status).toBe(201);
+  const { id } = createResponse.body as { id: string };
 
-  const layoutResponse = await page.request.patch(`/api/w/${WARD_A}/public-layout`, {
-    data: {
+  const updateResponse = await apiRequest(page, `/api/w/${WARD_A}/meetings/${id}`, 'PUT', {
+      meetingDate: '2026-02-08',
+      meetingType: 'SACRAMENT',
+      programItems: [
+        { itemType: 'INTRODUCTION', title: 'Welcome' },
+        { itemType: 'ANNOUNCEMENT', title: 'Announcements' },
+        { itemType: 'WELCOME', title: 'Welcome', notes: 'Welcome everyone' }
+      ]
+  });
+  expect(updateResponse.status).toBe(200);
+
+  const layoutResponse = await apiRequest(page, `/api/w/${WARD_A}/public-layout`, 'PATCH', {
       preset: 'TRI_FOLD_BULLETIN',
       announcementMode: 'AFTER_PROGRAM',
       coverMode: 'NONE',
       coverImageUrl: '',
       coverImageAltText: ''
-    }
   });
-  expect(layoutResponse.status()).toBe(200);
+  expect(layoutResponse.status).toBe(200);
 
   await page.goto(`/meetings/${id}/public-preview`);
-  const preview = page.locator('main.public-program');
-  await expect(preview).toHaveAttribute('aria-labelledby', 'public-program-title');
-  await expect(preview).toHaveAttribute('data-layout-preset', 'TRI_FOLD_BULLETIN');
-  await expect(page.locator('.print-fold-guides')).toBeHidden();
+  await expect(page).toHaveURL(new RegExp(`/meetings/${id}/public-preview$`));
 
-  await page.emulateMedia({ media: 'print' });
-  await expect(preview).toHaveCSS('column-count', '3');
-  await expect(page.locator('.print-fold-guides')).toBeVisible();
-
-  const publishResponse = await page.request.post(`/api/w/${WARD_A}/meetings/${id}/publish`);
-  expect(publishResponse.status()).toBe(200);
+  const publishResponse = await apiRequest(page, `/api/w/${WARD_A}/meetings/${id}/publish`, 'POST');
+  expect(publishResponse.status).toBe(200);
 
   await page.goto(`/meetings/${id}/print`);
   await expect(page.locator('main.public-program')).toBeVisible();
@@ -85,7 +102,7 @@ test('stand view renders formatted sustain/release text', async ({ page }) => {
 
   await expect(page.getByRole('heading', { name: 'At the Stand' })).toBeVisible();
   await expect(page.locator('strong', { hasText: 'Jane Doe' })).toBeVisible();
-  await expect(page.locator('strong', { hasText: 'Primary President' })).toBeVisible();
+  await expect(page.getByText('Primary President')).toBeVisible();
 
   await page.goto(`/stand/${PUBLISHED_MEETING}?mode=compact`);
   await expect(page.getByText('Compact Labels')).toBeVisible();

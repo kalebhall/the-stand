@@ -1,0 +1,33 @@
+import { redirect } from 'next/navigation';
+
+import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth/guards';
+import { canManageStakeTemplates, canManageSystemTemplates } from '@/src/auth/roles';
+import { TemplateAdminClient } from './template-admin-client';
+
+export default async function TemplateAdministrationPage() {
+  const session = await requireAuthenticatedSession();
+  enforcePasswordRotation(session);
+  const canSystem = canManageSystemTemplates({ roles: session.user.roles });
+  const canStake = Boolean(session.activeStakeId && canManageStakeTemplates({
+    roles: session.user.roles,
+    activeStakeId: session.activeStakeId,
+    stakeAssignments: session.stakeAssignments
+  }, session.activeStakeId ?? ''));
+
+  if (!canSystem && !canStake) redirect('/dashboard');
+
+  return (
+    <main className="mx-auto w-full max-w-6xl space-y-6 p-4 sm:p-6">
+      <header>
+        <p className="text-sm font-medium text-muted-foreground">Program Designer</p>
+        <h1 className="text-3xl font-semibold tracking-tight">Template administration</h1>
+        <p className="mt-1 text-sm text-muted-foreground">Manage published system and stake sources without changing ward copies.</p>
+      </header>
+      <TemplateAdminClient
+        activeStakeId={session.activeStakeId}
+        canSystem={canSystem}
+        canStake={canStake}
+      />
+    </main>
+  );
+}

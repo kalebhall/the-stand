@@ -72,8 +72,8 @@ describe('document designer registry', () => {
   it('validates narrow config schemas and rejects arbitrary config', () => {
     const schema = createDocumentBlockSchema(sacramentProgramRegistry);
     expect(schema.safeParse({ ...validBase, type: 'CUSTOM_TEXT', config: { text: 'Welcome', unexpected: true } }).success).toBe(false);
-    expect(schema.safeParse({ ...validBase, type: 'IMAGE', config: { src: 'http://example.com/a.png', alt: 'A' } }).success).toBe(false);
-    expect(schema.safeParse({ ...validBase, type: 'IMAGE', config: { src: 'https://example.com/a.png', alt: 'A' } }).success).toBe(true);
+    expect(schema.safeParse({ ...validBase, type: 'IMAGE', config: { assetId: null, alt: '', isDecorative: true } }).success).toBe(true);
+    expect(schema.safeParse({ ...validBase, type: 'IMAGE', config: { src: 'https://example.com/a.png', alt: 'A' } }).success).toBe(false);
     expect(schema.safeParse({ ...validBase, type: 'CUSTOM_TEXT', config: { text: '<script>alert(1)</script>' } }).success).toBe(false);
     expect(
       schema.safeParse({ ...validBase, type: 'CUSTOM_TEXT', lock: { level: 'NONE', properties: ['CONTENT'] }, config: { text: 'Welcome' } })

@@ -32,17 +32,19 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     const builtIn = getBuiltInTemplate(templateId);
     let sourceName = builtIn?.name ?? 'Template';
     let description = builtIn?.description ?? null;
+    let sourceTemplateId: string | null = null;
+    let sourceTemplateVersion: number | null = null;
     let layout: ReturnType<typeof parseTemplateLayout>;
     if (builtIn) {
       layout = parseTemplateLayout(builtIn.layout);
     } else {
       const source = await client.query(
-        `SELECT t.name, t.description, v.layout_json
+        `SELECT t.id, t.name, t.description, t.status, t.distribution_policy, v.version, v.layout_json
            FROM document_template t
            JOIN document_template_version v ON v.id = t.current_published_version_id
           WHERE t.id = $1::uuid
             AND t.document_type = 'SACRAMENT_PROGRAM'
-            AND ((t.scope_type = 'STAKE' AND t.status = 'PUBLISHED')
+            AND ((t.scope_type = 'STAKE' AND t.status = 'PUBLISHED' AND t.scope_id = (SELECT stake_id FROM ward WHERE id = $2::uuid))
               OR (t.scope_type = 'WARD' AND t.scope_id = $2::uuid)
               OR (t.scope_type = 'PERSONAL_DRAFT' AND t.scope_id = $2::uuid AND t.created_by_user_id = $3::uuid))
           LIMIT 1`,
@@ -53,8 +55,14 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
         return NextResponse.json({ error: 'Template not found', code: 'NOT_FOUND' }, { status: 404 });
       }
       const sourceRow = source.rows[0] as Record<string, unknown>;
+      if (sourceRow.status !== 'PUBLISHED' || sourceRow.distribution_policy === 'USE_AS_IS') {
+        await client.query('ROLLBACK');
+        return NextResponse.json({ error: 'Template cannot be duplicated', code: 'COPY_FORBIDDEN' }, { status: 403 });
+      }
       sourceName = String(sourceRow.name);
       description = (sourceRow.description as string | null) ?? null;
+      sourceTemplateId = String(sourceRow.id);
+      sourceTemplateVersion = Number(sourceRow.version);
       try {
         layout = parseTemplateLayout(sourceRow.layout_json);
       } catch {
@@ -65,10 +73,10 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
 
     const name = body.data.name ?? `${sourceName} Copy`;
     const inserted = await client.query(
-      `INSERT INTO document_template (scope_type, scope_id, document_type, name, description, status, created_by_user_id)
-       VALUES ('WARD', $1::uuid, 'SACRAMENT_PROGRAM', $2::text, $3::text, 'DRAFT', $4::uuid)
-       RETURNING id, name, description, status`,
-      [wardId, name, body.data.description === undefined ? description : body.data.description, session.user.id]
+      `INSERT INTO document_template (scope_type, scope_id, document_type, name, description, source_template_id, source_template_version, status, created_by_user_id)
+       VALUES ('WARD', $1::uuid, 'SACRAMENT_PROGRAM', $2::text, $3::text, $4::uuid, $5::int, 'DRAFT', $6::uuid)
+       RETURNING id, name, description, distribution_policy, source_template_id, source_template_version, status`,
+      [wardId, name, body.data.description === undefined ? description : body.data.description, sourceTemplateId, sourceTemplateVersion, session.user.id]
     );
     const row = inserted.rows[0] as Record<string, unknown>;
     const version = await client.query(
@@ -79,7 +87,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     );
     await recordAuditEvent(client, { wardId, userId: session.user.id, actorName: session.user.name || session.user.email || null, action: 'PROGRAM_TEMPLATE_DUPLICATED', entityType: 'document_template', entityId: String(row.id), details: { sourceTemplateId: templateId }, source: 'manual_ui', severity: 'notice' });
     await client.query('COMMIT');
-    return NextResponse.json({ template: { id: row.id, source: 'WARD', scopeType: 'WARD', name: row.name, description: row.description, status: row.status, version: version.rows[0] } }, { status: 201 });
+    return NextResponse.json({ template: { id: row.id, source: 'WARD', scopeType: 'WARD', name: row.name, description: row.description, distributionPolicy: row.distribution_policy, sourceTemplateId: row.source_template_id, sourceTemplateVersion: row.source_template_version, status: row.status, version: version.rows[0] } }, { status: 201 });
   } catch {
     await client.query('ROLLBACK').catch(() => undefined);
     return NextResponse.json({ error: 'Failed to duplicate document template', code: 'INTERNAL_ERROR' }, { status: 500 });

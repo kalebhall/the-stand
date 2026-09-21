@@ -16,9 +16,11 @@ function hasAnyRole(roles: string[] | undefined, roleNames: readonly string[]): 
 export function getNavigationItems(roles: string[] | undefined, features: WardFeatureFlags = DEFAULT_WARD_FEATURE_FLAGS): AppNavItem[] {
   const items: AppNavItem[] = [{ href: '/dashboard', label: 'Dashboard' }];
 
-  if (hasRole(roles, 'PROGRAM_EDITOR') || hasRole(roles, 'BISHOPRIC_EDITOR') || hasRole(roles, 'STAND_ADMIN')) {
-    items.push({ href: '/programs', label: 'Programs' });
-  }
+  const canViewPrograms = hasRole(roles, 'PROGRAM_EDITOR') || hasRole(roles, 'BISHOPRIC_EDITOR') || hasRole(roles, 'STAND_ADMIN');
+  const canAdministerTemplates = hasRole(roles, 'STAKE_ADMIN') || hasRole(roles, 'SYSTEM_ADMIN') || hasRole(roles, 'SUPPORT_ADMIN');
+  if (canViewPrograms) items.push({ href: '/programs', label: 'Programs' });
+  if (canViewPrograms) items.push({ href: '/programs/templates', label: 'Templates' });
+  if (canAdministerTemplates) items.push({ href: '/programs/templates/admin', label: 'Template Administration' });
 
   if (hasAnyRole(roles, MEETING_VIEW_ROLES) || hasRole(roles, 'STAND_ADMIN')) {
     items.push({ href: '/meetings', label: 'Meetings' });

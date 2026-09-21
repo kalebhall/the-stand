@@ -1,4 +1,5 @@
 import { parseDocumentLayout } from './schema';
+import { isAdvancedLayout, parseAdvancedLayout, projectAdvancedLayoutForOutput, downgradeToV1 } from './advanced-schema';
 import { allBlocks, validatePublicDocumentLayout } from './public-safety';
 import type { DocumentBlock, DocumentLayout } from './types';
 import type { ResolvedDocumentData } from './render-types';
@@ -12,16 +13,18 @@ export type SafeMeetingSource = {
   publicUrl?: string | null;
   programItems: Array<{ order: number; label: string; details?: string | null }>;
   publicValues?: Partial<Record<DocumentBlock['type'], string | null>>;
+  media?: Partial<Record<string, { url: string; altText: string | null; isDecorative: boolean }>>;
 };
 
 export function resolveDocumentData(
   inputLayout: unknown,
   source: SafeMeetingSource,
-  options: { public?: boolean; explicitPublicBlockTypes?: readonly string[] } = {}
+  options: { public?: boolean; target?: 'PRINT' | 'DIGITAL'; explicitPublicBlockTypes?: readonly string[] } = {}
 ): { layout: DocumentLayout; data: ResolvedDocumentData } {
-  const layout = parseDocumentLayout(inputLayout);
-  if (options.public) validatePublicDocumentLayout(layout, options.explicitPublicBlockTypes ?? []);
-
+  const advancedLayout = isAdvancedLayout(inputLayout) ? parseAdvancedLayout(inputLayout) : null;
+  let layout = advancedLayout
+    ? downgradeToV1(advancedLayout)
+    : parseDocumentLayout(inputLayout);
   const configuredValues = Object.fromEntries(
     allBlocks(layout).flatMap((block) => {
       const config = block.config as { text?: string };
@@ -47,17 +50,22 @@ export function resolveDocumentData(
     QR_CODE: source.publicUrl ?? null
   };
 
-  return {
-    layout,
-    data: {
-      meetingDate: source.meetingDate,
-      meetingType: source.meetingType,
-      wardName: source.wardName,
-      location: source.location,
-      publicUrl: source.publicUrl,
-      values,
-      meetingItems: source.programItems,
-      warnings: []
-    }
+  const data: ResolvedDocumentData = {
+    meetingDate: source.meetingDate,
+    meetingType: source.meetingType,
+    wardName: source.wardName,
+    location: source.location,
+    publicUrl: source.publicUrl,
+    values,
+    meetingItems: source.programItems,
+    warnings: [],
+    media: source.media ?? {}
   };
+  if (advancedLayout) {
+    layout = projectAdvancedLayoutForOutput(advancedLayout, options.public ? 'PUBLIC' : (options.target ?? 'DIGITAL'), data);
+    if (options.public) validatePublicDocumentLayout(layout, options.explicitPublicBlockTypes ?? []);
+  } else if (options.public) {
+    validatePublicDocumentLayout(layout, options.explicitPublicBlockTypes ?? []);
+  }
+  return { layout, data };
 }

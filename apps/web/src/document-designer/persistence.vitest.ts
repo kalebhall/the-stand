@@ -35,7 +35,8 @@ describe('document designer persistence', () => {
       allowProgramEditorRepublish: false,
       allowProgramEditorRollback: false,
       allowProgramEditorCreateTemplates: false,
-      allowProgramEditorDeleteMedia: false
+      allowProgramEditorDeleteMedia: false,
+      publicProgramExpirationDays: 30
     })).resolves.toEqual(row);
     expect(client.query).toHaveBeenCalledWith(expect.stringContaining('WHERE ward_id = $1::uuid'), ['ward-a']);
     expect(client.query).toHaveBeenLastCalledWith(expect.stringContaining('$2::boolean'), expect.arrayContaining(['ward-a', true, true, 'user-a']));
@@ -43,6 +44,7 @@ describe('document designer persistence', () => {
 
   it('uses a revision predicate when saving a meeting document', async () => {
     const client = { query: vi.fn().mockResolvedValue({ rows: [{ revision: 2 }] }) };
+    client.query.mockResolvedValueOnce({ rows: [] }); // LOCK TABLE meeting_document
     await saveMeetingDocument(client, {
       wardId: 'ward-a',
       meetingId: 'meeting-a',

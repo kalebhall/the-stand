@@ -8,6 +8,8 @@ import { ensureSupportAdminBootstrap } from '@/src/db/bootstrap-support-admin';
 import { pool } from '@/src/db/client';
 import { enforceRateLimit } from '@/src/lib/rate-limit';
 
+const AUTHZ_REFRESH_INTERVAL_MS = 60_000;
+
 type SessionUserDetails = {
   id: string;
   email: string;
@@ -16,10 +18,13 @@ type SessionUserDetails = {
   hasPassword: boolean;
   roles: string[];
   activeWardId: string | null;
+  activeStakeId: string | null;
+  stakeAssignments: { stakeId: string; roleNames: string[] }[];
 };
 
 type WardAssignmentRow = {
   ward_id: string;
+  stake_id: string;
   is_support_assignment: boolean;
   expires_at: string | null;
   revoked_at: string | null;
@@ -48,26 +53,33 @@ async function loadSessionUserByEmail(email: string): Promise<SessionUserDetails
          INNER JOIN user_global_role ugr ON ugr.role_id = r.id
         WHERE ugr.user_id = $1
         UNION
-       SELECT r.name
-         FROM role r
-         INNER JOIN ward_user_role wur ON wur.role_id = r.id
-        WHERE wur.user_id = $1
-          AND wur.revoked_at IS NULL
-          AND (wur.expires_at IS NULL OR wur.expires_at > now())`,
+       SELECT role_name AS name
+         FROM app.load_user_ward_access($1)`,
       [user.id]
     );
 
     const wardResult = await client.query(
       `SELECT ward_id,
+              stake_id,
               is_support_assignment,
               expires_at,
               revoked_at,
               created_at
-         FROM ward_user_role
-        WHERE user_id = $1
-          AND revoked_at IS NULL
-          AND (expires_at IS NULL OR expires_at > now())
+         FROM app.load_user_ward_access($1)
         ORDER BY created_at ASC`,
+      [user.id]
+    );
+
+    const stakeResult = await client.query(
+      `SELECT sur.stake_id, r.name
+         FROM stake_user_role sur
+         INNER JOIN role r ON r.id = sur.role_id
+        WHERE sur.user_id = $1
+          AND sur.revoked_at IS NULL
+          AND sur.granted_at <= now()
+          AND r.scope = 'STAKE'
+          AND (r.name = 'STAKE_ADMIN')
+        ORDER BY sur.stake_id, r.name`,
       [user.id]
     );
 
@@ -81,6 +93,12 @@ async function loadSessionUserByEmail(email: string): Promise<SessionUserDetails
       createdAt: row.created_at
     }));
 
+    const activeWardId = chooseActiveWardId({
+      isSupportAdmin: roleResult.rows.some((row) => (row.name as string) === 'SUPPORT_ADMIN'),
+      assignments
+    });
+    const activeWard = (wardResult.rows as WardAssignmentRow[]).find((row) => row.ward_id === activeWardId);
+
     return {
       id: user.id,
       email: user.email,
@@ -88,10 +106,14 @@ async function loadSessionUserByEmail(email: string): Promise<SessionUserDetails
       mustChangePassword: user.must_change_password,
       hasPassword: user.has_password,
       roles: roleResult.rows.map((row) => row.name as string),
-      activeWardId: chooseActiveWardId({
-        isSupportAdmin: roleResult.rows.some((row) => (row.name as string) === 'SUPPORT_ADMIN'),
-        assignments
-      })
+      activeStakeId: activeWard?.stake_id ?? null,
+      stakeAssignments: stakeResult.rows.reduce<{ stakeId: string; roleNames: string[] }[]>((result, row) => {
+        const existing = result.find((assignment) => assignment.stakeId === row.stake_id);
+        if (existing) existing.roleNames.push(row.name as string);
+        else result.push({ stakeId: row.stake_id as string, roleNames: [row.name as string] });
+        return result;
+      }, []),
+      activeWardId
     };
   } finally {
     client.release();
@@ -176,8 +198,9 @@ export const { auth, handlers, unstable_update } = NextAuth({
           roles: sessionUser.roles,
           mustChangePassword: sessionUser.mustChangePassword,
           hasPassword: sessionUser.hasPassword,
-          activeWardId: sessionUser.activeWardId
-        };
+          activeWardId: sessionUser.activeWardId,
+          activeStakeId: sessionUser.activeStakeId,
+          stakeAssignments: sessionUser.stakeAssignments        };
       }
     })
   ],
@@ -207,6 +230,9 @@ export const { auth, handlers, unstable_update } = NextAuth({
               token.mustChangePassword = sessionUser.mustChangePassword;
               token.hasPassword = sessionUser.hasPassword;
               token.activeWardId = sessionUser.activeWardId;
+          token.activeStakeId = sessionUser.activeStakeId;
+          token.stakeAssignments = sessionUser.stakeAssignments;
+              token.authzRefreshedAt = Date.now();
               return token;
             }
           }
@@ -217,6 +243,9 @@ export const { auth, handlers, unstable_update } = NextAuth({
         token.mustChangePassword = user.mustChangePassword;
         token.hasPassword = user.hasPassword;
         token.activeWardId = user.activeWardId;
+        token.activeStakeId = user.activeStakeId;
+        token.stakeAssignments = user.stakeAssignments;
+        token.authzRefreshedAt = Date.now();
         return token;
       }
 
@@ -227,11 +256,43 @@ export const { auth, handlers, unstable_update } = NextAuth({
           token.mustChangePassword = sessionUser.mustChangePassword;
           token.hasPassword = sessionUser.hasPassword;
           token.activeWardId = sessionUser.activeWardId;
+          token.activeStakeId = sessionUser.activeStakeId;
+          token.stakeAssignments = sessionUser.stakeAssignments;
+          token.authzRefreshedAt = Date.now();
+        } else {
+          token.roles = [];
+          token.mustChangePassword = false;
+          token.hasPassword = false;
+          token.activeWardId = null;
+          token.activeStakeId = null;
+          token.stakeAssignments = [];
+          token.authzRefreshedAt = Date.now();
         }
       }
 
-      // Token already has roles baked in — no DB re-query on every request.
-      // Explicit client session updates refresh access after role changes.
+      if (
+        token.sub &&
+        (typeof token.authzRefreshedAt !== 'number' || Date.now() - token.authzRefreshedAt >= AUTHZ_REFRESH_INTERVAL_MS)
+      ) {
+        const sessionUser = await loadSessionUserById(token.sub);
+        token.authzRefreshedAt = Date.now();
+        if (sessionUser) {
+          token.roles = sessionUser.roles;
+          token.mustChangePassword = sessionUser.mustChangePassword;
+          token.hasPassword = sessionUser.hasPassword;
+          token.activeWardId = sessionUser.activeWardId;
+          token.activeStakeId = sessionUser.activeStakeId;
+          token.stakeAssignments = sessionUser.stakeAssignments;
+        } else {
+          token.roles = [];
+          token.mustChangePassword = false;
+          token.hasPassword = false;
+          token.activeWardId = null;
+          token.activeStakeId = null;
+          token.stakeAssignments = [];
+        }
+      }
+
       return token;
     },
     session: async ({ session, token }) => {
@@ -241,6 +302,8 @@ export const { auth, handlers, unstable_update } = NextAuth({
         session.user.mustChangePassword = Boolean(token.mustChangePassword);
         session.user.hasPassword = Boolean(token.hasPassword);
         session.activeWardId = (token.activeWardId as string | undefined) ?? null;
+        session.activeStakeId = (token.activeStakeId as string | undefined) ?? null;
+        session.stakeAssignments = (token.stakeAssignments as { stakeId: string; roleNames: string[] }[] | undefined) ?? [];
       }
 
       return session;

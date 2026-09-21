@@ -22,7 +22,12 @@ describe('ProgramDesignerClient', () => {
     expect(screen.getByRole('complementary', { name: 'Approved blocks' })).toBeInTheDocument();
     expect(screen.getByRole('complementary', { name: 'Simple Mode properties' })).toBeInTheDocument();
     await new Promise((resolve) => setTimeout(resolve, 30));
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
+      '/api/w/ward-1/meetings/meeting-1/program-design',
+      '/api/w/ward-1/document-templates',
+      '/api/w/ward-1/media'
+    ]);
   });
 
   it('debounces one save after a user change and sends the current revision', async () => {

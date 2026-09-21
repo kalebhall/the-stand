@@ -45,7 +45,7 @@ const meetingProgramConfig = z
       }
     }
   });
-const imageConfig = z.object({ src: safeUrlSchema, alt: structuredText(500) }).strict();
+const imageConfig = z.object({ assetId: z.string().uuid().nullable(), alt: structuredText(500), isDecorative: z.boolean() }).strict();
 const linkConfig = z.object({ label: boundedLabel, href: safeUrlSchema }).strict();
 const qrConfig = z.object({ href: safeUrlSchema, label: boundedLabel }).strict();
 const spacerConfig = z.object({ height: z.number().finite().positive().max(720) }).strict();
@@ -129,7 +129,7 @@ const sacramentProgramRegistryDefinition = {
   IMAGE: definition(
     'IMAGE',
     imageConfig,
-    { src: 'https://example.com/image.png', alt: 'Program image' },
+    { assetId: null, alt: '', isDecorative: true },
     { ...publicFields, allowedDataModes: allModes }
   ),
   DIVIDER: definition('DIVIDER', dividerConfig, { style: 'SOLID' }, { ...publicSafe, allowedDataModes: allModes }),

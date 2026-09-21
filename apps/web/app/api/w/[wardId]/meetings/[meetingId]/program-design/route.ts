@@ -9,11 +9,13 @@ import { buildPublicPreviewSource, getSimpleModeProperties, SimpleModeValidation
 import { parseTemplateLayout } from '@/src/document-designer/template-service';
 import { allBlocks, validatePublicDocumentLayout } from '@/src/document-designer/public-safety';
 import { getRegisteredBlockDefinition } from '@/src/document-designer/registry';
+import { mergeSimpleIntoAdvanced, normalizeToAdvanced, downgradeToV1, parseAdvancedLayout, projectAdvancedLayoutForPublic, type AdvancedDocumentLayout } from '@/src/document-designer/advanced-schema';
+import { assertNoLockedChanges, LockedLayoutError } from '@/src/document-designer/lock-enforcement';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 import type { DocumentLayout } from '@/src/document-designer/types';
 
-const saveSchema = z.object({ expectedRevision: z.number().int().positive(), document: z.unknown(), templateId: z.string().trim().min(1).optional() }).strict();
+const saveSchema = z.object({ expectedRevision: z.number().int().positive(), document: z.unknown(), templateId: z.string().trim().min(1).optional(), mode: z.enum(['SIMPLE', 'ADVANCED']).default('SIMPLE') }).strict();
 const fullPageFallback = () => BUILT_IN_TEMPLATES.find((template) => template.key === 'full-page-standard')!.layout;
 
 function errorResponse(message: string, code: string, status: number) {
@@ -85,15 +87,18 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+    await client.query('LOCK TABLE meeting_document IN ROW EXCLUSIVE MODE');
     await setDbContext(client, { userId: session.user.id, wardId });
     const contextData = await readContext(client, wardId, meetingId);
     if (!contextData) { await client.query('ROLLBACK'); return errorResponse('Meeting not found', 'NOT_FOUND', 404); }
     const document = await ensureDocument(client, wardId, meetingId, session.user.id);
+    const advancedModeAvailable = canUseAdvancedProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId, contextData.profile);
+    const advancedLayout = parseAdvancedLayout(document.layout_json);
+    const layout = downgradeToV1(advancedLayout);
     await client.query('COMMIT');
-    const layout = validateSimpleModeDraft(document.layout_json, document.layout_json).layout;
     return NextResponse.json({
       meeting: { id: contextData.meeting.id, meetingDate: contextData.meeting.meeting_date, meetingType: contextData.meeting.meeting_type },
-      document: { id: document.id, layout, theme: document.theme_json ?? layout.theme, revision: Number(document.revision ?? 1), sourceTemplateId: document.source_template_id ?? null, sourceTemplateVersion: document.source_template_version ?? null },
+      document: { id: document.id, layout, ...(advancedModeAvailable ? { advancedLayout } : {}), theme: document.theme_json ?? layout.theme, revision: Number(document.revision ?? 1), sourceTemplateId: document.source_template_id ?? null, sourceTemplateVersion: document.source_template_version ?? null, schemaVersion: advancedModeAvailable ? advancedLayout.schemaVersion : layout.schemaVersion },
       simpleMode: getSimpleModeProperties(layout, canUseAdvancedProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId, contextData.profile)),
       previewSource: contextData.previewSource
     });
@@ -113,6 +118,7 @@ export async function PUT(request: Request, context: { params: Promise<{ wardId:
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+    await client.query('LOCK TABLE meeting_document IN ROW EXCLUSIVE MODE');
     await setDbContext(client, { userId: session.user.id, wardId });
     const meeting = await client.query('SELECT id FROM meeting WHERE id = $1::uuid AND ward_id = $2::uuid LIMIT 1', [meetingId, wardId]);
     if (!meeting.rows[0]) { await client.query('ROLLBACK'); return errorResponse('Meeting not found', 'NOT_FOUND', 404); }
@@ -129,7 +135,10 @@ export async function PUT(request: Request, context: { params: Promise<{ wardId:
     let sourceTemplateId: string | null = (current.source_template_id as string | null | undefined) ?? null;
     let sourceTemplateVersion: number | null = current.source_template_version == null ? null : Number(current.source_template_version);
     try {
-      if (body.data.templateId) {
+      if (body.data.mode === 'ADVANCED') {
+        const advanced = parseAdvancedLayout(body.data.document);
+        validated = { layout: downgradeToV1(advanced), warnings: [] };
+      } else if (body.data.templateId) {
         const builtIn = BUILT_IN_TEMPLATES.find((template) => template.key === body.data.templateId);
         if (builtIn) {
           validated = { layout: parseTemplateLayout(builtIn.layout), warnings: [] };
@@ -145,7 +154,7 @@ export async function PUT(request: Request, context: { params: Promise<{ wardId:
                JOIN document_template_version v ON v.id = t.current_published_version_id
               WHERE t.id = $1::uuid AND t.document_type = 'SACRAMENT_PROGRAM'
                 AND t.status <> 'ARCHIVED'
-                AND ((t.scope_type = 'STAKE' AND t.status = 'PUBLISHED')
+                AND ((t.scope_type = 'STAKE' AND t.status = 'PUBLISHED' AND t.scope_id = (SELECT stake_id FROM ward WHERE id = $2::uuid))
                   OR (t.scope_type = 'WARD' AND t.scope_id = $2::uuid)
                   OR (t.scope_type = 'PERSONAL_DRAFT' AND t.scope_id = $2::uuid AND t.created_by_user_id = $3::uuid))
               LIMIT 1`,
@@ -161,24 +170,51 @@ export async function PUT(request: Request, context: { params: Promise<{ wardId:
           sourceTemplateVersion = Number(templateRow.version);
         }
       } else {
-        validated = validateSimpleModeDraft(body.data.document, current.layout_json);
+        validated = validateSimpleModeDraft(body.data.document, current.layout_json && typeof current.layout_json === 'object' && (current.layout_json as { schemaVersion?: unknown }).schemaVersion === 2 ? downgradeToV1(parseAdvancedLayout(current.layout_json)) : current.layout_json);
       }
     } catch (error) {
       await client.query('ROLLBACK');
       if (error instanceof SimpleModeValidationError) return errorResponse(error.message, error.code, error.code === 'INVALID_LAYOUT' ? 400 : 422);
       return errorResponse('Invalid program design', 'BAD_REQUEST', 400);
     }
+    if (body.data.mode === 'ADVANCED' && !advancedModeAvailable) {
+      await client.query('ROLLBACK');
+      return errorResponse('Advanced Mode is not enabled for this ward', 'FORBIDDEN', 403);
+    }
+    let advancedToSave: AdvancedDocumentLayout | null = null;
+    if (body.data.mode === 'ADVANCED') {
+      try {
+        advancedToSave = parseAdvancedLayout(body.data.document);
+        assertNoLockedChanges(normalizeToAdvanced(current.layout_json), advancedToSave);
+      } catch (error) {
+        await client.query('ROLLBACK');
+        if (error instanceof LockedLayoutError) return errorResponse(error.message, 'LOCKED_LAYOUT', 409);
+        return errorResponse(error instanceof Error ? error.message : 'Invalid advanced layout', 'BAD_REQUEST', 400);
+      }
+    }
+    const persistedLayout = advancedToSave ?? (current.layout_json && typeof current.layout_json === 'object' && (current.layout_json as { schemaVersion?: unknown }).schemaVersion === 2 ? mergeSimpleIntoAdvanced(parseAdvancedLayout(current.layout_json), validated.layout) : validated.layout);
+    try {
+      const previousAdvanced = current.layout_json && typeof current.layout_json === 'object' && (current.layout_json as { schemaVersion?: unknown }).schemaVersion === 2
+        ? parseAdvancedLayout(current.layout_json)
+        : normalizeToAdvanced(current.layout_json);
+      assertNoLockedChanges(previousAdvanced, parseAdvancedLayout(persistedLayout));
+    } catch (error) {
+      await client.query('ROLLBACK');
+      if (error instanceof LockedLayoutError) return errorResponse(error.message, 'LOCKED_LAYOUT', 409);
+      return errorResponse('Invalid program design', 'BAD_REQUEST', 400);
+    }
+    const persistedSchemaVersion = persistedLayout.schemaVersion;
     const updated = await client.query(
       `UPDATE meeting_document
           SET schema_version = $3::int, source_template_id = $4::uuid, source_template_version = $5::int, layout_json = $6::jsonb, theme_json = $7::jsonb, revision = revision + 1, updated_by_user_id = $8::uuid, updated_at = now()
         WHERE id = $1::uuid AND ward_id = $2::uuid AND revision = $9::int
         RETURNING id, revision`,
-      [current.id, wardId, validated.layout.schemaVersion, sourceTemplateId, sourceTemplateVersion, JSON.stringify(validated.layout), JSON.stringify(validated.layout.theme), session.user.id, revision]
+      [current.id, wardId, persistedSchemaVersion, sourceTemplateId, sourceTemplateVersion, JSON.stringify(persistedLayout), JSON.stringify(persistedLayout.theme), session.user.id, revision]
     );
     if (!updated.rows[0]) { await client.query('ROLLBACK'); return errorResponse('The program changed in another session', 'REVISION_CONFLICT', 409); }
     await recordAuditEvent(client, { wardId, userId: session.user.id, actorName: session.user.name || session.user.email || null, action: 'PROGRAM_DESIGN_UPDATED', entityType: 'meeting_document', entityId: String(current.id), details: { meetingId, revision: Number((updated.rows[0] as { revision: number }).revision) }, source: 'manual_ui', severity: 'notice' });
     await client.query('COMMIT');
-    return NextResponse.json({ success: true, revision: Number((updated.rows[0] as { revision: number }).revision), document: validated.layout });
+    return NextResponse.json({ success: true, revision: Number((updated.rows[0] as { revision: number }).revision), document: persistedLayout });
   } catch {
     await client.query('ROLLBACK').catch(() => undefined);
     return errorResponse('Failed to save program design', 'INTERNAL_ERROR', 500);
@@ -195,19 +231,33 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+    await client.query('LOCK TABLE meeting_document IN ROW EXCLUSIVE MODE');
     await setDbContext(client, { userId: session.user.id, wardId });
     const contextData = await readContext(client, wardId, meetingId);
     if (!contextData) { await client.query('ROLLBACK'); return errorResponse('Meeting not found', 'NOT_FOUND', 404); }
     const current = contextData.row?.layout_json ?? fullPageFallback();
-    let validated;
-    try { validated = validateSimpleModeDraft(body.data.document, current); validatePublicDocumentLayout(validated.layout, ['MEETING_PROGRAM', 'ANNOUNCEMENTS', 'QR_CODE']); }
-    catch (error) {
+    const currentSimpleLayout = current && typeof current === 'object' && (current as { schemaVersion?: unknown }).schemaVersion === 2 ? downgradeToV1(parseAdvancedLayout(current)) : current;
+    let warnings: string[] = [];
+    try {
+      if (body.data.mode === 'ADVANCED') {
+        const settings = await client.query('SELECT allow_advanced_program_designer FROM ward_document_settings WHERE ward_id = $1::uuid LIMIT 1', [wardId]);
+        const enabled = canUseAdvancedProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId, { allowAdvancedProgramDesigner: settings.rows[0]?.allow_advanced_program_designer === true });
+        if (!enabled) { await client.query('ROLLBACK'); return errorResponse('Advanced Mode is not enabled for this ward', 'FORBIDDEN', 403); }
+        const advanced = parseAdvancedLayout(body.data.document);
+        warnings = [];
+        validatePublicDocumentLayout(projectAdvancedLayoutForPublic(advanced), ['MEETING_PROGRAM', 'ANNOUNCEMENTS', 'QR_CODE']);
+      } else {
+        const validated = validateSimpleModeDraft(body.data.document, currentSimpleLayout);
+        warnings = validated.warnings;
+        validatePublicDocumentLayout(validated.layout, ['MEETING_PROGRAM', 'ANNOUNCEMENTS', 'QR_CODE']);
+      }
+    } catch (error) {
       await client.query('ROLLBACK');
       if (error instanceof SimpleModeValidationError) return errorResponse(error.message, error.code, 422);
       return errorResponse('Program cannot be previewed publicly', 'UNSAFE_PUBLIC_DOCUMENT', 422);
     }
     await client.query('ROLLBACK');
-    return NextResponse.json({ valid: true, warnings: validated.warnings, publicSafe: true });
+    return NextResponse.json({ valid: true, warnings, publicSafe: true });
   } catch {
     await client.query('ROLLBACK').catch(() => undefined);
     return errorResponse('Failed to validate program design', 'INTERNAL_ERROR', 500);

@@ -12,6 +12,9 @@ export type TemplateDbRow = {
   status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
   current_published_version_id: string | null;
   created_by_user_id: string | null;
+  distribution_policy?: 'USE_AS_IS' | 'DUPLICATE_AND_CUSTOMIZE' | 'REQUIRED';
+  source_template_id?: string | null;
+  source_template_version?: number | null;
 };
 
 export type TemplateClient = {
@@ -65,6 +68,9 @@ export function templateResponse(row: TemplateDbRow, version?: Record<string, un
     description: row.description,
     documentType: row.document_type,
     status: row.status,
+    distributionPolicy: row.distribution_policy ?? 'DUPLICATE_AND_CUSTOMIZE',
+    sourceTemplateId: row.source_template_id ?? null,
+    sourceTemplateVersion: row.source_template_version ?? null,
     version: version
       ? {
           id: version.id,

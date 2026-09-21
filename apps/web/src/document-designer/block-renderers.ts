@@ -38,8 +38,10 @@ export function renderDocumentBlock(block: DocumentBlock, data: ResolvedDocument
     return `<a class="document-block document-block--qr" href="${escapeDocumentHtml(data.publicUrl)}" aria-label="Open digital program">Open digital program</a>`;
   }
   if (block.type === 'IMAGE') {
-    const config = block.config as { src: string; alt: string };
-    return `<img class="document-block document-block--image" src="${escapeDocumentHtml(config.src)}" alt="${escapeDocumentHtml(config.alt)}" />`;
+    const config = block.config as { assetId: string | null; alt: string; isDecorative: boolean };
+    const asset = config.assetId ? data.media?.[config.assetId] : undefined;
+    if (!asset) return '';
+    return `<img class="document-block document-block--image" src="${escapeDocumentHtml(asset.url)}" alt="${escapeDocumentHtml(asset.isDecorative ? '' : (asset.altText ?? config.alt))}"${asset.isDecorative ? ' aria-hidden="true"' : ''} />`;
   }
   if (block.type === 'CUSTOM_LINK') {
     const config = block.config as { label: string; href: string };

@@ -21,7 +21,8 @@ const settingsSchema = z.object({
   allowProgramEditorRepublish: z.boolean().optional(),
   allowProgramEditorRollback: z.boolean().optional(),
   allowProgramEditorCreateTemplates: z.boolean().optional(),
-  allowProgramEditorDeleteMedia: z.boolean().optional()
+  allowProgramEditorDeleteMedia: z.boolean().optional(),
+  publicProgramExpirationDays: z.number().int().min(1).max(3650).nullable().optional()
 }).strict().refine((value) => Object.keys(value).length > 0, 'At least one program setting is required');
 
 type ProgramSettings = {
@@ -31,6 +32,7 @@ type ProgramSettings = {
   allowProgramEditorRollback: boolean;
   allowProgramEditorCreateTemplates: boolean;
   allowProgramEditorDeleteMedia: boolean;
+  publicProgramExpirationDays: number | null;
 };
 
 function rowToProgramSettings(row: WardDocumentSettings | null): ProgramSettings {
@@ -41,7 +43,8 @@ function rowToProgramSettings(row: WardDocumentSettings | null): ProgramSettings
     allowProgramEditorRepublish: value.allow_program_editor_republish,
     allowProgramEditorRollback: value.allow_program_editor_rollback,
     allowProgramEditorCreateTemplates: value.allow_program_editor_create_templates,
-    allowProgramEditorDeleteMedia: value.allow_program_editor_delete_media
+    allowProgramEditorDeleteMedia: value.allow_program_editor_delete_media,
+    publicProgramExpirationDays: value.public_program_expiration_days
   };
 }
 
@@ -97,7 +100,8 @@ export async function PATCH(request: Request, context: { params: Promise<{ wardI
     const nextSettings = { ...beforeSettings, ...parsed.data };
     const after = await saveWardDocumentSettings(client, wardId, session.user.id, nextSettings);
     const afterSettings = rowToProgramSettings(after);
-    const changes = buildFieldDiff(before ? { ...beforeSettings } : null, afterSettings, []);
+    const expirationChanged = beforeSettings.publicProgramExpirationDays !== afterSettings.publicProgramExpirationDays;
+    const changes = buildFieldDiff(before ? { ...beforeSettings } : null, afterSettings, ['publicProgramExpirationDays']);
     if (changes) {
       await recordAuditEvent(client, {
         wardId,
@@ -110,6 +114,25 @@ export async function PATCH(request: Request, context: { params: Promise<{ wardI
         changes,
         previousState: before ? { ...beforeSettings } : null,
         details: { setting: 'ward_document_settings' },
+        source: 'manual_ui',
+        severity: 'notice'
+      });
+    }
+    if (expirationChanged) {
+      await recordAuditEvent(client, {
+        wardId,
+        userId: session.user.id,
+        actorName: session.user.name || session.user.email || null,
+        actorRole: session.user.roles?.[0] || null,
+        action: 'PROGRAM_PUBLIC_EXPIRATION_UPDATED',
+        entityType: 'ward_setting',
+        entityId: wardId,
+        changes: { publicProgramExpirationDays: {
+          old: beforeSettings.publicProgramExpirationDays,
+          new: afterSettings.publicProgramExpirationDays
+        } },
+        previousState: { publicProgramExpirationDays: beforeSettings.publicProgramExpirationDays },
+        details: { setting: 'public_program_expiration_days' },
         source: 'manual_ui',
         severity: 'notice'
       });

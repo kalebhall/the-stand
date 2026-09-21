@@ -88,6 +88,7 @@ export async function saveWardDocumentSettings(
     allowProgramEditorRollback: boolean;
     allowProgramEditorCreateTemplates: boolean;
     allowProgramEditorDeleteMedia: boolean;
+    publicProgramExpirationDays: number | null;
   }
 ): Promise<WardDocumentSettings> {
   const result = await client.query(
@@ -99,8 +100,9 @@ export async function saveWardDocumentSettings(
        allow_program_editor_rollback,
        allow_program_editor_create_templates,
        allow_program_editor_delete_media,
+       public_program_expiration_days,
        updated_by_user_id
-     ) VALUES ($1::uuid, $2::boolean, $3::boolean, $4::boolean, $5::boolean, $6::boolean, $7::boolean, $8::uuid)
+     ) VALUES ($1::uuid, $2::boolean, $3::boolean, $4::boolean, $5::boolean, $6::boolean, $7::boolean, $8::int, $9::uuid)
      ON CONFLICT (ward_id) DO UPDATE SET
        allow_advanced_program_designer = EXCLUDED.allow_advanced_program_designer,
        allow_program_editor_publish = EXCLUDED.allow_program_editor_publish,
@@ -108,6 +110,7 @@ export async function saveWardDocumentSettings(
        allow_program_editor_rollback = EXCLUDED.allow_program_editor_rollback,
        allow_program_editor_create_templates = EXCLUDED.allow_program_editor_create_templates,
        allow_program_editor_delete_media = EXCLUDED.allow_program_editor_delete_media,
+       public_program_expiration_days = EXCLUDED.public_program_expiration_days,
        updated_by_user_id = EXCLUDED.updated_by_user_id,
        updated_at = now()
      RETURNING ward_id,
@@ -127,6 +130,7 @@ export async function saveWardDocumentSettings(
       settings.allowProgramEditorRollback,
       settings.allowProgramEditorCreateTemplates,
       settings.allowProgramEditorDeleteMedia,
+      settings.publicProgramExpirationDays,
       userId
     ]
   );
@@ -136,6 +140,7 @@ export async function saveWardDocumentSettings(
 
 export async function saveMeetingDocument(client: Queryable, input: MeetingDocumentInput) {
   const expectedRevision = input.expectedRevision ?? 0;
+  await client.query('LOCK TABLE meeting_document IN ROW EXCLUSIVE MODE');
   const result = await client.query(
     `INSERT INTO meeting_document (
        ward_id, meeting_id, document_type, source_template_id, source_template_version,

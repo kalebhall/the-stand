@@ -105,7 +105,7 @@ export interface SpacerBlock extends DocumentBlockBase<'SPACER'> {
   config: { height: number };
 }
 export interface ImageBlock extends DocumentBlockBase<'IMAGE'> {
-  config: { src: string; alt: string };
+  config: { assetId: string | null; alt: string; isDecorative: boolean };
 }
 export interface QrCodeBlock extends DocumentBlockBase<'QR_CODE'> {
   config: { href: string; label: string };

@@ -14,6 +14,7 @@ const server = http.createServer(async (req, res) => {
 
   if (req.url === '/health' && req.method === 'GET') {
     const body = await runHealthCheck();
+    res.statusCode = body.status === 'ok' ? 200 : 503;
     res.setHeader('content-type', 'application/json');
     res.end(JSON.stringify(body));
     return;

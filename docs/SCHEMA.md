@@ -426,5 +426,17 @@ validated copied layout in `meeting_document`, so later template publishing
 does not mutate existing meetings.
 
 ====================================================================
+MILESTONE 6 MEDIA MODEL
+====================================================================
+
+`0068_document_designer_media.sql` adds `media_asset`, storing only opaque
+storage keys and public tokens in PostgreSQL. Assets are scoped to SYSTEM,
+STAKE, or WARD; ward users can write only active-ward WARD rows. RLS permits
+read access to active system/stake assets available to the active ward and
+active ward assets. Uploads are limited to JPEG/PNG/WebP, bounded in bytes and
+pixels, normalized through decode/re-encode, and archived rather than deleted.
+IMAGE blocks store `assetId`, alt/decorative metadata, and never arbitrary URLs.
+
+====================================================================
 END OF SCHEMA.md
 ====================================================================

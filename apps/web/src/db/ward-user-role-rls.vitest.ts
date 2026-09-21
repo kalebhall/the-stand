@@ -18,7 +18,6 @@ describe('ward_user_role RLS isolation', () => {
   it.skipIf(!shouldRun)('returns only rows for current ward context', () => {
     const sql = String.raw`
 BEGIN;
-\i drizzle/0000_init.sql
 TRUNCATE TABLE ward_user_role, role, user_account, ward, stake RESTART IDENTITY CASCADE;
 
 DO $$

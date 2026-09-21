@@ -36,13 +36,14 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
     await setDbContext(client, { userId: session.user.id, wardId });
     const result = await client.query(
       `SELECT t.id, t.template_key, t.scope_type, t.scope_id, t.document_type, t.name, t.description, t.status,
-              t.current_published_version_id, t.created_by_user_id,
+              t.current_published_version_id, t.created_by_user_id, t.distribution_policy,
+              t.source_template_id, t.source_template_version,
               v.id AS version_id, v.version, v.schema_version, v.layout_json, v.theme_json, v.lock_json
          FROM document_template t
          LEFT JOIN document_template_version v ON v.id = t.current_published_version_id
         WHERE t.id = $1::uuid
           AND t.document_type = 'SACRAMENT_PROGRAM'
-          AND ((t.scope_type = 'STAKE' AND t.status = 'PUBLISHED')
+          AND ((t.scope_type = 'STAKE' AND t.status = 'PUBLISHED' AND t.scope_id = (SELECT stake_id FROM ward WHERE id = $2::uuid))
             OR (t.scope_type = 'WARD' AND t.scope_id = $2::uuid)
             OR (t.scope_type = 'PERSONAL_DRAFT' AND t.scope_id = $2::uuid AND t.created_by_user_id = $3::uuid))
         LIMIT 1`,
@@ -62,6 +63,9 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
       description: row.description,
       documentType: row.document_type,
       status: row.status,
+      distributionPolicy: row.distribution_policy ?? 'DUPLICATE_AND_CUSTOMIZE',
+      sourceTemplateId: row.source_template_id ?? null,
+      sourceTemplateVersion: row.source_template_version ?? null,
       version: row.version_id
         ? { id: row.version_id, version: row.version, schemaVersion: row.schema_version, layout: row.layout_json, theme: row.theme_json, lock: row.lock_json }
         : null

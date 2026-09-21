@@ -2,8 +2,20 @@ export const GLOBAL_ROLES = ['SUPPORT_ADMIN', 'SYSTEM_ADMIN'] as const;
 
 export const WARD_ROLES = ['STAND_ADMIN', 'BISHOPRIC_EDITOR', 'CLERK_EDITOR', 'WARD_CLERK', 'MEMBERSHIP_CLERK', 'CONDUCTOR_VIEW', 'PROGRAM_EDITOR'] as const;
 
+export const STAKE_ROLES = ['STAKE_ADMIN'] as const;
+
 export type GlobalRoleName = (typeof GLOBAL_ROLES)[number];
 export type WardRoleName = (typeof WARD_ROLES)[number];
+export type StakeRoleName = (typeof STAKE_ROLES)[number];
+
+export type StakeAssignment = { stakeId: string; roleNames: string[] };
+export type TemplateScope = 'SYSTEM' | 'STAKE' | 'WARD' | 'PERSONAL_DRAFT';
+export type TemplateAuthorizationSession = {
+  roles?: string[];
+  activeWardId?: string | null;
+  activeStakeId?: string | null;
+  stakeAssignments?: StakeAssignment[];
+};
 
 export type ProgramPermissionProfile = {
   allowAdvancedProgramDesigner?: boolean;
@@ -78,6 +90,12 @@ export function canManageProgramMedia(session: { roles?: string[]; activeWardId?
   return canViewProgramDesigner(session, wardId);
 }
 
+export function canDeleteProgramMedia(session: { roles?: string[]; activeWardId?: string | null }, wardId: string, profile: ProgramPermissionProfile = {}): boolean {
+  if (!inActiveWard(session, wardId)) return false;
+  if (hasRole(session.roles, 'STAND_ADMIN')) return true;
+  return hasRole(session.roles, 'PROGRAM_EDITOR') && profile.allowProgramEditorDeleteMedia === true;
+}
+
 export function canPublishProgram(session: { roles?: string[]; activeWardId?: string | null }, wardId: string, profile: ProgramPermissionProfile = {}): boolean {
   return inActiveWard(session, wardId) && (hasRole(session.roles, 'STAND_ADMIN') || hasRole(session.roles, 'BISHOPRIC_EDITOR') || (hasRole(session.roles, 'PROGRAM_EDITOR') && profile.allowProgramEditorPublish === true));
 }
@@ -144,4 +162,37 @@ export function canRunImports(session: { roles?: string[]; activeWardId?: string
   }
 
   return hasRole(roles, 'STAND_ADMIN') || hasRole(roles, 'CLERK_EDITOR');
+}
+
+function hasStakeRole(session: TemplateAuthorizationSession, stakeId: string): boolean {
+  return session.stakeAssignments?.some((assignment) => assignment.stakeId === stakeId && assignment.roleNames.some((role) => role.trim().toUpperCase() === 'STAKE_ADMIN')) === true;
+}
+
+export function canViewStakeTemplates(session: TemplateAuthorizationSession, stakeId: string): boolean {
+  return Boolean(stakeId) && (hasStakeRole(session, stakeId) || hasRole(session.roles, 'SYSTEM_ADMIN'));
+}
+
+export function canManageStakeTemplates(session: TemplateAuthorizationSession, stakeId: string): boolean {
+  return hasStakeRole(session, stakeId) || hasRole(session.roles, 'SYSTEM_ADMIN');
+}
+
+export const canPublishStakeTemplates = canManageStakeTemplates;
+export const canArchiveStakeTemplates = canManageStakeTemplates;
+
+export function canManageSystemTemplates(session: TemplateAuthorizationSession): boolean {
+  return hasRole(session.roles, 'SYSTEM_ADMIN') || hasRole(session.roles, 'SUPPORT_ADMIN');
+}
+
+export function canCopyAvailableTemplate(
+  session: TemplateAuthorizationSession,
+  template: { scopeType: TemplateScope; scopeId: string | null; ownerUserId?: string | null; status: string },
+  targetWardId: string,
+  userId: string
+): boolean {
+  if (session.activeWardId !== targetWardId) return false;
+  if (template.status !== 'PUBLISHED' && template.scopeType !== 'PERSONAL_DRAFT') return false;
+  if (template.scopeType === 'SYSTEM') return true;
+  if (template.scopeType === 'STAKE') return Boolean(template.scopeId && canViewStakeTemplates(session, template.scopeId));
+  if (template.scopeType === 'WARD') return template.scopeId === targetWardId;
+  return template.scopeId === targetWardId && template.ownerUserId === userId;
 }

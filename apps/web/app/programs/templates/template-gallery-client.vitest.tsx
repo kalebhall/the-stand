@@ -13,7 +13,9 @@ describe('TemplateGalleryClient', () => {
     ] }) }));
     render(<TemplateGalleryClient wardId="ward-1" canCopy />);
     expect(await screen.findByText('Classic Bifold')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Copy to ward draft' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Duplicate and customize' })).toBeInTheDocument();
+    expect(screen.getByText('Scope')).toBeInTheDocument();
+    expect(screen.getByText('Version')).toBeInTheDocument();
   });
 
   it('renders a failed load as a live status and hides copy controls', async () => {
