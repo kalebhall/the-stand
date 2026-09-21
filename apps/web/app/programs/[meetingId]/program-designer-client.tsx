@@ -8,9 +8,10 @@ import { downgradeToV1, normalizeToAdvanced, type AdvancedDocumentLayout } from 
 import { addBlock, configureColumns, reorderBlock, removeBlock, resizeBlock, setAdvancedBlockVisibility } from '@/src/document-designer/layout-operations';
 import { commitHistory, createHistory, redo, undo, type HistoryState } from '@/src/document-designer/history';
 import type { DocumentBlock, DocumentLayout } from '@/src/document-designer/types';
+import type { MediaAssetResponse } from '@/src/document-designer/media-types';
 import { moveBlock, modeClass, setBlockVisibility, setTheme, type DesignerMode, type SaveState } from './designer-state';
 
-type PreviewSource = { meetingDate: string; meetingType: string; wardName?: string | null; programItems: Array<{ order: number; label: string; details?: string | null }> };
+type PreviewSource = { meetingDate: string; meetingType: string; wardName?: string | null; programItems: Array<{ order: number; label: string; details?: string | null }>; media?: Partial<Record<string, { url: string; altText: string | null; isDecorative: boolean }>> };
 type LoadedDocument = { id: string; layout: DocumentLayout; advancedLayout?: AdvancedDocumentLayout; theme: DocumentLayout['theme']; revision: number; sourceTemplateId: string | null; sourceTemplateVersion: number | null };
 
 type Props = { wardId: string; meetingId: string };
@@ -23,6 +24,7 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
   const [document, setDocument] = useState<LoadedDocument | null>(null);
   const [source, setSource] = useState<PreviewSource | null>(null);
   const [templates, setTemplates] = useState<TemplateOption[]>([]);
+  const [media, setMedia] = useState<MediaAssetResponse[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState('');
   const [mode, setMode] = useState<DesignerMode>('EDIT');
   const [publicVisitor, setPublicVisitor] = useState(false);
@@ -54,6 +56,17 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
       if (templatesResponse.ok) setTemplates(templatesBody.templates ?? []);
     } catch {
       setTemplates([]);
+    }
+    try {
+      const mediaResponse = await fetch(`/api/w/${wardId}/media`);
+      const mediaBody = await mediaResponse.json();
+      if (mediaResponse.ok) {
+        const loadedMedia = mediaBody.media ?? [];
+        setMedia(loadedMedia);
+        setSource((current) => current ? { ...current, media: Object.fromEntries(loadedMedia.filter((asset: MediaAssetResponse) => asset.url).map((asset: MediaAssetResponse) => [asset.id, { url: asset.url as string, altText: asset.alt_text, isDecorative: asset.is_decorative }])) } : current);
+      }
+    } catch {
+      setMedia([]);
     }
     setLoaded(true);
     setStatus('saved');
@@ -178,11 +191,28 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
     if (current && selectedBlockId) applyAdvanced(removeBlock(current, selectedBlockId));
   }
 
+  async function uploadMedia(file: File, altText: string, isDecorative: boolean) {
+    const form = new FormData();
+    form.set('file', file);
+    form.set('altText', altText);
+    form.set('isDecorative', String(isDecorative));
+    const response = await fetch(`/api/w/${wardId}/media`, { method: 'POST', body: form });
+    const body = await response.json();
+    if (!response.ok) throw new Error(body.error ?? 'Upload failed');
+    const asset = body.media as MediaAssetResponse;
+    setMedia((current) => [asset, ...current]);
+    setSource((current) => current ? { ...current, media: { ...current.media, ...(asset.url ? { [asset.id]: { url: asset.url, altText: asset.alt_text, isDecorative: asset.is_decorative } } : {}) } } : current);
+    return asset;
+  }
+
+  function selectImageAsset(asset: MediaAssetResponse) {
+    if (selectedBlock?.type !== 'IMAGE' || !asset.url) return;
+    updateSelectedBlock((block) => ({ ...block, config: { assetId: asset.id, alt: asset.alt_text ?? '', isDecorative: asset.is_decorative } } as DocumentBlock));
+  }
   function saveAdvanced() {
     const current = currentAdvanced();
     if (current && document) void save(current, document.revision, undefined, 'ADVANCED');
   }
-
 
   let previewHtml = '';
   let previewError = '';
@@ -208,6 +238,7 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
         <aside className="space-y-3 rounded-lg border bg-card p-3" aria-label="Approved blocks">
           <div><h2 className="font-semibold">Blocks</h2><p className="text-xs text-muted-foreground">Simple Mode blocks from the approved template.</p></div>
           {advancedEditing ? <section className="space-y-2 border-b pb-3" aria-label="Advanced layout controls"><h3 className="font-medium">Advanced layout</h3><div className="grid grid-cols-2 gap-1"><button type="button" className="rounded border px-2 py-2 text-xs" onClick={addAdvancedTextBlock}>Add text block</button><button type="button" className="rounded border px-2 py-2 text-xs" disabled={!selectedBlockId} onClick={removeSelectedAdvancedBlock}>Remove selected</button><button type="button" className="rounded border px-2 py-2 text-xs" disabled={!historyState?.past.length} onClick={undoAdvanced}>Undo</button><button type="button" className="rounded border px-2 py-2 text-xs" disabled={!historyState?.future.length} onClick={redoAdvanced}>Redo</button></div><label className="block space-y-1 text-xs"><span>Region columns</span><select className="w-full rounded border px-2 py-2" value={currentAdvanced()?.pages[0]?.regions[0]?.columns.count ?? 1} onChange={(event) => { const current = currentAdvanced(); if (current) applyAdvanced(configureColumns(current, 0, 0, Number(event.target.value) as 1 | 2 | 3, Number(event.target.value) === 1 ? '1/1' : '1/3+2/3', 8)); }}><option value="1">1 column</option><option value="2">2 columns</option><option value="3">3 columns</option></select></label><button type="button" className="w-full rounded border px-2 py-2 text-sm" onClick={saveAdvanced} disabled={status === 'saving'}>Save Advanced Layout</button></section> : null}
+          {selectedBlock?.type === 'IMAGE' ? <section className="space-y-2 border-b pb-3" aria-label="Media library"><h3 className="font-medium">Media library</h3><p className="text-xs text-muted-foreground">Approved ward, stake, and system images only. Select an image block first.</p><label className="block space-y-1 text-xs"><span>Upload image</span><input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { const file = event.target.files?.[0]; if (file) void uploadMedia(file, file.name, false).catch((error: unknown) => setMessage(error instanceof Error ? error.message : 'Upload failed')); }} /></label><div className="max-h-40 space-y-1 overflow-auto">{media.map((asset) => <button type="button" key={asset.id} className="block w-full rounded border px-2 py-1 text-left text-xs" onClick={() => selectImageAsset(asset)}>{asset.filename}<span className="block text-muted-foreground">{asset.pixel_width}×{asset.pixel_height}</span></button>)}</div></section> : null}
           <div className="space-y-2 border-b pb-3"><label className="block space-y-1 text-sm"><span>Approved template</span><select aria-label="Approved template" className="w-full rounded-md border px-2 py-2" value={selectedTemplateId} onChange={(event) => setSelectedTemplateId(event.target.value)}><option value="">Keep current template</option>{templates.map((template) => <option key={template.id} value={template.id}>{template.name} · {template.source}</option>)}</select></label><button type="button" className="w-full rounded-md border px-2 py-2 text-sm" disabled={!selectedTemplateId || status === 'saving'} onClick={() => { if (document && selectedTemplateId) void save(document.layout, document.revision, selectedTemplateId); }}>Use approved template</button></div>
           <ul className="space-y-1">{allBlocks.map((block, index) => <li key={block.id}><button type="button" className={`w-full rounded-md border px-2 py-2 text-left text-sm ${selectedBlock?.id === block.id ? 'border-primary bg-primary/10' : ''}`} onClick={() => setSelectedBlockId(block.id)}>{blockLabel(block)}<span className="block text-xs text-muted-foreground">{block.visibility}</span></button><div className="mt-1 flex gap-1"><button type="button" className="rounded border px-2 text-xs" aria-label={`Move ${blockLabel(block)} up`} disabled={index === 0} onClick={() => moveSelectedBlock(-1)}>↑</button><button type="button" className="rounded border px-2 text-xs" aria-label={`Move ${blockLabel(block)} down`} disabled={index === allBlocks.length - 1} onClick={() => moveSelectedBlock(1)}>↓</button></div></li>)}</ul>
         </aside>

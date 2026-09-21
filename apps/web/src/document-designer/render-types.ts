@@ -11,6 +11,7 @@ export type ResolvedDocumentData = {
   values: Partial<Record<DocumentBlock['type'], string | null>>;
   meetingItems: Array<{ label: string; details?: string | null; order: number }>;
   warnings: string[];
+  media?: Partial<Record<string, { url: string; altText: string | null; isDecorative: boolean }>>;
 };
 
 export type DocumentRenderInput = {

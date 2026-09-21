@@ -71,6 +71,7 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
 
   try {
     await client.query('BEGIN');
+    await client.query('LOCK TABLE meeting_program_render IN ROW EXCLUSIVE MODE');
     await setDbContext(client, { userId: session.user.id, wardId });
 
     const meetingResult = await client.query(
@@ -181,6 +182,15 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
       introductionRoles: item.introduction_roles
     }));
 
+    const mediaResult = await client.query(
+      `SELECT id, public_token, alt_text, is_decorative
+         FROM media_asset
+        WHERE status = 'ACTIVE'
+          AND (scope_type = 'SYSTEM' OR ward_id = $1::uuid OR stake_id = (SELECT stake_id FROM ward WHERE id = $1::uuid))`,
+      [wardId]
+    );
+    const media = Object.fromEntries((mediaResult.rows as Array<{ id: string; public_token: string | null; alt_text: string | null; is_decorative: boolean }>).filter((item) => item.public_token).map((item) => [item.id, { url: `/media/${item.public_token}`, altText: item.alt_text, isDecorative: item.is_decorative }]));
+
     const renderHtml = meetingDocumentLayout
       ? renderDocumentHtml({
           ...resolveDocumentData(
@@ -198,7 +208,8 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
               })),
               publicValues: {
                 ANNOUNCEMENTS: (announcementResult.rows as AnnouncementRow[]).map((item) => item.title).join(' · ')
-              }
+              },
+              media
             },
             { public: true, explicitPublicBlockTypes: COMPATIBILITY_PUBLIC_BLOCK_TYPES }
           ),

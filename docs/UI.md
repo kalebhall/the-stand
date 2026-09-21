@@ -483,7 +483,7 @@ revision conflict preserves the local draft and offers an explicit reload;
 there is no silent overwrite and no offline durable draft claim. Public preview
 uses the same public-safe renderer boundary as publication and never publishes.
 The meeting editor links to this workflow instead of duplicating its controls.
-Advanced Mode is now capability-gated and provides schema-v2 layout operations, columns, block add/remove/resize, lock enforcement, and undo/redo. Media and PDF controls remain deferred.
+Advanced Mode is now capability-gated and provides schema-v2 layout operations, columns, block add/remove/resize, lock enforcement, and undo/redo. Media Library support now provides a ward-scoped picker/upload flow for approved JPEG/PNG/WebP assets, with alt/decorative metadata and no arbitrary image URLs. Deterministic PDF and overflow controls remain deferred to Milestone 7.
 
 ====================================================================
 END OF UI.md

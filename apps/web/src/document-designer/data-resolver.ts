@@ -13,6 +13,7 @@ export type SafeMeetingSource = {
   publicUrl?: string | null;
   programItems: Array<{ order: number; label: string; details?: string | null }>;
   publicValues?: Partial<Record<DocumentBlock['type'], string | null>>;
+  media?: Partial<Record<string, { url: string; altText: string | null; isDecorative: boolean }>>;
 };
 
 export function resolveDocumentData(
@@ -57,7 +58,8 @@ export function resolveDocumentData(
     publicUrl: source.publicUrl,
     values,
     meetingItems: source.programItems,
-    warnings: []
+    warnings: [],
+    media: source.media ?? {}
   };
   if (advancedLayout) {
     layout = projectAdvancedLayoutForOutput(advancedLayout, options.public ? 'PUBLIC' : (options.target ?? 'DIGITAL'), data);

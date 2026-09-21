@@ -177,6 +177,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
 
   try {
     await client.query('BEGIN');
+    await client.query('LOCK TABLE meeting_document IN ROW EXCLUSIVE MODE');
     await setDbContext(client, { userId: session.user.id, wardId });
 
     const inserted = await client.query(

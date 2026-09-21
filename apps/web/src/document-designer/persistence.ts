@@ -136,6 +136,7 @@ export async function saveWardDocumentSettings(
 
 export async function saveMeetingDocument(client: Queryable, input: MeetingDocumentInput) {
   const expectedRevision = input.expectedRevision ?? 0;
+  await client.query('LOCK TABLE meeting_document IN ROW EXCLUSIVE MODE');
   const result = await client.query(
     `INSERT INTO meeting_document (
        ward_id, meeting_id, document_type, source_template_id, source_template_version,

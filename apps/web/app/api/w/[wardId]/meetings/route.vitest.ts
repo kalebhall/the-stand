@@ -45,6 +45,7 @@ describe('POST /api/w/[wardId]/meetings', () => {
 
     queryMock
       .mockResolvedValueOnce({}) // BEGIN
+      .mockResolvedValueOnce({}) // LOCK TABLE meeting_document
       .mockResolvedValueOnce({ rows: [{ id: 'meeting-1' }] }) // INSERT meeting
       .mockResolvedValueOnce({}) // INSERT program item 1
       .mockResolvedValueOnce({}) // INSERT program item 2

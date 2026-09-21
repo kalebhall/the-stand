@@ -43,6 +43,7 @@ describe('document designer persistence', () => {
 
   it('uses a revision predicate when saving a meeting document', async () => {
     const client = { query: vi.fn().mockResolvedValue({ rows: [{ revision: 2 }] }) };
+    client.query.mockResolvedValueOnce({ rows: [] }); // LOCK TABLE meeting_document
     await saveMeetingDocument(client, {
       wardId: 'ward-a',
       meetingId: 'meeting-a',

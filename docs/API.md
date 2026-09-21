@@ -430,8 +430,19 @@ editor uses `GET/PUT/POST /api/w/{wardId}/meetings/{meetingId}/program-design`.
 PUT requires `expectedRevision`, validates the complete layout, and updates
 only `meeting_document`; stale revisions return `REVISION_CONFLICT`. POST
 validates a draft and public safety without publishing. Autosave is debounced
-and in-memory only. Advanced Mode now adds capability-gated schema-v2 layout operations, server-enforced locks, and revision-safe persistence. Media and deterministic PDF generation remain deferred.
-enhancements remain deferred.
+and in-memory only. Advanced Mode now adds capability-gated schema-v2 layout operations, server-enforced locks, and revision-safe persistence. Deterministic PDF generation remains deferred to Milestone 7.
+
+====================================================================
+PROGRAM DESIGNER MEDIA (MILESTONE 6)
+====================================================================
+
+`GET|POST /api/w/{wardId}/media` lists active media readable by the active ward
+or uploads a ward-scoped JPEG, PNG, or WebP image. Uploads use MIME sniffing,
+decode/re-encode normalization, bounded size/dimensions, opaque storage keys,
+and required alt text unless marked decorative. `DELETE /api/w/{wardId}/media/{assetId}`
+archives only an unreferenced ward asset. `GET /media/{publicToken}` serves
+only an active public-safe asset. IMAGE blocks reference `assetId`; arbitrary
+image URLs are rejected by the document schema.
 
 ====================================================================
 END OF API.md

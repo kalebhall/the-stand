@@ -31,6 +31,7 @@ describe('program design route', () => {
   it('returns a ward-scoped document and safe preview source', async () => {
     queryMock
       .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({})
       .mockResolvedValueOnce({ rows: [{ id: 'meeting-1', meeting_date: '2026-09-20', meeting_type: 'SACRAMENT', ward_name: 'Freedom Park Ward' }] })
       .mockResolvedValueOnce({ rows: [documentRow] })
       .mockResolvedValueOnce({ rows: [{ item_type: 'SPEAKER', title: 'Alex Hall', topic: 'Faith', hymn_title: null, sequence: 2 }] })
@@ -48,6 +49,7 @@ describe('program design route', () => {
   it('saves only with the expected revision and increments it without publishing', async () => {
     queryMock
       .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({})
       .mockResolvedValueOnce({ rows: [{ id: 'meeting-1' }] })
       .mockResolvedValueOnce({ rows: [documentRow] })
       .mockResolvedValueOnce({ rows: [{ allow_advanced_program_designer: false }] })
@@ -63,6 +65,7 @@ describe('program design route', () => {
 
   it('returns a conflict and retains local state on a stale revision', async () => {
     queryMock
+      .mockResolvedValueOnce({})
       .mockResolvedValueOnce({})
       .mockResolvedValueOnce({ rows: [{ id: 'meeting-1' }] })
       .mockResolvedValueOnce({ rows: [documentRow] })
@@ -82,6 +85,7 @@ describe('program design route', () => {
 
   it('validates a draft without publishing it', async () => {
     queryMock
+      .mockResolvedValueOnce({})
       .mockResolvedValueOnce({})
       .mockResolvedValueOnce({ rows: [{ id: 'meeting-1', meeting_date: '2026-09-20', meeting_type: 'SACRAMENT', ward_name: 'Freedom Park Ward' }] })
       .mockResolvedValueOnce({ rows: [documentRow] })

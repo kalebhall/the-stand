@@ -11,7 +11,7 @@ export type LegacyPublicLayout = {
   coverImageAltText?: string | null;
 };
 
-export const COMPATIBILITY_PUBLIC_BLOCK_TYPES = ['DOCUMENT_TITLE', 'WARD_NAME', 'MEETING_INFO', 'MEETING_PROGRAM', 'ANNOUNCEMENTS', 'QR_CODE'] as const;
+export const COMPATIBILITY_PUBLIC_BLOCK_TYPES = ['DOCUMENT_TITLE', 'WARD_NAME', 'MEETING_INFO', 'MEETING_PROGRAM', 'ANNOUNCEMENTS', 'QR_CODE', 'IMAGE'] as const;
 
 const uuid = (suffix: number) => `00000000-0000-4000-8000-${suffix.toString(16).padStart(12, '0')}`;
 

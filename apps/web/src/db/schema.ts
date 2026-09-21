@@ -944,3 +944,27 @@ export const wardDocumentSettings = pgTable('ward_document_settings', {
   updatedByUserId: uuid('updated_by_user_id').references(() => userAccount.id, { onDelete: 'set null' }),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
 });
+
+export const mediaAsset = pgTable('media_asset', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  scopeType: text('scope_type').notNull(),
+  wardId: uuid('ward_id').references(() => ward.id, { onDelete: 'cascade' }),
+  stakeId: uuid('stake_id').references(() => stake.id, { onDelete: 'cascade' }),
+  ownerUserId: uuid('owner_user_id').references(() => userAccount.id, { onDelete: 'set null' }),
+  filename: text('filename').notNull(),
+  storageKey: text('storage_key').notNull().unique(),
+  publicToken: text('public_token').unique(),
+  mimeType: text('mime_type').notNull(),
+  byteSize: integer('byte_size').notNull(),
+  pixelWidth: integer('pixel_width').notNull(),
+  pixelHeight: integer('pixel_height').notNull(),
+  altText: text('alt_text'),
+  isDecorative: boolean('is_decorative').notNull().default(false),
+  status: text('status').notNull().default('ACTIVE'),
+  createdByUserId: uuid('created_by_user_id').notNull().references(() => userAccount.id),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
+}, (table) => ({
+  mediaAssetWardStatusCreatedIdx: index('media_asset_ward_status_created_idx').on(table.wardId, table.status, table.createdAt),
+  mediaAssetScopeStatusCreatedIdx: index('media_asset_scope_status_created_idx').on(table.scopeType, table.status, table.createdAt)
+}));

@@ -87,6 +87,7 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+    await client.query('LOCK TABLE meeting_document IN ROW EXCLUSIVE MODE');
     await setDbContext(client, { userId: session.user.id, wardId });
     const contextData = await readContext(client, wardId, meetingId);
     if (!contextData) { await client.query('ROLLBACK'); return errorResponse('Meeting not found', 'NOT_FOUND', 404); }
@@ -117,6 +118,7 @@ export async function PUT(request: Request, context: { params: Promise<{ wardId:
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+    await client.query('LOCK TABLE meeting_document IN ROW EXCLUSIVE MODE');
     await setDbContext(client, { userId: session.user.id, wardId });
     const meeting = await client.query('SELECT id FROM meeting WHERE id = $1::uuid AND ward_id = $2::uuid LIMIT 1', [meetingId, wardId]);
     if (!meeting.rows[0]) { await client.query('ROLLBACK'); return errorResponse('Meeting not found', 'NOT_FOUND', 404); }
@@ -229,6 +231,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+    await client.query('LOCK TABLE meeting_document IN ROW EXCLUSIVE MODE');
     await setDbContext(client, { userId: session.user.id, wardId });
     const contextData = await readContext(client, wardId, meetingId);
     if (!contextData) { await client.query('ROLLBACK'); return errorResponse('Meeting not found', 'NOT_FOUND', 404); }

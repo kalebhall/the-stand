@@ -46,6 +46,7 @@ describe('POST /api/w/[wardId]/meetings/[meetingId]/publish', () => {
 
     queryMock
       .mockResolvedValueOnce({}) // BEGIN
+      .mockResolvedValueOnce({}) // LOCK TABLE meeting_program_render
       .mockResolvedValueOnce({
         rowCount: 1,
         rows: [{ id: 'meeting-1', meeting_date: '2026-01-04', meeting_type: 'SACRAMENT', status: 'DRAFT' }]
@@ -61,6 +62,7 @@ describe('POST /api/w/[wardId]/meetings/[meetingId]/publish', () => {
       .mockResolvedValueOnce({ rows: [{ latest_version: 1 }] }) // SELECT COALESCE MAX version
       .mockResolvedValueOnce({ rows: [{ allow_program_editor_publish: false, allow_program_editor_republish: false }] }) // SELECT program publish settings
       .mockResolvedValueOnce({ rows: [{ preferred_locale: 'es' }] }) // SELECT user locale
+      .mockResolvedValueOnce({ rows: [] }) // SELECT active authorized media
       .mockResolvedValueOnce({}) // INSERT meeting_program_render
       .mockResolvedValueOnce({}) // UPDATE meeting status
       .mockResolvedValueOnce({}) // INSERT public_program_share
@@ -91,7 +93,8 @@ describe('POST /api/w/[wardId]/meetings/[meetingId]/publish', () => {
   it('publishes a persisted document layout through the compatibility renderer', async () => {
     queryMock.mockReset();
     queryMock
-      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({}) // BEGIN
+      .mockResolvedValueOnce({}) // LOCK TABLE meeting_program_render
       .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'meeting-1', meeting_date: '2026-01-04', meeting_type: 'SACRAMENT', status: 'DRAFT' }] })
       .mockResolvedValueOnce({ rowCount: 1, rows: [{ item_type: 'OPENING_HYMN', title: 'Opening hymn', notes: null, topic: null, program_notes: null, hymn_number: '1', hymn_title: 'The Morning Breaks' }] })
       .mockResolvedValueOnce({ rows: [] })
@@ -101,6 +104,7 @@ describe('POST /api/w/[wardId]/meetings/[meetingId]/publish', () => {
       .mockResolvedValueOnce({ rows: [{ latest_version: 0 }] })
       .mockResolvedValueOnce({ rows: [{ allow_program_editor_publish: false, allow_program_editor_republish: false }] })
       .mockResolvedValueOnce({ rows: [{ preferred_locale: 'en-US' }] })
+      .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({})
       .mockResolvedValueOnce({})
       .mockResolvedValueOnce({})

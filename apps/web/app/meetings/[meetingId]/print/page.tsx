@@ -5,7 +5,6 @@ import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth
 import { canViewMeetings } from '@/src/auth/roles';
 import { resolveDocumentData } from '@/src/document-designer/data-resolver';
 import { renderDocumentHtml } from '@/src/document-designer/renderer';
-import { COMPATIBILITY_PUBLIC_BLOCK_TYPES } from '@/src/document-designer/legacy-layout-adapter';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 import { toYyyyMmDd } from '@/src/meetings/date';
@@ -97,6 +96,7 @@ export default async function PrintMeetingPage({
   const { version, draft } = await searchParams;
   const versionNumber = Number(version);
   const requestedVersion = Number.isInteger(versionNumber) && versionNumber > 0 ? versionNumber : null;
+  const wardId = session.activeWardId;
   const client = await pool.connect();
 
   try {
@@ -185,6 +185,15 @@ export default async function PrintMeetingPage({
     );
     const meetingDocumentLayout = meetingDocumentResult.rows?.[0]?.layout_json as unknown;
 
+    const mediaResult = await client.query(
+      `SELECT id, public_token, alt_text, is_decorative
+         FROM media_asset
+        WHERE status = 'ACTIVE'
+          AND (scope_type = 'SYSTEM' OR ward_id = $1::uuid OR stake_id = (SELECT stake_id FROM ward WHERE id = $1::uuid))`,
+      [session.activeWardId]
+    );
+    const media = Object.fromEntries((mediaResult.rows as Array<{ id: string; alt_text: string | null; is_decorative: boolean }>).map((item) => [item.id, { url: `/api/w/${encodeURIComponent(wardId)}/media/${encodeURIComponent(item.id)}`, altText: item.alt_text, isDecorative: item.is_decorative }]));
+
     if (meetingDocumentLayout) {
       const { layout: documentLayout, data } = resolveDocumentData(
         meetingDocumentLayout,
@@ -200,16 +209,16 @@ export default async function PrintMeetingPage({
           })),
           publicValues: {
             ANNOUNCEMENTS: (announcementResult.rows as AnnouncementRow[]).map((item) => item.title).join(' · ')
-          }
+          },
+          media
         },
-        { public: true, target: 'PRINT', explicitPublicBlockTypes: COMPATIBILITY_PUBLIC_BLOCK_TYPES }
+        { target: 'PRINT' }
       );
       const compatibilityHtml = renderDocumentHtml({
         layout: documentLayout,
         data,
         target: 'PRINT',
-        public: true,
-        explicitPublicBlockTypes: COMPATIBILITY_PUBLIC_BLOCK_TYPES
+        public: false,
       }).html;
       await client.query('COMMIT');
       return <div dangerouslySetInnerHTML={{ __html: compatibilityHtml }} />;
