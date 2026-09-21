@@ -39,7 +39,7 @@ describe('advanced document designer', () => {
   });
   it('uses resolved data for conditional visibility and preserves print document order', () => {
     const base = parseAdvancedLayout(DEFAULT_DOCUMENT_LAYOUT);
-    const withSecond = addBlock(base, 0, 0, { ...secondBlock, digitalOrder: 0 });
+    const withSecond = addBlock(base, 0, 0, { ...secondBlock, digitalOrder: 0 } as DocumentBlock);
     withSecond.pages[0].regions[0].blocks[0].visibilityRule = 'WHEN_DATA_EXISTS';
     withSecond.pages[0].regions[0].blocks[0].digitalOrder = 9;
     const emptyData = {

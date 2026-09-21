@@ -12,10 +12,15 @@ import {
   canManageProgramMedia,
   canPublishProgram,
   canUseAdvancedProgramDesigner,
+  canDeleteProgramMedia,
   canManageWardProgramTemplates,
   canRunImports,
   hasRole,
-  WARD_ROLES
+  WARD_ROLES,
+  canViewStakeTemplates,
+  canManageStakeTemplates,
+  canManageSystemTemplates,
+  canCopyAvailableTemplate
 } from './roles';
 
 describe('canManageWardUsers', () => {
@@ -104,5 +109,33 @@ describe('role normalization', () => {
 
   it('allows imports access for stand admins when role casing differs', () => {
     expect(canViewCallings({ roles: ['stand_admin'], activeWardId: 'ward-a' }, 'ward-a')).toBe(true);
+  });
+});
+
+describe('stake template authorization', () => {
+  const stakeAdmin = { roles: [], activeWardId: 'ward-a', activeStakeId: 'stake-a', stakeAssignments: [{ stakeId: 'stake-a', roleNames: ['STAKE_ADMIN' as const] }] };
+  it('requires explicit stake assignment', () => {
+    expect(canViewStakeTemplates(stakeAdmin, 'stake-a')).toBe(true);
+    expect(canManageStakeTemplates(stakeAdmin, 'stake-a')).toBe(true);
+    expect(canManageStakeTemplates({ ...stakeAdmin, stakeAssignments: [] }, 'stake-a')).toBe(false);
+    expect(canManageStakeTemplates({ roles: ['SUPPORT_ADMIN'], activeWardId: 'ward-a', activeStakeId: 'stake-a' }, 'stake-a')).toBe(false);
+  });
+  it('does not let ward roles manage system templates', () => {
+    expect(canManageSystemTemplates({ roles: ['STAND_ADMIN'], activeWardId: 'ward-a' })).toBe(false);
+    expect(canManageSystemTemplates({ roles: ['SYSTEM_ADMIN'], activeWardId: null })).toBe(true);
+  });
+  it('copies only published templates visible to the target ward', () => {
+    expect(canCopyAvailableTemplate(stakeAdmin, { scopeType: 'STAKE', scopeId: 'stake-a', status: 'PUBLISHED' }, 'ward-a', 'u')).toBe(true);
+    expect(canCopyAvailableTemplate(stakeAdmin, { scopeType: 'STAKE', scopeId: 'stake-b', status: 'PUBLISHED' }, 'ward-a', 'u')).toBe(false);
+    expect(canCopyAvailableTemplate(stakeAdmin, { scopeType: 'WARD', scopeId: 'ward-a', status: 'DRAFT' }, 'ward-a', 'u')).toBe(false);
+  });
+});
+
+describe('program media authorization', () => {
+  const editor = { roles: ['PROGRAM_EDITOR'], activeWardId: 'ward-a' };
+  it('requires the delete profile flag for Program Editor deletes', () => {
+    expect(canDeleteProgramMedia(editor, 'ward-a')).toBe(false);
+    expect(canDeleteProgramMedia(editor, 'ward-a', { allowProgramEditorDeleteMedia: true })).toBe(true);
+    expect(canDeleteProgramMedia({ roles: ['STAND_ADMIN'], activeWardId: 'ward-a' }, 'ward-a')).toBe(true);
   });
 });

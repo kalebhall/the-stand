@@ -1,6 +1,8 @@
 [Unit]
 Description=The Stand health recovery check
-After=the-stand.service
+Wants=network-online.target
+After=network-online.target the-stand.service
+Requires=the-stand.service
 
 [Service]
 Type=oneshot

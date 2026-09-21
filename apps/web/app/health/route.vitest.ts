@@ -23,4 +23,11 @@ describe('GET /health', () => {
     expect(await response.json()).toEqual({ status: 'ok', db: 'connected' });
     expect(poolQuery).toHaveBeenCalledWith('SELECT 1');
   });
+
+  it('returns service unavailable when the database probe fails', async () => {
+    poolQuery.mockRejectedValueOnce(new Error('database unavailable'));
+    const response = await GET();
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({ status: 'degraded', db: 'disconnected' });
+  });
 });

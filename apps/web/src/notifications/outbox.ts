@@ -31,7 +31,7 @@ export function enqueueNotificationOutboxEvent(
   wardId: string,
   eventOutboxId: string | null
 ): void {
-  if (!eventOutboxId) return;
+  if (!eventOutboxId || process.env.E2E_TEST_MODE === '1') return;
   Promise.resolve(enqueue({ wardId, eventOutboxId })).catch((error) => {
     console.error('[notifications] Failed to enqueue outbox event', error);
   });

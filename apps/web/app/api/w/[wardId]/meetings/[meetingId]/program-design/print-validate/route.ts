@@ -14,10 +14,10 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
   const { wardId, meetingId } = await context.params;
   if (!session?.user?.id) return errorResponse('Unauthorized', 'UNAUTHORIZED', 401);
   if (!canViewProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) return errorResponse('Forbidden', 'FORBIDDEN', 403);
-  const parsed = await request.json().catch(() => null) as unknown;
-  const body = parsed && typeof parsed === 'object' && !Array.isArray(parsed)
-    ? parsed as { source?: unknown; version?: unknown }
-    : {};
+  const raw = await request.json().catch(() => undefined) as unknown;
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return errorResponse('Invalid print validation payload', 'BAD_REQUEST', 400);
+  const body = raw as Record<string, unknown>;
+  if (Object.keys(body).some((key) => key !== 'source' && key !== 'version')) return errorResponse('Invalid print validation payload', 'BAD_REQUEST', 400);
   if (body.source !== undefined && body.source !== 'draft' && body.source !== 'published') return errorResponse('Invalid print source', 'BAD_REQUEST', 400);
   if (body.version !== undefined && body.version !== null && (!Number.isInteger(body.version) || Number(body.version) < 1)) return errorResponse('Invalid published version', 'BAD_REQUEST', 400);
   const source = body.source === 'published' ? 'published' : 'draft';

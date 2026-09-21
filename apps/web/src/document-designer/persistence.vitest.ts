@@ -35,7 +35,8 @@ describe('document designer persistence', () => {
       allowProgramEditorRepublish: false,
       allowProgramEditorRollback: false,
       allowProgramEditorCreateTemplates: false,
-      allowProgramEditorDeleteMedia: false
+      allowProgramEditorDeleteMedia: false,
+      publicProgramExpirationDays: 30
     })).resolves.toEqual(row);
     expect(client.query).toHaveBeenCalledWith(expect.stringContaining('WHERE ward_id = $1::uuid'), ['ward-a']);
     expect(client.query).toHaveBeenLastCalledWith(expect.stringContaining('$2::boolean'), expect.arrayContaining(['ward-a', true, true, 'user-a']));

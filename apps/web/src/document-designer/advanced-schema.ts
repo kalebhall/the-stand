@@ -143,7 +143,7 @@ export function mergeSimpleIntoAdvanced(previous: AdvancedDocumentLayout, simple
         return replacement ? { ...block, width: replacement.width, dataMode: replacement.dataMode, visibility: replacement.visibility, printBehavior: replacement.printBehavior, digitalBehavior: replacement.digitalBehavior, config: replacement.config, lock: block.lock } : block;
       })
     }))
-  }));
+  })) as AdvancedDocumentLayout['pages'];
   return parseAdvancedLayout(next as unknown);
 }
 

@@ -10,11 +10,19 @@ describe('getNavigationItems', () => {
   it('shows Programs to program users but excludes unrelated workflows', () => {
     const items = getNavigationItems(['PROGRAM_EDITOR']);
     expect(items).toContainEqual({ href: '/programs', label: 'Programs' });
+    expect(items).toContainEqual({ href: '/programs/templates', label: 'Templates' });
     expect(items).not.toContainEqual({ href: '/callings', label: 'Callings' });
     expect(items).not.toContainEqual({ href: '/members', label: 'Members' });
     expect(items).not.toContainEqual({ href: '/imports', label: 'Imports' });
   });
 
+  it('shows template administration to stake, system, and support administrators without exposing ward program editing', () => {
+    expect(getNavigationItems(['STAKE_ADMIN'])).toContainEqual({ href: '/programs/templates/admin', label: 'Template Administration' });
+    expect(getNavigationItems(['STAKE_ADMIN'])).not.toContainEqual({ href: '/programs/templates', label: 'Templates' });
+    expect(getNavigationItems(['STAKE_ADMIN'])).not.toContainEqual({ href: '/programs', label: 'Programs' });
+    expect(getNavigationItems(['SYSTEM_ADMIN'])).toContainEqual({ href: '/programs/templates/admin', label: 'Template Administration' });
+    expect(getNavigationItems(['SUPPORT_ADMIN'])).toContainEqual({ href: '/programs/templates/admin', label: 'Template Administration' });
+  });
   it('includes ward management links for stand admin but keeps settings in settings', () => {
     const items = getNavigationItems(['STAND_ADMIN']);
 

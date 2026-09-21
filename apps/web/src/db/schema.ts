@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { boolean, date, index, integer, jsonb, pgTable, text, timestamp, unique, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
+import { boolean, check, date, foreignKey, index, integer, jsonb, pgTable, text, timestamp, unique, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 
 export const stake = pgTable('stake', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -75,6 +75,26 @@ export const wardUserRole = pgTable(
   },
   (table) => ({
     wardUserRoleUnique: unique().on(table.wardId, table.userId, table.roleId)
+  })
+);
+
+export const stakeUserRole = pgTable(
+  'stake_user_role',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    stakeId: uuid('stake_id').notNull().references(() => stake.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id').notNull().references(() => userAccount.id, { onDelete: 'cascade' }),
+    roleId: uuid('role_id').notNull().references(() => role.id, { onDelete: 'cascade' }),
+    grantedAt: timestamp('granted_at', { withTimezone: true }).notNull().defaultNow(),
+    grantedByUserId: uuid('granted_by_user_id').references(() => userAccount.id, { onDelete: 'set null' }),
+    revokedAt: timestamp('revoked_at', { withTimezone: true }),
+    revokedByUserId: uuid('revoked_by_user_id').references(() => userAccount.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+  },
+  (table) => ({
+    stakeUserRoleUnique: unique().on(table.stakeId, table.userId, table.roleId),
+    stakeUserRoleStakeUserIdx: index('stake_user_role_stake_user_idx').on(table.stakeId, table.userId),
+    stakeUserRoleUserIdx: index('stake_user_role_user_idx').on(table.userId, table.revokedAt)
   })
 );
 
@@ -204,17 +224,24 @@ export const globalNotificationDelivery = pgTable(
     globalNotificationDeliveryStatusIdx: index('global_notification_delivery_status_idx').on(table.deliveryStatus, table.updatedAt)
   })
 );
-export const meeting = pgTable('meeting', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  wardId: uuid('ward_id')
-    .notNull()
-    .references(() => ward.id, { onDelete: 'cascade' }),
-  meetingDate: date('meeting_date').notNull(),
-  meetingType: text('meeting_type').notNull(),
-  status: text('status').notNull().default('DRAFT'),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
-});
+export const meeting = pgTable(
+  'meeting',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    wardId: uuid('ward_id')
+      .notNull()
+      .references(() => ward.id, { onDelete: 'cascade' }),
+    meetingDate: date('meeting_date').notNull(),
+    meetingType: text('meeting_type').notNull(),
+    location: text('location'),
+    status: text('status').notNull().default('DRAFT'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
+  },
+  (table) => ({
+    meetingWardIdUnique: unique('meeting_ward_id_unique').on(table.wardId, table.id)
+  })
+);
 
 export const meetingProgramItem = pgTable('meeting_program_item', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -237,6 +264,75 @@ export const meetingProgramItem = pgTable('meeting_program_item', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 });
 
+export const documentTemplate = pgTable(
+  'document_template',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    scopeType: text('scope_type').notNull(),
+    scopeId: uuid('scope_id'),
+    templateKey: text('template_key'),
+    documentType: text('document_type').notNull(),
+    name: text('name').notNull(),
+    description: text('description'),
+    status: text('status').notNull().default('DRAFT'),
+    distributionPolicy: text('distribution_policy').notNull().default('DUPLICATE_AND_CUSTOMIZE'),
+    sourceTemplateId: uuid('source_template_id'),
+    sourceTemplateVersion: integer('source_template_version'),
+    publishedByUserId: uuid('published_by_user_id').references(() => userAccount.id, { onDelete: 'set null' }),
+    publishedAt: timestamp('published_at', { withTimezone: true }),
+    currentPublishedVersionId: uuid('current_published_version_id'),
+    createdByUserId: uuid('created_by_user_id').references(() => userAccount.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
+  },
+  (table) => ({
+    documentTemplateScopeStatusTypeIdx: index('document_template_scope_status_type_idx').on(table.scopeType, table.scopeId, table.status, table.documentType),
+    documentTemplateSourceIdx: index('document_template_source_idx').on(table.sourceTemplateId, table.sourceTemplateVersion),
+    documentTemplatePublishedByUserFk: foreignKey({
+      name: 'document_template_published_by_user_id_fkey',
+      columns: [table.publishedByUserId],
+      foreignColumns: [userAccount.id]
+    }).onDelete('set null'),
+    documentTemplateScopeCheck: check('document_template_scope_check', sql`(
+      (${table.scopeType} = 'SYSTEM' AND ${table.scopeId} IS NULL AND ${table.createdByUserId} IS NULL) OR
+      (${table.scopeType} IN ('STAKE', 'WARD', 'PERSONAL_DRAFT') AND ${table.scopeId} IS NOT NULL)
+    )`),
+    documentTemplateDistributionPolicyCheck: check('document_template_distribution_policy_check', sql`${table.distributionPolicy} IN ('USE_AS_IS', 'DUPLICATE_AND_CUSTOMIZE', 'REQUIRED')`),
+    documentTemplateLineageCheck: check('document_template_lineage_check', sql`${table.sourceTemplateId} IS NULL OR ${table.sourceTemplateId} <> ${table.id}`),
+    documentTemplateSourcePairCheck: check(
+      'document_template_source_pair_check',
+      sql`(${table.sourceTemplateId} IS NULL AND ${table.sourceTemplateVersion} IS NULL) OR (${table.sourceTemplateId} IS NOT NULL AND ${table.sourceTemplateVersion} IS NOT NULL AND ${table.sourceTemplateVersion} > 0)`
+    ),
+    documentTemplatePublicationConsistencyCheck: check(
+      'document_template_publication_consistency_check',
+      sql`(${table.status} <> 'PUBLISHED') OR (${table.publishedAt} IS NOT NULL AND ${table.currentPublishedVersionId} IS NOT NULL)`
+    )
+  })
+);
+
+export const documentTemplateVersion = pgTable(
+  'document_template_version',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    templateId: uuid('template_id').notNull().references(() => documentTemplate.id, { onDelete: 'cascade' }),
+    version: integer('version').notNull(),
+    schemaVersion: integer('schema_version').notNull(),
+    layoutJson: jsonb('layout_json').notNull(),
+    themeJson: jsonb('theme_json').notNull(),
+    lockJson: jsonb('lock_json').notNull().default({}),
+    createdByUserId: uuid('created_by_user_id').references(() => userAccount.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+  },
+  (table) => ({
+    documentTemplateVersionUnique: unique().on(table.templateId, table.version),
+    documentTemplateVersionIdTemplateUnique: unique('document_template_version_id_template_unique').on(table.id, table.templateId),
+    documentTemplateVersionPositiveCheck: check('document_template_version_version_positive', sql`${table.version} > 0`),
+    documentTemplateVersionSchemaPositiveCheck: check('document_template_version_schema_version_positive', sql`${table.schemaVersion} > 0`),
+    documentTemplateVersionLockJsonShapeCheck: check('document_template_version_lock_json_shape', sql`jsonb_typeof(${table.lockJson}) = 'object'`),
+    documentTemplateVersionCreatedIdx: index('document_template_version_template_created_idx').on(table.templateId, table.createdAt)
+  })
+);
+
 export const meetingProgramRender = pgTable(
   'meeting_program_render',
   {
@@ -251,10 +347,42 @@ export const meetingProgramRender = pgTable(
     renderHtml: text('render_html').notNull(),
     layoutJson: jsonb('layout_json'),
     renderDataJson: jsonb('render_data_json'),
+    documentType: text('document_type').notNull().default('SACRAMENT_PROGRAM'),
+    sourceTemplateId: uuid('source_template_id').references(() => documentTemplate.id, { onDelete: 'set null' }),
+    sourceTemplateVersion: integer('source_template_version'),
+    publishedByUserId: uuid('published_by_user_id').references(() => userAccount.id, { onDelete: 'set null' }),
+    publishedAt: timestamp('published_at', { withTimezone: true }).notNull().defaultNow(),
+    publicationMetadataJson: jsonb('publication_metadata_json').notNull().default({}),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
   },
   (table) => ({
-    meetingProgramRenderVersionUnique: unique().on(table.meetingId, table.version)
+    meetingProgramRenderVersionUnique: unique().on(table.meetingId, table.version),
+    meetingProgramRenderIdWardMeetingUnique: unique('meeting_program_render_id_ward_meeting_unique').on(table.id, table.wardId, table.meetingId),
+    meetingProgramRenderWardMeetingVersionIdx: index('meeting_program_render_ward_meeting_version_idx').on(table.wardId, table.meetingId, table.version.desc()),
+    meetingProgramRenderWardPublishedAtIdx: index('meeting_program_render_ward_published_at_idx').on(
+      table.wardId,
+      table.meetingId,
+      table.publishedAt.desc().nullsLast(),
+      table.version.desc()
+    ),
+    meetingProgramRenderSourceTemplateVersionFk: foreignKey({
+      name: 'meeting_program_render_source_template_version_fk',
+      columns: [table.sourceTemplateId, table.sourceTemplateVersion],
+      foreignColumns: [documentTemplateVersion.templateId, documentTemplateVersion.version]
+    }).onDelete('set null'),
+    meetingProgramRenderDocumentTypeCheck: check('meeting_program_render_document_type_check', sql`${table.documentType} = 'SACRAMENT_PROGRAM'`),
+    meetingProgramRenderLayoutRenderDataCheck: check(
+      'meeting_program_render_layout_json_render_data_json_consistent',
+      sql`(${table.layoutJson} IS NULL AND ${table.renderDataJson} IS NULL) OR (${table.layoutJson} IS NOT NULL AND ${table.renderDataJson} IS NOT NULL)`
+    ),
+    meetingProgramRenderPublicationMetadataShapeCheck: check(
+      'meeting_program_render_publication_metadata_json_shape',
+      sql`jsonb_typeof(${table.publicationMetadataJson}) = 'object'`
+    ),
+    meetingProgramRenderSourceTemplatePairCheck: check(
+      'meeting_program_render_source_template_pair',
+      sql`(${table.sourceTemplateId} IS NULL AND ${table.sourceTemplateVersion} IS NULL) OR (${table.sourceTemplateId} IS NOT NULL AND ${table.sourceTemplateVersion} IS NOT NULL AND ${table.sourceTemplateVersion} > 0)`
+    )
   })
 );
 
@@ -753,11 +881,26 @@ export const publicProgramShare = pgTable(
       .notNull()
       .references(() => meeting.id, { onDelete: 'cascade' }),
     token: text('token').notNull(),
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+    activeRenderId: uuid('active_render_id'),
+    expiresAt: timestamp('expires_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
   },
   (table) => ({
     publicProgramShareTokenUnique: unique().on(table.token),
-    publicProgramShareMeetingUnique: unique().on(table.meetingId)
+    publicProgramShareMeetingUnique: unique().on(table.meetingId),
+    publicProgramShareWardActiveRenderIdx: index('public_program_share_ward_active_render_idx').on(table.wardId, table.activeRenderId),
+    publicProgramShareTokenExpiresIdx: index('public_program_share_token_expires_idx').on(table.token, table.expiresAt),
+    publicProgramShareMeetingSameWardFk: foreignKey({
+      name: 'public_program_share_meeting_same_ward_fk',
+      columns: [table.wardId, table.meetingId],
+      foreignColumns: [meeting.wardId, meeting.id]
+    }),
+    publicProgramShareActiveRenderSameMeetingWardFk: foreignKey({
+      name: 'public_program_share_active_render_same_meeting_ward_fk',
+      columns: [table.activeRenderId, table.wardId, table.meetingId],
+      foreignColumns: [meetingProgramRender.id, meetingProgramRender.wardId, meetingProgramRender.meetingId]
+    }).onDelete('restrict')
   })
 );
 
@@ -870,46 +1013,6 @@ export const standardCalling = pgTable('standard_calling', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
 });
-
-export const documentTemplate = pgTable(
-  'document_template',
-  {
-    id: uuid('id').defaultRandom().primaryKey(),
-    scopeType: text('scope_type').notNull(),
-    scopeId: uuid('scope_id'),
-    templateKey: text('template_key'),
-    documentType: text('document_type').notNull(),
-    name: text('name').notNull(),
-    description: text('description'),
-    status: text('status').notNull().default('DRAFT'),
-    currentPublishedVersionId: uuid('current_published_version_id'),
-    createdByUserId: uuid('created_by_user_id').references(() => userAccount.id, { onDelete: 'set null' }),
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
-  },
-  (table) => ({
-    documentTemplateScopeStatusTypeIdx: index('document_template_scope_status_type_idx').on(table.scopeType, table.scopeId, table.status, table.documentType)
-  })
-);
-
-export const documentTemplateVersion = pgTable(
-  'document_template_version',
-  {
-    id: uuid('id').defaultRandom().primaryKey(),
-    templateId: uuid('template_id').notNull().references(() => documentTemplate.id, { onDelete: 'cascade' }),
-    version: integer('version').notNull(),
-    schemaVersion: integer('schema_version').notNull(),
-    layoutJson: jsonb('layout_json').notNull(),
-    themeJson: jsonb('theme_json').notNull(),
-    lockJson: jsonb('lock_json').notNull().default({}),
-    createdByUserId: uuid('created_by_user_id').references(() => userAccount.id, { onDelete: 'set null' }),
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
-  },
-  (table) => ({
-    documentTemplateVersionUnique: unique().on(table.templateId, table.version),
-    documentTemplateVersionCreatedIdx: index('document_template_version_template_created_idx').on(table.templateId, table.createdAt)
-  })
-);
 
 export const meetingDocument = pgTable(
   'meeting_document',

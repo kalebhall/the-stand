@@ -38,7 +38,8 @@ describe('GET /p/ward/[portalToken]', () => {
     });
 
     expect(response.status).toBe(200);
-    expect(await response.text()).toBe('<main>Ward Published</main>');
+    expect(await response.text()).toBe('<meta name="robots" content="noindex,nofollow"><main>Ward Published</main>');
+    expect(response.headers.get('X-Robots-Tag')).toBe('noindex, nofollow');
     expect(queryMock).toHaveBeenCalledWith('SELECT set_config($1, $2, true)', ['app.public_portal_token', 'portal-1']);
     expect(queryMock).toHaveBeenCalledWith('SELECT set_config($1, $2, true)', ['app.ward_id', 'ward-1']);
   });

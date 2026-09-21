@@ -5,10 +5,17 @@ import { recordAuditEvent } from '@/src/audit/service';
 import { auth } from '@/src/auth/auth';
 import { canPublishProgram, canRepublishProgram, canViewProgramDesigner } from '@/src/auth/roles';
 import { loadProgramPermissionProfile } from '@/src/document-designer/template-service';
+import { parseTemplateLockPolicy } from '@/src/document-designer/template-locks';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 
 const publishSchema = z.object({ version: z.number().int().positive().optional() }).strict();
+const defaultLockPolicy = { mode: 'UNLOCKED' as const, lockedPageIds: [], lockedRegionIds: [], lockedBlockIds: [], lockedPropertyNames: [], protectedTheme: false, protectedVisibility: false, protectedOrder: false };
+
+function lockPolicyInput(value: unknown): unknown {
+  if (typeof value === 'object' && value !== null && 'mode' in value) return value;
+  return defaultLockPolicy;
+}
 
 export async function POST(request: Request, context: { params: Promise<{ wardId: string; templateId: string }> }) {
   const session = await auth();
@@ -41,15 +48,21 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
       return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
     }
     const version = body.data.version ?? Number((await client.query('SELECT MAX(version)::int AS version FROM document_template_version WHERE template_id = $1::uuid', [templateId])).rows[0]?.version);
-    const versionResult = await client.query('SELECT id FROM document_template_version WHERE template_id = $1::uuid AND version = $2::int LIMIT 1', [templateId, version]);
+    const versionResult = await client.query('SELECT id, lock_json FROM document_template_version WHERE template_id = $1::uuid AND version = $2::int LIMIT 1', [templateId, version]);
     if (!versionResult.rows[0]) {
       await client.query('ROLLBACK');
       return NextResponse.json({ error: 'Template version not found', code: 'NOT_FOUND' }, { status: 404 });
     }
+    try {
+      parseTemplateLockPolicy(lockPolicyInput((versionResult.rows[0] as Record<string, unknown>).lock_json));
+    } catch {
+      await client.query('ROLLBACK');
+      return NextResponse.json({ error: 'Invalid lock policy', code: 'BAD_REQUEST' }, { status: 400 });
+    }
     await client.query(
-      `UPDATE document_template SET status = 'PUBLISHED', current_published_version_id = $2::uuid, updated_at = now()
+      `UPDATE document_template SET status = 'PUBLISHED', current_published_version_id = $2::uuid, published_by_user_id = $4::uuid, published_at = now(), updated_at = now()
         WHERE id = $1::uuid AND scope_type = 'WARD' AND scope_id = $3::uuid`,
-      [templateId, (versionResult.rows[0] as Record<string, unknown>).id, wardId]
+      [templateId, (versionResult.rows[0] as Record<string, unknown>).id, wardId, session.user.id]
     );
     await recordAuditEvent(client, { wardId, userId: session.user.id, actorName: session.user.name || session.user.email || null, action: 'PROGRAM_TEMPLATE_PUBLISHED', entityType: 'document_template', entityId: templateId, details: { version }, source: 'manual_ui', severity: 'notice' });
     await client.query('COMMIT');

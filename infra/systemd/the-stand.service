@@ -13,7 +13,8 @@
 
 [Unit]
 Description=The Stand (Web)
-After=network.target postgresql@16-main.service
+Wants=network-online.target
+After=network-online.target postgresql@16-main.service
 Requires=postgresql@16-main.service
 
 [Service]

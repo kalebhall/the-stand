@@ -42,6 +42,8 @@ async function createBullMqQueue() {
 }
 
 export async function enqueueOutboxNotificationJob(payload: { wardId: string; eventOutboxId: string }): Promise<void> {
+  if (process.env.E2E_TEST_MODE === '1') return;
+
   const queue = await createBullMqQueue();
 
   try {

@@ -31,11 +31,12 @@ const row = {
 };
 
 function setupClient(overrides: Record<string, unknown> = {}) {
+  const currentRow = { ...row, ...overrides };
   const client = {
-    query: vi.fn(async (sql: string) => {
+    query: vi.fn(async (sql: string, values?: readonly unknown[]) => {
       if (sql === 'SELECT set_config($1, $2, true)') return { rows: [] };
-      if (sql.startsWith('SELECT ward_id')) return { rows: [row] };
-      if (sql.startsWith('INSERT INTO ward_document_settings')) return { rows: [{ ...row, allow_advanced_program_designer: true }] };
+      if (sql.startsWith('SELECT ward_id')) return { rows: [currentRow] };
+      if (sql.startsWith('INSERT INTO ward_document_settings')) return { rows: [{ ...currentRow, allow_advanced_program_designer: true, public_program_expiration_days: values && values.length > 7 ? values[7] : currentRow.public_program_expiration_days }] };
       if (sql === 'BEGIN' || sql === 'COMMIT' || sql === 'ROLLBACK') return { rows: [] };
       return { rows: [], ...overrides };
     }),
@@ -98,6 +99,25 @@ describe('program settings route', () => {
     expect(await response.json()).toMatchObject({ settings: { allowAdvancedProgramDesigner: true } });
     expect(recordAuditEventMock).toHaveBeenCalledWith(client, expect.objectContaining({ action: 'PROGRAM_SETTINGS_UPDATED' }));
     expect(client.query).toHaveBeenCalledWith(expect.stringContaining('ON CONFLICT (ward_id)'), expect.arrayContaining(['ward-a', true]));
+  });
+
+  it('validates and audits expiration policy changes, including clearing the policy', async () => {
+    const client = setupClient({ public_program_expiration_days: 30 });
+    const response = await PATCH(new Request('http://localhost', {
+      method: 'PATCH',
+      body: JSON.stringify({ publicProgramExpirationDays: null })
+    }), context);
+    expect(response.status).toBe(200);
+    expect(recordAuditEventMock).toHaveBeenCalledWith(client, expect.objectContaining({
+      action: 'PROGRAM_PUBLIC_EXPIRATION_UPDATED',
+      changes: { publicProgramExpirationDays: { old: 30, new: null } }
+    }));
+
+    const invalid = await PATCH(new Request('http://localhost', {
+      method: 'PATCH',
+      body: JSON.stringify({ publicProgramExpirationDays: -1 })
+    }), context);
+    expect(invalid.status).toBe(400);
   });
 
   it('denies PROGRAM_EDITOR settings writes', async () => {

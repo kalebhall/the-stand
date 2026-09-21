@@ -51,8 +51,18 @@ export async function loadPrintDocument(client: PoolClient, wardId: string, meet
   if (!meeting.rows[0]) return null;
   if (source === 'published') {
     const render = version
-      ? await client.query('SELECT layout_json, render_data_json, version FROM meeting_program_render WHERE meeting_id = $1::uuid AND ward_id = $2::uuid AND version = $3::int LIMIT 1', [meetingId, wardId, version])
-      : await client.query('SELECT layout_json, render_data_json, version FROM meeting_program_render WHERE meeting_id = $1::uuid AND ward_id = $2::uuid ORDER BY version DESC LIMIT 1', [meetingId, wardId]);
+      ? await client.query(`SELECT layout_json, render_data_json, version FROM meeting_program_render
+          WHERE meeting_id = $1::uuid AND ward_id = $2::uuid AND version = $3::int
+            AND published_at IS NOT NULL AND layout_json IS NOT NULL AND render_data_json IS NOT NULL LIMIT 1`, [meetingId, wardId, version])
+      : await client.query(`SELECT r.layout_json, r.render_data_json, r.version
+          FROM public_program_share s
+          JOIN meeting_program_render r ON r.id = s.active_render_id
+            AND r.ward_id = s.ward_id AND r.meeting_id = s.meeting_id
+          WHERE s.ward_id = $1::uuid AND s.meeting_id = $2::uuid
+            AND s.active_render_id IS NOT NULL
+            AND (s.expires_at IS NULL OR s.expires_at > now())
+            AND r.published_at IS NOT NULL AND r.layout_json IS NOT NULL AND r.render_data_json IS NOT NULL
+          LIMIT 1`, [meetingId, wardId]);
     const row = render.rows[0] as { layout_json: unknown; render_data_json: ResolvedDocumentData; version: number } | undefined;
     if (!row?.layout_json || !row.render_data_json) return null;
     const layout = (row.layout_json as { schemaVersion?: unknown }).schemaVersion === 2 ? downgradeToV1(parseAdvancedLayout(row.layout_json)) : row.layout_json as DocumentLayout;

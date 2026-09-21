@@ -96,6 +96,7 @@ export default async function PrintMeetingPage({
   const { version, draft } = await searchParams;
   const versionNumber = Number(version);
   const requestedVersion = Number.isInteger(versionNumber) && versionNumber > 0 ? versionNumber : null;
+  const hasExplicitVersion = version !== undefined;
   const wardId = session.activeWardId;
   const client = await pool.connect();
 
@@ -113,16 +114,43 @@ export default async function PrintMeetingPage({
       notFound();
     }
 
+    if (hasExplicitVersion && requestedVersion === null && draft !== '1') {
+      await client.query('ROLLBACK');
+      notFound();
+    }
+
     const renderResult =
       draft === '1'
         ? { rowCount: 0, rows: [] }
-        : requestedVersion
+        : hasExplicitVersion && requestedVersion
           ? await client.query(
-              'SELECT render_html, version FROM meeting_program_render WHERE meeting_id = $1::uuid AND ward_id = $2::uuid AND version = $3::int LIMIT 1',
+              `SELECT r.render_html, r.version
+                 FROM meeting_program_render r
+                 LEFT JOIN public_program_share s
+                   ON s.ward_id = r.ward_id AND s.meeting_id = r.meeting_id AND s.active_render_id = r.id
+                WHERE r.meeting_id = $1::uuid
+                  AND r.ward_id = $2::uuid
+                  AND r.version = $3::int
+                  AND r.published_at IS NOT NULL
+                  AND r.layout_json IS NOT NULL
+                  AND r.render_data_json IS NOT NULL
+                  AND (s.active_render_id IS NULL OR s.expires_at IS NULL OR s.expires_at > now())
+                LIMIT 1`,
               [meetingId, session.activeWardId, requestedVersion]
             )
           : await client.query(
-              'SELECT render_html, version FROM meeting_program_render WHERE meeting_id = $1::uuid AND ward_id = $2::uuid ORDER BY version DESC LIMIT 1',
+              `SELECT r.render_html, r.version
+                 FROM public_program_share s
+                 JOIN meeting_program_render r
+                   ON r.id = s.active_render_id AND r.ward_id = s.ward_id AND r.meeting_id = s.meeting_id
+                WHERE s.meeting_id = $1::uuid
+                  AND s.ward_id = $2::uuid
+                  AND s.active_render_id IS NOT NULL
+                  AND (s.expires_at IS NULL OR s.expires_at > now())
+                  AND r.published_at IS NOT NULL
+                  AND r.layout_json IS NOT NULL
+                  AND r.render_data_json IS NOT NULL
+                LIMIT 1`,
               [meetingId, session.activeWardId]
             );
 
@@ -137,6 +165,11 @@ export default async function PrintMeetingPage({
           </p>
         </>
       );
+    }
+
+    if (hasExplicitVersion && draft !== '1') {
+      await client.query('ROLLBACK');
+      notFound();
     }
 
     const meeting = meetingResult.rows[0] as MeetingRow;
@@ -189,7 +222,9 @@ export default async function PrintMeetingPage({
       `SELECT id, public_token, alt_text, is_decorative
          FROM media_asset
         WHERE status = 'ACTIVE'
-          AND (scope_type = 'SYSTEM' OR ward_id = $1::uuid OR stake_id = (SELECT stake_id FROM ward WHERE id = $1::uuid))`,
+          AND (scope_type = 'SYSTEM'
+            OR (scope_type = 'WARD' AND ward_id = $1::uuid)
+            OR (scope_type = 'STAKE' AND stake_id = (SELECT stake_id FROM ward WHERE id = $1::uuid)))`,
       [session.activeWardId]
     );
     const media = Object.fromEntries((mediaResult.rows as Array<{ id: string; alt_text: string | null; is_decorative: boolean }>).map((item) => [item.id, { url: `/api/w/${encodeURIComponent(wardId)}/media/${encodeURIComponent(item.id)}`, altText: item.alt_text, isDecorative: item.is_decorative }]));
@@ -283,6 +318,9 @@ export default async function PrintMeetingPage({
     );
   } catch (error) {
     await client.query('ROLLBACK').catch(() => undefined);
+    if (error && typeof error === 'object' && 'digest' in error && typeof error.digest === 'string' && error.digest.startsWith('NEXT_HTTP_ERROR_F')) {
+      throw error;
+    }
     console.error('[Fatal Print View Error]', error);
     throw new Error('Failed to load print view', { cause: error });
   } finally {

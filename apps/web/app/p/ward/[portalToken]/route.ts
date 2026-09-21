@@ -1,85 +1,42 @@
 import { NextResponse } from 'next/server';
-
 import { pool } from '@/src/db/client';
 import { buildPublicProgramEmptyHtml, resolvePublicLocale } from '@/src/i18n/public-program';
 
-type PortalRow = {
-  ward_id: string;
-};
-
-type PublicRenderRow = {
-  render_html: string;
-};
+type PortalRow = { ward_id: string };
+type PublicRenderRow = { render_html: string };
+const noIndex = { 'content-type': 'text/html; charset=utf-8', 'X-Robots-Tag': 'noindex, nofollow' };
+const notFound = () => NextResponse.json({ error: 'Not found', code: 'NOT_FOUND' }, { status: 404 });
+function withRobotsMeta(html: string): string {
+  const meta = '<meta name="robots" content="noindex,nofollow">';
+  const head = html.match(/<head(?:\s[^>]*)?>/i);
+  return head ? html.replace(head[0], `${head[0]}${meta}`) : `${meta}${html}`;
+}
 
 export async function GET(request: Request, context: { params: Promise<{ portalToken: string }> }) {
-  const { portalToken } = await context.params;
-  const token = portalToken.trim();
+  const token = (await context.params).portalToken.trim();
   const cookieLocale = request.headers.get('cookie')?.match(/(?:^|;\s*)NEXT_LOCALE=([^;]+)/)?.[1];
-  let decodedLocale: string | undefined;
-  try {
-    decodedLocale = cookieLocale ? decodeURIComponent(cookieLocale) : undefined;
-  } catch {
-    decodedLocale = undefined;
-  }
-  const publicLocale = resolvePublicLocale(decodedLocale);
-
-  if (!token) {
-    return NextResponse.json({ error: 'Not found', code: 'NOT_FOUND' }, { status: 404 });
-  }
-
+  let locale: string | undefined;
+  try { locale = cookieLocale ? decodeURIComponent(cookieLocale) : undefined; } catch { locale = undefined; }
+  const publicLocale = resolvePublicLocale(locale);
+  if (!token) return notFound();
   const client = await pool.connect();
-
   try {
     await client.query('BEGIN');
     await client.query('SELECT set_config($1, $2, true)', ['app.public_portal_token', token]);
-
-    const portalResult = await client.query('SELECT ward_id FROM public_program_portal WHERE token = $1 LIMIT 1', [token]);
-
-    if (!portalResult.rowCount) {
-      await client.query('ROLLBACK');
-      return NextResponse.json({ error: 'Not found', code: 'NOT_FOUND' }, { status: 404 });
-    }
-
+    const portalResult = await client.query('SELECT ward_id FROM public_program_portal WHERE token = $1::text LIMIT 1', [token]);
+    if (!portalResult.rows[0]) { await client.query('ROLLBACK'); return notFound(); }
     const portal = portalResult.rows[0] as PortalRow;
     await client.query('SELECT set_config($1, $2, true)', ['app.ward_id', portal.ward_id]);
-
-    const renderResult = await client.query(
-      `SELECT mpr.render_html
-         FROM meeting m
-         JOIN public_program_share pps
-           ON pps.meeting_id = m.id
-         JOIN meeting_program_render mpr
-           ON mpr.meeting_id = m.id
-        WHERE m.ward_id = $1
-          AND m.status = 'PUBLISHED'
-        ORDER BY m.meeting_date DESC, m.updated_at DESC, mpr.version DESC
-        LIMIT 1`,
-      [portal.ward_id]
-    );
-
-    if (!renderResult.rowCount) {
-      await client.query('COMMIT');
-      return new NextResponse(buildPublicProgramEmptyHtml(publicLocale), {
-        status: 200,
-        headers: {
-          'content-type': 'text/html; charset=utf-8'
-        }
-      });
-    }
-
+    const result = await client.query(`SELECT mpr.render_html FROM meeting m
+      JOIN public_program_share pps ON pps.meeting_id = m.id AND pps.ward_id = m.ward_id
+      JOIN meeting_program_render mpr ON mpr.id = pps.active_render_id AND mpr.ward_id = pps.ward_id AND mpr.meeting_id = pps.meeting_id
+      WHERE m.ward_id = $1::uuid AND m.status = 'PUBLISHED' AND (pps.expires_at IS NULL OR pps.expires_at > now()) AND mpr.published_at IS NOT NULL
+      ORDER BY m.meeting_date DESC, m.updated_at DESC LIMIT 1`, [portal.ward_id]);
     await client.query('COMMIT');
-    const row = renderResult.rows[0] as PublicRenderRow;
-
-    return new NextResponse(row.render_html, {
-      status: 200,
-      headers: {
-        'content-type': 'text/html; charset=utf-8'
-      }
-    });
+    if (!result.rows[0]) return new NextResponse(withRobotsMeta(buildPublicProgramEmptyHtml(publicLocale)), { status: 200, headers: noIndex });
+    return new NextResponse(withRobotsMeta((result.rows[0] as PublicRenderRow).render_html), { status: 200, headers: noIndex });
   } catch {
-    await client.query('ROLLBACK');
+    await client.query('ROLLBACK').catch(() => undefined);
     return NextResponse.json({ error: 'Failed to load ward public portal', code: 'INTERNAL_ERROR' }, { status: 500 });
-  } finally {
-    client.release();
-  }
+  } finally { client.release(); }
 }

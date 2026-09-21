@@ -20,7 +20,7 @@ type Props = { wardId: string; meetingId: string };
 
 const blockLabel = (block: DocumentBlock) => block.type.replaceAll('_', ' ').toLowerCase().replace(/(^|\s)\S/g, (letter) => letter.toUpperCase());
 
-type TemplateOption = { id: string; name: string; source: string; version?: { layout?: DocumentLayout } | null };
+type TemplateOption = { id: string; name: string; source: string; scopeType?: string; status?: string; distributionPolicy?: string | null; version?: { version?: number; lock?: unknown } | null };
 
 export function ProgramDesignerClient({ wardId, meetingId }: Props) {
   const [document, setDocument] = useState<LoadedDocument | null>(null);
@@ -254,6 +254,14 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
         {advancedEnabled ? <button type="button" className={`rounded-md px-3 py-2 text-sm ${advancedEditing ? 'bg-primary text-primary-foreground' : 'border'}`} onClick={() => setAdvancedEditing((value) => !value)}>{advancedEditing ? 'Simple Mode' : 'Advanced Mode'}</button> : null}
         {mode !== 'EDIT' ? <label className="ml-auto flex items-center gap-2 text-sm"><input type="checkbox" checked={publicVisitor} onChange={(event) => setPublicVisitor(event.target.checked)} /> Preview as public visitor</label> : null}
       </nav>
+      <section aria-label="Template source metadata" className="rounded-md border bg-card p-3 text-sm">
+        <div className="flex flex-wrap gap-x-5 gap-y-2">
+          <span><span className="font-medium">Source scope:</span> {templates.find((template) => template.id === document.sourceTemplateId)?.scopeType ?? (document.sourceTemplateId ? 'Unavailable' : 'System / built-in')}</span>
+          <span><span className="font-medium">Publication version:</span> {document.sourceTemplateVersion ? `v${document.sourceTemplateVersion}` : 'Draft layout'}</span>
+          <span><span className="font-medium">Lock:</span> {document.sourceTemplateId && templates.find((template) => template.id === document.sourceTemplateId)?.version?.lock ? 'Locked source blocks' : 'No source lock reported'}</span>
+          <span><span className="font-medium">Policy:</span> Use as-is, or duplicate and customize. Source templates are never edited here.</span>
+        </div>
+      </section>
       {mode === 'PRINT' ? <section aria-label="Print actions" className="flex flex-wrap items-center gap-2 rounded-md border bg-card p-3"><button type="button" className="rounded-md border px-3 py-2 text-sm" onClick={() => void validatePrint().catch((error: unknown) => setMessage(error instanceof Error ? error.message : 'Print validation failed'))}>Validate print</button><button type="button" className="rounded-md border px-3 py-2 text-sm" onClick={() => downloadPdf('draft')}>Download draft PDF</button><button type="button" className="rounded-md border px-3 py-2 text-sm" onClick={() => downloadPdf('published')}>Download published PDF</button>{printValidation ? <span className={`text-sm ${printValidation.valid ? 'text-green-700' : 'text-red-700'}`}>{printValidation.valid ? `Ready · ${printValidation.pageCount} page${printValidation.pageCount === 1 ? '' : 's'}` : `${printValidation.errors.length} print error${printValidation.errors.length === 1 ? '' : 's'}`}</span> : null}</section> : null}
       {mode === 'PRINT' && printValidation && !printValidation.valid ? <section aria-label="Print diagnostics" className="rounded-md border border-red-300 bg-red-50 p-3 text-red-900"><h2 className="font-semibold">Print diagnostics</h2><ul className="mt-2 list-disc space-y-1 pl-5 text-sm">{[...printValidation.errors, ...printValidation.warnings].map((issue, index) => <li key={`${issue.code}-${issue.blockId ?? 'document'}-${index}`}>{issue.message}{issue.suggestion ? ` ${issue.suggestion}` : ''}</li>)}</ul></section> : null}
       <div className="grid gap-4 lg:grid-cols-[220px_minmax(0,1fr)_260px]">

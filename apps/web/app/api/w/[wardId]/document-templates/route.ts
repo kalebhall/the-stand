@@ -13,6 +13,7 @@ const createSchema = z.object({
   name: z.string().trim().min(1).max(200),
   description: z.string().trim().max(2_000).nullable().optional(),
   scopeType: z.enum(['WARD', 'PERSONAL_DRAFT']),
+  distributionPolicy: z.enum(['USE_AS_IS', 'DUPLICATE_AND_CUSTOMIZE', 'REQUIRED']).optional(),
   layout: z.unknown()
 }).strict();
 
@@ -29,6 +30,7 @@ function builtInResponse() {
     id: template.key,
     key: template.key,
     source: template.source,
+    distributionPolicy: 'USE_AS_IS',
     scopeType: 'SYSTEM',
     name: template.name,
     description: template.description,
@@ -50,19 +52,22 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
     await client.query('BEGIN');
     await setDbContext(client, { userId: session.user.id, wardId });
     const result = await client.query(
-      `SELECT id, template_key, scope_type, scope_id, document_type, name, description, status,
-              current_published_version_id, created_by_user_id
-         FROM document_template
-        WHERE document_type = 'SACRAMENT_PROGRAM'
-          AND status <> 'ARCHIVED'
-          AND ((scope_type = 'STAKE' AND status = 'PUBLISHED' AND scope_id = (SELECT stake_id FROM ward WHERE id = $1::uuid))
-            OR (scope_type = 'WARD' AND scope_id = $1::uuid AND status = 'PUBLISHED' AND current_published_version_id IS NOT NULL)
-            OR (scope_type = 'PERSONAL_DRAFT' AND scope_id = $1::uuid AND created_by_user_id = $2::uuid AND status = 'PUBLISHED' AND current_published_version_id IS NOT NULL))
-        ORDER BY name ASC`,
+      `SELECT t.id, t.template_key, t.scope_type, t.scope_id, t.document_type, t.name, t.description, t.status,
+              t.current_published_version_id, t.created_by_user_id, t.distribution_policy,
+              t.source_template_id, t.source_template_version,
+              v.id AS version_id, v.version, v.schema_version, v.layout_json, v.theme_json, v.lock_json
+         FROM document_template t
+         LEFT JOIN document_template_version v ON v.id = t.current_published_version_id
+        WHERE t.document_type = 'SACRAMENT_PROGRAM'
+          AND t.status <> 'ARCHIVED'
+          AND ((t.scope_type = 'STAKE' AND t.status = 'PUBLISHED' AND t.scope_id = (SELECT stake_id FROM ward WHERE id = $1::uuid))
+            OR (t.scope_type = 'WARD' AND t.scope_id = $1::uuid AND t.status = 'PUBLISHED' AND t.current_published_version_id IS NOT NULL)
+            OR (t.scope_type = 'PERSONAL_DRAFT' AND t.scope_id = $1::uuid AND t.created_by_user_id = $2::uuid AND t.status = 'PUBLISHED' AND t.current_published_version_id IS NOT NULL))
+        ORDER BY t.name ASC`,
       [wardId, session.user.id]
     );
     await client.query('COMMIT');
-    return NextResponse.json({ templates: [...builtInResponse(), ...(result.rows as unknown as TemplateDbRow[]).map((row) => templateResponse(row))] });
+    return NextResponse.json({ templates: [...builtInResponse(), ...(result.rows as unknown as Array<TemplateDbRow & Record<string, unknown>>).map((row) => templateResponse(row, row.version_id ? { id: row.version_id, version: row.version, schema_version: row.schema_version, layout_json: row.layout_json, theme_json: row.theme_json, lock_json: row.lock_json } : null))] });
   } catch {
     await client.query('ROLLBACK').catch(() => undefined);
     return NextResponse.json({ error: 'Failed to list document templates', code: 'INTERNAL_ERROR' }, { status: 500 });
@@ -95,10 +100,10 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
       return forbidden();
     }
     const inserted = await client.query(
-      `INSERT INTO document_template (scope_type, scope_id, document_type, name, description, status, created_by_user_id)
-       VALUES ($1::text, $2::uuid, 'SACRAMENT_PROGRAM', $3::text, $4::text, 'DRAFT', $5::uuid)
-       RETURNING id, template_key, scope_type, scope_id, document_type, name, description, status, current_published_version_id, created_by_user_id`,
-      [parsed.data.scopeType, wardId, parsed.data.name, parsed.data.description ?? null, session.user.id]
+      `INSERT INTO document_template (scope_type, scope_id, document_type, name, description, distribution_policy, status, created_by_user_id)
+       VALUES ($1::text, $2::uuid, 'SACRAMENT_PROGRAM', $3::text, $4::text, $5::text, 'DRAFT', $6::uuid)
+       RETURNING id, template_key, scope_type, scope_id, document_type, name, description, distribution_policy, source_template_id, source_template_version, status, current_published_version_id, created_by_user_id`,
+      [parsed.data.scopeType, wardId, parsed.data.name, parsed.data.description ?? null, parsed.data.distributionPolicy ?? 'DUPLICATE_AND_CUSTOMIZE', session.user.id]
     );
     const row = inserted.rows[0] as unknown as TemplateDbRow;
     const version = await client.query(

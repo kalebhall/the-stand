@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/src/auth/auth';
-import { canManageProgramMedia, canViewMeetings, canViewProgramDesigner } from '@/src/auth/roles';
+import { recordAuditEvent } from '@/src/audit/service';
+import { canDeleteProgramMedia, canViewMeetings, canViewProgramDesigner } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 import { archiveWardMedia, MediaServiceError } from '@/src/document-designer/media-service';
@@ -54,12 +55,29 @@ export async function DELETE(_: Request, context: { params: Promise<{ wardId: st
   const session = await auth();
   const { wardId, assetId } = await context.params;
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, { status: 401 });
-  if (!canManageProgramMedia({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
     await setDbContext(client, { userId: session.user.id, wardId });
+    const settings = await client.query('SELECT allow_program_editor_delete_media FROM ward_document_settings WHERE ward_id = $1::uuid LIMIT 1', [wardId]);
+    const profile = { allowProgramEditorDeleteMedia: settings.rows[0]?.allow_program_editor_delete_media === true };
+    if (!canDeleteProgramMedia({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId, profile)) {
+      await client.query('ROLLBACK');
+      return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
+    }
     await archiveWardMedia(client, wardId, assetId);
+    await recordAuditEvent(client, {
+      wardId,
+      userId: session.user.id,
+      actorName: session.user.name || session.user.email || null,
+      actorRole: session.user.roles?.[0] || null,
+      action: 'MEDIA_ARCHIVED',
+      entityType: 'media_asset',
+      entityId: assetId,
+      details: { status: 'ARCHIVED' },
+      source: 'api',
+      severity: 'notice'
+    });
     await client.query('COMMIT');
     return NextResponse.json({ archived: true });
   } catch (error) {
