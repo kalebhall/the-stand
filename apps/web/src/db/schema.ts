@@ -249,6 +249,8 @@ export const meetingProgramRender = pgTable(
       .references(() => meeting.id, { onDelete: 'cascade' }),
     version: integer('version').notNull(),
     renderHtml: text('render_html').notNull(),
+    layoutJson: jsonb('layout_json'),
+    renderDataJson: jsonb('render_data_json'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
   },
   (table) => ({

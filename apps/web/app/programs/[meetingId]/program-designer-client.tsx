@@ -9,6 +9,8 @@ import { addBlock, configureColumns, reorderBlock, removeBlock, resizeBlock, set
 import { commitHistory, createHistory, redo, undo, type HistoryState } from '@/src/document-designer/history';
 import type { DocumentBlock, DocumentLayout } from '@/src/document-designer/types';
 import type { MediaAssetResponse } from '@/src/document-designer/media-types';
+import type { PrintValidationResult } from '@/src/document-designer/print-types';
+
 import { moveBlock, modeClass, setBlockVisibility, setTheme, type DesignerMode, type SaveState } from './designer-state';
 
 type PreviewSource = { meetingDate: string; meetingType: string; wardName?: string | null; programItems: Array<{ order: number; label: string; details?: string | null }>; media?: Partial<Record<string, { url: string; altText: string | null; isDecorative: boolean }>> };
@@ -25,12 +27,14 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
   const [source, setSource] = useState<PreviewSource | null>(null);
   const [templates, setTemplates] = useState<TemplateOption[]>([]);
   const [media, setMedia] = useState<MediaAssetResponse[]>([]);
+
   const [selectedTemplateId, setSelectedTemplateId] = useState('');
   const [mode, setMode] = useState<DesignerMode>('EDIT');
   const [publicVisitor, setPublicVisitor] = useState(false);
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
   const [advancedEnabled, setAdvancedEnabled] = useState(false);
   const [advancedEditing, setAdvancedEditing] = useState(false);
+  const [printValidation, setPrintValidation] = useState<PrintValidationResult | null>(null);
   const [historyState, setHistoryState] = useState<HistoryState | null>(null);
   const [status, setStatus] = useState<SaveState>('loading');
   const [message, setMessage] = useState('Loading program design…');
@@ -214,6 +218,22 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
     if (current && document) void save(current, document.revision, undefined, 'ADVANCED');
   }
 
+  async function validatePrint() {
+    const response = await fetch(`/api/w/${wardId}/meetings/${meetingId}/program-design/print-validate`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ source: 'draft' })
+    });
+    const body = await response.json() as PrintValidationResult & { error?: string };
+    if (!response.ok) throw new Error(body.error ?? 'Print validation failed');
+    setPrintValidation(body);
+  }
+
+  function downloadPdf(sourceName: 'draft' | 'published') {
+    window.open(`/api/w/${encodeURIComponent(wardId)}/meetings/${encodeURIComponent(meetingId)}/program-design/pdf?source=${sourceName}`, '_blank', 'noopener,noreferrer');
+  }
+
+
   let previewHtml = '';
   let previewError = '';
   if (document && source && mode !== 'EDIT') {
@@ -234,6 +254,8 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
         {advancedEnabled ? <button type="button" className={`rounded-md px-3 py-2 text-sm ${advancedEditing ? 'bg-primary text-primary-foreground' : 'border'}`} onClick={() => setAdvancedEditing((value) => !value)}>{advancedEditing ? 'Simple Mode' : 'Advanced Mode'}</button> : null}
         {mode !== 'EDIT' ? <label className="ml-auto flex items-center gap-2 text-sm"><input type="checkbox" checked={publicVisitor} onChange={(event) => setPublicVisitor(event.target.checked)} /> Preview as public visitor</label> : null}
       </nav>
+      {mode === 'PRINT' ? <section aria-label="Print actions" className="flex flex-wrap items-center gap-2 rounded-md border bg-card p-3"><button type="button" className="rounded-md border px-3 py-2 text-sm" onClick={() => void validatePrint().catch((error: unknown) => setMessage(error instanceof Error ? error.message : 'Print validation failed'))}>Validate print</button><button type="button" className="rounded-md border px-3 py-2 text-sm" onClick={() => downloadPdf('draft')}>Download draft PDF</button><button type="button" className="rounded-md border px-3 py-2 text-sm" onClick={() => downloadPdf('published')}>Download published PDF</button>{printValidation ? <span className={`text-sm ${printValidation.valid ? 'text-green-700' : 'text-red-700'}`}>{printValidation.valid ? `Ready · ${printValidation.pageCount} page${printValidation.pageCount === 1 ? '' : 's'}` : `${printValidation.errors.length} print error${printValidation.errors.length === 1 ? '' : 's'}`}</span> : null}</section> : null}
+      {mode === 'PRINT' && printValidation && !printValidation.valid ? <section aria-label="Print diagnostics" className="rounded-md border border-red-300 bg-red-50 p-3 text-red-900"><h2 className="font-semibold">Print diagnostics</h2><ul className="mt-2 list-disc space-y-1 pl-5 text-sm">{[...printValidation.errors, ...printValidation.warnings].map((issue, index) => <li key={`${issue.code}-${issue.blockId ?? 'document'}-${index}`}>{issue.message}{issue.suggestion ? ` ${issue.suggestion}` : ''}</li>)}</ul></section> : null}
       <div className="grid gap-4 lg:grid-cols-[220px_minmax(0,1fr)_260px]">
         <aside className="space-y-3 rounded-lg border bg-card p-3" aria-label="Approved blocks">
           <div><h2 className="font-semibold">Blocks</h2><p className="text-xs text-muted-foreground">Simple Mode blocks from the approved template.</p></div>

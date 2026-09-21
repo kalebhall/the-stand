@@ -14,7 +14,7 @@ flowchart LR
   A2["root:other<br/>1 files"]
   A3["root:tooling<br/>7 files"]
   A4["web:announcements<br/>2 files"]
-  A5["web:api<br/>103 files"]
+  A5["web:api<br/>105 files"]
   A6["web:app<br/>137 files"]
   A7["web:audit<br/>2 files"]
   A8["web:auth<br/>11 files"]
@@ -24,7 +24,7 @@ flowchart LR
   A12["web:church-actions<br/>4 files"]
   A13["web:config<br/>15 files"]
   A14["web:db<br/>8 files"]
-  A15["web:document-designer<br/>42 files"]
+  A15["web:document-designer<br/>51 files"]
   A16["web:features<br/>3 files"]
   A17["web:hardening<br/>1 files"]
   A18["web:health.mjs<br/>1 files"]
@@ -43,18 +43,18 @@ flowchart LR
   A31["web:types<br/>2 files"]
   A32["web:ui<br/>33 files"]
   A33["web:version.mjs<br/>1 files"]
-  A5 -->|142| A8
-  A5 -->|133| A14
+  A5 -->|146| A8
+  A5 -->|137| A14
   A6 -->|123| A32
   A6 -->|96| A8
   A6 -->|59| A14
   A5 -->|46| A26
-  A5 -->|28| A15
+  A5 -->|34| A15
   A5 -->|27| A7
   A5 -->|23| A22
   A5 -->|15| A11
   A6 -->|15| A24
-  A6 -->|13| A15
+  A6 -->|14| A15
   A5 -->|11| A16
   A5 -->|11| A20
   A6 -->|8| A26
@@ -124,7 +124,7 @@ flowchart LR
 | `root:other` | 1 |
 | `root:tooling` | 7 |
 | `web:announcements` | 2 |
-| `web:api` | 103 |
+| `web:api` | 105 |
 | `web:app` | 137 |
 | `web:audit` | 2 |
 | `web:auth` | 11 |
@@ -134,7 +134,7 @@ flowchart LR
 | `web:church-actions` | 4 |
 | `web:config` | 15 |
 | `web:db` | 8 |
-| `web:document-designer` | 42 |
+| `web:document-designer` | 51 |
 | `web:features` | 3 |
 | `web:hardening` | 1 |
 | `web:health.mjs` | 1 |
@@ -158,24 +158,24 @@ flowchart LR
 
 | Importing area | Imported area | Imports |
 | --- | --- | ---: |
-| `web:api` | `web:auth` | 142 |
-| `web:api` | `web:db` | 133 |
+| `web:api` | `web:auth` | 146 |
+| `web:api` | `web:db` | 137 |
+| `web:document-designer` | `web:document-designer` | 136 |
 | `web:app` | `web:ui` | 123 |
-| `web:document-designer` | `web:document-designer` | 106 |
 | `web:app` | `web:auth` | 96 |
 | `web:app` | `web:app` | 66 |
 | `web:app` | `web:db` | 59 |
 | `web:notifications` | `web:notifications` | 53 |
 | `web:api` | `web:notifications` | 46 |
+| `web:api` | `web:document-designer` | 34 |
 | `web:ui` | `web:ui` | 30 |
-| `web:api` | `web:document-designer` | 28 |
 | `web:api` | `web:api` | 27 |
 | `web:api` | `web:audit` | 27 |
 | `web:api` | `web:lib` | 23 |
 | `web:api` | `web:callings` | 15 |
 | `web:app` | `web:meetings` | 15 |
+| `web:app` | `web:document-designer` | 14 |
 | `web:imports` | `web:imports` | 14 |
-| `web:app` | `web:document-designer` | 13 |
 | `web:meetings` | `web:meetings` | 12 |
 | `web:api` | `web:features` | 11 |
 | `web:api` | `web:imports` | 11 |
@@ -258,15 +258,15 @@ flowchart LR
 | Importing area | Package/runtime | Imports |
 | --- | --- | ---: |
 | `web:app` | `next` | 99 |
-| `web:api` | `next` | 76 |
+| `web:api` | `next` | 78 |
 | `web:app` | `react` | 42 |
 | `web:ui` | `react` | 31 |
 | `web:api` | `vitest` | 25 |
 | `web:app` | `next-intl` | 19 |
 | `web:app` | `vitest` | 19 |
+| `web:document-designer` | `vitest` | 17 |
 | `web:notifications` | `vitest` | 16 |
 | `web:api` | `zod` | 15 |
-| `web:document-designer` | `vitest` | 15 |
 | `root:tooling` | `Node.js` | 14 |
 | `web:ui` | `next` | 14 |
 | `web:app` | `@testing-library/react` | 13 |
@@ -333,6 +333,9 @@ flowchart LR
 | `web:config` | `typescript-eslint` | 1 |
 | `web:config` | `vitest` | 1 |
 | `web:db` | `module` | 1 |
+| `web:document-designer` | `jspdf` | 1 |
+| `web:document-designer` | `next` | 1 |
+| `web:document-designer` | `pg` | 1 |
 | `web:features` | `vitest` | 1 |
 | `web:hardening` | `vitest` | 1 |
 | `web:i18n` | `next` | 1 |
@@ -440,6 +443,8 @@ flowchart LR
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/membership-ordinances/route.ts` | `web:api` | 5 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/offline-snapshot/route.ts` | `web:api` | 7 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/offline-sync/route.ts` | `web:api` | 5 | 2 |
+| `apps/web/app/api/w/[wardId]/meetings/[meetingId]/program-design/pdf/route.ts` | `web:api` | 8 | 1 |
+| `apps/web/app/api/w/[wardId]/meetings/[meetingId]/program-design/print-validate/route.ts` | `web:api` | 6 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/program-design/route.ts` | `web:api` | 13 | 2 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/program-design/route.vitest.ts` | `web:api` | 2 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/program-design/validate/route.ts` | `web:api` | 1 | 0 |
@@ -537,7 +542,7 @@ flowchart LR
 | `apps/web/app/programs/[meetingId]/designer-state.ts` | `web:app` | 1 | 0 |
 | `apps/web/app/programs/[meetingId]/designer-state.vitest.ts` | `web:app` | 2 | 1 |
 | `apps/web/app/programs/[meetingId]/page.tsx` | `web:app` | 3 | 1 |
-| `apps/web/app/programs/[meetingId]/program-designer-client.tsx` | `web:app` | 7 | 2 |
+| `apps/web/app/programs/[meetingId]/program-designer-client.tsx` | `web:app` | 8 | 2 |
 | `apps/web/app/programs/[meetingId]/program-designer-client.vitest.tsx` | `web:app` | 2 | 2 |
 | `apps/web/app/programs/page.tsx` | `web:app` | 7 | 1 |
 | `apps/web/app/programs/programs-client.tsx` | `web:app` | 0 | 1 |
@@ -711,11 +716,20 @@ flowchart LR
 | `apps/web/src/document-designer/media-validation.vitest.ts` | `web:document-designer` | 1 | 2 |
 | `apps/web/src/document-designer/meeting-document-service.ts` | `web:document-designer` | 4 | 0 |
 | `apps/web/src/document-designer/meeting-document-service.vitest.ts` | `web:document-designer` | 2 | 1 |
+| `apps/web/src/document-designer/overflow.ts` | `web:document-designer` | 6 | 0 |
+| `apps/web/src/document-designer/pdf-download.ts` | `web:document-designer` | 0 | 1 |
+| `apps/web/src/document-designer/pdf-renderer.ts` | `web:document-designer` | 5 | 1 |
+| `apps/web/src/document-designer/pdf-renderer.vitest.ts` | `web:document-designer` | 3 | 1 |
 | `apps/web/src/document-designer/persistence.ts` | `web:document-designer` | 1 | 0 |
 | `apps/web/src/document-designer/persistence.vitest.ts` | `web:document-designer` | 2 | 1 |
 | `apps/web/src/document-designer/preview-contract.ts` | `web:document-designer` | 3 | 0 |
 | `apps/web/src/document-designer/preview-contract.vitest.ts` | `web:document-designer` | 2 | 1 |
 | `apps/web/src/document-designer/primitives.ts` | `web:document-designer` | 2 | 1 |
+| `apps/web/src/document-designer/print-data.ts` | `web:document-designer` | 5 | 1 |
+| `apps/web/src/document-designer/print-layout.ts` | `web:document-designer` | 1 | 0 |
+| `apps/web/src/document-designer/print-layout.vitest.ts` | `web:document-designer` | 4 | 1 |
+| `apps/web/src/document-designer/print-preview-contract.ts` | `web:document-designer` | 5 | 0 |
+| `apps/web/src/document-designer/print-types.ts` | `web:document-designer` | 1 | 0 |
 | `apps/web/src/document-designer/public-safety.ts` | `web:document-designer` | 3 | 0 |
 | `apps/web/src/document-designer/public-safety.vitest.ts` | `web:document-designer` | 2 | 1 |
 | `apps/web/src/document-designer/registry.ts` | `web:document-designer` | 4 | 1 |

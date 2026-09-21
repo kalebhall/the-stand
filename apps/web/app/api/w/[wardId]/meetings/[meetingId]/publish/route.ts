@@ -191,9 +191,11 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
     );
     const media = Object.fromEntries((mediaResult.rows as Array<{ id: string; public_token: string | null; alt_text: string | null; is_decorative: boolean }>).filter((item) => item.public_token).map((item) => [item.id, { url: `/media/${item.public_token}`, altText: item.alt_text, isDecorative: item.is_decorative }]));
 
+    let publishedLayoutJson: unknown = null;
+    let publishedRenderDataJson: unknown = null;
     const renderHtml = meetingDocumentLayout
-      ? renderDocumentHtml({
-          ...resolveDocumentData(
+      ? (() => {
+          const resolved = resolveDocumentData(
             meetingDocumentLayout,
             {
               meetingDate: meeting.meeting_date,
@@ -212,10 +214,16 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
               media
             },
             { public: true, explicitPublicBlockTypes: COMPATIBILITY_PUBLIC_BLOCK_TYPES }
-          ),
-          public: true,
-          explicitPublicBlockTypes: COMPATIBILITY_PUBLIC_BLOCK_TYPES
-        }).html
+          );
+          publishedLayoutJson = resolved.layout;
+          publishedRenderDataJson = resolved.data;
+          return renderDocumentHtml({
+            layout: resolved.layout,
+            data: resolved.data,
+            public: true,
+            explicitPublicBlockTypes: COMPATIBILITY_PUBLIC_BLOCK_TYPES
+          }).html;
+        })()
       : buildMeetingRenderHtml({
       publicUrl: `${process.env.NEXTAUTH_URL ?? 'http://localhost:3000'}/p/${shareToken}`,
       meetingDate: meeting.meeting_date,
@@ -241,9 +249,9 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
     });
 
     await client.query(
-      `INSERT INTO meeting_program_render (ward_id, meeting_id, version, render_html)
-       VALUES ($1::uuid, $2::uuid, $3::int, $4::text)`,
-      [wardId, meetingId, nextVersion, renderHtml]
+      `INSERT INTO meeting_program_render (ward_id, meeting_id, version, render_html, layout_json, render_data_json)
+       VALUES ($1::uuid, $2::uuid, $3::int, $4::text, $5::jsonb, $6::jsonb)`,
+      [wardId, meetingId, nextVersion, renderHtml, publishedLayoutJson ? JSON.stringify(publishedLayoutJson) : null, publishedRenderDataJson ? JSON.stringify(publishedRenderDataJson) : null]
     );
 
     await client.query(

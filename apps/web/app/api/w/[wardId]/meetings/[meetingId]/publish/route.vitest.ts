@@ -83,7 +83,9 @@ describe('POST /api/w/[wardId]/meetings/[meetingId]/publish', () => {
       'ward-1',
       'meeting-1',
       2,
-      expect.stringContaining('Programa de la reunión sacramental')
+      expect.stringContaining('Programa de la reunión sacramental'),
+      null,
+      null
     ]);
     expect(queryMock).toHaveBeenCalledWith(expect.stringContaining("SET status = 'PUBLISHED'"), ['meeting-1', 'ward-1']);
     expect(queryMock).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO audit_log'), expect.arrayContaining(['ward-1', 'user-1', 'MEETING_REPUBLISHED']));
@@ -122,7 +124,9 @@ describe('POST /api/w/[wardId]/meetings/[meetingId]/publish', () => {
       'ward-1',
       'meeting-1',
       1,
-      expect.stringContaining('document-root')
+      expect.stringContaining('document-root'),
+      expect.any(String),
+      expect.any(String)
     ]);
   });
 });
