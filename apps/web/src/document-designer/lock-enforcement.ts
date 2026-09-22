@@ -33,7 +33,16 @@ function locationMap(layout: AdvancedDocumentLayout): Map<string, { page: number
 function ids<T extends { id: string }>(items: T[]): string[] { return items.map((item) => item.id); }
 
 export function assertAdvancedMutationAllowed(layout: AdvancedDocumentLayout, operation: LayoutOperation, blockId?: string): void {
+  assertAdvancedMutationAllowedAt(layout, operation, blockId);
+}
+
+export function assertAdvancedMutationAllowedAt(layout: AdvancedDocumentLayout, operation: LayoutOperation, blockId?: string, pageIndex?: number, regionIndex?: number): void {
   const block = blockId ? layout.pages.flatMap((page) => page.regions.flatMap((region) => region.blocks)).find((item) => item.id === blockId) : undefined;
+  const property = operation === 'RESIZE' ? 'SIZE' : operation === 'STRUCTURE' || operation === 'MOVE' || operation === 'ADD' || operation === 'REMOVE' || operation === 'COLUMNS' ? 'POSITION' : operation;
+  const page = pageIndex === undefined ? undefined : layout.pages[pageIndex];
+  const region = page && regionIndex === undefined ? undefined : page?.regions[regionIndex ?? -1];
+  if (blocked(page?.lock, property) || (operation === 'COLUMNS' && blocked(page?.lock, 'SIZE'))) throw new LockedLayoutError(property as LockProperty, 'The page property is locked');
+  if (blocked(region?.lock, property) || (operation === 'COLUMNS' && blocked(region?.lock, 'SIZE'))) throw new LockedLayoutError(property as LockProperty, 'The region property is locked');
   assertLayoutOperationAllowed(layout as unknown as DocumentLayout, operation, block, block);
 }
 

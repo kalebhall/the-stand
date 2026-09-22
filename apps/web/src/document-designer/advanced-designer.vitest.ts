@@ -134,6 +134,7 @@ describe('advanced document designer', () => {
     const changed = structuredClone(locked);
     [changed.pages[0].regions[0].columns.blockIds[0], changed.pages[0].regions[0].columns.blockIds[1]] = [changed.pages[0].regions[0].columns.blockIds[1], changed.pages[0].regions[0].columns.blockIds[0]];
     expect(() => assertNoLockedChanges(locked, changed)).toThrow(LockedLayoutError);
+    expect(() => configureColumns(locked, 0, 0, 3, '1/1', 6)).toThrow(LockedLayoutError);
   });
 
   it('enforces locked content on the server boundary', () => {

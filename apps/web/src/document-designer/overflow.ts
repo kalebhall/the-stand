@@ -69,9 +69,13 @@ export function validatePrintLayout(inputLayout: unknown, data: ResolvedDocument
     })))
     : blocks.reduce((total, block) => total + estimateLines(block, panelWidth), 0);
   const usableLines = Math.max(1, Math.floor(physical.contentHeightMm / Math.max(3.5, layout.theme.baseFontSize * 0.42)));
-  const flowingPages = Math.max(1, Math.ceil(estimatedLines / usableLines));
+  const flowingPages = Math.max(
+    advancedLayout ? advancedLayout.pages.length * (layout.fold === 'NONE' ? 1 : 2) : 1,
+    Math.ceil(estimatedLines / usableLines)
+  );
   const pageCount = getExpectedPageCount(layout, flowingPages);
-  if (layout.fold !== 'NONE' && flowingPages > 1) errors.push({ code: 'FIXED_FOLD_OVERFLOW', message: 'This folded format cannot add another sheet.', severity: 'ERROR', suggestion: 'Remove content, shorten text, reduce spacing, or choose Full Page.' });
+  const fixedFoldCapacity = advancedLayout ? advancedLayout.pages.length * 2 : 1;
+  if (layout.fold !== 'NONE' && flowingPages > fixedFoldCapacity) errors.push({ code: 'FIXED_FOLD_OVERFLOW', message: 'This folded format cannot add another sheet.', severity: 'ERROR', suggestion: 'Remove content, shorten text, reduce spacing, or choose Full Page.' });
   if (layout.fold === 'NONE' && flowingPages > 1) warnings.push({ code: 'FLOWING_PAGE_COUNT', message: `Content flows to ${flowingPages} pages.`, severity: 'WARNING', suggestion: 'Review page breaks before downloading.' });
   if (layout.theme.baseFontSize < 9) errors.push({ code: 'MIN_FONT_SIZE', message: 'Font size is below the print minimum of 9px.', severity: 'ERROR', suggestion: 'Increase the base font size.' });
   for (const block of blocks) {

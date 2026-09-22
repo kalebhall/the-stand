@@ -83,6 +83,10 @@ export async function loadPrintDocument(client: PoolClient, wardId: string, meet
   const input = document.rows[0].layout_json;
   const { layout, data } = resolveDocumentData(input, sourceData, { target: 'PRINT' });
   const hydratedData = { ...data, media: await hydrateMedia(client, wardId, data.media) };
-  const advancedLayout = isAdvancedLayout(input) ? projectAdvancedLayoutForOutput(parseAdvancedLayout(input), 'PRINT', hydratedData) : null;
+  const advancedLayout = isAdvancedLayout(input)
+    ? projectAdvancedLayoutForOutput(parseAdvancedLayout(input), 'PRINT', hydratedData)
+    : layout.fold === 'BIFOLD'
+      ? projectAdvancedLayoutForOutput(parseAdvancedLayout(input), 'PRINT', hydratedData)
+      : null;
   return { layout: advancedLayout ?? layout, data: hydratedData, wardName: meeting.rows[0].ward_name, publishedVersion: null };
 }

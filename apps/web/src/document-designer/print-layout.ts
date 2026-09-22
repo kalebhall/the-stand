@@ -32,7 +32,7 @@ export function getFoldPanels(layout: Pick<DocumentLayout, 'paper' | 'orientatio
 }
 
 export function getExpectedPageCount(layout: Pick<DocumentLayout, 'fold'>, flowingPages = 1): number {
-  return layout.fold === 'NONE' ? Math.max(1, flowingPages) : 2;
+  return layout.fold === 'NONE' ? Math.max(1, flowingPages) : Math.max(2, flowingPages);
 }
 
 export function getFoldGuidance(fold: FoldType): string[] {

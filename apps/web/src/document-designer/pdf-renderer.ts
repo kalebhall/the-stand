@@ -86,23 +86,23 @@ export async function renderDocumentPdf(layout: DocumentLayout | AdvancedDocumen
   const foldRegionMapping = [[0, 1], [1, 0], [1, 1], [0, 0]] as const;
   const advancedRegions = isAdvancedLayout(layout) ? layout.pages.flatMap((page) => page.regions) : [];
   const renderBlocks = isAdvancedLayout(layout)
-    ? advancedRegions.flatMap((region, regionIndex) => {
+    ? layout.pages.flatMap((documentPage, pageIndex) => documentPage.regions.flatMap((region, regionIndex) => {
       const [sideIndex, slotIndex] = layout.fold === 'BIFOLD' ? foldRegionMapping[regionIndex] ?? [0, 0] : [0, 0];
       return region.columns.blockIds.flatMap((ids, columnIndex) => ids.flatMap((id) => {
         const block = region.blocks.find((candidate) => candidate.id === id);
-        return block ? [{ block, regionKey: region.id, sideIndex, slotIndex, columnIndex }] : [];
+        return block ? [{ block, regionKey: region.id, pageIndex, sideIndex, slotIndex, columnIndex }] : [];
       }));
-    }).sort((a, b) => a.sideIndex - b.sideIndex || a.slotIndex - b.slotIndex)
-    : allBlocks(layout).map((block) => ({ block, regionKey: 'legacy', sideIndex: 0, slotIndex: 0, columnIndex: 0 }));
-  let currentSide = 0;
-  let panelIndexForSide = 0;
+    })).sort((a, b) => a.pageIndex - b.pageIndex || a.sideIndex - b.sideIndex || a.slotIndex - b.slotIndex)
+    : allBlocks(layout).map((block) => ({ block, regionKey: 'legacy', pageIndex: 0, sideIndex: 0, slotIndex: 0, columnIndex: 0 }));
+  let currentPhysicalPage = 0;
   let lastRegionKey: string | null = null;
   let lastColumnIndex = 0;
   for (const item of renderBlocks) {
     if (item.regionKey !== lastRegionKey) {
-      if (isAdvancedLayout(layout) && layout.fold !== 'NONE' && item.sideIndex !== currentSide) {
+      const targetPhysicalPage = isAdvancedLayout(layout) && layout.fold !== 'NONE' ? item.pageIndex * 2 + item.sideIndex : item.pageIndex;
+      while (targetPhysicalPage > currentPhysicalPage) {
         doc.addPage();
-        currentSide = item.sideIndex;
+        currentPhysicalPage += 1;
       }
       panelIndex = item.slotIndex;
       panelSlot = 0;

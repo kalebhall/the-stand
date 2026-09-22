@@ -1,7 +1,7 @@
 import { idSchema } from './primitives';
 import { parseAdvancedLayout, type AdvancedBlock, type AdvancedDocumentLayout, type ColumnCount, type ColumnRatio } from './advanced-schema';
 import type { BlockWidth, DocumentBlock } from './types';
-import { assertAdvancedMutationAllowed } from './lock-enforcement';
+import { assertAdvancedMutationAllowed, assertAdvancedMutationAllowedAt } from './lock-enforcement';
 
 const newId = () => idSchema.parse(globalThis.crypto.randomUUID());
 
@@ -18,7 +18,7 @@ function clone(layout: AdvancedDocumentLayout): AdvancedDocumentLayout {
 }
 
 export function addBlock(layout: AdvancedDocumentLayout, pageIndex: number, regionIndex: number, block: DocumentBlock, column = 0): AdvancedDocumentLayout {
-  assertAdvancedMutationAllowed(layout, 'ADD');
+  assertAdvancedMutationAllowedAt(layout, 'ADD', undefined, pageIndex, regionIndex);
   const next = clone(layout);
   const region = next.pages[pageIndex]?.regions[regionIndex];
   if (!region || column < 0 || column >= region.columns.count) throw new Error('Invalid target region or column');
@@ -96,7 +96,7 @@ export function resizeBlock(layout: AdvancedDocumentLayout, blockId: string, wid
 }
 
 export function configureColumns(layout: AdvancedDocumentLayout, pageIndex: number, regionIndex: number, count: ColumnCount, ratio: ColumnRatio, gutter: number): AdvancedDocumentLayout {
-  assertAdvancedMutationAllowed(layout, 'COLUMNS');
+  assertAdvancedMutationAllowedAt(layout, 'COLUMNS', undefined, pageIndex, regionIndex);
   const next = clone(layout);
   const region = next.pages[pageIndex]?.regions[regionIndex];
   if (!region) throw new Error('Invalid region');
