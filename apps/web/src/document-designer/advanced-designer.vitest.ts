@@ -21,6 +21,16 @@ describe('advanced document designer', () => {
     expect(downgradeToV1(upgraded).pages[0].regions[0].blocks[0].id).toBe(DEFAULT_DOCUMENT_LAYOUT.pages[0].regions[0].blocks[0].id);
   });
 
+  it('maps a legacy bifold into four stable panel regions', () => {
+    const bifold = { ...DEFAULT_DOCUMENT_LAYOUT, fold: 'BIFOLD' as const };
+    const upgraded = normalizeToAdvanced(bifold);
+    expect(upgraded.pages[0].regions).toHaveLength(4);
+    expect(upgraded.pages[0].regions.map((region) => region.ratio)).toEqual([0.25, 0.25, 0.25, 0.25]);
+    expect(new Set(upgraded.pages[0].regions.map((region) => region.id)).size).toBe(4);
+    expect(upgraded.pages[0].regions.flatMap((region) => region.blocks).map((block) => block.id).sort()).toEqual(
+      DEFAULT_DOCUMENT_LAYOUT.pages[0].regions[0].blocks.map((block) => block.id).sort()
+    );
+  });
   it('preserves v2 columns and advanced block metadata through a round trip', () => {
     const source = structuredClone(DEFAULT_DOCUMENT_LAYOUT) as unknown as Record<string, unknown>;
     const page = (source.pages as Array<Record<string, unknown>>)[0];
@@ -115,6 +125,16 @@ describe('advanced document designer', () => {
     const changed = structuredClone(locked);
     changed.pages[0].regions[0].blocks[0].digitalOrder = 99;
     expect(() => assertNoLockedChanges(locked, changed)).toThrow(LockedLayoutError);
+  });
+
+  it('rejects page-locked column membership changes', () => {
+    const configured = configureColumns(parseAdvancedLayout(DEFAULT_DOCUMENT_LAYOUT), 0, 0, 2, '1/1', 6);
+    const locked = structuredClone(configured);
+    locked.pages[0].lock = { level: 'REGION', properties: ['POSITION'] };
+    const changed = structuredClone(locked);
+    [changed.pages[0].regions[0].columns.blockIds[0], changed.pages[0].regions[0].columns.blockIds[1]] = [changed.pages[0].regions[0].columns.blockIds[1], changed.pages[0].regions[0].columns.blockIds[0]];
+    expect(() => assertNoLockedChanges(locked, changed)).toThrow(LockedLayoutError);
+    expect(() => configureColumns(locked, 0, 0, 3, '1/1', 6)).toThrow(LockedLayoutError);
   });
 
   it('enforces locked content on the server boundary', () => {

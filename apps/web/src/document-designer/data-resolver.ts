@@ -22,11 +22,11 @@ export function resolveDocumentData(
   options: { public?: boolean; target?: 'PRINT' | 'DIGITAL'; explicitPublicBlockTypes?: readonly string[] } = {}
 ): { layout: DocumentLayout; data: ResolvedDocumentData } {
   const advancedLayout = isAdvancedLayout(inputLayout) ? parseAdvancedLayout(inputLayout) : null;
-  let layout = advancedLayout
+  let layout: DocumentLayout = advancedLayout
     ? downgradeToV1(advancedLayout)
     : parseDocumentLayout(inputLayout);
   const configuredValues = Object.fromEntries(
-    allBlocks(layout).flatMap((block) => {
+    allBlocks(advancedLayout ? downgradeToV1(advancedLayout) : layout).flatMap((block) => {
       const config = block.config as { text?: string };
       return typeof config.text === 'string' ? [[block.type, config.text]] : [];
     })
@@ -62,7 +62,7 @@ export function resolveDocumentData(
     media: source.media ?? {}
   };
   if (advancedLayout) {
-    layout = projectAdvancedLayoutForOutput(advancedLayout, options.public ? 'PUBLIC' : (options.target ?? 'DIGITAL'), data);
+    layout = downgradeToV1(projectAdvancedLayoutForOutput(advancedLayout, options.public ? 'PUBLIC' : (options.target ?? 'DIGITAL'), data));
     if (options.public) validatePublicDocumentLayout(layout, options.explicitPublicBlockTypes ?? []);
   } else if (options.public) {
     validatePublicDocumentLayout(layout, options.explicitPublicBlockTypes ?? []);

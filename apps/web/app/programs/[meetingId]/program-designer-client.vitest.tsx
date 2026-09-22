@@ -3,12 +3,20 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 
 import { adaptLegacyLayoutToDocument } from '@/src/document-designer/legacy-layout-adapter';
+import { normalizeToAdvanced } from '@/src/document-designer/advanced-schema';
 import { ProgramDesignerClient } from './program-designer-client';
 
 const layout = adaptLegacyLayoutToDocument({ preset: 'FULL_PAGE', announcementMode: 'AFTER_PROGRAM', coverMode: 'NONE' });
 const payload = {
   document: { id: 'document-1', layout, theme: layout.theme, revision: 1, sourceTemplateId: null, sourceTemplateVersion: null },
   previewSource: { meetingDate: '2026-09-20', meetingType: 'SACRAMENT', wardName: 'Freedom Park Ward', programItems: [] }
+};
+const spatialLayout = adaptLegacyLayoutToDocument({ preset: 'SINGLE_SHEET_BIFOLD', announcementMode: 'AFTER_PROGRAM', coverMode: 'NONE' });
+const spatialAdvancedLayout = normalizeToAdvanced(spatialLayout);
+const spatialPayload = {
+  ...payload,
+  document: { ...payload.document, layout: spatialLayout, advancedLayout: spatialAdvancedLayout },
+  simpleMode: { advancedModeAvailable: true }
 };
 
 afterEach(() => { cleanup(); vi.restoreAllMocks(); });
@@ -42,6 +50,19 @@ describe('ProgramDesignerClient', () => {
     const putCall = fetchMock.mock.calls.find(([, options]) => (options as RequestInit | undefined)?.method === 'PUT');
     expect(putCall).toBeDefined();
     expect(JSON.parse(String(putCall?.[1] && (putCall[1] as RequestInit).body)).expectedRevision).toBe(1);
+  });
+  it('renders bi-fold panels, adds to the selected panel, and switches views', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => spatialPayload }));
+    render(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
+    expect(await screen.findByRole('region', { name: 'Front cover' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Advanced Mode' }));
+    fireEvent.change(screen.getByLabelText('Target panel'), { target: { value: '2' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Add to panel' }));
+    expect(screen.getByRole('region', { name: 'Inside right' })).toHaveTextContent('Custom Text');
+    fireEvent.click(screen.getByRole('button', { name: 'Phone preview' }));
+    expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    expect(screen.getByRole('region', { name: 'Inside right' })).toBeInTheDocument();
   });
   it('shows public preview errors without exposing editor controls as publish actions', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => payload }));

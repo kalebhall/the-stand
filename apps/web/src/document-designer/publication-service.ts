@@ -1,6 +1,7 @@
 import type { Queryable } from './persistence';
 import type { ResolvedDocumentData } from './render-types';
 import type { DocumentLayout } from './types';
+import type { AdvancedDocumentLayout } from './advanced-schema';
 
 export type PublicationMetadata = {
   readonly validationWarningCodes: readonly string[];
@@ -14,7 +15,7 @@ export type ImmutableRenderInsertPayload = {
   readonly meetingId: string;
   readonly version: number;
   readonly renderHtml: string;
-  readonly layoutJson: DocumentLayout;
+  readonly layoutJson: DocumentLayout | AdvancedDocumentLayout;
   readonly renderDataJson: ResolvedDocumentData;
   readonly documentType: DocumentLayout['documentType'];
   readonly sourceTemplateId: string | null;
@@ -99,6 +100,6 @@ export async function updateActivePublicPointer(client: Queryable, input: { ward
 }
 
 export type DraftPublicationInput = { readonly layout: DocumentLayout; readonly data: ResolvedDocumentData };
-export type PublishedPublicationInput = { readonly layoutJson: DocumentLayout; readonly renderDataJson: ResolvedDocumentData; readonly renderHtml: string };
+export type PublishedPublicationInput = { readonly layoutJson: DocumentLayout | AdvancedDocumentLayout; readonly renderDataJson: ResolvedDocumentData; readonly renderHtml: string };
 export function resolveDraftPublicationInput(input: DraftPublicationInput): DraftPublicationInput { return { layout: structuredClone(input.layout), data: structuredClone(input.data) }; }
 export function resolvePublishedPublicationInput(input: PublishedPublicationInput): PublishedPublicationInput { return { layoutJson: structuredClone(input.layoutJson), renderDataJson: structuredClone(input.renderDataJson), renderHtml: input.renderHtml }; }

@@ -76,6 +76,30 @@ function defaultColumns(region: DocumentRegion): RegionColumns {
   return { count: 1, ratio: '1/1', gutter: region.gutter, blockIds: [region.blocks.map((block) => block.id)] };
 }
 
+function bifoldPanelRegionId(regionId: string, panelIndex: number): string {
+  return `${regionId.slice(0, -3)}a${panelIndex.toString(16).padStart(2, '0')}`;
+}
+
+function splitBifoldPanels(layout: DocumentLayout): DocumentLayout {
+  if (layout.fold !== 'BIFOLD' || layout.pages[0]?.regions.length !== 1) return layout;
+  const page = layout.pages[0];
+  const source = page.regions[0];
+  const panelBlocks: DocumentBlock[][] = [[], [], [], []];
+  for (const block of source.blocks) {
+    const panel = block.type === 'QR_CODE' || block.type === 'IMAGE' ? 3
+      : block.type === 'MEETING_PROGRAM' || block.type === 'ANNOUNCEMENTS' || block.type === 'SPEAKERS' ? 1
+        : 0;
+    panelBlocks[panel].push(block);
+  }
+  const regions: DocumentRegion[] = panelBlocks.map((blocks, panelIndex) => ({
+    ...source,
+    id: (panelIndex === 0 ? source.id : bifoldPanelRegionId(source.id, panelIndex)) as DocumentRegion['id'],
+    ratio: 0.25,
+    blocks
+  }));
+  return { ...layout, pages: [{ ...page, regions }] };
+}
+
 function validateColumns(region: AdvancedRegion): void {
   const { columns } = region;
   if (columns.count === 1 && columns.ratio !== '1/1') throw new Error('One-column regions must use the 1/1 ratio');
@@ -92,14 +116,14 @@ function validateColumns(region: AdvancedRegion): void {
 
 export function normalizeToAdvanced(input: unknown): AdvancedDocumentLayout {
   const source = input as { schemaVersion?: unknown } | null;
-  const base = parseDocumentLayout(stripAdvancedFields(input));
+  const base = splitBifoldPanels(parseDocumentLayout(stripAdvancedFields(input)));
   const sourcePages = source && typeof source === 'object' && Array.isArray((source as { pages?: unknown }).pages) ? (source as { pages: unknown[] }).pages : [];
   const pages = base.pages.map((page, pageIndex) => ({
     ...page,
     regions: page.regions.map((region, regionIndex) => {
       const sourcePage = sourcePages[pageIndex] as { regions?: unknown[] } | undefined;
       const sourceRegions = sourcePage && Array.isArray(sourcePage.regions) ? sourcePage.regions : [];
-      const sourceRegion = sourceRegions[regionIndex];
+      const sourceRegion = sourceRegions.find((candidate) => candidate && typeof candidate === 'object' && (candidate as { id?: unknown }).id === region.id) ?? sourceRegions[regionIndex];
       const sourceRegionObject = sourceRegion && typeof sourceRegion === 'object' ? sourceRegion as { columns?: unknown } : undefined;
       const parsedColumns = sourceRegionObject?.columns !== undefined && source?.schemaVersion === ADVANCED_SCHEMA_VERSION
         ? regionColumnsSchema.parse(sourceRegionObject.columns)
@@ -108,7 +132,7 @@ export function normalizeToAdvanced(input: unknown): AdvancedDocumentLayout {
         ...region,
         blocks: region.blocks.map((block, blockIndex) => {
           const sourceBlocks = sourceRegionObject && Array.isArray((sourceRegionObject as { blocks?: unknown[] }).blocks) ? (sourceRegionObject as { blocks: unknown[] }).blocks : [];
-          const sourceBlock = sourceBlocks[blockIndex];
+          const sourceBlock = sourceBlocks.find((candidate) => candidate && typeof candidate === 'object' && (candidate as { id?: unknown }).id === block.id) ?? sourceBlocks[blockIndex];
           if (!sourceBlock || typeof sourceBlock !== 'object') return block as AdvancedBlock;
           const value = sourceBlock as Record<string, unknown>;
           return { ...block, ...(value.styleOverrides !== undefined ? { styleOverrides: value.styleOverrides } : {}), ...(value.visibilityRule !== undefined ? { visibilityRule: value.visibilityRule } : {}), ...(value.digitalOrder !== undefined ? { digitalOrder: value.digitalOrder } : {}) } as AdvancedBlock;
@@ -173,7 +197,7 @@ export function projectAdvancedLayoutForOutput(
   layout: AdvancedDocumentLayout,
   target: 'PUBLIC' | 'PRINT' | 'DIGITAL',
   data?: ResolvedDocumentData
-): DocumentLayout {
+): AdvancedDocumentLayout {
   const projected = structuredClone(layout);
   projected.pages = projected.pages.map((page) => ({
     ...page,
@@ -196,9 +220,9 @@ export function projectAdvancedLayoutForOutput(
           : 0)
     }))
   }));
-  return downgradeToV1(projected);
+  return projected;
 }
 
-export function projectAdvancedLayoutForPublic(layout: AdvancedDocumentLayout): DocumentLayout {
+export function projectAdvancedLayoutForPublic(layout: AdvancedDocumentLayout): AdvancedDocumentLayout {
   return projectAdvancedLayoutForOutput(layout, 'PUBLIC');
 }

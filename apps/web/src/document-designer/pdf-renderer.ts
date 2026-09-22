@@ -1,6 +1,7 @@
 import { jsPDF } from 'jspdf';
 
 import { allBlocks } from './public-safety';
+import { isAdvancedLayout, type AdvancedDocumentLayout } from './advanced-schema';
 import { getPhysicalPage, getFoldPanels } from './print-layout';
 import type { PrintRenderMetadata } from './print-types';
 import type { DocumentBlock, DocumentLayout } from './types';
@@ -18,26 +19,44 @@ function blockText(block: DocumentBlock, data: ResolvedDocumentData): string {
   return config.text ?? config.label ?? '';
 }
 
-function fontName(layout: DocumentLayout): 'helvetica' | 'times' | 'courier' {
+function fontName(layout: Pick<DocumentLayout, 'theme'> | Pick<AdvancedDocumentLayout, 'theme'>): 'helvetica' | 'times' | 'courier' {
   if (layout.theme.fontFamily === 'SERIF') return 'times';
   if (layout.theme.fontFamily === 'MONOSPACE') return 'courier';
   return 'helvetica';
 }
 
-export async function renderDocumentPdf(layout: DocumentLayout, data: ResolvedDocumentData, options: PdfRenderOptions): Promise<jsPDF> {
+export async function renderDocumentPdf(layout: DocumentLayout | AdvancedDocumentLayout, data: ResolvedDocumentData, options: PdfRenderOptions): Promise<jsPDF> {
   const page = getPhysicalPage(layout.paper, layout.orientation);
   const doc = new jsPDF({ orientation: layout.orientation === 'LANDSCAPE' ? 'landscape' : 'portrait', unit: 'mm', format: layout.paper === 'A4' ? 'a4' : 'letter', compress: false });
   const font = fontName(layout);
   const panels = getFoldPanels(layout);
   const fold = layout.fold !== 'NONE';
   let panelIndex = 0;
+  let panelSlot = 0;
+  let columnCount = 1;
+  let columnIndex = 0;
+  let columnRatio: '1/1' | '1/3+2/3' | '2/3+1/3' = '1/1';
+  let columnGutter = 0;
   let y = page.marginMm;
   const lineHeight = Math.max(4, layout.theme.baseFontSize * 0.42);
   const bottom = page.heightMm - page.marginMm;
 
   const currentPanel = () => panels[fold ? panelIndex : 0] ?? panels[0];
-  const currentX = () => fold ? currentPanel().xMm : page.marginMm;
-  const currentWidth = () => fold ? currentPanel().widthMm - 6 : page.contentWidthMm;
+
+  const baseColumnWidth = () => fold ? currentPanel().widthMm : page.contentWidthMm;
+  const columnWidths = () => {
+    const available = baseColumnWidth() - columnGutter * Math.max(0, columnCount - 1);
+    if (columnCount === 1) return [available];
+    if (columnCount === 3) return [available / 3, available / 3, available / 3];
+    return columnRatio === '1/3+2/3' ? [available / 3, available * 2 / 3] : columnRatio === '2/3+1/3' ? [available * 2 / 3, available / 3] : [available / 2, available / 2];
+  };
+  const currentX = () => {
+    const widths = columnWidths();
+    const slotX = fold ? currentPanel().xMm + panelSlot * baseColumnWidth() : page.marginMm;
+    const columnOffset = widths.slice(0, columnIndex).reduce((sum, width) => sum + width + columnGutter, 0);
+    return slotX + columnOffset;
+  };
+  const currentWidth = () => Math.max(1, columnWidths()[columnIndex] - 6);
   const advanceColumn = () => {
     if (fold && panelIndex < panels.length - 1) {
       panelIndex += 1;
@@ -64,7 +83,45 @@ export async function renderDocumentPdf(layout: DocumentLayout, data: ResolvedDo
     y += afterMoveLines.length * lineHeight + 3;
   };
 
-  for (const block of allBlocks(layout)) {
+  const foldRegionMapping = [[0, 1], [1, 0], [1, 1], [0, 0]] as const;
+  const advancedRegions = isAdvancedLayout(layout) ? layout.pages.flatMap((page) => page.regions) : [];
+  const renderBlocks = isAdvancedLayout(layout)
+    ? layout.pages.flatMap((documentPage, pageIndex) => documentPage.regions.flatMap((region, regionIndex) => {
+      const [sideIndex, slotIndex] = layout.fold === 'BIFOLD' ? foldRegionMapping[regionIndex] ?? [0, 0] : [0, 0];
+      return region.columns.blockIds.flatMap((ids, columnIndex) => ids.flatMap((id) => {
+        const block = region.blocks.find((candidate) => candidate.id === id);
+        return block ? [{ block, regionKey: region.id, pageIndex, sideIndex, slotIndex, columnIndex }] : [];
+      }));
+    })).sort((a, b) => a.pageIndex - b.pageIndex || a.sideIndex - b.sideIndex || a.slotIndex - b.slotIndex)
+    : allBlocks(layout).map((block) => ({ block, regionKey: 'legacy', pageIndex: 0, sideIndex: 0, slotIndex: 0, columnIndex: 0 }));
+  let currentPhysicalPage = 0;
+  let lastRegionKey: string | null = null;
+  let lastColumnIndex = 0;
+  for (const item of renderBlocks) {
+    if (item.regionKey !== lastRegionKey) {
+      const targetPhysicalPage = isAdvancedLayout(layout) && layout.fold !== 'NONE' ? item.pageIndex * 2 + item.sideIndex : item.pageIndex;
+      while (targetPhysicalPage > currentPhysicalPage) {
+        doc.addPage();
+        currentPhysicalPage += 1;
+      }
+      panelIndex = item.slotIndex;
+      panelSlot = 0;
+      if (isAdvancedLayout(layout)) {
+        const region = advancedRegions.find((candidate) => candidate.id === item.regionKey);
+        columnCount = region?.columns.count ?? 1;
+        columnRatio = region?.columns.ratio ?? '1/1';
+        columnGutter = region?.columns.gutter ?? 0;
+        columnIndex = 0;
+      } else { columnCount = 1; columnIndex = 0; columnRatio = '1/1'; columnGutter = 0; }
+      y = page.marginMm;
+      lastRegionKey = item.regionKey;
+      lastColumnIndex = item.columnIndex;
+    } else if (item.columnIndex !== lastColumnIndex) {
+      y = page.marginMm;
+      lastColumnIndex = item.columnIndex;
+    }
+    columnIndex = item.columnIndex;
+    const block = item.block;
     if (block.visibility === 'HIDDEN' || block.printBehavior === 'DIGITAL_ONLY') continue;
     if (block.type === 'IMAGE') {
       const assetId = (block.config as { assetId: string | null }).assetId;
@@ -85,6 +142,7 @@ export async function renderDocumentPdf(layout: DocumentLayout, data: ResolvedDo
     writeText(text || '—', heading ? layout.theme.baseFontSize + 3 : layout.theme.baseFontSize, heading);
   }
 
+  if (fold && doc.getNumberOfPages() < 2) doc.addPage();
   doc.setCreationDate(new Date('2000-01-01T00:00:00.000Z'));
   doc.setFileId(options.metadata.layoutHash.replace(/[^A-Za-z0-9]/g, '').padEnd(32, '0').slice(0, 32));
   doc.setProperties({ title: options.title ?? 'Meeting Program', subject: 'The Stand program', author: 'The Stand', creator: `The Stand ${options.metadata.rendererVersion}` });

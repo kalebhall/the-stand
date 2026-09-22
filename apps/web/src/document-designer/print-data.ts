@@ -1,10 +1,11 @@
 import type { PoolClient } from 'pg';
 
-import { downgradeToV1, parseAdvancedLayout } from './advanced-schema';
+import { isAdvancedLayout, parseAdvancedLayout, projectAdvancedLayoutForOutput } from './advanced-schema';
 import { resolveDocumentData } from './data-resolver';
 import { readMedia } from './media-storage';
 import type { ResolvedDocumentData } from './render-types';
 import type { DocumentLayout } from './types';
+import type { AdvancedDocumentLayout } from './advanced-schema';
 
 type PrintSource = 'draft' | 'published';
 
@@ -44,7 +45,7 @@ async function hydrateMedia(client: PoolClient, wardId: string, media: ResolvedD
   return hydrated;
 }
 
-export async function loadPrintDocument(client: PoolClient, wardId: string, meetingId: string, source: PrintSource, version: number | null): Promise<{ layout: DocumentLayout; data: ResolvedDocumentData; wardName: string; publishedVersion: number | null } | null> {
+export async function loadPrintDocument(client: PoolClient, wardId: string, meetingId: string, source: PrintSource, version: number | null): Promise<{ layout: DocumentLayout | AdvancedDocumentLayout; data: ResolvedDocumentData; wardName: string; publishedVersion: number | null } | null> {
   const meeting = await client.query(
     'SELECT w.name AS ward_name, m.meeting_date, m.meeting_type, m.location FROM meeting m JOIN ward w ON w.id = m.ward_id WHERE m.id = $1::uuid AND m.ward_id = $2::uuid LIMIT 1', [meetingId, wardId]
   );
@@ -65,8 +66,9 @@ export async function loadPrintDocument(client: PoolClient, wardId: string, meet
           LIMIT 1`, [meetingId, wardId]);
     const row = render.rows[0] as { layout_json: unknown; render_data_json: ResolvedDocumentData; version: number } | undefined;
     if (!row?.layout_json || !row.render_data_json) return null;
-    const layout = (row.layout_json as { schemaVersion?: unknown }).schemaVersion === 2 ? downgradeToV1(parseAdvancedLayout(row.layout_json)) : row.layout_json as DocumentLayout;
-    return { layout, data: { ...row.render_data_json, media: await hydrateMedia(client, wardId, row.render_data_json.media) }, wardName: meeting.rows[0].ward_name, publishedVersion: row.version };
+    const data = { ...row.render_data_json, media: await hydrateMedia(client, wardId, row.render_data_json.media) };
+    const layout = isAdvancedLayout(row.layout_json) ? projectAdvancedLayoutForOutput(parseAdvancedLayout(row.layout_json), 'PRINT', data) : row.layout_json as DocumentLayout;
+    return { layout, data, wardName: meeting.rows[0].ward_name, publishedVersion: row.version };
   }
 
   const document = await client.query('SELECT layout_json FROM meeting_document WHERE meeting_id = $1::uuid AND ward_id = $2::uuid AND document_type = \'SACRAMENT_PROGRAM\' LIMIT 1', [meetingId, wardId]);
@@ -80,5 +82,11 @@ export async function loadPrintDocument(client: PoolClient, wardId: string, meet
   };
   const input = document.rows[0].layout_json;
   const { layout, data } = resolveDocumentData(input, sourceData, { target: 'PRINT' });
-  return { layout, data: { ...data, media: await hydrateMedia(client, wardId, data.media) }, wardName: meeting.rows[0].ward_name, publishedVersion: null };
+  const hydratedData = { ...data, media: await hydrateMedia(client, wardId, data.media) };
+  const advancedLayout = isAdvancedLayout(input)
+    ? projectAdvancedLayoutForOutput(parseAdvancedLayout(input), 'PRINT', hydratedData)
+    : layout.fold === 'BIFOLD'
+      ? projectAdvancedLayoutForOutput(parseAdvancedLayout(input), 'PRINT', hydratedData)
+      : null;
+  return { layout: advancedLayout ?? layout, data: hydratedData, wardName: meeting.rows[0].ward_name, publishedVersion: null };
 }

@@ -7,7 +7,9 @@ import { canPublishProgram, canRepublishProgram, canViewProgramDesigner } from '
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 import { adaptLegacyLayoutToDocument, COMPATIBILITY_PUBLIC_BLOCK_TYPES } from '@/src/document-designer/legacy-layout-adapter';
+import { isAdvancedLayout, parseAdvancedLayout, projectAdvancedLayoutForOutput } from '@/src/document-designer/advanced-schema';
 import { resolveDocumentData } from '@/src/document-designer/data-resolver';
+import { validatePrintLayout } from '@/src/document-designer/overflow';
 import { insertImmutableRender, calculatePublicationExpiration } from '@/src/document-designer/publication-service';
 import { validatePublication } from '@/src/document-designer/publication-validation';
 import { renderDocumentHtml } from '@/src/document-designer/renderer';
@@ -122,15 +124,19 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     const rawLayout = documentResult.rows[0]?.layout_json ?? adaptLegacyLayoutToDocument(legacy);
     const sourceData = { meetingDate: String(meeting.meeting_date), meetingType: meeting.meeting_type, wardName: meeting.ward_name, location: meeting.location, publicUrl: `${process.env.NEXTAUTH_URL ?? 'http://localhost:3000'}/p/${shareToken}`, programItems: programItems.map((item) => ({ order: item.order, label: item.title ?? item.hymnTitle ?? item.itemType, details: item.topic ?? null })), publicValues: { ANNOUNCEMENTS: (announcements.rows as Array<{ title: string }>).map((item) => item.title).join(' · ') }, media };
     const resolved = resolveDocumentData(rawLayout, sourceData, { public: true, explicitPublicBlockTypes: COMPATIBILITY_PUBLIC_BLOCK_TYPES });
+    const publishedLayout = isAdvancedLayout(rawLayout)
+      ? projectAdvancedLayoutForOutput(parseAdvancedLayout(rawLayout), 'PUBLIC', resolved.data)
+      : resolved.layout;
     const validation = validatePublication({ layout: resolved.layout, data: resolved.data }, { explicitPublicBlockTypes: COMPATIBILITY_PUBLIC_BLOCK_TYPES, acknowledgedWarningCodes: body.acknowledgedWarningCodes });
     if (!validation.valid) {
       await client.query('ROLLBACK');
       await recordPublicationValidationFailure(client, { userId: session.user.id, wardId }, { id: meeting.id, meetingDate: meeting.meeting_date }, validation, session.user);
       return NextResponse.json({ error: validation.errors.length ? 'Publication validation failed' : 'Publication warnings require acknowledgement', code: validation.errors.length ? 'PUBLICATION_VALIDATION_FAILED' : 'WARNING_ACKNOWLEDGEMENT_REQUIRED', errors: validation.errors, warnings: validation.warnings, warningCodes: validation.warningCodes }, { status: 422 });
     }
-    const rendered = documentResult.rows[0]?.layout_json ? renderDocumentHtml({ layout: resolved.layout, data: resolved.data, public: true, explicitPublicBlockTypes: COMPATIBILITY_PUBLIC_BLOCK_TYPES }).html : buildMeetingRenderHtml({ publicUrl: sourceData.publicUrl, meetingDate: sourceData.meetingDate, meetingType: meeting.meeting_type, programItems, announcements: announcements.rows, layout: { preset: legacy.preset, announcementMode: legacy.announcement_mode, coverMode: legacy.cover_mode, coverImageUrl: legacy.cover_image_url, coverImageAltText: legacy.cover_image_alt_text }, labels: getPublicProgramRenderLabels(locale, meeting.meeting_type) });
+    const rendered = documentResult.rows[0]?.layout_json ? renderDocumentHtml({ layout: publishedLayout, data: resolved.data, public: true, explicitPublicBlockTypes: COMPATIBILITY_PUBLIC_BLOCK_TYPES }).html : buildMeetingRenderHtml({ publicUrl: sourceData.publicUrl, meetingDate: sourceData.meetingDate, meetingType: meeting.meeting_type, programItems, announcements: announcements.rows, layout: { preset: legacy.preset, announcementMode: legacy.announcement_mode, coverMode: legacy.cover_mode, coverImageUrl: legacy.cover_image_url, coverImageAltText: legacy.cover_image_alt_text }, labels: getPublicProgramRenderLabels(locale, meeting.meeting_type) });
     const publishedAt = new Date();
-    const inserted = await insertImmutableRender(client, { wardId, meetingId, version, renderHtml: rendered, layoutJson: resolved.layout, renderDataJson: resolved.data, documentType: resolved.layout.documentType, sourceTemplateId: documentResult.rows[0]?.source_template_id ?? null, sourceTemplateVersion: documentResult.rows[0]?.source_template_version == null ? null : Number(documentResult.rows[0].source_template_version), publishedByUserId: session.user.id, publishedAt, publicationMetadataJson: { validationWarningCodes: validation.warningCodes, rendererVersion: 'm8', pageCount: 1, layoutHash: createHash('sha256').update(JSON.stringify(resolved.layout)).digest('hex') } });
+    const printValidation = validatePrintLayout(publishedLayout, resolved.data);
+    const inserted = await insertImmutableRender(client, { wardId, meetingId, version, renderHtml: rendered, layoutJson: publishedLayout, renderDataJson: resolved.data, documentType: publishedLayout.documentType, sourceTemplateId: documentResult.rows[0]?.source_template_id ?? null, sourceTemplateVersion: documentResult.rows[0]?.source_template_version == null ? null : Number(documentResult.rows[0].source_template_version), publishedByUserId: session.user.id, publishedAt, publicationMetadataJson: { validationWarningCodes: validation.warningCodes, rendererVersion: 'm8', pageCount: printValidation.pageCount, layoutHash: createHash('sha256').update(JSON.stringify(publishedLayout)).digest('hex') } });
     if (!inserted.id || !Number.isSafeInteger(inserted.version) || inserted.version < 1 || inserted.version !== version) {
       throw new Error('Publication render insert returned an invalid version');
     }
