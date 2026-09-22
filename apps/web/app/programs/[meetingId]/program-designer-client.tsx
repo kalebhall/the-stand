@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { renderProgramPreview } from '@/src/document-designer/preview-contract';
 import { downgradeToV1, normalizeToAdvanced, type AdvancedDocumentLayout } from '@/src/document-designer/advanced-schema';
-import { addBlock, configureColumns, reorderBlock, removeBlock, resizeBlock, setAdvancedBlockVisibility } from '@/src/document-designer/layout-operations';
+import { addBlock, configureColumns, moveBlockToColumn, reorderBlock, removeBlock, resizeBlock, setAdvancedBlockVisibility } from '@/src/document-designer/layout-operations';
 import { commitHistory, createHistory, redo, undo, type HistoryState } from '@/src/document-designer/history';
 import type { DocumentBlock, DocumentLayout } from '@/src/document-designer/types';
 import type { MediaAssetResponse } from '@/src/document-designer/media-types';
@@ -19,6 +19,8 @@ type LoadedDocument = { id: string; layout: DocumentLayout; advancedLayout?: Adv
 type Props = { wardId: string; meetingId: string };
 
 const blockLabel = (block: DocumentBlock) => block.type.replaceAll('_', ' ').toLowerCase().replace(/(^|\s)\S/g, (letter) => letter.toUpperCase());
+const PANEL_LABELS = ['Front cover', 'Inside left', 'Inside right', 'Back cover'] as const;
+
 
 type TemplateOption = { id: string; name: string; source: string; scopeType?: string; status?: string; distributionPolicy?: string | null; version?: { version?: number; lock?: unknown } | null };
 
@@ -32,6 +34,8 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
   const [mode, setMode] = useState<DesignerMode>('EDIT');
   const [publicVisitor, setPublicVisitor] = useState(false);
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
+  const [selectedPanelIndex, setSelectedPanelIndex] = useState(0);
+  const [operationError, setOperationError] = useState<string | null>(null);
   const [advancedEnabled, setAdvancedEnabled] = useState(false);
   const [advancedEditing, setAdvancedEditing] = useState(false);
   const [printValidation, setPrintValidation] = useState<PrintValidationResult | null>(null);
@@ -83,6 +87,8 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
   }, [load]);
 
   const allBlocks = useMemo(() => document?.layout.pages.flatMap((page) => page.regions.flatMap((region) => region.blocks)) ?? [], [document]);
+  const panelBlocks = (panelIndex: number) => document?.layout.pages[0]?.regions[panelIndex]?.blocks ?? [];
+  const panelForBlock = (blockId: string) => document?.layout.pages[0]?.regions.findIndex((region) => region.blocks.some((block) => block.id === blockId)) ?? -1;
   const selectedBlock = allBlocks.find((block) => block.id === selectedBlockId) ?? allBlocks[0];
 
   const save = useCallback(async (nextLayout: DocumentLayout | AdvancedDocumentLayout, expectedRevision: number, templateId?: string, saveMode: 'SIMPLE' | 'ADVANCED' = 'SIMPLE') => {
@@ -163,6 +169,24 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
   function applyAdvanced(next: AdvancedDocumentLayout) {
     setHistoryState((current) => current ? commitHistory(current, next) : createHistory(next));
     setDocument((current) => current ? { ...current, advancedLayout: next, layout: downgradeToV1(next), theme: next.theme } : current);
+    setOperationError(null);
+  }
+
+  function runLayoutOperation(operation: () => void) {
+    try {
+      operation();
+      setOperationError(null);
+    } catch (error: unknown) {
+      setOperationError(error instanceof Error ? error.message : 'That layout change is not allowed.');
+    }
+  }
+
+  function moveBlockToPanel(blockId: string, targetPanel: number) {
+    if (!document || !advancedEditing || panelForBlock(blockId) === targetPanel) return;
+    runLayoutOperation(() => {
+      const current = currentAdvanced();
+      if (current) applyAdvanced(moveBlockToColumn(current, blockId, 0, targetPanel, 0));
+    });
   }
 
   function currentAdvanced(): AdvancedDocumentLayout | null {
@@ -187,12 +211,12 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
     const current = currentAdvanced();
     if (!current) return;
     const block: DocumentBlock = { id: crypto.randomUUID() as DocumentBlock['id'], type: 'CUSTOM_TEXT', width: 'FULL', dataMode: 'MANUAL', visibility: 'VISIBLE', printBehavior: 'PRINT_AND_DIGITAL', digitalBehavior: 'NORMAL', config: { text: 'New text block' } };
-    applyAdvanced(addBlock(current, 0, 0, block));
+    runLayoutOperation(() => applyAdvanced(addBlock(current, 0, selectedPanelIndex, block)));
   }
 
   function removeSelectedAdvancedBlock() {
     const current = currentAdvanced();
-    if (current && selectedBlockId) applyAdvanced(removeBlock(current, selectedBlockId));
+    if (current && selectedBlockId) runLayoutOperation(() => applyAdvanced(removeBlock(current, selectedBlockId)));
   }
 
   async function uploadMedia(file: File, altText: string, isDecorative: boolean) {
@@ -267,13 +291,14 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
       <div className="grid gap-4 lg:grid-cols-[220px_minmax(0,1fr)_260px]">
         <aside className="space-y-3 rounded-lg border bg-card p-3" aria-label="Approved blocks">
           <div><h2 className="font-semibold">Blocks</h2><p className="text-xs text-muted-foreground">Simple Mode blocks from the approved template.</p></div>
-          {advancedEditing ? <section className="space-y-2 border-b pb-3" aria-label="Advanced layout controls"><h3 className="font-medium">Advanced layout</h3><div className="grid grid-cols-2 gap-1"><button type="button" className="rounded border px-2 py-2 text-xs" onClick={addAdvancedTextBlock}>Add text block</button><button type="button" className="rounded border px-2 py-2 text-xs" disabled={!selectedBlockId} onClick={removeSelectedAdvancedBlock}>Remove selected</button><button type="button" className="rounded border px-2 py-2 text-xs" disabled={!historyState?.past.length} onClick={undoAdvanced}>Undo</button><button type="button" className="rounded border px-2 py-2 text-xs" disabled={!historyState?.future.length} onClick={redoAdvanced}>Redo</button></div><label className="block space-y-1 text-xs"><span>Region columns</span><select className="w-full rounded border px-2 py-2" value={currentAdvanced()?.pages[0]?.regions[0]?.columns.count ?? 1} onChange={(event) => { const current = currentAdvanced(); if (current) applyAdvanced(configureColumns(current, 0, 0, Number(event.target.value) as 1 | 2 | 3, Number(event.target.value) === 1 ? '1/1' : '1/3+2/3', 8)); }}><option value="1">1 column</option><option value="2">2 columns</option><option value="3">3 columns</option></select></label><button type="button" className="w-full rounded border px-2 py-2 text-sm" onClick={saveAdvanced} disabled={status === 'saving'}>Save Advanced Layout</button></section> : null}
+          {advancedEditing ? <section className="space-y-2 border-b pb-3" aria-label="Advanced layout controls"><h3 className="font-medium">Spatial layout</h3><p className="text-xs text-muted-foreground">Select a panel, then add or move blocks into it.</p><label className="block space-y-1 text-xs"><span>Target panel</span><select className="w-full rounded border px-2 py-2" value={selectedPanelIndex} onChange={(event) => setSelectedPanelIndex(Number(event.target.value))}>{PANEL_LABELS.map((label, index) => <option key={label} value={index}>{label}</option>)}</select></label><label className="block space-y-1 text-xs"><span>Move selected block to</span><select className="w-full rounded border px-2 py-2" value={selectedBlockId ? Math.max(panelForBlock(selectedBlockId), 0) : selectedPanelIndex} disabled={!selectedBlockId} onChange={(event) => moveBlockToPanel(selectedBlockId ?? '', Number(event.target.value))}>{PANEL_LABELS.map((label, index) => <option key={label} value={index}>{label}</option>)}</select></label><div className="grid grid-cols-2 gap-1"><button type="button" className="rounded border px-2 py-2 text-xs" onClick={addAdvancedTextBlock}>Add to panel</button><button type="button" className="rounded border px-2 py-2 text-xs" disabled={!selectedBlockId} onClick={removeSelectedAdvancedBlock}>Remove selected</button><button type="button" className="rounded border px-2 py-2 text-xs" disabled={!historyState?.past.length} onClick={undoAdvanced}>Undo</button><button type="button" className="rounded border px-2 py-2 text-xs" disabled={!historyState?.future.length} onClick={redoAdvanced}>Redo</button></div><label className="block space-y-1 text-xs"><span>Columns in selected panel</span><select className="w-full rounded border px-2 py-2" value={currentAdvanced()?.pages[0]?.regions[selectedPanelIndex]?.columns.count ?? 1} onChange={(event) => { const current = currentAdvanced(); if (current) runLayoutOperation(() => applyAdvanced(configureColumns(current, 0, selectedPanelIndex, Number(event.target.value) as 1 | 2 | 3, Number(event.target.value) === 1 ? '1/1' : '1/3+2/3', 8))); }}><option value="1">1 column</option><option value="2">2 columns</option><option value="3">3 columns</option></select></label><button type="button" className="w-full rounded border px-2 py-2 text-sm" onClick={saveAdvanced} disabled={status === 'saving'}>Save Advanced Layout</button></section> : null}
+          {operationError ? <p role="alert" className="rounded border border-red-300 bg-red-50 p-2 text-xs text-red-900">{operationError}</p> : null}
           {selectedBlock?.type === 'IMAGE' ? <section className="space-y-2 border-b pb-3" aria-label="Media library"><h3 className="font-medium">Media library</h3><p className="text-xs text-muted-foreground">Approved ward, stake, and system images only. Select an image block first.</p><label className="block space-y-1 text-xs"><span>Upload image</span><input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { const file = event.target.files?.[0]; if (file) void uploadMedia(file, file.name, false).catch((error: unknown) => setMessage(error instanceof Error ? error.message : 'Upload failed')); }} /></label><div className="max-h-40 space-y-1 overflow-auto">{media.map((asset) => <button type="button" key={asset.id} className="block w-full rounded border px-2 py-1 text-left text-xs" onClick={() => selectImageAsset(asset)}>{asset.filename}<span className="block text-muted-foreground">{asset.pixel_width}×{asset.pixel_height}</span></button>)}</div></section> : null}
           <div className="space-y-2 border-b pb-3"><label className="block space-y-1 text-sm"><span>Approved template</span><select aria-label="Approved template" className="w-full rounded-md border px-2 py-2" value={selectedTemplateId} onChange={(event) => setSelectedTemplateId(event.target.value)}><option value="">Keep current template</option>{templates.map((template) => <option key={template.id} value={template.id}>{template.name} · {template.source}</option>)}</select></label><button type="button" className="w-full rounded-md border px-2 py-2 text-sm" disabled={!selectedTemplateId || status === 'saving'} onClick={() => { if (document && selectedTemplateId) void save(document.layout, document.revision, selectedTemplateId); }}>Use approved template</button></div>
-          <ul className="space-y-1">{allBlocks.map((block, index) => <li key={block.id}><button type="button" className={`w-full rounded-md border px-2 py-2 text-left text-sm ${selectedBlock?.id === block.id ? 'border-primary bg-primary/10' : ''}`} onClick={() => setSelectedBlockId(block.id)}>{blockLabel(block)}<span className="block text-xs text-muted-foreground">{block.visibility}</span></button><div className="mt-1 flex gap-1"><button type="button" className="rounded border px-2 text-xs" aria-label={`Move ${blockLabel(block)} up`} disabled={index === 0} onClick={() => moveSelectedBlock(-1)}>↑</button><button type="button" className="rounded border px-2 text-xs" aria-label={`Move ${blockLabel(block)} down`} disabled={index === allBlocks.length - 1} onClick={() => moveSelectedBlock(1)}>↓</button></div></li>)}</ul>
+          <div className="space-y-3">{PANEL_LABELS.map((label, panelIndex) => <section key={label} className={`rounded border p-2 ${selectedPanelIndex === panelIndex ? 'border-primary bg-primary/5' : ''}`}><button type="button" className="mb-2 w-full text-left text-xs font-semibold" onClick={() => setSelectedPanelIndex(panelIndex)}>{label} <span className="font-normal text-muted-foreground">({panelBlocks(panelIndex).length})</span></button><ul className="space-y-1">{panelBlocks(panelIndex).map((block, index) => <li key={block.id} draggable={advancedEditing} onDragStart={(event) => { event.dataTransfer.setData('text/plain', block.id); }}><button type="button" className={`w-full rounded-md border px-2 py-2 text-left text-sm ${selectedBlock?.id === block.id ? 'border-primary bg-primary/10' : ''}`} onClick={() => { setSelectedBlockId(block.id); setSelectedPanelIndex(panelIndex); }}>{blockLabel(block)}<span className="block text-xs text-muted-foreground">{block.visibility}</span></button><div className="mt-1 flex gap-1"><button type="button" className="rounded border px-2 text-xs" aria-label={`Move ${blockLabel(block)} up`} disabled={index === 0} onClick={() => moveSelectedBlock(-1)}>↑</button><button type="button" className="rounded border px-2 text-xs" aria-label={`Move ${blockLabel(block)} down`} disabled={index === panelBlocks(panelIndex).length - 1} onClick={() => moveSelectedBlock(1)}>↓</button></div></li>)}</ul></section>)}</div>
         </aside>
         <section className={`min-h-[620px] overflow-auto rounded-lg border bg-muted/30 p-4 ${modeClass(mode)}`} aria-label="Document canvas">
-          {mode === 'EDIT' ? <div className="mx-auto space-y-3 rounded-md bg-background p-6 shadow-sm"><div className="text-sm text-muted-foreground">Document canvas · {document.layout.paper} · {document.layout.orientation} · {document.layout.fold}</div>{allBlocks.map((block) => <button type="button" key={block.id} onClick={() => setSelectedBlockId(block.id)} className={`block w-full rounded border p-3 text-left ${block.visibility === 'HIDDEN' ? 'opacity-40' : ''} ${selectedBlock?.id === block.id ? 'border-primary' : ''}`}><strong>{blockLabel(block)}</strong><span className="ml-2 text-sm text-muted-foreground">{block.visibility}</span></button>)}</div> : previewError ? <p role="alert" className="rounded-md border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">{previewError}</p> : <div className="mx-auto bg-background shadow-sm" dangerouslySetInnerHTML={{ __html: previewHtml }} />}
+          {mode === 'EDIT' ? <div className="mx-auto space-y-3 rounded-md bg-background p-4 shadow-sm"><div className="text-sm text-muted-foreground">Bi-fold canvas · {document.layout.paper} · {document.layout.orientation}</div><div className="grid gap-3 sm:grid-cols-2">{PANEL_LABELS.map((label, panelIndex) => <section key={label} aria-label={label} onClick={() => setSelectedPanelIndex(panelIndex)} onDragOver={(event) => { if (advancedEditing) event.preventDefault(); }} onDrop={(event) => { event.preventDefault(); const blockId = event.dataTransfer.getData('text/plain'); if (blockId) moveBlockToPanel(blockId, panelIndex); }} className={`min-h-52 rounded-md border-2 border-dashed p-3 ${selectedPanelIndex === panelIndex ? 'border-primary bg-primary/5' : 'border-muted-foreground/30'}`}><div className="mb-2 flex items-center justify-between"><h2 className="font-semibold">{label}</h2><span className="text-xs text-muted-foreground">{panelBlocks(panelIndex).length} blocks</span></div><div className="space-y-2">{panelBlocks(panelIndex).map((block) => <button type="button" key={block.id} onClick={(event) => { event.stopPropagation(); setSelectedBlockId(block.id); setSelectedPanelIndex(panelIndex); }} className={`block w-full rounded border p-2 text-left text-sm ${selectedBlock?.id === block.id ? 'border-primary bg-primary/10' : ''}`} draggable={advancedEditing} onDragStart={(event) => event.dataTransfer.setData('text/plain', block.id)}><strong>{blockLabel(block)}</strong><span className="ml-2 text-xs text-muted-foreground">{block.visibility}</span></button>)}</div>{advancedEditing ? <p className="mt-3 text-xs text-muted-foreground">Drop blocks here</p> : null}</section>)}</div></div> : previewError ? <p role="alert" className="rounded-md border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">{previewError}</p> : <div className="mx-auto bg-background shadow-sm" dangerouslySetInnerHTML={{ __html: previewHtml }} />}
         </section>
         <aside className="space-y-4 rounded-lg border bg-card p-3" aria-label="Simple Mode properties">
           <section><h2 className="font-semibold">Properties</h2>{selectedBlock ? <div className="mt-3 space-y-3"><p className="text-sm font-medium">{blockLabel(selectedBlock)}</p><label className="block space-y-1 text-sm"><span>Visibility</span><select className="w-full rounded-md border px-2 py-2" value={selectedBlock.visibility} onChange={(event) => advancedEditing ? updateAdvancedVisibility(event.target.value as DocumentBlock['visibility']) : updateLayout(setBlockVisibility(document.layout, selectedBlock.id, event.target.value as 'VISIBLE' | 'HIDDEN' | 'HIDE_WHEN_EMPTY'))}><option value="VISIBLE">Visible</option><option value="HIDDEN">Hidden</option><option value="HIDE_WHEN_EMPTY">Hide when empty</option></select></label>{advancedEditing ? <label className="block space-y-1 text-sm"><span>Width</span><select className="w-full rounded-md border px-2 py-2" value={selectedBlock.width} onChange={(event) => { const current = currentAdvanced(); if (current) applyAdvanced(resizeBlock(current, selectedBlock.id, event.target.value as 'FULL' | 'TWO_THIRDS' | 'HALF' | 'ONE_THIRD')); }}><option value="FULL">Full</option><option value="TWO_THIRDS">Two thirds</option><option value="HALF">Half</option><option value="ONE_THIRD">One third</option></select></label> : null}{'text' in selectedBlock.config ? <label className="block space-y-1 text-sm"><span>Text</span><textarea className="min-h-24 w-full rounded-md border p-2" value={String(selectedBlock.config.text)} onChange={(event) => updateSelectedBlock((block) => ({ ...block, config: { ...block.config, text: event.target.value } } as DocumentBlock))} /></label> : null}</div> : <p className="mt-2 text-sm text-muted-foreground">Select a block to edit safe properties.</p>}</section>
