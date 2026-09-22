@@ -127,6 +127,15 @@ describe('advanced document designer', () => {
     expect(() => assertNoLockedChanges(locked, changed)).toThrow(LockedLayoutError);
   });
 
+  it('rejects page-locked column membership changes', () => {
+    const configured = configureColumns(parseAdvancedLayout(DEFAULT_DOCUMENT_LAYOUT), 0, 0, 2, '1/1', 6);
+    const locked = structuredClone(configured);
+    locked.pages[0].lock = { level: 'REGION', properties: ['POSITION'] };
+    const changed = structuredClone(locked);
+    [changed.pages[0].regions[0].columns.blockIds[0], changed.pages[0].regions[0].columns.blockIds[1]] = [changed.pages[0].regions[0].columns.blockIds[1], changed.pages[0].regions[0].columns.blockIds[0]];
+    expect(() => assertNoLockedChanges(locked, changed)).toThrow(LockedLayoutError);
+  });
+
   it('enforces locked content on the server boundary', () => {
     const locked = parseAdvancedLayout({ ...DEFAULT_DOCUMENT_LAYOUT, pages: [{ ...DEFAULT_DOCUMENT_LAYOUT.pages[0], regions: [{ ...DEFAULT_DOCUMENT_LAYOUT.pages[0].regions[0], blocks: [{ ...DEFAULT_DOCUMENT_LAYOUT.pages[0].regions[0].blocks[0], lock: { level: 'BLOCK', properties: ['CONTENT'] } }] }] }] });
     const changed = structuredClone(locked);

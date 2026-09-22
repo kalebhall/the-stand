@@ -36,19 +36,27 @@ export async function renderDocumentPdf(layout: DocumentLayout | AdvancedDocumen
   let columnCount = 1;
   let columnIndex = 0;
   let columnRatio: '1/1' | '1/3+2/3' | '2/3+1/3' = '1/1';
+  let columnGutter = 0;
   let y = page.marginMm;
   const lineHeight = Math.max(4, layout.theme.baseFontSize * 0.42);
   const bottom = page.heightMm - page.marginMm;
 
   const currentPanel = () => panels[fold ? panelIndex : 0] ?? panels[0];
-  const columnFraction = () => columnCount === 1 ? 1 : columnCount === 3 ? 1 / 3 : columnRatio === '1/3+2/3' ? (columnIndex === 0 ? 1 / 3 : 2 / 3) : columnRatio === '2/3+1/3' ? (columnIndex === 0 ? 2 / 3 : 1 / 3) : 1 / 2;
+
+  const baseColumnWidth = () => fold ? currentPanel().widthMm / 2 : page.contentWidthMm;
+  const columnWidths = () => {
+    const available = baseColumnWidth() - columnGutter * Math.max(0, columnCount - 1);
+    if (columnCount === 1) return [available];
+    if (columnCount === 3) return [available / 3, available / 3, available / 3];
+    return columnRatio === '1/3+2/3' ? [available / 3, available * 2 / 3] : columnRatio === '2/3+1/3' ? [available * 2 / 3, available / 3] : [available / 2, available / 2];
+  };
   const currentX = () => {
-    const logicalWidth = fold ? currentPanel().widthMm / 2 : page.contentWidthMm;
-    const slotX = fold ? currentPanel().xMm + panelSlot * logicalWidth : page.marginMm;
-    const columnOffset = columnCount === 1 ? 0 : columnCount === 3 ? logicalWidth * columnIndex / 3 : columnIndex === 0 ? 0 : logicalWidth * (columnRatio === '1/3+2/3' ? 1 / 3 : columnRatio === '2/3+1/3' ? 2 / 3 : 1 / 2);
+    const widths = columnWidths();
+    const slotX = fold ? currentPanel().xMm + panelSlot * baseColumnWidth() : page.marginMm;
+    const columnOffset = widths.slice(0, columnIndex).reduce((sum, width) => sum + width + columnGutter, 0);
     return slotX + columnOffset;
   };
-  const currentWidth = () => (fold ? currentPanel().widthMm / 2 : page.contentWidthMm) * columnFraction() - 6;
+  const currentWidth = () => Math.max(1, columnWidths()[columnIndex] - 6);
   const advanceColumn = () => {
     if (fold && panelIndex < panels.length - 1) {
       panelIndex += 1;
@@ -93,8 +101,9 @@ export async function renderDocumentPdf(layout: DocumentLayout | AdvancedDocumen
         const region = layout.pages.flatMap((page) => page.regions).find((candidate) => candidate.id === item.regionKey);
         columnCount = region?.columns.count ?? 1;
         columnRatio = region?.columns.ratio ?? '1/1';
+        columnGutter = region?.columns.gutter ?? 0;
         columnIndex = 0;
-      } else { columnCount = 1; columnIndex = 0; columnRatio = '1/1'; }
+      } else { columnCount = 1; columnIndex = 0; columnRatio = '1/1'; columnGutter = 0; }
       y = page.marginMm;
       lastRegionKey = item.regionKey;
       lastColumnIndex = item.columnIndex;
