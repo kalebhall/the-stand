@@ -4,6 +4,17 @@ import { redisClient } from './redis';
 
 const WINDOW_MS = 10 * 60 * 1000;
 const KEY_PREFIX = 'the-stand:rate-limit:';
+const RATE_LIMIT_SCRIPT = `
+local count = redis.call('INCR', KEYS[1])
+local ttl = redis.call('PTTL', KEYS[1])
+if ttl < 0 then
+  redis.call('PEXPIRE', KEYS[1], ARGV[1])
+end
+if count > tonumber(ARGV[2]) then
+  return 0
+end
+return 1
+`;
 
 const keysUsedByTests = new Set<string>();
 
@@ -19,11 +30,8 @@ export async function enforceRateLimit(key: string, maxAttempts: number): Promis
   }
 
   try {
-    const count = await redisClient.incr(redisKey);
-    if (count === 1) {
-      await redisClient.pexpire(redisKey, WINDOW_MS);
-    }
-    return count <= maxAttempts;
+    const allowed = await redisClient.eval(RATE_LIMIT_SCRIPT, 1, redisKey, WINDOW_MS, maxAttempts);
+    return Number(allowed) === 1;
   } catch (error) {
     console.error('rate_limit_redis_error', { error });
     return false;
