@@ -171,7 +171,7 @@ export const { auth, handlers, unstable_update } = NextAuth({
         }
 
         const ip = request?.headers?.get('x-forwarded-for') ?? 'unknown-ip';
-        if (!enforceRateLimit(`auth:credentials:${email}:${ip}`, 10)) {
+        if (!(await enforceRateLimit(`auth:credentials:${email}:${ip}`, 10))) {
           return null;
         }
 

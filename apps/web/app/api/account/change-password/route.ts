@@ -19,7 +19,7 @@ export async function POST(request: Request) {
   }
 
   const ip = request.headers.get('x-forwarded-for') ?? 'unknown-ip';
-  if (!enforceRateLimit(`account:change-password:${session.user.id}:${ip}`, 10)) {
+  if (!(await enforceRateLimit(`account:change-password:${session.user.id}:${ip}`, 10))) {
     return NextResponse.json({ error: 'Too many requests', code: 'RATE_LIMITED' }, { status: 429 });
   }
 
