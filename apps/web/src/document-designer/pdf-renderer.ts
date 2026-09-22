@@ -43,7 +43,7 @@ export async function renderDocumentPdf(layout: DocumentLayout | AdvancedDocumen
 
   const currentPanel = () => panels[fold ? panelIndex : 0] ?? panels[0];
 
-  const baseColumnWidth = () => fold ? currentPanel().widthMm / 2 : page.contentWidthMm;
+  const baseColumnWidth = () => fold ? currentPanel().widthMm : page.contentWidthMm;
   const columnWidths = () => {
     const available = baseColumnWidth() - columnGutter * Math.max(0, columnCount - 1);
     if (columnCount === 1) return [available];
