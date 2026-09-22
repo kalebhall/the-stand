@@ -28,6 +28,11 @@ describe('print overflow', () => {
     expect(result.metadata.layoutHash).toMatch(/^fnv1a-/);
   });
 
+  it('reports two physical pages for folded output', () => {
+    const result = validatePrintLayout({ ...DEFAULT_DOCUMENT_LAYOUT, fold: 'BIFOLD' }, data);
+    expect(result.pageCount).toBe(2);
+  });
+
   it('blocks fixed-fold documents that cannot fit', () => {
     const layout = structuredClone(DEFAULT_DOCUMENT_LAYOUT);
     layout.fold = 'BIFOLD';

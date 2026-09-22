@@ -83,22 +83,31 @@ export async function renderDocumentPdf(layout: DocumentLayout | AdvancedDocumen
     y += afterMoveLines.length * lineHeight + 3;
   };
 
+  const foldRegionMapping = [[0, 1], [1, 0], [1, 1], [0, 0]] as const;
+  const advancedRegions = isAdvancedLayout(layout) ? layout.pages.flatMap((page) => page.regions) : [];
   const renderBlocks = isAdvancedLayout(layout)
-    ? layout.pages.flatMap((page) => page.regions).map((region, regionIndex) => ({ regionKey: region.id, panelIndex: layout.fold === 'BIFOLD' ? [3, 0, 1, 2][regionIndex] ?? regionIndex % 2 : 0, blocks: region.columns.blockIds.flatMap((ids, columnIndex) => ids.map((id) => ({ block: region.blocks.find((candidate) => candidate.id === id), columnIndex }))).filter((item): item is { block: typeof region.blocks[number]; columnIndex: number } => Boolean(item.block)) })).flatMap(({ regionKey, panelIndex, blocks }) => blocks.map(({ block, columnIndex }) => ({ block, regionKey, panelIndex, columnIndex })))
-    : allBlocks(layout).map((block) => ({ block, regionKey: 'legacy', panelIndex: 0, columnIndex: 0 }));
+    ? advancedRegions.flatMap((region, regionIndex) => {
+      const [sideIndex, slotIndex] = layout.fold === 'BIFOLD' ? foldRegionMapping[regionIndex] ?? [0, 0] : [0, 0];
+      return region.columns.blockIds.flatMap((ids, columnIndex) => ids.flatMap((id) => {
+        const block = region.blocks.find((candidate) => candidate.id === id);
+        return block ? [{ block, regionKey: region.id, sideIndex, slotIndex, columnIndex }] : [];
+      }));
+    }).sort((a, b) => a.sideIndex - b.sideIndex || a.slotIndex - b.slotIndex)
+    : allBlocks(layout).map((block) => ({ block, regionKey: 'legacy', sideIndex: 0, slotIndex: 0, columnIndex: 0 }));
+  let currentSide = 0;
+  let panelIndexForSide = 0;
   let lastRegionKey: string | null = null;
   let lastColumnIndex = 0;
   for (const item of renderBlocks) {
     if (item.regionKey !== lastRegionKey) {
-      panelIndex = item.panelIndex;
-      if (isAdvancedLayout(layout) && layout.fold === 'BIFOLD') {
-        const regionIndex = layout.pages.flatMap((page) => page.regions).findIndex((region) => region.id === item.regionKey);
-        const bifoldMapping = [[0, 1], [1, 0], [1, 1], [0, 0]] as const;
-        const mapped = bifoldMapping[regionIndex];
-        if (mapped) { panelIndex = mapped[0]; panelSlot = mapped[1]; } else panelSlot = 0;
-      } else panelSlot = 0;
+      if (isAdvancedLayout(layout) && layout.fold !== 'NONE' && item.sideIndex !== currentSide) {
+        doc.addPage();
+        currentSide = item.sideIndex;
+      }
+      panelIndex = item.slotIndex;
+      panelSlot = 0;
       if (isAdvancedLayout(layout)) {
-        const region = layout.pages.flatMap((page) => page.regions).find((candidate) => candidate.id === item.regionKey);
+        const region = advancedRegions.find((candidate) => candidate.id === item.regionKey);
         columnCount = region?.columns.count ?? 1;
         columnRatio = region?.columns.ratio ?? '1/1';
         columnGutter = region?.columns.gutter ?? 0;
@@ -133,6 +142,7 @@ export async function renderDocumentPdf(layout: DocumentLayout | AdvancedDocumen
     writeText(text || '—', heading ? layout.theme.baseFontSize + 3 : layout.theme.baseFontSize, heading);
   }
 
+  if (fold && doc.getNumberOfPages() < 2) doc.addPage();
   doc.setCreationDate(new Date('2000-01-01T00:00:00.000Z'));
   doc.setFileId(options.metadata.layoutHash.replace(/[^A-Za-z0-9]/g, '').padEnd(32, '0').slice(0, 32));
   doc.setProperties({ title: options.title ?? 'Meeting Program', subject: 'The Stand program', author: 'The Stand', creator: `The Stand ${options.metadata.rendererVersion}` });

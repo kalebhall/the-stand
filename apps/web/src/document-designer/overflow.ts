@@ -1,5 +1,5 @@
 import { parseDocumentLayout } from './schema';
-import { downgradeToV1, isAdvancedLayout, parseAdvancedLayout, projectAdvancedLayoutForOutput } from './advanced-schema';
+import { downgradeToV1, isAdvancedLayout, parseAdvancedLayout, projectAdvancedLayoutForOutput, type AdvancedDocumentLayout } from './advanced-schema';
 import { allBlocks } from './public-safety';
 import { getExpectedPageCount, getFoldGuidance, getPhysicalPage } from './print-layout';
 import { PDF_RENDERER_VERSION, type PrintIssue, type PrintRenderMetadata, type PrintValidationResult } from './print-types';
@@ -35,10 +35,12 @@ export function validatePrintLayout(inputLayout: unknown, data: ResolvedDocument
   const errors: PrintIssue[] = [];
   const warnings: PrintIssue[] = [];
   let layout: DocumentLayout;
+  let advancedLayout: AdvancedDocumentLayout | null = null;
   try {
-    layout = isAdvancedLayout(inputLayout)
-      ? downgradeToV1(projectAdvancedLayoutForOutput(parseAdvancedLayout(inputLayout), 'PRINT', data))
-      : parseDocumentLayout(inputLayout);
+    if (isAdvancedLayout(inputLayout)) {
+      advancedLayout = projectAdvancedLayoutForOutput(parseAdvancedLayout(inputLayout), 'PRINT', data);
+      layout = downgradeToV1(advancedLayout);
+    } else layout = parseDocumentLayout(inputLayout);
   } catch (error) {
     const issue = { code: 'INVALID_LAYOUT', message: error instanceof Error ? error.message : 'Invalid document layout', severity: 'ERROR' as const };
     return { valid: false, errors: [issue], warnings: [], pageCount: 0, foldGuidance: [], metadata: { schemaVersion: 0, layoutHash: 'invalid', documentType: 'SACRAMENT_PROGRAM', paper: 'LETTER', orientation: 'PORTRAIT', fold: 'NONE', pageCount: 0, rendererVersion: PDF_RENDERER_VERSION, mediaAssetIds: [] } };
@@ -47,14 +49,25 @@ export function validatePrintLayout(inputLayout: unknown, data: ResolvedDocument
   const blocks = allBlocks(layout).filter((block) => block.visibility !== 'HIDDEN' && block.printBehavior !== 'DIGITAL_ONLY');
   const panelCount = layout.fold === 'TRIFOLD' ? 3 : layout.fold === 'BIFOLD' || layout.fold === 'HALF_SHEET' ? 2 : 1;
   const panelWidth = layout.fold === 'NONE' ? physical.contentWidthMm : physical.contentWidthMm / panelCount;
-  const charsPerLine = Math.max(12, Math.floor((panelWidth - (layout.fold === 'NONE' ? 0 : 6)) / Math.max(1.8, layout.theme.baseFontSize * 0.55)));
-  const estimatedLines = blocks.reduce((total, block) => {
-    if (block.type === 'IMAGE') return total + 10;
-    if (block.type === 'SPACER') return total + Math.max(1, Math.ceil(Number((block.config as { height?: number }).height ?? 12) / 3.5));
+  const estimateLines = (block: { type: string; config: unknown }, width: number): number => {
+    const charsPerLine = Math.max(12, Math.floor((width - 6) / Math.max(1.8, layout.theme.baseFontSize * 0.55)));
+    if (block.type === 'IMAGE') return 10;
+    if (block.type === 'SPACER') return Math.max(1, Math.ceil(Number((block.config as { height?: number }).height ?? 12) / 3.5));
     const heading = block.type === 'DOCUMENT_TITLE' || block.type === 'WARD_NAME' || block.type === 'MEETING_INFO';
     const contentLines = Math.max(1, Math.ceil(textLength(block, data) / charsPerLine));
-    return total + contentLines * (heading ? 1.35 : 1);
-  }, 0);
+    return contentLines * (heading ? 1.35 : 1);
+  };
+  const estimatedLines = advancedLayout
+    ? Math.max(0, ...advancedLayout.pages.flatMap((page) => page.regions.map((region) => {
+      const regionWidth = layout.fold === 'NONE' ? physical.contentWidthMm : physical.contentWidthMm / panelCount;
+      const available = regionWidth - region.columns.gutter * Math.max(0, region.columns.count - 1);
+      const widths = region.columns.count === 3 ? [available / 3, available / 3, available / 3] : region.columns.ratio === '1/3+2/3' ? [available / 3, available * 2 / 3] : region.columns.ratio === '2/3+1/3' ? [available * 2 / 3, available / 3] : [available / region.columns.count, available / region.columns.count];
+      return Math.max(...region.columns.blockIds.map((column, columnIndex) => column.reduce((total, id) => {
+        const block = region.blocks.find((candidate) => candidate.id === id);
+        return block ? total + estimateLines(block, widths[columnIndex] ?? widths[0]) : total;
+      }, 0)));
+    })))
+    : blocks.reduce((total, block) => total + estimateLines(block, panelWidth), 0);
   const usableLines = Math.max(1, Math.floor(physical.contentHeightMm / Math.max(3.5, layout.theme.baseFontSize * 0.42)));
   const flowingPages = Math.max(1, Math.ceil(estimatedLines / usableLines));
   const pageCount = getExpectedPageCount(layout, flowingPages);
