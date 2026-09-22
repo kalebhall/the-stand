@@ -1,6 +1,7 @@
 import { jsPDF } from 'jspdf';
 
 import { allBlocks } from './public-safety';
+import { isAdvancedLayout, type AdvancedDocumentLayout } from './advanced-schema';
 import { getPhysicalPage, getFoldPanels } from './print-layout';
 import type { PrintRenderMetadata } from './print-types';
 import type { DocumentBlock, DocumentLayout } from './types';
@@ -18,26 +19,36 @@ function blockText(block: DocumentBlock, data: ResolvedDocumentData): string {
   return config.text ?? config.label ?? '';
 }
 
-function fontName(layout: DocumentLayout): 'helvetica' | 'times' | 'courier' {
+function fontName(layout: Pick<DocumentLayout, 'theme'> | Pick<AdvancedDocumentLayout, 'theme'>): 'helvetica' | 'times' | 'courier' {
   if (layout.theme.fontFamily === 'SERIF') return 'times';
   if (layout.theme.fontFamily === 'MONOSPACE') return 'courier';
   return 'helvetica';
 }
 
-export async function renderDocumentPdf(layout: DocumentLayout, data: ResolvedDocumentData, options: PdfRenderOptions): Promise<jsPDF> {
+export async function renderDocumentPdf(layout: DocumentLayout | AdvancedDocumentLayout, data: ResolvedDocumentData, options: PdfRenderOptions): Promise<jsPDF> {
   const page = getPhysicalPage(layout.paper, layout.orientation);
   const doc = new jsPDF({ orientation: layout.orientation === 'LANDSCAPE' ? 'landscape' : 'portrait', unit: 'mm', format: layout.paper === 'A4' ? 'a4' : 'letter', compress: false });
   const font = fontName(layout);
   const panels = getFoldPanels(layout);
   const fold = layout.fold !== 'NONE';
   let panelIndex = 0;
+  let panelSlot = 0;
+  let columnCount = 1;
+  let columnIndex = 0;
+  let columnRatio: '1/1' | '1/3+2/3' | '2/3+1/3' = '1/1';
   let y = page.marginMm;
   const lineHeight = Math.max(4, layout.theme.baseFontSize * 0.42);
   const bottom = page.heightMm - page.marginMm;
 
   const currentPanel = () => panels[fold ? panelIndex : 0] ?? panels[0];
-  const currentX = () => fold ? currentPanel().xMm : page.marginMm;
-  const currentWidth = () => fold ? currentPanel().widthMm - 6 : page.contentWidthMm;
+  const columnFraction = () => columnCount === 1 ? 1 : columnCount === 3 ? 1 / 3 : columnRatio === '1/3+2/3' ? (columnIndex === 0 ? 1 / 3 : 2 / 3) : columnRatio === '2/3+1/3' ? (columnIndex === 0 ? 2 / 3 : 1 / 3) : 1 / 2;
+  const currentX = () => {
+    const logicalWidth = fold ? currentPanel().widthMm / 2 : page.contentWidthMm;
+    const slotX = fold ? currentPanel().xMm + panelSlot * logicalWidth : page.marginMm;
+    const columnOffset = columnCount === 1 ? 0 : columnCount === 3 ? logicalWidth * columnIndex / 3 : columnIndex === 0 ? 0 : logicalWidth * (columnRatio === '1/3+2/3' ? 1 / 3 : columnRatio === '2/3+1/3' ? 2 / 3 : 1 / 2);
+    return slotX + columnOffset;
+  };
+  const currentWidth = () => (fold ? currentPanel().widthMm / 2 : page.contentWidthMm) * columnFraction() - 6;
   const advanceColumn = () => {
     if (fold && panelIndex < panels.length - 1) {
       panelIndex += 1;
@@ -64,7 +75,35 @@ export async function renderDocumentPdf(layout: DocumentLayout, data: ResolvedDo
     y += afterMoveLines.length * lineHeight + 3;
   };
 
-  for (const block of allBlocks(layout)) {
+  const renderBlocks = isAdvancedLayout(layout)
+    ? layout.pages.flatMap((page) => page.regions).map((region, regionIndex) => ({ regionKey: region.id, panelIndex: layout.fold === 'BIFOLD' ? [3, 0, 1, 2][regionIndex] ?? regionIndex % 2 : 0, blocks: region.columns.blockIds.flatMap((ids, columnIndex) => ids.map((id) => ({ block: region.blocks.find((candidate) => candidate.id === id), columnIndex }))).filter((item): item is { block: typeof region.blocks[number]; columnIndex: number } => Boolean(item.block)) })).flatMap(({ regionKey, panelIndex, blocks }) => blocks.map(({ block, columnIndex }) => ({ block, regionKey, panelIndex, columnIndex })))
+    : allBlocks(layout).map((block) => ({ block, regionKey: 'legacy', panelIndex: 0, columnIndex: 0 }));
+  let lastRegionKey: string | null = null;
+  let lastColumnIndex = 0;
+  for (const item of renderBlocks) {
+    if (item.regionKey !== lastRegionKey) {
+      panelIndex = item.panelIndex;
+      if (isAdvancedLayout(layout) && layout.fold === 'BIFOLD') {
+        const regionIndex = layout.pages.flatMap((page) => page.regions).findIndex((region) => region.id === item.regionKey);
+        const bifoldMapping = [[0, 1], [1, 0], [1, 1], [0, 0]] as const;
+        const mapped = bifoldMapping[regionIndex];
+        if (mapped) { panelIndex = mapped[0]; panelSlot = mapped[1]; } else panelSlot = 0;
+      } else panelSlot = 0;
+      if (isAdvancedLayout(layout)) {
+        const region = layout.pages.flatMap((page) => page.regions).find((candidate) => candidate.id === item.regionKey);
+        columnCount = region?.columns.count ?? 1;
+        columnRatio = region?.columns.ratio ?? '1/1';
+        columnIndex = 0;
+      } else { columnCount = 1; columnIndex = 0; columnRatio = '1/1'; }
+      y = page.marginMm;
+      lastRegionKey = item.regionKey;
+      lastColumnIndex = item.columnIndex;
+    } else if (item.columnIndex !== lastColumnIndex) {
+      y = page.marginMm;
+      lastColumnIndex = item.columnIndex;
+    }
+    columnIndex = item.columnIndex;
+    const block = item.block;
     if (block.visibility === 'HIDDEN' || block.printBehavior === 'DIGITAL_ONLY') continue;
     if (block.type === 'IMAGE') {
       const assetId = (block.config as { assetId: string | null }).assetId;

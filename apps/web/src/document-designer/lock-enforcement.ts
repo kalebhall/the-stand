@@ -19,7 +19,7 @@ function equal(a: unknown, b: unknown): boolean {
 }
 
 export function assertLayoutOperationAllowed(layout: DocumentLayout, operation: LayoutOperation, block?: DocumentBlock, previous?: DocumentBlock): void {
-  const property = operation === 'RESIZE' ? 'SIZE' : operation === 'STRUCTURE' ? 'POSITION' : operation;
+  const property = operation === 'RESIZE' ? 'SIZE' : operation === 'STRUCTURE' || operation === 'MOVE' || operation === 'ADD' || operation === 'REMOVE' || operation === 'COLUMNS' ? 'POSITION' : operation;
   if (blocked(layout.lock, property)) throw new LockedLayoutError(property as LockProperty, 'The document property is locked');
   if (blocked(previous?.lock, property) || blocked(block?.lock, property)) throw new LockedLayoutError(property as LockProperty, 'This block property is locked');
 }
@@ -86,7 +86,7 @@ export function assertNoLockedChanges(previous: AdvancedDocumentLayout, next: Ad
       if (!equal(oldRegion.lock, newRegion.lock)) throw new LockedLayoutError('STRUCTURE', 'Region lock metadata cannot be changed');
       if (blocked(oldRegion.lock, 'POSITION') && newPage.regions.indexOf(newRegion) !== regionIndex) throw new LockedLayoutError('POSITION', 'A locked region cannot move');
       if (oldRegion.lock) {
-        if (blocked(oldRegion.lock, 'POSITION') && (!equal(ids(oldRegion.blocks), ids(newRegion.blocks)) || !equal(oldRegion.blocks.map((block) => [block.id, block.digitalOrder]), newRegion.blocks.map((block) => [block.id, block.digitalOrder])))) throw new LockedLayoutError('POSITION', 'Locked region block positions cannot change');
+        if (blocked(oldRegion.lock, 'POSITION') && (!equal(ids(oldRegion.blocks), ids(newRegion.blocks)) || !equal(oldRegion.columns.blockIds, newRegion.columns.blockIds) || !equal(oldRegion.blocks.map((block) => [block.id, block.digitalOrder]), newRegion.blocks.map((block) => [block.id, block.digitalOrder])))) throw new LockedLayoutError('POSITION', 'Locked region block positions cannot change');
         if (blocked(oldRegion.lock, 'SIZE') && (!equal(oldRegion.columns, newRegion.columns) || oldRegion.ratio !== newRegion.ratio || oldRegion.gutter !== newRegion.gutter)) throw new LockedLayoutError('SIZE', 'Locked region size cannot change');
         if (blocked(oldRegion.lock, 'CONTENT') && !equal(oldRegion.blocks.map((block) => block.config), newRegion.blocks.map((block) => block.config))) throw new LockedLayoutError('CONTENT', 'Locked region content cannot change');
         if (blocked(oldRegion.lock, 'STYLE') && !equal(oldRegion.blocks.map((block) => ({ width: block.width, printBehavior: block.printBehavior, digitalBehavior: block.digitalBehavior, styleOverrides: block.styleOverrides })), newRegion.blocks.map((block) => ({ width: block.width, printBehavior: block.printBehavior, digitalBehavior: block.digitalBehavior, styleOverrides: block.styleOverrides })))) throw new LockedLayoutError('STYLE', 'Locked region style cannot change');

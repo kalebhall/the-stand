@@ -123,7 +123,7 @@ export function normalizeToAdvanced(input: unknown): AdvancedDocumentLayout {
     regions: page.regions.map((region, regionIndex) => {
       const sourcePage = sourcePages[pageIndex] as { regions?: unknown[] } | undefined;
       const sourceRegions = sourcePage && Array.isArray(sourcePage.regions) ? sourcePage.regions : [];
-      const sourceRegion = sourceRegions[regionIndex];
+      const sourceRegion = sourceRegions.find((candidate) => candidate && typeof candidate === 'object' && (candidate as { id?: unknown }).id === region.id) ?? sourceRegions[regionIndex];
       const sourceRegionObject = sourceRegion && typeof sourceRegion === 'object' ? sourceRegion as { columns?: unknown } : undefined;
       const parsedColumns = sourceRegionObject?.columns !== undefined && source?.schemaVersion === ADVANCED_SCHEMA_VERSION
         ? regionColumnsSchema.parse(sourceRegionObject.columns)
@@ -132,7 +132,7 @@ export function normalizeToAdvanced(input: unknown): AdvancedDocumentLayout {
         ...region,
         blocks: region.blocks.map((block, blockIndex) => {
           const sourceBlocks = sourceRegionObject && Array.isArray((sourceRegionObject as { blocks?: unknown[] }).blocks) ? (sourceRegionObject as { blocks: unknown[] }).blocks : [];
-          const sourceBlock = sourceBlocks[blockIndex];
+          const sourceBlock = sourceBlocks.find((candidate) => candidate && typeof candidate === 'object' && (candidate as { id?: unknown }).id === block.id) ?? sourceBlocks[blockIndex];
           if (!sourceBlock || typeof sourceBlock !== 'object') return block as AdvancedBlock;
           const value = sourceBlock as Record<string, unknown>;
           return { ...block, ...(value.styleOverrides !== undefined ? { styleOverrides: value.styleOverrides } : {}), ...(value.visibilityRule !== undefined ? { visibilityRule: value.visibilityRule } : {}), ...(value.digitalOrder !== undefined ? { digitalOrder: value.digitalOrder } : {}) } as AdvancedBlock;
@@ -197,7 +197,7 @@ export function projectAdvancedLayoutForOutput(
   layout: AdvancedDocumentLayout,
   target: 'PUBLIC' | 'PRINT' | 'DIGITAL',
   data?: ResolvedDocumentData
-): DocumentLayout {
+): AdvancedDocumentLayout {
   const projected = structuredClone(layout);
   projected.pages = projected.pages.map((page) => ({
     ...page,
@@ -220,9 +220,9 @@ export function projectAdvancedLayoutForOutput(
           : 0)
     }))
   }));
-  return downgradeToV1(projected);
+  return projected;
 }
 
-export function projectAdvancedLayoutForPublic(layout: AdvancedDocumentLayout): DocumentLayout {
+export function projectAdvancedLayoutForPublic(layout: AdvancedDocumentLayout): AdvancedDocumentLayout {
   return projectAdvancedLayoutForOutput(layout, 'PUBLIC');
 }

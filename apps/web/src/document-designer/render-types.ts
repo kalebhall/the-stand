@@ -1,4 +1,5 @@
 import type { DocumentBlock, DocumentLayout } from './types';
+import type { AdvancedDocumentLayout } from './advanced-schema';
 
 export type RenderTarget = 'DIGITAL' | 'PRINT';
 
@@ -15,7 +16,7 @@ export type ResolvedDocumentData = {
 };
 
 export type DocumentRenderInput = {
-  layout: DocumentLayout;
+  layout: DocumentLayout | AdvancedDocumentLayout;
   data: ResolvedDocumentData;
   target?: RenderTarget;
   public?: boolean;
