@@ -75,6 +75,15 @@ Verified from the current repository:
 
 Existing guidance is in `CLAUDE.md`; future work must preserve its server-first, ward-isolated, RLS, audit, outbox, and testing conventions.
 
+### 2.1 Prerequisites before Phase 1
+
+Two P0 issues from `docs/GAP_ANALYSIS.md` must be resolved before any Phase 1 platform work begins. Codifying platform facades on top of a broken security foundation would freeze the gap into the module contracts.
+
+- **RLS on 17 ward-scoped tables.** A new Drizzle migration must enable RLS and add explicit `app.ward_id` / `app.user_id` policies for: `meeting`, `meeting_program_item`, `meeting_program_render`, `meeting_business_line`, `calling_assignment`, `calling_action`, `event_outbox`, `notification_delivery`, `public_program_share`, `public_program_portal`, `announcement`, `calendar_feed`, `calendar_event_cache`, `member`, `member_note`, `import_run`, `ward_stand_template`. Cross-ward rejection tests must cover a representative subset.
+- **Rate limiting.** Replace the `Map`-based limiter in `src/lib/rate-limit.ts` with a Redis- or DB-backed implementation before it is captured by a platform facade.
+
+These fixes are not part of the architecture restructuring, but their landing gates Phase 1.
+
 ---
 
 ## 3. Product boundary
@@ -93,6 +102,7 @@ Core must support the minimum reliable sacrament-meeting workflow:
 - At-the-Stand conducting view.
 - Conducting notes required during the meeting.
 - Basic program preview and print output.
+- Publication of immutable `meeting_program_render` snapshots. The act of writing the immutable snapshot is a Core operation; sharing surfaces built on top of it are optional (see §3.3).
 - Latest-meeting offline access and visible offline state.
 - Core permissions, audit boundaries, and ward isolation.
 - Shared navigation, errors, settings shell, and feature capability checks.
@@ -127,7 +137,7 @@ Initial module candidates:
 - Notifications.
 - Interviews.
 - Technology checklist.
-- Public portal and public program sharing.
+- Public portal sharing UI, portal token administration, and access-request workflows (the immutable snapshot itself is Core; only the sharing surface is a module).
 - Advanced spatial program designer.
 - Document templates and template administration.
 - Media library.
@@ -261,6 +271,16 @@ Use these in priority order:
 
 Avoid a generic event bus for everything. Events must have named payload types and ownership documentation.
 
+### Contract versioning discipline
+
+Both module and event contracts carry a `version` field. To keep changes reviewable and to keep the agent from silently breaking downstream consumers, apply a semver-like rule:
+
+- **Patch:** doc-only or non-observable refactor of the contract file.
+- **Minor:** additive optional field, additive event, additive extension point. Existing consumers must keep type-checking without change.
+- **Major:** any field removed, renamed, or type-narrowed; any required field added; any event payload shape change. Requires a paired codemod or migration note in the same PR and a note in `docs/architecture/module-contracts.md`.
+
+A contract PR whose change is not marked patch/minor/major explicitly is rejected. The `docs:dependencies:check` gate should be extended to flag consumer files that import a bumped-major contract without being updated in the same PR.
+
 ---
 
 ## 6. Core contracts to stabilize first
@@ -357,23 +377,31 @@ No module may write private data into the Core offline store without a declared 
 - `docs/architecture/system-map.md`
 - `docs/architecture/domain-boundaries.md`
 - `docs/architecture/module-contracts.md`
+- `docs/architecture/existing-file-map.md` — classifies every current directory under `apps/web/src/` and every top-level file (`bootstrap.mjs`, `health.mjs`, `version.mjs`) as **core**, **platform**, **optional module**, or **adapter**, using the §3.4 rule. Every current directory listed by `ls apps/web/src/` must appear. Ambiguous placements (`church-actions`, `leadership`, `notes`, `hardening`, `maintenance`, `reports`, `features`) must include a one-line justification.
 - `apps/web/AGENTS.md`
 - `apps/web/src/AGENTS.md`
 - `apps/web/src/platform/AGENTS.md`
 - `apps/web/src/conducting/AGENTS.md`
 - `apps/web/src/modules/AGENTS.md`
 
-**Modify only if needed:**
+**Modify:**
 
 - `CLAUDE.md` to link to the architecture documents.
+- `apps/web/package.json` `lint` script to include `src` (currently `eslint app components lib --max-warnings=0`), so `no-restricted-paths` rules added later can actually catch boundary violations.
+- `apps/web/eslint.config.*` to add an `no-restricted-paths` (or equivalent `import/no-restricted-paths`) rule scaffold — initially empty of `zones`, ready to receive rules in Phase 1 and Phase 2.
+- Regenerate `docs/DEPENDENCY_GRAPH.md` via `npm run docs:dependencies` and commit it so `docs:dependencies:check` is green before any subsequent phase lands.
 
 **Verification:**
 
 - Documentation review.
 - No runtime behavior changes.
+- `npm run lint` still passes with the expanded target.
+- `npm run docs:dependencies:check` passes.
 - `git diff --check`.
 
 ### Phase 1: Establish platform boundaries
+
+**Prerequisite:** The two P0 remediations in §2.1 (RLS on the 17 tables and a non-in-memory rate limiter) must be merged first.
 
 **Goal:** Make shared security and lifecycle services explicit.
 
@@ -436,6 +464,9 @@ No module may write private data into the Core offline store without a declared 
 - `apps/web/src/modules/registry.ts`
 - `apps/web/src/modules/types.ts`
 - `apps/web/src/modules/enablement.ts`
+- A test harness (fixture/helper) that toggles module enablement per test — e.g. a `withModules({ callings: false, announcements: false, ... })` wrapper — used by a new "core-only" suite that boots the app with every optional module disabled and runs the full prep → conduct → publish → complete flow. Without this harness, "Core works with all optional modules disabled" is aspirational rather than tested.
+
+**Contract scope:** ship the smallest viable subset of the §5 sketch — `id`, `name`, `defaultEnabled`, `navigation`, `routes`, `permissions`. `meetingPanels`, `eventHandlers`, `offlineScopes`, and `requiredCapabilities` are added only when a real module needs them.
 
 **Modify:**
 
@@ -447,7 +478,7 @@ No module may write private data into the Core offline store without a declared 
 
 - Disabled module is absent from navigation and routes.
 - Enabled module contributes only declared surfaces.
-- Core works with all optional modules disabled.
+- Core works with all optional modules disabled (via the new harness).
 - Ward A's enablement does not affect Ward B.
 
 ### Phase 4: Extract one low-risk module
@@ -472,6 +503,8 @@ Do not start with Membership, LCR, or Public Portal. Those have heavier privacy,
 ### Phase 5: Extract advanced program designer
 
 **Goal:** Make the spatial designer an optional enhancement over Core program data.
+
+**Prerequisite (Phase 5a — must land before extraction):** Add a repository- and ward-level feature flag `advanced-designer` that disables the designer entirely — no nav, no routes, no edit surface, no advanced projection in the render pipeline. With the flag off, prep view, at-the-Stand view, publish, print, and PDF must all continue to work using the Core renderer. A dedicated flag-off test suite must cover preview, print, and PDF parity against a small fixture meeting. Extraction (Phase 5b) begins only after the flag-off suite is green in CI. This is the fallback the plan already promises, made testable before the surgery.
 
 **Likely extraction:**
 
@@ -510,16 +543,16 @@ Reorder based on product priority, but do not extract a module until its ownersh
 
 ### Phase 7: Consider package extraction or external plugins
 
-Only consider separate workspaces or independently versioned plugins after:
+**Not now.** This phase exists to give the plan a shape past Phase 6, not to authorize the work. It must not be started, planned in detail, or scaffolded speculatively. The default answer to "should we extract packages now?" is no. Package extraction begins only after **all** of the following are true and have been separately authorized:
 
-- At least two modules use stable contracts.
-- Dependency rules are enforced.
-- Module enablement is tested per ward.
-- Upgrade and rollback behavior is defined.
-- The security model for third-party code is explicit.
-- The operational cost is justified by a real integration need.
+- At least two modules use stable contracts in production.
+- Dependency rules are enforced by lint and by CI, not by convention.
+- Module enablement is tested per ward end-to-end.
+- Upgrade and rollback behavior is defined and rehearsed.
+- The security model for third-party code is explicit and reviewed.
+- The operational cost is justified by a real integration need with a named consumer.
 
-This phase is optional and should not block the modular-monolith work.
+This phase must not block the modular-monolith work and must not be used as a rationale for premature package boundaries in earlier phases.
 
 ---
 
