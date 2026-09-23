@@ -100,8 +100,8 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
               m.status,
               COUNT(mpi.id)::text AS program_item_count
          FROM meeting m
-         LEFT JOIN meeting_program_item mpi ON mpi.meeting_id = m.id
-        WHERE m.ward_id = $1
+         LEFT JOIN meeting_program_item mpi ON mpi.meeting_id = m.id AND mpi.ward_id = m.ward_id
+        WHERE m.ward_id = $1::uuid
         GROUP BY m.id
         ORDER BY m.meeting_date DESC`,
       [wardId]
@@ -182,7 +182,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
 
     const inserted = await client.query(
       `INSERT INTO meeting (ward_id, meeting_date, meeting_type)
-       VALUES ($1, $2, $3)
+       VALUES ($1::uuid, $2::date, $3::text)
        RETURNING id`,
       [wardId, meetingDate, meetingType]
     );

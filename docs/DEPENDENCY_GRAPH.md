@@ -14,7 +14,7 @@ flowchart LR
   A2["root:other<br/>1 files"]
   A3["root:tooling<br/>7 files"]
   A4["web:announcements<br/>2 files"]
-  A5["web:api<br/>124 files"]
+  A5["web:api<br/>126 files"]
   A6["web:app<br/>142 files"]
   A7["web:audit<br/>2 files"]
   A8["web:auth<br/>12 files"]
@@ -22,107 +22,110 @@ flowchart LR
   A10["web:calendar<br/>4 files"]
   A11["web:callings<br/>7 files"]
   A12["web:church-actions<br/>4 files"]
-  A13["web:config<br/>16 files"]
-  A14["web:db<br/>11 files"]
-  A15["web:document-designer<br/>65 files"]
-  A16["web:features<br/>3 files"]
-  A17["web:hardening<br/>1 files"]
-  A18["web:health.mjs<br/>1 files"]
-  A19["web:i18n<br/>5 files"]
-  A20["web:imports<br/>20 files"]
-  A21["web:leadership<br/>14 files"]
-  A22["web:lib<br/>10 files"]
-  A23["web:maintenance<br/>5 files"]
-  A24["web:meetings<br/>14 files"]
-  A25["web:notes<br/>1 files"]
-  A26["web:notifications<br/>36 files"]
-  A27["web:offline<br/>3 files"]
-  A28["web:platform<br/>9 files"]
-  A29["web:reports<br/>3 files"]
-  A30["web:stand<br/>10 files"]
-  A31["web:tooling<br/>2 files"]
-  A32["web:types<br/>2 files"]
-  A33["web:ui<br/>33 files"]
-  A34["web:version.mjs<br/>1 files"]
-  A5 -->|164| A8
-  A5 -->|145| A14
-  A6 -->|123| A33
+  A13["web:conducting<br/>3 files"]
+  A14["web:config<br/>16 files"]
+  A15["web:db<br/>11 files"]
+  A16["web:document-designer<br/>65 files"]
+  A17["web:features<br/>3 files"]
+  A18["web:hardening<br/>1 files"]
+  A19["web:health.mjs<br/>1 files"]
+  A20["web:i18n<br/>5 files"]
+  A21["web:imports<br/>20 files"]
+  A22["web:leadership<br/>14 files"]
+  A23["web:lib<br/>10 files"]
+  A24["web:maintenance<br/>5 files"]
+  A25["web:meetings<br/>14 files"]
+  A26["web:notes<br/>1 files"]
+  A27["web:notifications<br/>36 files"]
+  A28["web:offline<br/>3 files"]
+  A29["web:platform<br/>9 files"]
+  A30["web:reports<br/>3 files"]
+  A31["web:stand<br/>10 files"]
+  A32["web:tooling<br/>2 files"]
+  A33["web:types<br/>2 files"]
+  A34["web:ui<br/>33 files"]
+  A35["web:version.mjs<br/>1 files"]
+  A5 -->|168| A8
+  A5 -->|149| A15
+  A6 -->|123| A34
   A6 -->|94| A8
-  A6 -->|56| A14
-  A5 -->|53| A15
-  A5 -->|46| A26
-  A5 -->|30| A7
-  A5 -->|23| A22
-  A5 -->|15| A11
-  A6 -->|15| A15
-  A6 -->|15| A24
-  A6 -->|14| A28
-  A5 -->|11| A16
-  A5 -->|11| A20
-  A6 -->|8| A26
-  A5 -->|7| A21
-  A5 -->|6| A24
-  A6 -->|5| A16
-  A6 -->|5| A30
+  A6 -->|56| A15
+  A5 -->|52| A16
+  A5 -->|44| A27
+  A5 -->|31| A7
+  A5 -->|24| A23
+  A6 -->|15| A16
+  A6 -->|15| A25
+  A5 -->|14| A11
+  A6 -->|14| A29
+  A5 -->|11| A17
+  A5 -->|11| A21
+  A6 -->|8| A27
+  A5 -->|7| A13
+  A5 -->|7| A22
+  A5 -->|6| A25
+  A6 -->|5| A17
+  A6 -->|5| A31
   A6 -->|4| A11
-  A15 -->|4| A8
-  A5 -->|3| A4
-  A5 -->|3| A19
-  A6 -->|3| A4
-  A6 -->|3| A19
-  A6 -->|3| A21
-  A26 -->|3| A14
-  A28 -->|3| A8
-  A28 -->|3| A16
+  A16 -->|4| A8
+  A5 -->|3| A20
+  A6 -->|3| A20
+  A6 -->|3| A22
+  A27 -->|3| A15
+  A29 -->|3| A8
+  A29 -->|3| A17
+  A5 -->|2| A4
   A5 -->|2| A12
+  A6 -->|2| A4
   A6 -->|2| A12
-  A6 -->|2| A27
-  A6 -->|2| A29
-  A8 -->|2| A14
-  A10 -->|2| A14
-  A13 -->|2| A22
-  A14 -->|2| A8
-  A19 -->|2| A24
-  A21 -->|2| A26
-  A28 -->|2| A7
-  A28 -->|2| A14
-  A33 -->|2| A29
-  A2 -->|1| A18
+  A6 -->|2| A28
+  A6 -->|2| A30
+  A8 -->|2| A15
+  A10 -->|2| A15
+  A14 -->|2| A23
+  A15 -->|2| A8
+  A20 -->|2| A25
+  A22 -->|2| A27
+  A29 -->|2| A7
+  A29 -->|2| A15
+  A34 -->|2| A30
+  A2 -->|1| A19
   A5 -->|1| A10
-  A5 -->|1| A25
-  A5 -->|1| A30
+  A5 -->|1| A26
+  A5 -->|1| A31
   A6 -->|1| A10
-  A6 -->|1| A20
-  A6 -->|1| A22
-  A8 -->|1| A16
-  A8 -->|1| A22
-  A10 -->|1| A26
-  A13 -->|1| A9
-  A13 -->|1| A18
-  A13 -->|1| A24
-  A15 -->|1| A7
-  A15 -->|1| A14
-  A15 -->|1| A24
-  A16 -->|1| A14
-  A18 -->|1| A34
-  A19 -->|1| A8
-  A19 -->|1| A14
-  A20 -->|1| A14
-  A23 -->|1| A14
-  A24 -->|1| A4
-  A26 -->|1| A11
-  A26 -->|1| A25
-  A28 -->|1| A27
-  A30 -->|1| A24
-  A33 -->|1| A8
-  A33 -->|1| A12
-  A33 -->|1| A16
-  A33 -->|1| A20
-  A33 -->|1| A22
-  A33 -->|1| A24
-  A33 -->|1| A25
-  A33 -->|1| A27
-  A33 -->|1| A30
+  A6 -->|1| A13
+  A6 -->|1| A21
+  A6 -->|1| A23
+  A8 -->|1| A17
+  A8 -->|1| A23
+  A10 -->|1| A27
+  A14 -->|1| A9
+  A14 -->|1| A19
+  A14 -->|1| A25
+  A16 -->|1| A7
+  A16 -->|1| A15
+  A16 -->|1| A25
+  A17 -->|1| A15
+  A19 -->|1| A35
+  A20 -->|1| A8
+  A20 -->|1| A15
+  A21 -->|1| A15
+  A24 -->|1| A15
+  A25 -->|1| A4
+  A27 -->|1| A11
+  A27 -->|1| A26
+  A29 -->|1| A28
+  A31 -->|1| A25
+  A34 -->|1| A8
+  A34 -->|1| A12
+  A34 -->|1| A17
+  A34 -->|1| A21
+  A34 -->|1| A23
+  A34 -->|1| A25
+  A34 -->|1| A26
+  A34 -->|1| A28
+  A34 -->|1| A31
 ```
 
 ## Area inventory
@@ -133,7 +136,7 @@ flowchart LR
 | `root:other` | 1 |
 | `root:tooling` | 7 |
 | `web:announcements` | 2 |
-| `web:api` | 124 |
+| `web:api` | 126 |
 | `web:app` | 142 |
 | `web:audit` | 2 |
 | `web:auth` | 12 |
@@ -141,6 +144,7 @@ flowchart LR
 | `web:calendar` | 4 |
 | `web:callings` | 7 |
 | `web:church-actions` | 4 |
+| `web:conducting` | 3 |
 | `web:config` | 16 |
 | `web:db` | 11 |
 | `web:document-designer` | 65 |
@@ -169,23 +173,23 @@ flowchart LR
 | Importing area | Imported area | Imports |
 | --- | --- | ---: |
 | `web:document-designer` | `web:document-designer` | 174 |
-| `web:api` | `web:auth` | 164 |
-| `web:api` | `web:db` | 145 |
+| `web:api` | `web:auth` | 168 |
+| `web:api` | `web:db` | 149 |
 | `web:app` | `web:ui` | 123 |
 | `web:app` | `web:auth` | 94 |
 | `web:app` | `web:app` | 69 |
 | `web:app` | `web:db` | 56 |
-| `web:api` | `web:document-designer` | 53 |
 | `web:notifications` | `web:notifications` | 53 |
-| `web:api` | `web:notifications` | 46 |
+| `web:api` | `web:document-designer` | 52 |
+| `web:api` | `web:notifications` | 44 |
 | `web:api` | `web:api` | 33 |
-| `web:api` | `web:audit` | 30 |
+| `web:api` | `web:audit` | 31 |
 | `web:ui` | `web:ui` | 30 |
-| `web:api` | `web:lib` | 23 |
+| `web:api` | `web:lib` | 24 |
 | `web:platform` | `web:platform` | 17 |
-| `web:api` | `web:callings` | 15 |
 | `web:app` | `web:document-designer` | 15 |
 | `web:app` | `web:meetings` | 15 |
+| `web:api` | `web:callings` | 14 |
 | `web:app` | `web:platform` | 14 |
 | `web:imports` | `web:imports` | 14 |
 | `web:meetings` | `web:meetings` | 12 |
@@ -195,6 +199,7 @@ flowchart LR
 | `web:auth` | `web:auth` | 8 |
 | `web:leadership` | `web:leadership` | 8 |
 | `web:stand` | `web:stand` | 8 |
+| `web:api` | `web:conducting` | 7 |
 | `web:api` | `web:leadership` | 7 |
 | `web:api` | `web:meetings` | 6 |
 | `web:app` | `web:features` | 5 |
@@ -206,18 +211,19 @@ flowchart LR
 | `web:features` | `web:features` | 4 |
 | `web:i18n` | `web:i18n` | 4 |
 | `web:lib` | `web:lib` | 4 |
-| `web:api` | `web:announcements` | 3 |
 | `web:api` | `web:i18n` | 3 |
-| `web:app` | `web:announcements` | 3 |
 | `web:app` | `web:i18n` | 3 |
 | `web:app` | `web:leadership` | 3 |
 | `web:calendar` | `web:calendar` | 3 |
+| `web:conducting` | `web:conducting` | 3 |
 | `web:maintenance` | `web:maintenance` | 3 |
 | `web:notifications` | `web:db` | 3 |
 | `web:platform` | `web:auth` | 3 |
 | `web:platform` | `web:features` | 3 |
 | `package:shared` | `package:shared` | 2 |
+| `web:api` | `web:announcements` | 2 |
 | `web:api` | `web:church-actions` | 2 |
+| `web:app` | `web:announcements` | 2 |
 | `web:app` | `web:church-actions` | 2 |
 | `web:app` | `web:offline` | 2 |
 | `web:app` | `web:reports` | 2 |
@@ -237,6 +243,7 @@ flowchart LR
 | `web:api` | `web:notes` | 1 |
 | `web:api` | `web:stand` | 1 |
 | `web:app` | `web:calendar` | 1 |
+| `web:app` | `web:conducting` | 1 |
 | `web:app` | `web:imports` | 1 |
 | `web:app` | `web:lib` | 1 |
 | `web:audit` | `web:audit` | 1 |
@@ -277,7 +284,7 @@ flowchart LR
 | Importing area | Package/runtime | Imports |
 | --- | --- | ---: |
 | `web:app` | `next` | 103 |
-| `web:api` | `next` | 82 |
+| `web:api` | `next` | 84 |
 | `web:app` | `react` | 44 |
 | `web:ui` | `react` | 31 |
 | `web:api` | `vitest` | 30 |
@@ -344,6 +351,7 @@ flowchart LR
 | `web:auth` | `next` | 1 |
 | `web:bootstrap.mjs` | `Node.js` | 1 |
 | `web:calendar` | `pg` | 1 |
+| `web:conducting` | `vitest` | 1 |
 | `web:config` | `@testing-library/jest-dom` | 1 |
 | `web:config` | `child_process` | 1 |
 | `web:config` | `drizzle-kit` | 1 |
@@ -477,7 +485,7 @@ flowchart LR
 | `apps/web/app/api/w/[wardId]/media/route.ts` | `web:api` | 6 | 1 |
 | `apps/web/app/api/w/[wardId]/media/route.vitest.ts` | `web:api` | 2 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/business/[lineId]/route.ts` | `web:api` | 5 | 1 |
-| `apps/web/app/api/w/[wardId]/meetings/[meetingId]/complete/route.ts` | `web:api` | 7 | 1 |
+| `apps/web/app/api/w/[wardId]/meetings/[meetingId]/complete/route.ts` | `web:api` | 8 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/complete/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/membership-ordinances/[actionId]/route.ts` | `web:api` | 8 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/membership-ordinances/[actionId]/route.vitest.ts` | `web:api` | 1 | 1 |
@@ -493,12 +501,14 @@ flowchart LR
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/publication-history/rollback/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/publication-history/route.ts` | `web:api` | 5 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/publication-history/route.vitest.ts` | `web:api` | 1 | 1 |
-| `apps/web/app/api/w/[wardId]/meetings/[meetingId]/publish/route.ts` | `web:api` | 17 | 2 |
+| `apps/web/app/api/w/[wardId]/meetings/[meetingId]/publish/route.ts` | `web:api` | 18 | 2 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/publish/route.vitest.ts` | `web:api` | 2 | 1 |
-| `apps/web/app/api/w/[wardId]/meetings/[meetingId]/route.ts` | `web:api` | 9 | 1 |
+| `apps/web/app/api/w/[wardId]/meetings/[meetingId]/render/route.ts` | `web:api` | 6 | 1 |
+| `apps/web/app/api/w/[wardId]/meetings/[meetingId]/reopen/route.ts` | `web:api` | 7 | 1 |
+| `apps/web/app/api/w/[wardId]/meetings/[meetingId]/route.ts` | `web:api` | 7 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/technology/route.ts` | `web:api` | 5 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/route.ts` | `web:api` | 10 | 1 |
-| `apps/web/app/api/w/[wardId]/meetings/route.vitest.ts` | `web:api` | 2 | 1 |
+| `apps/web/app/api/w/[wardId]/meetings/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/members/[memberId]/route.ts` | `web:api` | 5 | 1 |
 | `apps/web/app/api/w/[wardId]/members/route.ts` | `web:api` | 5 | 1 |
 | `apps/web/app/api/w/[wardId]/members/route.vitest.ts` | `web:api` | 1 | 1 |
@@ -736,6 +746,9 @@ flowchart LR
 | `apps/web/src/church-actions/membership-ordinance.vitest.ts` | `web:church-actions` | 1 | 1 |
 | `apps/web/src/church-actions/types.ts` | `web:church-actions` | 0 | 0 |
 | `apps/web/src/church-actions/types.vitest.ts` | `web:church-actions` | 1 | 1 |
+| `apps/web/src/conducting/core-only.vitest.ts` | `web:conducting` | 2 | 1 |
+| `apps/web/src/conducting/core.ts` | `web:conducting` | 1 | 0 |
+| `apps/web/src/conducting/model.ts` | `web:conducting` | 0 | 0 |
 | `apps/web/src/db/bootstrap-support-admin.ts` | `web:db` | 3 | 1 |
 | `apps/web/src/db/bootstrap-support-admin.vitest.ts` | `web:db` | 1 | 1 |
 | `apps/web/src/db/client.ts` | `web:db` | 1 | 5 |

@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import { recordAuditEvent } from '@/src/audit/service';
 import { auth } from '@/src/auth/auth';
 import { canPublishProgram, canRepublishProgram, canViewProgramDesigner } from '@/src/auth/roles';
+import { isMeetingStatus, transitionMeetingStatus } from '@/src/conducting/model';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 import { adaptLegacyLayoutToDocument, COMPATIBILITY_PUBLIC_BLOCK_TYPES } from '@/src/document-designer/legacy-layout-adapter';
@@ -88,6 +89,14 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
       FROM meeting m JOIN ward w ON w.id = m.ward_id WHERE m.id = $1::uuid AND m.ward_id = $2::uuid LIMIT 1 FOR UPDATE`, [meetingId, wardId]);
     if (!meetingResult.rows[0]) { await client.query('ROLLBACK'); return NOT_FOUND(); }
     const meeting = meetingResult.rows[0] as { id: string; meeting_date: string; meeting_type: string; status: string; ward_name: string; location: string | null };
+    if (!isMeetingStatus(meeting.status)) {
+      await client.query('ROLLBACK');
+      return NextResponse.json({ error: 'Meeting has an invalid status', code: 'INVALID_STATUS' }, { status: 409 });
+    }
+    if (meeting.status === 'COMPLETED') {
+      await client.query('ROLLBACK');
+      return NextResponse.json({ error: 'Reopen the meeting before publishing again', code: 'INVALID_TRANSITION' }, { status: 409 });
+    }
     const profileResult = await client.query(`SELECT allow_program_editor_publish, allow_program_editor_republish, public_program_expiration_days
       FROM ward_document_settings WHERE ward_id = $1::uuid LIMIT 1`, [wardId]);
     const profile = profileResult.rows[0] ?? {};
@@ -143,6 +152,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     const expiresAt = calculatePublicationExpiration(publishedAt, profile.public_program_expiration_days == null ? null : Number(profile.public_program_expiration_days));
     await client.query(`INSERT INTO public_program_share (ward_id, meeting_id, token, active_render_id, expires_at) VALUES ($1::uuid, $2::uuid, $3::text, $4::uuid, $5::timestamptz)
       ON CONFLICT (meeting_id) DO UPDATE SET active_render_id = EXCLUDED.active_render_id, expires_at = EXCLUDED.expires_at, updated_at = now()`, [wardId, meetingId, shareToken, inserted.id, expiresAt]);
+    if (meeting.status === 'DRAFT') transitionMeetingStatus(meeting.status, 'publish');
     await client.query(`UPDATE meeting SET status = 'PUBLISHED', updated_at = now() WHERE id = $1::uuid AND ward_id = $2::uuid`, [meetingId, wardId]);
     await client.query(`INSERT INTO public_program_portal (ward_id, token) VALUES ($1::uuid, $2::text) ON CONFLICT (ward_id) DO NOTHING`, [wardId, token()]);
     const auditAction = version > 1 ? 'PROGRAM_REPUBLISHED' : 'PROGRAM_PUBLISHED';

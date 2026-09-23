@@ -3,12 +3,17 @@ import { NextResponse } from 'next/server';
 import { recordAuditEvent } from '@/src/audit/service';
 import { auth } from '@/src/auth/auth';
 import { canManageMeetings } from '@/src/auth/roles';
+import { isMeetingStatus, transitionMeetingStatus } from '@/src/conducting/model';
 import { pool } from '@/src/db/client';
 import { createLogger } from '@/src/lib/logger';
 import { setDbContext } from '@/src/db/context';
 import { enqueueOutboxNotificationJob } from '@/src/notifications/queue';
 
 const logger = createLogger('meetings');
+
+function isCompletionTransitionError(error: unknown): boolean {
+  return error instanceof Error && error.message.startsWith('Cannot complete a ');
+}
 
 type AnnouncedBusinessLineRow = {
   id: string;
@@ -35,9 +40,9 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
     await setDbContext(client, { userId: session.user.id, wardId });
 
     const meetingResult = await client.query(
-      `SELECT id
+      `SELECT id, status
          FROM meeting
-        WHERE id = $1 AND ward_id = $2
+        WHERE id = $1::uuid AND ward_id = $2::uuid
         LIMIT 1
         FOR UPDATE`,
       [meetingId, wardId]
@@ -48,11 +53,15 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
       return NextResponse.json({ error: 'Meeting not found', code: 'NOT_FOUND' }, { status: 404 });
     }
 
+    const currentStatus = String(meetingResult.rows[0].status);
+    if (!isMeetingStatus(currentStatus)) throw new Error('Meeting has an invalid status.');
+    const nextStatus = transitionMeetingStatus(currentStatus, 'complete');
+
     const announcedResult = await client.query(
       `SELECT id, member_name, calling_name, action_type
          FROM meeting_business_line
-        WHERE ward_id = $1
-          AND meeting_id = $2
+        WHERE ward_id = $1::uuid
+          AND meeting_id = $2::uuid
           AND status = 'announced'
         ORDER BY created_at ASC`,
       [wardId, meetingId]
@@ -67,15 +76,15 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
 
     await client.query(
       `UPDATE meeting
-          SET status = 'COMPLETED',
+          SET status = $3::text,
               updated_at = now()
-        WHERE id = $1 AND ward_id = $2`,
-      [meetingId, wardId]
+        WHERE id = $1::uuid AND ward_id = $2::uuid`,
+      [meetingId, wardId, nextStatus]
     );
 
     const outboxResult = await client.query(
       `INSERT INTO event_outbox (ward_id, aggregate_type, aggregate_id, event_type, payload)
-       VALUES ($1, 'meeting', $2, 'MEETING_COMPLETED', $3::jsonb)
+       VALUES ($1::uuid, 'meeting', $2::uuid, 'MEETING_COMPLETED', $3::jsonb)
        ON CONFLICT (ward_id, event_type, aggregate_id)
        DO UPDATE SET payload = EXCLUDED.payload, updated_at = now(), status = 'pending'
        RETURNING id`,
@@ -88,7 +97,7 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
     for (const line of announcedBusinessLines.filter((line) => line.actionType === 'RELEASE')) {
       const releaseOutboxResult = await client.query(
         `INSERT INTO event_outbox (ward_id, aggregate_type, aggregate_id, event_type, payload)
-         VALUES ($1, 'meeting_business_line', $2, 'CALLING_RELEASE_ANNOUNCED', $3::jsonb)
+         VALUES ($1::uuid, 'meeting_business_line', $2::uuid, 'CALLING_RELEASE_ANNOUNCED', $3::jsonb)
          ON CONFLICT (ward_id, event_type, aggregate_id)
          DO UPDATE SET payload = EXCLUDED.payload, updated_at = now(), status = 'pending'
          RETURNING id`,
@@ -116,7 +125,7 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
       entityType: 'meeting',
       entityId: meetingId,
       changes: {
-        status: { old: 'PUBLISHED', new: 'COMPLETED' },
+        status: { old: currentStatus, new: nextStatus },
         announcedBusinessLineCount: { old: 0, new: announcedBusinessLines.length }
       },
       details: {
@@ -138,7 +147,10 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
 
     return NextResponse.json({ success: true, meetingId, eventOutboxId, announcedBusinessLineCount: announcedBusinessLines.length });
   } catch (err) {
-    await client.query('ROLLBACK');
+    await client.query('ROLLBACK').catch(() => undefined);
+    if (isCompletionTransitionError(err)) {
+      return NextResponse.json({ error: 'Meeting cannot be completed in its current state', code: 'INVALID_TRANSITION' }, { status: 409 });
+    }
     logger.error('Failed to complete meeting', { wardId, meetingId, error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: 'Failed to complete meeting', code: 'INTERNAL_ERROR' }, { status: 500 });
   } finally {

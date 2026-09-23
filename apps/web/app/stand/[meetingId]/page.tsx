@@ -10,7 +10,7 @@ import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth
 import { canManageCallings, canUseInternalNotes, canViewMeetings } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
-import { isAnnouncementActiveForDate } from '@/src/announcements/types';
+import { isCoreAnnouncementActiveForDate } from '@/src/conducting/core';
 import { buildStandRows } from '@/src/stand/render';
 import { formatAtStandMemberName } from '@/src/stand/member-display';
 import { OfflineStandButton } from '@/components/offline-stand-button';
@@ -224,7 +224,7 @@ export default async function StandViewPage({
       }>
     )
       .filter((a) =>
-        isAnnouncementActiveForDate(
+        isCoreAnnouncementActiveForDate(
           {
             startDate: a.start_date,
             endDate: a.end_date,

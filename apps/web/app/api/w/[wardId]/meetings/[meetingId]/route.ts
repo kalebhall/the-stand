@@ -2,12 +2,11 @@ import { NextResponse } from 'next/server';
 
 import { auth } from '@/src/auth/auth';
 import { canManageMeetings, canViewMeetings } from '@/src/auth/roles';
-import { isConferenceMeetingType, migrateBusinessLinesOffConference } from '@/src/callings/meeting-business';
+import { canonicalizeMeeting, createMeetingContext } from '@/src/conducting/model';
+
 import { pool } from '@/src/db/client';
 import { createLogger } from '@/src/lib/logger';
 import { setDbContext } from '@/src/db/context';
-import { enqueueOutboxNotificationJob } from '@/src/notifications/queue';
-import { enqueueNotificationOutboxEvent, insertNotificationOutboxEvent } from '@/src/notifications/outbox';
 
 const logger = createLogger('meetings');
 import { INTRODUCTION_ITEM_TYPE, isMeetingType, SPEAKER_STATUSES, validateProgramItemsForMeetingType, validateSpeakerStatusTransition, type IntroductionRoles, type ProgramItemInput } from '@/src/meetings/types';
@@ -66,7 +65,7 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
     await setDbContext(client, { userId: session.user.id, wardId });
 
     const meetingResult = await client.query(
-      'SELECT id, meeting_date, meeting_type, status FROM meeting WHERE id = $1 AND ward_id = $2 LIMIT 1',
+      'SELECT id, meeting_date, meeting_type, status FROM meeting WHERE id = $1::uuid AND ward_id = $2::uuid LIMIT 1',
       [meetingId, wardId]
     );
 
@@ -78,30 +77,52 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
     const itemsResult = await client.query(
       `SELECT id, item_type, title, notes, topic, program_notes, hymn_number, hymn_title, introduction_roles, speaker_status, sequence
          FROM meeting_program_item
-        WHERE meeting_id = $1 AND ward_id = $2
+        WHERE meeting_id = $1::uuid AND ward_id = $2::uuid
         ORDER BY sequence ASC`,
       [meetingId, wardId]
     );
 
     await client.query('COMMIT');
 
+    const coreMeeting = canonicalizeMeeting({
+      id: meetingResult.rows[0].id,
+      wardId,
+      meetingDate: String(meetingResult.rows[0].meeting_date),
+      meetingType: meetingResult.rows[0].meeting_type,
+      status: meetingResult.rows[0].status,
+      programItems: (itemsResult.rows as ProgramItemRow[]).map((item) => ({
+        id: item.id,
+        sequence: item.sequence,
+        itemType: item.item_type,
+        title: item.title,
+        notes: item.notes,
+        topic: item.topic,
+        programNotes: item.program_notes,
+        hymnNumber: item.hymn_number,
+        hymnTitle: item.hymn_title,
+        introductionRoles: item.introduction_roles,
+        speakerStatus: item.speaker_status
+      }))
+    });
+    const coreContext = createMeetingContext(session.user.id, wardId, coreMeeting);
+
     return NextResponse.json({
       meeting: {
-        id: meetingResult.rows[0].id,
-        meetingDate: meetingResult.rows[0].meeting_date,
-        meetingType: meetingResult.rows[0].meeting_type,
-        status: meetingResult.rows[0].status,
-        programItems: (itemsResult.rows as ProgramItemRow[]).map((item) => ({
+        id: coreContext.meeting.id,
+        meetingDate: coreContext.meeting.meetingDate,
+        meetingType: coreContext.meeting.meetingType,
+        status: coreContext.meeting.status,
+        programItems: coreContext.meeting.programItems.map((item) => ({
           id: item.id,
-          itemType: item.item_type,
+          itemType: item.itemType,
           title: item.title ?? '',
           notes: item.notes ?? '',
           topic: item.topic ?? '',
-          programNotes: item.program_notes ?? '',
-          hymnNumber: item.hymn_number ?? '',
-          hymnTitle: item.hymn_title ?? '',
-          introductionRoles: item.introduction_roles ?? undefined,
-          speakerStatus: item.speaker_status as ProgramItemInput['speakerStatus'],
+          programNotes: item.programNotes ?? '',
+          hymnNumber: item.hymnNumber ?? '',
+          hymnTitle: item.hymnTitle ?? '',
+          introductionRoles: item.introductionRoles ?? undefined,
+          speakerStatus: item.speakerStatus as ProgramItemInput['speakerStatus'],
           sequence: item.sequence
         }))
       }
@@ -201,7 +222,7 @@ export async function PUT(request: Request, context: { params: Promise<{ wardId:
       if (toTrimmedString(item?.itemType).toUpperCase() === 'ANNOUNCEMENT') indexes.push(index);
       return indexes;
     }, []);
-    const requiresIntroduction = !isConferenceMeetingType(existingMeeting.meeting_type);
+    const requiresIntroduction = !['STAKE_CONFERENCE', 'GENERAL_CONFERENCE'].includes(existingMeeting.meeting_type);
     const expectedAnnouncementIndex = requiresIntroduction ? 1 : 0;
     if (
       (requiresIntroduction && (introductionIndexes.length !== 1 || introductionIndexes[0] !== 0)) ||
@@ -221,10 +242,6 @@ export async function PUT(request: Request, context: { params: Promise<{ wardId:
       [meetingId, wardId]
     );
 
-    // Keep pending ward-business lines aligned with conference meetings.
-    if (isConferenceMeetingType(existingMeeting.meeting_type)) {
-      await migrateBusinessLinesOffConference(client, { wardId, meetingId, newMeetingDate: existingMeeting.meeting_date });
-    }
 
     const retainedIds = programItems.map((item) => toTrimmedString(item?.id)).filter(Boolean);
     await client.query(
@@ -271,21 +288,7 @@ export async function PUT(request: Request, context: { params: Promise<{ wardId:
       [wardId, session.user.id, meetingId, programItems.length]
     );
 
-    const eventOutboxId = await insertNotificationOutboxEvent(client, {
-      wardId,
-      aggregateType: 'meeting',
-      aggregateId: meetingId,
-      eventType: 'MEETING_UPDATED',
-      payload: {
-        meetingId,
-        meetingDate: existingMeeting.meeting_date,
-        meetingType: existingMeeting.meeting_type,
-        programItemCount: programItems.length
-      }
-    });
-
     await client.query('COMMIT');
-    enqueueNotificationOutboxEvent(enqueueOutboxNotificationJob, wardId, eventOutboxId);
 
     return NextResponse.json({ success: true });
   } catch (error) {

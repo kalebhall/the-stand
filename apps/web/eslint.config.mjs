@@ -40,6 +40,38 @@ export default tseslint.config(
     }
   },
   {
+    files: ['src/conducting/**/*.{ts,tsx}'],
+    plugins: {
+      import: importPlugin
+    },
+    settings: {
+      'import/resolver': {
+        typescript: true
+      }
+    },
+    rules: {
+      'import/no-restricted-paths': ['error', {
+        basePath: new URL('.', import.meta.url).pathname,
+        zones: [
+          ...[
+            'document-designer',
+            'callings',
+            'announcements',
+            'notifications',
+            'imports',
+            'reports',
+            'leadership',
+            'church-actions'
+          ].map((directory) => ({
+            target: './src/conducting',
+            from: `./src/${directory}`,
+            message: `Conducting Core must not import optional module code from src/${directory}.`
+          }))
+        ]
+      }]
+    }
+  },
+  {
     files: ['**/*.{ts,tsx}'],
     rules: {
       'no-console': ['warn', { allow: ['debug', 'info', 'warn', 'error'] }],
