@@ -56,9 +56,9 @@ flowchart LR
   A5 -->|15| A11
   A6 -->|15| A15
   A6 -->|15| A24
+  A6 -->|14| A28
   A5 -->|11| A16
   A5 -->|11| A20
-  A6 -->|11| A28
   A6 -->|8| A26
   A5 -->|7| A21
   A5 -->|6| A24
@@ -66,7 +66,6 @@ flowchart LR
   A6 -->|5| A30
   A6 -->|4| A11
   A15 -->|4| A8
-  A28 -->|4| A16
   A5 -->|3| A4
   A5 -->|3| A19
   A6 -->|3| A4
@@ -74,6 +73,7 @@ flowchart LR
   A6 -->|3| A21
   A26 -->|3| A14
   A28 -->|3| A8
+  A28 -->|3| A16
   A5 -->|2| A12
   A6 -->|2| A12
   A6 -->|2| A27
@@ -182,15 +182,15 @@ flowchart LR
 | `web:api` | `web:audit` | 30 |
 | `web:ui` | `web:ui` | 30 |
 | `web:api` | `web:lib` | 23 |
+| `web:platform` | `web:platform` | 17 |
 | `web:api` | `web:callings` | 15 |
 | `web:app` | `web:document-designer` | 15 |
 | `web:app` | `web:meetings` | 15 |
-| `web:platform` | `web:platform` | 15 |
+| `web:app` | `web:platform` | 14 |
 | `web:imports` | `web:imports` | 14 |
 | `web:meetings` | `web:meetings` | 12 |
 | `web:api` | `web:features` | 11 |
 | `web:api` | `web:imports` | 11 |
-| `web:app` | `web:platform` | 11 |
 | `web:app` | `web:notifications` | 8 |
 | `web:auth` | `web:auth` | 8 |
 | `web:leadership` | `web:leadership` | 8 |
@@ -206,7 +206,6 @@ flowchart LR
 | `web:features` | `web:features` | 4 |
 | `web:i18n` | `web:i18n` | 4 |
 | `web:lib` | `web:lib` | 4 |
-| `web:platform` | `web:features` | 4 |
 | `web:api` | `web:announcements` | 3 |
 | `web:api` | `web:i18n` | 3 |
 | `web:app` | `web:announcements` | 3 |
@@ -216,6 +215,7 @@ flowchart LR
 | `web:maintenance` | `web:maintenance` | 3 |
 | `web:notifications` | `web:db` | 3 |
 | `web:platform` | `web:auth` | 3 |
+| `web:platform` | `web:features` | 3 |
 | `package:shared` | `package:shared` | 2 |
 | `web:api` | `web:church-actions` | 2 |
 | `web:app` | `web:church-actions` | 2 |
@@ -531,7 +531,7 @@ flowchart LR
 | `apps/web/app/callings/standard/page.tsx` | `web:app` | 4 | 2 |
 | `apps/web/app/dashboard/error.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/dashboard/loading.tsx` | `web:app` | 0 | 0 |
-| `apps/web/app/dashboard/page.tsx` | `web:app` | 7 | 2 |
+| `apps/web/app/dashboard/page.tsx` | `web:app` | 8 | 2 |
 | `apps/web/app/global-error.tsx` | `web:app` | 1 | 1 |
 | `apps/web/app/health/route.ts` | `web:app` | 1 | 1 |
 | `apps/web/app/health/route.vitest.ts` | `web:app` | 1 | 1 |
@@ -566,7 +566,7 @@ flowchart LR
 | `apps/web/app/meetings/meeting-form.tsx` | `web:app` | 11 | 3 |
 | `apps/web/app/meetings/meeting-form.vitest.tsx` | `web:app` | 1 | 4 |
 | `apps/web/app/meetings/new/page.tsx` | `web:app` | 3 | 1 |
-| `apps/web/app/meetings/page.tsx` | `web:app` | 8 | 3 |
+| `apps/web/app/meetings/page.tsx` | `web:app` | 9 | 3 |
 | `apps/web/app/members/members-manager-client.tsx` | `web:app` | 3 | 2 |
 | `apps/web/app/members/page.tsx` | `web:app` | 7 | 2 |
 | `apps/web/app/membership-ordinances/page.tsx` | `web:app` | 9 | 2 |
@@ -630,7 +630,7 @@ flowchart LR
 | `apps/web/app/settings/users/loading.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/settings/users/page.tsx` | `web:app` | 3 | 2 |
 | `apps/web/app/settings/users/ward-users-manager.tsx` | `web:app` | 2 | 1 |
-| `apps/web/app/speakers/page.tsx` | `web:app` | 6 | 1 |
+| `apps/web/app/speakers/page.tsx` | `web:app` | 7 | 1 |
 | `apps/web/app/speakers/speaker-lifecycle-workspace.tsx` | `web:app` | 1 | 1 |
 | `apps/web/app/stand/[meetingId]/offline/offline-stand-page.tsx` | `web:app` | 2 | 4 |
 | `apps/web/app/stand/[meetingId]/offline/offline-stand-page.vitest.tsx` | `web:app` | 1 | 4 |
@@ -925,11 +925,11 @@ flowchart LR
 | `apps/web/src/offline/service-worker.vitest.ts` | `web:offline` | 0 | 3 |
 | `apps/web/src/offline/storage.ts` | `web:offline` | 0 | 0 |
 | `apps/web/src/offline/storage.vitest.ts` | `web:offline` | 1 | 1 |
-| `apps/web/src/platform/audit/index.ts` | `web:platform` | 3 | 0 |
+| `apps/web/src/platform/audit/index.ts` | `web:platform` | 4 | 0 |
 | `apps/web/src/platform/auth/session.ts` | `web:platform` | 3 | 1 |
-| `apps/web/src/platform/db/context.ts` | `web:platform` | 3 | 0 |
+| `apps/web/src/platform/db/context.ts` | `web:platform` | 4 | 0 |
 | `apps/web/src/platform/errors.ts` | `web:platform` | 0 | 0 |
-| `apps/web/src/platform/features/flags.ts` | `web:platform` | 5 | 0 |
+| `apps/web/src/platform/features/flags.ts` | `web:platform` | 4 | 0 |
 | `apps/web/src/platform/offline/lifecycle.ts` | `web:platform` | 2 | 0 |
 | `apps/web/src/platform/permissions/index.ts` | `web:platform` | 2 | 0 |
 | `apps/web/src/platform/platform-facades.vitest.ts` | `web:platform` | 8 | 1 |

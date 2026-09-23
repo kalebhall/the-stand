@@ -6,7 +6,8 @@ import { cn } from '@/lib/utils';
 import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/platform/auth/session';
 import { canManageMeetings, canViewCallings, canViewMeetings, hasRole } from '@/src/platform/permissions';
 import { pool } from '@/src/db/client';
-import { getWardFeatureFlags } from '@/src/platform/features/flags';
+import { createWardContext } from '@/src/platform/tenancy/context';
+import { getContextFeatureFlags } from '@/src/platform/features/flags';
 import { setDbContext } from '@/src/platform/db/context';
 
 function DashboardCard({
@@ -43,8 +44,9 @@ export default async function DashboardPage() {
   const t = await getTranslations('dashboard');
   enforcePasswordRotation(session);
 
-  const wardSession = session.activeWardId ? { roles: session.user.roles, activeWardId: session.activeWardId } : null;
-  const featureFlags = session.activeWardId ? await getWardFeatureFlags(session.activeWardId, session.user.id) : null;
+  const wardContext = session.activeWardId ? createWardContext(session, session.activeWardId) : null;
+  const wardSession = wardContext ? { roles: session.user.roles, activeWardId: wardContext.wardId } : null;
+  const featureFlags = wardContext ? await getContextFeatureFlags(wardContext, wardContext.wardId) : null;
   const canAccessMeetings = wardSession ? canViewMeetings(wardSession, session.activeWardId!) : false;
   const canAccessCallings = wardSession ? canViewCallings(wardSession, session.activeWardId!) : false;
   const canAccessTechnology = wardSession ? canManageMeetings(wardSession, session.activeWardId!) : false;
@@ -72,12 +74,12 @@ export default async function DashboardPage() {
   let portalStatusValue = 'Not configured';
   let portalStatusDetail = 'No public portal token has been created yet.';
 
-  if (session.activeWardId && canAccessCallings) {
+  if (session.activeWardId && wardContext && canAccessCallings) {
     const client = await pool.connect();
 
     try {
       await client.query('BEGIN');
-      await setDbContext(client, { userId: session.user.id, wardId: session.activeWardId });
+      await setDbContext(client, wardContext);
 
       const result = await client.query(
         `SELECT COUNT(*)::int AS count

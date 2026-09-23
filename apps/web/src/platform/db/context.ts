@@ -1,10 +1,10 @@
-import { setDbContext as setExistingDbContext, type DbContext } from '@/src/db/context';
+import { setDbContext as setExistingDbContext } from '@/src/db/context';
 import { assertWardAccess, type WardContext } from '@/src/platform/tenancy/context';
 
-export type { DbContext };
-export { requireWardContext } from '@/src/db/context';
+export type { DbContext } from '@/src/db/context';
+export { requireWardContext } from '@/src/platform/tenancy/context';
 
-export async function setDbContext(client: Parameters<typeof setExistingDbContext>[0], context: DbContext): Promise<void> {
+export async function setDbContext(client: Parameters<typeof setExistingDbContext>[0], context: WardContext): Promise<void> {
   await setExistingDbContext(client, context);
 }
 

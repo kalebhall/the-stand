@@ -22,10 +22,10 @@ export class PlatformError extends Error {
   }
 }
 
-export function wardAccessDenied(wardId: string): PlatformError {
+export function wardAccessDenied(_wardId: string): PlatformError {
   return new PlatformError(
     PLATFORM_ERROR_CODES.WARD_ACCESS_DENIED,
-    `Access denied for ward ${wardId}.`,
+    'Access denied for the requested ward.',
     403
   );
 }

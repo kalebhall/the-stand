@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/platform/auth/session';
 import { canManageMeetings, canViewMeetings } from '@/src/platform/permissions';
 import { pool } from '@/src/db/client';
+import { createWardContext } from '@/src/platform/tenancy/context';
 import { setDbContext } from '@/src/platform/db/context';
 import { formatMeetingDateForDisplay } from '@/src/meetings/date';
 
@@ -42,12 +43,12 @@ export default async function MeetingsPage() {
     redirect('/dashboard');
   }
   const wardId = session.activeWardId;
-
+  const wardContext = createWardContext(session, wardId);
   const client = await pool.connect();
 
   try {
     await client.query('BEGIN');
-    await setDbContext(client, { userId: session.user.id, wardId: session.activeWardId });
+    await setDbContext(client, wardContext);
 
     const meetingsResult = await client.query(
       'SELECT id, meeting_date, meeting_type, status FROM meeting WHERE ward_id = $1 ORDER BY meeting_date DESC',

@@ -1,6 +1,11 @@
 import { assertWardAccess, type WardContext } from '@/src/platform/tenancy/context';
 
-export * from '@/src/auth/roles';
+export {
+  canManageMeetings,
+  canViewCallings,
+  canViewMeetings,
+  hasRole
+} from '@/src/auth/roles';
 
 export type PermissionSubject = {
   roles?: string[];
