@@ -1,79 +1,64 @@
-# RELEASE_NOTES.md — The Stand v1.0.0 Release Candidate
+# The Stand v2.0.0
 
-Release date: 2026-02-12  
-Version: v1.0.0-rc
+Release status: review candidate
+Version: v2.0.0
 
-## Scope
+## Summary
 
-This release candidate closes Phase 13 objectives from `docs/PLANS.md`:
+v2.0.0 is a clean-start release for the single-user deployment. The database may be recreated from the new baseline; existing v1 database data is not migrated automatically.
 
-- release notes generated
-- schema frozen for 1.0.0
-- full regression command set run (`lint`, `typecheck`, `test`, `build`)
-- deployment and hardening docs re-verified for a clean Ubuntu deploy path
-- bootstrap behavior re-validated at documentation level (Option 1 requirements)
+## Included
 
-## Highlights
+- Explicit ward-scoped PostgreSQL RLS policies for the P0 protected tables.
+- Active user/ward assignment validation inside RLS policy checks.
+- Redis-backed, hashed, atomically expiring rate limiting.
+- Cross-ward and public-token isolation tests.
+- Fresh database baseline: `apps/web/drizzle/0000_v2_baseline.sql`.
+- Historical v1 migrations archived under `apps/web/drizzle/archive/v1/` and excluded from the migration runner.
+- Migration ledger now uses fully qualified `public._migrations` references so the baseline's dump search path cannot break migration recording.
+- Application/package version set to `2.0.0`.
 
-- Ward-scoped architecture with defense in depth remains enforced by design requirements (API permission checks + PostgreSQL RLS).
-- Public program endpoints remain token-driven and do not accept `ward_id`.
-- Support Admin bootstrap policy remains Option 1: random password (>=24 chars), printed once to logs, `must_change_password=true`.
-- Audit logging remains mandatory for admin/support actions.
+## Database reset contract
 
-## Schema Freeze
+This release intentionally does not provide an in-place v1-to-v2 migration.
 
-Schema is frozen for this release candidate at migration:
-
-- `apps/web/drizzle/0008_phase10_membership_import.sql`
-
-No new migrations were added as part of this Phase 13 release-candidate pass.
-
-## Deployment Notes
-
-`docs/INSTALL.md` was aligned with the current monorepo workspace scripts:
-
-- build command uses `npm --workspace @the-stand/web run build`
-- migration command uses `npm --workspace @the-stand/web run db:migrate`
-- systemd startup command uses `npm --workspace @the-stand/web run start`
-- update path includes migration execution before rebuild/restart
-
-`docs/HARDENING.md` was reviewed and required no changes.
-
-## Regression Status
-
-The following repository checks were executed for this candidate:
-
-- `npm run lint`
-- `npm run typecheck`
-- `npm run test`
-- `npm run build`
-
-All passed in the release-candidate validation run.
-
-## Manual Steps to Cut v1.0.0
-
-Codex cannot create Git tags directly in this workflow; run these commands manually from a clean main branch checkout:
+For a new installation or reset:
 
 ```bash
-git fetch origin
-git checkout main
-git pull --ff-only
-
-git tag -a v1.0.0 -m "The Stand v1.0.0"
-git push origin v1.0.0
+npm install
+npm --workspace @the-stand/web run db:migrate
+npm --workspace @the-stand/web run build
 ```
 
-Optional verification:
+The migration runner applies exactly one migration and records:
 
-```bash
-git show v1.0.0 --no-patch
+```text
+0000_v2_baseline.sql
 ```
 
-## Post-Tag Smoke Checklist
+Before resetting production:
 
-- Fresh Ubuntu deploy completes using `docs/INSTALL.md`
-- `/health` returns `{ "status": "ok", "db": "connected" }`
-- Support Admin bootstrap password appears once in logs and forced rotation works
-- Ward provisioning succeeds
-- Meeting can be created, published, and viewed in At-the-Stand mode
-- Public portal routes only published snapshots
+1. Create and verify a backup.
+2. Stop web and worker services.
+3. Recreate the application database.
+4. Run the v2 baseline migration.
+5. Bootstrap the support administrator.
+6. Build and start the application.
+7. Verify `/health`, login, ward access, meeting creation, publication, and public read-only routes.
+
+Do not run the reset against production until the release PR is approved and the release tag has been created.
+
+## Verification evidence
+
+Required gates for this release:
+
+- focused live P0 RLS tests against a fresh PostgreSQL database;
+- full unit/component test suite;
+- typecheck;
+- owning-workspace lint;
+- production build;
+- dependency graph check;
+- migration idempotence check;
+- restore smoke test against a v2 backup.
+
+A fresh database is a separate gate from an upgrade of an existing v1 database. v1 upgrade compatibility is intentionally out of scope for v2.0.0.

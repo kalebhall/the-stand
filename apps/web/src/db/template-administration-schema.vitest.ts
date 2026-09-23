@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-const read = (name: string) => readFile(path.resolve(import.meta.dirname, `../../drizzle/${name}`), 'utf8').then((sql) => sql.toLowerCase());
+const read = (name: string) => readFile(path.resolve(import.meta.dirname, `../../drizzle/archive/v1/${name}`), 'utf8').then((sql) => sql.toLowerCase());
 describe('Milestone 9 migrations', () => {
   it('defines explicit stake tenancy and guarded RLS', async () => {
     const sql = await read('0079_stake_template_administration.sql');
