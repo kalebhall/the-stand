@@ -66,7 +66,7 @@ await client.connect();
 try {
   // Create migrations tracking table if it doesn't exist
   await client.query(`
-    CREATE TABLE IF NOT EXISTS _migrations (
+    CREATE TABLE IF NOT EXISTS public._migrations (
       id SERIAL PRIMARY KEY,
       name TEXT UNIQUE NOT NULL,
       applied_at TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -74,7 +74,7 @@ try {
   `);
 
   // Get already-applied migrations
-  const { rows: applied } = await client.query('SELECT name FROM _migrations ORDER BY name');
+  const { rows: applied } = await client.query('SELECT name FROM public._migrations ORDER BY name');
   const appliedSet = new Set(applied.map((r) => r.name));
 
   // Get migration files sorted alphabetically
@@ -91,7 +91,7 @@ try {
     await client.query('BEGIN');
     try {
       await client.query(sql);
-      await client.query('INSERT INTO _migrations (name) VALUES ($1)', [file]);
+      await client.query('INSERT INTO public._migrations (name) VALUES ($1)', [file]);
       await client.query('COMMIT');
       console.log(`  Applied successfully.`);
       count++;

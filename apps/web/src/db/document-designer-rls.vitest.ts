@@ -28,6 +28,7 @@ DECLARE
   ward_b UUID;
   meeting_a UUID;
   user_a UUID;
+  role_id UUID;
   visible_count INTEGER;
   hidden_count INTEGER;
 BEGIN
@@ -35,8 +36,10 @@ BEGIN
   INSERT INTO ward (stake_id, name, unit_number) VALUES (stake_id, 'Designer Ward A', 'A') RETURNING id INTO ward_a;
   INSERT INTO ward (stake_id, name, unit_number) VALUES (stake_id, 'Designer Ward B', 'B') RETURNING id INTO ward_b;
   INSERT INTO user_account (email) VALUES ('designer@example.test') RETURNING id INTO user_a;
+  INSERT INTO role (name, scope) VALUES ('STAND_ADMIN', 'WARD') RETURNING id INTO role_id;
   PERFORM set_config('app.user_id', user_a::text, true);
   PERFORM set_config('app.ward_id', ward_a::text, true);
+  INSERT INTO ward_user_role (ward_id, user_id, role_id) VALUES (ward_a, user_a, role_id);
   INSERT INTO meeting (ward_id, meeting_date, meeting_type) VALUES (ward_a, '2026-09-20', 'SACRAMENT') RETURNING id INTO meeting_a;
 
   INSERT INTO meeting_document (ward_id, meeting_id, document_type, schema_version, layout_json, theme_json, updated_by_user_id)

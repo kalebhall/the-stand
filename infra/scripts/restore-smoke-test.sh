@@ -10,7 +10,7 @@ if [ "$#" -ne 1 ]; then
 fi
 
 BACKUP="$1"
-EXPECTED_MIGRATION="${EXPECTED_MIGRATION:-0050_public_cover_metadata.sql}"
+EXPECTED_MIGRATION="${EXPECTED_MIGRATION:-0000_v2_baseline.sql}"
 if [ ! -f "$BACKUP" ]; then
   printf 'Backup file not found: %s\n' "$BACKUP" >&2
   exit 1

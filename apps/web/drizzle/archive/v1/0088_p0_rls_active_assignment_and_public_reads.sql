@@ -7,7 +7,7 @@ LANGUAGE sql
 STABLE
 SECURITY DEFINER
 SET search_path = pg_catalog, public
-SET row_security = off
+SET row_security = on
 AS $$
   SELECT EXISTS (
     SELECT 1

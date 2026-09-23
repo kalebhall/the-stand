@@ -3,8 +3,8 @@ import path from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-const migrationPath = path.resolve(import.meta.dirname, '../../drizzle/0078_publication_history_and_active_pointer.sql');
-const priorMigrationPath = path.resolve(import.meta.dirname, '../../drizzle/0077_published_print_input_immutability.sql');
+const migrationPath = path.resolve(import.meta.dirname, '../../drizzle/archive/v1/0078_publication_history_and_active_pointer.sql');
+const priorMigrationPath = path.resolve(import.meta.dirname, '../../drizzle/archive/v1/0077_published_print_input_immutability.sql');
 
 async function readSql(filePath: string): Promise<string> {
   return (await readFile(filePath, 'utf8')).toLowerCase();
