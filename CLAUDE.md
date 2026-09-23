@@ -176,6 +176,15 @@ API routes live under `app/api/` and follow this structure:
 
 ## Architecture Notes
 
+Phase 0 modular architecture documents:
+
+- [System map](docs/architecture/system-map.md)
+- [Domain boundaries](docs/architecture/domain-boundaries.md)
+- [Module contracts](docs/architecture/module-contracts.md)
+- [Existing source file map](docs/architecture/existing-file-map.md)
+
+These documents define the intended Platform, Conducting Core, Optional Module, and Adapter boundaries. They do not authorize runtime directory moves or behavior changes by themselves.
+
 ### Server-First Approach
 
 The app heavily relies on **React Server Components** (RSC). Client-side state is minimal. Most data flows through:

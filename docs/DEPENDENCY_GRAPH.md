@@ -332,6 +332,7 @@ flowchart LR
 | `web:config` | `@testing-library/jest-dom` | 1 |
 | `web:config` | `child_process` | 1 |
 | `web:config` | `drizzle-kit` | 1 |
+| `web:config` | `eslint-plugin-import` | 1 |
 | `web:config` | `fs` | 1 |
 | `web:config` | `next` | 1 |
 | `web:config` | `next-intl` | 1 |
@@ -674,7 +675,7 @@ flowchart LR
 | `apps/web/e2e/accessibility.spec.ts` | `web:config` | 0 | 1 |
 | `apps/web/e2e/print-preview.spec.ts` | `web:config` | 1 | 1 |
 | `apps/web/e2e/program-template-boundaries.spec.ts` | `web:config` | 0 | 1 |
-| `apps/web/eslint.config.mjs` | `web:config` | 0 | 1 |
+| `apps/web/eslint.config.mjs` | `web:config` | 0 | 2 |
 | `apps/web/instrumentation-client.ts` | `web:config` | 1 | 0 |
 | `apps/web/instrumentation.ts` | `web:config` | 1 | 0 |
 | `apps/web/lib/utils.ts` | `web:ui` | 0 | 2 |
