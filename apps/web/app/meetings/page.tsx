@@ -4,10 +4,10 @@ import { redirect } from 'next/navigation';
 
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth/guards';
-import { canManageMeetings, canViewMeetings } from '@/src/auth/roles';
+import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/platform/auth/session';
+import { canManageMeetings, canViewMeetings } from '@/src/platform/permissions';
 import { pool } from '@/src/db/client';
-import { setDbContext } from '@/src/db/context';
+import { setDbContext } from '@/src/platform/db/context';
 import { formatMeetingDateForDisplay } from '@/src/meetings/date';
 
 import { DeleteMeetingButton } from './delete-meeting-button';

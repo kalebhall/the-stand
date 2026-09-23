@@ -37,17 +37,18 @@ flowchart LR
   A25["web:notes<br/>1 files"]
   A26["web:notifications<br/>36 files"]
   A27["web:offline<br/>3 files"]
-  A28["web:reports<br/>3 files"]
-  A29["web:stand<br/>10 files"]
-  A30["web:tooling<br/>2 files"]
-  A31["web:types<br/>2 files"]
-  A32["web:ui<br/>33 files"]
-  A33["web:version.mjs<br/>1 files"]
+  A28["web:platform<br/>9 files"]
+  A29["web:reports<br/>3 files"]
+  A30["web:stand<br/>10 files"]
+  A31["web:tooling<br/>2 files"]
+  A32["web:types<br/>2 files"]
+  A33["web:ui<br/>33 files"]
+  A34["web:version.mjs<br/>1 files"]
   A5 -->|164| A8
   A5 -->|145| A14
-  A6 -->|123| A32
-  A6 -->|100| A8
-  A6 -->|59| A14
+  A6 -->|123| A33
+  A6 -->|94| A8
+  A6 -->|56| A14
   A5 -->|53| A15
   A5 -->|46| A26
   A5 -->|30| A7
@@ -57,34 +58,39 @@ flowchart LR
   A6 -->|15| A24
   A5 -->|11| A16
   A5 -->|11| A20
+  A6 -->|11| A28
   A6 -->|8| A26
   A5 -->|7| A21
-  A6 -->|7| A16
   A5 -->|6| A24
-  A6 -->|5| A29
+  A6 -->|5| A16
+  A6 -->|5| A30
   A6 -->|4| A11
   A15 -->|4| A8
+  A28 -->|4| A16
   A5 -->|3| A4
   A5 -->|3| A19
   A6 -->|3| A4
   A6 -->|3| A19
   A6 -->|3| A21
   A26 -->|3| A14
+  A28 -->|3| A8
   A5 -->|2| A12
   A6 -->|2| A12
   A6 -->|2| A27
-  A6 -->|2| A28
+  A6 -->|2| A29
   A8 -->|2| A14
   A10 -->|2| A14
   A13 -->|2| A22
   A14 -->|2| A8
   A19 -->|2| A24
   A21 -->|2| A26
-  A32 -->|2| A28
+  A28 -->|2| A7
+  A28 -->|2| A14
+  A33 -->|2| A29
   A2 -->|1| A18
   A5 -->|1| A10
   A5 -->|1| A25
-  A5 -->|1| A29
+  A5 -->|1| A30
   A6 -->|1| A10
   A6 -->|1| A20
   A6 -->|1| A22
@@ -98,7 +104,7 @@ flowchart LR
   A15 -->|1| A14
   A15 -->|1| A24
   A16 -->|1| A14
-  A18 -->|1| A33
+  A18 -->|1| A34
   A19 -->|1| A8
   A19 -->|1| A14
   A20 -->|1| A14
@@ -106,16 +112,17 @@ flowchart LR
   A24 -->|1| A4
   A26 -->|1| A11
   A26 -->|1| A25
-  A29 -->|1| A24
-  A32 -->|1| A8
-  A32 -->|1| A12
-  A32 -->|1| A16
-  A32 -->|1| A20
-  A32 -->|1| A22
-  A32 -->|1| A24
-  A32 -->|1| A25
-  A32 -->|1| A27
-  A32 -->|1| A29
+  A28 -->|1| A27
+  A30 -->|1| A24
+  A33 -->|1| A8
+  A33 -->|1| A12
+  A33 -->|1| A16
+  A33 -->|1| A20
+  A33 -->|1| A22
+  A33 -->|1| A24
+  A33 -->|1| A25
+  A33 -->|1| A27
+  A33 -->|1| A30
 ```
 
 ## Area inventory
@@ -149,6 +156,7 @@ flowchart LR
 | `web:notes` | 1 |
 | `web:notifications` | 36 |
 | `web:offline` | 3 |
+| `web:platform` | 9 |
 | `web:reports` | 3 |
 | `web:stand` | 10 |
 | `web:tooling` | 2 |
@@ -164,9 +172,9 @@ flowchart LR
 | `web:api` | `web:auth` | 164 |
 | `web:api` | `web:db` | 145 |
 | `web:app` | `web:ui` | 123 |
-| `web:app` | `web:auth` | 100 |
+| `web:app` | `web:auth` | 94 |
 | `web:app` | `web:app` | 69 |
-| `web:app` | `web:db` | 59 |
+| `web:app` | `web:db` | 56 |
 | `web:api` | `web:document-designer` | 53 |
 | `web:notifications` | `web:notifications` | 53 |
 | `web:api` | `web:notifications` | 46 |
@@ -177,17 +185,19 @@ flowchart LR
 | `web:api` | `web:callings` | 15 |
 | `web:app` | `web:document-designer` | 15 |
 | `web:app` | `web:meetings` | 15 |
+| `web:platform` | `web:platform` | 15 |
 | `web:imports` | `web:imports` | 14 |
 | `web:meetings` | `web:meetings` | 12 |
 | `web:api` | `web:features` | 11 |
 | `web:api` | `web:imports` | 11 |
+| `web:app` | `web:platform` | 11 |
 | `web:app` | `web:notifications` | 8 |
 | `web:auth` | `web:auth` | 8 |
 | `web:leadership` | `web:leadership` | 8 |
 | `web:stand` | `web:stand` | 8 |
 | `web:api` | `web:leadership` | 7 |
-| `web:app` | `web:features` | 7 |
 | `web:api` | `web:meetings` | 6 |
+| `web:app` | `web:features` | 5 |
 | `web:app` | `web:stand` | 5 |
 | `web:app` | `web:callings` | 4 |
 | `web:callings` | `web:callings` | 4 |
@@ -196,6 +206,7 @@ flowchart LR
 | `web:features` | `web:features` | 4 |
 | `web:i18n` | `web:i18n` | 4 |
 | `web:lib` | `web:lib` | 4 |
+| `web:platform` | `web:features` | 4 |
 | `web:api` | `web:announcements` | 3 |
 | `web:api` | `web:i18n` | 3 |
 | `web:app` | `web:announcements` | 3 |
@@ -204,6 +215,7 @@ flowchart LR
 | `web:calendar` | `web:calendar` | 3 |
 | `web:maintenance` | `web:maintenance` | 3 |
 | `web:notifications` | `web:db` | 3 |
+| `web:platform` | `web:auth` | 3 |
 | `package:shared` | `package:shared` | 2 |
 | `web:api` | `web:church-actions` | 2 |
 | `web:app` | `web:church-actions` | 2 |
@@ -216,6 +228,8 @@ flowchart LR
 | `web:db` | `web:auth` | 2 |
 | `web:i18n` | `web:meetings` | 2 |
 | `web:leadership` | `web:notifications` | 2 |
+| `web:platform` | `web:audit` | 2 |
+| `web:platform` | `web:db` | 2 |
 | `web:ui` | `web:reports` | 2 |
 | `root:other` | `web:health.mjs` | 1 |
 | `web:announcements` | `web:announcements` | 1 |
@@ -245,6 +259,7 @@ flowchart LR
 | `web:notifications` | `web:callings` | 1 |
 | `web:notifications` | `web:notes` | 1 |
 | `web:offline` | `web:offline` | 1 |
+| `web:platform` | `web:offline` | 1 |
 | `web:reports` | `web:reports` | 1 |
 | `web:stand` | `web:meetings` | 1 |
 | `web:ui` | `web:auth` | 1 |
@@ -361,6 +376,8 @@ flowchart LR
 | `web:maintenance` | `vitest` | 1 |
 | `web:meetings` | `qrcode` | 1 |
 | `web:notifications` | `nodemailer` | 1 |
+| `web:platform` | `next-auth` | 1 |
+| `web:platform` | `vitest` | 1 |
 | `web:reports` | `pg` | 1 |
 | `web:reports` | `vitest` | 1 |
 | `web:ui` | `class-variance-authority` | 1 |
@@ -908,6 +925,15 @@ flowchart LR
 | `apps/web/src/offline/service-worker.vitest.ts` | `web:offline` | 0 | 3 |
 | `apps/web/src/offline/storage.ts` | `web:offline` | 0 | 0 |
 | `apps/web/src/offline/storage.vitest.ts` | `web:offline` | 1 | 1 |
+| `apps/web/src/platform/audit/index.ts` | `web:platform` | 3 | 0 |
+| `apps/web/src/platform/auth/session.ts` | `web:platform` | 3 | 1 |
+| `apps/web/src/platform/db/context.ts` | `web:platform` | 3 | 0 |
+| `apps/web/src/platform/errors.ts` | `web:platform` | 0 | 0 |
+| `apps/web/src/platform/features/flags.ts` | `web:platform` | 5 | 0 |
+| `apps/web/src/platform/offline/lifecycle.ts` | `web:platform` | 2 | 0 |
+| `apps/web/src/platform/permissions/index.ts` | `web:platform` | 2 | 0 |
+| `apps/web/src/platform/platform-facades.vitest.ts` | `web:platform` | 8 | 1 |
+| `apps/web/src/platform/tenancy/context.ts` | `web:platform` | 1 | 0 |
 | `apps/web/src/reports/aggregations.ts` | `web:reports` | 0 | 1 |
 | `apps/web/src/reports/aggregations.vitest.ts` | `web:reports` | 1 | 1 |
 | `apps/web/src/reports/pages.ts` | `web:reports` | 0 | 0 |

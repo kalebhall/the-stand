@@ -7,13 +7,36 @@ export default tseslint.config(
   },
   ...tseslint.configs.recommended,
   {
+    files: ['src/platform/**/*.{ts,tsx}'],
     plugins: {
       import: importPlugin
     },
+    settings: {
+      'import/resolver': {
+        typescript: true
+      }
+    },
     rules: {
-      // Phase 0 scaffold. Add actual Core/Platform/Module zones in Phase 1.
-      // The rule stays disabled because the plugin schema rejects an empty zones array.
-      'import/no-restricted-paths': 'off'
+      'import/no-restricted-paths': ['error', {
+        basePath: new URL('.', import.meta.url).pathname,
+        zones: [
+          ...[
+            'meetings',
+            'callings',
+            'announcements',
+            'notifications',
+            'document-designer',
+            'imports',
+            'reports',
+            'leadership',
+            'church-actions'
+          ].map((directory) => ({
+            target: './src/platform',
+            from: `./src/${directory}`,
+            message: `Platform code must not import optional module code from src/${directory}.`
+          }))
+        ]
+      }]
     }
   },
   {

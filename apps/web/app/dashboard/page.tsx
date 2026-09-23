@@ -3,11 +3,11 @@ import Link from 'next/link';
 
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth/guards';
-import { canManageMeetings, canViewCallings, canViewMeetings, hasRole } from '@/src/auth/roles';
+import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/platform/auth/session';
+import { canManageMeetings, canViewCallings, canViewMeetings, hasRole } from '@/src/platform/permissions';
 import { pool } from '@/src/db/client';
-import { getWardFeatureFlags } from '@/src/features/flags';
-import { setDbContext } from '@/src/db/context';
+import { getWardFeatureFlags } from '@/src/platform/features/flags';
+import { setDbContext } from '@/src/platform/db/context';
 
 function DashboardCard({
   title,

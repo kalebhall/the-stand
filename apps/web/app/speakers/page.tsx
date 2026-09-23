@@ -1,10 +1,10 @@
 import { redirect } from 'next/navigation';
 
-import { requireAuthenticatedSession, enforcePasswordRotation } from '@/src/auth/guards';
-import { canManageMeetings } from '@/src/auth/roles';
+import { requireAuthenticatedSession, enforcePasswordRotation } from '@/src/platform/auth/session';
+import { canManageMeetings } from '@/src/platform/permissions';
 import { pool } from '@/src/db/client';
-import { setDbContext } from '@/src/db/context';
-import { isWardFeatureEnabled } from '@/src/features/flags';
+import { setDbContext } from '@/src/platform/db/context';
+import { isWardFeatureEnabled } from '@/src/platform/features/flags';
 import { SpeakerLifecycleWorkspace } from './speaker-lifecycle-workspace';
 
 export default async function SpeakersPage() {
