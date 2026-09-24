@@ -1,43 +1,15 @@
 import { getTranslations } from 'next-intl/server';
 import Link from 'next/link';
 
-import { buttonVariants } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/platform/auth/session';
 import { canManageMeetings, canViewCallings, canViewMeetings, hasRole } from '@/src/platform/permissions';
 import { pool } from '@/src/db/client';
 import { createWardContext } from '@/src/platform/tenancy/context';
-import { isWardModuleEnabled } from '@/src/modules/service';
+import { getWardModuleSettings } from '@/src/modules/service';
+import { createModuleEnablement } from '@/src/modules/enablement';
+import { getDashboardModuleVisibility } from '@/src/dashboard/visibility';
 import { setDbContext } from '@/src/platform/db/context';
-
-function DashboardCard({
-  title,
-  value,
-  detail,
-  actions
-}: {
-  title: string;
-  value: string;
-  detail: string;
-  actions?: { href: string; label: string }[];
-}) {
-  return (
-    <article className="section-panel rounded-lg border bg-card p-5 text-card-foreground shadow-sm">
-      <p className="text-sm font-medium text-muted-foreground">{title}</p>
-      <p className="mt-2 text-2xl font-semibold tracking-tight">{value}</p>
-      <p className="mt-2 text-sm text-muted-foreground">{detail}</p>
-      {actions?.length ? (
-        <div className="mt-4 flex flex-wrap gap-2">
-          {actions.map((action) => (
-            <Link key={action.href} href={action.href} className={cn(buttonVariants({ size: 'sm', variant: 'outline' }))}>
-              {action.label}
-            </Link>
-          ))}
-        </div>
-      ) : null}
-    </article>
-  );
-}
+import { DashboardGrid, type DashboardCardData } from '@/components/dashboard/dashboard-grid';
 
 export default async function DashboardPage() {
   const session = await requireAuthenticatedSession();
@@ -46,14 +18,26 @@ export default async function DashboardPage() {
 
   const wardContext = session.activeWardId ? createWardContext(session, session.activeWardId) : null;
   const wardSession = wardContext ? { roles: session.user.roles, activeWardId: wardContext.wardId } : null;
-  const bishopricEnabled = wardContext ? await isWardModuleEnabled(wardContext.wardId, session.user.id, 'bishopric') : false;
-  const leadershipEnabled = wardContext ? await isWardModuleEnabled(wardContext.wardId, session.user.id, 'leadership') : false;
-  const technologyEnabled = wardContext ? await isWardModuleEnabled(wardContext.wardId, session.user.id, 'technology-checklist') : false;
-  const canAccessMeetings = wardSession ? canViewMeetings(wardSession, session.activeWardId!) : false;
-  const canAccessCallings = wardSession ? canViewCallings(wardSession, session.activeWardId!) : false;
-  const canAccessTechnology = wardSession ? canManageMeetings(wardSession, session.activeWardId!) && technologyEnabled : false;
+  const moduleSettings = wardContext ? await getWardModuleSettings(wardContext.wardId, session.user.id) : [];
+  const moduleEnablement = createModuleEnablement(
+    wardContext
+      ? { [wardContext.wardId]: Object.fromEntries(moduleSettings.map((module) => [module.id, module.enabled])) }
+      : {}
+  );
+  const dashboardModules = getDashboardModuleVisibility(
+    wardContext?.wardId ?? '',
+    moduleEnablement,
+    wardSession ? canViewMeetings(wardSession, session.activeWardId!) : false,
+    wardSession ? canViewCallings(wardSession, session.activeWardId!) : false,
+    wardSession ? canManageMeetings(wardSession, session.activeWardId!) : false,
+    session.user.roles?.includes('SUPPORT_ADMIN') ?? false
+  );
+  const canAccessMeetings = dashboardModules.meetings;
+  const canAccessMembership = dashboardModules.membership;
+  const canAccessCallings = dashboardModules.callings;
+  const canAccessTechnology = dashboardModules.technology;
   const canAccessPortal = Boolean(session.activeWardId) && hasRole(session.user.roles, 'STAND_ADMIN');
-  const showSupportCards = session.user.roles?.includes('SUPPORT_ADMIN') ?? false;
+  const showSupportCards = dashboardModules.support;
   let setApartQueueCount = 'Unavailable';
   let membershipActionQueueCount = 'Unavailable';
   let actionInterviewQueueCount = 'Unavailable';
@@ -76,7 +60,7 @@ export default async function DashboardPage() {
   let portalStatusValue = 'Not configured';
   let portalStatusDetail = 'No public portal token has been created yet.';
 
-  if (session.activeWardId && wardContext && canAccessCallings) {
+  if (session.activeWardId && wardContext && (canAccessMeetings || canAccessMembership || canAccessCallings || dashboardModules.notifications || dashboardModules.imports)) {
     const client = await pool.connect();
 
     try {
@@ -248,6 +232,35 @@ export default async function DashboardPage() {
     }
   }
 
+  const dashboardCards: DashboardCardData[] = [];
+  const addCard = (card: DashboardCardData): void => {
+    dashboardCards.push(card);
+  };
+
+  if (canAccessMeetings) {
+    addCard({ id: 'next-meeting', title: 'Next meeting', value: nextMeetingValue, detail: nextMeetingDetail, actions: nextMeetingActions });
+    addCard({ id: 'draft-count', title: t('draftCount'), value: draftCountValue, detail: draftCountDetail, actions: [{ href: '/meetings', label: t('viewMeetings') }] });
+  }
+  if (canAccessMembership) {
+    addCard({ id: 'membership-follow-up', title: t('membershipFollowUp'), value: membershipActionQueueCount, detail: t('announcedActions'), actions: [{ href: '/membership-ordinances?status=action_needed&queue=needs_attention', label: t('openQueue') }] });
+    addCard({ id: 'priesthood-preparation', title: t('priesthoodPreparation'), value: priesthoodPreparationCount, detail: t('priesthoodDetail'), actions: [{ href: '/membership-ordinances?action=PRIESTHOOD_ORDINATION&queue=needs_attention', label: t('reviewPreparation') }] });
+    addCard({ id: 'interview-follow-up', title: t('interviewFollowUp'), value: actionInterviewQueueCount, detail: t('interviewDetail'), actions: [{ href: '/membership-ordinances?followup=interview&queue=needs_attention', label: 'Review interviews' }] });
+    addCard({ id: 'overdue-actions', title: t('overdueActions'), value: overdueActionCount, detail: t('overdueDetail'), actions: [{ href: '/membership-ordinances?followup=overdue&queue=needs_attention', label: 'Review overdue work' }] });
+    addCard({ id: 'lcr-follow-up', title: t('lcrFollowUp'), value: lcrFollowUpCount, detail: t('lcrDetail'), actions: [{ href: '/membership-ordinances?followup=lcr&queue=needs_attention', label: 'Review LCR work' }] });
+    addCard({ id: 'official-handoff', title: t('officialHandoff'), value: officialRecordHandoffCount, detail: t('officialHandoffDetail'), actions: [{ href: '/membership-ordinances?followup=official-record&queue=needs_attention', label: 'Review handoffs' }] });
+  }
+  if (dashboardModules.bishopric) addCard({ id: 'leadership-due', title: t('leadershipDue'), value: bishopricDueActionCount, detail: t('leadershipDetail'), actions: [{ href: '/bishopric', label: 'Open leadership workspace' }] });
+  if (dashboardModules.leadership) addCard({ id: 'scheduled-interviews', title: t('scheduledInterviews'), value: scheduledInterviewCount, detail: t('scheduledInterviewDetail'), actions: [{ href: '/interviews', label: 'Open interview schedule' }] });
+  if (canAccessCallings) addCard({ id: 'set-apart-queue', title: t('setApartQueue'), value: setApartQueueCount, detail: t('setApartDetail'), actions: [{ href: '/callings', label: 'Open callings queue' }] });
+  if (dashboardModules.notifications) addCard({ id: 'notification-health', title: t('notificationHealth'), value: notificationHealthValue, detail: notificationHealthDetail, actions: [{ href: '/notifications/diagnostics', label: 'Open diagnostics' }] });
+  if (dashboardModules.imports) addCard({ id: 'last-import', title: t('lastImport'), value: importSummaryValue, detail: importSummaryDetail, actions: [{ href: '/imports/members', label: 'Import members' }, { href: '/imports/callings', label: 'Import callings' }] });
+  if (canAccessTechnology) addCard({ id: 'technology-readiness', title: t('technologyReadiness'), value: technologyChecklistCount, detail: t('technologyDetail'), actions: [{ href: '/technology', label: 'Open technology checklist' }] });
+  if (canAccessPortal) addCard({ id: 'public-portal', title: t('publicPortal'), value: portalStatusValue, detail: portalStatusDetail, actions: [{ href: '/settings/public-portal', label: 'Manage portal' }] });
+  if (showSupportCards) {
+    addCard({ id: 'support-user-administration', title: 'Support: User administration', value: 'Global user controls', detail: 'Manage all user accounts, review role coverage, and activate or deactivate access across the system.', actions: [{ href: '/support/users', label: 'Open user administration' }] });
+    addCard({ id: 'support-provisioning', title: 'Support: Stake & ward provisioning', value: 'Provisioning controls', detail: 'Create new stakes and wards so ward administrators can be assigned and onboarded.', actions: [{ href: '/support/provisioning', label: 'Open provisioning' }] });
+  }
+
   return (
     <main className="mx-auto w-full max-w-6xl space-y-6 p-4 sm:p-6">
       <section className="flex flex-wrap items-start justify-between gap-3">
@@ -260,158 +273,7 @@ export default async function DashboardPage() {
         </Link>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {canAccessMeetings ? (
-          <DashboardCard title="Next meeting" value={nextMeetingValue} detail={nextMeetingDetail} actions={nextMeetingActions} />
-        ) : null}
-
-        {canAccessMeetings ? (
-          <DashboardCard
-            title={t('draftCount')}
-            value={draftCountValue}
-            detail={draftCountDetail}
-            actions={[{ href: '/meetings', label: t('viewMeetings') }]}
-          />
-        ) : null}
-
-        {canAccessMeetings ? (
-          <DashboardCard
-            title={t('membershipFollowUp')}
-            value={membershipActionQueueCount}
-            detail={t('announcedActions')}
-            actions={[{ href: '/membership-ordinances?status=action_needed&queue=needs_attention', label: t('openQueue') }]}
-          />
-        ) : null}
-
-        {canAccessMeetings ? (
-          <DashboardCard
-            title={t('priesthoodPreparation')}
-            value={priesthoodPreparationCount}
-            detail={t('priesthoodDetail')}
-            actions={[{ href: '/membership-ordinances?action=PRIESTHOOD_ORDINATION&queue=needs_attention', label: t('reviewPreparation') }]}
-          />
-        ) : null}
-
-        {canAccessMeetings ? (
-          <DashboardCard
-            title={t('interviewFollowUp')}
-            value={actionInterviewQueueCount}
-            detail={t('interviewDetail')}
-            actions={[{ href: '/membership-ordinances?followup=interview&queue=needs_attention', label: 'Review interviews' }]}
-          />
-        ) : null}
-
-        {canAccessMeetings ? (
-          <DashboardCard
-            title={t('overdueActions')}
-            value={overdueActionCount}
-            detail={t('overdueDetail')}
-            actions={[{ href: '/membership-ordinances?followup=overdue&queue=needs_attention', label: 'Review overdue work' }]}
-          />
-        ) : null}
-
-        {canAccessMeetings && bishopricEnabled ? (
-          <DashboardCard
-            title={t('leadershipDue')}
-            value={bishopricDueActionCount}
-            detail={t('leadershipDetail')}
-            actions={[{ href: '/bishopric', label: 'Open leadership workspace' }]}
-          />
-        ) : null}
-
-        {canAccessMeetings && leadershipEnabled ? (
-          <DashboardCard
-            title={t('scheduledInterviews')}
-            value={scheduledInterviewCount}
-            detail={t('scheduledInterviewDetail')}
-            actions={[{ href: '/interviews', label: 'Open interview schedule' }]}
-          />
-        ) : null}
-
-        {canAccessMeetings ? (
-          <DashboardCard
-            title={t('lcrFollowUp')}
-            value={lcrFollowUpCount}
-            detail={t('lcrDetail')}
-            actions={[{ href: '/membership-ordinances?followup=lcr&queue=needs_attention', label: 'Review LCR work' }]}
-          />
-        ) : null}
-
-        {canAccessMeetings ? (
-          <DashboardCard
-            title={t('officialHandoff')}
-            value={officialRecordHandoffCount}
-            detail={t('officialHandoffDetail')}
-            actions={[{ href: '/membership-ordinances?followup=official-record&queue=needs_attention', label: 'Review handoffs' }]}
-          />
-        ) : null}
-
-        {canAccessCallings ? (
-          <DashboardCard
-            title={t('setApartQueue')}
-            value={setApartQueueCount}
-            detail={t('setApartDetail')}
-            actions={[{ href: '/callings', label: 'Open callings queue' }]}
-          />
-        ) : null}
-
-        {canAccessCallings ? (
-          <DashboardCard
-            title={t('notificationHealth')}
-            value={notificationHealthValue}
-            detail={notificationHealthDetail}
-            actions={[{ href: '/notifications/diagnostics', label: 'Open diagnostics' }]}
-          />
-        ) : null}
-
-        {canAccessCallings ? (
-          <DashboardCard
-            title={t('lastImport')}
-            value={importSummaryValue}
-            detail={importSummaryDetail}
-            actions={[
-              { href: '/imports/members', label: 'Import members' },
-              { href: '/imports/callings', label: 'Import callings' }
-            ]}
-          />
-        ) : null}
-
-        {canAccessTechnology ? (
-          <DashboardCard
-            title={t('technologyReadiness')}
-            value={technologyChecklistCount}
-            detail={t('technologyDetail')}
-            actions={[{ href: '/technology', label: 'Open technology checklist' }]}
-          />
-        ) : null}
-
-        {canAccessPortal ? (
-          <DashboardCard
-            title={t('publicPortal')}
-            value={portalStatusValue}
-            detail={portalStatusDetail}
-            actions={[{ href: '/settings/public-portal', label: 'Manage portal' }]}
-          />
-        ) : null}
-
-        {showSupportCards ? (
-          <>
-            <DashboardCard
-              title="Support: User administration"
-              value="Global user controls"
-              detail="Manage all user accounts, review role coverage, and activate or deactivate access across the system."
-              actions={[{ href: '/support/users', label: 'Open user administration' }]}
-            />
-
-            <DashboardCard
-              title="Support: Stake & ward provisioning"
-              value="Provisioning controls"
-              detail="Create new stakes and wards so ward administrators can be assigned and onboarded."
-              actions={[{ href: '/support/provisioning', label: 'Open provisioning' }]}
-            />
-          </>
-        ) : null}
-      </section>
+      <DashboardGrid wardId={session.activeWardId} cards={dashboardCards} />
     </main>
   );
 }

@@ -9,7 +9,7 @@
     "start": "next start",
     "lint": "eslint app components lib src --max-warnings=0",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
+    "test": "node scripts/test-all.mjs",
     "test:module:technology": "vitest run src/modules/technology-checklist",
     "test:components": "vitest run --environment jsdom components/*.vitest.tsx",
     "db:migrate": "node scripts/migrate.mjs",

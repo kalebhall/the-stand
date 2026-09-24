@@ -7,7 +7,7 @@ import type { Session } from 'next-auth';
 
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { getNavigationItems } from '@/src/auth/navigation';
+import { getNavigationGroups, type AppNavGroup } from '@/src/auth/navigation';
 import { useConductingMode } from '@/components/conducting-mode-context';
 import { DeploymentWatcher } from '@/components/deployment-watcher';
 import { SiteLogo } from '@/components/site-logo';
@@ -16,11 +16,76 @@ import { AuthSessionRefresh } from '@/components/auth-session-refresh';
 import { createModuleEnablement } from '@/src/modules/enablement';
 import type { EffectiveModuleSetting } from '@/src/modules/service';
 
+const NAV_GROUP_STORAGE_PREFIX = 'the-stand:navigation-groups:';
+
+function NavigationGroups({
+  groups,
+  pathname,
+  expandedGroups,
+  onToggle,
+  onNavigate,
+  ariaLabel
+}: {
+  groups: AppNavGroup[];
+  pathname: string | null;
+  expandedGroups: Record<string, boolean>;
+  onToggle: (groupId: string) => void;
+  onNavigate?: () => void;
+  ariaLabel: string;
+}) {
+  return (
+    <nav className="space-y-3" aria-label={ariaLabel}>
+      {groups.map((group) => {
+        const hasActiveItem = group.items.some((item) => pathname === item.href || pathname?.startsWith(`${item.href}/`));
+        const isExpanded = hasActiveItem || (expandedGroups[group.id] ?? true);
+        return (
+          <section key={group.id} aria-labelledby={`${group.id}-navigation-heading`}>
+            <button
+              type="button"
+              className="flex w-full items-center justify-between px-2 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground hover:text-foreground"
+              aria-expanded={isExpanded}
+              aria-controls={`${group.id}-navigation-links`}
+              onClick={() => onToggle(group.id)}
+            >
+              <span id={`${group.id}-navigation-heading`}>{group.label}</span>
+              <span aria-hidden="true">{isExpanded ? '▾' : '▸'}</span>
+            </button>
+            {isExpanded ? (
+              <div id={`${group.id}-navigation-links`} className="mt-1 space-y-1.5">
+                {group.items.map((item) => {
+                  const isActive = pathname === item.href || pathname?.startsWith(`${item.href}/`);
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={onNavigate}
+                      className={cn(
+                        buttonVariants({ variant: isActive ? 'secondary' : 'ghost', size: 'sm' }),
+                        'w-full justify-start gap-2.5 px-3 py-2 text-sm font-medium',
+                        isActive
+                          ? 'border-l-2 border-primary bg-secondary font-semibold text-secondary-foreground'
+                          : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
+                      )}
+                    >
+                      {item.label}
+                    </Link>
+                  );
+                })}
+              </div>
+            ) : null}
+          </section>
+        );
+      })}
+    </nav>
+  );
+}
+
 export function AppShell({ session, children }: { session: Session | null; children: ReactNode }) {
   const pathname = usePathname();
   const { isConductingMode, toggleConductingMode } = useConductingMode();
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [moduleSettings, setModuleSettings] = useState<EffectiveModuleSetting[]>([]);
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
   const isDevelopmentSite = process.env.NEXT_PUBLIC_APP_ENV === 'development';
 
   useEffect(() => {
@@ -41,6 +106,40 @@ export function AppShell({ session, children }: { session: Session | null; child
     };
   }, [session?.activeWardId]);
 
+  const navigationStorageKey = session?.user?.id && session.activeWardId
+    ? `${NAV_GROUP_STORAGE_PREFIX}${session.user.id}:${session.activeWardId}`
+    : null;
+
+  useEffect(() => {
+    if (!navigationStorageKey) return;
+    setExpandedGroups({});
+    try {
+      const stored = localStorage.getItem(navigationStorageKey);
+      if (stored) {
+        const parsed: unknown = JSON.parse(stored);
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+          setExpandedGroups(parsed as Record<string, boolean>);
+        }
+      }
+    } catch {
+      // Ignore unavailable or malformed local preferences.
+    }
+  }, [navigationStorageKey]);
+
+  const toggleNavigationGroup = (groupId: string) => {
+    setExpandedGroups((current) => {
+      const next = { ...current, [groupId]: !(current[groupId] ?? true) };
+      if (navigationStorageKey) {
+        try {
+          localStorage.setItem(navigationStorageKey, JSON.stringify(next));
+        } catch {
+          // Ignore unavailable local preferences.
+        }
+      }
+      return next;
+    });
+  };
+
   if (!session?.user?.id) {
     return <>{children}</>;
   }
@@ -48,7 +147,7 @@ export function AppShell({ session, children }: { session: Session | null; child
   const moduleEnablement = createModuleEnablement();
   for (const module of moduleSettings) moduleEnablement.setEnabled(session.activeWardId ?? 'default', module.id, module.enabled);
   const notificationsEnabled = moduleSettings.some((module) => module.id === 'notifications' && module.enabled);
-  const navItems = getNavigationItems(session.user.roles, session.activeWardId ?? undefined, moduleEnablement);
+  const navGroups = getNavigationGroups(session.user.roles, session.activeWardId ?? undefined, moduleEnablement);
 
   return (
     <div className="flex min-h-screen bg-background text-foreground">
@@ -76,26 +175,13 @@ export function AppShell({ session, children }: { session: Session | null; child
         </div>
 
         <div className="flex flex-1 flex-col justify-between overflow-y-auto px-4 py-4">
-          <nav className="space-y-1.5" aria-label="Desktop Navigation">
-            {navItems.map((item) => {
-              const isActive = pathname === item.href || pathname?.startsWith(`${item.href}/`);
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={cn(
-                    buttonVariants({ variant: isActive ? 'secondary' : 'ghost', size: 'sm' }),
-                    'w-full justify-start text-sm font-medium gap-2.5 px-3 py-2',
-                    isActive
-                      ? 'border-l-2 border-primary bg-secondary text-secondary-foreground font-semibold'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
-                  )}
-                >
-                  {item.label}
-                </Link>
-              );
-            })}
-          </nav>
+          <NavigationGroups
+            groups={navGroups}
+            pathname={pathname}
+            expandedGroups={expandedGroups}
+            onToggle={toggleNavigationGroup}
+            ariaLabel="Desktop Navigation"
+          />
 
           <div className="space-y-3 pt-4 border-t">
             {/* Deployment update watcher */}
@@ -222,27 +308,14 @@ export function AppShell({ session, children }: { session: Session | null; child
                 </button>
               </div>
               <div className="flex flex-1 flex-col justify-between overflow-y-auto px-4 py-4">
-                <nav className="space-y-1.5" aria-label="Mobile Navigation Links">
-                  {navItems.map((item) => {
-                    const isActive = pathname === item.href || pathname?.startsWith(`${item.href}/`);
-                    return (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        onClick={() => setIsMobileNavOpen(false)}
-                        className={cn(
-                          buttonVariants({ variant: isActive ? 'secondary' : 'ghost', size: 'sm' }),
-                          'w-full justify-start gap-2.5 px-3 py-2 text-sm font-medium',
-                          isActive
-                            ? 'border-l-2 border-primary bg-secondary font-semibold text-secondary-foreground'
-                            : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
-                        )}
-                      >
-                        {item.label}
-                      </Link>
-                    );
-                  })}
-                </nav>
+                <NavigationGroups
+                  groups={navGroups}
+                  pathname={pathname}
+                  expandedGroups={expandedGroups}
+                  onToggle={toggleNavigationGroup}
+                  onNavigate={() => setIsMobileNavOpen(false)}
+                  ariaLabel="Mobile Navigation Links"
+                />
                 <div className="space-y-3 border-t pt-4">
                   <button
                     type="button"
