@@ -10,6 +10,8 @@ import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 import { toYyyyMmDd } from '@/src/meetings/date';
 import { buildMeetingRenderHtml } from '@/src/meetings/render';
+import { getPublicProgramRenderLabels } from '@/src/i18n/public-program';
+import { resolveLocale } from '@/src/i18n/config';
 import type { IntroductionRoles } from '@/src/meetings/types';
 
 type MeetingRow = {
@@ -18,6 +20,7 @@ type MeetingRow = {
   status: string;
   ward_name: string;
   location: string | null;
+  default_locale: string;
 };
 
 type ProgramItemRow = {
@@ -28,6 +31,7 @@ type ProgramItemRow = {
   program_notes: string | null;
   hymn_number: string | null;
   hymn_title: string | null;
+  hymn_locale: string | null;
   introduction_roles: IntroductionRoles | null;
 };
 
@@ -54,28 +58,6 @@ type LayoutRow = {
   cover_image_alt_text: string | null;
 };
 
-const PRINT_ITEM_KEYS = {
-  INTRODUCTION: 'item_INTRODUCTION',
-  ANNOUNCEMENT: 'item_ANNOUNCEMENT',
-  OPENING_HYMN: 'item_OPENING_HYMN',
-  INVOCATION: 'item_INVOCATION',
-  WARD_AND_STAKE_BUSINESS: 'item_WARD_AND_STAKE_BUSINESS',
-  SACRAMENT_HYMN: 'item_SACRAMENT_HYMN',
-  SACRAMENT: 'item_SACRAMENT',
-  SPEAKER: 'item_SPEAKER',
-  REST_HYMN: 'item_REST_HYMN',
-  CLOSING_HYMN: 'item_CLOSING_HYMN',
-  BENEDICTION: 'item_BENEDICTION',
-  TESTIMONIES: 'item_TESTIMONIES'
-} as const;
-
-const MEETING_TYPE_KEYS = {
-  SACRAMENT: 'type_SACRAMENT',
-  FAST_TESTIMONY: 'type_FAST_TESTIMONY',
-  WARD_CONFERENCE: 'type_WARD_CONFERENCE',
-  STAKE_CONFERENCE: 'type_STAKE_CONFERENCE',
-  GENERAL_CONFERENCE: 'type_GENERAL_CONFERENCE'
-} as const;
 
 export default async function PrintMeetingPage({
   params,
@@ -86,7 +68,7 @@ export default async function PrintMeetingPage({
 }) {
   const session = await requireAuthenticatedSession();
   const tPrint = await getTranslations('print');
-  const tMeetings = await getTranslations('meetings');
+
   enforcePasswordRotation(session);
 
   if (!session.activeWardId || !canViewMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId)) {
@@ -107,7 +89,7 @@ export default async function PrintMeetingPage({
     await setDbContext(client, { userId: session.user.id, wardId: session.activeWardId });
 
     const meetingResult = await client.query(
-      'SELECT m.meeting_date, m.meeting_type, m.status, w.name AS ward_name, m.location FROM meeting m JOIN ward w ON w.id = m.ward_id WHERE m.id = $1::uuid AND m.ward_id = $2::uuid LIMIT 1',
+      'SELECT m.meeting_date, m.meeting_type, m.status, w.name AS ward_name, w.default_locale, m.location FROM meeting m JOIN ward w ON w.id = m.ward_id WHERE m.id = $1::uuid AND m.ward_id = $2::uuid LIMIT 1',
       [meetingId, session.activeWardId]
     );
 
@@ -179,7 +161,7 @@ export default async function PrintMeetingPage({
     const meetingDate = toYyyyMmDd(meeting.meeting_date);
 
     const programResult = await client.query(
-      `SELECT id, item_type, title, notes, topic, program_notes, hymn_number, hymn_title, introduction_roles
+      `SELECT id, item_type, title, notes, topic, program_notes, hymn_number, hymn_title, hymn_locale, introduction_roles
          FROM meeting_program_item
         WHERE meeting_id = $1::uuid AND ward_id = $2::uuid
         ORDER BY sequence ASC`,
@@ -261,20 +243,7 @@ export default async function PrintMeetingPage({
       return <div dangerouslySetInnerHTML={{ __html: compatibilityHtml }} />;
     }
 
-    const renderLabels = {
-      programTitle: tPrint('programTitle'),
-      announcements: tPrint('announcements'),
-      introduction: tPrint('introduction'),
-      presiding: tPrint('presiding'),
-      conducting: tPrint('conducting'),
-      organistPianist: tPrint('organistPianist'),
-      chorister: tPrint('chorister'),
-      sacramentPrayers: tPrint('sacramentPrayers'),
-      qrDigitalProgram: tPrint('qrDigitalProgram'),
-      qrCode: tPrint('qrCode'),
-      meetingTypeLabel: tMeetings(MEETING_TYPE_KEYS[meeting.meeting_type as keyof typeof MEETING_TYPE_KEYS] ?? 'type_UNKNOWN'),
-      itemLabels: Object.fromEntries(Object.entries(PRINT_ITEM_KEYS).map(([itemType, key]) => [itemType, tPrint(key)]))
-    };
+    const renderLabels = getPublicProgramRenderLabels(resolveLocale(meeting.default_locale), meeting.meeting_type);
 
     const renderHtml = buildMeetingRenderHtml({
       meetingDate,
@@ -287,6 +256,7 @@ export default async function PrintMeetingPage({
         programNotes: item.program_notes,
         hymnNumber: item.hymn_number,
         hymnTitle: item.hymn_title,
+        hymnLocale: item.hymn_locale ?? 'en-US',
         introductionRoles: item.introduction_roles
       })),
       announcements: (announcementResult.rows as AnnouncementRow[]).map((item) => ({

@@ -28,6 +28,7 @@ type ProgramItemRow = {
   program_notes: string | null;
   hymn_number: string | null;
   hymn_title: string | null;
+  hymn_locale: string | null;
   introduction_roles: IntroductionRoles | null;
 };
 
@@ -130,7 +131,7 @@ export default async function StandViewPage({
     const hymnLocale = meetingResult.rows[0].default_locale as string;
 
     const programResult = await client.query(
-      `SELECT i.id, i.item_type, i.title, i.notes, i.topic, i.program_notes, i.hymn_number, i.hymn_title, i.introduction_roles,
+      `SELECT i.id, i.item_type, i.title, i.notes, i.topic, i.program_notes, i.hymn_number, i.hymn_title, i.hymn_locale, i.introduction_roles,
               m.first_name, m.last_name, m.gender
          FROM meeting_program_item i
          LEFT JOIN member m ON m.ward_id = i.ward_id AND m.full_name = i.title AND m.archived_at IS NULL
@@ -299,7 +300,7 @@ export default async function StandViewPage({
         programNotes: item.program_notes,
         hymnNumber: item.hymn_number,
         hymnTitle: item.hymn_title,
-        hymnLocale,
+        hymnLocale: item.hymn_locale ?? hymnLocale,
         introductionRoles: item.introduction_roles
       })),
       {

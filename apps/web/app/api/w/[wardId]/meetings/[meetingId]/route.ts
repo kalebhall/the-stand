@@ -42,6 +42,7 @@ type ProgramItemRow = {
   program_notes: string | null;
   hymn_number: string | null;
   hymn_title: string | null;
+  hymn_locale: string;
   introduction_roles: IntroductionRoles | null;
   speaker_status: string | null;
   sequence: number;
@@ -75,7 +76,7 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
     }
 
     const itemsResult = await client.query(
-      `SELECT id, item_type, title, notes, topic, program_notes, hymn_number, hymn_title, introduction_roles, speaker_status, sequence
+      `SELECT id, item_type, title, notes, topic, program_notes, hymn_number, hymn_title, hymn_locale, introduction_roles, speaker_status, sequence
          FROM meeting_program_item
         WHERE meeting_id = $1::uuid AND ward_id = $2::uuid
         ORDER BY sequence ASC`,
@@ -121,6 +122,7 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
           programNotes: item.programNotes ?? '',
           hymnNumber: item.hymnNumber ?? '',
           hymnTitle: item.hymnTitle ?? '',
+          hymnLocale: item.hymnLocale ?? 'en-US',
           introductionRoles: item.introductionRoles ?? undefined,
           speakerStatus: item.speakerStatus as ProgramItemInput['speakerStatus'],
           sequence: item.sequence
@@ -174,10 +176,10 @@ export async function PUT(request: Request, context: { params: Promise<{ wardId:
 
     const existingMeeting = existing.rows[0] as { meeting_date: string; meeting_type: string };
     const existingItems = await client.query(
-      'SELECT id, item_type, speaker_status, topic FROM meeting_program_item WHERE meeting_id = $1::uuid AND ward_id = $2::uuid',
+      'SELECT id, item_type, speaker_status, topic, hymn_locale FROM meeting_program_item WHERE meeting_id = $1::uuid AND ward_id = $2::uuid',
       [meetingId, wardId]
     );
-    const existingItemById = new Map(existingItems.rows.map((item: { id: string; item_type: string; speaker_status: string | null; topic: string | null }) => [item.id, item]));
+    const existingItemById = new Map(existingItems.rows.map((item: { id: string; item_type: string; speaker_status: string | null; topic: string | null; hymn_locale: string }) => [item.id, item]));
     if ((body?.meetingDate !== undefined && !meetingDate) || (body?.meetingType !== undefined && !isMeetingType(meetingType))) {
       await client.query('ROLLBACK');
       return NextResponse.json({ error: 'Invalid meeting payload', code: 'BAD_REQUEST' }, { status: 400 });
@@ -266,17 +268,18 @@ export async function PUT(request: Request, context: { params: Promise<{ wardId:
         toTrimmedString(item?.programNotes),
         toTrimmedString(item?.hymnNumber),
         toTrimmedString(item?.hymnTitle),
+        item?.hymnLocale || existingItemById.get(item?.id ?? '')?.hymn_locale || 'en-US',
         itemType.toUpperCase() === INTRODUCTION_ITEM_TYPE ? JSON.stringify(getIntroductionRoles(item?.introductionRoles)) : null,
         speakerStatus
       ];
       if (item?.id && retainedIds.includes(item.id)) {
         await client.query(
-          `UPDATE meeting_program_item SET sequence = $3::int, item_type = $4::text, title = NULLIF($5::text, ''), notes = NULLIF($6::text, ''), topic = NULLIF($7::text, ''), program_notes = NULLIF($8::text, ''), hymn_number = NULLIF($9::text, ''), hymn_title = NULLIF($10::text, ''), introduction_roles = $11::jsonb, speaker_status = $12::text WHERE id = $13::uuid AND meeting_id = $2::uuid AND ward_id = $1::uuid`,
+          `UPDATE meeting_program_item SET sequence = $3::int, item_type = $4::text, title = NULLIF($5::text, ''), notes = NULLIF($6::text, ''), topic = NULLIF($7::text, ''), program_notes = NULLIF($8::text, ''), hymn_number = NULLIF($9::text, ''), hymn_title = NULLIF($10::text, ''), hymn_locale = $11::text, introduction_roles = $12::jsonb, speaker_status = $13::text WHERE id = $14::uuid AND meeting_id = $2::uuid AND ward_id = $1::uuid`,
           [...values, item.id]
         );
       } else {
         await client.query(
-          `INSERT INTO meeting_program_item (ward_id, meeting_id, sequence, item_type, title, notes, topic, program_notes, hymn_number, hymn_title, introduction_roles, speaker_status) VALUES ($1::uuid, $2::uuid, $3::int, $4::text, NULLIF($5::text, ''), NULLIF($6::text, ''), NULLIF($7::text, ''), NULLIF($8::text, ''), NULLIF($9::text, ''), NULLIF($10::text, ''), $11::jsonb, $12::text)`,
+          `INSERT INTO meeting_program_item (ward_id, meeting_id, sequence, item_type, title, notes, topic, program_notes, hymn_number, hymn_title, hymn_locale, introduction_roles, speaker_status) VALUES ($1::uuid, $2::uuid, $3::int, $4::text, NULLIF($5::text, ''), NULLIF($6::text, ''), NULLIF($7::text, ''), NULLIF($8::text, ''), NULLIF($9::text, ''), NULLIF($10::text, ''), $11::text, $12::jsonb, $13::text)`,
           values
         );
       }
