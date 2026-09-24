@@ -19,7 +19,9 @@ describe('document designer RLS isolation', () => {
     const sql = String.raw`
 BEGIN;
 -- The database is provisioned by the migration setup before this test runs.
+SET LOCAL row_security = on;
 TRUNCATE TABLE meeting_document, ward_document_settings, document_template_version, document_template, meeting, ward, stake RESTART IDENTITY CASCADE;
+CREATE TEMP TABLE rls_fixture (ward_a UUID, ward_b UUID, user_a UUID, meeting_a UUID);
 
 DO $$
 DECLARE
@@ -29,8 +31,6 @@ DECLARE
   meeting_a UUID;
   user_a UUID;
   role_id UUID;
-  visible_count INTEGER;
-  hidden_count INTEGER;
 BEGIN
   INSERT INTO stake (name) VALUES ('Designer Stake') RETURNING id INTO stake_id;
   INSERT INTO ward (stake_id, name, unit_number) VALUES (stake_id, 'Designer Ward A', 'A') RETURNING id INTO ward_a;
@@ -41,17 +41,28 @@ BEGIN
   PERFORM set_config('app.ward_id', ward_a::text, true);
   INSERT INTO ward_user_role (ward_id, user_id, role_id) VALUES (ward_a, user_a, role_id);
   INSERT INTO meeting (ward_id, meeting_date, meeting_type) VALUES (ward_a, '2026-09-20', 'SACRAMENT') RETURNING id INTO meeting_a;
-
   INSERT INTO meeting_document (ward_id, meeting_id, document_type, schema_version, layout_json, theme_json, updated_by_user_id)
   VALUES (ward_a, meeting_a, 'SACRAMENT_PROGRAM', 1, '{"schemaVersion": 1}'::jsonb, '{}'::jsonb, user_a);
   INSERT INTO ward_document_settings (ward_id, allow_advanced_program_designer, updated_by_user_id)
   VALUES (ward_a, false, user_a);
+  INSERT INTO rls_fixture (ward_a, ward_b, user_a, meeting_a) VALUES (ward_a, ward_b, user_a, meeting_a);
+END;
+$$;
 
+DO $$
+DECLARE visible_count INTEGER;
+BEGIN
   SELECT count(*) INTO visible_count FROM meeting_document;
-  PERFORM set_config('app.ward_id', ward_b::text, true);
-  SELECT count(*) INTO hidden_count FROM meeting_document;
-
   IF visible_count <> 1 THEN RAISE EXCEPTION 'ward A expected one document, got %', visible_count; END IF;
+END;
+$$;
+
+SELECT set_config('app.ward_id', ward_b::text, false) FROM rls_fixture;
+
+DO $$
+DECLARE hidden_count INTEGER;
+BEGIN
+  SELECT count(*) INTO hidden_count FROM meeting_document;
   IF hidden_count <> 0 THEN RAISE EXCEPTION 'ward B expected zero documents, got %', hidden_count; END IF;
 END;
 $$;

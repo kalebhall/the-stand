@@ -3,7 +3,7 @@ import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 
 function mediaRoot(): string {
-  const root = path.resolve(process.env.MEDIA_ROOT ?? path.join(process.cwd(), 'var', 'media'));
+  const root = path.resolve(/* turbopackIgnore: true */ process.env.MEDIA_ROOT ?? path.join(process.cwd(), 'var', 'media'));
   if (root.includes(`${path.sep}.next${path.sep}`) || root.endsWith(`${path.sep}.next`)) throw new Error('MEDIA_ROOT cannot be inside the build directory.');
   return root;
 }
@@ -36,7 +36,7 @@ export async function writeMedia(key: string, buffer: Buffer): Promise<void> {
 }
 
 export async function readMedia(key: string): Promise<Buffer> {
-  return readFile(path.resolve(mediaRoot(), safeKey(key)));
+  return readFile(/* turbopackIgnore: true */ path.resolve(mediaRoot(), safeKey(key)));
 }
 
 export async function deleteMedia(key: string): Promise<void> {

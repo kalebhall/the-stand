@@ -1080,3 +1080,19 @@ export const mediaAsset = pgTable('media_asset', {
   mediaAssetWardStatusCreatedIdx: index('media_asset_ward_status_created_idx').on(table.wardId, table.status, table.createdAt),
   mediaAssetScopeStatusCreatedIdx: index('media_asset_scope_status_created_idx').on(table.scopeType, table.status, table.createdAt)
 }));
+
+export const dashboardLayoutPreference = pgTable(
+  'dashboard_layout_preference',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id').notNull().references(() => userAccount.id, { onDelete: 'cascade' }),
+    cardOrder: jsonb('card_order').notNull().default([]),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
+  },
+  (table) => ({
+    dashboardLayoutPreferenceWardUserUnique: unique().on(table.wardId, table.userId),
+    dashboardLayoutPreferenceWardUserIdx: index('dashboard_layout_preference_ward_user_idx').on(table.wardId, table.userId)
+  })
+);

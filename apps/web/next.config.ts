@@ -34,6 +34,13 @@ const nextConfig: NextConfig = {
     }
 
     return config;
+  },
+  turbopack: {
+    resolveAlias: hasSentrySdkInstalled
+      ? undefined
+      : {
+          '@sentry/nextjs': './src/lib/sentry-nextjs-noop.ts'
+        }
   }
 };
 

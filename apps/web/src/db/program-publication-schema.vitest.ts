@@ -1,16 +1,23 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
+import { Pool } from 'pg';
 
-import { describe, expect, it } from 'vitest';
+import { afterAll, describe, expect, it } from 'vitest';
 
 const migrationPath = path.resolve(import.meta.dirname, '../../drizzle/archive/v1/0078_publication_history_and_active_pointer.sql');
 const priorMigrationPath = path.resolve(import.meta.dirname, '../../drizzle/archive/v1/0077_published_print_input_immutability.sql');
+const dbUrl = process.env.TEST_DATABASE_URL ?? process.env.DATABASE_URL;
+const pool = dbUrl ? new Pool({ connectionString: dbUrl }) : undefined;
 
 async function readSql(filePath: string): Promise<string> {
   return (await readFile(filePath, 'utf8')).toLowerCase();
 }
 
 describe('publication schema migration', () => {
+  afterAll(async () => {
+    await pool?.end();
+  });
+
   it('defines publication defaults, nullability, and document constraints', async () => {
     const sql = await readSql(migrationPath);
 
@@ -97,7 +104,36 @@ describe('publication schema migration', () => {
     expect(sql).not.toContain('restart identity');
   });
 
-  it.skip('live PostgreSQL migration and RLS scenario (requires TEST_DATABASE_URL)', () => {
-    // Kept separate from static migration assertions until a disposable PostgreSQL fixture is available.
+  it.skipIf(!dbUrl)('verifies the migrated publication schema and RLS contract in PostgreSQL', async () => {
+    const client = await pool!.connect();
+    try {
+      const columns = await client.query(
+        `SELECT column_name
+           FROM information_schema.columns
+          WHERE table_schema = 'public'
+            AND table_name IN ('meeting_program_render', 'public_program_share')
+            AND column_name IN ('published_at', 'publication_metadata_json', 'active_render_id', 'expires_at')`
+      );
+      expect(new Set((columns.rows as Array<{ column_name: string }>).map((row) => row.column_name))).toEqual(
+        new Set(['published_at', 'publication_metadata_json', 'active_render_id', 'expires_at'])
+      );
+
+      const security = await client.query(
+        `SELECT relrowsecurity, relforcerowsecurity
+           FROM pg_class
+          WHERE oid = 'public.public_program_share'::regclass`
+      );
+      expect(security.rows[0] as { relrowsecurity: boolean; relforcerowsecurity: boolean }).toMatchObject({ relrowsecurity: true, relforcerowsecurity: true });
+
+      const triggers = await client.query(
+        `SELECT tgname
+           FROM pg_trigger
+          WHERE tgrelid = 'public.public_program_share'::regclass
+            AND NOT tgisinternal`
+      );
+      expect((triggers.rows as Array<{ tgname: string }>).map((row) => row.tgname)).toContain('public_program_share_active_render_published_guard');
+    } finally {
+      client.release();
+    }
   });
 });
