@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/src/auth/auth';
 import { hasRole } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
+import { isSupportedCatalogLocale } from '@/src/i18n/config';
 
 const VALID_BOOKS = ['STANDARD', 'NEW', 'CHILDRENS'] as const;
 
@@ -19,25 +20,27 @@ export async function POST(request: Request) {
   const body = (await request.json().catch(() => null)) as {
     hymnNumber?: string;
     title?: string;
+    locale?: string;
     book?: string;
     sortKey?: number;
   } | null;
 
   const hymnNumber = body?.hymnNumber?.trim() ?? '';
   const title = body?.title?.trim() ?? '';
+  const locale = body?.locale?.trim() ?? '';
   const book = body?.book?.trim() ?? '';
   const sortKey = typeof body?.sortKey === 'number' ? body.sortKey : null;
 
-  if (!hymnNumber || !title || !VALID_BOOKS.includes(book as (typeof VALID_BOOKS)[number]) || sortKey === null) {
+  if (!hymnNumber || !title || !isSupportedCatalogLocale(locale) || !VALID_BOOKS.includes(book as (typeof VALID_BOOKS)[number]) || sortKey === null) {
     return NextResponse.json({ error: 'Invalid hymn payload', code: 'BAD_REQUEST' }, { status: 400 });
   }
 
   try {
     const result = await pool.query(
-      `INSERT INTO hymn (hymn_number, title, book, sort_key)
-       VALUES ($1, $2, $3, $4)
+      `INSERT INTO hymn (locale, hymn_number, title, book, sort_key)
+       VALUES ($1, $2, $3, $4, $5)
        RETURNING id`,
-      [hymnNumber, title, book, sortKey]
+      [locale, hymnNumber, title, book, sortKey]
     );
 
     return NextResponse.json({ id: result.rows[0].id }, { status: 201 });

@@ -10,6 +10,9 @@ import { requireAuthenticatedSession } from '@/src/auth/guards';
 import { canManageMeetings, canRunImports, canViewMeetings, hasRole } from '@/src/auth/roles';
 import { getWardModuleSettings, isWardModuleEnabled } from '@/src/modules/service';
 import { ModuleSettings } from '@/app/settings/module-settings';
+import { pool } from '@/src/db/client';
+import { CATALOG_LOCALE_LABELS, isSupportedCatalogLocale, SUPPORTED_CATALOG_LOCALES } from '@/src/i18n/config';
+import { revalidatePath } from 'next/cache';
 
 export default async function SettingsPage() {
   const session = await requireAuthenticatedSession();
@@ -27,6 +30,18 @@ export default async function SettingsPage() {
   const canViewActivityLog = wardId ? canRunImports({ roles: session.user.roles, activeWardId: wardId }, wardId) : false;
   const canManageProgramLayout = wardId ? canManageMeetings({ roles: session.user.roles, activeWardId: wardId }, wardId) : false;
   const moduleSettings = wardId && isStandAdmin ? await getWardModuleSettings(wardId, session.user.id) : null;
+  const wardLocale = wardId && isStandAdmin
+    ? ((await pool.query('SELECT default_locale FROM ward WHERE id = $1::uuid', [wardId])).rows[0]?.default_locale ?? 'en-US')
+    : null;
+
+  async function updateWardLocale(formData: FormData) {
+    'use server';
+    const nextLocale = String(formData.get('locale') ?? '');
+    const currentSession = await requireAuthenticatedSession();
+    if (!currentSession.activeWardId || !hasRole(currentSession.user.roles, 'STAND_ADMIN') || !isSupportedCatalogLocale(nextLocale)) return;
+    await pool.query('UPDATE ward SET default_locale = $1::text WHERE id = $2::uuid', [nextLocale, currentSession.activeWardId]);
+    revalidatePath('/settings');
+  }
 
   return (
     <main className="mx-auto max-w-4xl space-y-8 p-6">
@@ -65,6 +80,16 @@ export default async function SettingsPage() {
             <p className="mt-2 text-sm text-muted-foreground">Manage ward access and program configuration.</p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
+            {isStandAdmin && (
+              <form action={updateWardLocale} className="space-y-2 rounded-md border p-4 sm:col-span-2">
+                <label htmlFor="ward-default-locale" className="block text-sm font-medium">Ward hymn catalog language</label>
+                <p className="text-xs text-muted-foreground">This controls the hymn numbers and titles shown for new program editing. Your interface language remains personal.</p>
+                <select id="ward-default-locale" name="locale" defaultValue={wardLocale ?? 'en-US'} className="rounded-md border bg-background px-3 py-2 text-sm">
+                  {SUPPORTED_CATALOG_LOCALES.map((catalogLocale) => <option key={catalogLocale} value={catalogLocale}>{CATALOG_LOCALE_LABELS[catalogLocale]}</option>)}
+                </select>
+                <button type="submit" className="rounded-md border px-3 py-2 text-sm font-medium hover:bg-accent">Save ward language</button>
+              </form>
+            )}
             {isStandAdmin && <SettingsLink href="/settings/users" label="Ward user management" />}
             {isStandAdmin && <SettingsLink href="/settings/stand-script" label="Stand script templates" />}
             {canManageProgramLayout && <SettingsLink href="/settings/public-layout" label="Printed program layout" />}

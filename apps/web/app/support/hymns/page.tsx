@@ -7,9 +7,11 @@ import { cn } from '@/lib/utils';
 import { auth } from '@/src/auth/auth';
 import { hasRole } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
+import { CATALOG_LOCALE_LABELS, isSupportedCatalogLocale, SUPPORTED_CATALOG_LOCALES, type CatalogLocale } from '@/src/i18n/config';
 
 type HymnRow = {
   id: string;
+  locale: CatalogLocale;
   hymn_number: string;
   title: string;
   book: string;
@@ -33,11 +35,12 @@ async function requireSupportAdmin() {
   return session;
 }
 
-export default async function SupportHymnsPage({ searchParams }: { searchParams: Promise<{ book?: string; q?: string }> }) {
+export default async function SupportHymnsPage({ searchParams }: { searchParams: Promise<{ book?: string; locale?: string; q?: string }> }) {
   await requireSupportAdmin();
 
-  const { book: bookFilter, q: query } = await searchParams;
+  const { book: bookFilter, locale: localeFilter, q: query } = await searchParams;
   const activeBook = VALID_BOOKS.includes(bookFilter as Book) ? (bookFilter as Book) : null;
+  const activeLocale = isSupportedCatalogLocale(localeFilter) ? localeFilter : null;
 
   async function addHymn(formData: FormData) {
     'use server';
@@ -46,11 +49,13 @@ export default async function SupportHymnsPage({ searchParams }: { searchParams:
     const hymnNumber = String(formData.get('hymnNumber') ?? '').trim();
     const title = String(formData.get('title') ?? '').trim();
     const book = String(formData.get('book') ?? '').trim();
+    const locale = String(formData.get('locale') ?? '').trim();
     const sortKeyRaw = parseInt(String(formData.get('sortKey') ?? ''), 10);
 
-    if (!hymnNumber || !title || !VALID_BOOKS.includes(book as Book) || isNaN(sortKeyRaw)) return;
+    if (!hymnNumber || !title || !VALID_BOOKS.includes(book as Book) || !isSupportedCatalogLocale(locale) || isNaN(sortKeyRaw)) return;
 
-    await pool.query(`INSERT INTO hymn (hymn_number, title, book, sort_key) VALUES ($1, $2, $3, $4)`, [
+    await pool.query(`INSERT INTO hymn (locale, hymn_number, title, book, sort_key) VALUES ($1, $2, $3, $4, $5)`, [
+      locale,
       hymnNumber,
       title,
       book,
@@ -67,12 +72,14 @@ export default async function SupportHymnsPage({ searchParams }: { searchParams:
     const hymnNumber = String(formData.get('hymnNumber') ?? '').trim();
     const title = String(formData.get('title') ?? '').trim();
     const book = String(formData.get('book') ?? '').trim();
+    const locale = String(formData.get('locale') ?? '').trim();
     const sortKeyRaw = parseInt(String(formData.get('sortKey') ?? ''), 10);
     const isActive = formData.getAll('isActive').includes('1');
 
-    if (!id || !hymnNumber || !title || !VALID_BOOKS.includes(book as Book) || isNaN(sortKeyRaw)) return;
+    if (!id || !hymnNumber || !title || !VALID_BOOKS.includes(book as Book) || !isSupportedCatalogLocale(locale) || isNaN(sortKeyRaw)) return;
 
-    await pool.query(`UPDATE hymn SET hymn_number=$1, title=$2, book=$3, sort_key=$4, is_active=$5, updated_at=now() WHERE id=$6`, [
+    await pool.query(`UPDATE hymn SET locale=$1, hymn_number=$2, title=$3, book=$4, sort_key=$5, is_active=$6, updated_at=now() WHERE id=$7`, [
+      locale,
       hymnNumber,
       title,
       book,
@@ -94,9 +101,14 @@ export default async function SupportHymnsPage({ searchParams }: { searchParams:
     revalidatePath('/support/hymns');
   }
 
-  let queryStr = `SELECT id, hymn_number, title, book, sort_key, is_active FROM hymn`;
+  let queryStr = `SELECT id, locale, hymn_number, title, book, sort_key, is_active FROM hymn`;
   const params: (string | number)[] = [];
   const conditions: string[] = [];
+
+  if (activeLocale) {
+    params.push(activeLocale);
+    conditions.push(`locale = $${params.length}`);
+  }
 
   if (activeBook) {
     params.push(activeBook);
@@ -125,7 +137,7 @@ export default async function SupportHymnsPage({ searchParams }: { searchParams:
       <section className="space-y-2">
         <h1 className="text-2xl font-semibold">Support Console: Hymn Library</h1>
         <p className="text-muted-foreground">
-          Manage the global hymn list used in the meeting program autocomplete. All wards share this list.
+          Manage the language-specific hymn catalogs used by meeting program autocomplete. Each ward selects its default catalog language.
         </p>
         <Link href="/support" className={cn(buttonVariants({ size: 'sm', variant: 'outline' }))}>
           Back to support sections
@@ -135,6 +147,10 @@ export default async function SupportHymnsPage({ searchParams }: { searchParams:
       {/* Filters */}
       <form method="GET" className="flex flex-wrap gap-2">
         <input name="q" defaultValue={query ?? ''} placeholder="Search…" className="rounded-md border px-3 py-2 text-sm" />
+        <select name="locale" defaultValue={localeFilter ?? ''} className="rounded-md border px-3 py-2 text-sm">
+          <option value="">All languages</option>
+          {SUPPORTED_CATALOG_LOCALES.map((catalogLocale) => <option key={catalogLocale} value={catalogLocale}>{CATALOG_LOCALE_LABELS[catalogLocale]}</option>)}
+        </select>
         <select name="book" defaultValue={bookFilter ?? ''} className="rounded-md border px-3 py-2 text-sm">
           <option value="">All books</option>
           {VALID_BOOKS.map((b) => (
@@ -157,6 +173,9 @@ export default async function SupportHymnsPage({ searchParams }: { searchParams:
         <form action={addHymn} className="grid gap-3 sm:grid-cols-[auto_1fr_auto_auto_auto]">
           <input name="hymnNumber" required placeholder="Number (e.g. 30, 1001, C1)" className="rounded-md border px-3 py-2 text-sm" />
           <input name="title" required placeholder="Title" className="rounded-md border px-3 py-2 text-sm" />
+          <select name="locale" required defaultValue={activeLocale ?? 'en-US'} className="rounded-md border px-3 py-2 text-sm">
+            {SUPPORTED_CATALOG_LOCALES.map((catalogLocale) => <option key={catalogLocale} value={catalogLocale}>{CATALOG_LOCALE_LABELS[catalogLocale]}</option>)}
+          </select>
           <select name="book" required className="rounded-md border px-3 py-2 text-sm">
             {VALID_BOOKS.map((b) => (
               <option key={b} value={b}>
@@ -191,6 +210,7 @@ export default async function SupportHymnsPage({ searchParams }: { searchParams:
               <thead>
                 <tr className="border-b bg-muted/50">
                   <th className="px-3 py-2 text-left font-medium">Number</th>
+                  <th className="px-3 py-2 text-left font-medium">Language</th>
                   <th className="px-3 py-2 text-left font-medium">Title</th>
                   <th className="px-3 py-2 text-left font-medium">Book</th>
                   <th className="px-3 py-2 text-left font-medium">Sort</th>
@@ -202,6 +222,7 @@ export default async function SupportHymnsPage({ searchParams }: { searchParams:
                 {hymns.map((hymn) => (
                   <tr key={hymn.id} className={`border-b last:border-0 ${!hymn.is_active ? 'opacity-50' : ''}`}>
                     <td className="px-3 py-2 font-mono">{hymn.hymn_number}</td>
+                    <td className="px-3 py-2 text-muted-foreground">{CATALOG_LOCALE_LABELS[hymn.locale]}</td>
                     <td className="px-3 py-2">{hymn.title}</td>
                     <td className="px-3 py-2 text-muted-foreground">{BOOK_LABELS[hymn.book as Book] ?? hymn.book}</td>
                     <td className="px-3 py-2 tabular-nums text-muted-foreground">{hymn.sort_key}</td>
@@ -211,6 +232,9 @@ export default async function SupportHymnsPage({ searchParams }: { searchParams:
                         <summary className="cursor-pointer text-xs underline underline-offset-2">Edit</summary>
                         <form action={updateHymn} className="mt-2 flex flex-wrap gap-2">
                           <input type="hidden" name="id" value={hymn.id} />
+                          <select name="locale" defaultValue={hymn.locale} className="rounded-md border px-2 py-1 text-xs">
+                            {SUPPORTED_CATALOG_LOCALES.map((catalogLocale) => <option key={catalogLocale} value={catalogLocale}>{CATALOG_LOCALE_LABELS[catalogLocale]}</option>)}
+                          </select>
                           <input
                             name="hymnNumber"
                             defaultValue={hymn.hymn_number}

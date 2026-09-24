@@ -14,6 +14,7 @@ export const ward = pgTable('ward', {
     .references(() => stake.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
   unitNumber: text('unit_number'),
+  defaultLocale: text('default_locale').notNull().default('en-US'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 });
 
@@ -984,6 +985,7 @@ export const importRun = pgTable('import_run', {
 
 export const hymn = pgTable('hymn', {
   id: uuid('id').defaultRandom().primaryKey(),
+  locale: text('locale').notNull().default('en-US'),
   hymnNumber: text('hymn_number').notNull(),
   title: text('title').notNull(),
   book: text('book').notNull(),
