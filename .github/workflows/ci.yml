@@ -17,8 +17,8 @@ jobs:
       postgres:
         image: postgres:16-alpine
         env:
-          POSTGRES_USER: stand_test
-          POSTGRES_PASSWORD: stand_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
           POSTGRES_DB: the_stand_test
         ports:
           - 5432:5432
@@ -50,6 +50,21 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Provision non-superuser test database role
+        run: |
+          PGPASSWORD=postgres psql -h localhost -U postgres -d the_stand_test -v ON_ERROR_STOP=1 <<'SQL'
+          DO $$
+          BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'stand_test') THEN
+              CREATE ROLE stand_test LOGIN PASSWORD 'stand_test' NOSUPERUSER;
+            END IF;
+          END
+          $$;
+          ALTER ROLE stand_test LOGIN PASSWORD 'stand_test' NOSUPERUSER;
+          ALTER DATABASE the_stand_test OWNER TO stand_test;
+          GRANT ALL ON SCHEMA public TO stand_test;
+          SQL
 
       - name: Lint
         run: npm run lint
