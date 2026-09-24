@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { insertCoreEventOutboxEvent, recordCoreEventOutboxFailure } from './outbox';
+import { insertCoreEventOutboxEvent, recordCoreEventOutboxFailure, type EventOutboxDbClient } from './outbox';
 
 const event = {
   type: 'MeetingCreated' as const,
@@ -16,7 +16,7 @@ const event = {
 function concurrentClient() {
   let existingId: string | undefined;
   const queries: string[] = [];
-  const query = vi.fn(async (text: string) => {
+  const query = vi.fn<EventOutboxDbClient['query']>(async (text: string) => {
     queries.push(text);
     if (text.includes('INSERT INTO event_outbox')) {
       await new Promise((resolve) => setTimeout(resolve, 0));
@@ -33,25 +33,25 @@ function concurrentClient() {
 
 describe('Core event outbox insertion', () => {
   it('returns one stable ID for concurrent duplicate insertion attempts', async () => {
-    const client = concurrentClient();
+    const { query, queries } = concurrentClient();
 
     const ids = await Promise.all([
-      insertCoreEventOutboxEvent(client as unknown as Parameters<typeof insertCoreEventOutboxEvent>[0], event),
-      insertCoreEventOutboxEvent(client as unknown as Parameters<typeof insertCoreEventOutboxEvent>[0], event)
+      insertCoreEventOutboxEvent({ query }, event),
+      insertCoreEventOutboxEvent({ query }, event)
     ]);
 
     expect(ids).toEqual(['event-1', 'event-1']);
-    expect(client.query).toHaveBeenCalledTimes(3);
-    expect(client.queries[0]).toContain("ON CONFLICT (ward_id, event_type, aggregate_id)");
-    expect(client.queries[0]).toContain("WHERE event_outbox.status = 'pending'");
+    expect(query).toHaveBeenCalledTimes(3);
+    expect(queries[0]).toContain("ON CONFLICT (ward_id, event_type, aggregate_id)");
+    expect(queries[0]).toContain("WHERE event_outbox.status = 'pending'");
   });
 
   it.each(['processed', 'failed'])('does not resurrect a terminal %s row during replay', async (status) => {
-    const query = vi.fn()
+    const query = vi.fn<EventOutboxDbClient['query']>()
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [{ id: `terminal-${status}` }] });
 
-    const id = await insertCoreEventOutboxEvent({ query } as unknown as Parameters<typeof insertCoreEventOutboxEvent>[0], event);
+    const id = await insertCoreEventOutboxEvent({ query }, event);
 
     expect(id).toBe(`terminal-${status}`);
     expect(query).toHaveBeenCalledTimes(2);
@@ -60,8 +60,8 @@ describe('Core event outbox insertion', () => {
   });
 
   it('increments one retry attempt per failure and marks the fifth attempt terminal', async () => {
-    const query = vi.fn().mockResolvedValue({ rows: [] });
-    const client = { query } as unknown as Parameters<typeof recordCoreEventOutboxFailure>[0];
+    const query = vi.fn<EventOutboxDbClient['query']>().mockResolvedValue({ rows: [] });
+    const client: EventOutboxDbClient = { query };
 
     for (let attempt = 1; attempt <= 5; attempt += 1) {
       await recordCoreEventOutboxFailure(client, {

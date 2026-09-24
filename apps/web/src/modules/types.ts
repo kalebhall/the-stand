@@ -6,6 +6,7 @@ export type ModuleNavigationItem = {
 export type ModuleDefinition = {
   id: string;
   name: string;
+  description: string;
   version: string;
   defaultEnabled: boolean;
   navigation: readonly ModuleNavigationItem[];

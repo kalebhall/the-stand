@@ -7,6 +7,7 @@ import type { ModuleDefinition, ModuleRegistry } from './types';
 export type EffectiveModuleSetting = {
   id: string;
   name: string;
+  description: string;
   version: string;
   enabled: boolean;
   defaultEnabled: boolean;
@@ -36,6 +37,7 @@ export function buildEffectiveModuleSettings(
     return {
       id: module.id,
       name: module.name,
+      description: module.description,
       version: module.version,
       enabled,
       defaultEnabled: module.defaultEnabled,

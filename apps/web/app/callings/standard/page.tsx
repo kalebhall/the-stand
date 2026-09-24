@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { StandardCallingsManager, type StandardCalling } from '@/components/StandardCallingsManager';
 import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth/guards';
 import { canManageCallings, canViewCallings, hasRole } from '@/src/auth/roles';
+import { isWardModuleEnabled } from '@/src/modules/service';
 import { pool } from '@/src/db/client';
 
 type StandardCallingRow = {
@@ -19,7 +20,7 @@ export default async function StandardCallingsPage() {
   const session = await requireAuthenticatedSession();
   enforcePasswordRotation(session);
 
-  if (!session.activeWardId || !canViewCallings({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId)) {
+  if (!session.activeWardId || !canViewCallings({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId) || !(await isWardModuleEnabled(session.activeWardId, session.user.id, 'callings'))) {
     redirect('/dashboard');
   }
 

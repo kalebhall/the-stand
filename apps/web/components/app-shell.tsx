@@ -47,6 +47,7 @@ export function AppShell({ session, children }: { session: Session | null; child
 
   const moduleEnablement = createModuleEnablement();
   for (const module of moduleSettings) moduleEnablement.setEnabled(session.activeWardId ?? 'default', module.id, module.enabled);
+  const notificationsEnabled = moduleSettings.some((module) => module.id === 'notifications' && module.enabled);
   const navItems = getNavigationItems(session.user.roles, session.activeWardId ?? undefined, moduleEnablement);
 
   return (
@@ -71,7 +72,7 @@ export function AppShell({ session, children }: { session: Session | null; child
               </span>
             ) : null}
           </div>
-          <NotificationBell wardId={session.activeWardId} />
+          {notificationsEnabled && <NotificationBell wardId={session.activeWardId} />}
         </div>
 
         <div className="flex flex-1 flex-col justify-between overflow-y-auto px-4 py-4">
@@ -171,7 +172,7 @@ export function AppShell({ session, children }: { session: Session | null; child
           </div>
 
           <div className="flex items-center gap-2">
-            <NotificationBell wardId={session.activeWardId} />
+            {notificationsEnabled && <NotificationBell wardId={session.activeWardId} />}
             <button
               type="button"
               onClick={toggleConductingMode}

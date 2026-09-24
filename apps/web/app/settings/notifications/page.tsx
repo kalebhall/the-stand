@@ -1,6 +1,8 @@
 import { redirect } from 'next/navigation';
 
 import { auth } from '@/src/auth/auth';
+import { isWardModuleEnabled } from '@/src/modules/service';
+import { canViewMeetings } from '@/src/auth/roles';
 import { NotificationSubscriptionSettings } from './notification-subscription-settings';
 
 export default async function NotificationSettingsPage() {
@@ -8,6 +10,8 @@ export default async function NotificationSettingsPage() {
   if (!session?.user?.id) redirect('/login');
 
   const wardId = session.activeWardId;
+  if (!wardId || !(await isWardModuleEnabled(wardId, session.user.id, 'notifications')) || !canViewMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) redirect('/settings');
+
   return (
     <main className="mx-auto max-w-4xl space-y-8 p-6">
       <div>

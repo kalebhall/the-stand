@@ -1,36 +1,17 @@
-import { beforeAll, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { createNotificationWorkerHandler } from './worker-handler';
 
 const state = vi.hoisted(() => ({
-  handler: undefined as ((job: unknown) => Promise<void>) | undefined,
   client: undefined as { query: ReturnType<typeof vi.fn>; release: ReturnType<typeof vi.fn> } | undefined,
   setDbContext: vi.fn(),
   processCoreEventOutbox: vi.fn(),
-  recordCoreEventOutboxFailure: vi.fn(),
-  sideEffectConnects: 0}));
-
-vi.mock('bullmq', () => ({
-  Worker: class {
-    constructor(_queue: string, handler: (job: unknown) => Promise<void>) {
-      state.handler = handler;
-    }
-
-    on() {
-      return this;
-    }
-
-    async close() {}
-  }
+  recordCoreEventOutboxFailure: vi.fn()
 }));
 
 vi.mock('@/src/db/client', () => ({
   pool: {
-    connect: vi.fn(async () => {
-      if (state.sideEffectConnects < 2) {
-        state.sideEffectConnects += 1;
-        return { query: vi.fn(async () => ({ rows: [] })), release: vi.fn() };
-      }
-      return state.client;
-    })
+    connect: vi.fn(async () => state.client)
   }
 }));
 vi.mock('@/src/db/context', () => ({ setDbContext: state.setDbContext }));
@@ -40,27 +21,17 @@ vi.mock('@/src/platform/events/outbox', () => ({
   recordCoreEventOutboxFailure: state.recordCoreEventOutboxFailure
 }));
 vi.mock('@/src/notifications/queue', () => ({
-  NOTIFICATION_QUEUE_NAME: 'notification-outbox',
   enqueueDigestNotificationJob: vi.fn(),
-  enqueueGlobalEmailDeliveryJob: vi.fn(),
-  enqueueGlobalNotificationJob: vi.fn(),
-  enqueueOutboxNotificationJob: vi.fn()
-}));
-vi.mock('@/src/notifications/recovery', () => ({
-  findPendingGlobalEmailDeliveries: vi.fn(async () => []),
-  findPendingGlobalOutboxEvents: vi.fn(async () => []),
-  findPendingOutboxEvents: vi.fn(async () => [])
+  enqueueGlobalEmailDeliveryJob: vi.fn()
 }));
 vi.mock('@/src/notifications/digests', () => ({ processNotificationDigest: vi.fn() }));
 vi.mock('@/src/notifications/global-email', () => ({ processGlobalEmailDelivery: vi.fn() }));
 vi.mock('@/src/notifications/global-runner', () => ({ processGlobalOutboxEvent: vi.fn() }));
 vi.mock('@/src/notifications/runner', () => ({ processOutboxEvent: vi.fn() }));
-vi.mock('@/src/notifications/support-reminders', () => ({ createDueSupportReminderEvents: vi.fn(async () => []) }));
 
 describe('notifications worker Core failure bookkeeping', () => {
-  beforeAll(async () => {
-    vi.stubEnv('REDIS_URL', 'redis://127.0.0.1:6379');
-    vi.stubGlobal('setInterval', () => ({ unref: vi.fn() }));
+  beforeEach(() => {
+    vi.clearAllMocks();
     state.client = {
       query: vi.fn()
         .mockResolvedValueOnce({ rows: [] })
@@ -71,11 +42,12 @@ describe('notifications worker Core failure bookkeeping', () => {
       release: vi.fn()
     };
     state.processCoreEventOutbox.mockRejectedValue(new Error('handler failed'));
-    await import('./worker-entry');
   });
 
   it('rolls back the handler transaction and records exactly one retry in a fresh transaction', async () => {
-    await expect(state.handler?.({
+    const handler = createNotificationWorkerHandler();
+
+    await expect(handler({
       data: {
         kind: 'outbox-event',
         wardId: '11111111-1111-4111-8111-111111111111',

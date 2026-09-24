@@ -25,22 +25,22 @@ describe('notification event registry', () => {
     );
   });
 
-  it('defines safe defaults for meeting publication', () => {
+  it('keeps email delivery opt-in for meeting publication', () => {
     expect(getNotificationEventDefinition('MEETING_PUBLISHED')).toEqual({
       eventType: 'MEETING_PUBLISHED',
       category: 'MEETINGS',
       label: 'Meeting published',
-      defaultChannels: ['IN_APP', 'EMAIL'],
+      defaultChannels: ['IN_APP'],
       severity: 'info'
     });
   });
 
-  it('uses email defaults for ordinary meeting changes', () => {
+  it('keeps ordinary meeting changes in-app by default', () => {
     const definition = getNotificationEventDefinition('MEETING_UPDATED');
     const channels: NotificationChannel[] = definition.defaultChannels;
 
     expect(definition.category).toBe('MEETINGS');
-    expect(channels).toEqual(['IN_APP', 'EMAIL']);
+    expect(channels).toEqual(['IN_APP']);
   });
 
   it('rejects unknown event types at runtime', () => {

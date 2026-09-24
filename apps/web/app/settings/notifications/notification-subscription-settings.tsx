@@ -159,7 +159,7 @@ export function NotificationSubscriptionSettings({ wardId, hasUsableEmail }: { w
         <div>
           <h2 className="text-lg font-medium">Email delivery</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Choose whether email arrives immediately or as a digest. In-app notifications remain immediate.
+            Choose whether email arrives immediately or as a digest. Email is off by default; in-app notifications remain immediate.
           </p>
         </div>
         <div className="grid gap-3 sm:grid-cols-2">

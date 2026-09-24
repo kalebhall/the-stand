@@ -2,6 +2,13 @@ import { describe, expect, it } from 'vitest';
 
 import { canViewDashboardPublicPortalStatus, getNavigationItems } from '@/src/auth/navigation';
 import { createModuleEnablement } from '@/src/modules/enablement';
+import { DEFAULT_MODULE_REGISTRY } from '@/src/modules/registry';
+
+function allModulesEnabled() {
+  return createModuleEnablement({
+    ward: Object.fromEntries(DEFAULT_MODULE_REGISTRY.modules.map((module) => [module.id, true]))
+  });
+}
 
 describe('getNavigationItems', () => {
   it('always includes dashboard for authenticated users', () => {
@@ -9,7 +16,7 @@ describe('getNavigationItems', () => {
   });
 
   it('shows Programs to program users but excludes unrelated workflows', () => {
-    const items = getNavigationItems(['PROGRAM_EDITOR']);
+    const items = getNavigationItems(['PROGRAM_EDITOR'], 'ward', allModulesEnabled());
     expect(items).toContainEqual({ href: '/programs', label: 'Programs' });
     expect(items).toContainEqual({ href: '/programs/templates', label: 'Templates' });
     expect(items).not.toContainEqual({ href: '/callings', label: 'Callings' });
@@ -18,14 +25,15 @@ describe('getNavigationItems', () => {
   });
 
   it('shows template administration to stake, system, and support administrators without exposing ward program editing', () => {
-    expect(getNavigationItems(['STAKE_ADMIN'])).toContainEqual({ href: '/programs/templates/admin', label: 'Template Administration' });
-    expect(getNavigationItems(['STAKE_ADMIN'])).not.toContainEqual({ href: '/programs/templates', label: 'Templates' });
-    expect(getNavigationItems(['STAKE_ADMIN'])).not.toContainEqual({ href: '/programs', label: 'Programs' });
-    expect(getNavigationItems(['SYSTEM_ADMIN'])).toContainEqual({ href: '/programs/templates/admin', label: 'Template Administration' });
-    expect(getNavigationItems(['SUPPORT_ADMIN'])).toContainEqual({ href: '/programs/templates/admin', label: 'Template Administration' });
+    const enablement = allModulesEnabled();
+    expect(getNavigationItems(['STAKE_ADMIN'], 'ward', enablement)).toContainEqual({ href: '/programs/templates/admin', label: 'Template Administration' });
+    expect(getNavigationItems(['STAKE_ADMIN'], 'ward', enablement)).not.toContainEqual({ href: '/programs/templates', label: 'Templates' });
+    expect(getNavigationItems(['STAKE_ADMIN'], 'ward', enablement)).not.toContainEqual({ href: '/programs', label: 'Programs' });
+    expect(getNavigationItems(['SYSTEM_ADMIN'], 'ward', enablement)).toContainEqual({ href: '/programs/templates/admin', label: 'Template Administration' });
+    expect(getNavigationItems(['SUPPORT_ADMIN'], 'ward', enablement)).toContainEqual({ href: '/programs/templates/admin', label: 'Template Administration' });
   });
   it('includes ward management links for stand admin but keeps settings in settings', () => {
-    const items = getNavigationItems(['STAND_ADMIN']);
+    const items = getNavigationItems(['STAND_ADMIN'], 'ward', allModulesEnabled());
 
     expect(items).toContainEqual({ href: '/members', label: 'Members' });
     expect(items).toContainEqual({ href: '/callings', label: 'Callings' });
@@ -42,18 +50,18 @@ describe('getNavigationItems', () => {
   });
 
   it('includes meetings for conductor role', () => {
-    expect(getNavigationItems(['CONDUCTOR_VIEW'])).toContainEqual({ href: '/meetings', label: 'Meetings' });
+    expect(getNavigationItems(['CONDUCTOR_VIEW'], 'ward', allModulesEnabled())).toContainEqual({ href: '/meetings', label: 'Meetings' });
 
-    expect(getNavigationItems(['CONDUCTOR_VIEW'])).not.toContainEqual({ href: '/callings', label: 'Callings' });
+    expect(getNavigationItems(['CONDUCTOR_VIEW'], 'ward', allModulesEnabled())).not.toContainEqual({ href: '/callings', label: 'Callings' });
   });
 
   it('includes support console only for support admins', () => {
-    expect(getNavigationItems(['SUPPORT_ADMIN'])).toContainEqual({
+    expect(getNavigationItems(['SUPPORT_ADMIN'], 'ward', allModulesEnabled())).toContainEqual({
       href: '/support',
       label: 'Support Console'
     });
 
-    expect(getNavigationItems(['BISHOPRIC_EDITOR'])).not.toContainEqual({
+    expect(getNavigationItems(['BISHOPRIC_EDITOR'], 'ward', allModulesEnabled())).not.toContainEqual({
       href: '/support',
       label: 'Support Console'
     });

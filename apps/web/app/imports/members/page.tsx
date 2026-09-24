@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { MemberImportClient } from './member-import-client';
 import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth/guards';
 import { canRunImports } from '@/src/auth/roles';
+import { isWardModuleEnabled } from '@/src/modules/service';
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -11,7 +12,7 @@ export default async function ImportMembersPage() {
   const session = await requireAuthenticatedSession();
   enforcePasswordRotation(session);
 
-  if (!session.activeWardId || !canRunImports({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId)) {
+  if (!session.activeWardId || !canRunImports({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId) || !(await isWardModuleEnabled(session.activeWardId, session.user.id, 'imports'))) {
     redirect('/dashboard');
   }
 

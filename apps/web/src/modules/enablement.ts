@@ -13,11 +13,11 @@ export function createModuleEnablement(
 
   return {
     isEnabled(wardId: string, moduleId: string): boolean {
-      return values.get(wardId)?.get(moduleId) ?? registry.get(moduleId)?.defaultEnabled ?? false;
+      return values.get(wardId)?.get(moduleId) ?? (moduleId === 'conducting-core' ? true : registry.get(moduleId)?.defaultEnabled ?? false);
     },
     setEnabled(wardId: string, moduleId: string, enabled: boolean): void {
       const wardValues = values.get(wardId) ?? new Map<string, boolean>();
-      wardValues.set(moduleId, enabled);
+      wardValues.set(moduleId, moduleId === 'conducting-core' ? true : enabled);
       values.set(wardId, wardValues);
     }
   };

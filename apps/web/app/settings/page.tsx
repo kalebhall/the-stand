@@ -7,8 +7,8 @@ import { NotificationTimezoneSetting } from '@/app/settings/notification-timezon
 import { getLocale } from 'next-intl/server';
 import { resolveLocale } from '@/src/i18n/config';
 import { requireAuthenticatedSession } from '@/src/auth/guards';
-import { canManageMeetings, canRunImports, hasRole } from '@/src/auth/roles';
-import { getWardModuleSettings } from '@/src/modules/service';
+import { canManageMeetings, canRunImports, canViewMeetings, hasRole } from '@/src/auth/roles';
+import { getWardModuleSettings, isWardModuleEnabled } from '@/src/modules/service';
 import { ModuleSettings } from '@/app/settings/module-settings';
 
 export default async function SettingsPage() {
@@ -16,8 +16,10 @@ export default async function SettingsPage() {
   const wardId = session.activeWardId;
   const locale = resolveLocale(await getLocale());
   const isStandAdmin = hasRole(session.user.roles, 'STAND_ADMIN');
+  const notificationsEnabled = wardId ? await isWardModuleEnabled(wardId, session.user.id, 'notifications') : false;
   const canManageNotifications =
-    Boolean(wardId) &&
+    Boolean(wardId && notificationsEnabled) &&
+    (wardId ? canViewMeetings({ roles: session.user.roles, activeWardId: wardId }, wardId) : false) &&
     (isStandAdmin ||
       ['BISHOPRIC_EDITOR', 'CLERK_EDITOR', 'WARD_CLERK', 'MEMBERSHIP_CLERK', 'CONDUCTOR_VIEW'].some((role) =>
         hasRole(session.user.roles, role)

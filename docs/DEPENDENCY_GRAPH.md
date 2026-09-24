@@ -37,9 +37,9 @@ flowchart LR
   A25["web:meetings<br/>14 files"]
   A26["web:modules<br/>12 files"]
   A27["web:notes<br/>1 files"]
-  A28["web:notifications<br/>39 files"]
+  A28["web:notifications<br/>40 files"]
   A29["web:offline<br/>3 files"]
-  A30["web:platform<br/>13 files"]
+  A30["web:platform<br/>14 files"]
   A31["web:reports<br/>3 files"]
   A32["web:stand<br/>10 files"]
   A33["web:test-matchers.d.ts<br/>1 files"]
@@ -69,19 +69,19 @@ flowchart LR
   A5 -->|7| A22
   A5 -->|6| A25
   A6 -->|5| A32
+  A8 -->|5| A26
   A5 -->|4| A30
   A6 -->|4| A11
-  A8 -->|4| A26
   A16 -->|4| A8
   A26 -->|4| A13
   A26 -->|4| A30
+  A28 -->|4| A15
   A30 -->|4| A8
   A5 -->|3| A17
   A5 -->|3| A20
   A6 -->|3| A17
   A6 -->|3| A20
   A6 -->|3| A22
-  A28 -->|3| A15
   A5 -->|2| A4
   A5 -->|2| A12
   A6 -->|2| A4
@@ -173,9 +173,9 @@ flowchart LR
 | `web:meetings` | 14 |
 | `web:modules` | 12 |
 | `web:notes` | 1 |
-| `web:notifications` | 39 |
+| `web:notifications` | 40 |
 | `web:offline` | 3 |
-| `web:platform` | 13 |
+| `web:platform` | 14 |
 | `web:reports` | 3 |
 | `web:stand` | 10 |
 | `web:test-matchers.d.ts` | 1 |
@@ -194,8 +194,8 @@ flowchart LR
 | `web:app` | `web:ui` | 121 |
 | `web:app` | `web:auth` | 93 |
 | `web:app` | `web:app` | 69 |
+| `web:notifications` | `web:notifications` | 57 |
 | `web:app` | `web:db` | 56 |
-| `web:notifications` | `web:notifications` | 55 |
 | `web:api` | `web:modules` | 54 |
 | `web:api` | `web:document-designer` | 52 |
 | `web:api` | `web:notifications` | 44 |
@@ -203,7 +203,7 @@ flowchart LR
 | `web:api` | `web:audit` | 30 |
 | `web:ui` | `web:ui` | 30 |
 | `web:api` | `web:lib` | 25 |
-| `web:platform` | `web:platform` | 21 |
+| `web:platform` | `web:platform` | 22 |
 | `web:app` | `web:modules` | 20 |
 | `web:modules` | `web:modules` | 17 |
 | `web:app` | `web:document-designer` | 15 |
@@ -222,9 +222,9 @@ flowchart LR
 | `web:api` | `web:leadership` | 7 |
 | `web:api` | `web:meetings` | 6 |
 | `web:app` | `web:stand` | 5 |
+| `web:auth` | `web:modules` | 5 |
 | `web:api` | `web:platform` | 4 |
 | `web:app` | `web:callings` | 4 |
-| `web:auth` | `web:modules` | 4 |
 | `web:callings` | `web:callings` | 4 |
 | `web:db` | `web:db` | 4 |
 | `web:document-designer` | `web:auth` | 4 |
@@ -232,6 +232,7 @@ flowchart LR
 | `web:lib` | `web:lib` | 4 |
 | `web:modules` | `web:conducting` | 4 |
 | `web:modules` | `web:platform` | 4 |
+| `web:notifications` | `web:db` | 4 |
 | `web:platform` | `web:auth` | 4 |
 | `web:api` | `web:features` | 3 |
 | `web:api` | `web:i18n` | 3 |
@@ -241,7 +242,6 @@ flowchart LR
 | `web:calendar` | `web:calendar` | 3 |
 | `web:conducting` | `web:conducting` | 3 |
 | `web:maintenance` | `web:maintenance` | 3 |
-| `web:notifications` | `web:db` | 3 |
 | `web:api` | `web:announcements` | 2 |
 | `web:api` | `web:church-actions` | 2 |
 | `web:app` | `web:announcements` | 2 |
@@ -342,6 +342,7 @@ flowchart LR
 | `web:stand` | `vitest` | 5 |
 | `web:app` | `@testing-library/user-event` | 4 |
 | `web:modules` | `vitest` | 4 |
+| `web:platform` | `vitest` | 4 |
 | `web:tooling` | `Node.js` | 4 |
 | `web:ui` | `next-auth` | 4 |
 | `web:api` | `Node.js` | 3 |
@@ -351,7 +352,6 @@ flowchart LR
 | `web:db` | `drizzle-orm` | 3 |
 | `web:lib` | `vitest` | 3 |
 | `web:notifications` | `bullmq` | 3 |
-| `web:platform` | `vitest` | 3 |
 | `package:shared` | `vitest` | 2 |
 | `root:other` | `Node.js` | 2 |
 | `web:api` | `pg` | 2 |
@@ -758,7 +758,7 @@ flowchart LR
 | `apps/web/src/auth/auth.ts` | `web:auth` | 5 | 3 |
 | `apps/web/src/auth/guards.ts` | `web:auth` | 1 | 2 |
 | `apps/web/src/auth/navigation.ts` | `web:auth` | 5 | 0 |
-| `apps/web/src/auth/navigation.vitest.ts` | `web:auth` | 2 | 1 |
+| `apps/web/src/auth/navigation.vitest.ts` | `web:auth` | 3 | 1 |
 | `apps/web/src/auth/password.ts` | `web:auth` | 0 | 1 |
 | `apps/web/src/auth/password.vitest.ts` | `web:auth` | 1 | 1 |
 | `apps/web/src/auth/roles.ts` | `web:auth` | 0 | 0 |
@@ -985,7 +985,8 @@ flowchart LR
 | `apps/web/src/notifications/visibility.ts` | `web:notifications` | 1 | 0 |
 | `apps/web/src/notifications/visibility.vitest.ts` | `web:notifications` | 1 | 1 |
 | `apps/web/src/notifications/worker-bookkeeping.vitest.ts` | `web:notifications` | 1 | 1 |
-| `apps/web/src/notifications/worker-entry.ts` | `web:notifications` | 10 | 1 |
+| `apps/web/src/notifications/worker-entry.ts` | `web:notifications` | 5 | 1 |
+| `apps/web/src/notifications/worker-handler.ts` | `web:notifications` | 8 | 0 |
 | `apps/web/src/notifications/worker-rls.vitest.ts` | `web:notifications` | 0 | 2 |
 | `apps/web/src/offline/service-worker.vitest.ts` | `web:offline` | 0 | 3 |
 | `apps/web/src/offline/storage.ts` | `web:offline` | 0 | 0 |
@@ -997,7 +998,8 @@ flowchart LR
 | `apps/web/src/platform/events/core.ts` | `web:platform` | 0 | 0 |
 | `apps/web/src/platform/events/core.vitest.ts` | `web:platform` | 1 | 1 |
 | `apps/web/src/platform/events/dispatch.ts` | `web:platform` | 4 | 0 |
-| `apps/web/src/platform/events/outbox.ts` | `web:platform` | 5 | 1 |
+| `apps/web/src/platform/events/outbox-db.vitest.ts` | `web:platform` | 1 | 2 |
+| `apps/web/src/platform/events/outbox.ts` | `web:platform` | 5 | 0 |
 | `apps/web/src/platform/events/outbox.vitest.ts` | `web:platform` | 1 | 1 |
 | `apps/web/src/platform/offline/lifecycle.ts` | `web:platform` | 2 | 0 |
 | `apps/web/src/platform/permissions/index.ts` | `web:platform` | 6 | 0 |

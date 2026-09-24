@@ -54,8 +54,16 @@ describe('module enablement harness', () => {
     expect(renderBasicProgram(published)).toContain('Faith in Jesus Christ');
   });
 
-  it('isolates enablement between Ward A and Ward B', () => {
+  it('cannot disable Conducting Core through the in-memory mutator', () => {
     const enablement = createModuleEnablement();
+    enablement.setEnabled('ward-a', CORE_MODULE_ID, false);
+    expect(enablement.isEnabled('ward-a', CORE_MODULE_ID)).toBe(true);
+  });
+
+  it('isolates enablement between Ward A and Ward B', () => {
+    const enablement = createModuleEnablement({
+      'ward-b': { programs: true }
+    });
     enablement.setEnabled('ward-a', 'programs', false);
 
     const wardANavigation = getNavigationItems(['STAND_ADMIN'], 'ward-a', enablement);

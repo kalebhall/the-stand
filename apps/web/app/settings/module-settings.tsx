@@ -5,6 +5,7 @@ import { useState } from 'react';
 type ModuleSetting = {
   id: string;
   name: string;
+  description: string;
   version: string;
   enabled: boolean;
   defaultEnabled: boolean;
@@ -45,7 +46,8 @@ export function ModuleSettings({ wardId, initial }: { wardId: string; initial: M
         <div key={module.id} className="flex items-center justify-between gap-4 rounded-md border p-3">
           <div>
             <p className="font-medium">{module.name}</p>
-            <p className="text-xs text-muted-foreground">v{module.version}{module.overridden ? ' · Ward override' : ' · Default'}</p>
+            <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{module.description}</p>
+            <p className="text-xs text-muted-foreground">v{module.version}{module.overridden ? ' · Ward override' : module.defaultEnabled ? ' · On by default' : ' · Off by default'}</p>
           </div>
           <button
             type="button"

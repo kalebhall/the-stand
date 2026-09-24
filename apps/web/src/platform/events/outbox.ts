@@ -1,5 +1,3 @@
-import type { PoolClient } from 'pg';
-
 import { DEFAULT_MODULE_REGISTRY } from '@/src/modules/registry';
 import { buildEffectiveModuleSettings } from '@/src/modules/service';
 import { dispatchCoreEvent } from './dispatch';
@@ -8,7 +6,14 @@ import { isCoreEventPayload } from './core';
 
 const CORE_EVENT_TYPES = new Set(['CORE_MEETING_CREATED', 'CORE_MEETING_COMPLETED']);
 
-type DbClient = Pick<PoolClient, 'query'>;
+export type EventOutboxDbClient = {
+  query: (text: string, values?: unknown[]) => Promise<{
+    rows: Array<Record<string, unknown>>;
+    rowCount?: number | null;
+  }>;
+};
+
+type DbClient = EventOutboxDbClient;
 
 export function coreEventOutboxType(event: CoreEvent): string {
   return event.type === 'MeetingCreated' ? 'CORE_MEETING_CREATED' : 'CORE_MEETING_COMPLETED';
