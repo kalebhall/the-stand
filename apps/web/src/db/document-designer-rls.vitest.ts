@@ -19,6 +19,7 @@ describe('document designer RLS isolation', () => {
     const sql = String.raw`
 BEGIN;
 -- The database is provisioned by the migration setup before this test runs.
+SET LOCAL row_security = on;
 TRUNCATE TABLE meeting_document, ward_document_settings, document_template_version, document_template, meeting, ward, stake RESTART IDENTITY CASCADE;
 
 DO $$
