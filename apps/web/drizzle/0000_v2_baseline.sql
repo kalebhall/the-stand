@@ -1595,15 +1595,15 @@ CREATE TABLE public.ward_stand_template (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     ward_id uuid NOT NULL,
     welcome_text text DEFAULT 'Welcome to The Church of Jesus Christ of Latter-day Saints.'::text NOT NULL,
-    sustain_template text DEFAULT 'Those in favor of sustaining **{memberName}** as **{callingName}**, please manifest it.'::text NOT NULL,
-    release_template text DEFAULT 'Those who wish to express appreciation for the service of **{memberName}** as **{callingName}**, please do so.'::text NOT NULL,
+    sustain_template text DEFAULT '**{memberName}** has been called as **{callingName}**. Those in favor of sustaining [him or her] may show it by the uplifted hand. [Pause briefly.] Those opposed, if any, may also show it. [Pause briefly.]'::text NOT NULL,
+    release_template text DEFAULT '**{memberName}** has been released as  **{callingName}**. Those who would like to express thanks for [his or her] service may show it by the uplifted hand.'::text NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    welcome_new_member_template text DEFAULT 'After a few words of introduction, we welcome **{memberName}** into the ward by the uplifted hand.'::text NOT NULL,
-    baby_blessing_template text DEFAULT 'The person acting as voice addresses Heavenly Father as in prayer, gives the child a name, addresses the child, gives a blessing as guided by the Spirit, and closes in the name of Jesus Christ.'::text NOT NULL,
-    priesthood_ordination_template text DEFAULT '**{memberName}** will be ordained to the office of **{callingName}**. The ordinance is performed by the authority and according to the required elements in General Handbook 18.10.5.'::text NOT NULL,
-    priesthood_advancement_template text DEFAULT '**{memberName}** will be ordained to the office of **{callingName}**. The ordinance is performed by the authority and according to the required elements in General Handbook 18.10.5.'::text NOT NULL,
-    recognize_baptized_child_template text DEFAULT 'We recognize **{memberName}**, who has been baptized. [Use the ward-approved introduction and welcome; this prompt does not replace the baptism or confirmation ordinance.]'::text NOT NULL,
+    welcome_new_member_template text DEFAULT 'Would **{memberName}** please stand. **{memberName}** [moved into the ward / was baptized] all those who would like to welcome **{memberName}** into the ward please do so by the uplifted hand.'::text NOT NULL,
+    baby_blessing_template text DEFAULT 'We will now have a baby blessing for the **{lastName}** baby.'::text NOT NULL,
+    priesthood_ordination_template text DEFAULT 'We propose that **{memberName}** receive the Aaronic Priesthood and be ordained a **{callingName}**. Those in favor may show it by the uplifted hand. [Pause briefly.] Those opposed, if any, may also show it. [Pause briefly.]'::text NOT NULL,
+    priesthood_advancement_template text DEFAULT 'We propose that **{memberName}** be ordained a **{callingName}**. Those in favor may show it by the uplifted hand. [Pause briefly.] Those opposed, if any, may also show it. [Pause briefly.]'::text NOT NULL,
+    recognize_baptized_child_template text DEFAULT '**{memberName}** was baptized recently and we would like to reconize them as a new member of the ward.'::text NOT NULL,
     template_metadata jsonb DEFAULT '{}'::jsonb NOT NULL
 );
 
