@@ -17,7 +17,7 @@ export function getDashboardModuleVisibility(
   enablement: ModuleEnablement,
   canViewMeetings: boolean,
   canViewCallings: boolean,
-  canManageMeetings: boolean,
+  canViewTechnology: boolean,
   canViewSupport: boolean
 ): DashboardModuleVisibility {
   return {
@@ -28,7 +28,7 @@ export function getDashboardModuleVisibility(
     imports: canViewCallings && enablement.isEnabled(wardId, 'imports'),
     bishopric: canViewMeetings && enablement.isEnabled(wardId, 'bishopric'),
     leadership: canViewMeetings && enablement.isEnabled(wardId, 'leadership'),
-    technology: canManageMeetings && enablement.isEnabled(wardId, 'technology-checklist'),
+    technology: canViewTechnology && enablement.isEnabled(wardId, 'technology-checklist'),
     support: canViewSupport && enablement.isEnabled(wardId, 'support')
   };
 }

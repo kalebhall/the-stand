@@ -99,7 +99,7 @@ describe('getNavigationGroups', () => {
   it('preserves canonical item order while assigning visible items to fixed groups', () => {
     const groups = getNavigationGroups(['STAND_ADMIN'], 'ward', allModulesEnabled());
     expect(groups.map((group) => group.id)).toEqual(['workspace', 'ward', 'ministry', 'administration']);
-    expect(groups[0]?.items.map((item) => item.href)).toEqual(['/dashboard', '/programs', '/programs/templates', '/meetings']);
+    expect(groups[0]?.items.map((item) => item.href)).toEqual(['/dashboard', '/meetings', '/announcements', '/programs', '/programs/templates']);
     expect(groups[1]?.items.map((item) => item.href)).toEqual(['/bishopric', '/interviews', '/technology']);
   });
 

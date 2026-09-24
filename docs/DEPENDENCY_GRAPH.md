@@ -46,11 +46,11 @@ flowchart LR
   A34["web:test-matchers.d.ts<br/>1 files"]
   A35["web:tooling<br/>3 files"]
   A36["web:types<br/>2 files"]
-  A37["web:ui<br/>35 files"]
+  A37["web:ui<br/>34 files"]
   A38["web:version.mjs<br/>1 files"]
   A5 -->|169| A8
   A5 -->|148| A16
-  A6 -->|120| A37
+  A6 -->|119| A37
   A6 -->|94| A8
   A6 -->|56| A16
   A5 -->|54| A27
@@ -187,7 +187,7 @@ flowchart LR
 | `web:test-matchers.d.ts` | 1 |
 | `web:tooling` | 3 |
 | `web:types` | 2 |
-| `web:ui` | 35 |
+| `web:ui` | 34 |
 | `web:version.mjs` | 1 |
 
 ## Internal dependencies
@@ -197,7 +197,7 @@ flowchart LR
 | `web:document-designer` | `web:document-designer` | 180 |
 | `web:api` | `web:auth` | 169 |
 | `web:api` | `web:db` | 148 |
-| `web:app` | `web:ui` | 120 |
+| `web:app` | `web:ui` | 119 |
 | `web:app` | `web:auth` | 94 |
 | `web:app` | `web:app` | 70 |
 | `web:notifications` | `web:notifications` | 57 |
@@ -206,7 +206,7 @@ flowchart LR
 | `web:api` | `web:document-designer` | 52 |
 | `web:api` | `web:notifications` | 44 |
 | `web:api` | `web:api` | 36 |
-| `web:ui` | `web:ui` | 33 |
+| `web:ui` | `web:ui` | 32 |
 | `web:api` | `web:audit` | 30 |
 | `web:app` | `web:modules` | 29 |
 | `web:api` | `web:lib` | 25 |
@@ -327,7 +327,7 @@ flowchart LR
 | `web:api` | `next` | 85 |
 | `web:app` | `react` | 44 |
 | `web:api` | `vitest` | 33 |
-| `web:ui` | `react` | 32 |
+| `web:ui` | `react` | 31 |
 | `web:document-designer` | `vitest` | 25 |
 | `web:app` | `vitest` | 21 |
 | `web:app` | `next-intl` | 19 |
@@ -607,7 +607,7 @@ flowchart LR
 | `apps/web/app/imports/sacrament-planner/sacrament-planner-import-client.tsx` | `web:app` | 2 | 1 |
 | `apps/web/app/interviews/interviews-client.tsx` | `web:app` | 5 | 1 |
 | `apps/web/app/interviews/page.tsx` | `web:app` | 8 | 1 |
-| `apps/web/app/layout.tsx` | `web:app` | 6 | 4 |
+| `apps/web/app/layout.tsx` | `web:app` | 5 | 4 |
 | `apps/web/app/login/login-form.tsx` | `web:app` | 2 | 2 |
 | `apps/web/app/login/page.tsx` | `web:app` | 2 | 1 |
 | `apps/web/app/logout/logout-form.tsx` | `web:app` | 2 | 2 |
@@ -731,10 +731,9 @@ flowchart LR
 | `apps/web/components/WardBusinessSection.tsx` | `web:ui` | 2 | 3 |
 | `apps/web/components/WardBusinessSection.vitest.tsx` | `web:ui` | 1 | 4 |
 | `apps/web/components/app-navigation.tsx` | `web:ui` | 1 | 0 |
-| `apps/web/components/app-shell.tsx` | `web:ui` | 10 | 4 |
+| `apps/web/components/app-shell.tsx` | `web:ui` | 9 | 4 |
 | `apps/web/components/auth-session-provider.tsx` | `web:ui` | 0 | 3 |
 | `apps/web/components/auth-session-refresh.tsx` | `web:ui` | 0 | 3 |
-| `apps/web/components/conducting-mode-context.tsx` | `web:ui` | 0 | 1 |
 | `apps/web/components/dashboard/dashboard-grid.tsx` | `web:ui` | 3 | 2 |
 | `apps/web/components/dashboard/dashboard-grid.vitest.tsx` | `web:ui` | 1 | 2 |
 | `apps/web/components/deployment-watcher.tsx` | `web:ui` | 0 | 1 |

@@ -41,6 +41,14 @@ export function getNavigationItems(
 
   add('conducting-core', '/dashboard', true);
 
+  if (hasAnyRole(roles, MEETING_VIEW_ROLES) || hasRole(roles, 'STAND_ADMIN')) {
+    add('conducting-core', '/meetings', true);
+  }
+
+  if (hasAnyRole(roles, CLERK_OR_BISHOPRIC_ROLES) || hasRole(roles, 'STAND_ADMIN')) {
+    add('announcements', '/announcements', true);
+  }
+
   const canViewPrograms = hasRole(roles, 'PROGRAM_EDITOR') || hasRole(roles, 'BISHOPRIC_EDITOR') || hasRole(roles, 'STAND_ADMIN');
   const canAdministerTemplates = hasRole(roles, 'STAKE_ADMIN') || hasRole(roles, 'SYSTEM_ADMIN') || hasRole(roles, 'SUPPORT_ADMIN');
   if (advancedDesignerEnabled) {
@@ -49,9 +57,6 @@ export function getNavigationItems(
     add('programs', '/programs/templates/admin', canAdministerTemplates);
   }
 
-  if (hasAnyRole(roles, MEETING_VIEW_ROLES) || hasRole(roles, 'STAND_ADMIN')) {
-    add('conducting-core', '/meetings', true);
-  }
 
   if (hasAnyRole(roles, CLERK_OR_BISHOPRIC_ROLES) || hasRole(roles, 'STAND_ADMIN')) {
     add('bishopric', '/bishopric', true);
@@ -65,7 +70,6 @@ export function getNavigationItems(
     add('leadership', '/speakers', true);
     add('membership-ordinances', '/membership-ordinances', true);
     add('notifications', '/notifications', true);
-    add('announcements', '/announcements', true);
     add('reports', '/reports', true);
     add('imports', '/imports', true);
   }
@@ -87,10 +91,11 @@ const NAV_GROUPS: readonly Omit<AppNavGroup, 'items'>[] = [
 
 const NAV_GROUP_BY_HREF: Readonly<Record<string, AppNavGroup['id']>> = {
   '/dashboard': 'workspace',
+  '/meetings': 'workspace',
+  '/announcements': 'workspace',
   '/programs': 'workspace',
   '/programs/templates': 'workspace',
   '/programs/templates/admin': 'workspace',
-  '/meetings': 'workspace',
   '/bishopric': 'ward',
   '/interviews': 'ward',
   '/technology': 'ward',
@@ -99,7 +104,6 @@ const NAV_GROUP_BY_HREF: Readonly<Record<string, AppNavGroup['id']>> = {
   '/speakers': 'ministry',
   '/membership-ordinances': 'ministry',
   '/notifications': 'ministry',
-  '/announcements': 'administration',
   '/reports': 'administration',
   '/imports': 'administration',
   '/support': 'support'

@@ -8,7 +8,6 @@ import type { Session } from 'next-auth';
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { getNavigationGroups, type AppNavGroup } from '@/src/auth/navigation';
-import { useConductingMode } from '@/components/conducting-mode-context';
 import { DeploymentWatcher } from '@/components/deployment-watcher';
 import { SiteLogo } from '@/components/site-logo';
 import { NotificationBell } from '@/components/notification-bell';
@@ -17,6 +16,7 @@ import { createModuleEnablement } from '@/src/modules/enablement';
 import type { EffectiveModuleSetting } from '@/src/modules/service';
 
 const NAV_GROUP_STORAGE_PREFIX = 'the-stand:navigation-groups:';
+const SIDEBAR_STORAGE_PREFIX = 'the-stand:sidebar-collapsed:';
 
 function NavigationGroups({
   groups,
@@ -82,8 +82,8 @@ function NavigationGroups({
 
 export function AppShell({ session, children }: { session: Session | null; children: ReactNode }) {
   const pathname = usePathname();
-  const { isConductingMode, toggleConductingMode } = useConductingMode();
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [moduleSettings, setModuleSettings] = useState<EffectiveModuleSetting[]>([]);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
   const isDevelopmentSite = process.env.NEXT_PUBLIC_APP_ENV === 'development';
@@ -109,6 +109,19 @@ export function AppShell({ session, children }: { session: Session | null; child
   const navigationStorageKey = session?.user?.id && session.activeWardId
     ? `${NAV_GROUP_STORAGE_PREFIX}${session.user.id}:${session.activeWardId}`
     : null;
+  const sidebarStorageKey = session?.user?.id && session.activeWardId
+    ? `${SIDEBAR_STORAGE_PREFIX}${session.user.id}:${session.activeWardId}`
+    : null;
+
+  useEffect(() => {
+    if (!sidebarStorageKey) return;
+    setIsSidebarCollapsed(false);
+    try {
+      setIsSidebarCollapsed(localStorage.getItem(sidebarStorageKey) === 'true');
+    } catch {
+      // Ignore unavailable local preferences.
+    }
+  }, [sidebarStorageKey]);
 
   useEffect(() => {
     if (!navigationStorageKey) return;
@@ -140,6 +153,20 @@ export function AppShell({ session, children }: { session: Session | null; child
     });
   };
 
+  const toggleSidebar = () => {
+    setIsSidebarCollapsed((current) => {
+      const next = !current;
+      if (sidebarStorageKey) {
+        try {
+          localStorage.setItem(sidebarStorageKey, String(next));
+        } catch {
+          // Ignore unavailable local preferences.
+        }
+      }
+      return next;
+    });
+  };
+
   if (!session?.user?.id) {
     return <>{children}</>;
   }
@@ -156,7 +183,7 @@ export function AppShell({ session, children }: { session: Session | null; child
       <aside
         className={cn(
           'hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 z-30 border-r border-[#c8d7de] bg-card/95 backdrop-blur',
-          isConductingMode && 'md:hidden'
+          isSidebarCollapsed && 'md:hidden'
         )}
       >
         <div className="flex h-16 shrink-0 items-center justify-between border-b border-[#c8d7de] px-6">
@@ -187,18 +214,14 @@ export function AppShell({ session, children }: { session: Session | null; child
             {/* Deployment update watcher */}
             <DeploymentWatcher />
 
-            {/* Stand Conducting Mode Trigger Button */}
             <button
               type="button"
-              onClick={toggleConductingMode}
-              className="flex w-full items-center justify-between rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs font-semibold text-amber-700 dark:text-amber-300 hover:bg-amber-500/20 transition-colors"
-              title="Enter Stand Conducting Focus Mode"
+              onClick={toggleSidebar}
+              className="flex w-full items-center justify-between rounded-lg border px-3 py-2 text-xs font-semibold text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              title="Collapse navigation menu"
             >
-              <span className="flex items-center gap-1.5">
-                <span>🎙️</span>
-                <span>{isConductingMode ? 'Exit Focus Mode' : 'Stand Focus Mode'}</span>
-              </span>
-              <span className="rounded bg-amber-500/20 px-1.5 py-0.5 text-[10px]">{isConductingMode ? 'Exit' : 'Enter'}</span>
+              <span>Collapse menu</span>
+              <span aria-hidden="true">‹</span>
             </button>
 
             <div className="space-y-1 text-xs text-muted-foreground">
@@ -225,12 +248,12 @@ export function AppShell({ session, children }: { session: Session | null; child
       </aside>
 
       {/* Main Content Area */}
-      <div className={cn('flex flex-1 flex-col', !isConductingMode && 'md:pl-64')}>
+      <div className={cn('flex flex-1 flex-col', !isSidebarCollapsed && 'md:pl-64')}>
         {/* Mobile top bar */}
         <header
           className={cn(
             'sticky top-0 z-20 flex h-14 items-center justify-between border-b bg-background/95 px-4 backdrop-blur',
-            !isConductingMode && 'md:hidden'
+            !isSidebarCollapsed && 'md:hidden'
           )}
         >
           <div className="flex items-center gap-3">
@@ -238,7 +261,7 @@ export function AppShell({ session, children }: { session: Session | null; child
               type="button"
               onClick={() => setIsMobileNavOpen(true)}
               className="inline-flex h-9 w-9 items-center justify-center rounded-md border text-lg hover:bg-accent"
-              aria-label={isConductingMode ? 'Open navigation menu in focus mode' : 'Open navigation menu'}
+              aria-label="Open navigation menu"
               aria-expanded={isMobileNavOpen}
               aria-controls="mobile-navigation"
             >
@@ -259,14 +282,6 @@ export function AppShell({ session, children }: { session: Session | null; child
 
           <div className="flex items-center gap-2">
             {notificationsEnabled && <NotificationBell wardId={session.activeWardId} />}
-            <button
-              type="button"
-              onClick={toggleConductingMode}
-              className="flex items-center gap-1.5 rounded-full border border-amber-500/40 bg-amber-500/10 px-3 py-1 text-xs font-semibold text-amber-700 transition-transform active:scale-95 dark:text-amber-300"
-            >
-              <span>🎙️</span>
-              <span>{isConductingMode ? 'Exit Focus Mode' : 'Stand Mode'}</span>
-            </button>
           </div>
         </header>
 
@@ -274,7 +289,7 @@ export function AppShell({ session, children }: { session: Session | null; child
           <>
             <button
               type="button"
-              className="fixed inset-0 z-30 bg-black/40 md:hidden"
+              className={cn('fixed inset-0 z-30 bg-black/40', !isSidebarCollapsed && 'md:hidden')}
               aria-label="Close navigation menu"
               onClick={() => setIsMobileNavOpen(false)}
             />
@@ -282,7 +297,7 @@ export function AppShell({ session, children }: { session: Session | null; child
               id="mobile-navigation"
               className={cn(
                 'fixed inset-y-0 left-0 z-40 flex w-72 max-w-[85vw] flex-col border-r bg-card shadow-xl',
-                !isConductingMode && 'md:hidden'
+                !isSidebarCollapsed && 'md:hidden'
               )}
               aria-label="Mobile Navigation"
             >
@@ -321,15 +336,12 @@ export function AppShell({ session, children }: { session: Session | null; child
                     type="button"
                     onClick={() => {
                       setIsMobileNavOpen(false);
-                      toggleConductingMode();
+                      toggleSidebar();
                     }}
-                    className="flex w-full items-center justify-between rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs font-semibold text-amber-700 hover:bg-amber-500/20 dark:text-amber-300"
+                    className="flex w-full items-center justify-between rounded-lg border px-3 py-2 text-xs font-semibold text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                   >
-                    <span className="flex items-center gap-1.5">
-                      <span>🎙️</span>
-                      <span>{isConductingMode ? 'Exit Focus Mode' : 'Stand Focus Mode'}</span>
-                    </span>
-                    <span className="rounded bg-amber-500/20 px-1.5 py-0.5 text-[10px]">{isConductingMode ? 'Exit' : 'Enter'}</span>
+                    <span>Expand menu</span>
+                    <span aria-hidden="true">›</span>
                   </button>
                   <Link
                     href="/account"
