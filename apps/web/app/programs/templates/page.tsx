@@ -2,12 +2,13 @@ import { redirect } from 'next/navigation';
 
 import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth/guards';
 import { canManageWardProgramTemplates, canViewProgramDesigner } from '@/src/auth/roles';
+import { isWardModuleEnabled } from '@/src/modules/service';
 import { TemplateGalleryClient } from './template-gallery-client';
 
 export default async function TemplateGalleryPage() {
   const session = await requireAuthenticatedSession();
   enforcePasswordRotation(session);
-  if (!session.activeWardId || !canViewProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId)) redirect('/dashboard');
+  if (!session.activeWardId || !(await isWardModuleEnabled(session.activeWardId, session.user.id, 'programs')) || !canViewProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId)) redirect('/dashboard');
   const canCopy = canManageWardProgramTemplates({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId);
   return (
     <main className="mx-auto w-full max-w-6xl space-y-6 p-4 sm:p-6">

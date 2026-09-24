@@ -21,6 +21,7 @@ import {
 
 import { MembershipOrdinanceWorkspaceControls } from './workspace-controls';
 import { MembershipOrdinanceSection } from '@/components/MembershipOrdinanceSection';
+import { isWardModuleEnabled } from '@/src/modules/service';
 
 const GROUPS: Array<{ key: MembershipOrdinanceActionGroup; title: string; description: string }> = [
   { key: 'needs_attention', title: 'Needs attention', description: 'Actions with follow-up, interview, LCR, or overdue work.' },
@@ -130,7 +131,7 @@ export default async function MembershipOrdinancesPage({ searchParams }: { searc
   const session = await requireAuthenticatedSession();
   enforcePasswordRotation(session);
 
-  if (!session.activeWardId || !canManageMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId)) {
+  if (!session.activeWardId || !(await isWardModuleEnabled(session.activeWardId, session.user.id, 'membership-ordinances')) || !canManageMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId)) {
     redirect('/dashboard');
   }
 

@@ -93,7 +93,7 @@ export type NotificationEventDefinition = {
 type EventDefinitionInput = Omit<NotificationEventDefinition, 'eventType'>;
 
 const inApp: NotificationChannel[] = ['IN_APP'];
-const inAppAndEmail: NotificationChannel[] = ['IN_APP', 'EMAIL'];
+const inAppDefault: NotificationChannel[] = ['IN_APP'];
 
 const definition = (eventType: NotificationEventType, values: EventDefinitionInput): NotificationEventDefinition => ({
   eventType,
@@ -104,7 +104,7 @@ const EVENT_DEFINITIONS: Record<NotificationEventType, NotificationEventDefiniti
   CALLING_SUGGESTED: definition('CALLING_SUGGESTED', {
     category: 'CALLINGS',
     label: 'Calling suggested',
-    defaultChannels: inAppAndEmail,
+    defaultChannels: inAppDefault,
     severity: 'info'
   }),
   CALLING_PROPOSAL_ACCEPTED: definition('CALLING_PROPOSAL_ACCEPTED', {
@@ -128,19 +128,19 @@ const EVENT_DEFINITIONS: Record<NotificationEventType, NotificationEventDefiniti
   CALLING_SUSTAINED: definition('CALLING_SUSTAINED', {
     category: 'CALLINGS',
     label: 'Calling sustained',
-    defaultChannels: inAppAndEmail,
+    defaultChannels: inAppDefault,
     severity: 'success'
   }),
   CALLING_SET_APART: definition('CALLING_SET_APART', {
     category: 'CALLINGS',
     label: 'Calling set apart',
-    defaultChannels: inAppAndEmail,
+    defaultChannels: inAppDefault,
     severity: 'success'
   }),
   CALLING_RELEASED: definition('CALLING_RELEASED', {
     category: 'CALLINGS',
     label: 'Calling released',
-    defaultChannels: inAppAndEmail,
+    defaultChannels: inAppDefault,
     severity: 'info'
   }),
   CALLING_ASSIGNMENT_CHANGED: definition('CALLING_ASSIGNMENT_CHANGED', {
@@ -183,7 +183,7 @@ const EVENT_DEFINITIONS: Record<NotificationEventType, NotificationEventDefiniti
   MEMBERSHIP_IMPORT_FAILED: definition('MEMBERSHIP_IMPORT_FAILED', {
     category: 'MEMBERSHIP',
     label: 'Membership import failed',
-    defaultChannels: inAppAndEmail,
+    defaultChannels: inAppDefault,
     severity: 'error'
   }),
   CALLING_IMPORT_COMPLETED: definition('CALLING_IMPORT_COMPLETED', {
@@ -195,7 +195,7 @@ const EVENT_DEFINITIONS: Record<NotificationEventType, NotificationEventDefiniti
   CALLING_IMPORT_FAILED: definition('CALLING_IMPORT_FAILED', {
     category: 'MEMBERSHIP',
     label: 'Calling import failed',
-    defaultChannels: inAppAndEmail,
+    defaultChannels: inAppDefault,
     severity: 'error'
   }),
   MEMBER_DUPLICATE_DETECTED: definition('MEMBER_DUPLICATE_DETECTED', {
@@ -219,19 +219,19 @@ const EVENT_DEFINITIONS: Record<NotificationEventType, NotificationEventDefiniti
   MEETING_UPDATED: definition('MEETING_UPDATED', {
     category: 'MEETINGS',
     label: 'Meeting changed',
-    defaultChannels: inAppAndEmail,
+    defaultChannels: inAppDefault,
     severity: 'info'
   }),
   MEETING_PUBLISHED: definition('MEETING_PUBLISHED', {
     category: 'MEETINGS',
     label: 'Meeting published',
-    defaultChannels: inAppAndEmail,
+    defaultChannels: inAppDefault,
     severity: 'info'
   }),
   MEETING_REPUBLISHED: definition('MEETING_REPUBLISHED', {
     category: 'MEETINGS',
     label: 'Meeting republished',
-    defaultChannels: inAppAndEmail,
+    defaultChannels: inAppDefault,
     severity: 'info'
   }),
   MEETING_COMPLETED: definition('MEETING_COMPLETED', {
@@ -243,13 +243,13 @@ const EVENT_DEFINITIONS: Record<NotificationEventType, NotificationEventDefiniti
   MEETING_PROGRAM_ITEM_CHANGED: definition('MEETING_PROGRAM_ITEM_CHANGED', {
     category: 'MEETINGS',
     label: 'Meeting program item changed',
-    defaultChannels: inAppAndEmail,
+    defaultChannels: inAppDefault,
     severity: 'info'
   }),
   MEETING_BUSINESS_LINE_ADDED: definition('MEETING_BUSINESS_LINE_ADDED', {
     category: 'MEETINGS',
     label: 'Meeting business added',
-    defaultChannels: inAppAndEmail,
+    defaultChannels: inAppDefault,
     severity: 'info'
   }),
   MEETING_MISSING_REQUIRED_INFORMATION: definition('MEETING_MISSING_REQUIRED_INFORMATION', {
@@ -263,7 +263,7 @@ const EVENT_DEFINITIONS: Record<NotificationEventType, NotificationEventDefiniti
   NOTE_MENTIONED: definition('NOTE_MENTIONED', {
     category: 'NOTES',
     label: 'You were mentioned in a note',
-    defaultChannels: inAppAndEmail,
+    defaultChannels: inAppDefault,
     severity: 'info'
   }),
   COMMENT_CREATED: definition('COMMENT_CREATED', { category: 'NOTES', label: 'Comment added', defaultChannels: inApp, severity: 'info' }),
@@ -307,25 +307,25 @@ const EVENT_DEFINITIONS: Record<NotificationEventType, NotificationEventDefiniti
   CALENDAR_IMPORT_FAILED: definition('CALENDAR_IMPORT_FAILED', {
     category: 'CALENDAR',
     label: 'Calendar import failed',
-    defaultChannels: inAppAndEmail,
+    defaultChannels: inAppDefault,
     severity: 'error'
   }),
   ACCESS_REQUEST_SUBMITTED: definition('ACCESS_REQUEST_SUBMITTED', {
     category: 'ACCESS',
     label: 'Access request submitted',
-    defaultChannels: inAppAndEmail,
+    defaultChannels: inAppDefault,
     severity: 'info'
   }),
   SUPPORT_REQUEST_CREATED: definition('SUPPORT_REQUEST_CREATED', {
     category: 'ACCESS',
     label: 'Support request created',
-    defaultChannels: inAppAndEmail,
+    defaultChannels: inAppDefault,
     severity: 'info'
   }),
   USER_REQUIRES_ASSIGNMENT: definition('USER_REQUIRES_ASSIGNMENT', {
     category: 'ACCESS',
     label: 'User requires assignment',
-    defaultChannels: inAppAndEmail,
+    defaultChannels: inAppDefault,
     severity: 'warning'
   }),
   SUPPORT_REQUEST_ASSIGNED: definition('SUPPORT_REQUEST_ASSIGNED', {
@@ -343,37 +343,37 @@ const EVENT_DEFINITIONS: Record<NotificationEventType, NotificationEventDefiniti
   SUPPORT_REQUEST_REMINDER: definition('SUPPORT_REQUEST_REMINDER', {
     category: 'REMINDERS',
     label: 'Support request reminder',
-    defaultChannels: inAppAndEmail,
+    defaultChannels: inAppDefault,
     severity: 'warning'
   }),
   ACCESS_REQUEST_APPROVED: definition('ACCESS_REQUEST_APPROVED', {
     category: 'ACCESS',
     label: 'Access request approved',
-    defaultChannels: inAppAndEmail,
+    defaultChannels: inAppDefault,
     severity: 'success'
   }),
   ACCESS_REQUEST_DENIED: definition('ACCESS_REQUEST_DENIED', {
     category: 'ACCESS',
     label: 'Access request denied',
-    defaultChannels: inAppAndEmail,
+    defaultChannels: inAppDefault,
     severity: 'warning'
   }),
   WARD_ACCESS_GRANTED: definition('WARD_ACCESS_GRANTED', {
     category: 'ACCESS',
     label: 'Ward access granted',
-    defaultChannels: inAppAndEmail,
+    defaultChannels: inAppDefault,
     severity: 'success'
   }),
   WARD_ACCESS_CHANGED: definition('WARD_ACCESS_CHANGED', {
     category: 'ACCESS',
     label: 'Ward access changed',
-    defaultChannels: inAppAndEmail,
+    defaultChannels: inAppDefault,
     severity: 'info'
   }),
   WARD_ACCESS_REVOKED: definition('WARD_ACCESS_REVOKED', {
     category: 'ACCESS',
     label: 'Ward access revoked',
-    defaultChannels: inAppAndEmail,
+    defaultChannels: inAppDefault,
     severity: 'warning'
   }),
   SUPPORT_ACCESS_STARTED: definition('SUPPORT_ACCESS_STARTED', {
@@ -391,13 +391,13 @@ const EVENT_DEFINITIONS: Record<NotificationEventType, NotificationEventDefiniti
   SYSTEM_FAILURE: definition('SYSTEM_FAILURE', {
     category: 'SYSTEM',
     label: 'System failure',
-    defaultChannels: inAppAndEmail,
+    defaultChannels: inAppDefault,
     severity: 'error'
   }),
   NOTIFICATION_DELIVERY_FAILED: definition('NOTIFICATION_DELIVERY_FAILED', {
     category: 'SYSTEM',
     label: 'Notification delivery failed',
-    defaultChannels: inAppAndEmail,
+    defaultChannels: inAppDefault,
     severity: 'error'
   }),
   MEETING_NOT_PUBLISHED_REMINDER: definition('MEETING_NOT_PUBLISHED_REMINDER', {
@@ -421,13 +421,13 @@ const EVENT_DEFINITIONS: Record<NotificationEventType, NotificationEventDefiniti
   MEMBERSHIP_ORDINANCE_ACTION_NEEDED_REMINDER: definition('MEMBERSHIP_ORDINANCE_ACTION_NEEDED_REMINDER', {
     category: 'REMINDERS',
     label: 'Membership or ordinance action needs attention',
-    defaultChannels: inAppAndEmail,
+    defaultChannels: inAppDefault,
     severity: 'warning'
   }),
   MEMBERSHIP_ORDINANCE_LCR_NEEDED_REMINDER: definition('MEMBERSHIP_ORDINANCE_LCR_NEEDED_REMINDER', {
     category: 'REMINDERS',
     label: 'Priesthood action needs LCR update',
-    defaultChannels: inAppAndEmail,
+    defaultChannels: inAppDefault,
     severity: 'warning'
   }),
   ANNOUNCEMENT_EXPIRING_REMINDER: definition('ANNOUNCEMENT_EXPIRING_REMINDER', {

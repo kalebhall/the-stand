@@ -10,6 +10,7 @@ import { setDbContext } from '@/src/db/context';
 import { INTRODUCTION_ITEM_TYPE, isMeetingType, SPEAKER_STATUSES, validateProgramItemsForMeetingType, type IntroductionRoles, type ProgramItemInput } from '@/src/meetings/types';
 import { enqueueOutboxNotificationJob } from '@/src/notifications/queue';
 import { enqueueNotificationOutboxEvent, insertNotificationOutboxEvent } from '@/src/notifications/outbox';
+import { insertCoreEventOutboxEvent } from '@/src/platform/events/outbox';
 
 function toTrimmedString(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
@@ -100,8 +101,8 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
               m.status,
               COUNT(mpi.id)::text AS program_item_count
          FROM meeting m
-         LEFT JOIN meeting_program_item mpi ON mpi.meeting_id = m.id
-        WHERE m.ward_id = $1
+         LEFT JOIN meeting_program_item mpi ON mpi.meeting_id = m.id AND mpi.ward_id = m.ward_id
+        WHERE m.ward_id = $1::uuid
         GROUP BY m.id
         ORDER BY m.meeting_date DESC`,
       [wardId]
@@ -182,7 +183,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
 
     const inserted = await client.query(
       `INSERT INTO meeting (ward_id, meeting_date, meeting_type)
-       VALUES ($1, $2, $3)
+       VALUES ($1::uuid, $2::date, $3::text)
        RETURNING id`,
       [wardId, meetingDate, meetingType]
     );
@@ -251,9 +252,22 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
       payload: { meetingId: inserted.rows[0].id, meetingDate, meetingType }
     });
 
+    const coreEvent = {
+      type: 'MeetingCreated' as const,
+      version: 1 as const,
+      wardId,
+      actorId: session.user.id,
+      meetingId: inserted.rows[0].id as string,
+      occurredAt: new Date().toISOString(),
+      meetingDate,
+      meetingType
+    };
+    const coreEventOutboxId = await insertCoreEventOutboxEvent(client, coreEvent);
+
     await client.query('COMMIT');
 
     enqueueNotificationOutboxEvent(enqueueOutboxNotificationJob, wardId, eventOutboxId);
+    enqueueNotificationOutboxEvent(enqueueOutboxNotificationJob, wardId, coreEventOutboxId);
 
     return NextResponse.json({ id: inserted.rows[0].id }, { status: 201 });
   } catch (error) {

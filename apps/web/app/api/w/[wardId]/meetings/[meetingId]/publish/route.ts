@@ -4,6 +4,8 @@ import { NextResponse } from 'next/server';
 import { recordAuditEvent } from '@/src/audit/service';
 import { auth } from '@/src/auth/auth';
 import { canPublishProgram, canRepublishProgram, canViewProgramDesigner } from '@/src/auth/roles';
+import { isAdvancedDesignerFeatureEnabled } from '@/src/features/advanced-designer';
+import { isMeetingStatus, transitionMeetingStatus } from '@/src/conducting/model';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 import { adaptLegacyLayoutToDocument, COMPATIBILITY_PUBLIC_BLOCK_TYPES } from '@/src/document-designer/legacy-layout-adapter';
@@ -18,6 +20,7 @@ import { getPublicProgramRenderLabels } from '@/src/i18n/public-program';
 import { resolveLocale } from '@/src/i18n/config';
 import type { IntroductionRoles } from '@/src/meetings/types';
 import { enqueueOutboxNotificationJob } from '@/src/notifications/queue';
+import { isWardModuleEnabled } from '@/src/modules/service';
 
 const BAD_REQUEST = (message = 'Invalid publication payload') => NextResponse.json({ error: message, code: 'BAD_REQUEST' }, { status: 400 });
 const NOT_FOUND = () => NextResponse.json({ error: 'Meeting not found', code: 'NOT_FOUND' }, { status: 404 });
@@ -79,6 +82,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
   const { wardId, meetingId } = await context.params;
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, { status: 401 });
   if (!canViewProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
+  if (!(await isWardModuleEnabled(wardId, session.user.id, 'programs'))) return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
 
   const client = await pool.connect();
   try {
@@ -88,6 +92,14 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
       FROM meeting m JOIN ward w ON w.id = m.ward_id WHERE m.id = $1::uuid AND m.ward_id = $2::uuid LIMIT 1 FOR UPDATE`, [meetingId, wardId]);
     if (!meetingResult.rows[0]) { await client.query('ROLLBACK'); return NOT_FOUND(); }
     const meeting = meetingResult.rows[0] as { id: string; meeting_date: string; meeting_type: string; status: string; ward_name: string; location: string | null };
+    if (!isMeetingStatus(meeting.status)) {
+      await client.query('ROLLBACK');
+      return NextResponse.json({ error: 'Meeting has an invalid status', code: 'INVALID_STATUS' }, { status: 409 });
+    }
+    if (meeting.status === 'COMPLETED') {
+      await client.query('ROLLBACK');
+      return NextResponse.json({ error: 'Reopen the meeting before publishing again', code: 'INVALID_TRANSITION' }, { status: 409 });
+    }
     const profileResult = await client.query(`SELECT allow_program_editor_publish, allow_program_editor_republish, public_program_expiration_days
       FROM ward_document_settings WHERE ward_id = $1::uuid LIMIT 1`, [wardId]);
     const profile = profileResult.rows[0] ?? {};
@@ -123,8 +135,9 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     const legacy = legacyResult.rows[0] ?? { preset: 'FULL_PAGE', announcement_mode: 'AFTER_PROGRAM', cover_mode: 'NONE', cover_image_url: null, cover_image_alt_text: null };
     const rawLayout = documentResult.rows[0]?.layout_json ?? adaptLegacyLayoutToDocument(legacy);
     const sourceData = { meetingDate: String(meeting.meeting_date), meetingType: meeting.meeting_type, wardName: meeting.ward_name, location: meeting.location, publicUrl: `${process.env.NEXTAUTH_URL ?? 'http://localhost:3000'}/p/${shareToken}`, programItems: programItems.map((item) => ({ order: item.order, label: item.title ?? item.hymnTitle ?? item.itemType, details: item.topic ?? null })), publicValues: { ANNOUNCEMENTS: (announcements.rows as Array<{ title: string }>).map((item) => item.title).join(' · ') }, media };
-    const resolved = resolveDocumentData(rawLayout, sourceData, { public: true, explicitPublicBlockTypes: COMPATIBILITY_PUBLIC_BLOCK_TYPES });
-    const publishedLayout = isAdvancedLayout(rawLayout)
+    const advancedDesignerEnabled = isAdvancedDesignerFeatureEnabled();
+    const resolved = resolveDocumentData(rawLayout, sourceData, { public: true, explicitPublicBlockTypes: COMPATIBILITY_PUBLIC_BLOCK_TYPES, advancedProjection: advancedDesignerEnabled });
+    const publishedLayout = advancedDesignerEnabled && isAdvancedLayout(rawLayout)
       ? projectAdvancedLayoutForOutput(parseAdvancedLayout(rawLayout), 'PUBLIC', resolved.data)
       : resolved.layout;
     const validation = validatePublication({ layout: resolved.layout, data: resolved.data }, { explicitPublicBlockTypes: COMPATIBILITY_PUBLIC_BLOCK_TYPES, acknowledgedWarningCodes: body.acknowledgedWarningCodes });
@@ -143,6 +156,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     const expiresAt = calculatePublicationExpiration(publishedAt, profile.public_program_expiration_days == null ? null : Number(profile.public_program_expiration_days));
     await client.query(`INSERT INTO public_program_share (ward_id, meeting_id, token, active_render_id, expires_at) VALUES ($1::uuid, $2::uuid, $3::text, $4::uuid, $5::timestamptz)
       ON CONFLICT (meeting_id) DO UPDATE SET active_render_id = EXCLUDED.active_render_id, expires_at = EXCLUDED.expires_at, updated_at = now()`, [wardId, meetingId, shareToken, inserted.id, expiresAt]);
+    if (meeting.status === 'DRAFT') transitionMeetingStatus(meeting.status, 'publish');
     await client.query(`UPDATE meeting SET status = 'PUBLISHED', updated_at = now() WHERE id = $1::uuid AND ward_id = $2::uuid`, [meetingId, wardId]);
     await client.query(`INSERT INTO public_program_portal (ward_id, token) VALUES ($1::uuid, $2::text) ON CONFLICT (ward_id) DO NOTHING`, [wardId, token()]);
     const auditAction = version > 1 ? 'PROGRAM_REPUBLISHED' : 'PROGRAM_PUBLISHED';

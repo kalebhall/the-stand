@@ -8,6 +8,7 @@ import { loadProgramPermissionProfile, canEditTemplate, parseTemplateLayout } fr
 import { checkTemplateLocks, parseTemplateLockPolicy } from '@/src/document-designer/template-locks';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
+import { isWardModuleEnabled } from '@/src/modules/service';
 
 const versionSchema = z.object({ layout: z.unknown() }).strict();
 const defaultLockPolicy = { mode: 'UNLOCKED' as const, lockedPageIds: [], lockedRegionIds: [], lockedBlockIds: [], lockedPropertyNames: [], protectedTheme: false, protectedVisibility: false, protectedOrder: false };
@@ -34,6 +35,7 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
   const { wardId, templateId } = await context.params;
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, { status: 401 });
   if (!canViewProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
+  if (!(await isWardModuleEnabled(wardId, session.user.id, 'programs'))) return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -63,6 +65,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
   const { wardId, templateId } = await context.params;
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, { status: 401 });
   if (!canViewProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
+  if (!(await isWardModuleEnabled(wardId, session.user.id, 'programs'))) return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
   const body = versionSchema.safeParse(await request.json().catch(() => null));
   if (!body.success) return NextResponse.json({ error: 'Invalid template version payload', code: 'BAD_REQUEST' }, { status: 400 });
   let layout;

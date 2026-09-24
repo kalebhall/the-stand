@@ -13,13 +13,14 @@ import { DeploymentWatcher } from '@/components/deployment-watcher';
 import { SiteLogo } from '@/components/site-logo';
 import { NotificationBell } from '@/components/notification-bell';
 import { AuthSessionRefresh } from '@/components/auth-session-refresh';
-import { DEFAULT_WARD_FEATURE_FLAGS, type WardFeatureFlags } from '@/src/features/types';
+import { createModuleEnablement } from '@/src/modules/enablement';
+import type { EffectiveModuleSetting } from '@/src/modules/service';
 
 export function AppShell({ session, children }: { session: Session | null; children: ReactNode }) {
   const pathname = usePathname();
   const { isConductingMode, toggleConductingMode } = useConductingMode();
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
-  const [featureFlags, setFeatureFlags] = useState<WardFeatureFlags>(DEFAULT_WARD_FEATURE_FLAGS);
+  const [moduleSettings, setModuleSettings] = useState<EffectiveModuleSetting[]>([]);
   const isDevelopmentSite = process.env.NEXT_PUBLIC_APP_ENV === 'development';
 
   useEffect(() => {
@@ -29,10 +30,10 @@ export function AppShell({ session, children }: { session: Session | null; child
   useEffect(() => {
     if (!session?.activeWardId) return;
     let cancelled = false;
-    void fetch(`/api/w/${session.activeWardId}/feature-flags`, { cache: 'no-store' })
-      .then((response) => (response.ok ? (response.json() as Promise<{ features?: WardFeatureFlags }>) : null))
+    void fetch(`/api/w/${session.activeWardId}/module-settings`, { cache: 'no-store' })
+      .then((response) => (response.ok ? (response.json() as Promise<{ modules?: EffectiveModuleSetting[] }>) : null))
       .then((body) => {
-        if (!cancelled && body?.features) setFeatureFlags(body.features);
+        if (!cancelled && body?.modules) setModuleSettings(body.modules);
       })
       .catch(() => undefined);
     return () => {
@@ -44,7 +45,10 @@ export function AppShell({ session, children }: { session: Session | null; child
     return <>{children}</>;
   }
 
-  const navItems = getNavigationItems(session.user.roles, featureFlags);
+  const moduleEnablement = createModuleEnablement();
+  for (const module of moduleSettings) moduleEnablement.setEnabled(session.activeWardId ?? 'default', module.id, module.enabled);
+  const notificationsEnabled = moduleSettings.some((module) => module.id === 'notifications' && module.enabled);
+  const navItems = getNavigationItems(session.user.roles, session.activeWardId ?? undefined, moduleEnablement);
 
   return (
     <div className="flex min-h-screen bg-background text-foreground">
@@ -68,7 +72,7 @@ export function AppShell({ session, children }: { session: Session | null; child
               </span>
             ) : null}
           </div>
-          <NotificationBell wardId={session.activeWardId} />
+          {notificationsEnabled && <NotificationBell wardId={session.activeWardId} />}
         </div>
 
         <div className="flex flex-1 flex-col justify-between overflow-y-auto px-4 py-4">
@@ -168,7 +172,7 @@ export function AppShell({ session, children }: { session: Session | null; child
           </div>
 
           <div className="flex items-center gap-2">
-            <NotificationBell wardId={session.activeWardId} />
+            {notificationsEnabled && <NotificationBell wardId={session.activeWardId} />}
             <button
               type="button"
               onClick={toggleConductingMode}

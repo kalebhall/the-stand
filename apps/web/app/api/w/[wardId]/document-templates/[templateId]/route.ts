@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 
 import { auth } from '@/src/auth/auth';
 import { canViewProgramDesigner } from '@/src/auth/roles';
+import { isWardModuleEnabled } from '@/src/modules/service';
 import { getBuiltInTemplate } from '@/src/document-designer/built-in-templates';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
@@ -11,6 +12,7 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
   const { wardId, templateId } = await context.params;
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, { status: 401 });
   if (!canViewProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
+  if (!(await isWardModuleEnabled(wardId, session.user.id, 'programs'))) return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
 
   const builtIn = getBuiltInTemplate(templateId);
   if (builtIn) {

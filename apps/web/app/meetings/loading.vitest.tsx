@@ -2,13 +2,15 @@
 
 import React from 'react';
 import { NextIntlClientProvider } from 'next-intl';
-import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { render, screen, cleanup } from '@testing-library/react';
+import { afterEach, describe, expect, it } from 'vitest';
 
 import messages from '../../messages/es.json';
 import Loading from './loading';
 
 describe('meetings loading state localization', () => {
+  afterEach(() => cleanup());
+
   it('renders Spanish loading text', () => {
     render(
       <NextIntlClientProvider locale="es" messages={messages}>

@@ -1,17 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { authMock, connectMock, recordAuditEventMock, listReadableMediaMock, createWardMediaMock, archiveWardMediaMock } = vi.hoisted(() => ({
+const { authMock, connectMock, recordAuditEventMock, listReadableMediaMock, createWardMediaMock, archiveWardMediaMock, moduleEnabledMock } = vi.hoisted(() => ({
   authMock: vi.fn(),
   connectMock: vi.fn(),
   recordAuditEventMock: vi.fn(),
   listReadableMediaMock: vi.fn(),
   createWardMediaMock: vi.fn(),
-  archiveWardMediaMock: vi.fn()
+  archiveWardMediaMock: vi.fn(),
+  moduleEnabledMock: vi.fn()
 }));
 
 vi.mock('@/src/auth/auth', () => ({ auth: authMock }));
 vi.mock('@/src/db/client', () => ({ pool: { connect: connectMock } }));
 vi.mock('@/src/audit/service', () => ({ recordAuditEvent: recordAuditEventMock }));
+vi.mock('@/src/modules/service', () => ({ isWardModuleEnabled: moduleEnabledMock }));
 vi.mock('@/src/document-designer/media-service', () => ({
   listReadableMedia: listReadableMediaMock,
   createWardMedia: createWardMediaMock,
@@ -22,7 +24,7 @@ vi.mock('@/src/document-designer/media-service', () => ({
   }
 }));
 
-import { POST } from './route';
+import { GET, POST } from './route';
 import { DELETE } from './[assetId]/route';
 
 const session = {
@@ -57,9 +59,18 @@ describe('media routes', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     authMock.mockResolvedValue(session);
+    moduleEnabledMock.mockResolvedValue(true);
     listReadableMediaMock.mockResolvedValue([]);
     createWardMediaMock.mockResolvedValue({ id: 'asset-a', filename: 'logo.png', mime_type: 'image/png', byte_size: 3 });
     archiveWardMediaMock.mockResolvedValue(undefined);
+  });
+
+  it('rejects direct Programs access when the module is disabled before opening a database connection', async () => {
+    moduleEnabledMock.mockResolvedValue(false);
+    const response = await GET(new Request('http://localhost'), wardContext);
+    expect(response.status).toBe(403);
+    expect((await response.json()).code).toBe('FORBIDDEN');
+    expect(connectMock).not.toHaveBeenCalled();
   });
 
   it('rejects upload for a different active ward before opening a database connection', async () => {

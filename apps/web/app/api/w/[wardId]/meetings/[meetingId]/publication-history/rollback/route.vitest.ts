@@ -9,7 +9,8 @@ const mocks = vi.hoisted(() => ({
   release: vi.fn(),
   setDbContext: vi.fn(),
   audit: vi.fn(),
-  expiration: vi.fn()
+  expiration: vi.fn(),
+  moduleEnabled: vi.fn()
 }));
 
 vi.mock('@/src/auth/auth', () => ({ auth: mocks.auth }));
@@ -20,6 +21,7 @@ vi.mock('@/src/auth/roles', () => ({
 vi.mock('@/src/audit/service', () => ({ recordAuditEvent: mocks.audit }));
 vi.mock('@/src/db/client', () => ({ pool: { connect: mocks.connect } }));
 vi.mock('@/src/db/context', () => ({ setDbContext: mocks.setDbContext }));
+vi.mock('@/src/modules/service', () => ({ isWardModuleEnabled: mocks.moduleEnabled }));
 vi.mock('@/src/document-designer/publication-service', () => ({ calculatePublicationExpiration: mocks.expiration }));
 
 import { POST } from './route';
@@ -62,6 +64,7 @@ describe('POST publication history rollback route', () => {
     mocks.auth.mockResolvedValue({ user: { id: 'user-1', name: 'User', roles: ['PROGRAM_EDITOR'] }, activeWardId: 'ward-1' });
     mocks.canView.mockReturnValue(true);
     mocks.canRollback.mockReturnValue(true);
+    mocks.moduleEnabled.mockResolvedValue(true);
     mocks.connect.mockResolvedValue({ query: mocks.query, release: mocks.release });
     mocks.setDbContext.mockResolvedValue(undefined);
     mocks.audit.mockResolvedValue(undefined);

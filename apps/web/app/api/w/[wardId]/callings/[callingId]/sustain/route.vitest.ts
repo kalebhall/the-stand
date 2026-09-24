@@ -10,6 +10,7 @@ const { authMock, canManageCallingsMock, setDbContextMock, connectMock, releaseM
 }));
 
 vi.mock('@/src/auth/auth', () => ({ auth: authMock }));
+vi.mock('@/src/modules/service', () => ({ isWardModuleEnabled: vi.fn().mockResolvedValue(true) }));
 vi.mock('@/src/auth/roles', () => ({ canManageCallings: canManageCallingsMock }));
 vi.mock('@/src/db/context', () => ({ setDbContext: setDbContextMock }));
 vi.mock('@/src/db/client', () => ({

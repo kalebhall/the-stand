@@ -8,6 +8,8 @@ import { canManageMeetings, canViewMeetings } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 import { getNextSunday, toYyyyMmDd } from '@/src/meetings/date';
+import { isWardModuleEnabled } from '@/src/modules/service';
+import { requireWardModuleEnabled } from '@/src/modules/action-guard';
 
 type AnnouncementRow = {
   id: string;
@@ -46,7 +48,7 @@ export default async function AnnouncementsPage({ searchParams }: { searchParams
   const session = await requireAuthenticatedSession();
   enforcePasswordRotation(session);
 
-  if (!session.activeWardId || !canViewMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId)) {
+  if (!session.activeWardId || !(await isWardModuleEnabled(session.activeWardId, session.user.id, 'announcements')) || !canViewMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId)) {
     redirect('/dashboard');
   }
 
@@ -61,6 +63,9 @@ export default async function AnnouncementsPage({ searchParams }: { searchParams
 
     const actionSession = await requireAuthenticatedSession();
     enforcePasswordRotation(actionSession);
+    if (actionSession.activeWardId) {
+      await requireWardModuleEnabled(actionSession.activeWardId, actionSession.user.id, 'announcements', '/announcements');
+    }
 
     if (
       !actionSession.activeWardId ||
@@ -130,6 +135,9 @@ export default async function AnnouncementsPage({ searchParams }: { searchParams
 
     const actionSession = await requireAuthenticatedSession();
     enforcePasswordRotation(actionSession);
+    if (actionSession.activeWardId) {
+      await requireWardModuleEnabled(actionSession.activeWardId, actionSession.user.id, 'announcements', '/announcements');
+    }
 
     if (
       !actionSession.activeWardId ||
@@ -209,6 +217,9 @@ export default async function AnnouncementsPage({ searchParams }: { searchParams
 
     const actionSession = await requireAuthenticatedSession();
     enforcePasswordRotation(actionSession);
+    if (actionSession.activeWardId) {
+      await requireWardModuleEnabled(actionSession.activeWardId, actionSession.user.id, 'announcements', '/announcements');
+    }
 
     if (
       !actionSession.activeWardId ||
@@ -258,6 +269,9 @@ export default async function AnnouncementsPage({ searchParams }: { searchParams
 
     const actionSession = await requireAuthenticatedSession();
     enforcePasswordRotation(actionSession);
+    if (actionSession.activeWardId) {
+      await requireWardModuleEnabled(actionSession.activeWardId, actionSession.user.id, 'announcements', '/announcements');
+    }
 
     if (
       !actionSession.activeWardId ||
@@ -291,6 +305,9 @@ export default async function AnnouncementsPage({ searchParams }: { searchParams
 
     const actionSession = await requireAuthenticatedSession();
     enforcePasswordRotation(actionSession);
+    if (actionSession.activeWardId) {
+      await requireWardModuleEnabled(actionSession.activeWardId, actionSession.user.id, 'announcements', '/announcements');
+    }
 
     if (
       !actionSession.activeWardId ||
@@ -314,6 +331,9 @@ export default async function AnnouncementsPage({ searchParams }: { searchParams
 
     const actionSession = await requireAuthenticatedSession();
     enforcePasswordRotation(actionSession);
+    if (actionSession.activeWardId) {
+      await requireWardModuleEnabled(actionSession.activeWardId, actionSession.user.id, 'announcements', '/announcements');
+    }
 
     if (
       !actionSession.activeWardId ||
@@ -409,6 +429,9 @@ export default async function AnnouncementsPage({ searchParams }: { searchParams
 
     const actionSession = await requireAuthenticatedSession();
     enforcePasswordRotation(actionSession);
+    if (actionSession.activeWardId) {
+      await requireWardModuleEnabled(actionSession.activeWardId, actionSession.user.id, 'announcements', '/announcements');
+    }
 
     if (
       !actionSession.activeWardId ||

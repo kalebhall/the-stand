@@ -10,7 +10,8 @@ const {
   updateEmailPreferenceMock,
   queryMock,
   releaseMock,
-  connectMock
+  connectMock,
+  moduleEnabledMock
 } = vi.hoisted(() => ({
   authMock: vi.fn(),
   canViewMeetingsMock: vi.fn(),
@@ -21,13 +22,15 @@ const {
   updateEmailPreferenceMock: vi.fn(),
   queryMock: vi.fn(),
   releaseMock: vi.fn(),
-  connectMock: vi.fn()
+  connectMock: vi.fn(),
+  moduleEnabledMock: vi.fn()
 }));
 
 vi.mock('@/src/auth/auth', () => ({ auth: authMock }));
 vi.mock('@/src/auth/roles', () => ({ canViewMeetings: canViewMeetingsMock }));
 vi.mock('@/src/db/context', () => ({ setDbContext: setDbContextMock }));
 vi.mock('@/src/db/client', () => ({ pool: { connect: connectMock } }));
+vi.mock('@/src/modules/service', () => ({ isWardModuleEnabled: moduleEnabledMock }));
 vi.mock('@/src/notifications/subscriptions', () => ({
   getNotificationSubscriptions: getSubscriptionsMock,
   updateNotificationSubscriptions: updateSubscriptionsMock
@@ -61,6 +64,7 @@ describe('notification subscription route', () => {
     vi.clearAllMocks();
     authMock.mockResolvedValue({ user: { id: userId, roles: ['STAND_ADMIN'] }, activeWardId: wardId });
     canViewMeetingsMock.mockReturnValue(true);
+    moduleEnabledMock.mockResolvedValue(true);
     connectMock.mockResolvedValue({ query: queryMock, release: releaseMock });
     getSubscriptionsMock.mockResolvedValue([{ eventType: 'MEETING_PUBLISHED' }]);
     updateSubscriptionsMock.mockResolvedValue([{ eventType: 'MEETING_PUBLISHED' }]);

@@ -1,21 +1,24 @@
 import { redirect } from 'next/navigation';
 
-import { requireAuthenticatedSession, enforcePasswordRotation } from '@/src/auth/guards';
-import { canManageMeetings } from '@/src/auth/roles';
+import { requireAuthenticatedSession, enforcePasswordRotation } from '@/src/platform/auth/session';
+import { canManageMeetings } from '@/src/platform/permissions';
 import { pool } from '@/src/db/client';
-import { setDbContext } from '@/src/db/context';
-import { isWardFeatureEnabled } from '@/src/features/flags';
+import { createWardContext } from '@/src/platform/tenancy/context';
+import { setDbContext } from '@/src/platform/db/context';
+import { isWardModuleEnabled } from '@/src/modules/service';
 import { SpeakerLifecycleWorkspace } from './speaker-lifecycle-workspace';
 
 export default async function SpeakersPage() {
   const session = await requireAuthenticatedSession();
   enforcePasswordRotation(session);
-  if (!session.activeWardId || !canManageMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId) || !(await isWardFeatureEnabled(session.activeWardId, session.user.id, 'SPEAKER_LIFECYCLE'))) redirect('/dashboard');
+  if (!session.activeWardId) redirect('/dashboard');
+  const wardContext = createWardContext(session, session.activeWardId);
+  if (!canManageMeetings({ roles: session.user.roles, activeWardId: wardContext.wardId }, wardContext.wardId) || !(await isWardModuleEnabled(wardContext.wardId, session.user.id, 'leadership'))) redirect('/dashboard');
 
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    await setDbContext(client, { userId: session.user.id, wardId: session.activeWardId });
+    await setDbContext(client, wardContext);
     const result = await client.query(
       `SELECT item.id, item.meeting_id, item.title, item.topic, COALESCE(item.speaker_status, 'PLANNED') AS speaker_status,
               to_char(meeting.meeting_date, 'Mon DD, YYYY') || ' · ' || replace(meeting.meeting_type, '_', ' ') AS meeting_label

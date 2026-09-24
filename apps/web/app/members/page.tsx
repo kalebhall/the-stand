@@ -8,6 +8,7 @@ import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { isWardModuleEnabled } from '@/src/modules/service';
 
 type MemberRow = {
   id: string;
@@ -35,6 +36,7 @@ export default async function MembersPage() {
 
   if (
     !session.activeWardId ||
+    !(await isWardModuleEnabled(session.activeWardId, session.user.id, 'members')) ||
     !canUseInternalNotes({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId)
   ) {
     redirect('/dashboard');

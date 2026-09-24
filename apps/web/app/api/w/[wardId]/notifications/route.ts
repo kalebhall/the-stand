@@ -7,6 +7,7 @@ import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 import { NOTIFICATION_CATEGORIES } from '@/src/notifications/events';
 import { listUserNotifications, countUnreadUserNotifications } from '@/src/notifications/user-notifications';
+import { isWardModuleEnabled } from '@/src/modules/service';
 
 const filterSchema = z.enum(['all', 'unread']);
 const categorySchema = z.enum(NOTIFICATION_CATEGORIES);
@@ -18,7 +19,7 @@ async function authorize(wardId: string): Promise<AuthorizationResult> {
   if (!session?.user?.id) {
     return { response: NextResponse.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, { status: 401 }) };
   }
-  if (!canViewMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) {
+  if (!(await isWardModuleEnabled(wardId, session.user.id, 'notifications')) || !canViewMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) {
     return { response: NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 }) };
   }
   return { userId: session.user.id };

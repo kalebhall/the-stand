@@ -1,82 +1,22 @@
 import { Worker } from 'bullmq';
 
 import { pool } from '@/src/db/client';
-import { setDbContext } from '@/src/db/context';
-import { processNotificationDigest } from '@/src/notifications/digests';
-import { processGlobalEmailDelivery } from '@/src/notifications/global-email';
-import { processGlobalOutboxEvent } from '@/src/notifications/global-runner';
-import { enqueueDigestNotificationJob, enqueueGlobalEmailDeliveryJob, enqueueGlobalNotificationJob, enqueueOutboxNotificationJob, NOTIFICATION_QUEUE_NAME, type NotificationQueueJob } from '@/src/notifications/queue';
+import { createNotificationWorkerHandler } from '@/src/notifications/worker-handler';
+import { enqueueGlobalEmailDeliveryJob, enqueueGlobalNotificationJob, enqueueOutboxNotificationJob, NOTIFICATION_QUEUE_NAME, type NotificationQueueJob } from '@/src/notifications/queue';
 import { findPendingGlobalEmailDeliveries, findPendingGlobalOutboxEvents, findPendingOutboxEvents } from '@/src/notifications/recovery';
 import { createDueSupportReminderEvents } from '@/src/notifications/support-reminders';
-import { processOutboxEvent } from '@/src/notifications/runner';
-
-const DEFAULT_REDIS_URL = 'redis://127.0.0.1:6379';
-const WORKER_SYSTEM_USER_ID = '00000000-0000-0000-0000-000000000000';
 
 function getRedisConnectionUrl(): string {
-  return process.env.REDIS_URL ?? DEFAULT_REDIS_URL;
+  const redisUrl = process.env.REDIS_URL?.trim();
+  if (!redisUrl) {
+    throw new Error('REDIS_URL is required to start the notifications worker');
+  }
+  return redisUrl;
 }
 
 const worker = new Worker<NotificationQueueJob>(
   NOTIFICATION_QUEUE_NAME,
-  async (job) => {
-    const client = await pool.connect();
-
-    if (job.data.kind === 'global-email-delivery') {
-      try {
-        await processGlobalEmailDelivery(client, job.data.globalNotificationDeliveryId);
-      } finally {
-        client.release();
-      }
-      return;
-    }
-
-    try {
-      await client.query('BEGIN');
-      let digestJobs = [] as Awaited<ReturnType<typeof processOutboxEvent>>;
-      let emailDeliveryIds: string[] = [];
-      if (job.data.kind === 'global-outbox-event') {
-        emailDeliveryIds = await processGlobalOutboxEvent(client, job.data.globalEventOutboxId);
-      } else {
-        await setDbContext(client, { userId: WORKER_SYSTEM_USER_ID, wardId: job.data.wardId });
-        if (job.data.kind === 'outbox-event') {
-          digestJobs = await processOutboxEvent(client, { wardId: job.data.wardId, eventOutboxId: job.data.eventOutboxId });
-        } else {
-          await processNotificationDigest(client, {
-            wardId: job.data.wardId,
-            recipientUserId: job.data.recipientUserId,
-            frequency: job.data.frequency
-          });
-        }
-      }
-      await client.query('COMMIT');
-      for (const emailDeliveryId of emailDeliveryIds) {
-        try {
-          await enqueueGlobalEmailDeliveryJob({ globalNotificationDeliveryId: emailDeliveryId });
-        } catch (error) {
-          console.error('[notifications-worker] failed to enqueue global email delivery after commit', {
-            globalNotificationDeliveryId: emailDeliveryId,
-            error: error instanceof Error ? error.message : String(error)
-          });
-        }
-      }
-      for (const digestJob of digestJobs) {
-        try {
-          await enqueueDigestNotificationJob(digestJob);
-        } catch (error) {
-          console.error('[notifications-worker] failed to enqueue digest job after commit', {
-            digestItemId: digestJob.digestItemId,
-            error: error instanceof Error ? error.message : String(error)
-          });
-        }
-      }
-    } catch (error) {
-      await client.query('ROLLBACK');
-      throw error;
-    } finally {
-      client.release();
-    }
-  },
+  createNotificationWorkerHandler(),
   {
     connection: { url: getRedisConnectionUrl() },
     concurrency: 10

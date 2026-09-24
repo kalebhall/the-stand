@@ -21,11 +21,13 @@ async function sourceFiles() {
     encoding: 'buffer',
     maxBuffer: 10 * 1024 * 1024
   });
-  return stdout
+  const files = stdout
     .toString('utf8')
     .split('\0')
     .filter((file) => file && sourceExtensions.has(path.extname(file)))
-    .map((file) => path.join(root, file))
+    .map((file) => path.join(root, file));
+  return (await Promise.all(files.map(async (file) => (await fs.access(file).then(() => file).catch(() => null)))))
+    .filter((file) => file !== null)
     .sort(compareText);
 }
 

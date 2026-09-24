@@ -7,6 +7,7 @@ import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth
 import { canViewCallings } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
+import { isWardModuleEnabled } from '@/src/modules/service';
 import { fetchNotificationDiagnostics, type NotificationDiagnosticRow } from '@/src/notifications/diagnostics';
 
 function formatDate(value: string | null): string {
@@ -22,7 +23,7 @@ export default async function NotificationDiagnosticsPage() {
   const session = await requireAuthenticatedSession();
   enforcePasswordRotation(session);
 
-  if (!session.activeWardId || !canViewCallings({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId)) {
+  if (!session.activeWardId || !(await isWardModuleEnabled(session.activeWardId, session.user.id, 'notifications')) || !canViewCallings({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId)) {
     redirect('/dashboard');
   }
 

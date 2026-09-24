@@ -27,11 +27,15 @@ async function main() {
     const interviews = await client.query(
       `SELECT id, ward_id, interview_type, member_name, interviewer_name, scheduled_at
          FROM scheduled_interview si
-         LEFT JOIN ward_feature_settings wfs ON wfs.ward_id = si.ward_id
         WHERE si.status = 'SCHEDULED'
           AND si.scheduled_at >= $1::timestamptz
           AND si.scheduled_at <= $2::timestamptz
-          AND COALESCE(wfs.scheduled_interviews, true)
+          AND NOT EXISTS (
+            SELECT 1 FROM ward_module_enablement wme
+             WHERE wme.ward_id = si.ward_id
+               AND wme.module_id = 'leadership'
+               AND wme.enabled = FALSE
+          )
         ORDER BY si.scheduled_at ASC`,
       [window.startsAt, window.endsAt]
     );

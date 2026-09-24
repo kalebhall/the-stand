@@ -8,6 +8,7 @@ import { loadProgramPermissionProfile } from '@/src/document-designer/template-s
 import { parseTemplateLockPolicy } from '@/src/document-designer/template-locks';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
+import { isWardModuleEnabled } from '@/src/modules/service';
 
 const publishSchema = z.object({ version: z.number().int().positive().optional() }).strict();
 const defaultLockPolicy = { mode: 'UNLOCKED' as const, lockedPageIds: [], lockedRegionIds: [], lockedBlockIds: [], lockedPropertyNames: [], protectedTheme: false, protectedVisibility: false, protectedOrder: false };
@@ -22,6 +23,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
   const { wardId, templateId } = await context.params;
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, { status: 401 });
   if (!canViewProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
+  if (!(await isWardModuleEnabled(wardId, session.user.id, 'programs'))) return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
   const body = publishSchema.safeParse(await request.json().catch(() => ({})));
   if (!body.success) return NextResponse.json({ error: 'Invalid publish payload', code: 'BAD_REQUEST' }, { status: 400 });
 

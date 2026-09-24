@@ -8,13 +8,15 @@ const mocks = vi.hoisted(() => ({
   release: vi.fn(),
   setDbContext: vi.fn(),
   listHistory: vi.fn(),
-  getActive: vi.fn()
+  getActive: vi.fn(),
+  moduleEnabled: vi.fn()
 }));
 
 vi.mock('@/src/auth/auth', () => ({ auth: mocks.auth }));
 vi.mock('@/src/auth/roles', () => ({ canViewProgramDesigner: mocks.canView }));
 vi.mock('@/src/db/client', () => ({ pool: { connect: mocks.connect } }));
 vi.mock('@/src/db/context', () => ({ setDbContext: mocks.setDbContext }));
+vi.mock('@/src/modules/service', () => ({ isWardModuleEnabled: mocks.moduleEnabled }));
 vi.mock('@/src/document-designer/publication-history', () => ({
   listPublicationHistory: mocks.listHistory,
   getActivePublication: mocks.getActive
@@ -60,6 +62,7 @@ describe('GET publication history route', () => {
     vi.clearAllMocks();
     mocks.auth.mockResolvedValue({ user: { id: 'user-1', roles: ['PROGRAM_EDITOR'] }, activeWardId: 'ward-1' });
     mocks.canView.mockReturnValue(true);
+    mocks.moduleEnabled.mockResolvedValue(true);
     mocks.connect.mockResolvedValue({ query: mocks.query, release: mocks.release });
     mocks.listHistory.mockResolvedValue(history);
     mocks.getActive.mockResolvedValue(active);

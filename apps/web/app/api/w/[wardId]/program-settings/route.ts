@@ -7,6 +7,7 @@ import { auth } from '@/src/auth/auth';
 import { hasRole, canViewProgramDesigner } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
+import { isWardModuleEnabled } from '@/src/modules/service';
 import {
   DEFAULT_WARD_DOCUMENT_SETTINGS,
   loadWardDocumentSettings,
@@ -48,10 +49,10 @@ function rowToProgramSettings(row: WardDocumentSettings | null): ProgramSettings
   };
 }
 
-function accessResponse(session: Session | null, wardId: string, requireAdmin: boolean) {
+async function accessResponse(session: Session | null, wardId: string, requireAdmin: boolean) {
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, { status: 401 });
   const allowed = canViewProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId);
-  if (!allowed || (requireAdmin && !hasRole(session.user.roles, 'STAND_ADMIN'))) {
+  if (!allowed || !(await isWardModuleEnabled(wardId, session.user.id, 'programs')) || (requireAdmin && !hasRole(session.user.roles, 'STAND_ADMIN'))) {
     return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
   }
   return null;
@@ -60,7 +61,7 @@ function accessResponse(session: Session | null, wardId: string, requireAdmin: b
 export async function GET(_: Request, context: { params: Promise<{ wardId: string }> }) {
   const { wardId } = await context.params;
   const session = await auth();
-  const denied = accessResponse(session, wardId, false);
+  const denied = await accessResponse(session, wardId, false);
   if (denied) return denied;
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, { status: 401 });
 
@@ -82,7 +83,7 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
 export async function PATCH(request: Request, context: { params: Promise<{ wardId: string }> }) {
   const { wardId } = await context.params;
   const session = await auth();
-  const denied = accessResponse(session, wardId, true);
+  const denied = await accessResponse(session, wardId, true);
   if (denied) return denied;
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, { status: 401 });
 

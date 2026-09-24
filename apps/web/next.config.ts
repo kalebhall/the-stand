@@ -19,11 +19,9 @@ function getBuildId(): string {
 
 const nextConfig: NextConfig = {
   outputFileTracingRoot: path.join(__dirname, '../..'),
+  serverExternalPackages: ['bullmq'],
   env: {
     NEXT_PUBLIC_BUILD_ID: getBuildId()
-  },
-  eslint: {
-    ignoreDuringBuilds: true
   },
   typescript: {
     ignoreBuildErrors: true

@@ -3,6 +3,7 @@ import { notFound, redirect } from 'next/navigation';
 
 import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth/guards';
 import { canViewMeetings } from '@/src/auth/roles';
+import { isAdvancedDesignerFeatureEnabled } from '@/src/features/advanced-designer';
 import { resolveDocumentData } from '@/src/document-designer/data-resolver';
 import { renderDocumentHtml } from '@/src/document-designer/renderer';
 import { pool } from '@/src/db/client';
@@ -98,6 +99,7 @@ export default async function PrintMeetingPage({
   const requestedVersion = Number.isInteger(versionNumber) && versionNumber > 0 ? versionNumber : null;
   const hasExplicitVersion = version !== undefined;
   const wardId = session.activeWardId;
+  const advancedDesignerEnabled = isAdvancedDesignerFeatureEnabled();
   const client = await pool.connect();
 
   try {
@@ -154,7 +156,7 @@ export default async function PrintMeetingPage({
               [meetingId, session.activeWardId]
             );
 
-    if (renderResult.rowCount) {
+    if (renderResult.rowCount && advancedDesignerEnabled) {
       const publishedRender = renderResult.rows[0] as RenderRow;
       await client.query('COMMIT');
       return (
@@ -247,7 +249,7 @@ export default async function PrintMeetingPage({
           },
           media
         },
-        { target: 'PRINT' }
+        { target: 'PRINT', advancedProjection: advancedDesignerEnabled }
       );
       const compatibilityHtml = renderDocumentHtml({
         layout: documentLayout,

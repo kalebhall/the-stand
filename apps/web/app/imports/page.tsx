@@ -5,12 +5,13 @@ import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth
 import { canRunImports } from '@/src/auth/roles';
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { isWardModuleEnabled } from '@/src/modules/service';
 
 export default async function ImportsHubPage() {
   const session = await requireAuthenticatedSession();
   enforcePasswordRotation(session);
 
-  if (!session.activeWardId || !canRunImports({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId)) {
+  if (!session.activeWardId || !(await isWardModuleEnabled(session.activeWardId, session.user.id, 'imports')) || !canRunImports({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId)) {
     redirect('/dashboard');
   }
 

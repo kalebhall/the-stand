@@ -4,6 +4,7 @@ import { canRollbackProgram, canViewProgramDesigner } from '@/src/auth/roles';
 import { recordAuditEvent } from '@/src/audit/service';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
+import { isWardModuleEnabled } from '@/src/modules/service';
 import { calculatePublicationExpiration } from '@/src/document-designer/publication-service';
 
 const response = (error: string, code: string, status: number) => NextResponse.json({ error, code }, { status });
@@ -26,6 +27,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
   const { wardId, meetingId } = await context.params;
   if (!session?.user?.id) return response('Unauthorized', 'UNAUTHORIZED', 401);
   if (!canViewProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) return response('Forbidden', 'FORBIDDEN', 403);
+  if (!(await isWardModuleEnabled(wardId, session.user.id, 'programs'))) return response('Forbidden', 'FORBIDDEN', 403);
   const client = await pool.connect();
   try {
     await client.query('BEGIN');

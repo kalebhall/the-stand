@@ -1,64 +1,48 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { authMock, canManageMeetingsMock, setDbContextMock, queryMock, releaseMock, connectMock, insertOutboxMock, enqueueOutboxMock } =
+const { authMock, canManageMeetingsMock, setDbContextMock, connectMock, releaseMock, queryMock, dispatchPersistedCoreEventMock } =
   vi.hoisted(() => ({
     authMock: vi.fn(),
     canManageMeetingsMock: vi.fn(),
     setDbContextMock: vi.fn(),
-    queryMock: vi.fn(),
-    releaseMock: vi.fn(),
     connectMock: vi.fn(),
-    insertOutboxMock: vi.fn().mockResolvedValue('event-1'),
-    enqueueOutboxMock: vi.fn()
+    releaseMock: vi.fn(),
+    queryMock: vi.fn(),
+    dispatchPersistedCoreEventMock: vi.fn()
   }));
 
 vi.mock('@/src/auth/auth', () => ({ auth: authMock }));
 vi.mock('@/src/auth/roles', () => ({ canManageMeetings: canManageMeetingsMock, canViewMeetings: vi.fn() }));
 vi.mock('@/src/db/context', () => ({ setDbContext: setDbContextMock }));
-vi.mock('@/src/db/client', () => ({
-  pool: {
-    connect: connectMock
-  }
-}));
-vi.mock('@/src/notifications/outbox', () => ({
-  insertNotificationOutboxEvent: insertOutboxMock,
-  enqueueNotificationOutboxEvent: enqueueOutboxMock
-}));
+vi.mock('@/src/db/client', () => ({ pool: { connect: connectMock } }));
+vi.mock('@/src/platform/events/dispatch', () => ({ dispatchPersistedCoreEvent: dispatchPersistedCoreEventMock }));
 
 import { POST } from './route';
-import { adaptLegacyLayoutToDocument } from '@/src/document-designer/legacy-layout-adapter';
 
 describe('POST /api/w/[wardId]/meetings', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-
-    authMock.mockResolvedValue({
-      user: { id: 'user-1', roles: ['STAND_ADMIN'] },
-      activeWardId: 'ward-1'
-    });
+    authMock.mockResolvedValue({ user: { id: 'user-1', roles: ['STAND_ADMIN'] }, activeWardId: 'ward-1' });
     canManageMeetingsMock.mockReturnValue(true);
-
-    connectMock.mockResolvedValue({
-      query: queryMock,
-      release: releaseMock
-    });
-
+    dispatchPersistedCoreEventMock.mockResolvedValue(undefined);
+    connectMock.mockResolvedValue({ query: queryMock, release: releaseMock });
     queryMock
       .mockResolvedValueOnce({}) // BEGIN
-      .mockResolvedValueOnce({}) // LOCK TABLE meeting_document
+      .mockResolvedValueOnce({}) // LOCK meeting_document
       .mockResolvedValueOnce({ rows: [{ id: 'meeting-1' }] }) // INSERT meeting
       .mockResolvedValueOnce({}) // INSERT program item 1
       .mockResolvedValueOnce({}) // INSERT program item 2
       .mockResolvedValueOnce({}) // INSERT program item 3
       .mockResolvedValueOnce({}) // INSERT program item 4
-      .mockResolvedValueOnce({ rows: [{ default_sacrament_template_id: 'template-1' }] }) // SELECT ward default template
-      .mockResolvedValueOnce({ rows: [{ id: 'template-1', version: 2, layout_json: adaptLegacyLayoutToDocument({ preset: 'FULL_PAGE', announcementMode: 'AFTER_PROGRAM', coverMode: 'NONE' }) }] }) // SELECT published template
-      .mockResolvedValueOnce({}) // INSERT inherited meeting document
+      .mockResolvedValueOnce({ rows: [] }) // ward document settings
+      .mockResolvedValueOnce({ rows: [] }) // default template
+      .mockResolvedValueOnce({}) // INSERT meeting document
       .mockResolvedValueOnce({}) // INSERT audit_log
+      .mockResolvedValueOnce({ rows: [{ id: 'event-1' }] }) // notification outbox
       .mockResolvedValueOnce({}); // COMMIT
   });
 
-  it('persists program items when creating a meeting', async () => {
+  it('persists the Core meeting and program items without optional modules', async () => {
     const response = await POST(
       new Request('http://localhost', {
         method: 'POST',
@@ -67,14 +51,7 @@ describe('POST /api/w/[wardId]/meetings', () => {
           meetingDate: '2026-01-04',
           meetingType: 'SACRAMENT',
           programItems: [
-            {
-              itemType: 'INTRODUCTION',
-              title: '',
-              notes: '',
-              introductionRoles: { presiding: 'Bishop', conducting: 'Counselor', organist: 'Organist', chorister: 'Chorister' },
-              hymnNumber: '',
-              hymnTitle: ''
-            },
+            { itemType: 'INTRODUCTION', title: '', notes: '', introductionRoles: { presiding: 'Bishop', conducting: 'Counselor', organist: 'Organist', chorister: 'Chorister' }, hymnNumber: '', hymnTitle: '' },
             { itemType: 'ANNOUNCEMENT', title: '', notes: '', hymnNumber: '', hymnTitle: '' },
             { itemType: 'OPENING_HYMN', title: '', notes: '', hymnNumber: '2', hymnTitle: 'The Spirit of God' },
             { itemType: 'SPEAKER', title: 'Jane Doe', notes: '', topic: 'Missionary report', hymnNumber: '', hymnTitle: '' }
@@ -86,49 +63,9 @@ describe('POST /api/w/[wardId]/meetings', () => {
 
     expect(response.status).toBe(201);
     expect(await response.json()).toEqual({ id: 'meeting-1' });
-    expect(queryMock).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO meeting_program_item'), [
-      'ward-1',
-      'meeting-1',
-      3,
-      'OPENING_HYMN',
-      '',
-      '',
-      '',
-      '',
-      '2',
-      'The Spirit of God',
-      null,
-      null
-    ]);
-    expect(queryMock).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO meeting_program_item'), [
-      'ward-1',
-      'meeting-1',
-      4,
-      'SPEAKER',
-      'Jane Doe',
-      '',
-      'Missionary report',
-      '',
-      '',
-      '',
-      null,
-      'PLANNED'
-    ]);
-    expect(queryMock).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO meeting_document'), expect.arrayContaining(['template-1', 2]));
-    expect(queryMock).toHaveBeenCalledWith(
-      expect.stringContaining('INSERT INTO audit_log'),
-      expect.arrayContaining(['ward-1', 'user-1', 'MEETING_CREATED'])
-    );
-    expect(insertOutboxMock).toHaveBeenCalledWith(
-      expect.anything(),
-      expect.objectContaining({
-        wardId: 'ward-1',
-        aggregateType: 'meeting',
-        aggregateId: 'meeting-1',
-        eventType: 'MEETING_CREATED'
-      })
-    );
-    expect(enqueueOutboxMock).toHaveBeenCalledWith(expect.anything(), 'ward-1', 'event-1');
+    expect(queryMock).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO meeting_program_item'), expect.arrayContaining(['ward-1', 'meeting-1', 3, 'OPENING_HYMN']));
+    expect(queryMock).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO meeting_program_item'), expect.arrayContaining(['ward-1', 'meeting-1', 4, 'SPEAKER']));
+    expect(queryMock).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO audit_log'), expect.arrayContaining(['ward-1', 'user-1', 'MEETING_CREATED']));
     expect(releaseMock).toHaveBeenCalled();
   });
 });

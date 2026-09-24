@@ -1,15 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { authMock, connectMock, recordAuditEventMock, buildFieldDiffMock } = vi.hoisted(() => ({
+const { authMock, connectMock, recordAuditEventMock, buildFieldDiffMock, moduleEnabledMock } = vi.hoisted(() => ({
   authMock: vi.fn(),
   connectMock: vi.fn(),
   recordAuditEventMock: vi.fn(),
-  buildFieldDiffMock: vi.fn(() => ({ allowAdvancedProgramDesigner: { old: false, new: true } }))
+  buildFieldDiffMock: vi.fn(() => ({ allowAdvancedProgramDesigner: { old: false, new: true } })),
+  moduleEnabledMock: vi.fn()
 }));
 
 vi.mock('@/src/auth/auth', () => ({ auth: authMock }));
 vi.mock('@/src/db/client', () => ({ pool: { connect: connectMock } }));
 vi.mock('@/src/audit/service', () => ({ buildFieldDiff: buildFieldDiffMock, recordAuditEvent: recordAuditEventMock }));
+vi.mock('@/src/modules/service', () => ({ isWardModuleEnabled: moduleEnabledMock }));
 
 import { GET, PATCH } from './route';
 
@@ -52,6 +54,7 @@ describe('program settings route', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     authMock.mockResolvedValue(session);
+    moduleEnabledMock.mockResolvedValue(true);
   });
 
   it('returns unauthorized without a session', async () => {

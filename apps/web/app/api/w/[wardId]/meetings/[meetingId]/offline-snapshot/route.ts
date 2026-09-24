@@ -4,8 +4,8 @@ import { auth } from '@/src/auth/auth';
 import { canViewMeetings } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
-import { isWardFeatureEnabled } from '@/src/features/flags';
-import { isAnnouncementActiveForDate } from '@/src/announcements/types';
+import { isWardModuleEnabled } from '@/src/modules/service';
+import { isCoreAnnouncementActiveForDate } from '@/src/conducting/core';
 import { buildStandRows } from '@/src/stand/render';
 
 export async function GET(_: Request, context: { params: Promise<{ wardId: string; meetingId: string }> }) {
@@ -15,7 +15,7 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
   if (!canViewMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) {
     return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
   }
-  const technologyEnabled = await isWardFeatureEnabled(wardId, session.user.id, 'TECHNOLOGY_CHECKLIST');
+  const technologyEnabled = await isWardModuleEnabled(wardId, session.user.id, 'technology-checklist');
 
   const client = await pool.connect();
   try {
@@ -101,7 +101,7 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
 
     const meetingDate = meeting.rows[0].meeting_date as string;
     const activeAnnouncements = announcements.rows.filter((item) =>
-      isAnnouncementActiveForDate({ startDate: item.start_date, endDate: item.end_date, isPermanent: item.is_permanent }, meetingDate)
+      isCoreAnnouncementActiveForDate({ startDate: item.start_date, endDate: item.end_date, isPermanent: item.is_permanent }, meetingDate)
     );
     const standRows = buildStandRows(
       items.rows.map((item) => ({

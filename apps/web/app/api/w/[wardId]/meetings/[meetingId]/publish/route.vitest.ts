@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   validatePublication: vi.fn(),
   setDbContext: vi.fn(),
   enqueue: vi.fn(),
+  moduleEnabled: vi.fn(),
   query: vi.fn(),
   release: vi.fn(),
   connect: vi.fn(),
@@ -30,6 +31,7 @@ vi.mock('@/src/auth/roles', () => ({
 }));
 vi.mock('@/src/db/context', () => ({ setDbContext: mocks.setDbContext }));
 vi.mock('@/src/notifications/queue', () => ({ enqueueOutboxNotificationJob: mocks.enqueue }));
+vi.mock('@/src/modules/service', () => ({ isWardModuleEnabled: mocks.moduleEnabled }));
 vi.mock('@/src/db/client', () => ({ pool: { connect: mocks.connect } }));
 vi.mock('@/src/document-designer/publication-validation', () => ({ validatePublication: mocks.validatePublication }));
 
@@ -94,6 +96,7 @@ describe('POST /api/w/[wardId]/meetings/[meetingId]/publish', () => {
     mocks.canView.mockReturnValue(true);
     mocks.canPublish.mockReturnValue(true);
     mocks.canRepublish.mockReturnValue(true);
+    mocks.moduleEnabled.mockResolvedValue(true);
     mocks.validatePublication.mockReturnValue({ valid: true, errors: [], warnings: [], warningCodes: [], requiresWarningAcknowledgement: false });
     mocks.enqueue.mockResolvedValue(undefined);
     mocks.connect.mockResolvedValue({ query: mocks.query, release: mocks.release });

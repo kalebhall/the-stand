@@ -17,7 +17,7 @@ function createClient(rows: unknown[][] = []) {
 }
 
 describe('notification subscriptions', () => {
-  it('builds explicit in-app and email defaults for every event', () => {
+  it('builds in-app defaults with email delivery opt-in for every event', () => {
     const defaults = buildDefaultRows();
 
     expect(defaults).toHaveLength(126);
@@ -31,14 +31,15 @@ describe('notification subscriptions', () => {
       eventType: 'CALLING_SUGGESTED',
       category: 'CALLINGS',
       channel: 'EMAIL',
-      enabled: true
+      enabled: false
     });
     expect(defaults).toContainEqual({
       eventType: 'MEETING_UPDATED',
       category: 'MEETINGS',
       channel: 'EMAIL',
-      enabled: true
+      enabled: false
     });
+    expect(defaults.filter((row) => row.channel === 'EMAIL' && row.enabled)).toHaveLength(0);
   });
 
   it('inserts defaults idempotently with ward and user scope', async () => {

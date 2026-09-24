@@ -23,6 +23,7 @@ const {
 }));
 
 vi.mock('@/src/auth/auth', () => ({ auth: authMock }));
+vi.mock('@/src/modules/service', () => ({ isWardModuleEnabled: vi.fn().mockResolvedValue(true) }));
 vi.mock('@/src/auth/roles', () => ({ canRunImports: canRunImportsMock }));
 vi.mock('@/src/db/context', () => ({ setDbContext: setDbContextMock }));
 vi.mock('@/src/imports/pdf', () => ({ extractPdfText: extractPdfTextMock }));

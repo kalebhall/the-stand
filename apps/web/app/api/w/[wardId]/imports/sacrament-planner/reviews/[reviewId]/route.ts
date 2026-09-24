@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 
 import { auth } from '@/src/auth/auth';
 import { canRunImports } from '@/src/auth/roles';
+import { isWardModuleEnabled } from '@/src/modules/service';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 
@@ -11,7 +12,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ wardI
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, { status: 401 });
   const { wardId, reviewId } = await context.params;
-  if (!canRunImports({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId))
+  if (!(await isWardModuleEnabled(wardId, session.user.id, 'imports')) || !canRunImports({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId))
     return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
   const body = (await request.json().catch(() => null)) as { action?: string; memberId?: string } | null;
   const action = body?.action;

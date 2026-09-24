@@ -3,6 +3,7 @@ import { auth } from '@/src/auth/auth';
 import { canViewProgramDesigner } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
+import { isWardModuleEnabled } from '@/src/modules/service';
 import { getActivePublication, listPublicationHistory } from '@/src/document-designer/publication-history';
 
 const errorResponse = (error: string, code: string, status: number) => NextResponse.json({ error, code }, { status });
@@ -12,6 +13,7 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
   const { wardId, meetingId } = await context.params;
   if (!session?.user?.id) return errorResponse('Unauthorized', 'UNAUTHORIZED', 401);
   if (!canViewProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) return errorResponse('Forbidden', 'FORBIDDEN', 403);
+  if (!(await isWardModuleEnabled(wardId, session.user.id, 'programs'))) return errorResponse('Forbidden', 'FORBIDDEN', 403);
   const client = await pool.connect();
   try {
     await client.query('BEGIN');

@@ -4,6 +4,7 @@ import { auth } from '@/src/auth/auth';
 import { canViewCallings } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
+import { isWardModuleEnabled } from '@/src/modules/service';
 import { fetchNotificationDiagnostics } from '@/src/notifications/diagnostics';
 
 export async function GET(request: Request, context: { params: Promise<{ wardId: string }> }) {
@@ -13,7 +14,7 @@ export async function GET(request: Request, context: { params: Promise<{ wardId:
   }
 
   const { wardId } = await context.params;
-  if (!canViewCallings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) {
+  if (!(await isWardModuleEnabled(wardId, session.user.id, 'notifications')) || !canViewCallings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) {
     return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
   }
 

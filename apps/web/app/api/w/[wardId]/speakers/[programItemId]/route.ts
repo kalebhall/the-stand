@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 
 import { auth } from '@/src/auth/auth';
 import { canManageMeetings } from '@/src/auth/roles';
-import { isWardFeatureEnabled } from '@/src/features/flags';
+import { isWardModuleEnabled } from '@/src/modules/service';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 import { SPEAKER_STATUSES, validateSpeakerStatusTransition, type SpeakerStatus } from '@/src/meetings/types';
@@ -15,7 +15,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ wardI
     !session.activeWardId ||
     session.activeWardId !== wardId ||
     !canManageMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId) ||
-    !(await isWardFeatureEnabled(wardId, session.user.id, 'SPEAKER_LIFECYCLE'))
+    !(await isWardModuleEnabled(wardId, session.user.id, 'leadership'))
   ) {
     return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
   }

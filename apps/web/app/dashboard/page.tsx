@@ -3,11 +3,12 @@ import Link from 'next/link';
 
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth/guards';
-import { canManageMeetings, canViewCallings, canViewMeetings, hasRole } from '@/src/auth/roles';
+import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/platform/auth/session';
+import { canManageMeetings, canViewCallings, canViewMeetings, hasRole } from '@/src/platform/permissions';
 import { pool } from '@/src/db/client';
-import { getWardFeatureFlags } from '@/src/features/flags';
-import { setDbContext } from '@/src/db/context';
+import { createWardContext } from '@/src/platform/tenancy/context';
+import { isWardModuleEnabled } from '@/src/modules/service';
+import { setDbContext } from '@/src/platform/db/context';
 
 function DashboardCard({
   title,
@@ -43,11 +44,14 @@ export default async function DashboardPage() {
   const t = await getTranslations('dashboard');
   enforcePasswordRotation(session);
 
-  const wardSession = session.activeWardId ? { roles: session.user.roles, activeWardId: session.activeWardId } : null;
-  const featureFlags = session.activeWardId ? await getWardFeatureFlags(session.activeWardId, session.user.id) : null;
+  const wardContext = session.activeWardId ? createWardContext(session, session.activeWardId) : null;
+  const wardSession = wardContext ? { roles: session.user.roles, activeWardId: wardContext.wardId } : null;
+  const bishopricEnabled = wardContext ? await isWardModuleEnabled(wardContext.wardId, session.user.id, 'bishopric') : false;
+  const leadershipEnabled = wardContext ? await isWardModuleEnabled(wardContext.wardId, session.user.id, 'leadership') : false;
+  const technologyEnabled = wardContext ? await isWardModuleEnabled(wardContext.wardId, session.user.id, 'technology-checklist') : false;
   const canAccessMeetings = wardSession ? canViewMeetings(wardSession, session.activeWardId!) : false;
   const canAccessCallings = wardSession ? canViewCallings(wardSession, session.activeWardId!) : false;
-  const canAccessTechnology = wardSession ? canManageMeetings(wardSession, session.activeWardId!) : false;
+  const canAccessTechnology = wardSession ? canManageMeetings(wardSession, session.activeWardId!) && technologyEnabled : false;
   const canAccessPortal = Boolean(session.activeWardId) && hasRole(session.user.roles, 'STAND_ADMIN');
   const showSupportCards = session.user.roles?.includes('SUPPORT_ADMIN') ?? false;
   let setApartQueueCount = 'Unavailable';
@@ -72,12 +76,12 @@ export default async function DashboardPage() {
   let portalStatusValue = 'Not configured';
   let portalStatusDetail = 'No public portal token has been created yet.';
 
-  if (session.activeWardId && canAccessCallings) {
+  if (session.activeWardId && wardContext && canAccessCallings) {
     const client = await pool.connect();
 
     try {
       await client.query('BEGIN');
-      await setDbContext(client, { userId: session.user.id, wardId: session.activeWardId });
+      await setDbContext(client, wardContext);
 
       const result = await client.query(
         `SELECT COUNT(*)::int AS count
@@ -306,7 +310,7 @@ export default async function DashboardPage() {
           />
         ) : null}
 
-        {canAccessMeetings && featureFlags?.BISHOPRIC_AGENDA ? (
+        {canAccessMeetings && bishopricEnabled ? (
           <DashboardCard
             title={t('leadershipDue')}
             value={bishopricDueActionCount}
@@ -315,7 +319,7 @@ export default async function DashboardPage() {
           />
         ) : null}
 
-        {canAccessMeetings && featureFlags?.SCHEDULED_INTERVIEWS ? (
+        {canAccessMeetings && leadershipEnabled ? (
           <DashboardCard
             title={t('scheduledInterviews')}
             value={scheduledInterviewCount}
@@ -372,7 +376,7 @@ export default async function DashboardPage() {
           />
         ) : null}
 
-        {canAccessTechnology && featureFlags?.TECHNOLOGY_CHECKLIST ? (
+        {canAccessTechnology ? (
           <DashboardCard
             title={t('technologyReadiness')}
             value={technologyChecklistCount}

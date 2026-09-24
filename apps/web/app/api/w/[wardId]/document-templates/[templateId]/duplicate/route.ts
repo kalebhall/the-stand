@@ -6,6 +6,7 @@ import { auth } from '@/src/auth/auth';
 import { canManageWardProgramTemplates, canViewProgramDesigner } from '@/src/auth/roles';
 import { getBuiltInTemplate } from '@/src/document-designer/built-in-templates';
 import { loadProgramPermissionProfile, parseTemplateLayout } from '@/src/document-designer/template-service';
+import { isWardModuleEnabled } from '@/src/modules/service';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 
@@ -16,6 +17,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
   const { wardId, templateId } = await context.params;
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, { status: 401 });
   if (!canViewProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
+  if (!(await isWardModuleEnabled(wardId, session.user.id, 'programs'))) return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
   const body = duplicateSchema.safeParse(await request.json().catch(() => ({})));
   if (!body.success) return NextResponse.json({ error: 'Invalid duplicate payload', code: 'BAD_REQUEST' }, { status: 400 });
 

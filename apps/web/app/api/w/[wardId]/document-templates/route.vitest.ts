@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { authMock, connectMock, queryMock, releaseMock, setDbContextMock, canViewMock, canManageMock, auditMock } = vi.hoisted(() => ({
-  authMock: vi.fn(), connectMock: vi.fn(), queryMock: vi.fn(), releaseMock: vi.fn(), setDbContextMock: vi.fn(), canViewMock: vi.fn(), canManageMock: vi.fn(), auditMock: vi.fn()
+const { authMock, connectMock, queryMock, releaseMock, setDbContextMock, canViewMock, canManageMock, auditMock, moduleEnabledMock } = vi.hoisted(() => ({
+  authMock: vi.fn(), connectMock: vi.fn(), queryMock: vi.fn(), releaseMock: vi.fn(), setDbContextMock: vi.fn(), canViewMock: vi.fn(), canManageMock: vi.fn(), auditMock: vi.fn(), moduleEnabledMock: vi.fn()
 }));
 
 vi.mock('@/src/auth/auth', () => ({ auth: authMock }));
@@ -9,6 +9,7 @@ vi.mock('@/src/auth/roles', () => ({ canViewProgramDesigner: canViewMock, canMan
 vi.mock('@/src/db/client', () => ({ pool: { connect: connectMock } }));
 vi.mock('@/src/db/context', () => ({ setDbContext: setDbContextMock }));
 vi.mock('@/src/audit/service', () => ({ recordAuditEvent: auditMock }));
+vi.mock('@/src/modules/service', () => ({ isWardModuleEnabled: moduleEnabledMock }));
 
 import { GET, POST } from './route';
 import { adaptLegacyLayoutToDocument } from '@/src/document-designer/legacy-layout-adapter';
@@ -19,6 +20,7 @@ describe('document template collection routes', () => {
     authMock.mockResolvedValue({ user: { id: 'user-1', roles: ['PROGRAM_EDITOR'] }, activeWardId: 'ward-1' });
     canViewMock.mockReturnValue(true);
     canManageMock.mockReturnValue(true);
+    moduleEnabledMock.mockResolvedValue(true);
     auditMock.mockResolvedValue(undefined);
     connectMock.mockResolvedValue({ query: queryMock, release: releaseMock });
   });

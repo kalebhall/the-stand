@@ -1,5 +1,8 @@
 import { hasRole } from '@/src/auth/roles';
-import { DEFAULT_WARD_FEATURE_FLAGS, type WardFeatureFlags } from '@/src/features/types';
+import { composeModuleNavigation, createModuleEnablement } from '@/src/modules/enablement';
+import { DEFAULT_MODULE_REGISTRY } from '@/src/modules/registry';
+import type { ModuleEnablement, ModuleRegistry } from '@/src/modules/types';
+import { isAdvancedDesignerFeatureEnabled } from '@/src/features/advanced-designer';
 
 export type AppNavItem = {
   href: string;
@@ -13,38 +16,56 @@ function hasAnyRole(roles: string[] | undefined, roleNames: readonly string[]): 
   return roleNames.some((roleName) => hasRole(roles, roleName));
 }
 
-export function getNavigationItems(roles: string[] | undefined, features: WardFeatureFlags = DEFAULT_WARD_FEATURE_FLAGS): AppNavItem[] {
-  const items: AppNavItem[] = [{ href: '/dashboard', label: 'Dashboard' }];
+const DEFAULT_MODULE_ENABLEMENT = createModuleEnablement();
+
+export function getNavigationItems(
+  roles: string[] | undefined,
+  wardId = 'default',
+  enablement: ModuleEnablement = DEFAULT_MODULE_ENABLEMENT,
+  registry: ModuleRegistry = DEFAULT_MODULE_REGISTRY,
+  advancedDesignerEnabled = isAdvancedDesignerFeatureEnabled()
+): AppNavItem[] {
+  const enabledNavigation = new Map(composeModuleNavigation(wardId, enablement, registry).map((item) => [item.href, item]));
+  const items: AppNavItem[] = [];
+  const add = (moduleId: string, href: string, allowed: boolean): void => {
+    if (!allowed) return;
+    const item = registry.get(moduleId)?.navigation.find((candidate) => candidate.href === href);
+    if (item && enabledNavigation.has(item.href)) items.push(item);
+  };
+
+  add('conducting-core', '/dashboard', true);
 
   const canViewPrograms = hasRole(roles, 'PROGRAM_EDITOR') || hasRole(roles, 'BISHOPRIC_EDITOR') || hasRole(roles, 'STAND_ADMIN');
   const canAdministerTemplates = hasRole(roles, 'STAKE_ADMIN') || hasRole(roles, 'SYSTEM_ADMIN') || hasRole(roles, 'SUPPORT_ADMIN');
-  if (canViewPrograms) items.push({ href: '/programs', label: 'Programs' });
-  if (canViewPrograms) items.push({ href: '/programs/templates', label: 'Templates' });
-  if (canAdministerTemplates) items.push({ href: '/programs/templates/admin', label: 'Template Administration' });
+  if (advancedDesignerEnabled) {
+    add('programs', '/programs', canViewPrograms);
+    add('programs', '/programs/templates', canViewPrograms);
+    add('programs', '/programs/templates/admin', canAdministerTemplates);
+  }
 
   if (hasAnyRole(roles, MEETING_VIEW_ROLES) || hasRole(roles, 'STAND_ADMIN')) {
-    items.push({ href: '/meetings', label: 'Meetings' });
+    add('conducting-core', '/meetings', true);
   }
 
   if (hasAnyRole(roles, CLERK_OR_BISHOPRIC_ROLES) || hasRole(roles, 'STAND_ADMIN')) {
-    if (features.BISHOPRIC_AGENDA) items.push({ href: '/bishopric', label: 'Bishopric Agenda' });
-    if (features.SCHEDULED_INTERVIEWS) items.push({ href: '/interviews', label: 'Scheduled Interviews' });
-    if (features.TECHNOLOGY_CHECKLIST) items.push({ href: '/technology', label: 'Technology Checklist' });
+    add('bishopric', '/bishopric', true);
+    add('leadership', '/interviews', true);
+    add('technology-checklist', '/technology', true);
   }
 
   if (hasAnyRole(roles, CLERK_OR_BISHOPRIC_ROLES) || hasRole(roles, 'STAND_ADMIN')) {
-    items.push({ href: '/members', label: 'Members' });
-    items.push({ href: '/callings', label: 'Callings' });
-    if (features.SPEAKER_LIFECYCLE) items.push({ href: '/speakers', label: 'Speaker Lifecycle' });
-    items.push({ href: '/membership-ordinances', label: 'Membership & Ordinances' });
-    items.push({ href: '/notifications', label: 'Notifications' });
-    items.push({ href: '/announcements', label: 'Announcements' });
-    items.push({ href: '/reports', label: 'Reports' });
-    items.push({ href: '/imports', label: 'Imports' });
+    add('members', '/members', true);
+    add('callings', '/callings', true);
+    add('leadership', '/speakers', true);
+    add('membership-ordinances', '/membership-ordinances', true);
+    add('notifications', '/notifications', true);
+    add('announcements', '/announcements', true);
+    add('reports', '/reports', true);
+    add('imports', '/imports', true);
   }
 
   if (hasRole(roles, 'SUPPORT_ADMIN')) {
-    items.push({ href: '/support', label: 'Support Console' });
+    add('support', '/support', true);
   }
 
   return items;
