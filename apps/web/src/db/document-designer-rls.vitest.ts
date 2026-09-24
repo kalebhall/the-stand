@@ -50,7 +50,7 @@ BEGIN
 
   SELECT count(*) INTO visible_count FROM meeting_document;
   PERFORM set_config('app.ward_id', ward_b::text, true);
-  SELECT count(*) INTO hidden_count FROM meeting_document;
+  EXECUTE 'SELECT count(*) FROM meeting_document' INTO hidden_count;
 
   IF visible_count <> 1 THEN RAISE EXCEPTION 'ward A expected one document, got %', visible_count; END IF;
   IF hidden_count <> 0 THEN RAISE EXCEPTION 'ward B expected zero documents, got %', hidden_count; END IF;
