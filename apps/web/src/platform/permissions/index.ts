@@ -61,6 +61,7 @@ export function hasModulePermission(
     case 'support.manage':
       return hasRole(subject.roles, 'SUPPORT_ADMIN') || hasRole(subject.roles, 'SYSTEM_ADMIN');
     case 'technology-checklist.view':
+      return canViewMeetings(session, wardId);
     case 'technology-checklist.manage':
       return canManageMeetings(session, wardId);
     case 'members.view':

@@ -83,6 +83,8 @@ describe('module enablement harness', () => {
     enablement.setEnabled('ward-b', 'technology-checklist', false);
     expect(hasModulePermission({ activeWardId: 'ward-b', roles: ['STAND_ADMIN'] }, 'ward-b', 'technology-checklist.manage', enablement)).toBe(false);
     enablement.setEnabled('ward-b', 'technology-checklist', true);
+    expect(hasModulePermission({ activeWardId: 'ward-b', roles: ['CONDUCTOR_VIEW'] }, 'ward-b', 'technology-checklist.view', enablement)).toBe(true);
+    expect(hasModulePermission({ activeWardId: 'ward-b', roles: ['CONDUCTOR_VIEW'] }, 'ward-b', 'technology-checklist.manage', enablement)).toBe(false);
     expect(hasModulePermission({ activeWardId: 'ward-b', roles: ['STAND_ADMIN'] }, 'ward-b', 'technology-checklist.manage', enablement)).toBe(true);
   });
 });

@@ -2,7 +2,7 @@ import { getTranslations } from 'next-intl/server';
 import Link from 'next/link';
 
 import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/platform/auth/session';
-import { canManageMeetings, canViewCallings, canViewMeetings, hasRole } from '@/src/platform/permissions';
+import { canViewCallings, canViewMeetings, hasRole } from '@/src/platform/permissions';
 import { pool } from '@/src/db/client';
 import { createWardContext } from '@/src/platform/tenancy/context';
 import { getWardModuleSettings } from '@/src/modules/service';
@@ -29,7 +29,7 @@ export default async function DashboardPage() {
     moduleEnablement,
     wardSession ? canViewMeetings(wardSession, session.activeWardId!) : false,
     wardSession ? canViewCallings(wardSession, session.activeWardId!) : false,
-    wardSession ? canManageMeetings(wardSession, session.activeWardId!) : false,
+    wardSession ? canViewMeetings(wardSession, session.activeWardId!) : false,
     session.user.roles?.includes('SUPPORT_ADMIN') ?? false
   );
   const canAccessMeetings = dashboardModules.meetings;
