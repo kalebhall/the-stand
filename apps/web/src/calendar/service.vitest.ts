@@ -10,7 +10,7 @@ const { queryMock, connectMock, releaseMock, setDbContextMock } = vi.hoisted(() 
 vi.mock('@/src/db/client', () => ({ pool: { connect: connectMock } }));
 vi.mock('@/src/db/context', () => ({ setDbContext: setDbContextMock }));
 
-import { copyCalendarEventToAnnouncement } from './service';
+import { copyCalendarEventToAnnouncement, fetchCalendarFeed } from './service';
 
 const args = {
   wardId: '11111111-1111-4111-8111-111111111111',
@@ -66,5 +66,36 @@ describe('copyCalendarEventToAnnouncement', () => {
       args.wardId
     ]);
     expect(queryMock).toHaveBeenLastCalledWith('COMMIT');
+  });
+});
+
+describe('fetchCalendarFeed', () => {
+  it('aborts a feed that exceeds the request timeout', async () => {
+    const fetchImpl = (_input: string, init?: RequestInit) =>
+      new Promise<Response>((_, reject) => {
+        init?.signal?.addEventListener('abort', () => reject(init.signal?.reason));
+      });
+
+    await expect(fetchCalendarFeed('https://calendar.example.test/feed.ics', 5, fetchImpl)).rejects.toMatchObject({
+      name: 'TimeoutError'
+    });
+  });
+
+  it('parses a successful feed without requiring a database client', async () => {
+    const fetchImpl = async () =>
+      new Response(
+        [
+          'BEGIN:VCALENDAR',
+          'BEGIN:VEVENT',
+          'UID:event-1',
+          'SUMMARY:Ward activity',
+          'DTSTART:20260924T120000Z',
+          'END:VEVENT',
+          'END:VCALENDAR'
+        ].join(String.fromCharCode(13, 10)),
+        { status: 200 }
+      );
+
+    await expect(fetchCalendarFeed('https://calendar.example.test/feed.ics', 1000, fetchImpl)).resolves.toHaveLength(1);
   });
 });

@@ -75,18 +75,43 @@ export async function pruneCalendarEventCache(client: PoolClient): Promise<numbe
   return pruned.rowCount ?? 0;
 }
 
+export const CALENDAR_FEED_TIMEOUT_MS = 15_000;
+
+type CalendarFetch = (input: string, init?: RequestInit) => Promise<Response>;
+
+export async function fetchCalendarFeed(
+  feedUrl: string,
+  timeoutMs = CALENDAR_FEED_TIMEOUT_MS,
+  fetchImpl: CalendarFetch = fetch
+): Promise<ParsedCalendarEvent[]> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => {
+    controller.abort(new DOMException('Calendar feed request timed out', 'TimeoutError'));
+  }, timeoutMs);
+
+  try {
+    const response = await fetchImpl(feedUrl, { cache: 'no-store', signal: controller.signal });
+    if (!response.ok) {
+      throw new Error(`Feed responded with ${response.status}`);
+    }
+    return parseIcsEvents(await response.text());
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 export async function refreshCalendarFeedsForWard(args: {
   wardId: string;
   userId: string;
   reason: RefreshReason;
 }): Promise<RefreshSummary[]> {
-  const client = await pool.connect();
+  const feedReadClient = await pool.connect();
+  let feeds: CalendarFeedRow[];
 
   try {
-    await client.query('BEGIN');
-    await setDbContext(client, { wardId: args.wardId, userId: args.userId });
-
-    const feedsResult = await client.query(
+    await feedReadClient.query('BEGIN');
+    await setDbContext(feedReadClient, { wardId: args.wardId, userId: args.userId });
+    const feedsResult = await feedReadClient.query(
       `SELECT id, ward_id, display_name, feed_scope, feed_url, tag_map
          FROM calendar_feed
         WHERE ward_id = $1::uuid
@@ -94,19 +119,53 @@ export async function refreshCalendarFeedsForWard(args: {
         ORDER BY created_at ASC`,
       [args.wardId]
     );
+    await feedReadClient.query('COMMIT');
+    feeds = feedsResult.rows as CalendarFeedRow[];
+  } catch {
+    await feedReadClient.query('ROLLBACK').catch(() => undefined);
+    throw new Error('Failed to refresh calendar feeds');
+  } finally {
+    feedReadClient.release();
+  }
+
+  // Never hold a database client or transaction open while waiting on an external feed.
+  const fetchedFeeds = await Promise.all(
+    feeds.map(async (feed) => {
+      try {
+        return { feed, events: await fetchCalendarFeed(feed.feed_url), error: null };
+      } catch (error) {
+        return {
+          feed,
+          events: [] as ParsedCalendarEvent[],
+          error: error instanceof Error ? error.message.slice(0, 500) : 'Unknown refresh error'
+        };
+      }
+    })
+  );
+
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+    await setDbContext(client, { wardId: args.wardId, userId: args.userId });
 
     const summaries: RefreshSummary[] = [];
 
-    for (const feed of feedsResult.rows as CalendarFeedRow[]) {
+    for (const { feed, events, error } of fetchedFeeds) {
+      if (error) {
+        await client.query(
+          `UPDATE calendar_feed
+              SET last_refreshed_at = now(),
+                  last_refresh_status = 'ERROR',
+                  last_refresh_error = $3::text
+            WHERE id = $1::uuid
+              AND ward_id = $2::uuid`,
+          [feed.id, args.wardId, error]
+        );
+        continue;
+      }
+
       try {
-        const response = await fetch(feed.feed_url, { cache: 'no-store' });
-        if (!response.ok) {
-          throw new Error(`Feed responded with ${response.status}`);
-        }
-
-        const icsBody = await response.text();
-        const events = parseIcsEvents(icsBody);
-
         let imported = 0;
         for (const event of events) {
           const calendarEventId = await upsertCachedEvent(client, { wardId: args.wardId, feed, event });

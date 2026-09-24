@@ -15,7 +15,7 @@ flowchart LR
   A3["root:tooling<br/>7 files"]
   A4["web:announcements<br/>2 files"]
   A5["web:api<br/>128 files"]
-  A6["web:app<br/>142 files"]
+  A6["web:app<br/>143 files"]
   A7["web:audit<br/>2 files"]
   A8["web:auth<br/>12 files"]
   A9["web:bootstrap.mjs<br/>1 files"]
@@ -50,14 +50,14 @@ flowchart LR
   A5 -->|167| A8
   A5 -->|147| A15
   A6 -->|121| A36
-  A6 -->|93| A8
+  A6 -->|94| A8
   A6 -->|56| A15
   A5 -->|54| A26
   A5 -->|52| A16
   A5 -->|44| A28
   A5 -->|30| A7
+  A6 -->|28| A26
   A5 -->|25| A23
-  A6 -->|20| A26
   A6 -->|15| A16
   A6 -->|15| A25
   A5 -->|14| A11
@@ -151,7 +151,7 @@ flowchart LR
 | `root:tooling` | 7 |
 | `web:announcements` | 2 |
 | `web:api` | 128 |
-| `web:app` | 142 |
+| `web:app` | 143 |
 | `web:audit` | 2 |
 | `web:auth` | 12 |
 | `web:bootstrap.mjs` | 1 |
@@ -192,8 +192,8 @@ flowchart LR
 | `web:api` | `web:auth` | 167 |
 | `web:api` | `web:db` | 147 |
 | `web:app` | `web:ui` | 121 |
-| `web:app` | `web:auth` | 93 |
-| `web:app` | `web:app` | 69 |
+| `web:app` | `web:auth` | 94 |
+| `web:app` | `web:app` | 70 |
 | `web:notifications` | `web:notifications` | 57 |
 | `web:app` | `web:db` | 56 |
 | `web:api` | `web:modules` | 54 |
@@ -202,9 +202,9 @@ flowchart LR
 | `web:api` | `web:api` | 35 |
 | `web:api` | `web:audit` | 30 |
 | `web:ui` | `web:ui` | 30 |
+| `web:app` | `web:modules` | 28 |
 | `web:api` | `web:lib` | 25 |
 | `web:platform` | `web:platform` | 22 |
-| `web:app` | `web:modules` | 20 |
 | `web:modules` | `web:modules` | 17 |
 | `web:app` | `web:document-designer` | 15 |
 | `web:app` | `web:meetings` | 15 |
@@ -318,12 +318,12 @@ flowchart LR
 | `web:api` | `vitest` | 32 |
 | `web:ui` | `react` | 31 |
 | `web:document-designer` | `vitest` | 25 |
-| `web:app` | `vitest` | 20 |
+| `web:app` | `vitest` | 21 |
 | `web:app` | `next-intl` | 19 |
 | `web:notifications` | `vitest` | 19 |
 | `web:api` | `zod` | 15 |
+| `web:app` | `@testing-library/react` | 15 |
 | `root:tooling` | `Node.js` | 14 |
-| `web:app` | `@testing-library/react` | 14 |
 | `web:ui` | `next` | 14 |
 | `web:notifications` | `pg` | 13 |
 | `web:db` | `Node.js` | 10 |
@@ -574,7 +574,7 @@ flowchart LR
 | `apps/web/app/callings/error.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/callings/loading.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/callings/page.tsx` | `web:app` | 19 | 3 |
-| `apps/web/app/callings/standard/page.tsx` | `web:app` | 4 | 2 |
+| `apps/web/app/callings/standard/page.tsx` | `web:app` | 5 | 2 |
 | `apps/web/app/dashboard/error.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/dashboard/loading.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/dashboard/page.tsx` | `web:app` | 8 | 2 |
@@ -582,14 +582,14 @@ flowchart LR
 | `apps/web/app/health/route.ts` | `web:app` | 1 | 1 |
 | `apps/web/app/health/route.vitest.ts` | `web:app` | 1 | 1 |
 | `apps/web/app/imports/callings/calling-import-client.tsx` | `web:app` | 2 | 1 |
-| `apps/web/app/imports/callings/page.tsx` | `web:app` | 7 | 2 |
+| `apps/web/app/imports/callings/page.tsx` | `web:app` | 8 | 2 |
 | `apps/web/app/imports/error.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/imports/loading.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/imports/members/member-import-client.tsx` | `web:app` | 2 | 1 |
-| `apps/web/app/imports/members/page.tsx` | `web:app` | 5 | 2 |
+| `apps/web/app/imports/members/page.tsx` | `web:app` | 6 | 2 |
 | `apps/web/app/imports/membership-imports-client.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/imports/page.tsx` | `web:app` | 5 | 2 |
-| `apps/web/app/imports/sacrament-planner/page.tsx` | `web:app` | 5 | 2 |
+| `apps/web/app/imports/sacrament-planner/page.tsx` | `web:app` | 6 | 2 |
 | `apps/web/app/imports/sacrament-planner/sacrament-planner-import-client.tsx` | `web:app` | 2 | 1 |
 | `apps/web/app/interviews/interviews-client.tsx` | `web:app` | 5 | 1 |
 | `apps/web/app/interviews/page.tsx` | `web:app` | 8 | 1 |
@@ -619,7 +619,7 @@ flowchart LR
 | `apps/web/app/membership-ordinances/workspace-controls.tsx` | `web:app` | 2 | 1 |
 | `apps/web/app/missionary-coordination/page.tsx` | `web:app` | 0 | 1 |
 | `apps/web/app/not-found.tsx` | `web:app` | 2 | 1 |
-| `apps/web/app/notifications/diagnostics/page.tsx` | `web:app` | 7 | 2 |
+| `apps/web/app/notifications/diagnostics/page.tsx` | `web:app` | 8 | 2 |
 | `apps/web/app/notifications/error.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/notifications/loading.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/notifications/notification-center.tsx` | `web:app` | 1 | 1 |
@@ -646,8 +646,8 @@ flowchart LR
 | `apps/web/app/programs/templates/page.tsx` | `web:app` | 4 | 1 |
 | `apps/web/app/programs/templates/template-gallery-client.tsx` | `web:app` | 0 | 2 |
 | `apps/web/app/programs/templates/template-gallery-client.vitest.tsx` | `web:app` | 1 | 2 |
-| `apps/web/app/reports/[report]/page.tsx` | `web:app` | 7 | 2 |
-| `apps/web/app/reports/notes/page.tsx` | `web:app` | 4 | 2 |
+| `apps/web/app/reports/[report]/page.tsx` | `web:app` | 8 | 2 |
+| `apps/web/app/reports/notes/page.tsx` | `web:app` | 5 | 2 |
 | `apps/web/app/reports/page.tsx` | `web:app` | 4 | 1 |
 | `apps/web/app/request-access/page.tsx` | `web:app` | 1 | 0 |
 | `apps/web/app/request-access/request-access-form.tsx` | `web:app` | 2 | 1 |
@@ -657,11 +657,12 @@ flowchart LR
 | `apps/web/app/settings/health/page.tsx` | `web:app` | 3 | 4 |
 | `apps/web/app/settings/language-preference.tsx` | `web:app` | 1 | 3 |
 | `apps/web/app/settings/module-settings.tsx` | `web:app` | 0 | 1 |
+| `apps/web/app/settings/module-settings.vitest.tsx` | `web:app` | 1 | 2 |
 | `apps/web/app/settings/notification-timezone.tsx` | `web:app` | 0 | 1 |
 | `apps/web/app/settings/notification-timezone.vitest.tsx` | `web:app` | 1 | 4 |
 | `apps/web/app/settings/notifications/notification-subscription-settings.tsx` | `web:app` | 1 | 1 |
 | `apps/web/app/settings/notifications/notification-subscription-settings.vitest.tsx` | `web:app` | 1 | 4 |
-| `apps/web/app/settings/notifications/page.tsx` | `web:app` | 2 | 1 |
+| `apps/web/app/settings/notifications/page.tsx` | `web:app` | 4 | 1 |
 | `apps/web/app/settings/page.tsx` | `web:app` | 9 | 2 |
 | `apps/web/app/settings/public-layout/page.tsx` | `web:app` | 7 | 1 |
 | `apps/web/app/settings/public-layout/public-layout-client.tsx` | `web:app` | 3 | 1 |
