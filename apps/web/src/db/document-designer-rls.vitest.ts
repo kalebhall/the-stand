@@ -57,7 +57,7 @@ BEGIN
 END;
 $$;
 
-SELECT set_config('app.ward_id', ward_b::text, true) FROM rls_fixture;
+SELECT set_config('app.ward_id', ward_b::text, false) FROM rls_fixture;
 
 DO $$
 DECLARE hidden_count INTEGER;
