@@ -5,7 +5,7 @@ import { auth } from '@/src/auth/auth';
 import { canManageMeetings } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
-import { isWardFeatureEnabled } from '@/src/features/flags';
+import { isWardModuleEnabled } from '@/src/modules/service';
 import { isValidLeadershipMeetingPayload, LEADERSHIP_MEETING_TYPES, type LeadershipMeetingType } from '@/src/leadership/bishopric';
 
 const text = (value: unknown) => typeof value === 'string' ? value.trim() : '';
@@ -16,7 +16,7 @@ async function authorize(wardId: string) {
   if (!canManageMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) {
     return { response: NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 }) };
   }
-  if (!(await isWardFeatureEnabled(wardId, session.user.id, 'BISHOPRIC_AGENDA'))) return { response: NextResponse.json({ error: 'Bishopric agenda feature is disabled', code: 'FEATURE_DISABLED' }, { status: 403 }) };
+  if (!(await isWardModuleEnabled(wardId, session.user.id, 'bishopric'))) return { response: NextResponse.json({ error: 'Bishopric agenda feature is disabled', code: 'FEATURE_DISABLED' }, { status: 403 }) };
   return { session };
 }
 

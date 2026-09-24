@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 
 import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth/guards';
 import { canUseInternalNotes } from '@/src/auth/roles';
+import { isWardModuleEnabled } from '@/src/modules/service';
 import { ReportHub } from '@/components/reports/report-view';
 
 export default async function ReportsPage() {
@@ -9,6 +10,7 @@ export default async function ReportsPage() {
   enforcePasswordRotation(session);
   if (
     !session.activeWardId ||
+    !(await isWardModuleEnabled(session.activeWardId, session.user.id, 'reports')) ||
     !canUseInternalNotes({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId)
   ) {
     redirect('/dashboard');

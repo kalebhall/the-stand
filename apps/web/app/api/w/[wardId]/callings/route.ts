@@ -8,6 +8,7 @@ import { pool } from '@/src/db/client';
 import { createLogger } from '@/src/lib/logger';
 import { setDbContext } from '@/src/db/context';
 import { enqueueOutboxNotificationJob } from '@/src/notifications/queue';
+import { isWardModuleEnabled } from '@/src/modules/service';
 
 const logger = createLogger('callings');
 
@@ -26,7 +27,7 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
   }
 
   const { wardId } = await context.params;
-  if (!canViewCallings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) {
+  if (!(await isWardModuleEnabled(wardId, session.user.id, 'callings')) || !canViewCallings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) {
     return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
   }
 
@@ -84,7 +85,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
   }
 
   const { wardId } = await context.params;
-  if (!canManageCallings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) {
+  if (!(await isWardModuleEnabled(wardId, session.user.id, 'callings')) || !canManageCallings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) {
     return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
   }
 

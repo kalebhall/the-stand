@@ -4,6 +4,8 @@ import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth/guards';
 import { canViewProgramDesigner } from '@/src/auth/roles';
+import { isAdvancedDesignerFeatureEnabled } from '@/src/features/advanced-designer';
+import { isWardModuleEnabled } from '@/src/modules/service';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 import { ProgramsClient, type ProgramMeeting } from './programs-client';
@@ -11,7 +13,7 @@ import { ProgramsClient, type ProgramMeeting } from './programs-client';
 export default async function ProgramsPage() {
   const session = await requireAuthenticatedSession();
   enforcePasswordRotation(session);
-  if (!session.activeWardId || !canViewProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId)) redirect('/dashboard');
+  if (!isAdvancedDesignerFeatureEnabled() || !session.activeWardId || !(await isWardModuleEnabled(session.activeWardId, session.user.id, 'programs')) || !canViewProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId)) redirect('/dashboard');
 
   const client = await pool.connect();
   let meetings: ProgramMeeting[] = [];

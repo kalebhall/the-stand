@@ -6,6 +6,7 @@ import { loadPrintDocument } from '@/src/document-designer/print-data';
 import { validatePrintLayout } from '@/src/document-designer/overflow';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
+import { isWardModuleEnabled } from '@/src/modules/service';
 
 function errorResponse(error: string, code: string, status: number) { return NextResponse.json({ error, code }, { status }); }
 
@@ -14,6 +15,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
   const { wardId, meetingId } = await context.params;
   if (!session?.user?.id) return errorResponse('Unauthorized', 'UNAUTHORIZED', 401);
   if (!canViewProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) return errorResponse('Forbidden', 'FORBIDDEN', 403);
+  if (!(await isWardModuleEnabled(wardId, session.user.id, 'programs'))) return errorResponse('Forbidden', 'FORBIDDEN', 403);
   const raw = await request.json().catch(() => undefined) as unknown;
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return errorResponse('Invalid print validation payload', 'BAD_REQUEST', 400);
   const body = raw as Record<string, unknown>;

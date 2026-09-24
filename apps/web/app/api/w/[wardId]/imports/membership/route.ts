@@ -11,6 +11,7 @@ import { getMemberIdentitySecret, makeMemberIdentityKey, makeSafeImportSnapshot 
 import { createLogger } from '@/src/lib/logger';
 import { enqueueOutboxNotificationJob } from '@/src/notifications/queue';
 import { enqueueNotificationOutboxEvent, insertNotificationOutboxEvent } from '@/src/notifications/outbox';
+import { isWardModuleEnabled } from '@/src/modules/service';
 
 type MembershipImportBody = {
   rawText?: unknown;
@@ -26,7 +27,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
   }
 
   const { wardId } = await context.params;
-  if (!canRunImports({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) {
+  if (!(await isWardModuleEnabled(wardId, session.user.id, 'imports')) || !canRunImports({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) {
     return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
   }
 

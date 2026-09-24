@@ -1,7 +1,7 @@
 import type { NotificationDigestFrequency } from './email-preferences';
 
 const NOTIFICATION_QUEUE_NAME = 'notification-outbox';
-const DEFAULT_REDIS_URL = 'redis://127.0.0.1:6379';
+
 
 export type OutboxNotificationQueueJob = {
   kind: 'outbox-event';
@@ -30,14 +30,17 @@ export type GlobalEmailDeliveryQueueJob = {
 
 export type NotificationQueueJob = OutboxNotificationQueueJob | GlobalOutboxNotificationQueueJob | GlobalEmailDeliveryQueueJob | NotificationDigestQueueJob;
 
-function getRedisConnectionUrl(): string {
-  return process.env.REDIS_URL ?? DEFAULT_REDIS_URL;
+function getRedisConnectionUrl(): string | null {
+  const redisUrl = process.env.REDIS_URL?.trim();
+  return redisUrl || null;
 }
 
 async function createBullMqQueue() {
+  const redisUrl = getRedisConnectionUrl();
+  if (!redisUrl) return null;
   const { Queue } = await import('bullmq');
   return new Queue<NotificationQueueJob>(NOTIFICATION_QUEUE_NAME, {
-    connection: { url: getRedisConnectionUrl() }
+    connection: { url: redisUrl }
   });
 }
 
@@ -45,9 +48,10 @@ export async function enqueueOutboxNotificationJob(payload: { wardId: string; ev
   if (process.env.E2E_TEST_MODE === '1') return;
 
   const queue = await createBullMqQueue();
+  if (!queue) return;
 
   try {
-    const jobId = `outbox:${payload.wardId}:${payload.eventOutboxId}`;
+    const jobId = `outbox-${payload.wardId}-${payload.eventOutboxId}`;
     const existingJob = await queue.getJob(jobId);
     if (existingJob) {
       const state = await existingJob.getState();
@@ -83,9 +87,10 @@ export async function enqueueOutboxNotificationJob(payload: { wardId: string; ev
 
 export async function enqueueGlobalNotificationJob(payload: { globalEventOutboxId: string }): Promise<void> {
   const queue = await createBullMqQueue();
+  if (!queue) return;
 
   try {
-    const jobId = `global-outbox:${payload.globalEventOutboxId}`;
+    const jobId = `global-outbox-${payload.globalEventOutboxId}`;
     const existingJob = await queue.getJob(jobId);
     if (existingJob) {
       const state = await existingJob.getState();
@@ -109,8 +114,9 @@ export async function enqueueGlobalNotificationJob(payload: { globalEventOutboxI
 }
 export async function enqueueGlobalEmailDeliveryJob(payload: { globalNotificationDeliveryId: string }): Promise<void> {
   const queue = await createBullMqQueue();
+  if (!queue) return;
   try {
-    const jobId = `global-email:${payload.globalNotificationDeliveryId}`;
+    const jobId = `global-email-${payload.globalNotificationDeliveryId}`;
     const existingJob = await queue.getJob(jobId);
     if (existingJob) {
       const state = await existingJob.getState();
@@ -131,11 +137,12 @@ export async function enqueueGlobalEmailDeliveryJob(payload: { globalNotificatio
 
 export async function enqueueDigestNotificationJob(payload: NotificationDigestQueueJob): Promise<void> {
   const queue = await createBullMqQueue();
+  if (!queue) return;
 
   try {
     const delay = Math.max(0, new Date(payload.runAt).getTime() - Date.now());
     await queue.add('process-digest-delivery', payload, {
-      jobId: `digest:${payload.digestItemId}`,
+      jobId: `digest-${payload.digestItemId}`,
       delay,
       removeOnComplete: 1000,
       removeOnFail: 5000,

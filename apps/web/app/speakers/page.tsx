@@ -5,7 +5,7 @@ import { canManageMeetings } from '@/src/platform/permissions';
 import { pool } from '@/src/db/client';
 import { createWardContext } from '@/src/platform/tenancy/context';
 import { setDbContext } from '@/src/platform/db/context';
-import { isContextFeatureEnabled } from '@/src/platform/features/flags';
+import { isWardModuleEnabled } from '@/src/modules/service';
 import { SpeakerLifecycleWorkspace } from './speaker-lifecycle-workspace';
 
 export default async function SpeakersPage() {
@@ -13,7 +13,7 @@ export default async function SpeakersPage() {
   enforcePasswordRotation(session);
   if (!session.activeWardId) redirect('/dashboard');
   const wardContext = createWardContext(session, session.activeWardId);
-  if (!canManageMeetings({ roles: session.user.roles, activeWardId: wardContext.wardId }, wardContext.wardId) || !(await isContextFeatureEnabled(wardContext, wardContext.wardId, 'SPEAKER_LIFECYCLE'))) redirect('/dashboard');
+  if (!canManageMeetings({ roles: session.user.roles, activeWardId: wardContext.wardId }, wardContext.wardId) || !(await isWardModuleEnabled(wardContext.wardId, session.user.id, 'leadership'))) redirect('/dashboard');
 
   const client = await pool.connect();
   try {

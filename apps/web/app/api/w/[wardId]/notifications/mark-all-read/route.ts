@@ -4,6 +4,7 @@ import { auth } from '@/src/auth/auth';
 import { canViewMeetings } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
+import { isWardModuleEnabled } from '@/src/modules/service';
 import { markAllUserNotificationsRead } from '@/src/notifications/user-notifications';
 
 export async function POST(_: Request, context: { params: Promise<{ wardId: string }> }) {
@@ -12,7 +13,7 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
     return NextResponse.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, { status: 401 });
   }
   const { wardId } = await context.params;
-  if (!canViewMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) {
+  if (!(await isWardModuleEnabled(wardId, session.user.id, 'notifications')) || !canViewMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) {
     return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
   }
 

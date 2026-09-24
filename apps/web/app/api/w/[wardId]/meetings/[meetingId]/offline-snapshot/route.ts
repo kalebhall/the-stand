@@ -4,7 +4,7 @@ import { auth } from '@/src/auth/auth';
 import { canViewMeetings } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
-import { isWardFeatureEnabled } from '@/src/features/flags';
+import { isWardModuleEnabled } from '@/src/modules/service';
 import { isCoreAnnouncementActiveForDate } from '@/src/conducting/core';
 import { buildStandRows } from '@/src/stand/render';
 
@@ -15,7 +15,7 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
   if (!canViewMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) {
     return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
   }
-  const technologyEnabled = await isWardFeatureEnabled(wardId, session.user.id, 'TECHNOLOGY_CHECKLIST');
+  const technologyEnabled = await isWardModuleEnabled(wardId, session.user.id, 'technology-checklist');
 
   const client = await pool.connect();
   try {

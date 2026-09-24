@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { authMock, canRunImportsMock, setDbContextMock, connectMock, releaseMock, queryMock } = vi.hoisted(() => ({
+const { authMock, canRunImportsMock, moduleEnabledMock, setDbContextMock, connectMock, releaseMock, queryMock } = vi.hoisted(() => ({
   authMock: vi.fn(),
   canRunImportsMock: vi.fn(),
+  moduleEnabledMock: vi.fn(),
   setDbContextMock: vi.fn(),
   connectMock: vi.fn(),
   releaseMock: vi.fn(),
@@ -13,6 +14,7 @@ const loggerErrorMock = vi.hoisted(() => vi.fn());
 
 vi.mock('@/src/auth/auth', () => ({ auth: authMock }));
 vi.mock('@/src/auth/roles', () => ({ canRunImports: canRunImportsMock }));
+vi.mock('@/src/modules/service', () => ({ isWardModuleEnabled: moduleEnabledMock }));
 vi.mock('@/src/db/context', () => ({ setDbContext: setDbContextMock }));
 vi.mock('@/src/db/client', () => ({
   pool: {
@@ -37,6 +39,7 @@ describe('POST /api/w/[wardId]/imports/membership', () => {
 
     authMock.mockResolvedValue({ user: { id: 'user-1', roles: ['MEMBERSHIP_CLERK'] }, activeWardId: 'ward-1' });
     canRunImportsMock.mockReturnValue(true);
+    moduleEnabledMock.mockResolvedValue(true);
 
     connectMock.mockResolvedValue({
       query: queryMock,

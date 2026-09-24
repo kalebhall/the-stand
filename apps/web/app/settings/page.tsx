@@ -4,12 +4,12 @@ import { ChangePasswordForm } from '@/app/account/change-password/change-passwor
 import { ThemeToggle } from '@/app/account/preferences/theme-toggle';
 import { LanguagePreference } from '@/app/settings/language-preference';
 import { NotificationTimezoneSetting } from '@/app/settings/notification-timezone';
-import { FeatureSettings } from '@/app/settings/feature-settings';
 import { getLocale } from 'next-intl/server';
 import { resolveLocale } from '@/src/i18n/config';
 import { requireAuthenticatedSession } from '@/src/auth/guards';
 import { canManageMeetings, canRunImports, hasRole } from '@/src/auth/roles';
-import { getWardFeatureFlags } from '@/src/features/flags';
+import { getWardModuleSettings } from '@/src/modules/service';
+import { ModuleSettings } from '@/app/settings/module-settings';
 
 export default async function SettingsPage() {
   const session = await requireAuthenticatedSession();
@@ -24,7 +24,7 @@ export default async function SettingsPage() {
       ));
   const canViewActivityLog = wardId ? canRunImports({ roles: session.user.roles, activeWardId: wardId }, wardId) : false;
   const canManageProgramLayout = wardId ? canManageMeetings({ roles: session.user.roles, activeWardId: wardId }, wardId) : false;
-  const featureFlags = wardId && isStandAdmin ? await getWardFeatureFlags(wardId, session.user.id) : null;
+  const moduleSettings = wardId && isStandAdmin ? await getWardModuleSettings(wardId, session.user.id) : null;
 
   return (
     <main className="mx-auto max-w-4xl space-y-8 p-6">
@@ -70,7 +70,13 @@ export default async function SettingsPage() {
             {canManageNotifications && <SettingsLink href="/settings/notifications" label="Notification settings" />}
             {canViewActivityLog && <SettingsLink href="/settings/audit-log" label="Activity log" />}
           </div>
-          {featureFlags ? <FeatureSettings wardId={wardId} initial={featureFlags} /> : null}
+          {moduleSettings ? (
+            <div className="border-t pt-4">
+              <h3 className="mb-2 text-lg font-medium">Modules</h3>
+              <p className="mb-4 text-sm text-muted-foreground">Turn optional workflows on or off for this ward. Existing data is preserved.</p>
+              <ModuleSettings wardId={wardId} initial={moduleSettings} />
+            </div>
+          ) : null}
           {canManageNotifications && (
             <div className="border-t pt-4">
               <NotificationTimezoneSetting wardId={wardId} />

@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { authMock, canManageCallingsMock, setDbContextMock, connectMock, releaseMock, queryMock, loggerErrorMock } = vi.hoisted(() => ({
+const { authMock, canManageCallingsMock, moduleEnabledMock, setDbContextMock, connectMock, releaseMock, queryMock, loggerErrorMock } = vi.hoisted(() => ({
   authMock: vi.fn(),
   canManageCallingsMock: vi.fn(),
+  moduleEnabledMock: vi.fn(),
   setDbContextMock: vi.fn(),
   connectMock: vi.fn(),
   releaseMock: vi.fn(),
@@ -11,6 +12,7 @@ const { authMock, canManageCallingsMock, setDbContextMock, connectMock, releaseM
 }));
 
 vi.mock('@/src/auth/auth', () => ({ auth: authMock }));
+vi.mock('@/src/modules/service', () => ({ isWardModuleEnabled: moduleEnabledMock }));
 vi.mock('@/src/auth/roles', () => ({ canManageCallings: canManageCallingsMock }));
 vi.mock('@/src/db/context', () => ({ setDbContext: setDbContextMock }));
 vi.mock('@/src/db/client', () => ({
@@ -26,14 +28,26 @@ import { POST } from './route';
 
 describe('POST /api/w/[wardId]/callings/[callingId]/assign', () => {
   beforeEach(() => {
-    vi.resetAllMocks();
+    vi.clearAllMocks();
 
     authMock.mockResolvedValue({ user: { id: 'user-1', roles: ['STAND_ADMIN'] }, activeWardId: 'ward-1' });
     canManageCallingsMock.mockReturnValue(true);
+    moduleEnabledMock.mockResolvedValue(true);
     connectMock.mockResolvedValue({
       query: queryMock,
       release: releaseMock
     });
+  });
+
+  it('denies direct access when the Callings module is disabled', async () => {
+    moduleEnabledMock.mockResolvedValue(false);
+
+    const response = await POST(new Request('http://localhost', { method: 'POST' }), {
+      params: Promise.resolve({ wardId: 'ward-1', callingId: 'calling-1' })
+    });
+
+    expect(response.status).toBe(403);
+    expect(connectMock).not.toHaveBeenCalled();
   });
 
   it('converts a sustained calling to assigned and preserves history', async () => {

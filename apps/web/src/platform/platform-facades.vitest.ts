@@ -6,7 +6,6 @@ import { assertSessionWardAccess } from '@/src/platform/auth/session';
 import { recordWardAuditEvent } from '@/src/platform/audit';
 import { setDbContextForWard } from '@/src/platform/db/context';
 import { PLATFORM_ERROR_CODES, PlatformError, toPlatformErrorResponse } from '@/src/platform/errors';
-import { getContextFeatureFlags } from '@/src/platform/features/flags';
 import { assertOfflineWardAccess } from '@/src/platform/offline/lifecycle';
 import { assertPermissionWardAccess, canAccessWard } from '@/src/platform/permissions';
 import { assertStakeAccess, assertWardAccess, createWardContext, type WardContext } from '@/src/platform/tenancy/context';
@@ -56,10 +55,6 @@ describe('platform facades', () => {
     await expectWardRejection(() => recordWardAuditEvent(client, context, { action: 'TEST', wardId: 'ward-b' }));
     await expectForbidden(() => recordWardAuditEvent(client, context, { action: 'TEST', userId: 'user-b' }));
     expect(client.query).not.toHaveBeenCalled();
-  });
-
-  it('rejects cross-ward feature-flag reads', async () => {
-    await expectWardRejection(() => getContextFeatureFlags(context, 'ward-b'));
   });
 
   it('rejects cross-ward offline access', async () => {

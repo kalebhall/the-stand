@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { canViewDashboardPublicPortalStatus, getNavigationItems } from '@/src/auth/navigation';
+import { createModuleEnablement } from '@/src/modules/enablement';
 
 describe('getNavigationItems', () => {
   it('always includes dashboard for authenticated users', () => {
@@ -59,12 +60,14 @@ describe('getNavigationItems', () => {
   });
 
   it('hides disabled optional features', () => {
-    const items = getNavigationItems(['STAND_ADMIN'], {
-      BISHOPRIC_AGENDA: false,
-      SCHEDULED_INTERVIEWS: false,
-      TECHNOLOGY_CHECKLIST: true,
-      SPEAKER_LIFECYCLE: false
+    const enablement = createModuleEnablement({
+      ward: {
+        bishopric: false,
+        leadership: false,
+        'technology-checklist': true
+      }
     });
+    const items = getNavigationItems(['STAND_ADMIN'], 'ward', enablement);
     const hrefs = items.map((item) => item.href);
     expect(hrefs).toContain('/technology');
     expect(hrefs).not.toContain('/bishopric');

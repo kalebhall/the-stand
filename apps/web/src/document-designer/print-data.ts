@@ -45,7 +45,7 @@ async function hydrateMedia(client: PoolClient, wardId: string, media: ResolvedD
   return hydrated;
 }
 
-export async function loadPrintDocument(client: PoolClient, wardId: string, meetingId: string, source: PrintSource, version: number | null): Promise<{ layout: DocumentLayout | AdvancedDocumentLayout; data: ResolvedDocumentData; wardName: string; publishedVersion: number | null } | null> {
+export async function loadPrintDocument(client: PoolClient, wardId: string, meetingId: string, source: PrintSource, version: number | null, options: { advancedProjection?: boolean } = {}): Promise<{ layout: DocumentLayout | AdvancedDocumentLayout; data: ResolvedDocumentData; wardName: string; publishedVersion: number | null } | null> {
   const meeting = await client.query(
     'SELECT w.name AS ward_name, m.meeting_date, m.meeting_type, m.location FROM meeting m JOIN ward w ON w.id = m.ward_id WHERE m.id = $1::uuid AND m.ward_id = $2::uuid LIMIT 1', [meetingId, wardId]
   );
@@ -67,7 +67,9 @@ export async function loadPrintDocument(client: PoolClient, wardId: string, meet
     const row = render.rows[0] as { layout_json: unknown; render_data_json: ResolvedDocumentData; version: number } | undefined;
     if (!row?.layout_json || !row.render_data_json) return null;
     const data = { ...row.render_data_json, media: await hydrateMedia(client, wardId, row.render_data_json.media) };
-    const layout = isAdvancedLayout(row.layout_json) ? projectAdvancedLayoutForOutput(parseAdvancedLayout(row.layout_json), 'PRINT', data) : row.layout_json as DocumentLayout;
+    const layout = options.advancedProjection === false
+      ? resolveDocumentData(row.layout_json, { meetingDate: String(meeting.rows[0].meeting_date), meetingType: meeting.rows[0].meeting_type, wardName: meeting.rows[0].ward_name, programItems: data.meetingItems }, { target: 'PRINT', advancedProjection: false }).layout
+      : isAdvancedLayout(row.layout_json) ? projectAdvancedLayoutForOutput(parseAdvancedLayout(row.layout_json), 'PRINT', data) : row.layout_json as DocumentLayout;
     return { layout, data, wardName: meeting.rows[0].ward_name, publishedVersion: row.version };
   }
 
@@ -81,9 +83,9 @@ export async function loadPrintDocument(client: PoolClient, wardId: string, meet
     media: Object.fromEntries((media.rows as Array<{ id: string; alt_text: string | null; is_decorative: boolean; public_token: string }>).map((item) => [item.id, { url: `/media/${encodeURIComponent(item.public_token)}`, altText: item.alt_text, isDecorative: item.is_decorative }])),
   };
   const input = document.rows[0].layout_json;
-  const { layout, data } = resolveDocumentData(input, sourceData, { target: 'PRINT' });
+  const { layout, data } = resolveDocumentData(input, sourceData, { target: 'PRINT', advancedProjection: options.advancedProjection });
   const hydratedData = { ...data, media: await hydrateMedia(client, wardId, data.media) };
-  const advancedLayout = isAdvancedLayout(input)
+  const advancedLayout = options.advancedProjection === false ? null : isAdvancedLayout(input)
     ? projectAdvancedLayoutForOutput(parseAdvancedLayout(input), 'PRINT', hydratedData)
     : layout.fold === 'BIFOLD'
       ? projectAdvancedLayoutForOutput(parseAdvancedLayout(input), 'PRINT', hydratedData)

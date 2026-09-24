@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 
 import { auth } from '@/src/auth/auth';
 import { canViewProgramDesigner } from '@/src/auth/roles';
+import { isWardModuleEnabled } from '@/src/modules/service';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 
@@ -14,6 +15,7 @@ export async function GET(_: Request, context: { params: Promise<Params> }) {
   const { wardId, templateId } = await context.params;
   if (!session?.user?.id) return errorResponse('Unauthorized', 'UNAUTHORIZED', 401);
   if (!canViewProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) return errorResponse('Forbidden', 'FORBIDDEN', 403);
+  if (!(await isWardModuleEnabled(wardId, session.user.id, 'programs'))) return errorResponse('Forbidden', 'FORBIDDEN', 403);
 
   const client = await pool.connect();
   try {

@@ -1,10 +1,7 @@
-export const TECHNOLOGY_CHECKLIST_FIELDS = ['roomReady', 'audioReady', 'streamReady', 'accessibilityChecked'] as const;
-export type TechnologyChecklistField = (typeof TECHNOLOGY_CHECKLIST_FIELDS)[number];
-
-export function isTechnologyReady(checklist: Record<TechnologyChecklistField, boolean>): boolean {
-  return TECHNOLOGY_CHECKLIST_FIELDS.every((field) => checklist[field]);
-}
-
-export function canConfirmRecordingStop(recordingDeletionReminder: boolean): boolean {
-  return recordingDeletionReminder;
-}
+/** @deprecated Import from the Technology Checklist module contract. */
+export {
+  TECHNOLOGY_CHECKLIST_FIELDS,
+  canConfirmRecordingStop,
+  isTechnologyReady,
+  type TechnologyChecklistField
+} from '@/src/modules/technology-checklist/service';

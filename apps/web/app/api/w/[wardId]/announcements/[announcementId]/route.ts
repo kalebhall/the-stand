@@ -6,6 +6,7 @@ import { canManageMeetings } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { createLogger } from '@/src/lib/logger';
 import { setDbContext } from '@/src/db/context';
+import { isWardModuleEnabled } from '@/src/modules/service';
 
 const logger = createLogger('announcements');
 
@@ -32,7 +33,7 @@ export async function PUT(request: Request, context: { params: Promise<{ wardId:
   }
 
   const { wardId, announcementId } = await context.params;
-  if (!canManageMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) {
+  if (!(await isWardModuleEnabled(wardId, session.user.id, 'announcements')) || !canManageMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) {
     return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
   }
 
@@ -101,7 +102,7 @@ export async function DELETE(_: Request, context: { params: Promise<{ wardId: st
   }
 
   const { wardId, announcementId } = await context.params;
-  if (!canManageMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) {
+  if (!(await isWardModuleEnabled(wardId, session.user.id, 'announcements')) || !canManageMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) {
     return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
   }
 

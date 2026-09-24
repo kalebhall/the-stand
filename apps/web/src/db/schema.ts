@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { boolean, check, date, foreignKey, index, integer, jsonb, pgTable, text, timestamp, unique, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
+import { boolean, check, date, foreignKey, index, integer, jsonb, pgTable, primaryKey, text, timestamp, unique, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 
 export const stake = pgTable('stake', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -590,15 +590,22 @@ export const meetingTechnologyChecklist = pgTable('meeting_technology_checklist'
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
 });
 
-export const wardFeatureSettings = pgTable('ward_feature_settings', {
-  wardId: uuid('ward_id').primaryKey().references(() => ward.id, { onDelete: 'cascade' }),
-  bishopricAgenda: boolean('bishopric_agenda').notNull().default(true),
-  scheduledInterviews: boolean('scheduled_interviews').notNull().default(true),
-  technologyChecklist: boolean('technology_checklist').notNull().default(true),
-  speakerLifecycle: boolean('speaker_lifecycle').notNull().default(true),
-  updatedByUserId: uuid('updated_by_user_id').references(() => userAccount.id, { onDelete: 'set null' }),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
-});
+export const wardModuleEnablement = pgTable(
+  'ward_module_enablement',
+  {
+    wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
+    moduleId: text('module_id').notNull(),
+    enabled: boolean('enabled').notNull(),
+    updatedByUserId: uuid('updated_by_user_id').notNull().references(() => userAccount.id, { onDelete: 'restrict' }),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
+  },
+  (table) => ({
+    wardModuleEnablementPk: primaryKey({ columns: [table.wardId, table.moduleId] }),
+    wardModuleEnablementWardEnabledIdx: index('ward_module_enablement_ward_enabled_idx').on(table.wardId, table.enabled),
+    wardModuleEnablementModuleIdCheck: check('ward_module_enablement_module_id_check', sql`length(btrim(${table.moduleId})) > 0`),
+    wardModuleEnablementCoreEnabledCheck: check('ward_module_enablement_core_enabled_check', sql`${table.moduleId} <> 'conducting-core' OR ${table.enabled}`)
+  })
+);
 
 export const publicProgramLayout = pgTable('public_program_layout', {
   id: uuid('id').defaultRandom().primaryKey(),

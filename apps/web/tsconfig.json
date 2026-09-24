@@ -1,7 +1,11 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "lib": ["dom", "dom.iterable", "es2022"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "es2022"
+    ],
     "allowJs": false,
     "skipLibCheck": true,
     "strict": true,
@@ -11,12 +15,20 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "jsx": "preserve",
+    "jsx": "react-jsx",
     "incremental": true,
-    "types": ["vitest/globals", "@testing-library/jest-dom", "node"],
+    "types": [
+      "vitest/globals",
+      "@testing-library/jest-dom/vitest",
+      "node"
+    ],
     "paths": {
-      "@/*": ["./*"],
-      "@the-stand/shared": ["../../packages/shared/src/index.ts"]
+      "@/*": [
+        "./*"
+      ],
+      "@the-stand/shared": [
+        "../../packages/shared/src/index.ts"
+      ]
     },
     "plugins": [
       {
@@ -33,7 +45,10 @@
     "lib/**/*.ts",
     "src/**/*.ts",
     "src/**/*.d.ts",
-    ".next/types/**/*.ts"
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules"
+  ]
 }

@@ -1,18 +1,20 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { authMock, canManageMeetingsMock, setDbContextMock, connectMock, releaseMock, queryMock } = vi.hoisted(() => ({
+const { authMock, canManageMeetingsMock, setDbContextMock, connectMock, releaseMock, queryMock, insertCoreEventOutboxEventMock } = vi.hoisted(() => ({
   authMock: vi.fn(),
   canManageMeetingsMock: vi.fn(),
   setDbContextMock: vi.fn(),
   connectMock: vi.fn(),
   releaseMock: vi.fn(),
-  queryMock: vi.fn()
+  queryMock: vi.fn(),
+  insertCoreEventOutboxEventMock: vi.fn()
 }));
 
 vi.mock('@/src/auth/auth', () => ({ auth: authMock }));
 vi.mock('@/src/auth/roles', () => ({ canManageMeetings: canManageMeetingsMock }));
 vi.mock('@/src/db/context', () => ({ setDbContext: setDbContextMock }));
 vi.mock('@/src/db/client', () => ({ pool: { connect: connectMock } }));
+vi.mock('@/src/platform/events/outbox', () => ({ insertCoreEventOutboxEvent: insertCoreEventOutboxEventMock }));
 
 import { POST } from './route';
 
@@ -21,6 +23,7 @@ describe('POST /api/w/[wardId]/meetings/[meetingId]/complete', () => {
     vi.clearAllMocks();
     authMock.mockResolvedValue({ user: { id: 'user-1', roles: ['STAND_ADMIN'] }, activeWardId: 'ward-1' });
     canManageMeetingsMock.mockReturnValue(true);
+    insertCoreEventOutboxEventMock.mockResolvedValue('core-event-1');
     connectMock.mockResolvedValue({ query: queryMock, release: releaseMock });
     queryMock
       .mockResolvedValueOnce({}) // BEGIN

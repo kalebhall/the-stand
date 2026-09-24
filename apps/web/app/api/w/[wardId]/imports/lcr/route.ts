@@ -3,6 +3,7 @@ import type { QueryResultRow } from 'pg';
 
 import { auth } from '@/src/auth/auth';
 import { canRunImports } from '@/src/auth/roles';
+import { isWardModuleEnabled } from '@/src/modules/service';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 import { enqueueLcrImportJob } from '@/src/imports/lcr-jobs';
@@ -224,7 +225,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
   }
 
   const { wardId } = await context.params;
-  if (!canRunImports({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) {
+  if (!(await isWardModuleEnabled(wardId, session.user.id, 'imports')) || !canRunImports({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) {
     return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
   }
 

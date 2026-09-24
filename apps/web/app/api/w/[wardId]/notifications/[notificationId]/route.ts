@@ -5,6 +5,7 @@ import { auth } from '@/src/auth/auth';
 import { canViewMeetings } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
+import { isWardModuleEnabled } from '@/src/modules/service';
 import { dismissUserNotification, markUserNotificationRead } from '@/src/notifications/user-notifications';
 
 const actionSchema = z.object({ action: z.enum(['read', 'dismiss']) });
@@ -21,7 +22,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ wardI
     return NextResponse.json({ error: 'Invalid notification path', code: 'VALIDATION_ERROR' }, { status: 400 });
   }
   const { wardId, notificationId } = params.data;
-  if (!canViewMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) {
+  if (!(await isWardModuleEnabled(wardId, session.user.id, 'notifications')) || !canViewMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) {
     return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
   }
 

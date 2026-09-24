@@ -8,6 +8,7 @@ import { pool } from '@/src/db/client';
 import { createLogger } from '@/src/lib/logger';
 import { setDbContext } from '@/src/db/context';
 import { enqueueOutboxNotificationJob } from '@/src/notifications/queue';
+import { insertCoreEventOutboxEvent } from '@/src/platform/events/outbox';
 
 const logger = createLogger('meetings');
 
@@ -40,7 +41,7 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
     await setDbContext(client, { userId: session.user.id, wardId });
 
     const meetingResult = await client.query(
-      `SELECT id, status
+      `SELECT id, status, meeting_date, meeting_type
          FROM meeting
         WHERE id = $1::uuid AND ward_id = $2::uuid
         LIMIT 1
@@ -137,7 +138,21 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
       severity: 'notice'
     });
 
+    const coreEvent = {
+      type: 'MeetingCompleted' as const,
+      version: 1 as const,
+      wardId,
+      actorId: session.user.id,
+      meetingId,
+      occurredAt: new Date().toISOString()
+    };
+    const coreEventOutboxId = await insertCoreEventOutboxEvent(client, coreEvent);
+
     await client.query('COMMIT');
+
+    Promise.resolve(enqueueOutboxNotificationJob({ wardId, eventOutboxId: coreEventOutboxId })).catch((error) => {
+      logger.error('meeting_completed_core_event_enqueue_failed', { wardId, meetingId, error });
+    });
 
     for (const queuedEventOutboxId of notificationEventOutboxIds) {
       Promise.resolve(enqueueOutboxNotificationJob({ wardId, eventOutboxId: queuedEventOutboxId })).catch((err) => {

@@ -13,7 +13,9 @@ import { mergeSimpleIntoAdvanced, normalizeToAdvanced, downgradeToV1, parseAdvan
 import { assertNoLockedChanges, LockedLayoutError } from '@/src/document-designer/lock-enforcement';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
+import { isAdvancedDesignerEnabled, isAdvancedDesignerFeatureEnabled } from '@/src/features/advanced-designer';
 import type { DocumentLayout } from '@/src/document-designer/types';
+import { isWardModuleEnabled } from '@/src/modules/service';
 
 const saveSchema = z.object({ expectedRevision: z.number().int().positive(), document: z.unknown(), templateId: z.string().trim().min(1).optional(), mode: z.enum(['SIMPLE', 'ADVANCED']).default('SIMPLE') }).strict();
 const fullPageFallback = () => BUILT_IN_TEMPLATES.find((template) => template.key === 'full-page-standard')!.layout;
@@ -83,7 +85,7 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
   const session = await auth();
   const { wardId, meetingId } = await context.params;
   if (!session?.user?.id) return errorResponse('Unauthorized', 'UNAUTHORIZED', 401);
-  if (!canViewProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) return errorResponse('Forbidden', 'FORBIDDEN', 403);
+  if (!canViewProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId) || !(await isWardModuleEnabled(wardId, session.user.id, 'programs'))) return errorResponse('Forbidden', 'FORBIDDEN', 403);
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -92,14 +94,15 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
     const contextData = await readContext(client, wardId, meetingId);
     if (!contextData) { await client.query('ROLLBACK'); return errorResponse('Meeting not found', 'NOT_FOUND', 404); }
     const document = await ensureDocument(client, wardId, meetingId, session.user.id);
-    const advancedModeAvailable = canUseAdvancedProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId, contextData.profile);
+    if (!isAdvancedDesignerFeatureEnabled()) { await client.query('ROLLBACK'); return errorResponse('Advanced designer is disabled', 'FEATURE_DISABLED', 404); }
+    const advancedModeAvailable = isAdvancedDesignerEnabled({ repositoryEnabled: true, wardEnabled: contextData.profile.allowAdvancedProgramDesigner, capabilityEnabled: canUseAdvancedProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId, contextData.profile) });
     const advancedLayout = parseAdvancedLayout(document.layout_json);
     const layout = downgradeToV1(advancedLayout);
     await client.query('COMMIT');
     return NextResponse.json({
       meeting: { id: contextData.meeting.id, meetingDate: contextData.meeting.meeting_date, meetingType: contextData.meeting.meeting_type },
       document: { id: document.id, layout, ...(advancedModeAvailable ? { advancedLayout } : {}), theme: document.theme_json ?? layout.theme, revision: Number(document.revision ?? 1), sourceTemplateId: document.source_template_id ?? null, sourceTemplateVersion: document.source_template_version ?? null, schemaVersion: advancedModeAvailable ? advancedLayout.schemaVersion : layout.schemaVersion },
-      simpleMode: getSimpleModeProperties(layout, canUseAdvancedProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId, contextData.profile)),
+      simpleMode: getSimpleModeProperties(layout, advancedModeAvailable),
       previewSource: contextData.previewSource
     });
   } catch {
@@ -113,6 +116,8 @@ export async function PUT(request: Request, context: { params: Promise<{ wardId:
   const { wardId, meetingId } = await context.params;
   if (!session?.user?.id) return errorResponse('Unauthorized', 'UNAUTHORIZED', 401);
   if (!canEditProgramDesign({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) return errorResponse('Forbidden', 'FORBIDDEN', 403);
+  if (!(await isWardModuleEnabled(wardId, session.user.id, 'programs'))) return errorResponse('Forbidden', 'FORBIDDEN', 403);
+  if (!isAdvancedDesignerFeatureEnabled()) return errorResponse('Advanced designer is disabled', 'FEATURE_DISABLED', 404);
   const body = saveSchema.safeParse(await request.json().catch(() => null));
   if (!body.success) return errorResponse('Invalid program design payload', 'BAD_REQUEST', 400);
   const client = await pool.connect();
@@ -124,11 +129,15 @@ export async function PUT(request: Request, context: { params: Promise<{ wardId:
     if (!meeting.rows[0]) { await client.query('ROLLBACK'); return errorResponse('Meeting not found', 'NOT_FOUND', 404); }
     const current = await ensureDocument(client, wardId, meetingId, session.user.id);
     const settingsResult = await client.query('SELECT allow_advanced_program_designer FROM ward_document_settings WHERE ward_id = $1::uuid LIMIT 1', [wardId]);
-    const advancedModeAvailable = canUseAdvancedProgramDesigner(
+    const advancedModeAvailable = isAdvancedDesignerFeatureEnabled() && isAdvancedDesignerEnabled({
+      repositoryEnabled: true,
+      wardEnabled: (settingsResult.rows[0] as { allow_advanced_program_designer?: boolean } | undefined)?.allow_advanced_program_designer === true,
+      capabilityEnabled: canUseAdvancedProgramDesigner(
       { roles: session.user.roles, activeWardId: session.activeWardId },
       wardId,
       { allowAdvancedProgramDesigner: (settingsResult.rows[0] as { allow_advanced_program_designer?: boolean } | undefined)?.allow_advanced_program_designer === true }
-    );
+      )
+    });
     const revision = Number(current.revision);
     if (body.data.expectedRevision !== revision) { await client.query('ROLLBACK'); return errorResponse('The program changed in another session', 'REVISION_CONFLICT', 409); }
     let validated: { layout: DocumentLayout; warnings: string[] };
@@ -225,7 +234,8 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
   const session = await auth();
   const { wardId, meetingId } = await context.params;
   if (!session?.user?.id) return errorResponse('Unauthorized', 'UNAUTHORIZED', 401);
-  if (!canViewProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) return errorResponse('Forbidden', 'FORBIDDEN', 403);
+  if (!canViewProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId) || !(await isWardModuleEnabled(wardId, session.user.id, 'programs'))) return errorResponse('Forbidden', 'FORBIDDEN', 403);
+  if (!isAdvancedDesignerFeatureEnabled()) return errorResponse('Advanced designer is disabled', 'FEATURE_DISABLED', 404);
   const body = saveSchema.omit({ expectedRevision: true }).safeParse(await request.json().catch(() => null));
   if (!body.success) return errorResponse('Invalid program design payload', 'BAD_REQUEST', 400);
   const client = await pool.connect();
@@ -241,7 +251,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     try {
       if (body.data.mode === 'ADVANCED') {
         const settings = await client.query('SELECT allow_advanced_program_designer FROM ward_document_settings WHERE ward_id = $1::uuid LIMIT 1', [wardId]);
-        const enabled = canUseAdvancedProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId, { allowAdvancedProgramDesigner: settings.rows[0]?.allow_advanced_program_designer === true });
+        const enabled = isAdvancedDesignerFeatureEnabled() && canUseAdvancedProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId, { allowAdvancedProgramDesigner: settings.rows[0]?.allow_advanced_program_designer === true });
         if (!enabled) { await client.query('ROLLBACK'); return errorResponse('Advanced Mode is not enabled for this ward', 'FORBIDDEN', 403); }
         const advanced = parseAdvancedLayout(body.data.document);
         warnings = [];

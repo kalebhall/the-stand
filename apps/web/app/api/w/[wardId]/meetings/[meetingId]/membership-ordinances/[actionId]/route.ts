@@ -8,12 +8,13 @@ import { setDbContext } from '@/src/db/context';
 import { enqueueOutboxNotificationJob } from '@/src/notifications/queue';
 import { enqueueNotificationOutboxEvent, insertNotificationOutboxEvent } from '@/src/notifications/outbox';
 import { validateMembershipOrdinanceTransition, type MembershipOrdinanceTransition } from '@/src/church-actions/membership-ordinance';
+import { isWardModuleEnabled } from '@/src/modules/service';
 
 export async function PATCH(request: Request, context: { params: Promise<{ wardId: string; meetingId: string; actionId: string }> }) {
   const session = await auth();
   const { wardId, meetingId, actionId } = await context.params;
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, { status: 401 });
-  if (!canManageMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) {
+  if (!(await isWardModuleEnabled(wardId, session.user.id, 'membership-ordinances')) || !canManageMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) {
     return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
   }
   const body = (await request.json().catch(() => null)) as { status?: unknown; officialRecordUpdatedBy?: unknown; handoffDate?: unknown; officialSystemReferenceUrl?: unknown } | null;

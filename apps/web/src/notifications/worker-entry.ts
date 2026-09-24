@@ -9,18 +9,23 @@ import { enqueueDigestNotificationJob, enqueueGlobalEmailDeliveryJob, enqueueGlo
 import { findPendingGlobalEmailDeliveries, findPendingGlobalOutboxEvents, findPendingOutboxEvents } from '@/src/notifications/recovery';
 import { createDueSupportReminderEvents } from '@/src/notifications/support-reminders';
 import { processOutboxEvent } from '@/src/notifications/runner';
+import { processCoreEventOutbox, recordCoreEventOutboxFailure, isCoreEventOutboxType } from '@/src/platform/events/outbox';
 
-const DEFAULT_REDIS_URL = 'redis://127.0.0.1:6379';
 const WORKER_SYSTEM_USER_ID = '00000000-0000-0000-0000-000000000000';
 
 function getRedisConnectionUrl(): string {
-  return process.env.REDIS_URL ?? DEFAULT_REDIS_URL;
+  const redisUrl = process.env.REDIS_URL?.trim();
+  if (!redisUrl) {
+    throw new Error('REDIS_URL is required to start the notifications worker');
+  }
+  return redisUrl;
 }
 
 const worker = new Worker<NotificationQueueJob>(
   NOTIFICATION_QUEUE_NAME,
   async (job) => {
     const client = await pool.connect();
+    let coreEventJob: { wardId: string; eventOutboxId: string } | null = null;
 
     if (job.data.kind === 'global-email-delivery') {
       try {
@@ -40,7 +45,17 @@ const worker = new Worker<NotificationQueueJob>(
       } else {
         await setDbContext(client, { userId: WORKER_SYSTEM_USER_ID, wardId: job.data.wardId });
         if (job.data.kind === 'outbox-event') {
-          digestJobs = await processOutboxEvent(client, { wardId: job.data.wardId, eventOutboxId: job.data.eventOutboxId });
+          const eventTypeResult = await client.query(
+            'SELECT event_type FROM event_outbox WHERE id = $1::uuid AND ward_id = $2::uuid LIMIT 1',
+            [job.data.eventOutboxId, job.data.wardId]
+          );
+          const eventType = eventTypeResult.rows[0]?.event_type as string | undefined;
+          if (eventType && isCoreEventOutboxType(eventType)) {
+            coreEventJob = { wardId: job.data.wardId, eventOutboxId: job.data.eventOutboxId };
+            await processCoreEventOutbox(client, { wardId: job.data.wardId, eventOutboxId: job.data.eventOutboxId });
+          } else {
+            digestJobs = await processOutboxEvent(client, { wardId: job.data.wardId, eventOutboxId: job.data.eventOutboxId });
+          }
         } else {
           await processNotificationDigest(client, {
             wardId: job.data.wardId,
@@ -72,6 +87,23 @@ const worker = new Worker<NotificationQueueJob>(
       }
     } catch (error) {
       await client.query('ROLLBACK');
+      if (coreEventJob) {
+        try {
+          await client.query('BEGIN');
+          await setDbContext(client, { userId: WORKER_SYSTEM_USER_ID, wardId: coreEventJob.wardId });
+          await recordCoreEventOutboxFailure(client, {
+            ...coreEventJob,
+            errorMessage: error instanceof Error ? error.message : String(error)
+          });
+          await client.query('COMMIT');
+        } catch (bookkeepingError) {
+          await client.query('ROLLBACK');
+          console.error('[notifications-worker] failed to persist Core outbox failure', {
+            eventOutboxId: coreEventJob.eventOutboxId,
+            error: bookkeepingError instanceof Error ? bookkeepingError.message : String(bookkeepingError)
+          });
+        }
+      }
       throw error;
     } finally {
       client.release();

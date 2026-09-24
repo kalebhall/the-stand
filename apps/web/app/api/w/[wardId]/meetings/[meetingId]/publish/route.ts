@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import { recordAuditEvent } from '@/src/audit/service';
 import { auth } from '@/src/auth/auth';
 import { canPublishProgram, canRepublishProgram, canViewProgramDesigner } from '@/src/auth/roles';
+import { isAdvancedDesignerFeatureEnabled } from '@/src/features/advanced-designer';
 import { isMeetingStatus, transitionMeetingStatus } from '@/src/conducting/model';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
@@ -19,6 +20,7 @@ import { getPublicProgramRenderLabels } from '@/src/i18n/public-program';
 import { resolveLocale } from '@/src/i18n/config';
 import type { IntroductionRoles } from '@/src/meetings/types';
 import { enqueueOutboxNotificationJob } from '@/src/notifications/queue';
+import { isWardModuleEnabled } from '@/src/modules/service';
 
 const BAD_REQUEST = (message = 'Invalid publication payload') => NextResponse.json({ error: message, code: 'BAD_REQUEST' }, { status: 400 });
 const NOT_FOUND = () => NextResponse.json({ error: 'Meeting not found', code: 'NOT_FOUND' }, { status: 404 });
@@ -80,6 +82,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
   const { wardId, meetingId } = await context.params;
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, { status: 401 });
   if (!canViewProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
+  if (!(await isWardModuleEnabled(wardId, session.user.id, 'programs'))) return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
 
   const client = await pool.connect();
   try {
@@ -132,8 +135,9 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     const legacy = legacyResult.rows[0] ?? { preset: 'FULL_PAGE', announcement_mode: 'AFTER_PROGRAM', cover_mode: 'NONE', cover_image_url: null, cover_image_alt_text: null };
     const rawLayout = documentResult.rows[0]?.layout_json ?? adaptLegacyLayoutToDocument(legacy);
     const sourceData = { meetingDate: String(meeting.meeting_date), meetingType: meeting.meeting_type, wardName: meeting.ward_name, location: meeting.location, publicUrl: `${process.env.NEXTAUTH_URL ?? 'http://localhost:3000'}/p/${shareToken}`, programItems: programItems.map((item) => ({ order: item.order, label: item.title ?? item.hymnTitle ?? item.itemType, details: item.topic ?? null })), publicValues: { ANNOUNCEMENTS: (announcements.rows as Array<{ title: string }>).map((item) => item.title).join(' · ') }, media };
-    const resolved = resolveDocumentData(rawLayout, sourceData, { public: true, explicitPublicBlockTypes: COMPATIBILITY_PUBLIC_BLOCK_TYPES });
-    const publishedLayout = isAdvancedLayout(rawLayout)
+    const advancedDesignerEnabled = isAdvancedDesignerFeatureEnabled();
+    const resolved = resolveDocumentData(rawLayout, sourceData, { public: true, explicitPublicBlockTypes: COMPATIBILITY_PUBLIC_BLOCK_TYPES, advancedProjection: advancedDesignerEnabled });
+    const publishedLayout = advancedDesignerEnabled && isAdvancedLayout(rawLayout)
       ? projectAdvancedLayoutForOutput(parseAdvancedLayout(rawLayout), 'PUBLIC', resolved.data)
       : resolved.layout;
     const validation = validatePublication({ layout: resolved.layout, data: resolved.data }, { explicitPublicBlockTypes: COMPATIBILITY_PUBLIC_BLOCK_TYPES, acknowledgedWarningCodes: body.acknowledgedWarningCodes });

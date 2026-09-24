@@ -19,7 +19,7 @@ export type SafeMeetingSource = {
 export function resolveDocumentData(
   inputLayout: unknown,
   source: SafeMeetingSource,
-  options: { public?: boolean; target?: 'PRINT' | 'DIGITAL'; explicitPublicBlockTypes?: readonly string[] } = {}
+  options: { public?: boolean; target?: 'PRINT' | 'DIGITAL'; explicitPublicBlockTypes?: readonly string[]; advancedProjection?: boolean } = {}
 ): { layout: DocumentLayout; data: ResolvedDocumentData } {
   const advancedLayout = isAdvancedLayout(inputLayout) ? parseAdvancedLayout(inputLayout) : null;
   let layout: DocumentLayout = advancedLayout
@@ -61,7 +61,7 @@ export function resolveDocumentData(
     warnings: [],
     media: source.media ?? {}
   };
-  if (advancedLayout) {
+  if (advancedLayout && options.advancedProjection !== false) {
     layout = downgradeToV1(projectAdvancedLayoutForOutput(advancedLayout, options.public ? 'PUBLIC' : (options.target ?? 'DIGITAL'), data));
     if (options.public) validatePublicDocumentLayout(layout, options.explicitPublicBlockTypes ?? []);
   } else if (options.public) {

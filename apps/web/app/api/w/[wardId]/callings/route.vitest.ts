@@ -9,7 +9,8 @@ const {
   releaseMock,
   queryMock,
   loggerErrorMock,
-  enqueueMock
+  enqueueMock,
+  moduleEnabledMock
 } = vi.hoisted(() => ({
   authMock: vi.fn(),
   canManageCallingsMock: vi.fn(),
@@ -19,7 +20,8 @@ const {
   releaseMock: vi.fn(),
   queryMock: vi.fn(),
   loggerErrorMock: vi.fn(),
-  enqueueMock: vi.fn()
+  enqueueMock: vi.fn(),
+  moduleEnabledMock: vi.fn()
 }));
 
 vi.mock('@/src/auth/auth', () => ({ auth: authMock }));
@@ -34,6 +36,7 @@ vi.mock('@/src/lib/logger', () => ({
   createLogger: () => ({ error: loggerErrorMock })
 }));
 vi.mock('@/src/notifications/queue', () => ({ enqueueOutboxNotificationJob: enqueueMock }));
+vi.mock('@/src/modules/service', () => ({ isWardModuleEnabled: moduleEnabledMock }));
 
 import { POST } from './route';
 
@@ -44,6 +47,7 @@ describe('POST /api/w/[wardId]/callings', () => {
     authMock.mockResolvedValue({ user: { id: 'user-1', roles: ['STAND_ADMIN'] }, activeWardId: 'ward-1' });
     canManageCallingsMock.mockReturnValue(true);
     canViewCallingsMock.mockReturnValue(true);
+    moduleEnabledMock.mockResolvedValue(true);
     connectMock.mockResolvedValue({
       query: queryMock,
       release: releaseMock

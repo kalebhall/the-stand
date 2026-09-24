@@ -10,13 +10,14 @@
     "lint": "eslint app components lib src --max-warnings=0",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:module:technology": "vitest run src/modules/technology-checklist",
     "test:components": "vitest run --environment jsdom components/*.vitest.tsx",
     "db:migrate": "node scripts/migrate.mjs",
     "purge:raw-imports": "node --experimental-strip-types src/imports/purge-runner.ts",
     "purge:retention": "node src/maintenance/retention-runner.mjs",
     "remind:interviews": "node --experimental-strip-types src/leadership/interview-reminder-runner.mjs",
     "remind:technology": "node --experimental-strip-types src/leadership/technology-reminder-runner.mjs",
-    "worker": "node --experimental-strip-types src/notifications/worker-entry.ts",
+    "worker": "tsx src/notifications/worker-entry.ts",
     "test:e2e": "playwright test"
   },
   "dependencies": {
@@ -27,11 +28,11 @@
     "drizzle-orm": "^0.45.2",
     "ioredis": "^5.4.1",
     "jspdf": "^4.2.1",
-    "next": "15.5.18",
+    "next": "^16.3.6",
     "next-auth": "^5.0.0-beta.25",
     "next-intl": "^4.14.5",
     "next-themes": "^0.4.4",
-    "nodemailer": "^7.0.13",
+    "nodemailer": "^10.0.10",
     "pdf-parse": "^1.1.1",
     "pg": "^8.13.1",
     "qrcode": "^1.5.4",
@@ -40,6 +41,7 @@
     "sharp": "^0.35.4",
     "tailwind-merge": "^3.3.1",
     "tailwindcss": "^4.1.8",
+    "tsx": "^4.23.15",
     "zod": "^3.24.4"
   },
   "devDependencies": {
@@ -57,9 +59,9 @@
     "eslint-import-resolver-typescript": "^4.4.5",
     "eslint-plugin-import": "^2.32.0",
     "jsdom": "^30.0.1",
-    "postcss": "^8.5.14",
+    "postcss": "^8.5.28",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.56.0",
-    "vitest": "^3.2.2"
+    "vitest": "^5.0.1"
   }
 }

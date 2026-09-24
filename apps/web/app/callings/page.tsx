@@ -21,6 +21,8 @@ import { setDbContext } from '@/src/db/context';
 import { getCallingNotificationEventType } from '@/src/notifications/calling-events';
 import { enqueueNotificationOutboxEvent, insertNotificationOutboxEvent } from '@/src/notifications/outbox';
 import { enqueueOutboxNotificationJob } from '@/src/notifications/queue';
+import { isWardModuleEnabled } from '@/src/modules/service';
+import { requireWardModuleEnabled } from '@/src/modules/action-guard';
 
 type CallingQueueRow = {
   id: string;
@@ -112,7 +114,7 @@ export default async function CallingsPage() {
   const session = await requireAuthenticatedSession();
   enforcePasswordRotation(session);
 
-  if (!session.activeWardId || !canViewCallings({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId)) {
+  if (!session.activeWardId || !(await isWardModuleEnabled(session.activeWardId, session.user.id, 'callings')) || !canViewCallings({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId)) {
     redirect('/dashboard');
   }
 
@@ -124,6 +126,9 @@ export default async function CallingsPage() {
 
     const actionSession = await requireAuthenticatedSession();
     enforcePasswordRotation(actionSession);
+    if (actionSession.activeWardId) {
+      await requireWardModuleEnabled(actionSession.activeWardId, actionSession.user.id, 'callings', '/callings');
+    }
 
     if (
       !actionSession.activeWardId ||

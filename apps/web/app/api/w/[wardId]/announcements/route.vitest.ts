@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { authMock, canManageMeetingsMock, canViewMeetingsMock, setDbContextMock, queryMock, releaseMock, connectMock } = vi.hoisted(() => ({
+const { authMock, canManageMeetingsMock, canViewMeetingsMock, moduleEnabledMock, setDbContextMock, queryMock, releaseMock, connectMock } = vi.hoisted(() => ({
   authMock: vi.fn(),
   canManageMeetingsMock: vi.fn(),
   canViewMeetingsMock: vi.fn(),
+  moduleEnabledMock: vi.fn(),
   setDbContextMock: vi.fn(),
   queryMock: vi.fn(),
   releaseMock: vi.fn(),
@@ -15,6 +16,7 @@ vi.mock('@/src/auth/roles', () => ({
   canManageMeetings: canManageMeetingsMock,
   canViewMeetings: canViewMeetingsMock
 }));
+vi.mock('@/src/modules/service', () => ({ isWardModuleEnabled: moduleEnabledMock }));
 vi.mock('@/src/db/context', () => ({ setDbContext: setDbContextMock }));
 vi.mock('@/src/db/client', () => ({
   pool: {
@@ -34,6 +36,7 @@ describe('GET and POST /api/w/[wardId]/announcements', () => {
     });
     canViewMeetingsMock.mockReturnValue(true);
     canManageMeetingsMock.mockReturnValue(true);
+    moduleEnabledMock.mockResolvedValue(true);
 
     connectMock.mockResolvedValue({
       query: queryMock,

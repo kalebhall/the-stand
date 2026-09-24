@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { authMock, canViewMeetingsMock, setDbContextMock, listMock, countMock, queryMock, releaseMock, connectMock } = vi.hoisted(() => ({
+const { authMock, canViewMeetingsMock, moduleEnabledMock, setDbContextMock, listMock, countMock, queryMock, releaseMock, connectMock } = vi.hoisted(() => ({
   authMock: vi.fn(),
   canViewMeetingsMock: vi.fn(),
+  moduleEnabledMock: vi.fn(),
   setDbContextMock: vi.fn(),
   listMock: vi.fn(),
   countMock: vi.fn(),
@@ -13,6 +14,7 @@ const { authMock, canViewMeetingsMock, setDbContextMock, listMock, countMock, qu
 
 vi.mock('@/src/auth/auth', () => ({ auth: authMock }));
 vi.mock('@/src/auth/roles', () => ({ canViewMeetings: canViewMeetingsMock }));
+vi.mock('@/src/modules/service', () => ({ isWardModuleEnabled: moduleEnabledMock }));
 vi.mock('@/src/db/context', () => ({ setDbContext: setDbContextMock }));
 vi.mock('@/src/db/client', () => ({ pool: { connect: connectMock } }));
 vi.mock('@/src/notifications/user-notifications', () => ({ listUserNotifications: listMock, countUnreadUserNotifications: countMock }));
@@ -28,6 +30,7 @@ describe('notification list route', () => {
     vi.clearAllMocks();
     authMock.mockResolvedValue({ user: { id: userId, roles: ['STAND_ADMIN'] }, activeWardId: wardId });
     canViewMeetingsMock.mockReturnValue(true);
+    moduleEnabledMock.mockResolvedValue(true);
     connectMock.mockResolvedValue({ query: queryMock, release: releaseMock });
     listMock.mockResolvedValue([{ id: 'notification-1' }]);
     countMock.mockResolvedValue(1);

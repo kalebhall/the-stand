@@ -3,6 +3,7 @@ import { auth } from '@/src/auth/auth';
 import { canManageProgramMedia, canViewProgramDesigner } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
+import { isWardModuleEnabled } from '@/src/modules/service';
 import { listReadableMedia, createWardMedia } from '@/src/document-designer/media-service';
 import { recordAuditEvent } from '@/src/audit/service';
 
@@ -14,6 +15,7 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
   const { wardId } = await context.params;
   if (!session?.user?.id) return unauthorized();
   if (!canViewProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) return forbidden();
+  if (!(await isWardModuleEnabled(wardId, session.user.id, 'programs'))) return forbidden();
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -32,6 +34,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
   const { wardId } = await context.params;
   if (!session?.user?.id) return unauthorized();
   if (!canManageProgramMedia({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) return forbidden();
+  if (!(await isWardModuleEnabled(wardId, session.user.id, 'programs'))) return forbidden();
   const form = await request.formData().catch(() => null);
   const file = form?.get('file');
   if (!(file instanceof File)) return NextResponse.json({ error: 'Image file is required', code: 'BAD_REQUEST' }, { status: 400 });

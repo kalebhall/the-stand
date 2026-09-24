@@ -1,19 +1,21 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { authMock, canManageMeetingsMock, setDbContextMock, queryMock, releaseMock, connectMock, recordAuditEventMock } = vi.hoisted(() => ({
+const { authMock, canManageMeetingsMock, setDbContextMock, queryMock, releaseMock, connectMock, recordAuditEventMock, moduleEnabledMock } = vi.hoisted(() => ({
   authMock: vi.fn(),
   canManageMeetingsMock: vi.fn(),
   setDbContextMock: vi.fn(),
   queryMock: vi.fn(),
   releaseMock: vi.fn(),
   connectMock: vi.fn(),
-  recordAuditEventMock: vi.fn()
+  recordAuditEventMock: vi.fn(),
+  moduleEnabledMock: vi.fn()
 }));
 
 vi.mock('@/src/auth/auth', () => ({ auth: authMock }));
 vi.mock('@/src/auth/roles', () => ({ canManageMeetings: canManageMeetingsMock }));
 vi.mock('@/src/db/context', () => ({ setDbContext: setDbContextMock }));
 vi.mock('@/src/db/client', () => ({ pool: { connect: connectMock } }));
+vi.mock('@/src/modules/service', () => ({ isWardModuleEnabled: moduleEnabledMock }));
 vi.mock('@/src/audit/service', async () => {
   const actual = await vi.importActual<typeof import('@/src/audit/service')>('@/src/audit/service');
   return { ...actual, recordAuditEvent: recordAuditEventMock };
@@ -26,6 +28,7 @@ describe('PATCH /api/w/[wardId]/public-layout', () => {
     vi.clearAllMocks();
     authMock.mockResolvedValue({ user: { id: 'user-1', name: 'Bishop', roles: ['BISHOPRIC_EDITOR'] }, activeWardId: 'ward-1' });
     canManageMeetingsMock.mockReturnValue(true);
+    moduleEnabledMock.mockResolvedValue(true);
     connectMock.mockResolvedValue({ query: queryMock, release: releaseMock });
     recordAuditEventMock.mockResolvedValue(undefined);
   });

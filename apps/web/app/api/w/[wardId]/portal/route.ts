@@ -5,6 +5,12 @@ import { auth } from '@/src/auth/auth';
 import { hasRole } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
+import { isWardModuleEnabled } from '@/src/modules/service';
+
+async function requireProgramsEnabled(wardId: string, userId: string): Promise<NextResponse | null> {
+  if (await isWardModuleEnabled(wardId, userId, 'programs')) return null;
+  return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
+}
 
 export async function GET(_: Request, context: { params: Promise<{ wardId: string }> }) {
   const session = await auth();
@@ -16,6 +22,8 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
   if (!hasRole(session.user.roles, 'STAND_ADMIN') && !hasRole(session.user.roles, 'SUPPORT_ADMIN')) {
     return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
   }
+  const moduleResponse = await requireProgramsEnabled(wardId, session.user.id);
+  if (moduleResponse) return moduleResponse;
 
   const client = await pool.connect();
 
@@ -59,6 +67,8 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
   if (!hasRole(session.user.roles, 'STAND_ADMIN') && !hasRole(session.user.roles, 'SUPPORT_ADMIN')) {
     return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
   }
+  const moduleResponse = await requireProgramsEnabled(wardId, session.user.id);
+  if (moduleResponse) return moduleResponse;
 
   const newToken = randomBytes(24).toString('base64url');
   const client = await pool.connect();
@@ -102,6 +112,8 @@ export async function DELETE(_: Request, context: { params: Promise<{ wardId: st
   if (!hasRole(session.user.roles, 'STAND_ADMIN') && !hasRole(session.user.roles, 'SUPPORT_ADMIN')) {
     return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
   }
+  const moduleResponse = await requireProgramsEnabled(wardId, session.user.id);
+  if (moduleResponse) return moduleResponse;
 
   const client = await pool.connect();
 

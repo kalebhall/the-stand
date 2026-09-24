@@ -9,7 +9,7 @@ import {
   callingStatusSchema,
   changePasswordSchema,
   type HealthResponse
-} from './index';
+} from './index.js';
 
 describe('shared validators', () => {
   it('keeps the health response shape', () => {

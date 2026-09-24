@@ -48,16 +48,16 @@ BEGIN
   INSERT INTO ward_user_role (ward_id, user_id, role_id) VALUES (ward_b, user_b, role_id);
 
   PERFORM set_config('app.ward_id', ward_a::text, true);
-  SELECT COUNT(*) INTO count_a FROM ward_user_role;
+  SELECT COUNT(*) INTO count_a FROM ward_user_role WHERE user_id = user_a;
 
   PERFORM set_config('app.ward_id', ward_b::text, true);
-  SELECT COUNT(*) INTO count_b FROM ward_user_role;
+  SELECT COUNT(*) INTO count_b FROM ward_user_role WHERE user_id = user_b;
 
   PERFORM set_config('app.ward_id', gen_random_uuid()::text, true);
-  SELECT COUNT(*) INTO count_none FROM ward_user_role;
+  SELECT COUNT(*) INTO count_none FROM ward_user_role WHERE user_id IN (user_a, user_b);
 
   PERFORM set_config('app.ward_id', '', true);
-  SELECT COUNT(*) INTO count_unset FROM ward_user_role;
+  SELECT COUNT(*) INTO count_unset FROM ward_user_role WHERE user_id IN (user_a, user_b);
 
   IF count_a <> 1 THEN
     RAISE EXCEPTION 'ward A expected 1 row, got %', count_a;

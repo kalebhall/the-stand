@@ -7,6 +7,7 @@ import { createLogger } from '@/src/lib/logger';
 
 const logger = createLogger('members');
 import { setDbContext } from '@/src/db/context';
+import { isWardModuleEnabled } from '@/src/modules/service';
 
 type MemberPatchBody = {
   firstName?: unknown;
@@ -25,7 +26,7 @@ export async function DELETE(_request: Request, context: { params: Promise<{ war
 
   const { wardId, memberId } = await context.params;
 
-  if (!canManageCallings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) {
+  if (!(await isWardModuleEnabled(wardId, session.user.id, 'members')) || !canManageCallings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) {
     return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
   }
 
@@ -75,7 +76,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ wardI
 
   const { wardId, memberId } = await context.params;
 
-  if (!canManageCallings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) {
+  if (!(await isWardModuleEnabled(wardId, session.user.id, 'members')) || !canManageCallings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) {
     return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
   }
 

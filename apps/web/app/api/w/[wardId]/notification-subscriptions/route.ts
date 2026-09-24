@@ -5,6 +5,7 @@ import { auth } from '@/src/auth/auth';
 import { canViewMeetings } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
+import { isWardModuleEnabled } from '@/src/modules/service';
 import {
   NOTIFICATION_EMAIL_FREQUENCIES,
   getNotificationEmailPreference,
@@ -46,7 +47,7 @@ async function getAuthorizedSession(wardId: string): Promise<AuthorizationResult
   if (!session?.user?.id) {
     return { response: NextResponse.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, { status: 401 }) };
   }
-  if (!canViewMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) {
+  if (!(await isWardModuleEnabled(wardId, session.user.id, 'notifications')) || !canViewMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) {
     return { response: NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 }) };
   }
   return {

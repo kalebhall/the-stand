@@ -7,7 +7,7 @@ import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/plat
 import { canManageMeetings, canViewCallings, canViewMeetings, hasRole } from '@/src/platform/permissions';
 import { pool } from '@/src/db/client';
 import { createWardContext } from '@/src/platform/tenancy/context';
-import { getContextFeatureFlags } from '@/src/platform/features/flags';
+import { isWardModuleEnabled } from '@/src/modules/service';
 import { setDbContext } from '@/src/platform/db/context';
 
 function DashboardCard({
@@ -46,10 +46,12 @@ export default async function DashboardPage() {
 
   const wardContext = session.activeWardId ? createWardContext(session, session.activeWardId) : null;
   const wardSession = wardContext ? { roles: session.user.roles, activeWardId: wardContext.wardId } : null;
-  const featureFlags = wardContext ? await getContextFeatureFlags(wardContext, wardContext.wardId) : null;
+  const bishopricEnabled = wardContext ? await isWardModuleEnabled(wardContext.wardId, session.user.id, 'bishopric') : false;
+  const leadershipEnabled = wardContext ? await isWardModuleEnabled(wardContext.wardId, session.user.id, 'leadership') : false;
+  const technologyEnabled = wardContext ? await isWardModuleEnabled(wardContext.wardId, session.user.id, 'technology-checklist') : false;
   const canAccessMeetings = wardSession ? canViewMeetings(wardSession, session.activeWardId!) : false;
   const canAccessCallings = wardSession ? canViewCallings(wardSession, session.activeWardId!) : false;
-  const canAccessTechnology = wardSession ? canManageMeetings(wardSession, session.activeWardId!) : false;
+  const canAccessTechnology = wardSession ? canManageMeetings(wardSession, session.activeWardId!) && technologyEnabled : false;
   const canAccessPortal = Boolean(session.activeWardId) && hasRole(session.user.roles, 'STAND_ADMIN');
   const showSupportCards = session.user.roles?.includes('SUPPORT_ADMIN') ?? false;
   let setApartQueueCount = 'Unavailable';
@@ -308,7 +310,7 @@ export default async function DashboardPage() {
           />
         ) : null}
 
-        {canAccessMeetings && featureFlags?.BISHOPRIC_AGENDA ? (
+        {canAccessMeetings && bishopricEnabled ? (
           <DashboardCard
             title={t('leadershipDue')}
             value={bishopricDueActionCount}
@@ -317,7 +319,7 @@ export default async function DashboardPage() {
           />
         ) : null}
 
-        {canAccessMeetings && featureFlags?.SCHEDULED_INTERVIEWS ? (
+        {canAccessMeetings && leadershipEnabled ? (
           <DashboardCard
             title={t('scheduledInterviews')}
             value={scheduledInterviewCount}
@@ -374,7 +376,7 @@ export default async function DashboardPage() {
           />
         ) : null}
 
-        {canAccessTechnology && featureFlags?.TECHNOLOGY_CHECKLIST ? (
+        {canAccessTechnology ? (
           <DashboardCard
             title={t('technologyReadiness')}
             value={technologyChecklistCount}

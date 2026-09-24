@@ -5,6 +5,7 @@ import { auth } from '@/src/auth/auth';
 import { canManageMeetings } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
+import { isWardModuleEnabled } from '@/src/modules/service';
 import { validatePublicLayout } from '@/src/meetings/public-layout';
 
 const text = (value: unknown) => typeof value === 'string' ? value.trim() : '';
@@ -18,9 +19,9 @@ type LayoutRow = {
 };
 
 function getAccess(wardId: string) {
-  return auth().then((session) => {
+  return auth().then(async (session) => {
     if (!session?.user?.id) return { response: NextResponse.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, { status: 401 }) };
-    if (!canManageMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) return { response: NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 }) };
+    if (!canManageMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId) || !(await isWardModuleEnabled(wardId, session.user.id, 'programs'))) return { response: NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 }) };
     return { session };
   });
 }

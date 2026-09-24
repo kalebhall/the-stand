@@ -5,11 +5,12 @@ import { buttonVariants } from '@/components/ui/button';
 import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth/guards';
 import { canViewCallings } from '@/src/auth/roles';
 import { NotificationCenter } from './notification-center';
+import { isWardModuleEnabled } from '@/src/modules/service';
 
 export default async function NotificationsPage() {
   const session = await requireAuthenticatedSession();
   enforcePasswordRotation(session);
-  if (!session.activeWardId || !canViewCallings({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId))
+  if (!session.activeWardId || !(await isWardModuleEnabled(session.activeWardId, session.user.id, 'notifications')) || !canViewCallings({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId))
     redirect('/dashboard');
 
   return (

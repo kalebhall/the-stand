@@ -45,7 +45,7 @@ async function checkDatabase(): Promise<HealthCheck> {
 
 async function checkQueue(): Promise<HealthCheck> {
   if (!process.env.REDIS_URL) {
-    return { name: 'Notification queue', state: 'NOT_CONFIGURED', detail: 'REDIS_URL is not configured; queue uses its local default only when explicitly started.' };
+    return { name: 'Notification queue', state: 'NOT_CONFIGURED', detail: 'REDIS_URL is not configured; notification jobs remain persisted in the database until a worker is configured.' };
   }
 
   let closeQueue: (() => Promise<void>) | undefined;

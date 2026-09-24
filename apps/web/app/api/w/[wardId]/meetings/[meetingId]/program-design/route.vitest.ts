@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { authMock, connectMock, queryMock, releaseMock, setDbContextMock, auditMock } = vi.hoisted(() => ({
-  authMock: vi.fn(), connectMock: vi.fn(), queryMock: vi.fn(), releaseMock: vi.fn(), setDbContextMock: vi.fn(), auditMock: vi.fn()
+const { authMock, connectMock, queryMock, releaseMock, setDbContextMock, auditMock, moduleEnabledMock } = vi.hoisted(() => ({
+  authMock: vi.fn(), connectMock: vi.fn(), queryMock: vi.fn(), releaseMock: vi.fn(), setDbContextMock: vi.fn(), auditMock: vi.fn(), moduleEnabledMock: vi.fn()
 }));
 
 vi.mock('@/src/auth/auth', () => ({ auth: authMock }));
@@ -9,6 +9,7 @@ vi.mock('@/src/auth/roles', () => ({ canViewProgramDesigner: vi.fn(() => true), 
 vi.mock('@/src/db/client', () => ({ pool: { connect: connectMock } }));
 vi.mock('@/src/db/context', () => ({ setDbContext: setDbContextMock }));
 vi.mock('@/src/audit/service', () => ({ recordAuditEvent: auditMock }));
+vi.mock('@/src/modules/service', () => ({ isWardModuleEnabled: moduleEnabledMock }));
 
 import { adaptLegacyLayoutToDocument } from '@/src/document-designer/legacy-layout-adapter';
 import { GET, POST, PUT } from './route';
@@ -25,7 +26,15 @@ describe('program design route', () => {
     connectMock.mockReset();
     authMock.mockResolvedValue({ user: { id: 'user-1', roles: ['PROGRAM_EDITOR'], name: 'Editor' }, activeWardId: 'ward-1' });
     auditMock.mockResolvedValue(undefined);
+    moduleEnabledMock.mockResolvedValue(true);
     connectMock.mockResolvedValue({ query: queryMock, release: releaseMock });
+  });
+
+  it('denies direct access when the Programs module is disabled', async () => {
+    moduleEnabledMock.mockResolvedValue(false);
+    const response = await GET(new Request('http://localhost'), params());
+    expect(response.status).toBe(403);
+    expect((await response.json()).code).toBe('FORBIDDEN');
   });
 
   it('returns a ward-scoped document and safe preview source', async () => {

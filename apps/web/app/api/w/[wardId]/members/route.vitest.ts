@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { authMock, canViewMeetingsMock, setDbContextMock, queryMock, releaseMock, connectMock } = vi.hoisted(() => ({
+const { authMock, canViewMeetingsMock, moduleEnabledMock, setDbContextMock, queryMock, releaseMock, connectMock } = vi.hoisted(() => ({
   authMock: vi.fn(),
   canViewMeetingsMock: vi.fn(),
+  moduleEnabledMock: vi.fn(),
   setDbContextMock: vi.fn(),
   queryMock: vi.fn(),
   releaseMock: vi.fn(),
@@ -11,6 +12,7 @@ const { authMock, canViewMeetingsMock, setDbContextMock, queryMock, releaseMock,
 
 vi.mock('@/src/auth/auth', () => ({ auth: authMock }));
 vi.mock('@/src/auth/roles', () => ({ canViewMeetings: canViewMeetingsMock }));
+vi.mock('@/src/modules/service', () => ({ isWardModuleEnabled: moduleEnabledMock }));
 vi.mock('@/src/db/context', () => ({ setDbContext: setDbContextMock }));
 vi.mock('@/src/db/client', () => ({
   pool: {
@@ -29,6 +31,7 @@ describe('GET /api/w/[wardId]/members', () => {
       activeWardId: 'ward-1'
     });
     canViewMeetingsMock.mockReturnValue(true);
+    moduleEnabledMock.mockResolvedValue(true);
 
     connectMock.mockResolvedValue({
       query: queryMock,

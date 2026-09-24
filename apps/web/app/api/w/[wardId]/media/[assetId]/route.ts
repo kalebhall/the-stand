@@ -4,6 +4,7 @@ import { recordAuditEvent } from '@/src/audit/service';
 import { canDeleteProgramMedia, canViewMeetings, canViewProgramDesigner } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
+import { isWardModuleEnabled } from '@/src/modules/service';
 import { archiveWardMedia, MediaServiceError } from '@/src/document-designer/media-service';
 import { readMedia } from '@/src/document-designer/media-storage';
 
@@ -14,6 +15,7 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
   const canReadMedia = canViewMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)
     || canViewProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId);
   if (!canReadMedia) return new NextResponse(null, { status: 404 });
+  if (!(await isWardModuleEnabled(wardId, session.user.id, 'programs'))) return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -55,6 +57,7 @@ export async function DELETE(_: Request, context: { params: Promise<{ wardId: st
   const session = await auth();
   const { wardId, assetId } = await context.params;
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, { status: 401 });
+  if (!(await isWardModuleEnabled(wardId, session.user.id, 'programs'))) return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
   const client = await pool.connect();
   try {
     await client.query('BEGIN');

@@ -10,6 +10,7 @@ import { setDbContext } from '@/src/db/context';
 import { INTRODUCTION_ITEM_TYPE, isMeetingType, SPEAKER_STATUSES, validateProgramItemsForMeetingType, type IntroductionRoles, type ProgramItemInput } from '@/src/meetings/types';
 import { enqueueOutboxNotificationJob } from '@/src/notifications/queue';
 import { enqueueNotificationOutboxEvent, insertNotificationOutboxEvent } from '@/src/notifications/outbox';
+import { insertCoreEventOutboxEvent } from '@/src/platform/events/outbox';
 
 function toTrimmedString(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
@@ -251,9 +252,22 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
       payload: { meetingId: inserted.rows[0].id, meetingDate, meetingType }
     });
 
+    const coreEvent = {
+      type: 'MeetingCreated' as const,
+      version: 1 as const,
+      wardId,
+      actorId: session.user.id,
+      meetingId: inserted.rows[0].id as string,
+      occurredAt: new Date().toISOString(),
+      meetingDate,
+      meetingType
+    };
+    const coreEventOutboxId = await insertCoreEventOutboxEvent(client, coreEvent);
+
     await client.query('COMMIT');
 
     enqueueNotificationOutboxEvent(enqueueOutboxNotificationJob, wardId, eventOutboxId);
+    enqueueNotificationOutboxEvent(enqueueOutboxNotificationJob, wardId, coreEventOutboxId);
 
     return NextResponse.json({ id: inserted.rows[0].id }, { status: 201 });
   } catch (error) {
