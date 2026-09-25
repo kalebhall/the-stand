@@ -25,5 +25,8 @@ describe('hymn links', () => {
     expect(buildHymnUrl('1', 'The Morning Breaks', 'es')).toBe(
       'https://www.churchofjesuschrist.org/study/manual/hymns/the-morning-breaks?lang=spa'
     );
+    expect(buildHymnUrl('1', 'Kuo ʻAho Hake ʻa e Pō', 'to')).toBe(
+      'https://www.churchofjesuschrist.org/study/manual/hymns/kuo-aho-hake-a-e-po?lang=ton'
+    );
   });
 });

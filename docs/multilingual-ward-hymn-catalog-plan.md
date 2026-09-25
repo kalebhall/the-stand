@@ -20,12 +20,14 @@ Official catalog counts loaded by migration `0011_official_multilingual_hymn_cat
 - Spanish (`es`): 209 standard hymns.
 - Portuguese (Brazil) (`pt-BR`): 204 standard hymns.
 - Tagalog (`tl`): 200 standard hymns.
+- Tongan (`to`): 204 standard hymns.
 
 Source indexes:
 
 - https://www.churchofjesuschrist.org/study/manual/hymns?lang=spa
 - https://www.churchofjesuschrist.org/study/manual/hymns?lang=por
 - https://www.churchofjesuschrist.org/study/manual/hymns?lang=tgl
+- https://www.churchofjesuschrist.org/study/manual/hymns?lang=ton
 
 ## Behavior
 

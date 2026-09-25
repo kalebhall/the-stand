@@ -13,7 +13,8 @@ const CHURCH_LANGUAGE_CODES: Record<string, string> = {
   'en-US': 'eng',
   es: 'spa',
   'pt-BR': 'por',
-  tl: 'tgl'
+  tl: 'tgl',
+  to: 'ton'
 };
 
 export function buildHymnUrl(

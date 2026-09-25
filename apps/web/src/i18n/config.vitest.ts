@@ -13,6 +13,7 @@ describe('locale configuration', () => {
   it('allows planned languages for hymn catalogs before UI translations are complete', () => {
     expect(isSupportedCatalogLocale('pt-BR')).toBe(true);
     expect(isSupportedCatalogLocale('tl')).toBe(true);
+    expect(isSupportedCatalogLocale('to')).toBe(true);
     expect(isSupportedCatalogLocale('fr')).toBe(false);
   });
 
