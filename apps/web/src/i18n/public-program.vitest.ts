@@ -1,9 +1,18 @@
 import { describe, expect, it } from 'vitest';
 
 import { buildMeetingRenderHtml } from '../meetings/render';
-import { getPublicProgramRenderLabels } from './public-program';
+import { getPublicProgramRenderLabels, resolvePublicLocale } from './public-program';
 
 const meetingTypes = ['SACRAMENT', 'FAST_TESTIMONY', 'WARD_CONFERENCE', 'STAKE_CONFERENCE', 'GENERAL_CONFERENCE'];
+
+describe('public program locale fallback', () => {
+  it('uses the ward default when no valid public preference exists', () => {
+    expect(resolvePublicLocale(undefined, 'es')).toBe('es');
+    expect(resolvePublicLocale('unsupported', 'es')).toBe('es');
+    expect(resolvePublicLocale('en-US', 'es')).toBe('en-US');
+    expect(resolvePublicLocale(undefined, 'pt-BR')).toBe('en-US');
+  });
+});
 
 for (const locale of ['en-US', 'es'] as const) {
   describe(`public program render labels: ${locale}`, () => {

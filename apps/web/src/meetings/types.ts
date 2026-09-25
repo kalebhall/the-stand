@@ -11,6 +11,7 @@ export type ProgramItemInput = {
   programNotes?: string;
   hymnNumber: string;
   hymnTitle: string;
+  hymnLocale?: string;
   introductionRoles?: IntroductionRoles;
   speakerStatus?: SpeakerStatus;
 };

@@ -21,10 +21,23 @@ async function loadPersistedLocale(): Promise<string | undefined> {
   }
 }
 
+async function loadWardDefaultLocale(): Promise<string | undefined> {
+  try {
+    const session = await auth();
+    if (!session?.activeWardId) return undefined;
+    const result = await pool.query('SELECT default_locale FROM ward WHERE id = $1::uuid LIMIT 1', [session.activeWardId]);
+    return result.rows[0]?.default_locale;
+  } catch (error) {
+    console.warn('i18n_ward_default_locale_unavailable', error);
+    return undefined;
+  }
+}
+
 export default getRequestConfig(async () => {
   const cookieLocale = (await cookies()).get('NEXT_LOCALE')?.value;
   const persistedLocale = await loadPersistedLocale();
-  const locale = resolveActiveLocale(persistedLocale, cookieLocale);
+  const wardDefaultLocale = await loadWardDefaultLocale();
+  const locale = resolveActiveLocale(persistedLocale, cookieLocale, wardDefaultLocale);
 
   return {
     locale,

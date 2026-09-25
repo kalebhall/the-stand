@@ -32,6 +32,7 @@ type ProgramItemRow = {
   program_notes: string | null;
   hymn_number: string | null;
   hymn_title: string | null;
+  hymn_locale: string | null;
   introduction_roles: IntroductionRoles | null;
   speaker_status: ProgramItemInput['speakerStatus'];
 };
@@ -80,7 +81,7 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ me
     }
 
     const programItemsResult = await client.query(
-      `SELECT id, item_type, title, notes, topic, program_notes, hymn_number, hymn_title, introduction_roles, speaker_status
+      `SELECT id, item_type, title, notes, topic, program_notes, hymn_number, hymn_title, hymn_locale, introduction_roles, speaker_status
          FROM meeting_program_item
         WHERE meeting_id = $1 AND ward_id = $2
         ORDER BY sequence ASC`,
@@ -173,6 +174,7 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ me
       programNotes: item.program_notes ?? '',
       hymnNumber: item.hymn_number ?? '',
       hymnTitle: item.hymn_title ?? '',
+      hymnLocale: item.hymn_locale ?? 'en-US',
       introductionRoles: item.introduction_roles ?? undefined,
       speakerStatus: item.speaker_status ?? undefined
     }));

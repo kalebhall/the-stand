@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { pool } from '@/src/db/client';
 import { buildPublicProgramEmptyHtml, resolvePublicLocale } from '@/src/i18n/public-program';
 
-type PortalRow = { ward_id: string };
+type PortalRow = { ward_id: string; default_locale: string | null };
 type PublicRenderRow = { render_html: string };
 const noIndex = { 'content-type': 'text/html; charset=utf-8', 'X-Robots-Tag': 'noindex, nofollow' };
 const notFound = () => NextResponse.json({ error: 'Not found', code: 'NOT_FOUND' }, { status: 404 });
@@ -17,16 +17,17 @@ export async function GET(request: Request, context: { params: Promise<{ portalT
   const cookieLocale = request.headers.get('cookie')?.match(/(?:^|;\s*)NEXT_LOCALE=([^;]+)/)?.[1];
   let locale: string | undefined;
   try { locale = cookieLocale ? decodeURIComponent(cookieLocale) : undefined; } catch { locale = undefined; }
-  const publicLocale = resolvePublicLocale(locale);
+
   if (!token) return notFound();
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
     await client.query('SELECT set_config($1, $2, true)', ['app.public_portal_token', token]);
-    const portalResult = await client.query('SELECT ward_id FROM public_program_portal WHERE token = $1::text LIMIT 1', [token]);
+    const portalResult = await client.query('SELECT p.ward_id, w.default_locale FROM public_program_portal p JOIN ward w ON w.id = p.ward_id WHERE p.token = $1::text LIMIT 1', [token]);
     if (!portalResult.rows[0]) { await client.query('ROLLBACK'); return notFound(); }
     const portal = portalResult.rows[0] as PortalRow;
     await client.query('SELECT set_config($1, $2, true)', ['app.ward_id', portal.ward_id]);
+    const publicLocale = resolvePublicLocale(locale, portal.default_locale);
     const result = await client.query(`SELECT mpr.render_html FROM meeting m
       JOIN public_program_share pps ON pps.meeting_id = m.id AND pps.ward_id = m.ward_id
       JOIN meeting_program_render mpr ON mpr.id = pps.active_render_id AND mpr.ward_id = pps.ward_id AND mpr.meeting_id = pps.meeting_id

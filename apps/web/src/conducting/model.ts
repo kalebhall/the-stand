@@ -22,6 +22,7 @@ export type ProgramItem = {
   programNotes: string | null;
   hymnNumber: string | null;
   hymnTitle: string | null;
+  hymnLocale?: string;
   introductionRoles: IntroductionRoles | null;
   speakerStatus: string | null;
 };
@@ -65,6 +66,7 @@ export function canonicalizeProgramItems(items: readonly CoreProgramItemInput[])
       programNotes: item.programNotes?.trim() || null,
       hymnNumber: item.hymnNumber?.trim() || null,
       hymnTitle: item.hymnTitle?.trim() || null,
+      hymnLocale: item.hymnLocale?.trim() || 'en-US',
       introductionRoles: item.introductionRoles ?? null,
       speakerStatus: item.speakerStatus ?? null
     }));

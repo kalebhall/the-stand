@@ -88,10 +88,10 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
   try {
     await client.query('BEGIN');
     await setDbContext(client, { userId: session.user.id, wardId });
-    const meetingResult = await client.query(`SELECT m.id, m.meeting_date, m.meeting_type, m.status, w.name AS ward_name, m.location
+    const meetingResult = await client.query(`SELECT m.id, m.meeting_date, m.meeting_type, m.status, w.name AS ward_name, w.default_locale, m.location
       FROM meeting m JOIN ward w ON w.id = m.ward_id WHERE m.id = $1::uuid AND m.ward_id = $2::uuid LIMIT 1 FOR UPDATE`, [meetingId, wardId]);
     if (!meetingResult.rows[0]) { await client.query('ROLLBACK'); return NOT_FOUND(); }
-    const meeting = meetingResult.rows[0] as { id: string; meeting_date: string; meeting_type: string; status: string; ward_name: string; location: string | null };
+    const meeting = meetingResult.rows[0] as { id: string; meeting_date: string; meeting_type: string; status: string; ward_name: string; default_locale: string; location: string | null };
     if (!isMeetingStatus(meeting.status)) {
       await client.query('ROLLBACK');
       return NextResponse.json({ error: 'Meeting has an invalid status', code: 'INVALID_STATUS' }, { status: 409 });
@@ -118,7 +118,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
       return NextResponse.json({ error: 'Failed to determine publication version', code: 'INTERNAL_ERROR' }, { status: 500 });
     }
 
-    const itemsResult = await client.query(`SELECT item_type, title, notes, topic, program_notes, hymn_number, hymn_title, introduction_roles
+    const itemsResult = await client.query(`SELECT item_type, title, notes, topic, program_notes, hymn_number, hymn_title, hymn_locale, introduction_roles
       FROM meeting_program_item WHERE meeting_id = $1::uuid AND ward_id = $2::uuid ORDER BY sequence ASC`, [meetingId, wardId]);
     const announcements = await client.query(`SELECT title, body, start_date, end_date, is_permanent, placement, include_in_program
       FROM announcement WHERE ward_id = $1::uuid AND include_in_program = TRUE AND (is_permanent = TRUE OR ((start_date IS NULL OR start_date <= $2::date) AND (end_date IS NULL OR end_date >= $2::date))) ORDER BY created_at DESC`, [wardId, meeting.meeting_date]);
@@ -127,9 +127,8 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
         OR (scope_type = 'WARD' AND ward_id = $1::uuid)
         OR (scope_type = 'STAKE' AND stake_id = (SELECT stake_id FROM ward WHERE id = $1::uuid)))`, [wardId]);
     const media = Object.fromEntries((mediaResult.rows as Array<{ id: string; public_token: string | null; alt_text: string | null; is_decorative: boolean }>).filter((item) => item.public_token).map((item) => [item.id, { url: `/media/${item.public_token}`, altText: item.alt_text, isDecorative: item.is_decorative }]));
-    const programItems = (itemsResult.rows as Array<{ item_type: string; title: string | null; notes: string | null; topic: string | null; program_notes: string | null; hymn_number: string | null; hymn_title: string | null; introduction_roles: IntroductionRoles | null }>).map((item, order) => ({ itemType: item.item_type, title: item.title, notes: item.notes, topic: item.topic, programNotes: item.program_notes, hymnNumber: item.hymn_number, hymnTitle: item.hymn_title, introductionRoles: item.introduction_roles, order }));
-    const localeResult = await client.query('SELECT preferred_locale FROM user_account WHERE id = $1::uuid AND is_active = true LIMIT 1', [session.user.id]);
-    const locale = resolveLocale(localeResult.rows[0]?.preferred_locale);
+    const programItems = (itemsResult.rows as Array<{ item_type: string; title: string | null; notes: string | null; topic: string | null; program_notes: string | null; hymn_number: string | null; hymn_title: string | null; hymn_locale: string | null; introduction_roles: IntroductionRoles | null }>).map((item, order) => ({ itemType: item.item_type, title: item.title, notes: item.notes, topic: item.topic, programNotes: item.program_notes, hymnNumber: item.hymn_number, hymnTitle: item.hymn_title, hymnLocale: item.hymn_locale ?? 'en-US', introductionRoles: item.introduction_roles, order }));
+    const locale = resolveLocale(meeting.default_locale);
     const documentResult = await client.query(`SELECT layout_json, source_template_id, source_template_version FROM meeting_document WHERE meeting_id = $1::uuid AND ward_id = $2::uuid AND document_type = 'SACRAMENT_PROGRAM' LIMIT 1`, [meetingId, wardId]);
     const legacyResult = await client.query(`SELECT preset, announcement_mode, cover_mode, cover_image_url, cover_image_alt_text FROM public_program_layout WHERE ward_id = $1::uuid LIMIT 1`, [wardId]);
     const legacy = legacyResult.rows[0] ?? { preset: 'FULL_PAGE', announcement_mode: 'AFTER_PROGRAM', cover_mode: 'NONE', cover_image_url: null, cover_image_alt_text: null };

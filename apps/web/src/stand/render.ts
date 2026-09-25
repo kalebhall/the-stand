@@ -13,6 +13,7 @@ export type StandProgramItem = {
   programNotes?: string | null;
   hymnNumber: string | null;
   hymnTitle: string | null;
+  hymnLocale?: string | null;
   introductionRoles?: IntroductionRoles | null;
 };
 
@@ -241,7 +242,7 @@ export function buildStandRows(
       programItemId: item.id,
       label,
       details,
-      ...(isHymn ? { hymnUrl: buildHymnUrl(item.hymnNumber, item.hymnTitle) ?? undefined } : {}),
+      ...(isHymn ? { hymnUrl: buildHymnUrl(item.hymnNumber, item.hymnTitle, item.hymnLocale ?? 'en-US') ?? undefined } : {}),
       ...(item.programNotes?.trim() ? { programNotes: item.programNotes } : {})
     });
   }

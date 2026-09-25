@@ -52,7 +52,7 @@ flowchart LR
   A5 -->|148| A16
   A6 -->|119| A37
   A6 -->|94| A8
-  A6 -->|56| A16
+  A6 -->|57| A16
   A5 -->|54| A27
   A5 -->|52| A17
   A5 -->|44| A29
@@ -68,7 +68,9 @@ flowchart LR
   A31 -->|8| A27
   A5 -->|7| A13
   A5 -->|7| A23
+  A6 -->|7| A21
   A5 -->|6| A26
+  A5 -->|5| A21
   A5 -->|5| A31
   A6 -->|5| A33
   A8 -->|5| A27
@@ -79,9 +81,7 @@ flowchart LR
   A29 -->|4| A16
   A31 -->|4| A8
   A5 -->|3| A18
-  A5 -->|3| A21
   A6 -->|3| A18
-  A6 -->|3| A21
   A6 -->|3| A23
   A5 -->|2| A4
   A5 -->|2| A12
@@ -200,8 +200,8 @@ flowchart LR
 | `web:app` | `web:ui` | 119 |
 | `web:app` | `web:auth` | 94 |
 | `web:app` | `web:app` | 70 |
+| `web:app` | `web:db` | 57 |
 | `web:notifications` | `web:notifications` | 57 |
-| `web:app` | `web:db` | 56 |
 | `web:api` | `web:modules` | 54 |
 | `web:api` | `web:document-designer` | 52 |
 | `web:api` | `web:notifications` | 44 |
@@ -226,7 +226,9 @@ flowchart LR
 | `web:stand` | `web:stand` | 8 |
 | `web:api` | `web:conducting` | 7 |
 | `web:api` | `web:leadership` | 7 |
+| `web:app` | `web:i18n` | 7 |
 | `web:api` | `web:meetings` | 6 |
+| `web:api` | `web:i18n` | 5 |
 | `web:api` | `web:platform` | 5 |
 | `web:app` | `web:stand` | 5 |
 | `web:auth` | `web:modules` | 5 |
@@ -241,9 +243,7 @@ flowchart LR
 | `web:notifications` | `web:db` | 4 |
 | `web:platform` | `web:auth` | 4 |
 | `web:api` | `web:features` | 3 |
-| `web:api` | `web:i18n` | 3 |
 | `web:app` | `web:features` | 3 |
-| `web:app` | `web:i18n` | 3 |
 | `web:app` | `web:leadership` | 3 |
 | `web:calendar` | `web:calendar` | 3 |
 | `web:conducting` | `web:conducting` | 3 |
@@ -323,7 +323,7 @@ flowchart LR
 
 | Importing area | Package/runtime | Imports |
 | --- | --- | ---: |
-| `web:app` | `next` | 103 |
+| `web:app` | `next` | 104 |
 | `web:api` | `next` | 85 |
 | `web:app` | `react` | 44 |
 | `web:api` | `vitest` | 33 |
@@ -480,8 +480,8 @@ flowchart LR
 | `apps/web/app/api/support/document-templates/[templateId]/versions/route.ts` | `web:api` | 2 | 0 |
 | `apps/web/app/api/support/document-templates/route.ts` | `web:api` | 2 | 0 |
 | `apps/web/app/api/support/document-templates/route.vitest.ts` | `web:api` | 1 | 1 |
-| `apps/web/app/api/support/hymns/[id]/route.ts` | `web:api` | 3 | 1 |
-| `apps/web/app/api/support/hymns/route.ts` | `web:api` | 3 | 1 |
+| `apps/web/app/api/support/hymns/[id]/route.ts` | `web:api` | 4 | 1 |
+| `apps/web/app/api/support/hymns/route.ts` | `web:api` | 4 | 1 |
 | `apps/web/app/api/support/queue/route.ts` | `web:api` | 5 | 2 |
 | `apps/web/app/api/support/queue/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/announcements/[announcementId]/route.ts` | `web:api` | 7 | 1 |
@@ -615,7 +615,7 @@ flowchart LR
 | `apps/web/app/manual/page.tsx` | `web:app` | 3 | 1 |
 | `apps/web/app/media/[publicToken]/route.ts` | `web:app` | 3 | 1 |
 | `apps/web/app/meetings/[meetingId]/edit/page.tsx` | `web:app` | 13 | 3 |
-| `apps/web/app/meetings/[meetingId]/print/page.tsx` | `web:app` | 10 | 2 |
+| `apps/web/app/meetings/[meetingId]/print/page.tsx` | `web:app` | 12 | 2 |
 | `apps/web/app/meetings/[meetingId]/public-preview/page.tsx` | `web:app` | 1 | 0 |
 | `apps/web/app/meetings/delete-meeting-button.tsx` | `web:app` | 1 | 3 |
 | `apps/web/app/meetings/delete-meeting-button.vitest.tsx` | `web:app` | 1 | 4 |
@@ -677,7 +677,7 @@ flowchart LR
 | `apps/web/app/settings/notifications/notification-subscription-settings.tsx` | `web:app` | 1 | 1 |
 | `apps/web/app/settings/notifications/notification-subscription-settings.vitest.tsx` | `web:app` | 1 | 4 |
 | `apps/web/app/settings/notifications/page.tsx` | `web:app` | 4 | 1 |
-| `apps/web/app/settings/page.tsx` | `web:app` | 9 | 2 |
+| `apps/web/app/settings/page.tsx` | `web:app` | 11 | 3 |
 | `apps/web/app/settings/public-layout/page.tsx` | `web:app` | 7 | 1 |
 | `apps/web/app/settings/public-layout/public-layout-client.tsx` | `web:app` | 3 | 1 |
 | `apps/web/app/settings/public-layout/public-layout-client.vitest.tsx` | `web:app` | 1 | 2 |
@@ -700,7 +700,7 @@ flowchart LR
 | `apps/web/app/support/access-requests/page.tsx` | `web:app` | 5 | 3 |
 | `apps/web/app/support/audit-log/AuditLogViewer.tsx` | `web:app` | 1 | 1 |
 | `apps/web/app/support/audit-log/page.tsx` | `web:app` | 7 | 2 |
-| `apps/web/app/support/hymns/page.tsx` | `web:app` | 5 | 3 |
+| `apps/web/app/support/hymns/page.tsx` | `web:app` | 6 | 3 |
 | `apps/web/app/support/page.tsx` | `web:app` | 5 | 2 |
 | `apps/web/app/support/provisioning/StakeWardManager.tsx` | `web:app` | 2 | 1 |
 | `apps/web/app/support/provisioning/actions.ts` | `web:app` | 3 | 2 |

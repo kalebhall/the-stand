@@ -1,7 +1,7 @@
 import enUS from '../../messages/en-US.json';
 import es from '../../messages/es.json';
 import type { MeetingRenderLabels } from '../meetings/render';
-import { resolveLocale, type Locale } from './config';
+import { isSupportedLocale, resolveLocale, type Locale } from './config';
 
 type PublicProgramMessages = {
   publicProgram: {
@@ -91,8 +91,8 @@ export function getPublicProgramRenderLabels(locale: Locale, meetingType: string
   };
 }
 
-export function resolvePublicLocale(cookieLocale: string | null | undefined): Locale {
-  return resolveLocale(cookieLocale);
+export function resolvePublicLocale(cookieLocale: string | null | undefined, wardDefaultLocale?: string | null): Locale {
+  return isSupportedLocale(cookieLocale) ? cookieLocale : resolveLocale(wardDefaultLocale);
 }
 
 export function buildPublicProgramEmptyHtml(locale: Locale): string {

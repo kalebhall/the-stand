@@ -279,6 +279,16 @@ describe('buildStandRows', () => {
     expect(rows[2]).toEqual({ kind: 'sacrament', programItemId: 'sacrament' });
   });
 
+  it('uses the hymn catalog locale stored on the historical program item', () => {
+    const rows = buildStandRows([
+      { id: 'historical-hymn', itemType: 'OPENING_HYMN', title: '', notes: '', hymnNumber: '1', hymnTitle: 'The Morning Breaks', hymnLocale: 'es' }
+    ]);
+
+    expect(rows[1]).toMatchObject({
+      hymnUrl: 'https://www.churchofjesuschrist.org/study/manual/hymns/the-morning-breaks?lang=spa'
+    });
+  });
+
   it('uses injected localized display labels without changing authored details', () => {
     const rows = buildStandRows(
       [

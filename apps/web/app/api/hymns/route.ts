@@ -9,6 +9,7 @@ type HymnRow = {
   title: string;
   book: string;
   sort_key: number;
+  locale: string;
 };
 
 export async function GET() {
@@ -17,12 +18,19 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, { status: 401 });
   }
 
+  if (!session.activeWardId) {
+    return NextResponse.json({ hymns: [], locale: null });
+  }
+
   try {
     const result = await pool.query(
-      `SELECT id, hymn_number, title, book, sort_key
-         FROM hymn
-        WHERE is_active = true
-        ORDER BY sort_key ASC`
+      `SELECT h.id, h.hymn_number, h.title, h.book, h.sort_key, h.locale
+         FROM hymn h
+         JOIN ward w ON w.default_locale = h.locale
+        WHERE h.is_active = true
+          AND w.id = $1::uuid
+        ORDER BY h.sort_key ASC`,
+      [session.activeWardId]
     );
 
     return NextResponse.json({
@@ -31,8 +39,10 @@ export async function GET() {
         hymnNumber: row.hymn_number,
         title: row.title,
         book: row.book,
-        sortKey: row.sort_key
-      }))
+        sortKey: row.sort_key,
+        locale: row.locale
+      })),
+      locale: result.rows[0]?.locale ?? null
     });
   } catch {
     return NextResponse.json({ error: 'Failed to fetch hymns', code: 'INTERNAL_ERROR' }, { status: 500 });
