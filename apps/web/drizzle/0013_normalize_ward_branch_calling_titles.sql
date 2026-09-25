@@ -9,7 +9,7 @@ WITH prefixed AS (
     name AS source_name,
     regexp_replace(name, '^(Ward|Branch) ', '') AS canonical_name,
     unit_type
-  FROM standard_calling
+  FROM public.standard_calling
   WHERE name ~ '^Ward '
 ),
 canonical_existing AS (
@@ -26,11 +26,11 @@ canonical_existing AS (
       ORDER BY (p.unit_type = 'ward') DESC, p.source_id
     )) AS keep_id
   FROM prefixed p
-  LEFT JOIN standard_calling existing
+  LEFT JOIN public.standard_calling existing
     ON existing.name = p.canonical_name
    AND existing.unit_type = p.unit_type
    AND existing.id <> p.source_id
-  LEFT JOIN standard_calling conflicting
+  LEFT JOIN public.standard_calling conflicting
     ON conflicting.name = p.canonical_name
    AND conflicting.id <> p.source_id
   ORDER BY p.source_id, existing.id
@@ -49,12 +49,12 @@ FROM canonical_existing;
 -- display text. They have no authoritative standard-calling foreign key or
 -- unit-type discriminator, so text-based rewrites could alter unrelated custom
 -- assignments in another ward, branch, stake, or district.
-DELETE FROM standard_calling standard
+DELETE FROM public.standard_calling standard
 USING calling_title_normalization normalization
 WHERE standard.id = normalization.source_id
   AND standard.id <> normalization.keep_id;
 
-UPDATE standard_calling standard
+UPDATE public.standard_calling standard
 SET name = normalization.canonical_name,
     updated_at = NOW()
 FROM calling_title_normalization normalization
