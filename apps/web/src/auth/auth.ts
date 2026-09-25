@@ -231,7 +231,8 @@ export const { auth, handlers, unstable_update } = NextAuth({
             if (sessionUser) {
               token.sub = sessionUser.id;
               token.roles = sessionUser.roles;
-              token.mustChangePassword = sessionUser.mustChangePassword;
+              token.authProvider = account?.provider;
+              token.mustChangePassword = account?.provider === 'google' ? false : sessionUser.mustChangePassword;
               token.hasPassword = sessionUser.hasPassword;
               token.activeWardId = sessionUser.activeWardId;
           token.activeStakeId = sessionUser.activeStakeId;
@@ -244,6 +245,7 @@ export const { auth, handlers, unstable_update } = NextAuth({
 
         token.sub = user.id;
         token.roles = user.roles;
+        token.authProvider = account?.provider ?? 'credentials';
         token.mustChangePassword = user.mustChangePassword;
         token.hasPassword = user.hasPassword;
         token.activeWardId = user.activeWardId;
@@ -257,7 +259,7 @@ export const { auth, handlers, unstable_update } = NextAuth({
         const sessionUser = await loadSessionUserById(token.sub);
         if (sessionUser) {
           token.roles = sessionUser.roles;
-          token.mustChangePassword = sessionUser.mustChangePassword;
+          token.mustChangePassword = token.authProvider === 'google' ? false : sessionUser.mustChangePassword;
           token.hasPassword = sessionUser.hasPassword;
           token.activeWardId = sessionUser.activeWardId;
           token.activeStakeId = sessionUser.activeStakeId;
@@ -282,7 +284,7 @@ export const { auth, handlers, unstable_update } = NextAuth({
         token.authzRefreshedAt = Date.now();
         if (sessionUser) {
           token.roles = sessionUser.roles;
-          token.mustChangePassword = sessionUser.mustChangePassword;
+          token.mustChangePassword = token.authProvider === 'google' ? false : sessionUser.mustChangePassword;
           token.hasPassword = sessionUser.hasPassword;
           token.activeWardId = sessionUser.activeWardId;
           token.activeStakeId = sessionUser.activeStakeId;
