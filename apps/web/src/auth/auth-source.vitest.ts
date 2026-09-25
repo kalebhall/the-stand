@@ -22,4 +22,9 @@ describe('authentication authorization boundaries', () => {
     expect(source).toContain('authz_refresh_interval_ms');
     expect(source).toContain('loadsessionuserbyid(token.sub)');
   });
+
+  it('does not apply password rotation to Google OAuth sessions', async () => {
+    const source = await readAuth();
+    expect(source).toContain("token.authprovider === 'google' ? false : sessionuser.mustchangepassword");
+  });
 });

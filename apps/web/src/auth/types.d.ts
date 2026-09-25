@@ -11,6 +11,7 @@ declare module 'next-auth' {
     activeStakeId?: string | null;
     stakeAssignments?: StakeSessionAssignment[];
     hasPassword?: boolean;
+    authProvider?: string;
   }
 
   interface Session {
@@ -36,6 +37,7 @@ declare module 'next-auth/jwt' {
     activeStakeId?: string | null;
     stakeAssignments?: StakeSessionAssignment[];
     hasPassword?: boolean;
+    authProvider?: string;
     authzRefreshedAt?: number;
   }
 }
