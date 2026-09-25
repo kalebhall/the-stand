@@ -1,0 +1,32 @@
+{
+  "members": {
+    "pageTitle": "Miembros y notas",
+    "pageDescription": "Directorio de miembros del barrio y notas restringidas de seguimiento del liderazgo.",
+    "importMembers": "Importar miembros",
+    "filterPlaceholder": "Filtrar miembros por nombre, correo o teléfono…",
+    "sortBy": "Ordenar por",
+    "name": "Nombre",
+    "age": "Edad",
+    "email": "Correo electrónico",
+    "showing": "Se muestran {shown} de {total} miembros",
+    "noEmail": "Sin correo",
+    "noPhone": "Sin teléfono",
+    "edit": "Editar",
+    "archiving": "Archivando…",
+    "archive": "Archivar",
+    "archiveConfirm": "¿Archivar a {name}? Ya no aparecerá en las listas de miembros activos, pero se conservarán los registros históricos.",
+    "editMemberInfo": "Editar información del miembro",
+    "firstName": "Nombre",
+    "lastName": "Apellidos",
+    "phone": "Teléfono",
+    "save": "Guardar",
+    "saving": "Guardando…",
+    "cancel": "Cancelar",
+    "memberNotes": "Notas del miembro",
+    "noMembersImported": "Aún no se han importado miembros.",
+    "noMembersMatched": "Ningún miembro coincide con la búsqueda.",
+    "importMembersNow": "Importar miembros ahora",
+    "saveFailed": "No se pudieron guardar los cambios.",
+    "archiveFailed": "No se pudo archivar al miembro."
+  }
+}

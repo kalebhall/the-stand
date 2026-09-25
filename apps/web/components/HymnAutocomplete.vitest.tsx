@@ -5,7 +5,8 @@ import { NextIntlClientProvider } from 'next-intl';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import messages from '../messages/es.json';
+import { MESSAGE_CATALOGS } from '@/src/i18n/messages';
+const messages = MESSAGE_CATALOGS.es;
 import { HymnAutocomplete } from './HymnAutocomplete';
 
 describe('HymnAutocomplete localization', () => {

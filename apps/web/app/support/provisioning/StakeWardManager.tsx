@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useLocale, useTranslations } from 'next-intl';
 
 import { Button } from '@/components/ui/button';
 
@@ -29,6 +30,9 @@ type Props = {
 type Tab = 'stakes' | 'wards';
 
 export default function StakeWardManager({ stakes, wards }: Props) {
+  const t = useTranslations('supportProvisioning');
+  const locale = useLocale();
+  const formatDate = (value: string) => new Intl.DateTimeFormat(locale).format(new Date(value));
   const [tab, setTab] = useState<Tab>('stakes');
   const [stakeSearch, setStakeSearch] = useState('');
   const [wardSearch, setWardSearch] = useState('');
@@ -76,13 +80,13 @@ export default function StakeWardManager({ stakes, wards }: Props) {
           onClick={() => setTab('stakes')}
           className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors ${tab === 'stakes' ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground'}`}
         >
-          Stakes ({stakes.length})
+          {t('stakesTab', { count: stakes.length })}
         </button>
         <button
           onClick={() => setTab('wards')}
           className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors ${tab === 'wards' ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground'}`}
         >
-          Wards ({wards.length})
+          {t('wardsTab', { count: wards.length })}
         </button>
       </div>
 
@@ -93,31 +97,31 @@ export default function StakeWardManager({ stakes, wards }: Props) {
           <section className="rounded-lg border bg-card p-4 text-card-foreground">
             <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
               <label className="text-xs text-muted-foreground">
-                Search stakes
+                {t('searchStakes')}
                 <input
                   type="text"
                   value={stakeSearch}
                   onChange={(e) => setStakeSearch(e.target.value)}
-                  placeholder="Stake name..."
+                  placeholder={t('stakeSearchPlaceholder')}
                   className="mt-1 w-full rounded-md border px-3 py-2 text-sm text-foreground"
                 />
               </label>
               <div className="flex items-end">
                 <Button variant="outline" size="sm" onClick={() => setShowCreateStake(!showCreateStake)}>
-                  {showCreateStake ? 'Cancel' : 'Add stake'}
+                  {showCreateStake ? t('cancel') : t('addStake')}
                 </Button>
               </div>
             </div>
             <p className="mt-2 text-xs text-muted-foreground">
-              Showing {filteredStakes.length} of {stakes.length} stakes
+              {t('showingStakes', { shown: filteredStakes.length, total: stakes.length })}
             </p>
           </section>
 
           {/* Create Stake Form */}
           {showCreateStake && (
             <section className="rounded-lg border bg-card p-4 text-card-foreground">
-              <h2 className="text-lg font-semibold">Create Stake</h2>
-              <p className="mt-1 text-sm text-muted-foreground">Add a new stake before creating wards under it.</p>
+              <h2 className="text-lg font-semibold">{t('createStake')}</h2>
+              <p className="mt-1 text-sm text-muted-foreground">{t('createStakeDescription')}</p>
               <form
                 action={async (formData) => {
                   await createStake(formData);
@@ -126,16 +130,16 @@ export default function StakeWardManager({ stakes, wards }: Props) {
                 className="mt-3 flex items-end gap-3"
               >
                 <label className="flex-1 text-xs text-muted-foreground">
-                  Stake name
+                  {t('stakeName')}
                   <input
                     name="name"
                     required
-                    placeholder="Enter stake name"
+                    placeholder={t('enterStakeName')}
                     className="mt-1 w-full rounded-md border px-3 py-2 text-sm text-foreground"
                   />
                 </label>
                 <Button type="submit" size="sm">
-                  Create stake
+                  {t('createStake')}
                 </Button>
               </form>
             </section>
@@ -143,7 +147,7 @@ export default function StakeWardManager({ stakes, wards }: Props) {
 
           {/* Stake List */}
           <section className="space-y-2">
-            {filteredStakes.length === 0 && <p className="text-sm text-muted-foreground">No stakes match the current filter.</p>}
+            {filteredStakes.length === 0 && <p className="text-sm text-muted-foreground">{t('noStakes')}</p>}
             {filteredStakes.map((stake) => {
               const isEditing = editingStakeId === stake.id;
               const wardCount = wardCountByStake.get(stake.id) ?? 0;
@@ -154,23 +158,23 @@ export default function StakeWardManager({ stakes, wards }: Props) {
                     <div className="space-y-0.5">
                       <p className="font-medium">{stake.name}</p>
                       <p className="text-xs text-muted-foreground">
-                        {wardCount} ward{wardCount !== 1 ? 's' : ''} &middot; Created: {new Date(stake.created_at).toLocaleDateString()}
+                        {t('wardCount', { count: wardCount })} &middot; {t('created')}: {formatDate(stake.created_at)}
                       </p>
                     </div>
                     <div className="flex gap-2">
                       <Button variant="outline" size="sm" onClick={() => setEditingStakeId(isEditing ? null : stake.id)}>
-                        {isEditing ? 'Close' : 'Edit'}
+                        {isEditing ? t('close') : t('edit')}
                       </Button>
                       {confirmDeleteStakeId === stake.id ? (
                         <div className="flex items-center gap-1">
                           <form action={deleteStake}>
                             <input type="hidden" name="stakeId" value={stake.id} />
                             <Button variant="destructive" size="sm" type="submit">
-                              Confirm
+                              {t('confirm')}
                             </Button>
                           </form>
                           <Button variant="ghost" size="sm" onClick={() => setConfirmDeleteStakeId(null)}>
-                            Cancel
+                            {t('cancel')}
                           </Button>
                         </div>
                       ) : (
@@ -179,9 +183,9 @@ export default function StakeWardManager({ stakes, wards }: Props) {
                           size="sm"
                           onClick={() => setConfirmDeleteStakeId(stake.id)}
                           disabled={wardCount > 0}
-                          title={wardCount > 0 ? 'Remove all wards first' : undefined}
+                          title={wardCount > 0 ? t('removeWardsFirst') : undefined}
                         >
-                          Delete
+{t('delete')}
                         </Button>
                       )}
                     </div>
@@ -198,7 +202,7 @@ export default function StakeWardManager({ stakes, wards }: Props) {
                       >
                         <input type="hidden" name="stakeId" value={stake.id} />
                         <label className="flex-1 text-xs text-muted-foreground">
-                          Stake name
+                          {t('stakeName')}
                           <input
                             name="name"
                             required
@@ -207,7 +211,7 @@ export default function StakeWardManager({ stakes, wards }: Props) {
                           />
                         </label>
                         <Button type="submit" size="sm">
-                          Save
+{t('save')}
                         </Button>
                       </form>
                     </div>
@@ -226,23 +230,23 @@ export default function StakeWardManager({ stakes, wards }: Props) {
           <section className="rounded-lg border bg-card p-4 text-card-foreground">
             <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
               <label className="text-xs text-muted-foreground">
-                Search wards
+                {t('searchWards')}
                 <input
                   type="text"
                   value={wardSearch}
                   onChange={(e) => setWardSearch(e.target.value)}
-                  placeholder="Ward name, unit number, or stake..."
+                  placeholder={t('wardSearchPlaceholder')}
                   className="mt-1 w-full rounded-md border px-3 py-2 text-sm text-foreground"
                 />
               </label>
               <label className="text-xs text-muted-foreground">
-                Filter by stake
+                {t('filterByStake')}
                 <select
                   value={wardFilterStake}
                   onChange={(e) => setWardFilterStake(e.target.value)}
                   className="mt-1 w-full rounded-md border px-3 py-2 text-sm text-foreground"
                 >
-                  <option value="">All stakes</option>
+                  <option value="">{t('allStakes')}</option>
                   {stakes.map((s) => (
                     <option key={s.id} value={s.id}>
                       {s.name}
@@ -252,20 +256,20 @@ export default function StakeWardManager({ stakes, wards }: Props) {
               </label>
               <div className="flex items-end">
                 <Button variant="outline" size="sm" onClick={() => setShowCreateWard(!showCreateWard)}>
-                  {showCreateWard ? 'Cancel' : 'Add ward'}
+                  {showCreateWard ? t('cancel') : t('addWard')}
                 </Button>
               </div>
             </div>
             <p className="mt-2 text-xs text-muted-foreground">
-              Showing {filteredWards.length} of {wards.length} wards
+              {t('showingWards', { shown: filteredWards.length, total: wards.length })}
             </p>
           </section>
 
           {/* Create Ward Form */}
           {showCreateWard && (
             <section className="rounded-lg border bg-card p-4 text-card-foreground">
-              <h2 className="text-lg font-semibold">Create Ward</h2>
-              <p className="mt-1 text-sm text-muted-foreground">Select the parent stake and enter ward details.</p>
+              <h2 className="text-lg font-semibold">{t('createWard')}</h2>
+              <p className="mt-1 text-sm text-muted-foreground">{t('createWardDescription')}</p>
               <form
                 action={async (formData) => {
                   await createWard(formData);
@@ -275,9 +279,9 @@ export default function StakeWardManager({ stakes, wards }: Props) {
               >
                 <div className="grid gap-3 md:grid-cols-3">
                   <label className="text-xs text-muted-foreground">
-                    Stake
+                    {t('stake')}
                     <select name="stakeId" required className="mt-1 w-full rounded-md border px-3 py-2 text-sm text-foreground">
-                      <option value="">Select stake</option>
+                      <option value="">{t('selectStake')}</option>
                       {stakes.map((s) => (
                         <option key={s.id} value={s.id}>
                           {s.name}
@@ -286,25 +290,25 @@ export default function StakeWardManager({ stakes, wards }: Props) {
                     </select>
                   </label>
                   <label className="text-xs text-muted-foreground">
-                    Ward name
+                    {t('wardName')}
                     <input
                       name="wardName"
                       required
-                      placeholder="Enter ward name"
+                      placeholder={t('enterWardName')}
                       className="mt-1 w-full rounded-md border px-3 py-2 text-sm text-foreground"
                     />
                   </label>
                   <label className="text-xs text-muted-foreground">
-                    Unit number (optional)
+                    {t('unitNumberOptional')}
                     <input
                       name="unitNumber"
-                      placeholder="e.g. 123456"
+                      placeholder={t('unitNumberPlaceholder')}
                       className="mt-1 w-full rounded-md border px-3 py-2 text-sm text-foreground"
                     />
                   </label>
                 </div>
                 <Button type="submit" size="sm">
-                  Create ward
+                  {t('createWard')}
                 </Button>
               </form>
             </section>
@@ -312,7 +316,7 @@ export default function StakeWardManager({ stakes, wards }: Props) {
 
           {/* Ward List */}
           <section className="space-y-2">
-            {filteredWards.length === 0 && <p className="text-sm text-muted-foreground">No wards match the current filters.</p>}
+            {filteredWards.length === 0 && <p className="text-sm text-muted-foreground">{t('noWards')}</p>}
             {filteredWards.map((ward) => {
               const isEditing = editingWardId === ward.id;
 
@@ -323,30 +327,30 @@ export default function StakeWardManager({ stakes, wards }: Props) {
                       <p className="font-medium">{ward.name}</p>
                       <p className="text-xs text-muted-foreground">
                         {ward.stake_name}
-                        {ward.unit_number ? ` \u00b7 Unit ${ward.unit_number}` : ''}
-                        {' \u00b7 Created: '}
-                        {new Date(ward.created_at).toLocaleDateString()}
+                        {ward.unit_number ? ` · ${t('unit')} ${ward.unit_number}` : ''}
+                        {` · ${t('created')}: `}
+                        {formatDate(ward.created_at)}
                       </p>
                     </div>
                     <div className="flex gap-2">
                       <Button variant="outline" size="sm" onClick={() => setEditingWardId(isEditing ? null : ward.id)}>
-                        {isEditing ? 'Close' : 'Edit'}
+                        {isEditing ? t('close') : t('edit')}
                       </Button>
                       {confirmDeleteWardId === ward.id ? (
                         <div className="flex items-center gap-1">
                           <form action={deleteWard}>
                             <input type="hidden" name="wardId" value={ward.id} />
                             <Button variant="destructive" size="sm" type="submit">
-                              Confirm
+                              {t('confirm')}
                             </Button>
                           </form>
                           <Button variant="ghost" size="sm" onClick={() => setConfirmDeleteWardId(null)}>
-                            Cancel
+                            {t('cancel')}
                           </Button>
                         </div>
                       ) : (
                         <Button variant="outline" size="sm" onClick={() => setConfirmDeleteWardId(ward.id)}>
-                          Delete
+{t('delete')}
                         </Button>
                       )}
                     </div>
@@ -363,7 +367,7 @@ export default function StakeWardManager({ stakes, wards }: Props) {
                       >
                         <input type="hidden" name="wardId" value={ward.id} />
                         <label className="text-xs text-muted-foreground">
-                          Stake
+                          {t('stake')}
                           <select
                             name="stakeId"
                             required
@@ -378,7 +382,7 @@ export default function StakeWardManager({ stakes, wards }: Props) {
                           </select>
                         </label>
                         <label className="text-xs text-muted-foreground">
-                          Ward name
+                          {t('wardName')}
                           <input
                             name="name"
                             required
@@ -387,16 +391,16 @@ export default function StakeWardManager({ stakes, wards }: Props) {
                           />
                         </label>
                         <label className="text-xs text-muted-foreground">
-                          Unit number
+                          {t('unitNumber')}
                           <input
                             name="unitNumber"
                             defaultValue={ward.unit_number ?? ''}
-                            placeholder="Optional"
+                            placeholder={t('optional')}
                             className="mt-1 w-full rounded-md border px-3 py-2 text-sm text-foreground"
                           />
                         </label>
                         <Button type="submit" size="sm">
-                          Save
+{t('save')}
                         </Button>
                       </form>
                     </div>

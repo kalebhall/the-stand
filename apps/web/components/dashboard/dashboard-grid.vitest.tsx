@@ -1,9 +1,11 @@
 // @vitest-environment jsdom
 
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { NextIntlClientProvider } from 'next-intl';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { DashboardGrid, type DashboardCardData } from './dashboard-grid';
+import { MESSAGE_CATALOGS } from '@/src/i18n/messages';
 
 const cards: DashboardCardData[] = [
   { id: 'next-meeting', title: 'Next meeting', value: 'Sunday', detail: 'Upcoming' },
@@ -12,10 +14,18 @@ const cards: DashboardCardData[] = [
 ];
 
 describe('DashboardGrid', () => {
+  function renderGrid() {
+    return render(
+      <NextIntlClientProvider locale="en-US" messages={MESSAGE_CATALOGS['en-US']}>
+        <DashboardGrid wardId={null} cards={cards} />
+      </NextIntlClientProvider>
+    );
+  }
+
   afterEach(() => cleanup());
 
   it('moves cards with accessible controls', () => {
-    render(<DashboardGrid wardId={null} cards={cards} />);
+    renderGrid();
 
     fireEvent.click(screen.getByRole('button', { name: 'Edit dashboard' }));
     fireEvent.click(screen.getByRole('button', { name: 'Move Next meeting down' }));
@@ -25,7 +35,7 @@ describe('DashboardGrid', () => {
   });
 
   it('resets the local order without a ward request', () => {
-    render(<DashboardGrid wardId={null} cards={cards} />);
+    renderGrid();
 
     fireEvent.click(screen.getByRole('button', { name: 'Edit dashboard' }));
     fireEvent.click(screen.getByRole('button', { name: 'Move Next meeting down' }));
@@ -36,7 +46,7 @@ describe('DashboardGrid', () => {
   });
 
   it('supports pointer drag-and-drop while retaining the keyboard controls', () => {
-    render(<DashboardGrid wardId={null} cards={cards} />);
+    renderGrid();
 
     fireEvent.click(screen.getByRole('button', { name: 'Edit dashboard' }));
     const source = document.querySelector('[data-dashboard-card="next-meeting"]');

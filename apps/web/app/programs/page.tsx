@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import { getTranslations } from 'next-intl/server';
 
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -11,6 +12,7 @@ import { setDbContext } from '@/src/db/context';
 import { ProgramsClient, type ProgramMeeting } from './programs-client';
 
 export default async function ProgramsPage() {
+  const t = await getTranslations('programs');
   const session = await requireAuthenticatedSession();
   enforcePasswordRotation(session);
   if (!isAdvancedDesignerFeatureEnabled() || !session.activeWardId || !(await isWardModuleEnabled(session.activeWardId, session.user.id, 'programs')) || !canViewProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId)) redirect('/dashboard');
@@ -45,11 +47,11 @@ export default async function ProgramsPage() {
     <main className="mx-auto w-full max-w-6xl space-y-6 p-4 sm:p-6">
       <section className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-sm font-medium text-muted-foreground">Program Designer</p>
-          <h1 className="text-3xl font-semibold tracking-tight">Upcoming programs</h1>
-          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">Choose a meeting to design its program, or browse approved templates without changing the existing public layout settings.</p>
+          <p className="text-sm font-medium text-muted-foreground">{t('designer')}</p>
+          <h1 className="text-3xl font-semibold tracking-tight">{t('upcoming')}</h1>
+          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{t('description')}</p>
         </div>
-        <a href="/programs/templates" className={cn(buttonVariants({ variant: 'outline' }))}>Browse templates</a>
+        <a href="/programs/templates" className={cn(buttonVariants({ variant: 'outline' }))}>{t('templates')}</a>
       </section>
       <ProgramsClient meetings={meetings} />
     </main>

@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import { getTranslations } from 'next-intl/server';
 
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -7,7 +8,7 @@ import { canManageMeetings } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 import { isWardModuleEnabled } from '@/src/modules/service';
-import { LEADERSHIP_MEETING_LABELS, type LeadershipMeetingType } from '@/src/leadership/bishopric';
+import { type LeadershipMeetingType } from '@/src/leadership/bishopric';
 
 import { BishopricWorkspaceClient } from './bishopric-workspace-client';
 
@@ -15,6 +16,7 @@ type Meeting = { id: string; meeting_date: string; meeting_type: string; agenda_
 type Action = { id: string; bishopric_meeting_id: string; title: string; details: string | null; decision: string | null; owner_name: string | null; due_date: string | null; status: string; carry_forward: boolean; meeting_date: string; member_id: string | null; linked_member_name: string | null; calling_assignment_id: string | null; linked_calling_name: string | null; linked_membership_action_id: string | null };
 
 export default async function BishopricPage({ searchParams }: { searchParams: Promise<{ type?: string }> }) {
+  const t = await getTranslations('bishopric');
   const session = await requireAuthenticatedSession();
   enforcePasswordRotation(session);
   if (!session.activeWardId || !canManageMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId) || !(await isWardModuleEnabled(session.activeWardId, session.user.id, 'bishopric'))) redirect('/dashboard');
@@ -30,7 +32,7 @@ export default async function BishopricPage({ searchParams }: { searchParams: Pr
     await client.query('COMMIT'); meetings = meetingResult.rows as Meeting[]; actions = actionResult.rows as Action[];
   } catch { await client.query('ROLLBACK'); } finally { client.release(); }
   return <main className="mx-auto w-full max-w-6xl space-y-6 p-4 sm:p-6 lg:p-8">
-    <section className="space-y-2"><div className="flex flex-wrap items-start justify-between gap-3"><div><h1 className="text-2xl font-semibold tracking-tight">{LEADERSHIP_MEETING_LABELS[meetingType]}</h1><p className="mt-1 text-sm text-muted-foreground">Private coordination agenda, decisions, assignments, and due dates. Not part of public meeting programs.</p></div><a href="/dashboard" className={cn(buttonVariants({ variant: 'outline' }))}>Dashboard</a></div><p className="text-xs text-muted-foreground">Visibility is private and ward-scoped. Do not store confidential counseling details here.</p></section>
+    <section className="space-y-2"><div className="flex flex-wrap items-start justify-between gap-3"><div><h1 className="text-2xl font-semibold tracking-tight">{t(`meetingTypes.${meetingType}`)}</h1><p className="mt-1 text-sm text-muted-foreground">{t('pageDescription')}</p></div><a href="/dashboard" className={cn(buttonVariants({ variant: 'outline' }))}>{t('dashboard')}</a></div><p className="text-xs text-muted-foreground">{t('privacyNotice')}</p></section>
     <BishopricWorkspaceClient wardId={session.activeWardId} defaultMeetingType={meetingType} initialMeetings={meetings} initialActions={actions} />
   </main>;
 }

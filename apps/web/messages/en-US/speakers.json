@@ -1,0 +1,26 @@
+{
+  "speakers": {
+    "title": "Speaker lifecycle",
+    "description": "Manage topics and move each speaker through planned, invited, accepted, confirmed, and completed.",
+    "speakingTopic": "Speaking topic",
+    "topicPlaceholder": "What will this speaker speak on?",
+    "lifecycleStatus": "Lifecycle status",
+    "saving": "Saving…",
+    "save": "Save",
+    "topicRequired": "Topic required before confirmation.",
+    "noSpeakers": "No speakers assigned to meetings.",
+    "speakerFallback": "Speaker {number}",
+    "statusFor": "Status for {speaker}",
+    "statuses": {
+      "PLANNED": "Planned",
+      "INVITED": "Invited",
+      "ACCEPTED": "Accepted",
+      "CONFIRMED": "Confirmed",
+      "COMPLETED": "Completed"
+    },
+    "errors": {
+      "load": "Failed to load speaker lifecycle workspace.",
+      "update": "Unable to update speaker."
+    }
+  }
+}

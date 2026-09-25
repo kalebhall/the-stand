@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, type ReactNode } from 'react';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { Session } from 'next-auth';
@@ -24,7 +25,9 @@ function NavigationGroups({
   expandedGroups,
   onToggle,
   onNavigate,
-  ariaLabel
+  ariaLabel,
+  translateGroup,
+  translateItem
 }: {
   groups: AppNavGroup[];
   pathname: string | null;
@@ -32,6 +35,8 @@ function NavigationGroups({
   onToggle: (groupId: string) => void;
   onNavigate?: () => void;
   ariaLabel: string;
+  translateGroup: (id: AppNavGroup['id']) => string;
+  translateItem: (href: string, fallback: string) => string;
 }) {
   return (
     <nav className="space-y-3" aria-label={ariaLabel}>
@@ -47,7 +52,7 @@ function NavigationGroups({
               aria-controls={`${group.id}-navigation-links`}
               onClick={() => onToggle(group.id)}
             >
-              <span id={`${group.id}-navigation-heading`}>{group.label}</span>
+              <span id={`${group.id}-navigation-heading`}>{translateGroup(group.id)}</span>
               <span aria-hidden="true">{isExpanded ? '▾' : '▸'}</span>
             </button>
             {isExpanded ? (
@@ -67,7 +72,7 @@ function NavigationGroups({
                           : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
                       )}
                     >
-                      {item.label}
+                      {translateItem(item.href, item.label)}
                     </Link>
                   );
                 })}
@@ -81,6 +86,8 @@ function NavigationGroups({
 }
 
 export function AppShell({ session, children }: { session: Session | null; children: ReactNode }) {
+  const t = useTranslations('shell');
+  const tn = useTranslations('navigation');
   const pathname = usePathname();
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -175,6 +182,17 @@ export function AppShell({ session, children }: { session: Session | null; child
   for (const module of moduleSettings) moduleEnablement.setEnabled(session.activeWardId ?? 'default', module.id, module.enabled);
   const notificationsEnabled = moduleSettings.some((module) => module.id === 'notifications' && module.enabled);
   const navGroups = getNavigationGroups(session.user.roles, session.activeWardId ?? undefined, moduleEnablement);
+  const translateGroup = (id: AppNavGroup['id']): string => tn(id);
+  const translateItem = (href: string, fallback: string): string => {
+    const keys: Record<string, string> = {
+      '/dashboard': 'dashboard', '/meetings': 'meetings', '/announcements': 'announcements', '/programs': 'programs',
+      '/programs/templates': 'templates', '/programs/templates/admin': 'templateAdministration', '/bishopric': 'bishopric',
+      '/interviews': 'interviews', '/technology': 'technology', '/members': 'members', '/callings': 'callings',
+      '/speakers': 'speakers', '/membership-ordinances': 'membershipOrdinances', '/notifications': 'notifications',
+      '/reports': 'reports', '/imports': 'imports', '/support': 'supportConsole'
+    };
+    return keys[href] ? tn(keys[href]) : fallback;
+  };
 
   return (
     <div className="flex min-h-screen bg-background text-foreground">
@@ -192,7 +210,7 @@ export function AppShell({ session, children }: { session: Session | null; child
             {isDevelopmentSite ? (
               <span
                 className="rounded-full border border-amber-500/40 bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold tracking-[0.16em] text-amber-800 dark:text-amber-200"
-                aria-label="Development site"
+                aria-label={t('developmentSite')}
               >
                 DEV
               </span>
@@ -207,7 +225,9 @@ export function AppShell({ session, children }: { session: Session | null; child
             pathname={pathname}
             expandedGroups={expandedGroups}
             onToggle={toggleNavigationGroup}
-            ariaLabel="Desktop Navigation"
+            ariaLabel={t('desktopNavigation')}
+            translateGroup={translateGroup}
+            translateItem={translateItem}
           />
 
           <div className="space-y-3 pt-4 border-t">
@@ -218,9 +238,9 @@ export function AppShell({ session, children }: { session: Session | null; child
               type="button"
               onClick={toggleSidebar}
               className="flex w-full items-center justify-between rounded-lg border px-3 py-2 text-xs font-semibold text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-              title="Collapse navigation menu"
+              title={t('collapseMenu')}
             >
-              <span>Collapse menu</span>
+              <span>{t('collapseMenu')}</span>
               <span aria-hidden="true">‹</span>
             </button>
 
@@ -233,13 +253,13 @@ export function AppShell({ session, children }: { session: Session | null; child
               </Link>
               <div className="flex items-center justify-between px-2 pt-1">
                 <Link href="/manual" className="text-[11px] hover:text-foreground hover:underline">
-                  Help / Manual
+                  {t('helpManual')}
                 </Link>
                 <Link href="/settings" className="hover:text-foreground text-[11px] underline-offset-2 hover:underline">
-                  Settings
+                  {t('settings')}
                 </Link>
                 <Link href="/logout" className="hover:text-foreground text-[11px] underline-offset-2 hover:underline">
-                  Log out
+                  {t('logOut')}
                 </Link>
               </div>
             </div>
@@ -261,7 +281,7 @@ export function AppShell({ session, children }: { session: Session | null; child
               type="button"
               onClick={() => setIsMobileNavOpen(true)}
               className="inline-flex h-9 w-9 items-center justify-center rounded-md border text-lg hover:bg-accent"
-              aria-label="Open navigation menu"
+              aria-label={t('openNavigation')}
               aria-expanded={isMobileNavOpen}
               aria-controls="mobile-navigation"
             >
@@ -272,7 +292,7 @@ export function AppShell({ session, children }: { session: Session | null; child
               {isDevelopmentSite ? (
                 <span
                   className="rounded-full border border-amber-500/40 bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold tracking-[0.16em] text-amber-800 dark:text-amber-200"
-                  aria-label="Development site"
+                  aria-label={t('developmentSite')}
                 >
                   DEV
                 </span>
@@ -290,7 +310,7 @@ export function AppShell({ session, children }: { session: Session | null; child
             <button
               type="button"
               className={cn('fixed inset-0 z-30 bg-black/40', !isSidebarCollapsed && 'md:hidden')}
-              aria-label="Close navigation menu"
+              aria-label={t('closeNavigation')}
               onClick={() => setIsMobileNavOpen(false)}
             />
             <aside
@@ -299,7 +319,7 @@ export function AppShell({ session, children }: { session: Session | null; child
                 'fixed inset-y-0 left-0 z-40 flex w-72 max-w-[85vw] flex-col border-r bg-card shadow-xl',
                 !isSidebarCollapsed && 'md:hidden'
               )}
-              aria-label="Mobile Navigation"
+              aria-label={t('mobileNavigation')}
             >
               <div className="flex h-16 shrink-0 items-center justify-between border-b px-5">
                 <div className="flex items-center gap-2">
@@ -307,7 +327,7 @@ export function AppShell({ session, children }: { session: Session | null; child
                   {isDevelopmentSite ? (
                     <span
                       className="rounded-full border border-amber-500/40 bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold tracking-[0.16em] text-amber-800 dark:text-amber-200"
-                      aria-label="Development site"
+                      aria-label={t('developmentSite')}
                     >
                       DEV
                     </span>
@@ -317,7 +337,7 @@ export function AppShell({ session, children }: { session: Session | null; child
                   type="button"
                   onClick={() => setIsMobileNavOpen(false)}
                   className="inline-flex h-9 w-9 items-center justify-center rounded-md border text-lg hover:bg-accent"
-                  aria-label="Close navigation menu"
+                  aria-label={t('closeNavigation')}
                 >
                   <span aria-hidden="true">×</span>
                 </button>
@@ -329,7 +349,9 @@ export function AppShell({ session, children }: { session: Session | null; child
                   expandedGroups={expandedGroups}
                   onToggle={toggleNavigationGroup}
                   onNavigate={() => setIsMobileNavOpen(false)}
-                  ariaLabel="Mobile Navigation Links"
+                  ariaLabel={t('mobileNavigationLinks')}
+                  translateGroup={translateGroup}
+                  translateItem={translateItem}
                 />
                 <div className="space-y-3 border-t pt-4">
                   <button
@@ -340,7 +362,7 @@ export function AppShell({ session, children }: { session: Session | null; child
                     }}
                     className="flex w-full items-center justify-between rounded-lg border px-3 py-2 text-xs font-semibold text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                   >
-                    <span>Expand menu</span>
+                    {t('expandMenu')}
                     <span aria-hidden="true">›</span>
                   </button>
                   <Link
@@ -359,21 +381,21 @@ export function AppShell({ session, children }: { session: Session | null; child
                       onClick={() => setIsMobileNavOpen(false)}
                       className="text-[11px] hover:text-foreground hover:underline"
                     >
-                      Help / Manual
+                      {t('helpManual')}
                     </Link>
                     <Link
                       href="/settings"
                       onClick={() => setIsMobileNavOpen(false)}
                       className="text-[11px] hover:text-foreground hover:underline"
                     >
-                      Settings
+                      {t('settings')}
                     </Link>
                     <Link
                       href="/logout"
                       onClick={() => setIsMobileNavOpen(false)}
                       className="text-[11px] hover:text-foreground hover:underline"
                     >
-                      Log out
+                      {t('logOut')}
                     </Link>
                   </div>
                 </div>

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useLocale, useTranslations } from 'next-intl';
 import { isAnnouncementActiveForDate } from '@/src/announcements/types';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -57,11 +58,11 @@ type AnnouncementsWorkspaceProps = {
   };
 };
 
-function formatEventDate(isoString: string): string {
+function formatEventDate(isoString: string, locale: string): string {
   try {
     const d = new Date(isoString);
     if (Number.isNaN(d.getTime())) return isoString;
-    return d.toLocaleDateString(undefined, {
+    return d.toLocaleDateString(locale, {
       weekday: 'short',
       month: 'short',
       day: 'numeric',
@@ -82,6 +83,8 @@ export function AnnouncementsWorkspaceClient({
   actions
 }: AnnouncementsWorkspaceProps) {
   const router = useRouter();
+  const locale = useLocale();
+  const t = useTranslations('announcements');
   const [selectedSunday, setSelectedSunday] = useState(targetSunday);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isManualModalOpen, setIsManualModalOpen] = useState(false);
@@ -112,13 +115,13 @@ export function AnnouncementsWorkspaceClient({
       {/* Top Header & Sunday Meeting Selector */}
       <div className="flex flex-col gap-4 rounded-xl border bg-card p-4 sm:flex-row sm:items-center sm:justify-between sm:p-6">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Announcements Workspace</h1>
-          <p className="text-sm text-muted-foreground">Plan ward announcements for sacrament meeting programs and stand conducting.</p>
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t('title')}</h1>
+          <p className="text-sm text-muted-foreground">{t('description')}</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
           <label className="flex items-center gap-2 text-sm font-medium">
-            <span className="text-muted-foreground">Sunday Meeting:</span>
+            <span className="text-muted-foreground">{t('sundayMeeting')}:</span>
             <input
               type="date"
               value={selectedSunday}
@@ -128,7 +131,7 @@ export function AnnouncementsWorkspaceClient({
           </label>
           {canManage && (
             <Button onClick={() => setIsManualModalOpen(true)} className="font-medium shadow-sm" size="sm">
-              + Add Announcement
+              + {t('addAnnouncement')}
             </Button>
           )}
         </div>
@@ -141,14 +144,14 @@ export function AnnouncementsWorkspaceClient({
           <div className="rounded-xl border bg-card p-4 shadow-sm">
             <div className="flex items-center justify-between border-b pb-3">
               <div>
-                <h2 className="text-base font-semibold">Ward & Church Calendar</h2>
-                <p className="text-xs text-muted-foreground">Events from official ICS feeds</p>
+                <h2 className="text-base font-semibold">{t('calendarTitle')}</h2>
+                <p className="text-xs text-muted-foreground">{t('calendarDescription')}</p>
               </div>
               <div className="flex items-center gap-2">
                 {canManage && (
                   <form action={actions.refreshCalendar}>
                     <Button type="submit" variant="outline" size="sm" className="gap-1">
-                      ↻ Sync
+                      ↻ {t('sync')}
                     </Button>
                   </form>
                 )}
@@ -159,7 +162,7 @@ export function AnnouncementsWorkspaceClient({
                   onClick={() => setFeedDrawerOpen(!feedDrawerOpen)}
                   className={cn('transition-colors', feedDrawerOpen ? 'bg-secondary text-secondary-foreground font-semibold' : '')}
                 >
-                  {feedDrawerOpen ? 'Close Feeds' : `Feeds (${calendarFeeds.length})`}
+                  {feedDrawerOpen ? t('closeFeeds') : t('feeds', { count: calendarFeeds.length })}
                 </Button>
               </div>
             </div>
@@ -168,7 +171,7 @@ export function AnnouncementsWorkspaceClient({
             {feedDrawerOpen && (
               <div className="mt-3 space-y-3 rounded-lg bg-muted/40 p-3 text-sm">
                 <div className="flex items-center justify-between font-medium">
-                  <span>Subscribed Feeds</span>
+                  <span>{t('subscribedFeeds')}</span>
                 </div>
                 {calendarFeeds.length ? (
                   <ul className="space-y-2">
@@ -179,7 +182,7 @@ export function AnnouncementsWorkspaceClient({
                             {feed.display_name} <span className="text-muted-foreground">({feed.feed_scope})</span>
                           </p>
                           <p className="text-muted-foreground">
-                            Last sync: {feed.last_refreshed_at ? formatEventDate(feed.last_refreshed_at) : 'Never'}
+                            {t('lastSync', { date: feed.last_refreshed_at ? formatEventDate(feed.last_refreshed_at, locale) : t('never') })}
                           </p>
                           {feed.last_refresh_error && <p className="text-destructive">{feed.last_refresh_error}</p>}
                         </div>
@@ -187,7 +190,7 @@ export function AnnouncementsWorkspaceClient({
                           <form action={actions.deleteCalendarFeed}>
                             <input type="hidden" name="feedId" value={feed.id} />
                             <Button type="submit" variant="ghost" size="sm" className="h-6 px-2 text-destructive">
-                              Remove
+                              {t('remove')}
                             </Button>
                           </form>
                         )}
@@ -195,33 +198,33 @@ export function AnnouncementsWorkspaceClient({
                     ))}
                   </ul>
                 ) : (
-                  <p className="text-xs text-muted-foreground">No ICS calendar feeds added yet.</p>
+                  <p className="text-xs text-muted-foreground">{t('noFeeds')}</p>
                 )}
 
                 {canManage && (
                   <form action={actions.createCalendarFeed} className="space-y-2 border-t pt-2">
-                    <p className="text-xs font-semibold">Add Feed URL</p>
+                    <p className="text-xs font-semibold">{t('addFeedUrl')}</p>
                     <input
                       name="displayName"
-                      placeholder="Feed Name (e.g. Ward Calendar)"
+                      placeholder={t('feedNamePlaceholder')}
                       required
                       className="w-full rounded border bg-background px-2 py-1 text-xs"
                     />
                     <input
                       name="feedUrl"
-                      placeholder="https://.../feed.ics"
+                      placeholder={t('feedUrlPlaceholder')}
                       required
                       type="url"
                       className="w-full rounded border bg-background px-2 py-1 text-xs"
                     />
                     <div className="flex items-center gap-2">
                       <select name="feedScope" defaultValue="WARD" className="rounded border bg-background px-2 py-1 text-xs">
-                        <option value="WARD">Ward</option>
-                        <option value="STAKE">Stake</option>
-                        <option value="CHURCH">Church</option>
+                        <option value="WARD">{t('ward')}</option>
+                        <option value="STAKE">{t('stake')}</option>
+                        <option value="CHURCH">{t('church')}</option>
                       </select>
                       <Button type="submit" size="sm" className="h-7 text-xs">
-                        Add Feed
+                        {t('addFeed')}
                       </Button>
                     </div>
                   </form>
@@ -241,7 +244,7 @@ export function AnnouncementsWorkspaceClient({
                       <div className="flex items-start justify-between gap-2">
                         <p className="font-semibold text-foreground">{evt.title}</p>
                         <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
-                          {formatEventDate(evt.starts_at)}
+                          {formatEventDate(evt.starts_at, locale)}
                         </span>
                       </div>
                       {evt.description && <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{evt.description}</p>}
@@ -259,12 +262,12 @@ export function AnnouncementsWorkspaceClient({
                     {canManage && (
                       <div className="flex items-center justify-between pt-1 border-t mt-1">
                         <span className="text-[11px] text-muted-foreground">
-                          {evt.copied_to_announcement_at ? '✓ In announcements' : 'Not added'}
+                          {evt.copied_to_announcement_at ? `✓ ${t('inAnnouncements')}` : t('notAdded')}
                         </span>
                         <form action={actions.copyCalendarEvent}>
                           <input type="hidden" name="calendarEventCacheId" value={evt.id} />
                           <Button type="submit" size="sm" variant="secondary" className="h-7 text-xs">
-                            Copy to Program →
+                            {t('copyToProgram')} →
                           </Button>
                         </form>
                       </div>
@@ -273,7 +276,7 @@ export function AnnouncementsWorkspaceClient({
                 ))
               ) : (
                 <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-                  No upcoming calendar events in the feed cache. Click <strong>Sync</strong> to fetch latest events.
+                  {t('noEvents')}
                 </div>
               )}
             </div>
@@ -285,13 +288,13 @@ export function AnnouncementsWorkspaceClient({
           <div className="rounded-xl border bg-card p-4 shadow-sm sm:p-6">
             <div className="flex items-center justify-between border-b pb-3">
               <div>
-                <h2 className="text-base font-semibold">Program Announcements for {selectedSunday}</h2>
+                <h2 className="text-base font-semibold">{t('programTitle', { date: selectedSunday })}</h2>
                 <p className="text-xs text-muted-foreground">
-                  Carried over from previous weeks unless date has passed. Undated announcements never expire.
+                  {t('programDescription')}
                 </p>
               </div>
               <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
-                {activeForSunday.length} Active
+                {activeForSunday.length} {t('active')}
               </span>
             </div>
 
@@ -310,7 +313,7 @@ export function AnnouncementsWorkspaceClient({
                       >
                         <input type="hidden" name="announcementId" value={item.id} />
                         <div>
-                          <label className="text-xs font-semibold">Title</label>
+                          <label className="text-xs font-semibold">{t('titleLabel')}</label>
                           <input
                             name="title"
                             defaultValue={item.title}
@@ -319,7 +322,7 @@ export function AnnouncementsWorkspaceClient({
                           />
                         </div>
                         <div>
-                          <label className="text-xs font-semibold">Body / Description</label>
+                          <label className="text-xs font-semibold">{t('bodyLabel')}</label>
                           <textarea
                             name="body"
                             defaultValue={item.body ?? ''}
@@ -329,7 +332,7 @@ export function AnnouncementsWorkspaceClient({
                         </div>
                         <div className="grid grid-cols-2 gap-3">
                           <div>
-                            <label className="text-xs font-semibold">Event / Start Date</label>
+                            <label className="text-xs font-semibold">{t('eventStartDate')}</label>
                             <input
                               name="startDate"
                               type="date"
@@ -338,7 +341,7 @@ export function AnnouncementsWorkspaceClient({
                             />
                           </div>
                           <div>
-                            <label className="text-xs font-semibold">End Date (optional)</label>
+                            <label className="text-xs font-semibold">{t('endDateOptional')}</label>
                             <input
                               name="endDate"
                               type="date"
@@ -356,7 +359,7 @@ export function AnnouncementsWorkspaceClient({
                               defaultChecked={item.include_in_program}
                               className="h-4 w-4 rounded border"
                             />
-                            <span>Include on Program</span>
+                            <span>{t('includeOnProgram')}</span>
                           </label>
 
                           <label className="flex items-center gap-1.5 text-xs font-medium cursor-pointer">
@@ -366,7 +369,7 @@ export function AnnouncementsWorkspaceClient({
                               defaultChecked={item.include_in_stand}
                               className="h-4 w-4 rounded border"
                             />
-                            <span>Announce at Stand</span>
+                            <span>{t('announceAtStand')}</span>
                           </label>
 
                           <label className="flex items-center gap-1.5 text-xs font-medium cursor-pointer">
@@ -376,16 +379,16 @@ export function AnnouncementsWorkspaceClient({
                               defaultChecked={item.is_permanent}
                               className="h-4 w-4 rounded border"
                             />
-                            <span>Never Expire (Permanent)</span>
+                            <span>{t('neverExpire')}</span>
                           </label>
                         </div>
 
                         <div className="flex gap-2 pt-2">
                           <Button type="submit" size="sm">
-                            Save
+                            {t('save')}
                           </Button>
                           <Button type="button" variant="outline" size="sm" onClick={() => setEditingId(null)}>
-                            Cancel
+                            {t('cancel')}
                           </Button>
                         </div>
                       </form>
@@ -396,12 +399,12 @@ export function AnnouncementsWorkspaceClient({
                           <div className="flex items-center gap-1.5">
                             {item.include_in_program && (
                               <span className="rounded bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
-                                Program
+                                {t('program')}
                               </span>
                             )}
                             {item.include_in_stand && (
                               <span className="rounded bg-blue-500/10 px-2 py-0.5 text-[11px] font-medium text-blue-600 dark:text-blue-400">
-                                Stand
+                                {t('stand')}
                               </span>
                             )}
                           </div>
@@ -412,22 +415,22 @@ export function AnnouncementsWorkspaceClient({
                         <div className="flex items-center justify-between pt-2 text-xs text-muted-foreground border-t">
                           <span>
                             {item.is_permanent || (!item.start_date && !item.end_date)
-                              ? 'No expiration (Undated)'
+                              ? t('noExpiration')
                               : item.start_date && item.end_date
-                                ? `${item.start_date} → ${item.end_date}`
-                                : `Date: ${item.start_date ?? item.end_date}`}
+                                ? t('dateRange', { start: item.start_date, end: item.end_date })
+                                : t('dateOnly', { date: item.start_date ?? item.end_date ?? '' })}
                           </span>
 
                           {canManage && (
                             <div className="flex items-center gap-2">
                               <button onClick={() => setEditingId(item.id)} className="font-medium text-primary hover:underline text-xs">
-                                Edit
+                                {t('edit')}
                               </button>
                               <span>·</span>
                               <form action={actions.deleteAnnouncement} className="inline">
                                 <input type="hidden" name="announcementId" value={item.id} />
                                 <button type="submit" className="font-medium text-destructive hover:underline text-xs">
-                                  Delete
+                                  {t('delete')}
                                 </button>
                               </form>
                             </div>
@@ -439,8 +442,7 @@ export function AnnouncementsWorkspaceClient({
                 ))
               ) : (
                 <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
-                  No announcements active for this Sunday. Use <strong>Copy to Program</strong> from the calendar on the left or click{' '}
-                  <strong>+ Add Announcement</strong>.
+                  {t('noActive')}
                 </div>
               )}
             </div>
@@ -449,7 +451,7 @@ export function AnnouncementsWorkspaceClient({
             {otherAnnouncements.length > 0 && (
               <details className="mt-6 border-t pt-4">
                 <summary className="cursor-pointer text-xs font-semibold uppercase text-muted-foreground">
-                  Other / Expired Announcements ({otherAnnouncements.length})
+                  {t('otherExpired', { count: otherAnnouncements.length })}
                 </summary>
                 <div className="mt-3 space-y-2">
                   {otherAnnouncements.map((item) => (
@@ -458,12 +460,12 @@ export function AnnouncementsWorkspaceClient({
                         <span>{item.title}</span>
                         <span className="text-muted-foreground">
                           {item.is_permanent
-                            ? 'Permanent'
+                            ? t('permanent')
                             : item.end_date && item.end_date < selectedSunday
-                              ? `Expired (${item.end_date})`
+                              ? t('expired', { date: item.end_date })
                               : item.start_date && item.start_date > selectedSunday
-                                ? `Upcoming (${item.start_date})`
-                                : 'Inactive'}
+                                ? t('upcoming', { date: item.start_date })
+                                : t('inactive')}
                         </span>
                       </div>
                       {item.body && <p className="mt-1 text-muted-foreground line-clamp-1">{item.body}</p>}
@@ -480,9 +482,9 @@ export function AnnouncementsWorkspaceClient({
       {isManualModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-lg rounded-xl border bg-card p-6 shadow-xl">
-            <h2 className="text-lg font-bold">Add New Announcement</h2>
+            <h2 className="text-lg font-bold">{t('addNewTitle')}</h2>
             <p className="text-xs text-muted-foreground">
-              Create a custom announcement. Leave dates blank for non-expiring ward announcements.
+              {t('addNewDescription')}
             </p>
 
             <form
@@ -493,32 +495,32 @@ export function AnnouncementsWorkspaceClient({
               className="mt-4 space-y-4 text-sm"
             >
               <div>
-                <label className="text-xs font-semibold">Title</label>
+                <label className="text-xs font-semibold">{t('titleLabel')}</label>
                 <input
                   name="title"
                   required
-                  placeholder="e.g. Ward Temple Day"
+                  placeholder={t('titlePlaceholder')}
                   className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-semibold">Description / Notes</label>
+                <label className="text-xs font-semibold">{t('descriptionNotes')}</label>
                 <textarea
                   name="body"
                   rows={3}
-                  placeholder="Details, times, contact person..."
+                  placeholder={t('descriptionPlaceholder')}
                   className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-semibold">Date (optional)</label>
+                  <label className="text-xs font-semibold">{t('dateOptional')}</label>
                   <input name="startDate" type="date" className="mt-1 w-full rounded-md border bg-background px-2 py-1.5 text-xs" />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold">End Date (optional)</label>
+                  <label className="text-xs font-semibold">{t('endDateOptional')}</label>
                   <input name="endDate" type="date" className="mt-1 w-full rounded-md border bg-background px-2 py-1.5 text-xs" />
                 </div>
               </div>
@@ -526,25 +528,25 @@ export function AnnouncementsWorkspaceClient({
               <div className="space-y-2 rounded-lg bg-muted/40 p-3">
                 <label className="flex items-center gap-2 text-xs font-medium cursor-pointer">
                   <input name="includeInProgram" type="checkbox" defaultChecked={true} className="h-4 w-4 rounded border" />
-                  <span>Include on Program (Default: On)</span>
+                  <span>{t('includeProgramDefault')}</span>
                 </label>
 
                 <label className="flex items-center gap-2 text-xs font-medium cursor-pointer">
                   <input name="includeInStand" type="checkbox" defaultChecked={false} className="h-4 w-4 rounded border" />
-                  <span>Announce at Stand (Default: Off)</span>
+                  <span>{t('includeStandDefault')}</span>
                 </label>
 
                 <label className="flex items-center gap-2 text-xs font-medium cursor-pointer">
                   <input name="isPermanent" type="checkbox" defaultChecked={false} className="h-4 w-4 rounded border" />
-                  <span>Never Expire (Permanent)</span>
+                  <span>{t('neverExpire')}</span>
                 </label>
               </div>
 
               <div className="flex justify-end gap-2 pt-2">
                 <Button type="button" variant="outline" onClick={() => setIsManualModalOpen(false)}>
-                  Cancel
+                  {t('cancel')}
                 </Button>
-                <Button type="submit">Create Announcement</Button>
+                <Button type="submit">{t('createAnnouncement')}</Button>
               </div>
             </form>
           </div>

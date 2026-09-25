@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 
 import { renderProgramPreview } from '@/src/document-designer/preview-contract';
 import { downgradeToV1, normalizeToAdvanced, type AdvancedDocumentLayout } from '@/src/document-designer/advanced-schema';
@@ -19,12 +20,13 @@ type LoadedDocument = { id: string; layout: DocumentLayout; advancedLayout?: Adv
 type Props = { wardId: string; meetingId: string };
 
 const blockLabel = (block: DocumentBlock) => block.type.replaceAll('_', ' ').toLowerCase().replace(/(^|\s)\S/g, (letter) => letter.toUpperCase());
-const PANEL_LABELS = ['Front cover', 'Inside left', 'Inside right', 'Back cover'] as const;
+const PANEL_LABELS = ['frontCover', 'insideLeft', 'insideRight', 'backCover'] as const;
 
 
 type TemplateOption = { id: string; name: string; source: string; scopeType?: string; status?: string; distributionPolicy?: string | null; version?: { version?: number; lock?: unknown } | null };
 
 export function ProgramDesignerClient({ wardId, meetingId }: Props) {
+  const t = useTranslations('programs');
   const [document, setDocument] = useState<LoadedDocument | null>(null);
   const [source, setSource] = useState<PreviewSource | null>(null);
   const [templates, setTemplates] = useState<TemplateOption[]>([]);
@@ -41,17 +43,17 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
   const [printValidation, setPrintValidation] = useState<PrintValidationResult | null>(null);
   const [historyState, setHistoryState] = useState<HistoryState | null>(null);
   const [status, setStatus] = useState<SaveState>('loading');
-  const [message, setMessage] = useState('Loading program design…');
+  const [message, setMessage] = useState(t('loadingDesign'));
   const [loaded, setLoaded] = useState(false);
   const initialLayout = useRef<DocumentLayout | null>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const load = useCallback(async () => {
     setStatus('loading');
-    setMessage('Loading program design…');
+    setMessage(t('loadingDesign'));
     const response = await fetch(`/api/w/${wardId}/meetings/${meetingId}/program-design`);
     const body = await response.json();
-    if (!response.ok) throw new Error(body.error ?? 'Failed to load program design');
+    if (!response.ok) throw new Error(body.error ?? t('failedLoadDesign'));
     setDocument({ ...body.document, advancedLayout: body.document.advancedLayout });
     setAdvancedEnabled(body.simpleMode?.advancedModeAvailable === true);
     if (body.document.advancedLayout) setHistoryState(createHistory(body.document.advancedLayout));
@@ -78,24 +80,24 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
     }
     setLoaded(true);
     setStatus('saved');
-    setMessage('Saved');
-  }, [meetingId, wardId]);
+    setMessage(t('saved'));
+  }, [meetingId, t, wardId]);
 
   useEffect(() => {
-    void load().catch((error: unknown) => { setStatus('error'); setMessage(error instanceof Error ? error.message : 'Failed to load program design'); });
+    void load().catch((error: unknown) => { setStatus('error'); setMessage(error instanceof Error ? error.message : t('failedLoadDesign')); });
     return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
-  }, [load]);
+  }, [load, t]);
 
   const allBlocks = useMemo(() => document?.layout.pages.flatMap((page) => page.regions.flatMap((region) => region.blocks)) ?? [], [document]);
   const panelBlocks = (panelIndex: number) => document?.layout.pages[0]?.regions[panelIndex]?.blocks ?? [];
   const panelForBlock = (blockId: string) => document?.layout.pages[0]?.regions.findIndex((region) => region.blocks.some((block) => block.id === blockId)) ?? -1;
   const selectedBlock = allBlocks.find((block) => block.id === selectedBlockId) ?? allBlocks[0];
   const isBifold = document?.layout.fold === 'BIFOLD';
-  const panelLabels = isBifold ? PANEL_LABELS : (document?.layout.pages[0]?.regions.map((_, index) => `Region ${index + 1}`) ?? []);
+  const panelLabels = isBifold ? PANEL_LABELS.map((key) => t(key)) : (document?.layout.pages[0]?.regions.map((_, index) => `Region ${index + 1}`) ?? []);
 
   const save = useCallback(async (nextLayout: DocumentLayout | AdvancedDocumentLayout, expectedRevision: number, templateId?: string, saveMode: 'SIMPLE' | 'ADVANCED' = 'SIMPLE') => {
     setStatus('saving');
-    setMessage('Saving…');
+    setMessage(t('saving'));
     try {
       const response = await fetch(`/api/w/${wardId}/meetings/${meetingId}/program-design`, {
         method: 'PUT',
@@ -105,18 +107,18 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
       const body = await response.json();
       if (response.status === 409) {
         setStatus('conflict');
-        setMessage('This program changed elsewhere. Your local changes are still here. Reload to discard them.');
+        setMessage(t('changedElsewhere'));
         return;
       }
-      if (!response.ok) throw new Error(body.error ?? 'Save failed');
+      if (!response.ok) throw new Error(body.error ?? t('saveFailed'));
       const savedLayout = body.document?.layout ?? (body.document?.schemaVersion === 2 ? downgradeToV1(body.document) : body.document) ?? nextLayout;
       setDocument((current) => current ? { ...current, layout: savedLayout, advancedLayout: body.document?.schemaVersion === 2 ? body.document : current.advancedLayout, theme: savedLayout.theme, revision: body.revision } : current);
       initialLayout.current = savedLayout;
       setStatus('saved');
-      setMessage('Saved');
+      setMessage(t('saved'));
     } catch (error: unknown) {
       setStatus('error');
-      setMessage(error instanceof Error ? error.message : 'Save failed. Retry when connected.');
+      setMessage(error instanceof Error ? error.message : t('retryConnected'));
     }
   }, [meetingId, wardId]);
 
@@ -179,7 +181,7 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
       operation();
       setOperationError(null);
     } catch (error: unknown) {
-      setOperationError(error instanceof Error ? error.message : 'That layout change is not allowed.');
+      setOperationError(error instanceof Error ? error.message : t('layoutNotAllowed'));
     }
   }
 
@@ -212,7 +214,7 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
   function addAdvancedTextBlock() {
     const current = currentAdvanced();
     if (!current) return;
-    const block: DocumentBlock = { id: crypto.randomUUID() as DocumentBlock['id'], type: 'CUSTOM_TEXT', width: 'FULL', dataMode: 'MANUAL', visibility: 'VISIBLE', printBehavior: 'PRINT_AND_DIGITAL', digitalBehavior: 'NORMAL', config: { text: 'New text block' } };
+    const block: DocumentBlock = { id: crypto.randomUUID() as DocumentBlock['id'], type: 'CUSTOM_TEXT', width: 'FULL', dataMode: 'MANUAL', visibility: 'VISIBLE', printBehavior: 'PRINT_AND_DIGITAL', digitalBehavior: 'NORMAL', config: { text: t('newTextBlock') } };
     runLayoutOperation(() => applyAdvanced(addBlock(current, 0, selectedPanelIndex, block)));
   }
 
@@ -228,7 +230,7 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
     form.set('isDecorative', String(isDecorative));
     const response = await fetch(`/api/w/${wardId}/media`, { method: 'POST', body: form });
     const body = await response.json();
-    if (!response.ok) throw new Error(body.error ?? 'Upload failed');
+    if (!response.ok) throw new Error(body.error ?? t('uploadFailed'));
     const asset = body.media as MediaAssetResponse;
     setMedia((current) => [asset, ...current]);
     setSource((current) => current ? { ...current, media: { ...current.media, ...(asset.url ? { [asset.id]: { url: asset.url, altText: asset.alt_text, isDecorative: asset.is_decorative } } : {}) } } : current);
@@ -251,7 +253,7 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
       body: JSON.stringify({ source: 'draft' })
     });
     const body = await response.json() as PrintValidationResult & { error?: string };
-    if (!response.ok) throw new Error(body.error ?? 'Print validation failed');
+    if (!response.ok) throw new Error(body.error ?? t('printValidationFailed'));
     setPrintValidation(body);
   }
 
@@ -264,7 +266,7 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
   let previewError = '';
   if (document && source && mode !== 'EDIT') {
     try { previewHtml = renderProgramPreview(document.advancedLayout ?? document.layout, source, { target: mode === 'PRINT' ? 'PRINT' : 'DIGITAL', publicVisitor }).html.replace(/<main[^>]*>/, '').replace(/<\/main>/, ''); }
-    catch (error: unknown) { previewError = error instanceof Error ? error.message : 'Preview unavailable'; }
+    catch (error: unknown) { previewError = error instanceof Error ? error.message : t('previewUnavailable'); }
   }
 
   if (!document) return <main className="mx-auto max-w-6xl p-6"><p role="status">{message}</p></main>;
@@ -272,42 +274,42 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
   return (
     <main className="mx-auto w-full max-w-[1500px] space-y-4 p-4 sm:p-6">
       <header className="flex flex-wrap items-start justify-between gap-3">
-        <div><p className="text-sm font-medium text-muted-foreground">Program Designer · Simple Mode</p><h1 className="text-2xl font-semibold">Meeting program</h1><p className="text-sm text-muted-foreground">{source?.meetingDate} · {source?.meetingType.replaceAll('_', ' ')}</p></div>
-        <div className="flex flex-wrap items-center gap-2"><Link href="/programs/templates" className="rounded-md border px-3 py-2 text-sm">Templates</Link><span role="status" aria-live="polite" className="min-w-24 text-right text-sm text-muted-foreground">{message}</span></div>
+        <div><p className="text-sm font-medium text-muted-foreground">{t('designerSimple')}</p><h1 className="text-2xl font-semibold">{t('meetingProgram')}</h1><p className="text-sm text-muted-foreground">{source?.meetingDate} · {source?.meetingType.replaceAll('_', ' ')}</p></div>
+        <div className="flex flex-wrap items-center gap-2"><Link href="/programs/templates" className="rounded-md border px-3 py-2 text-sm">{t('templates')}</Link><span role="status" aria-live="polite" className="min-w-24 text-right text-sm text-muted-foreground">{message}</span></div>
       </header>
-      <nav aria-label="Program designer modes" className="flex flex-wrap gap-2 border-b pb-3">
-        {(['EDIT', 'DIGITAL', 'PHONE', 'PRINT'] as const).map((value) => <button key={value} type="button" className={`rounded-md px-3 py-2 text-sm ${mode === value ? 'bg-primary text-primary-foreground' : 'border'}`} onClick={() => setMode(value)}>{value === 'EDIT' ? 'Edit' : value === 'DIGITAL' ? 'Desktop preview' : value === 'PHONE' ? 'Phone preview' : 'Print preview'}</button>)}
-        {advancedEnabled ? <button type="button" className={`rounded-md px-3 py-2 text-sm ${advancedEditing ? 'bg-primary text-primary-foreground' : 'border'}`} onClick={() => setAdvancedEditing((value) => !value)}>{advancedEditing ? 'Simple Mode' : 'Advanced Mode'}</button> : null}
-        {mode !== 'EDIT' ? <label className="ml-auto flex items-center gap-2 text-sm"><input type="checkbox" checked={publicVisitor} onChange={(event) => setPublicVisitor(event.target.checked)} /> Preview as public visitor</label> : null}
+      <nav aria-label={t('designerModes')} className="flex flex-wrap gap-2 border-b pb-3">
+        {(['EDIT', 'DIGITAL', 'PHONE', 'PRINT'] as const).map((value) => <button key={value} type="button" className={`rounded-md px-3 py-2 text-sm ${mode === value ? 'bg-primary text-primary-foreground' : 'border'}`} onClick={() => setMode(value)}>{value === 'EDIT' ? t('edit') : value === 'DIGITAL' ? t('desktopPreview') : value === 'PHONE' ? t('phonePreview') : t('printPreview')}</button>)}
+        {advancedEnabled ? <button type="button" className={`rounded-md px-3 py-2 text-sm ${advancedEditing ? 'bg-primary text-primary-foreground' : 'border'}`} onClick={() => setAdvancedEditing((value) => !value)}>{advancedEditing ? t('simpleMode') : t('advancedMode')}</button> : null}
+        {mode !== 'EDIT' ? <label className="ml-auto flex items-center gap-2 text-sm"><input type="checkbox" checked={publicVisitor} onChange={(event) => setPublicVisitor(event.target.checked)} /> {t('previewPublic')}</label> : null}
       </nav>
-      <section aria-label="Template source metadata" className="rounded-md border bg-card p-3 text-sm">
+      <section aria-label={t('templateMetadata')} className="rounded-md border bg-card p-3 text-sm">
         <div className="flex flex-wrap gap-x-5 gap-y-2">
-          <span><span className="font-medium">Source scope:</span> {templates.find((template) => template.id === document.sourceTemplateId)?.scopeType ?? (document.sourceTemplateId ? 'Unavailable' : 'System / built-in')}</span>
-          <span><span className="font-medium">Publication version:</span> {document.sourceTemplateVersion ? `v${document.sourceTemplateVersion}` : 'Draft layout'}</span>
-          <span><span className="font-medium">Lock:</span> {document.sourceTemplateId && templates.find((template) => template.id === document.sourceTemplateId)?.version?.lock ? 'Locked source blocks' : 'No source lock reported'}</span>
-          <span><span className="font-medium">Policy:</span> Use as-is, or duplicate and customize. Source templates are never edited here.</span>
+          <span><span className="font-medium">{t('sourceScope')}</span> {templates.find((template) => template.id === document.sourceTemplateId)?.scopeType ?? (document.sourceTemplateId ? t('unavailable') : t('systemBuiltIn'))}</span>
+          <span><span className="font-medium">{t('publicationVersion')}</span> {document.sourceTemplateVersion ? `v${document.sourceTemplateVersion}` : 'Draft layout'}</span>
+          <span><span className="font-medium">{t('lock')}</span> {document.sourceTemplateId && templates.find((template) => template.id === document.sourceTemplateId)?.version?.lock ? t('lockedSourceBlocks') : t('noSourceLock')}</span>
+          <span><span className="font-medium">{t('templatePolicy')}</span> {t('templatePolicyCopy')}</span>
         </div>
       </section>
-      {mode === 'PRINT' ? <section aria-label="Print actions" className="flex flex-wrap items-center gap-2 rounded-md border bg-card p-3"><button type="button" className="rounded-md border px-3 py-2 text-sm" onClick={() => void validatePrint().catch((error: unknown) => setMessage(error instanceof Error ? error.message : 'Print validation failed'))}>Validate print</button><button type="button" className="rounded-md border px-3 py-2 text-sm" onClick={() => downloadPdf('draft')}>Download draft PDF</button><button type="button" className="rounded-md border px-3 py-2 text-sm" onClick={() => downloadPdf('published')}>Download published PDF</button>{printValidation ? <span className={`text-sm ${printValidation.valid ? 'text-green-700' : 'text-red-700'}`}>{printValidation.valid ? `Ready · ${printValidation.pageCount} page${printValidation.pageCount === 1 ? '' : 's'}` : `${printValidation.errors.length} print error${printValidation.errors.length === 1 ? '' : 's'}`}</span> : null}</section> : null}
-      {mode === 'PRINT' && printValidation && !printValidation.valid ? <section aria-label="Print diagnostics" className="rounded-md border border-red-300 bg-red-50 p-3 text-red-900"><h2 className="font-semibold">Print diagnostics</h2><ul className="mt-2 list-disc space-y-1 pl-5 text-sm">{[...printValidation.errors, ...printValidation.warnings].map((issue, index) => <li key={`${issue.code}-${issue.blockId ?? 'document'}-${index}`}>{issue.message}{issue.suggestion ? ` ${issue.suggestion}` : ''}</li>)}</ul></section> : null}
+      {mode === 'PRINT' ? <section aria-label={t('printActions')} className="flex flex-wrap items-center gap-2 rounded-md border bg-card p-3"><button type="button" className="rounded-md border px-3 py-2 text-sm" onClick={() => void validatePrint().catch((error: unknown) => setMessage(error instanceof Error ? error.message : 'Print validation failed'))}>{t('validatePrint')}</button><button type="button" className="rounded-md border px-3 py-2 text-sm" onClick={() => downloadPdf('draft')}>{t('downloadDraftPdf')}</button><button type="button" className="rounded-md border px-3 py-2 text-sm" onClick={() => downloadPdf('published')}>{t('downloadPublishedPdf')}</button>{printValidation ? <span className={`text-sm ${printValidation.valid ? 'text-green-700' : 'text-red-700'}`}>{printValidation.valid ? `Ready · ${printValidation.pageCount} page${printValidation.pageCount === 1 ? '' : 's'}` : `${printValidation.errors.length} print error${printValidation.errors.length === 1 ? '' : 's'}`}</span> : null}</section> : null}
+      {mode === 'PRINT' && printValidation && !printValidation.valid ? <section aria-label={t('printDiagnostics')} className="rounded-md border border-red-300 bg-red-50 p-3 text-red-900"><h2 className="font-semibold">{t('printDiagnostics')}</h2><ul className="mt-2 list-disc space-y-1 pl-5 text-sm">{[...printValidation.errors, ...printValidation.warnings].map((issue, index) => <li key={`${issue.code}-${issue.blockId ?? 'document'}-${index}`}>{issue.message}{issue.suggestion ? ` ${issue.suggestion}` : ''}</li>)}</ul></section> : null}
       <div className="grid gap-4 lg:grid-cols-[220px_minmax(0,1fr)_260px]">
-        <aside className="space-y-3 rounded-lg border bg-card p-3" aria-label="Approved blocks">
-          <div><h2 className="font-semibold">Blocks</h2><p className="text-xs text-muted-foreground">Simple Mode blocks from the approved template.</p></div>
-          {advancedEditing ? <section className="space-y-2 border-b pb-3" aria-label="Advanced layout controls"><h3 className="font-medium">Spatial layout</h3><p className="text-xs text-muted-foreground">Select a panel, then add or move blocks into it.</p><label className="block space-y-1 text-xs"><span>Target panel</span><select className="w-full rounded border px-2 py-2" value={selectedPanelIndex} onChange={(event) => setSelectedPanelIndex(Number(event.target.value))}>{panelLabels.map((label, index) => <option key={label} value={index}>{label}</option>)}</select></label><label className="block space-y-1 text-xs"><span>Move selected block to</span><select className="w-full rounded border px-2 py-2" value={selectedBlockId ? Math.max(panelForBlock(selectedBlockId), 0) : selectedPanelIndex} disabled={!selectedBlockId} onChange={(event) => moveBlockToPanel(selectedBlockId ?? '', Number(event.target.value))}>{panelLabels.map((label, index) => <option key={label} value={index}>{label}</option>)}</select></label><div className="grid grid-cols-2 gap-1"><button type="button" className="rounded border px-2 py-2 text-xs" onClick={addAdvancedTextBlock}>Add to panel</button><button type="button" className="rounded border px-2 py-2 text-xs" disabled={!selectedBlockId} onClick={removeSelectedAdvancedBlock}>Remove selected</button><button type="button" className="rounded border px-2 py-2 text-xs" disabled={!historyState?.past.length} onClick={undoAdvanced}>Undo</button><button type="button" className="rounded border px-2 py-2 text-xs" disabled={!historyState?.future.length} onClick={redoAdvanced}>Redo</button></div><label className="block space-y-1 text-xs"><span>Columns in selected panel</span><select className="w-full rounded border px-2 py-2" value={currentAdvanced()?.pages[0]?.regions[selectedPanelIndex]?.columns.count ?? 1} onChange={(event) => { const current = currentAdvanced(); if (current) runLayoutOperation(() => applyAdvanced(configureColumns(current, 0, selectedPanelIndex, Number(event.target.value) as 1 | 2 | 3, Number(event.target.value) === 1 ? '1/1' : Number(event.target.value) === 2 ? '1/3+2/3' : '1/1', 8))); }}><option value="1">1 column</option><option value="2">2 columns</option><option value="3">3 columns</option></select></label><button type="button" className="w-full rounded border px-2 py-2 text-sm" onClick={saveAdvanced} disabled={status === 'saving'}>Save Advanced Layout</button></section> : null}
+        <aside className="space-y-3 rounded-lg border bg-card p-3" aria-label={t('approvedBlocks')}>
+          <div><h2 className="font-semibold">{t('blocks')}</h2><p className="text-xs text-muted-foreground">{t('simpleBlocksDescription')}</p></div>
+          {advancedEditing ? <section className="space-y-2 border-b pb-3" aria-label={t('advancedControls')}><h3 className="font-medium">{t('spatialLayout')}</h3><p className="text-xs text-muted-foreground">{t('spatialDescription')}</p><label className="block space-y-1 text-xs"><span>{t('targetPanel')}</span><select className="w-full rounded border px-2 py-2" value={selectedPanelIndex} onChange={(event) => setSelectedPanelIndex(Number(event.target.value))}>{panelLabels.map((label, index) => <option key={label} value={index}>{label}</option>)}</select></label><label className="block space-y-1 text-xs"><span>Move selected block to</span><select className="w-full rounded border px-2 py-2" value={selectedBlockId ? Math.max(panelForBlock(selectedBlockId), 0) : selectedPanelIndex} disabled={!selectedBlockId} onChange={(event) => moveBlockToPanel(selectedBlockId ?? '', Number(event.target.value))}>{panelLabels.map((label, index) => <option key={label} value={index}>{label}</option>)}</select></label><div className="grid grid-cols-2 gap-1"><button type="button" className="rounded border px-2 py-2 text-xs" onClick={addAdvancedTextBlock}>Add to panel</button><button type="button" className="rounded border px-2 py-2 text-xs" disabled={!selectedBlockId} onClick={removeSelectedAdvancedBlock}>Remove selected</button><button type="button" className="rounded border px-2 py-2 text-xs" disabled={!historyState?.past.length} onClick={undoAdvanced}>Undo</button><button type="button" className="rounded border px-2 py-2 text-xs" disabled={!historyState?.future.length} onClick={redoAdvanced}>Redo</button></div><label className="block space-y-1 text-xs"><span>Columns in selected panel</span><select className="w-full rounded border px-2 py-2" value={currentAdvanced()?.pages[0]?.regions[selectedPanelIndex]?.columns.count ?? 1} onChange={(event) => { const current = currentAdvanced(); if (current) runLayoutOperation(() => applyAdvanced(configureColumns(current, 0, selectedPanelIndex, Number(event.target.value) as 1 | 2 | 3, Number(event.target.value) === 1 ? '1/1' : Number(event.target.value) === 2 ? '1/3+2/3' : '1/1', 8))); }}><option value="1">1 column</option><option value="2">2 columns</option><option value="3">3 columns</option></select></label><button type="button" className="w-full rounded border px-2 py-2 text-sm" onClick={saveAdvanced} disabled={status === 'saving'}>Save Advanced Layout</button></section> : null}
           {operationError ? <p role="alert" className="rounded border border-red-300 bg-red-50 p-2 text-xs text-red-900">{operationError}</p> : null}
-          {selectedBlock?.type === 'IMAGE' ? <section className="space-y-2 border-b pb-3" aria-label="Media library"><h3 className="font-medium">Media library</h3><p className="text-xs text-muted-foreground">Approved ward, stake, and system images only. Select an image block first.</p><label className="block space-y-1 text-xs"><span>Upload image</span><input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { const file = event.target.files?.[0]; if (file) void uploadMedia(file, file.name, false).catch((error: unknown) => setMessage(error instanceof Error ? error.message : 'Upload failed')); }} /></label><div className="max-h-40 space-y-1 overflow-auto">{media.map((asset) => <button type="button" key={asset.id} className="block w-full rounded border px-2 py-1 text-left text-xs" onClick={() => selectImageAsset(asset)}>{asset.filename}<span className="block text-muted-foreground">{asset.pixel_width}×{asset.pixel_height}</span></button>)}</div></section> : null}
-          <div className="space-y-2 border-b pb-3"><label className="block space-y-1 text-sm"><span>Approved template</span><select aria-label="Approved template" className="w-full rounded-md border px-2 py-2" value={selectedTemplateId} onChange={(event) => setSelectedTemplateId(event.target.value)}><option value="">Keep current template</option>{templates.map((template) => <option key={template.id} value={template.id}>{template.name} · {template.source}</option>)}</select></label><button type="button" className="w-full rounded-md border px-2 py-2 text-sm" disabled={!selectedTemplateId || status === 'saving'} onClick={() => { if (document && selectedTemplateId) void save(document.layout, document.revision, selectedTemplateId); }}>Use approved template</button></div>
+          {selectedBlock?.type === 'IMAGE' ? <section className="space-y-2 border-b pb-3" aria-label={t('mediaLibrary')}><h3 className="font-medium">{t('mediaLibrary')}</h3><p className="text-xs text-muted-foreground">{t('mediaDescription')}</p><label className="block space-y-1 text-xs"><span>{t('uploadImage')}</span><input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { const file = event.target.files?.[0]; if (file) void uploadMedia(file, file.name, false).catch((error: unknown) => setMessage(error instanceof Error ? error.message : 'Upload failed')); }} /></label><div className="max-h-40 space-y-1 overflow-auto">{media.map((asset) => <button type="button" key={asset.id} className="block w-full rounded border px-2 py-1 text-left text-xs" onClick={() => selectImageAsset(asset)}>{asset.filename}<span className="block text-muted-foreground">{asset.pixel_width}×{asset.pixel_height}</span></button>)}</div></section> : null}
+          <div className="space-y-2 border-b pb-3"><label className="block space-y-1 text-sm"><span>{t('approvedTemplate')}</span><select aria-label={t('approvedTemplate')} className="w-full rounded-md border px-2 py-2" value={selectedTemplateId} onChange={(event) => setSelectedTemplateId(event.target.value)}><option value="">{t('keepCurrentTemplate')}</option>{templates.map((template) => <option key={template.id} value={template.id}>{template.name} · {template.source}</option>)}</select></label><button type="button" className="w-full rounded-md border px-2 py-2 text-sm" disabled={!selectedTemplateId || status === 'saving'} onClick={() => { if (document && selectedTemplateId) void save(document.layout, document.revision, selectedTemplateId); }}>{t('applyTemplate')}</button></div>
           <div className="space-y-3">{panelLabels.map((label, panelIndex) => <section key={label} className={`rounded border p-2 ${selectedPanelIndex === panelIndex ? 'border-primary bg-primary/5' : ''}`}><button type="button" className="mb-2 w-full text-left text-xs font-semibold" onClick={() => setSelectedPanelIndex(panelIndex)}>{label} <span className="font-normal text-muted-foreground">({panelBlocks(panelIndex).length})</span></button><ul className="space-y-1">{panelBlocks(panelIndex).map((block, index) => <li key={block.id} draggable={advancedEditing} onDragStart={(event) => { event.dataTransfer.setData('text/plain', block.id); }}><button type="button" className={`w-full rounded-md border px-2 py-2 text-left text-sm ${selectedBlock?.id === block.id ? 'border-primary bg-primary/10' : ''}`} onClick={() => { setSelectedBlockId(block.id); setSelectedPanelIndex(panelIndex); }}>{blockLabel(block)}<span className="block text-xs text-muted-foreground">{block.visibility}</span></button><div className="mt-1 flex gap-1"><button type="button" className="rounded border px-2 text-xs" aria-label={`Move ${blockLabel(block)} up`} disabled={index === 0} onClick={() => moveSelectedBlock(-1)}>↑</button><button type="button" className="rounded border px-2 text-xs" aria-label={`Move ${blockLabel(block)} down`} disabled={index === panelBlocks(panelIndex).length - 1} onClick={() => moveSelectedBlock(1)}>↓</button></div></li>)}</ul></section>)}</div>
         </aside>
-        <section className={`min-h-[620px] overflow-auto rounded-lg border bg-muted/30 p-4 ${modeClass(mode)}`} aria-label="Document canvas">
-          {mode === 'EDIT' ? <div className="mx-auto space-y-3 rounded-md bg-background p-4 shadow-sm"><div className="text-sm text-muted-foreground">{isBifold ? 'Bi-fold canvas' : 'Document canvas'} · {document.layout.paper} · {document.layout.orientation}</div><div className="grid gap-3 sm:grid-cols-2">{panelLabels.map((label, panelIndex) => <section key={label} aria-label={label} onClick={() => setSelectedPanelIndex(panelIndex)} onDragOver={(event) => { if (advancedEditing) event.preventDefault(); }} onDrop={(event) => { event.preventDefault(); const blockId = event.dataTransfer.getData('text/plain'); if (blockId) moveBlockToPanel(blockId, panelIndex); }} className={`min-h-52 rounded-md border-2 border-dashed p-3 ${selectedPanelIndex === panelIndex ? 'border-primary bg-primary/5' : 'border-muted-foreground/30'}`}><div className="mb-2 flex items-center justify-between"><h2 className="font-semibold">{label}</h2><span className="text-xs text-muted-foreground">{panelBlocks(panelIndex).length} blocks</span></div><div className="space-y-2">{panelBlocks(panelIndex).map((block) => <button type="button" key={block.id} onClick={(event) => { event.stopPropagation(); setSelectedBlockId(block.id); setSelectedPanelIndex(panelIndex); }} className={`block w-full rounded border p-2 text-left text-sm ${selectedBlock?.id === block.id ? 'border-primary bg-primary/10' : ''}`} draggable={advancedEditing} onDragStart={(event) => event.dataTransfer.setData('text/plain', block.id)}><strong>{blockLabel(block)}</strong><span className="ml-2 text-xs text-muted-foreground">{block.visibility}</span></button>)}</div>{advancedEditing ? <p className="mt-3 text-xs text-muted-foreground">Drop blocks here</p> : null}</section>)}</div></div> : previewError ? <p role="alert" className="rounded-md border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">{previewError}</p> : <div className="mx-auto bg-background shadow-sm" dangerouslySetInnerHTML={{ __html: previewHtml }} />}
+        <section className={`min-h-[620px] overflow-auto rounded-lg border bg-muted/30 p-4 ${modeClass(mode)}`} aria-label={t('documentCanvas')}>
+          {mode === 'EDIT' ? <div className="mx-auto space-y-3 rounded-md bg-background p-4 shadow-sm"><div className="text-sm text-muted-foreground">{isBifold ? t('bifoldCanvas') : t('documentCanvas')} · {document.layout.paper} · {document.layout.orientation}</div><div className="grid gap-3 sm:grid-cols-2">{panelLabels.map((label, panelIndex) => <section key={label} aria-label={label} onClick={() => setSelectedPanelIndex(panelIndex)} onDragOver={(event) => { if (advancedEditing) event.preventDefault(); }} onDrop={(event) => { event.preventDefault(); const blockId = event.dataTransfer.getData('text/plain'); if (blockId) moveBlockToPanel(blockId, panelIndex); }} className={`min-h-52 rounded-md border-2 border-dashed p-3 ${selectedPanelIndex === panelIndex ? 'border-primary bg-primary/5' : 'border-muted-foreground/30'}`}><div className="mb-2 flex items-center justify-between"><h2 className="font-semibold">{label}</h2><span className="text-xs text-muted-foreground">{panelBlocks(panelIndex).length} blocks</span></div><div className="space-y-2">{panelBlocks(panelIndex).map((block) => <button type="button" key={block.id} onClick={(event) => { event.stopPropagation(); setSelectedBlockId(block.id); setSelectedPanelIndex(panelIndex); }} className={`block w-full rounded border p-2 text-left text-sm ${selectedBlock?.id === block.id ? 'border-primary bg-primary/10' : ''}`} draggable={advancedEditing} onDragStart={(event) => event.dataTransfer.setData('text/plain', block.id)}><strong>{blockLabel(block)}</strong><span className="ml-2 text-xs text-muted-foreground">{block.visibility}</span></button>)}</div>{advancedEditing ? <p className="mt-3 text-xs text-muted-foreground">Drop blocks here</p> : null}</section>)}</div></div> : previewError ? <p role="alert" className="rounded-md border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">{previewError}</p> : <div className="mx-auto bg-background shadow-sm" dangerouslySetInnerHTML={{ __html: previewHtml }} />}
         </section>
-        <aside className="space-y-4 rounded-lg border bg-card p-3" aria-label="Simple Mode properties">
-          <section><h2 className="font-semibold">Properties</h2>{selectedBlock ? <div className="mt-3 space-y-3"><p className="text-sm font-medium">{blockLabel(selectedBlock)}</p><label className="block space-y-1 text-sm"><span>Visibility</span><select className="w-full rounded-md border px-2 py-2" value={selectedBlock.visibility} onChange={(event) => advancedEditing ? updateAdvancedVisibility(event.target.value as DocumentBlock['visibility']) : updateLayout(setBlockVisibility(document.layout, selectedBlock.id, event.target.value as 'VISIBLE' | 'HIDDEN' | 'HIDE_WHEN_EMPTY'))}><option value="VISIBLE">Visible</option><option value="HIDDEN">Hidden</option><option value="HIDE_WHEN_EMPTY">Hide when empty</option></select></label>{advancedEditing ? <label className="block space-y-1 text-sm"><span>Width</span><select className="w-full rounded-md border px-2 py-2" value={selectedBlock.width} onChange={(event) => { const current = currentAdvanced(); if (current) runLayoutOperation(() => applyAdvanced(resizeBlock(current, selectedBlock.id, event.target.value as 'FULL' | 'TWO_THIRDS' | 'HALF' | 'ONE_THIRD'))); }}><option value="FULL">Full</option><option value="TWO_THIRDS">Two thirds</option><option value="HALF">Half</option><option value="ONE_THIRD">One third</option></select></label> : null}{'text' in selectedBlock.config ? <label className="block space-y-1 text-sm"><span>Text</span><textarea className="min-h-24 w-full rounded-md border p-2" value={String(selectedBlock.config.text)} onChange={(event) => updateSelectedBlock((block) => ({ ...block, config: { ...block.config, text: event.target.value } } as DocumentBlock))} /></label> : null}</div> : <p className="mt-2 text-sm text-muted-foreground">Select a block to edit safe properties.</p>}</section>
-          <section><h2 className="font-semibold">Theme</h2><div className="mt-3 space-y-3"><label className="block space-y-1 text-sm"><span>Font</span><select className="w-full rounded-md border px-2 py-2" value={document.layout.theme.fontFamily} onChange={(event) => updateTheme({ fontFamily: event.target.value as DocumentLayout['theme']['fontFamily'] })}><option value="SYSTEM_SANS">System sans</option><option value="SERIF">Serif</option><option value="MONOSPACE">Monospace</option></select></label><label className="block space-y-1 text-sm"><span>Base font size</span><input className="w-full rounded-md border px-2 py-2" type="number" min={8} max={32} value={document.layout.theme.baseFontSize} onChange={(event) => updateTheme({ baseFontSize: Number(event.target.value) })} /></label></div></section>
-          {status === 'conflict' ? <div className="space-y-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900"><p>{message}</p><button type="button" className="rounded border px-2 py-1" onClick={() => void load().catch((error: unknown) => setMessage(error instanceof Error ? error.message : 'Reload failed'))}>Reload server version</button></div> : null}
-          {status === 'error' ? <button type="button" className="rounded-md border px-3 py-2 text-sm" onClick={() => document && void save(document.layout, document.revision)}>Retry save</button> : null}
-          <p className="text-xs text-muted-foreground">Save updates this private draft only. Publishing remains a separate action.</p>
+        <aside className="space-y-4 rounded-lg border bg-card p-3" aria-label={t('properties')}>
+          <section><h2 className="font-semibold">{t('properties')}</h2>{selectedBlock ? <div className="mt-3 space-y-3"><p className="text-sm font-medium">{blockLabel(selectedBlock)}</p><label className="block space-y-1 text-sm"><span>{t('visibility')}</span><select className="w-full rounded-md border px-2 py-2" value={selectedBlock.visibility} onChange={(event) => advancedEditing ? updateAdvancedVisibility(event.target.value as DocumentBlock['visibility']) : updateLayout(setBlockVisibility(document.layout, selectedBlock.id, event.target.value as 'VISIBLE' | 'HIDDEN' | 'HIDE_WHEN_EMPTY'))}><option value="VISIBLE">Visible</option><option value="HIDDEN">Hidden</option><option value="HIDE_WHEN_EMPTY">Hide when empty</option></select></label>{advancedEditing ? <label className="block space-y-1 text-sm"><span>Width</span><select className="w-full rounded-md border px-2 py-2" value={selectedBlock.width} onChange={(event) => { const current = currentAdvanced(); if (current) runLayoutOperation(() => applyAdvanced(resizeBlock(current, selectedBlock.id, event.target.value as 'FULL' | 'TWO_THIRDS' | 'HALF' | 'ONE_THIRD'))); }}><option value="FULL">Full</option><option value="TWO_THIRDS">Two thirds</option><option value="HALF">Half</option><option value="ONE_THIRD">One third</option></select></label> : null}{'text' in selectedBlock.config ? <label className="block space-y-1 text-sm"><span>Text</span><textarea className="min-h-24 w-full rounded-md border p-2" value={String(selectedBlock.config.text)} onChange={(event) => updateSelectedBlock((block) => ({ ...block, config: { ...block.config, text: event.target.value } } as DocumentBlock))} /></label> : null}</div> : <p className="mt-2 text-sm text-muted-foreground">Select a block to edit safe properties.</p>}</section>
+          <section><h2 className="font-semibold">{t('theme')}</h2><div className="mt-3 space-y-3"><label className="block space-y-1 text-sm"><span>{t('font')}</span><select className="w-full rounded-md border px-2 py-2" value={document.layout.theme.fontFamily} onChange={(event) => updateTheme({ fontFamily: event.target.value as DocumentLayout['theme']['fontFamily'] })}><option value="SYSTEM_SANS">{t('systemSans')}</option><option value="SERIF">{t('serif')}</option><option value="MONOSPACE">{t('monospace')}</option></select></label><label className="block space-y-1 text-sm"><span>Base font size</span><input className="w-full rounded-md border px-2 py-2" type="number" min={8} max={32} value={document.layout.theme.baseFontSize} onChange={(event) => updateTheme({ baseFontSize: Number(event.target.value) })} /></label></div></section>
+          {status === 'conflict' ? <div className="space-y-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900"><p>{message}</p><button type="button" className="rounded border px-2 py-1" onClick={() => void load().catch((error: unknown) => setMessage(error instanceof Error ? error.message : 'Reload failed'))}>{t('reloadServer')}</button></div> : null}
+          {status === 'error' ? <button type="button" className="rounded-md border px-3 py-2 text-sm" onClick={() => document && void save(document.layout, document.revision)}>{t('retrySave')}</button> : null}
+          <p className="text-xs text-muted-foreground">{t('privateDraft')}</p>
         </aside>
       </div>
     </main>

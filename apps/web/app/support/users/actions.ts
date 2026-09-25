@@ -85,6 +85,77 @@ export async function createUser(formData: FormData) {
   revalidatePath('/support/users');
 }
 
+export async function createGoogleProvisionedUser(formData: FormData) {
+  const actingSession = await requireSupportAdmin();
+  const email = String(formData.get('email') ?? '').trim().toLowerCase();
+  const displayNameRaw = String(formData.get('displayName') ?? '').trim();
+  const displayName = displayNameRaw.length ? displayNameRaw : null;
+  const wardId = String(formData.get('wardId') ?? '');
+  const roleId = String(formData.get('roleId') ?? '');
+
+  if (!email || !email.includes('@') || !wardId || !roleId) return;
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query('SELECT set_config($1, $2, true)', ['app.user_id', actingSession.user.id]);
+
+    const roleResult = await client.query(`SELECT name, scope FROM role WHERE id = $1 LIMIT 1`, [roleId]);
+    const wardResult = await client.query(`SELECT id, name FROM ward WHERE id = $1 LIMIT 1`, [wardId]);
+    if (!roleResult.rowCount || roleResult.rows[0].scope !== 'WARD' || !wardResult.rowCount) {
+      await client.query('ROLLBACK');
+      return;
+    }
+
+    const existing = await client.query(
+      `SELECT id, password_hash, is_active FROM user_account WHERE email = $1 FOR UPDATE`,
+      [email]
+    );
+    let userId: string;
+    if (existing.rowCount) {
+      if (existing.rows[0].password_hash || !existing.rows[0].is_active) {
+        await client.query('ROLLBACK');
+        return;
+      }
+      userId = existing.rows[0].id as string;
+      await client.query(`UPDATE user_account SET display_name = COALESCE($1, display_name) WHERE id = $2`, [displayName, userId]);
+    } else {
+      const inserted = await client.query(
+        `INSERT INTO user_account (email, display_name, password_hash, must_change_password)
+         VALUES ($1, $2, NULL, false) RETURNING id`,
+        [email, displayName]
+      );
+      userId = inserted.rows[0].id as string;
+    }
+
+    await client.query(
+      `INSERT INTO ward_user_role (ward_id, user_id, role_id, granted_by_user_id, grant_reason)
+       VALUES ($1, $2, $3, $4, 'Google first-login provisioning')
+       ON CONFLICT (ward_id, user_id, role_id) DO UPDATE
+         SET revoked_at = NULL,
+             revoked_by_user_id = NULL,
+             is_support_assignment = false,
+             granted_by_user_id = EXCLUDED.granted_by_user_id,
+             grant_reason = EXCLUDED.grant_reason,
+             expires_at = NULL`,
+      [wardId, userId, roleId, actingSession.user.id]
+    );
+    await client.query(
+      `INSERT INTO audit_log (ward_id, user_id, action, details)
+       VALUES (NULL, $1, 'GOOGLE_USER_PROVISIONED', jsonb_build_object('targetUserId', $2::text, 'email', $3::text, 'wardId', $4::text, 'roleName', $5::text))`,
+      [actingSession.user.id, userId, email, wardId, roleResult.rows[0].name as string]
+    );
+    await client.query('COMMIT');
+  } catch {
+    await client.query('ROLLBACK');
+    throw new Error('Failed to provision Google user');
+  } finally {
+    client.release();
+  }
+
+  revalidatePath('/support/users');
+}
+
 export async function updateUser(formData: FormData) {
   const actingSession = await requireSupportAdmin();
   const userId = String(formData.get('userId') ?? '');

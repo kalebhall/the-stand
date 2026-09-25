@@ -1,10 +1,12 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { getLcrBookmarkletHref, LCR_DOM_EXTRACTOR_SCRIPT } from '@/src/imports/bookmarklet';
 
 export function LcrExtractorInstructions({ targetType }: { targetType: 'members' | 'callings' }) {
+  const t = useTranslations('imports.extractor');
   const [copiedScript, setCopiedScript] = useState(false);
   const [copyError, setCopyError] = useState(false);
 
@@ -47,17 +49,17 @@ export function LcrExtractorInstructions({ targetType }: { targetType: 'members'
     <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 text-sm space-y-3">
       <div className="flex items-center justify-between">
         <h3 className="font-semibold text-foreground flex items-center gap-2">
-          <span>⚡</span> Browser DOM Extractor (Zero Password Sharing)
+          <span>⚡</span> {t('title')}
         </h3>
-        <span className="text-xs bg-primary/10 text-primary font-medium px-2 py-0.5 rounded-full">Recommended</span>
+        <span className="text-xs bg-primary/10 text-primary font-medium px-2 py-0.5 rounded-full">{t('recommended')}</span>
       </div>
       <p className="text-muted-foreground text-xs leading-relaxed">
-        Extract data directly from your authenticated Church session without sharing credentials or triggering security lockouts.
+        {t('description')}
       </p>
 
       <ol className="list-decimal list-inside space-y-1.5 text-xs text-foreground/90">
         <li>
-          Drag this bookmarklet to your browser bookmarks bar:
+          {t('step1')}
           <span className="ml-2 inline-block">
             {/* href is set imperatively via ref — React 19 blocks javascript: URLs as props */}
             <a
@@ -65,15 +67,15 @@ export function LcrExtractorInstructions({ targetType }: { targetType: 'members'
               className="inline-flex items-center gap-1 rounded bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground shadow hover:bg-primary/90 cursor-grab"
               onClick={(e) => {
                 e.preventDefault();
-                alert('Drag this button to your browser bookmarks bar! Then open LCR and click it in your bookmarks.');
+                alert(t('dragAlert'));
               }}
             >
-              ⭐ The Stand: Extract LCR
+              {t('bookmarklet')}
             </a>
           </span>
         </li>
         <li>
-          Open{' '}
+          {t('open')}{' '}
           <a
             href={lcrUrl}
             target="_blank"
@@ -82,25 +84,25 @@ export function LcrExtractorInstructions({ targetType }: { targetType: 'members'
           >
             LCR {lcrPageName} ↗
           </a>{' '}
-          and log in with your Church Account.
+          {t('andLogin')}
         </li>
         <li>
-          Click the <strong>The Stand: Extract LCR</strong> bookmark in your bookmarks bar.
+          {t('step3')}
         </li>
         <li>
-          Return here, click <strong>Paste text</strong>, and paste the clipboard contents into the box.
+          {t('step4')}
         </li>
       </ol>
 
       <div className="pt-1 flex items-center gap-2 flex-wrap">
         <Button type="button" variant="outline" size="sm" className="text-xs h-7" onClick={copyScript}>
-          {copiedScript ? 'Copied Console Code!' : 'Copy Console Snippet (Alternative)'}
+          {copiedScript ? t('copied') : t('copy')}
         </Button>
         <span className="text-[11px] text-muted-foreground">
-          (If bookmarklets are blocked in your browser, paste this into DevTools Console)
+          ({t('blocked')})
         </span>
         {copyError && (
-          <span className="text-[11px] text-destructive">Clipboard unavailable — open DevTools Console and paste manually.</span>
+          <span className="text-[11px] text-destructive">{t('clipboardError')}</span>
         )}
       </div>
     </div>

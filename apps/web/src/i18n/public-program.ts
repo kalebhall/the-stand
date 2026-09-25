@@ -1,7 +1,6 @@
-import enUS from '../../messages/en-US.json';
-import es from '../../messages/es.json';
 import type { MeetingRenderLabels } from '../meetings/render';
 import { isSupportedLocale, resolveLocale, type Locale } from './config';
+import { MESSAGE_CATALOGS } from './messages';
 
 type PublicProgramMessages = {
   publicProgram: {
@@ -42,10 +41,7 @@ type PublicProgramMessages = {
   };
 };
 
-const messages: Record<Locale, PublicProgramMessages> = {
-  'en-US': enUS,
-  es
-};
+const messages = MESSAGE_CATALOGS as Record<Locale, PublicProgramMessages>;
 
 const PRINT_ITEM_KEYS = [
   'INTRODUCTION',

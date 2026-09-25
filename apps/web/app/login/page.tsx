@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import { getTranslations } from 'next-intl/server';
 
 import { auth } from '@/src/auth/auth';
 
@@ -9,6 +10,7 @@ type LoginPageProps = {
 };
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
+  const t = await getTranslations('auth');
   const session = await auth();
 
   if (session?.user?.id) {
@@ -23,8 +25,8 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
   return (
     <main className="mx-auto max-w-2xl p-6">
-      <h1 className="text-2xl font-semibold">Login</h1>
-      <p className="mt-2 text-muted-foreground">Sign in with Google or credentials to continue.</p>
+      <h1 className="text-2xl font-semibold">{t('login')}</h1>
+      <p className="mt-2 text-muted-foreground">{t('loginDescription')}</p>
       <div className="mt-6">
         <LoginForm callbackUrl={params?.callbackUrl ?? '/dashboard'} />
       </div>

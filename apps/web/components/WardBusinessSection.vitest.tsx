@@ -5,7 +5,8 @@ import { NextIntlClientProvider } from 'next-intl';
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import messages from '../messages/en-US.json';
+import { MESSAGE_CATALOGS } from '@/src/i18n/messages';
+const messages = MESSAGE_CATALOGS['en-US'];
 
 import { WardBusinessSection } from './WardBusinessSection';
 

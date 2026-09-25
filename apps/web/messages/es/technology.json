@@ -1,0 +1,26 @@
+{
+  "technology": {
+    "title": "Lista de verificación de tecnología y transmisión",
+    "description": "Preparación de la sala, audio, transmisión, accesibilidad y ciclo de grabación.",
+    "dashboard": "Panel",
+    "privacyNotice": "Guarde solo enlaces autorizados. Nunca guarde contraseñas, tokens, claves de Wi-Fi ni credenciales de transmisión.",
+    "meeting": "Reunión",
+    "noMeetings": "No hay reuniones recientes disponibles.",
+    "loadChecklist": "Cargar lista de verificación",
+    "checklistOwner": "Responsable de la lista",
+    "authorizedStreamLink": "Enlace de transmisión autorizado (HTTPS)",
+    "neverStoreCredentials": "Nunca guarde aquí credenciales de transmisión.",
+    "roomReady": "Sala preparada",
+    "audioReady": "Audio preparado",
+    "streamReady": "Transmisión preparada",
+    "accessibilityChecked": "Accesibilidad comprobada",
+    "recordingDeletionReminder": "Recordatorio de eliminación de grabación",
+    "startConfirmed": "Inicio confirmado",
+    "stopConfirmed": "Finalización confirmada",
+    "saveChecklist": "Guardar lista de verificación",
+    "errors": {
+      "load": "No se pudo cargar la lista de verificación.",
+      "save": "No se pudo guardar la lista de verificación."
+    }
+  }
+}

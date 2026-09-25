@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
+import { getTranslations } from 'next-intl/server';
 
 import { MembersManagerClient } from './members-manager-client';
 import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth/guards';
@@ -31,6 +32,7 @@ type MemberNoteRow = {
 };
 
 export default async function MembersPage() {
+  const t = await getTranslations('members');
   const session = await requireAuthenticatedSession();
   enforcePasswordRotation(session);
 
@@ -78,13 +80,13 @@ export default async function MembersPage() {
       <main className="mx-auto w-full max-w-5xl space-y-6 p-4 sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="space-y-1">
-            <h1 className="text-2xl font-semibold tracking-tight">Members & Notes</h1>
-            <p className="text-sm text-muted-foreground">Directory of ward members and restricted leadership follow-up notes.</p>
+            <h1 className="text-2xl font-semibold tracking-tight">{t('pageTitle')}</h1>
+            <p className="text-sm text-muted-foreground">{t('pageDescription')}</p>
           </div>
           {canImportMembers ? (
             <div className="flex items-center gap-2">
               <Link href="/imports/members" className={cn(buttonVariants({ size: 'sm' }))}>
-                Import Members
+                {t('importMembers')}
               </Link>
             </div>
           ) : null}

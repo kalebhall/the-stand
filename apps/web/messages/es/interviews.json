@@ -1,0 +1,49 @@
+{
+  "interviews": {
+    "title": "Entrevistas programadas",
+    "description": "Solo para la programación operativa. No registre aquí contenido confidencial de las entrevistas.",
+    "exportCalendar": "Exportar calendario",
+    "dashboard": "Panel",
+    "offlineNotice": "Sin conexión: se muestra el calendario de entrevistas guardado. Es de solo lectura; los cambios requieren conexión.",
+    "savedCopy": "Copia guardada: {date}",
+    "calendarSubscription": "Suscripción al calendario",
+    "calendarSubscriptionDescription": "Cree una URL privada y revocable del calendario de entrevistas programadas de este barrio. Cualquier persona con la URL puede leer el calendario operativo.",
+    "rotateSubscriptionUrl": "Rotar URL de suscripción",
+    "createSubscriptionUrl": "Crear URL de suscripción",
+    "revokeUrl": "Revocar URL",
+    "newCalendarUrl": "Nueva URL del calendario",
+    "subscriptionCreated": "Copie esta URL ahora. No se volverá a mostrar.",
+    "subscriptionRevoked": "Se revocó la suscripción al calendario.",
+    "scheduleInterview": "Programar entrevista",
+    "interviewType": "Tipo de entrevista",
+    "defaultInterviewType": "Membresía u ordenanza",
+    "searchMember": "Buscar miembro",
+    "interviewer": "Entrevistador",
+    "interviewDateTime": "Fecha y hora de la entrevista",
+    "schedule": "Programar",
+    "interviewSchedule": "Calendario de entrevistas",
+    "statusFor": "Estado de {member}",
+    "noInterviews": "No hay entrevistas programadas.",
+    "fields": {
+      "interviewType": "tipo de entrevista",
+      "member": "miembro",
+      "interviewer": "entrevistador",
+      "dateTime": "fecha y hora de la entrevista"
+    },
+    "statuses": {
+      "SCHEDULED": "Programada",
+      "COMPLETED": "Completada",
+      "CANCELLED": "Cancelada"
+    },
+    "errors": {
+      "load": "No se pudieron cargar las entrevistas.",
+      "offlineEmpty": "No hay un calendario de entrevistas guardado en este dispositivo.",
+      "createSubscription": "No se pudo crear la suscripción al calendario.",
+      "revokeSubscription": "No se pudo revocar la suscripción al calendario.",
+      "completeRequired": "Complete los campos obligatorios: {fields}.",
+      "invalidDate": "Ingrese una fecha y hora de entrevista válidas.",
+      "schedule": "No se pudo programar la entrevista.",
+      "update": "No se pudo actualizar la entrevista."
+    }
+  }
+}

@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { InternalNotesPanel, type InternalNoteRow } from '@/components/InternalNotesPanel';
 import { cn } from '@/lib/utils';
@@ -48,6 +49,7 @@ export function MembersManagerClient({
   memberNotes: MemberNoteRow[];
   canManageMembers: boolean;
 }) {
+  const t = useTranslations('members');
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<'name' | 'age' | 'email'>('name');
   const [actionError, setActionError] = useState<string | null>(null);
@@ -111,20 +113,20 @@ export function MembersManagerClient({
 
       if (!response.ok) {
         const payload = (await response.json()) as { error?: string };
-        setActionError(payload.error ?? 'Failed to save changes.');
+        setActionError(payload.error ?? t('saveFailed'));
         return;
       }
 
       window.location.reload();
     } catch {
-      setActionError('Failed to save changes.');
+      setActionError(t('saveFailed'));
     } finally {
       setIsSavingEditId(null);
     }
   }
 
   async function archiveMember(memberId: string, name: string) {
-    if (!window.confirm(`Archive ${name}? They will no longer appear in active member lists but historical records are preserved.`)) {
+    if (!window.confirm(t('archiveConfirm', { name }))) {
       return;
     }
 
@@ -138,13 +140,13 @@ export function MembersManagerClient({
 
       if (!response.ok) {
         const payload = (await response.json()) as { error?: string };
-        setActionError(payload.error ?? 'Failed to archive member.');
+        setActionError(payload.error ?? t('archiveFailed'));
         return;
       }
 
       window.location.reload();
     } catch {
-      setActionError('Failed to archive member.');
+      setActionError(t('archiveFailed'));
     } finally {
       setIsArchivingMemberId(null);
     }
@@ -155,21 +157,20 @@ export function MembersManagerClient({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <input
           type="search"
-          placeholder="Filter members by name, email, or phone..."
+          placeholder={t('filterPlaceholder')}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="w-full max-w-sm rounded-md border bg-background px-3 py-2 text-sm"
         />
-        <label className="flex items-center gap-2 text-sm text-muted-foreground">
-          Sort by
+        <label className="flex items-center gap-2 text-sm text-muted-foreground">{t('sortBy')}
           <select value={sortBy} onChange={(event) => setSortBy(event.target.value as typeof sortBy)} className="rounded-md border bg-background px-2 py-2 text-foreground">
-            <option value="name">Name</option>
-            <option value="age">Age</option>
-            <option value="email">Email</option>
+            <option value="name">{t('name')}</option>
+            <option value="age">{t('age')}</option>
+            <option value="email">{t('email')}</option>
           </select>
         </label>
         <div className="text-sm text-muted-foreground">
-          Showing {filteredMembers.length} of {members.length} members
+          {t('showing', { shown: filteredMembers.length, total: members.length })}
         </div>
       </div>
 
@@ -183,8 +184,8 @@ export function MembersManagerClient({
                 <div>
                   <h3 className="font-semibold text-base">{displayName(member)}</h3>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    {member.email ?? 'No email'} · {member.phone ?? 'No phone'}
-                    {member.age != null ? ` · Age ${member.age}` : ''}
+                    {member.email ?? t('noEmail')} · {member.phone ?? t('noPhone')}
+                    {member.age != null ? ` · ${t('age')} ${member.age}` : ''}
                     {member.gender ? ` · ${member.gender}` : ''}
                   </p>
                 </div>
@@ -197,8 +198,7 @@ export function MembersManagerClient({
                       className="text-xs h-7"
                       onClick={() => startEdit(member)}
                       disabled={editingMemberId === member.id}
-                    >
-                      Edit
+                    >{t('edit')}
                     </Button>
                     <Button
                       type="button"
@@ -208,17 +208,17 @@ export function MembersManagerClient({
                       disabled={isArchivingMemberId === member.id}
                       className="text-xs h-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                     >
-                      {isArchivingMemberId === member.id ? 'Archiving…' : 'Archive'}
+                      {isArchivingMemberId === member.id ? t('archiving') : t('archive')}
                     </Button>
                   </div>
                 ) : null}
               </div>
               {editingMemberId === member.id && (
                 <div className="mt-3 rounded-md border bg-muted/20 p-3 space-y-3">
-                  <p className="text-xs font-medium text-muted-foreground">Edit Member Info</p>
+                  <p className="text-xs font-medium text-muted-foreground">{t('editMemberInfo')}</p>
                   <div className="grid grid-cols-2 gap-2">
                     <div className="space-y-1">
-                      <label className="text-xs text-muted-foreground">First Name</label>
+                      <label className="text-xs text-muted-foreground">{t('firstName')}</label>
                       <input
                         type="text"
                         value={editDrafts[member.id]?.firstName ?? ''}
@@ -229,11 +229,11 @@ export function MembersManagerClient({
                           }))
                         }
                         className="w-full rounded-md border bg-background px-2 py-1 text-sm"
-                        placeholder="First name"
+                        placeholder={t('firstName')}
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-xs text-muted-foreground">Last Name</label>
+                      <label className="text-xs text-muted-foreground">{t('lastName')}</label>
                       <input
                         type="text"
                         value={editDrafts[member.id]?.lastName ?? ''}
@@ -244,11 +244,11 @@ export function MembersManagerClient({
                           }))
                         }
                         className="w-full rounded-md border bg-background px-2 py-1 text-sm"
-                        placeholder="Last name"
+                        placeholder={t('lastName')}
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-xs text-muted-foreground">Email</label>
+                      <label className="text-xs text-muted-foreground">{t('email')}</label>
                       <input
                         type="email"
                         value={editDrafts[member.id]?.email ?? ''}
@@ -259,11 +259,11 @@ export function MembersManagerClient({
                           }))
                         }
                         className="w-full rounded-md border bg-background px-2 py-1 text-sm"
-                        placeholder="email@example.com"
+                        placeholder={t('email')}
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-xs text-muted-foreground">Phone</label>
+                      <label className="text-xs text-muted-foreground">{t('phone')}</label>
                       <input
                         type="tel"
                         value={editDrafts[member.id]?.phone ?? ''}
@@ -274,7 +274,7 @@ export function MembersManagerClient({
                           }))
                         }
                         className="w-full rounded-md border bg-background px-2 py-1 text-sm"
-                        placeholder="(702) 555-0100"
+                        placeholder={t('phone')}
                       />
                     </div>
                   </div>
@@ -286,10 +286,9 @@ export function MembersManagerClient({
                       onClick={() => void saveEdit(member.id)}
                       disabled={isSavingEditId === member.id}
                     >
-                      {isSavingEditId === member.id ? 'Saving…' : 'Save'}
+                      {isSavingEditId === member.id ? t('saving') : t('save')}
                     </Button>
-                    <Button type="button" variant="outline" size="sm" className="text-xs h-7" onClick={() => setEditingMemberId(null)}>
-                      Cancel
+                    <Button type="button" variant="outline" size="sm" className="text-xs h-7" onClick={() => setEditingMemberId(null)}>{t('cancel')}
                     </Button>
                   </div>
                 </div>
@@ -300,7 +299,7 @@ export function MembersManagerClient({
                   wardId={wardId}
                   target={{ type: 'MEMBER', memberId: member.id }}
                   notes={memberNotes.filter((note) => note.member_id === member.id)}
-                  title="Member notes"
+                  title={t('memberNotes')}
                 />
               </div>
             </article>
@@ -308,11 +307,10 @@ export function MembersManagerClient({
         ) : (
           <div className="rounded-md border border-dashed p-8 text-center space-y-3">
             <p className="text-sm text-muted-foreground">
-              {members.length === 0 ? 'No members imported yet.' : 'No members matched your search.'}
+              {members.length === 0 ? t('noMembersImported') : t('noMembersMatched')}
             </p>
             {members.length === 0 && (
-              <Link href="/imports/members" className={cn(buttonVariants({ size: 'sm' }))}>
-                Import Members Now
+              <Link href="/imports/members" className={cn(buttonVariants({ size: 'sm' }))}>{t('importMembersNow')}
               </Link>
             )}
           </div>

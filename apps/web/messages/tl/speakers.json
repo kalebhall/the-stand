@@ -1,0 +1,26 @@
+{
+  "speakers": {
+    "title": "Siklo ng buhay ng tagapagsalita",
+    "description": "Pamahalaan ang mga paksa at isulong ang bawat tagapagsalita sa mga nakaplano, inimbitahan, tinanggap, nakumpirma, at natapos.",
+    "speakingTopic": "Paksa ng pagsasalita",
+    "topicPlaceholder": "Ano ang tatalakayin ng tagapagsalitang ito?",
+    "lifecycleStatus": "Katayuan ng siklo ng buhay",
+    "saving": "Nagse-save…",
+    "save": "I-save",
+    "topicRequired": "Kinakailangan ang paksa bago ang kumpirmasyon.",
+    "noSpeakers": "Walang mga tagapagsalita na nakatalaga sa mga pulong.",
+    "speakerFallback": "Tagapagsalita {number}",
+    "statusFor": "Katayuan para sa {speaker}",
+    "statuses": {
+      "PLANNED": "Planado",
+      "INVITED": "Inimbitahan",
+      "ACCEPTED": "Tinanggap",
+      "CONFIRMED": "Nakumpirma",
+      "COMPLETED": "Nakumpleto"
+    },
+    "errors": {
+      "load": "Nabigong i-load ang workspace ng lifecycle ng speaker.",
+      "update": "Hindi ma-update ang speaker."
+    }
+  }
+}

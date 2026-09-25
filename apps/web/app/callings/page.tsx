@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { getTranslations } from 'next-intl/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,7 +12,7 @@ import { CallingReleaseButton } from '@/components/CallingReleaseButton';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth/guards';
-import { canManageCallings, canViewCallings } from '@/src/auth/roles';
+import { canManageCallings, canViewCallings, hasRole } from '@/src/auth/roles';
 import { canTransitionCallingStatus, type CallingStatus } from '@/src/callings/lifecycle';
 import { queueCallingBusinessLine } from '@/src/callings/meeting-business';
 import { STANDARD_CALLINGS } from '@/src/callings/standard-callings';
@@ -34,19 +35,12 @@ type CallingQueueRow = {
   created_at: string;
 };
 
-const STATUS_LABELS: Record<string, string> = {
-  ASSIGNED: 'Assigned',
-  PROPOSED: 'Proposed',
-  EXTENDED: 'Extended',
-  SUSTAINED: 'Sustained',
-  SET_APART: 'Set Apart',
-  TO_BE_RELEASED: 'To Be Released'
-};
+type Translator = (key: string, values?: Record<string, string | number>) => string;
 
-function formatCallingTenure(sustainedDate: string | null, createdAt: string): string {
+function formatCallingTenure(sustainedDate: string | null, createdAt: string, t: Translator): string {
   const start = sustainedDate ? new Date(`${sustainedDate}T00:00:00.000Z`) : new Date(createdAt);
   if (Number.isNaN(start.getTime())) {
-    return '0 months';
+    return t('months', { count: 0 });
   }
 
   const now = new Date();
@@ -64,27 +58,27 @@ function formatCallingTenure(sustainedDate: string | null, createdAt: string): s
   const remainderMonths = totalMonths % 12;
 
   if (years === 0) {
-    return `${remainderMonths} month${remainderMonths === 1 ? '' : 's'}`;
+    return t('months', { count: remainderMonths });
   }
 
   if (remainderMonths === 0) {
-    return `${years} year${years === 1 ? '' : 's'}`;
+    return t('years', { count: years });
   }
 
-  return `${years} year${years === 1 ? '' : 's'} ${remainderMonths} month${remainderMonths === 1 ? '' : 's'}`;
+  return t('tenureYearsMonths', { years, months: remainderMonths });
 }
 
-function nextTransition(status: string): { toStatus: CallingStatus; label: string } | null {
+function nextTransition(status: string): { toStatus: CallingStatus; labelKey: string } | null {
   if (status === 'PROPOSED' && canTransitionCallingStatus('PROPOSED', 'EXTENDED')) {
-    return { toStatus: 'EXTENDED', label: 'Mark Extended' };
+    return { toStatus: 'EXTENDED', labelKey: 'markExtended' };
   }
 
   if (status === 'EXTENDED' && canTransitionCallingStatus('EXTENDED', 'SUSTAINED')) {
-    return { toStatus: 'SUSTAINED', label: 'Mark Sustained' };
+    return { toStatus: 'SUSTAINED', labelKey: 'markSustained' };
   }
 
   if (status === 'SUSTAINED' && canTransitionCallingStatus('SUSTAINED', 'SET_APART')) {
-    return { toStatus: 'SET_APART', label: 'Mark Set Apart' };
+    return { toStatus: 'SET_APART', labelKey: 'markSetApart' };
   }
 
   return null;
@@ -102,7 +96,7 @@ function callingPriority(callingName: string): number {
 }
 
 function compareCallings(left: CallingSortRow, right: CallingSortRow): number {
-  const groupCompare = (left.organization ?? 'Other').localeCompare(right.organization ?? 'Other');
+  const groupCompare = (left.organization ?? '').localeCompare(right.organization ?? '');
   if (groupCompare !== 0) return groupCompare;
   const priorityCompare = callingPriority(left.calling_name) - callingPriority(right.calling_name);
   if (priorityCompare !== 0) return priorityCompare;
@@ -111,6 +105,7 @@ function compareCallings(left: CallingSortRow, right: CallingSortRow): number {
 }
 
 export default async function CallingsPage() {
+  const t = await getTranslations('callings');
   const session = await requireAuthenticatedSession();
   enforcePasswordRotation(session);
 
@@ -120,6 +115,7 @@ export default async function CallingsPage() {
 
   const wardId = session.activeWardId;
   const canManage = canManageCallings({ roles: session.user.roles, activeWardId: wardId }, wardId);
+  const canManageStandardCatalog = hasRole(session.user.roles, 'SUPPORT_ADMIN') || hasRole(session.user.roles, 'SYSTEM_ADMIN');
 
   async function transitionCalling(formData: FormData) {
     'use server';
@@ -205,7 +201,7 @@ export default async function CallingsPage() {
     } catch (err) {
       await client.query('ROLLBACK');
       console.error('[callings transitionCalling]', err instanceof Error ? err.message : String(err));
-      throw new Error('Failed to transition calling');
+      throw new Error(t('failedToTransition'));
     } finally {
       client.release();
     }
@@ -216,7 +212,7 @@ export default async function CallingsPage() {
   // Fetch standard callings from DB for autocomplete, fall back to hardcoded list
   let standardCallings: string[] = STANDARD_CALLINGS;
   try {
-    const scResult = await pool.query(`SELECT name FROM standard_calling WHERE is_active = true ORDER BY unit_type, sort_order, name`);
+    const scResult = await pool.query(`SELECT name FROM standard_calling WHERE is_active = true AND unit_type = 'ward' ORDER BY sort_order, name`);
     if (scResult.rowCount && scResult.rowCount > 0) {
       standardCallings = scResult.rows.map((r) => r.name as string);
     }
@@ -233,7 +229,7 @@ export default async function CallingsPage() {
     const callingResult = await client.query(
       `SELECT ca.id,
               ca.member_name,
-              COALESCE(NULLIF(ca.organization, ''), sc.organization, 'Other') AS organization,
+              COALESCE(NULLIF(ca.organization, ''), sc.organization, '') AS organization,
               ca.calling_name,
               latest.action_status AS status,
               ca.sustained_date,
@@ -256,7 +252,7 @@ export default async function CallingsPage() {
     const setApartQueueResult = await client.query(
       `SELECT ca.id,
               ca.member_name,
-              COALESCE(NULLIF(ca.organization, ''), sc.organization, 'Other') AS organization,
+              COALESCE(NULLIF(ca.organization, ''), sc.organization, '') AS organization,
               ca.calling_name,
               ca.sustained_date,
               ca.created_at
@@ -296,17 +292,17 @@ export default async function CallingsPage() {
           <span>
             <span className="font-semibold">{calling.member_name}</span> — {calling.calling_name}
             <span className="ml-2 text-xs text-muted-foreground">
-              In calling: {formatCallingTenure(calling.sustained_date, calling.created_at)}
+              {t('inCalling', { tenure: formatCallingTenure(calling.sustained_date, calling.created_at, t) })}
             </span>
           </span>
           <div className="flex items-center gap-2">
-            <span className="rounded-full border px-2 py-0.5 text-xs font-medium">{STATUS_LABELS[calling.status] ?? calling.status}</span>
+            <span className="rounded-full border px-2 py-0.5 text-xs font-medium">{t(`status_${calling.status}`)}</span>
             {transition ? (
               <form action={transitionCalling}>
                 <input type="hidden" name="callingId" value={calling.id} />
                 <input type="hidden" name="toStatus" value={transition.toStatus} />
                 <Button type="submit" size="sm" variant="outline">
-                  {transition.label}
+                  {t(transition.labelKey)}
                 </Button>
               </form>
             ) : null}
@@ -342,7 +338,7 @@ export default async function CallingsPage() {
     function CallingGroups({ callings, showRelease = true }: { callings: CallingQueueRow[]; showRelease?: boolean }) {
       const groups = new Map<string, CallingQueueRow[]>();
       for (const calling of [...callings].sort(compareCallings)) {
-        const group = calling.organization ?? 'Other';
+        const group = calling.organization || t('other');
         groups.set(group, [...(groups.get(group) ?? []), calling]);
       }
 
@@ -358,18 +354,18 @@ export default async function CallingsPage() {
       <main className="mx-auto w-full max-w-6xl space-y-6 p-4 sm:p-6">
         <section className="flex items-start justify-between gap-4">
           <div className="space-y-2">
-            <h1 className="text-2xl font-semibold tracking-tight">Callings</h1>
-            <p className="text-sm text-muted-foreground">Track proposed → extended → sustained → set apart lifecycle.</p>
+            <h1 className="text-2xl font-semibold tracking-tight">{t('title')}</h1>
+            <p className="text-sm text-muted-foreground">{t('description')}</p>
           </div>
           <div className="flex items-center gap-2">
             {canManage ? (
               <Link href="/imports/callings" className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}>
-                Import Callings
+                {t('importCallings')}
               </Link>
             ) : null}
-            {canManage ? (
+            {canManageStandardCatalog ? (
               <Link href="/callings/standard" className="shrink-0 text-sm text-muted-foreground underline-offset-4 hover:underline">
-                Manage Standard Callings
+                {t('manageStandardCallings')}
               </Link>
             ) : null}
           </div>
@@ -377,56 +373,49 @@ export default async function CallingsPage() {
 
         {canManage ? (
           <section className="section-panel section-panel--service rounded-lg border bg-card p-4">
-            <h2 className="text-lg font-semibold">Add Calling</h2>
-            <p className="mb-3 text-sm text-muted-foreground">
-              Select from standard callings or type a custom calling name. Use Assignment only for responsibilities that do not require
-              propose, sustain, or set apart workflow.
-            </p>
+            <h2 className="text-lg font-semibold">{t('addCalling')}</h2>
+            <p className="mb-3 text-sm text-muted-foreground">{t('addCallingDescription')}</p>
             <AddCallingSection wardId={wardId} standardCallings={standardCallings} />
           </section>
         ) : null}
 
         {/* Proposed section */}
         <section className="section-panel section-panel--service rounded-lg border bg-card p-4">
-          <h2 className="text-lg font-semibold">Proposed</h2>
-          <p className="mb-3 text-sm text-muted-foreground">Callings that have been proposed but not yet extended.</p>
+          <h2 className="text-lg font-semibold">{t('proposed')}</h2>
+          <p className="mb-3 text-sm text-muted-foreground">{t('proposedDescription')}</p>
           {proposedCallings.length ? (
             <CallingGroups callings={proposedCallings} />
           ) : (
-            <p className="text-sm text-muted-foreground">No proposed callings.</p>
+            <p className="text-sm text-muted-foreground">{t('noProposed')}</p>
           )}
         </section>
 
         {/* Extended section */}
         <section className="section-panel section-panel--service rounded-lg border bg-card p-4">
-          <h2 className="text-lg font-semibold">Extended</h2>
-          <p className="mb-3 text-sm text-muted-foreground">
-            Callings that have been extended — will appear on sacrament meeting ward business for sustaining.
-          </p>
+          <h2 className="text-lg font-semibold">{t('extended')}</h2>
+          <p className="mb-3 text-sm text-muted-foreground">{t('extendedDescription')}</p>
           {extendedCallings.length ? (
             <CallingGroups callings={extendedCallings} />
           ) : (
-            <p className="text-sm text-muted-foreground">No extended callings.</p>
+            <p className="text-sm text-muted-foreground">{t('noExtended')}</p>
           )}
         </section>
 
         {/* To Be Released section */}
         <section className="section-panel section-panel--service rounded-lg border bg-card p-4">
-          <h2 className="text-lg font-semibold">To Be Released</h2>
-          <p className="mb-3 text-sm text-muted-foreground">
-            Callings queued for release — will appear on sacrament meeting ward business. Delete permanently removes the record.
-          </p>
+          <h2 className="text-lg font-semibold">{t('toBeReleased')}</h2>
+          <p className="mb-3 text-sm text-muted-foreground">{t('toBeReleasedDescription')}</p>
           {toBeReleasedCallings.length ? (
             <CallingGroups callings={toBeReleasedCallings} showRelease={false} />
           ) : (
-            <p className="text-sm text-muted-foreground">No callings queued for release.</p>
+            <p className="text-sm text-muted-foreground">{t('noToBeReleased')}</p>
           )}
         </section>
 
         {/* Set Apart Queue */}
         <section className="section-panel section-panel--service rounded-lg border bg-card p-4">
-          <h2 className="text-lg font-semibold">Set Apart Queue</h2>
-          <p className="mb-3 text-sm text-muted-foreground">Sustained callings awaiting set apart action.</p>
+          <h2 className="text-lg font-semibold">{t('setApartQueue')}</h2>
+          <p className="mb-3 text-sm text-muted-foreground">{t('setApartQueueDescription')}</p>
           {setApartQueue.length ? (
             <ul className="space-y-2">
               {sortedSetApartQueue.map((item) => (
@@ -434,7 +423,7 @@ export default async function CallingsPage() {
                   <span>
                     <span className="font-semibold">{item.member_name}</span> — {item.calling_name}
                     <span className="ml-2 text-xs text-muted-foreground">
-                      In calling: {formatCallingTenure(item.sustained_date, item.created_at)}
+                      {t('inCalling', { tenure: formatCallingTenure(item.sustained_date, item.created_at, t) })}
                     </span>
                   </span>
                   {canManage ? (
@@ -442,7 +431,7 @@ export default async function CallingsPage() {
                       <input type="hidden" name="callingId" value={item.id} />
                       <input type="hidden" name="toStatus" value="SET_APART" />
                       <Button type="submit" size="sm" variant="outline">
-                        Mark Set Apart
+                        {t('markSetApart')}
                       </Button>
                     </form>
                   ) : null}
@@ -450,24 +439,24 @@ export default async function CallingsPage() {
               ))}
             </ul>
           ) : (
-            <p className="text-sm text-muted-foreground">No sustained callings are waiting for set apart.</p>
+            <p className="text-sm text-muted-foreground">{t('noSetApartQueue')}</p>
           )}
         </section>
 
         {/* All Calling Assignments (excluding proposed, extended, to be released) */}
         <section className="section-panel section-panel--service rounded-lg border bg-card p-4">
-          <h2 className="text-lg font-semibold">Calling Assignments</h2>
+          <h2 className="text-lg font-semibold">{t('assignments')}</h2>
           {activeCallings.length ? (
             <div className="mt-3"><CallingGroups callings={activeCallings} /></div>
           ) : (
-            <p className="mt-3 text-sm text-muted-foreground">No calling assignments yet.</p>
+            <p className="mt-3 text-sm text-muted-foreground">{t('noAssignments')}</p>
           )}
         </section>
       </main>
     );
   } catch {
     await client.query('ROLLBACK');
-    throw new Error('Failed to load callings');
+    throw new Error(t('failedToLoad'));
   } finally {
     client.release();
   }

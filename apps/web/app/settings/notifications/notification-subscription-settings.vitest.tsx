@@ -4,8 +4,13 @@ import React from 'react';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { NextIntlClientProvider } from 'next-intl';
+
+import { MESSAGE_CATALOGS } from '@/src/i18n/messages';
 
 import { NotificationSubscriptionSettings } from './notification-subscription-settings';
+
+const renderWithMessages = (ui: React.ReactNode) => render(<NextIntlClientProvider locale="en-US" messages={MESSAGE_CATALOGS['en-US']}>{ui}</NextIntlClientProvider>);
 
 const subscriptions = [
   {
@@ -30,7 +35,7 @@ describe('NotificationSubscriptionSettings', () => {
 
   it('loads grouped channel controls and warns when email is unavailable', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ subscriptions }), { status: 200 })));
-    render(<NotificationSubscriptionSettings wardId="ward-1" hasUsableEmail={false} />);
+    renderWithMessages(<NotificationSubscriptionSettings wardId="ward-1" hasUsableEmail={false} />);
 
     expect(await screen.findByText('Callings')).toBeVisible();
     expect(screen.getByText(/email notifications are unavailable/i)).toBeVisible();
@@ -49,7 +54,7 @@ describe('NotificationSubscriptionSettings', () => {
       );
     vi.stubGlobal('fetch', fetchMock);
     const user = userEvent.setup();
-    render(<NotificationSubscriptionSettings wardId="ward-1" hasUsableEmail={true} />);
+    renderWithMessages(<NotificationSubscriptionSettings wardId="ward-1" hasUsableEmail={true} />);
 
     await screen.findByText('Callings');
     await user.selectOptions(screen.getByRole('combobox', { name: 'Email frequency' }), 'DAILY');

@@ -1,0 +1,56 @@
+{
+  "bishopric": {
+    "meetingTypes": {
+      "BISHOPRIC": "Pulong ng Obispo",
+      "BISHOPRIC_AND_COUNCIL": "Obispo at konseho",
+      "WARD_COUNCIL": "Konseho ng ward",
+      "MISSIONARY_COORDINATION": "Koordinasyon ng Misyonero"
+    },
+    "pageDescription": "Pribadong adyenda sa koordinasyon, mga desisyon, mga takdang-aralin, at mga takdang petsa. Hindi bahagi ng mga programa sa pampublikong pagpupulong.",
+    "privacyNotice": "Ang kakayahang makita ay pribado at sakop ng ward. Huwag itago rito ang mga kumpidensyal na detalye ng pagpapayo.",
+    "dashboard": "Dashboard",
+    "newMeeting": "Bagong {meetingType}",
+    "leadershipMeetingType": "Uri ng pulong ng pamumuno",
+    "meetingDate": "Petsa ng pagpupulong",
+    "createMeeting": "Gumawa ng pulong",
+    "addPrivateAction": "Magdagdag ng pribadong aksyon",
+    "leadershipMeeting": "Pulong ng pamumuno",
+    "selectMeeting": "Pumili ng pulong",
+    "actionOrAssignment": "Aksyon o takdang-aralin",
+    "owner": "May-ari",
+    "linkedMember": "Naka-link na miyembro",
+    "noLinkedMember": "Walang naka-link na miyembro",
+    "linkedCalling": "Naka-link na pagtawag",
+    "noLinkedCalling": "Walang naka-link na pagtawag",
+    "dueDate": "Takdang petsa",
+    "openActions": "Mga bukas na aksyon",
+    "meeting": "Pagpupulong",
+    "ownerLabel": "May-ari",
+    "memberLabel": "Miyembro",
+    "callingLabel": "Tumatawag",
+    "linkedMembershipFollowUp": "Pagsubaybay sa naka-link na pagiging miyembro",
+    "dueLabel": "Takdang petsa",
+    "statusFor": "Katayuan para sa {title}",
+    "restrictedLeadershipNoteFor": "Limitadong tala ng pamumuno para sa {title}",
+    "restrictedLeadershipNote": "Limitadong tala ng pamumuno",
+    "addNote": "Magdagdag ng tala",
+    "restrictedNotes": "Mga pinaghihigpitang tala",
+    "leader": "Pinuno",
+    "noOpenActions": "Walang hayagang aksyon ng obispo.",
+    "statuses": {
+      "PENDING": "Nakabinbin",
+      "IN_PROGRESS": "Kasalukuyang ginagawa",
+      "COMPLETED": "Nakumpleto"
+    },
+    "errors": {
+      "loadLinks": "Hindi ma-load ang mga link ng miyembro at tumatawag.",
+      "loadNotes": "Hindi ma-load ang mga tala ng pamumuno.",
+      "createMeeting": "Hindi malikha ang pulong.",
+      "selectMeeting": "Gumawa o pumili muna ng isang pulong ng pamumuno.",
+      "createAction": "Hindi makagawa ng aksyon.",
+      "emptyNote": "Hindi maaaring walang laman ang tala ng pamumuno.",
+      "saveNote": "Hindi ma-save ang tala ng pamumuno.",
+      "updateAction": "Hindi ma-update ang aksyon."
+    }
+  }
+}

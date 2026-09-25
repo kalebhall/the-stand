@@ -5,7 +5,8 @@ import { NextIntlClientProvider } from 'next-intl';
 import { render, screen, cleanup } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import messages from '../../messages/es.json';
+import { MESSAGE_CATALOGS } from '@/src/i18n/messages';
+const messages = MESSAGE_CATALOGS.es;
 import Loading from './loading';
 
 describe('meetings loading state localization', () => {

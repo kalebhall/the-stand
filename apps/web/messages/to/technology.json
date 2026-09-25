@@ -1,0 +1,26 @@
+{
+  "technology": {
+    "title": "Lisi vakai'i 'o e tekinolosia mo e streaming",
+    "description": "Loki, le'o, vaitafe, lava ke ma'u, mo e lekooti 'o e mateuteu 'o e siakale 'o e mo'ui.",
+    "dashboard": "Tesipapa",
+    "privacyNotice": "Falekoloa 'a e ngaahi fehokotaki'anga kuo fakamafai'i pe. ʻOua naʻá ke teitei tauhi ha ngaahi lea fufuu, ngaahi fakaʻilonga, ngaahi kī Wi-Fi, pe ngaahi fakamoʻoni ʻo e streaming.",
+    "meeting": "Fakataha",
+    "noMeetings": "ʻOku ʻikai ke maʻu ha ngaahi fakataha kimuí ni mai.",
+    "loadChecklist": "Lisi vakaiʻi ʻo e uta",
+    "checklistOwner": "Ko e tokotaha 'oku 'a'ana 'a e lisi sivi",
+    "authorizedStreamLink": "Fehokotaki'anga 'o e vaitafe fakamafai'i (HTTPS)",
+    "neverStoreCredentials": "ʻOua naʻá ke teitei tauhi heni ha ngaahi fakamoʻoni streaming.",
+    "roomReady": "Loki mateuteu",
+    "audioReady": "Mateuteu 'a e le'o",
+    "streamReady": "Mateuteu 'a e vaitafe",
+    "accessibilityChecked": "Kuo vakaiʻi ʻa e lava ke hū ki aí",
+    "recordingDeletionReminder": "Lekooti fakamanatu tamate'i",
+    "startConfirmed": "Kuo fakapapau'i 'a e kamata",
+    "stopConfirmed": "Ta'ofi kuo fakapapau'i",
+    "saveChecklist": "Tauhi e lisi sivi",
+    "errors": {
+      "load": "Na'e 'ikai lava ke uta 'a e lisi vakai'i.",
+      "save": "Naʻe ʻikai lava ke fakahaofi ʻa e lisi vakaiʻí."
+    }
+  }
+}

@@ -8,9 +8,7 @@ const VALID_UNIT_TYPES = ['ward', 'stake', 'branch', 'district'] as const;
 type UnitType = (typeof VALID_UNIT_TYPES)[number];
 
 function canManageStandardCallings(roles: string[] | undefined): boolean {
-  return (
-    hasRole(roles, 'SUPPORT_ADMIN') || hasRole(roles, 'STAND_ADMIN') || hasRole(roles, 'BISHOPRIC_EDITOR') || hasRole(roles, 'CLERK_EDITOR')
-  );
+  return hasRole(roles, 'SUPPORT_ADMIN') || hasRole(roles, 'SYSTEM_ADMIN');
 }
 
 export async function PUT(request: Request, context: { params: Promise<{ id: string }> }) {

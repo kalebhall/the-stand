@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import { getTranslations } from 'next-intl/server';
 
 import { requireAuthenticatedSession, enforcePasswordRotation } from '@/src/platform/auth/session';
 import { canManageMeetings } from '@/src/platform/permissions';
@@ -9,6 +10,7 @@ import { isWardModuleEnabled } from '@/src/modules/service';
 import { SpeakerLifecycleWorkspace } from './speaker-lifecycle-workspace';
 
 export default async function SpeakersPage() {
+  const t = await getTranslations('speakers');
   const session = await requireAuthenticatedSession();
   enforcePasswordRotation(session);
   if (!session.activeWardId) redirect('/dashboard');
@@ -33,15 +35,15 @@ export default async function SpeakersPage() {
     return (
       <main className="mx-auto w-full max-w-6xl space-y-6 p-4 sm:p-6 lg:p-8">
         <section className="rounded-lg border bg-card p-5">
-          <h1 className="text-2xl font-semibold tracking-tight">Speaker Lifecycle</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Manage topics and move each speaker through planned, invited, accepted, confirmed, and completed.</p>
+          <h1 className="text-2xl font-semibold tracking-tight">{t('title')}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">{t('description')}</p>
         </section>
         <SpeakerLifecycleWorkspace wardId={session.activeWardId} speakers={speakers} />
       </main>
     );
   } catch {
     await client.query('ROLLBACK').catch(() => undefined);
-    throw new Error('Failed to load speaker lifecycle workspace');
+    throw new Error(t('errors.load'));
   } finally {
     client.release();
   }

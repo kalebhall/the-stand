@@ -159,6 +159,13 @@ CREATE FUNCTION app.is_support_admin() RETURNS boolean
       JOIN role r ON r.id = ugr.role_id
      WHERE ugr.user_id = NULLIF(current_setting('app.user_id', true), '')::uuid
        AND r.name = 'SUPPORT_ADMIN'
+       AND r.scope = 'GLOBAL'
+       AND EXISTS (
+         SELECT 1
+           FROM user_account u
+          WHERE u.id = ugr.user_id
+            AND u.is_active = true
+       )
   )
 $$;
 
@@ -2404,7 +2411,7 @@ INSERT INTO public.standard_calling VALUES ('97e42a4f-4988-4e29-b5e0-6b4474ae84b
 INSERT INTO public.standard_calling VALUES ('ac5430a6-ad1f-4609-bf90-753ea8cc739e', 'First Counselor in the Bishopric', 'Bishopric', 'ward', 2, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
 INSERT INTO public.standard_calling VALUES ('cdd48e9a-67f6-45ed-9ef8-7c8f253751e7', 'Second Counselor in the Bishopric', 'Bishopric', 'ward', 3, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
 INSERT INTO public.standard_calling VALUES ('6d9d18d1-3392-422f-832e-ff0cf2f3530f', 'Executive Secretary', 'Bishopric', 'ward', 4, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
-INSERT INTO public.standard_calling VALUES ('000ab8bf-2f70-40f9-acde-43b81ffe10eb', 'Ward Clerk', 'Bishopric', 'ward', 5, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
+INSERT INTO public.standard_calling VALUES ('000ab8bf-2f70-40f9-acde-43b81ffe10eb', 'Clerk', 'Bishopric', 'ward', 5, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
 INSERT INTO public.standard_calling VALUES ('2fdb6185-3771-4de0-bcaa-1b399f31744f', 'Assistant Ward Clerk', 'Bishopric', 'ward', 6, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
 INSERT INTO public.standard_calling VALUES ('0ebf330b-a2b0-4f9b-aa0c-1a91768a8b6e', 'Assistant Ward Clerk (Finance)', 'Bishopric', 'ward', 7, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
 INSERT INTO public.standard_calling VALUES ('48e8e554-4182-4d82-8a6d-f42de9ad2320', 'Assistant Ward Clerk (Membership)', 'Bishopric', 'ward', 8, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
@@ -2445,23 +2452,23 @@ INSERT INTO public.standard_calling VALUES ('6ded3f35-648f-49e5-91ec-0b88ac45563
 INSERT INTO public.standard_calling VALUES ('dd2274ba-f756-4cac-a8a7-8098ee71e643', 'Second Counselor in the Sunday School Presidency', 'Sunday School', 'ward', 62, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
 INSERT INTO public.standard_calling VALUES ('c1f0e508-bd0c-41e2-8223-129f33658542', 'Sunday School Secretary', 'Sunday School', 'ward', 63, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
 INSERT INTO public.standard_calling VALUES ('f966ca96-157b-4c4a-9088-502d694847d4', 'Sunday School Teacher', 'Sunday School', 'ward', 64, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
-INSERT INTO public.standard_calling VALUES ('d0f0a310-4a4c-49ec-805f-094e5077b804', 'Ward Mission Leader', 'Ward Mission', 'ward', 70, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
-INSERT INTO public.standard_calling VALUES ('28eebaa4-0a66-412f-bd96-2d21935c133e', 'Ward Missionary', 'Ward Mission', 'ward', 71, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
-INSERT INTO public.standard_calling VALUES ('9bd25708-f313-4fb0-b407-f4e0de3d7825', 'Ward Temple and Family History Consultant', 'Temple and Family History', 'ward', 80, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
-INSERT INTO public.standard_calling VALUES ('0400c5fd-32c2-4dc4-9609-9527e618b8c0', 'Ward Temple and Family History Leader', 'Temple and Family History', 'ward', 81, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
-INSERT INTO public.standard_calling VALUES ('cc57e144-13a5-417c-8a55-b4a1b2237ae1', 'Ward Music Coordinator', 'Music', 'ward', 90, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
-INSERT INTO public.standard_calling VALUES ('b9577423-d132-4288-a467-27bc9d349907', 'Ward Choir Director', 'Music', 'ward', 91, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
-INSERT INTO public.standard_calling VALUES ('7b40010c-3cf0-48d2-9694-c16eb795c579', 'Ward Organist', 'Music', 'ward', 92, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
+INSERT INTO public.standard_calling VALUES ('d0f0a310-4a4c-49ec-805f-094e5077b804', 'Mission Leader', 'Ward Mission', 'ward', 70, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
+INSERT INTO public.standard_calling VALUES ('28eebaa4-0a66-412f-bd96-2d21935c133e', 'Missionary', 'Ward Mission', 'ward', 71, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
+INSERT INTO public.standard_calling VALUES ('9bd25708-f313-4fb0-b407-f4e0de3d7825', 'Temple and Family History Consultant', 'Temple and Family History', 'ward', 80, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
+INSERT INTO public.standard_calling VALUES ('0400c5fd-32c2-4dc4-9609-9527e618b8c0', 'Temple and Family History Leader', 'Temple and Family History', 'ward', 81, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
+INSERT INTO public.standard_calling VALUES ('cc57e144-13a5-417c-8a55-b4a1b2237ae1', 'Music Coordinator', 'Music', 'ward', 90, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
+INSERT INTO public.standard_calling VALUES ('b9577423-d132-4288-a467-27bc9d349907', 'Choir Director', 'Music', 'ward', 91, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
+INSERT INTO public.standard_calling VALUES ('7b40010c-3cf0-48d2-9694-c16eb795c579', 'Organist', 'Music', 'ward', 92, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
 INSERT INTO public.standard_calling VALUES ('181b3aab-4ed8-42bb-ad9c-e9cdd8ec87b4', 'Sacrament Meeting Chorister', 'Music', 'ward', 93, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
-INSERT INTO public.standard_calling VALUES ('7b43f853-68ff-4f3e-ad53-47ee3fd561ed', 'Ward Accompanist', 'Music', 'ward', 94, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
+INSERT INTO public.standard_calling VALUES ('7b43f853-68ff-4f3e-ad53-47ee3fd561ed', 'Accompanist', 'Music', 'ward', 94, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
 INSERT INTO public.standard_calling VALUES ('b318171b-108c-4e75-b87e-8190cb65470f', 'Self-Reliance Specialist', 'Self-Reliance and Welfare', 'ward', 100, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
 INSERT INTO public.standard_calling VALUES ('b4681dba-9db5-4a72-bdec-f35fcc489c30', 'Welfare Specialist', 'Self-Reliance and Welfare', 'ward', 101, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
 INSERT INTO public.standard_calling VALUES ('d10330f5-0916-4df5-99cb-b811b59704fd', 'Employment Specialist', 'Self-Reliance and Welfare', 'ward', 102, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
-INSERT INTO public.standard_calling VALUES ('7fad3f0d-b5e5-4aa2-a452-51ad5df7ea74', 'Ward Communications Director', 'Other Ward Callings', 'ward', 110, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
-INSERT INTO public.standard_calling VALUES ('934d202c-add5-46da-813e-0aa8606169fa', 'Ward Newsletter Editor', 'Other Ward Callings', 'ward', 111, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
-INSERT INTO public.standard_calling VALUES ('3c71aa22-8f24-4764-a368-60a1d4a0f087', 'Ward Historian', 'Other Ward Callings', 'ward', 112, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
-INSERT INTO public.standard_calling VALUES ('f2d01d35-2b0b-415d-9f93-95ead0e631f9', 'Ward Emergency Preparedness Specialist', 'Other Ward Callings', 'ward', 113, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
-INSERT INTO public.standard_calling VALUES ('fe9cfb22-e6b3-4c38-8535-61b1234de26c', 'Ward Librarian', 'Other Ward Callings', 'ward', 114, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
+INSERT INTO public.standard_calling VALUES ('7fad3f0d-b5e5-4aa2-a452-51ad5df7ea74', 'Communications Director', 'Other Ward Callings', 'ward', 110, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
+INSERT INTO public.standard_calling VALUES ('934d202c-add5-46da-813e-0aa8606169fa', 'Newsletter Editor', 'Other Ward Callings', 'ward', 111, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
+INSERT INTO public.standard_calling VALUES ('3c71aa22-8f24-4764-a368-60a1d4a0f087', 'Historian', 'Other Ward Callings', 'ward', 112, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
+INSERT INTO public.standard_calling VALUES ('f2d01d35-2b0b-415d-9f93-95ead0e631f9', 'Emergency Preparedness Specialist', 'Other Ward Callings', 'ward', 113, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
+INSERT INTO public.standard_calling VALUES ('fe9cfb22-e6b3-4c38-8535-61b1234de26c', 'Librarian', 'Other Ward Callings', 'ward', 114, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
 INSERT INTO public.standard_calling VALUES ('6ffbd6bb-fc04-43a5-a382-42a833d2ab53', 'Assistant Ward Librarian', 'Other Ward Callings', 'ward', 115, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
 INSERT INTO public.standard_calling VALUES ('d71dff70-b14b-4e76-bc02-e12127db041f', 'Sunday Meeting Schedule Coordinator', 'Other Ward Callings', 'ward', 116, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
 INSERT INTO public.standard_calling VALUES ('20aeb1e3-a3e1-4cd8-a360-ca01b24c2f04', 'Stake President', 'Stake Presidency', 'stake', 1, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
@@ -2503,25 +2510,25 @@ INSERT INTO public.standard_calling VALUES ('9dfed60f-c08b-441d-966f-8b0d6be769b
 INSERT INTO public.standard_calling VALUES ('67c1c959-69dc-4cda-b277-3f7bc2503a16', 'Branch President', 'Branch Presidency', 'branch', 1, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
 INSERT INTO public.standard_calling VALUES ('6db0a16b-518e-4997-a0b2-8dda775cd7c7', 'First Counselor in the Branch Presidency', 'Branch Presidency', 'branch', 2, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
 INSERT INTO public.standard_calling VALUES ('d5dcf7bf-bf0c-4861-9989-6874da62a38b', 'Second Counselor in the Branch Presidency', 'Branch Presidency', 'branch', 3, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
-INSERT INTO public.standard_calling VALUES ('055e3f11-198c-4ac4-a1d2-95a027e1395f', 'Branch Executive Secretary', 'Branch Presidency', 'branch', 4, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
-INSERT INTO public.standard_calling VALUES ('cb22a82a-bf43-43f5-90a5-f346fd69d8a8', 'Branch Clerk', 'Branch Presidency', 'branch', 5, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
+INSERT INTO public.standard_calling VALUES ('226b92bf-b103-42d4-bfcb-c96c8503883d', 'Branch Executive Secretary', 'Branch Presidency', 'branch', 4, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
+INSERT INTO public.standard_calling VALUES ('e3a19e0c-4cd9-45d1-b683-4bb1590976e6', 'Branch Elders Quorum President', 'Elders Quorum', 'branch', 10, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
 INSERT INTO public.standard_calling VALUES ('532f3fda-a6af-4314-8f32-4c9377359a1d', 'Assistant Branch Clerk', 'Branch Presidency', 'branch', 6, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
-INSERT INTO public.standard_calling VALUES ('f129965a-9993-4fd4-8c65-3f768fb59009', 'Branch Elders Quorum President', 'Elders Quorum', 'branch', 10, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
+INSERT INTO public.standard_calling VALUES ('7e7d9c68-0d0f-4a7f-b7d8-0c9a9a8c3f5b', 'Branch Clerk', 'Branch Presidency', 'branch', 5, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
+INSERT INTO public.standard_calling VALUES ('a6d9203b-c3e4-4ff8-9ac6-2f726542f740', 'Branch Elders Quorum Secretary', 'Elders Quorum', 'branch', 13, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
+INSERT INTO public.standard_calling VALUES ('277c742c-3ce9-48ff-8465-c0fbe43e36b0', 'Branch Relief Society President', 'Relief Society', 'branch', 20, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
 INSERT INTO public.standard_calling VALUES ('b0410fbb-5578-4f68-a6d8-98a36d7364d5', 'First Counselor in the Branch Elders Quorum Presidency', 'Elders Quorum', 'branch', 11, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
 INSERT INTO public.standard_calling VALUES ('b8778cbf-6209-4dd6-9d52-69114703c53c', 'Second Counselor in the Branch Elders Quorum Presidency', 'Elders Quorum', 'branch', 12, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
-INSERT INTO public.standard_calling VALUES ('fdb4c11d-0564-4925-b361-4e6b17729aa8', 'Branch Elders Quorum Secretary', 'Elders Quorum', 'branch', 13, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
-INSERT INTO public.standard_calling VALUES ('9de59926-7196-45ff-966f-85c602851169', 'Branch Relief Society President', 'Relief Society', 'branch', 20, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
+INSERT INTO public.standard_calling VALUES ('70812452-4716-4205-9f4e-4cf33e5d4ebb', 'Branch Relief Society Secretary', 'Relief Society', 'branch', 23, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
 INSERT INTO public.standard_calling VALUES ('1cdaa491-4978-487c-ba6c-3c5b643917b5', 'First Counselor in the Branch Relief Society Presidency', 'Relief Society', 'branch', 21, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
 INSERT INTO public.standard_calling VALUES ('0fb9d0ca-8298-4ee7-9770-9ad2aa7b1f0b', 'Second Counselor in the Branch Relief Society Presidency', 'Relief Society', 'branch', 22, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
-INSERT INTO public.standard_calling VALUES ('97cc8a34-0564-4a47-b393-70c4ca34876e', 'Branch Relief Society Secretary', 'Relief Society', 'branch', 23, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
-INSERT INTO public.standard_calling VALUES ('d38e8343-d9cd-4d11-a722-84dc14d1e9d3', 'Branch Young Men President', 'Young Men', 'branch', 30, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
-INSERT INTO public.standard_calling VALUES ('e0a62e7f-05b5-4118-b472-e2dcb6d525b6', 'Branch Young Women President', 'Young Women', 'branch', 40, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
-INSERT INTO public.standard_calling VALUES ('1f6d8039-39bd-4802-9e3f-3d05cae0ac4c', 'Branch Primary President', 'Primary', 'branch', 50, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
+INSERT INTO public.standard_calling VALUES ('16b453e8-b3ef-4cf0-8caf-330ee0a22da0', 'Branch Young Men President', 'Young Men', 'branch', 30, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
+INSERT INTO public.standard_calling VALUES ('58bcb7ab-c479-42bf-b883-a4aa2a55ee08', 'Branch Young Women President', 'Young Women', 'branch', 40, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
+INSERT INTO public.standard_calling VALUES ('6446674f-b9b5-4894-91ad-0c7a85860443', 'Branch Primary President', 'Primary', 'branch', 50, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
 INSERT INTO public.standard_calling VALUES ('6da3d130-bcd3-4c4b-8564-0b5c39ef3303', 'First Counselor in the Branch Primary Presidency', 'Primary', 'branch', 51, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
 INSERT INTO public.standard_calling VALUES ('aeee1047-49f5-4b89-b916-076fe9aed001', 'Second Counselor in the Branch Primary Presidency', 'Primary', 'branch', 52, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
-INSERT INTO public.standard_calling VALUES ('318c24a9-71ba-43b5-83b4-7b8a726e2ddb', 'Branch Sunday School President', 'Sunday School', 'branch', 60, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
-INSERT INTO public.standard_calling VALUES ('0db9ad4e-350f-4eba-b567-25568f62a1a1', 'Branch Mission Leader', 'Branch Mission', 'branch', 70, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
-INSERT INTO public.standard_calling VALUES ('e6b96ac2-9ebd-4482-8a25-3324caa856aa', 'Branch Music Coordinator', 'Music', 'branch', 80, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
+INSERT INTO public.standard_calling VALUES ('cce0be50-a7bd-49cd-a5cb-3fdbfacaa5d4', 'Branch Sunday School President', 'Sunday School', 'branch', 60, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
+INSERT INTO public.standard_calling VALUES ('16d4b392-d031-4729-a8a1-c552f720a6f6', 'Branch Mission Leader', 'Branch Mission', 'branch', 70, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
+INSERT INTO public.standard_calling VALUES ('3f20f8fd-5a6f-4b6f-a708-1b22279c25a7', 'Branch Music Coordinator', 'Music', 'branch', 80, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
 INSERT INTO public.standard_calling VALUES ('5dff96b5-e7e8-47df-9c95-5b9727a4cdde', 'District President', 'District Presidency', 'district', 1, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
 INSERT INTO public.standard_calling VALUES ('c3fa98e4-d63c-417d-af95-eed85abe9293', 'First Counselor in the District Presidency', 'District Presidency', 'district', 2, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');
 INSERT INTO public.standard_calling VALUES ('58acd82c-380f-4ce4-b139-f333b963ee46', 'Second Counselor in the District Presidency', 'District Presidency', 'district', 3, true, '2026-09-22 17:55:02.997183-07', '2026-09-22 17:55:02.997183-07');

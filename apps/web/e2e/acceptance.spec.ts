@@ -9,13 +9,10 @@ async function login(page: Page, email: string, password: string) {
   await page.locator('input[name="email"]').fill(email);
   await page.locator('input[name="password"]').fill(password);
   await page.getByRole('button', { name: 'Sign in' }).click();
-  await expect.poll(async () => {
-    try {
-      return Boolean((await page.evaluate(async () => (await fetch('/api/auth/session')).json()))?.user);
-    } catch {
-      return false;
-    }
-  }, { timeout: 30_000 }).toBe(true);
+  await page.waitForURL(/\/(dashboard|account\/change-password)/, { timeout: 30_000 });
+  await expect.poll(async () => Boolean((await (await page.request.get('/api/auth/session')).json())?.user), {
+    timeout: 30_000
+  }).toBe(true);
 }
 
 async function apiRequest(page: Page, url: string, method: string, data?: unknown) {
@@ -31,7 +28,7 @@ async function apiRequest(page: Page, url: string, method: string, data?: unknow
 
 test('bootstrap admin is forced to change password', async ({ page }) => {
   await login(page, 'support-admin@example.test', 'BootstrapPassword123456789012');
-  await expect(page).toHaveURL(/\/account\/change-password/);
+  await expect(page.getByRole('heading', { name: 'Change password' })).toBeVisible();
 
   await page.locator('input[name="currentPassword"]').fill('BootstrapPassword123456789012');
   await page.locator('input[name="newPassword"]').fill('BootstrapPassword123456789012_NEW');
@@ -92,8 +89,8 @@ test('meeting create publish and print flow works', async ({ page }) => {
   expect(publishResponse.status).toBe(200);
 
   await page.goto(`/meetings/${id}/print`);
-  await expect(page.locator('main.public-program')).toBeVisible();
-  await expect(page.getByText('SACRAMENT')).toBeVisible();
+  await expect(page.getByRole('main', { name: 'Sacrament meeting program' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /SACRAMENT/ }).first()).toBeVisible();
 });
 
 test('stand view renders formatted sustain/release text', async ({ page }) => {
@@ -110,8 +107,10 @@ test('stand view renders formatted sustain/release text', async ({ page }) => {
 
 test('public portal exposes published snapshot', async ({ page }) => {
   await page.goto('/p/meeting-token-e2e');
-  await expect(page.getByText('Published snapshot')).toBeVisible();
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex,nofollow');
+  await expect(page.getByText('E2E Ward A')).toBeVisible();
 
   await page.goto('/p/ward/portal-token-e2e');
-  await expect(page.getByText('Published snapshot')).toBeVisible();
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex,nofollow');
+  await expect(page.getByText('E2E Ward A')).toBeVisible();
 });

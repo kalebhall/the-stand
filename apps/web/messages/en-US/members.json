@@ -1,0 +1,32 @@
+{
+  "members": {
+    "pageTitle": "Members & Notes",
+    "pageDescription": "Directory of ward members and restricted leadership follow-up notes.",
+    "importMembers": "Import members",
+    "filterPlaceholder": "Filter members by name, email, or phone…",
+    "sortBy": "Sort by",
+    "name": "Name",
+    "age": "Age",
+    "email": "Email",
+    "showing": "Showing {shown} of {total} members",
+    "noEmail": "No email",
+    "noPhone": "No phone",
+    "edit": "Edit",
+    "archiving": "Archiving…",
+    "archive": "Archive",
+    "archiveConfirm": "Archive {name}? They will no longer appear in active member lists but historical records are preserved.",
+    "editMemberInfo": "Edit member information",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "phone": "Phone",
+    "save": "Save",
+    "saving": "Saving…",
+    "cancel": "Cancel",
+    "memberNotes": "Member notes",
+    "noMembersImported": "No members imported yet.",
+    "noMembersMatched": "No members matched your search.",
+    "importMembersNow": "Import members now",
+    "saveFailed": "Failed to save changes.",
+    "archiveFailed": "Failed to archive member."
+  }
+}

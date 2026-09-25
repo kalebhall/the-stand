@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { getTranslations } from 'next-intl/server';
 
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -34,6 +35,7 @@ async function requireSupportAdmin() {
 
 export default async function SupportAccessRequestsPage() {
   const session = await requireSupportAdmin();
+  const t = await getTranslations('supportAccessRequests');
 
   async function addStake(formData: FormData) {
     'use server';
@@ -174,12 +176,12 @@ export default async function SupportAccessRequestsPage() {
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-5 p-6">
       <section className="space-y-2">
-        <h1 className="text-2xl font-semibold">Support Console: Access Requests</h1>
+        <h1 className="text-2xl font-semibold">{t('title')}</h1>
         <p className="text-muted-foreground">
-          Review and triage access intake requests. Use this queue to identify who needs provisioning or role assignment follow-up.
+          {t('description')}
         </p>
         <Link href="/support" className={cn(buttonVariants({ size: 'sm', variant: 'outline' }))}>
-          Back to support sections
+          {t('back')}
         </Link>
       </section>
       {result.rowCount ? (
@@ -197,19 +199,19 @@ export default async function SupportAccessRequestsPage() {
                 <form action={addStake}>
                   <input type="hidden" name="requestId" value={row.id} />
                   <button type="submit" className="rounded-md border px-3 py-2 text-sm font-medium">
-                    Add stake
+                    {t('addStake')}
                   </button>
                 </form>
                 <form action={addWard}>
                   <input type="hidden" name="requestId" value={row.id} />
                   <button type="submit" className="rounded-md border px-3 py-2 text-sm font-medium">
-                    Add ward
+                    {t('addWard')}
                   </button>
                 </form>
                 <form action={addUser}>
                   <input type="hidden" name="requestId" value={row.id} />
                   <button type="submit" className="rounded-md border px-3 py-2 text-sm font-medium">
-                    Add user
+                    {t('addUser')}
                   </button>
                 </form>
               </div>
@@ -217,7 +219,7 @@ export default async function SupportAccessRequestsPage() {
           ))}
         </div>
       ) : (
-        <p className="text-muted-foreground">No access requests yet.</p>
+        <p className="text-muted-foreground">{t('empty')}</p>
       )}
     </main>
   );

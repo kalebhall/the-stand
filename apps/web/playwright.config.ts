@@ -5,6 +5,7 @@ export default defineConfig({
   timeout: 120_000,
   fullyParallel: false,
   retries: 0,
+  workers: 1,
   use: {
     baseURL: 'http://localhost:3005',
     trace: 'on-first-retry'

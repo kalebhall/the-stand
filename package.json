@@ -7,7 +7,7 @@
     "packages/*"
   ],
   "scripts": {
-    "lint": "eslint --no-config-lookup --ext .js,.mjs scripts",
+    "lint": "eslint --config eslint.config.mjs scripts --max-warnings=0",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "node scripts/vitest.mjs",
     "build": "node scripts/next-build.mjs",
@@ -19,6 +19,9 @@
     "format:check": "prettier --check ."
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "eslint": "^9.39.5",
+    "globals": "^16.5.0",
     "prettier": "^3.5.3"
   }
 }

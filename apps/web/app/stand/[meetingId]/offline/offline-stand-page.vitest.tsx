@@ -5,7 +5,8 @@ import { NextIntlClientProvider } from 'next-intl';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import messages from '../../../../messages/en-US.json';
+import { MESSAGE_CATALOGS } from '@/src/i18n/messages';
+const messages = MESSAGE_CATALOGS['en-US'];
 
 const auth = vi.hoisted(() => ({ useSession: vi.fn() }));
 const offline = vi.hoisted(() => ({

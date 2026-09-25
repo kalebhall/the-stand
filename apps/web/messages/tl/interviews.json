@@ -1,0 +1,49 @@
+{
+  "interviews": {
+    "title": "Mga naka-iskedyul na panayam",
+    "description": "Para lamang sa pag-iiskedyul ng operasyon. Huwag itala ang kumpidensyal na nilalaman ng panayam.",
+    "exportCalendar": "I-export ang kalendaryo",
+    "dashboard": "Dashboard",
+    "offlineNotice": "Offline — ipinapakita ang naka-save na iskedyul ng panayam. Read-only; ang mga pagbabago ay nangangailangan ng koneksyon.",
+    "savedCopy": "Naka-save na kopya: {date}",
+    "calendarSubscription": "Subskripsyon sa kalendaryo",
+    "calendarSubscriptionDescription": "Gumawa ng pribado at maaaring bawiing URL sa kalendaryo para sa mga nakatakdang panayam sa ward na ito. Mababasa ng sinumang may URL ang iskedyul ng operasyon.",
+    "rotateSubscriptionUrl": "I-rotate ang URL ng subscription",
+    "createSubscriptionUrl": "Gumawa ng URL ng subscription",
+    "revokeUrl": "Bawiin ang URL",
+    "newCalendarUrl": "Bagong URL ng kalendaryo",
+    "subscriptionCreated": "Kopyahin ang URL na ito ngayon. Hindi na ito ipapakita muli.",
+    "subscriptionRevoked": "Binawi ang subscription sa kalendaryo.",
+    "scheduleInterview": "Mag-iskedyul ng panayam",
+    "interviewType": "Uri ng panayam",
+    "defaultInterviewType": "Pagiging Miyembro o Ordinansa",
+    "searchMember": "Maghanap ng miyembro",
+    "interviewer": "Tagapanayam",
+    "interviewDateTime": "Petsa at oras ng panayam",
+    "schedule": "Iskedyul",
+    "interviewSchedule": "Iskedyul ng panayam",
+    "statusFor": "Katayuan para sa {member}",
+    "noInterviews": "Walang naka-iskedyul na mga panayam.",
+    "fields": {
+      "interviewType": "uri ng panayam",
+      "member": "miyembro",
+      "interviewer": "tagapanayam",
+      "dateTime": "petsa at oras ng panayam"
+    },
+    "statuses": {
+      "SCHEDULED": "Naka-iskedyul",
+      "COMPLETED": "Nakumpleto",
+      "CANCELLED": "Kinansela"
+    },
+    "errors": {
+      "load": "Hindi ma-load ang mga panayam.",
+      "offlineEmpty": "Walang available na naka-save na iskedyul ng panayam sa device na ito.",
+      "createSubscription": "Hindi makagawa ng subscription sa kalendaryo.",
+      "revokeSubscription": "Hindi mabawi ang subscription sa kalendaryo.",
+      "completeRequired": "Kumpletuhin ang mga kinakailangang field: {fields}.",
+      "invalidDate": "Maglagay ng wastong petsa at oras ng panayam.",
+      "schedule": "Hindi ma-iskedyul ang panayam.",
+      "update": "Hindi ma-update ang panayam."
+    }
+  }
+}

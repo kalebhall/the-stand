@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 
 import { Button } from '@/components/ui/button';
 
@@ -13,6 +14,7 @@ type CallingDeleteButtonProps = {
 };
 
 export function CallingDeleteButton({ wardId, callingId, memberName, callingName }: CallingDeleteButtonProps) {
+  const t = useTranslations('callings');
   const router = useRouter();
   const [confirming, setConfirming] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -29,14 +31,14 @@ export function CallingDeleteButton({ wardId, callingId, memberName, callingName
 
       if (!response.ok) {
         const payload = (await response.json().catch(() => null)) as { error?: string } | null;
-        setError(payload?.error ?? `Failed to delete ${memberName} — ${callingName}.`);
+        setError(payload?.error ?? t('failedToDelete', { member: memberName, calling: callingName }));
         setDeleting(false);
         return;
       }
 
       router.refresh();
     } catch {
-      setError(`Failed to delete ${memberName} — ${callingName}.`);
+      setError(t('failedToDelete', { member: memberName, calling: callingName }));
       setDeleting(false);
     }
   }
@@ -45,10 +47,10 @@ export function CallingDeleteButton({ wardId, callingId, memberName, callingName
     return (
       <div className="flex items-center gap-2">
         <Button variant="destructive" size="sm" type="button" disabled={deleting} onClick={() => void deleteCalling()}>
-          {deleting ? 'Deleting…' : 'Confirm delete'}
+          {deleting ? t('deleting') : t('confirmDelete')}
         </Button>
         <Button variant="ghost" size="sm" type="button" disabled={deleting} onClick={() => setConfirming(false)}>
-          Cancel
+          {t('cancel')}
         </Button>
         {error ? <span className="text-xs text-destructive">{error}</span> : null}
       </div>
@@ -57,7 +59,7 @@ export function CallingDeleteButton({ wardId, callingId, memberName, callingName
 
   return (
     <Button variant="outline" size="sm" type="button" onClick={() => setConfirming(true)}>
-      Delete
+      {t('delete')}
     </Button>
   );
 }

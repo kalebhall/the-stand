@@ -1,0 +1,26 @@
+{
+  "speakers": {
+    "title": "Ciclo de vida del discursante",
+    "description": "Administre los temas y avance a cada discursante por los estados planificado, invitado, aceptado, confirmado y completado.",
+    "speakingTopic": "Tema del discurso",
+    "topicPlaceholder": "¿Sobre qué hablará este discursante?",
+    "lifecycleStatus": "Estado del ciclo de vida",
+    "saving": "Guardando…",
+    "save": "Guardar",
+    "topicRequired": "Se requiere un tema antes de confirmar.",
+    "noSpeakers": "No hay discursantes asignados a reuniones.",
+    "speakerFallback": "Discursante {number}",
+    "statusFor": "Estado de {speaker}",
+    "statuses": {
+      "PLANNED": "Planificado",
+      "INVITED": "Invitado",
+      "ACCEPTED": "Aceptado",
+      "CONFIRMED": "Confirmado",
+      "COMPLETED": "Completado"
+    },
+    "errors": {
+      "load": "No se pudo cargar el espacio de trabajo del ciclo de vida de los discursantes.",
+      "update": "No se pudo actualizar el discursante."
+    }
+  }
+}

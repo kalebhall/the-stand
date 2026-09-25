@@ -1,0 +1,26 @@
+{
+  "speakers": {
+    "title": "Siakale mo'ui 'a e tokotaha lea",
+    "description": "Puleʻi ʻa e ngaahi kaveingá pea hiki ʻa e tokotaha lea takitaha ʻo fakafou ʻi he palani, fakaafeʻi, tali, fakapapauʻi, mo fakakakato.",
+    "speakingTopic": "Kaveinga lea",
+    "topicPlaceholder": "Ko e hā ʻe lea ʻaki ʻe he tokotaha lea ko ʻení?",
+    "lifecycleStatus": "Tu'unga 'o e siakale 'o e mo'ui",
+    "saving": "Fakahaofi...",
+    "save": "Fakahaofi",
+    "topicRequired": "Kaveinga 'oku fiema'u kimu'a pea toki fakapapau'i.",
+    "noSpeakers": "‘Ikai ha kau malanga ‘e vahe ki he ngaahi fakatahá.",
+    "speakerFallback": "Ko e Sea {number}",
+    "statusFor": "Tu'unga mo e {speaker}",
+    "statuses": {
+      "PLANNED": "Palani",
+      "INVITED": "Fakaafe'i",
+      "ACCEPTED": "Kuo tali",
+      "CONFIRMED": "Fakapapau'i",
+      "COMPLETED": "Fakakakato"
+    },
+    "errors": {
+      "load": "Na'e 'ikai lava ke uta 'a e feitu'u ngaue 'o e siakale mo'ui 'o e tokotaha lea.",
+      "update": "'Oku 'ikai lava ke fakafo'ou 'a e speaker."
+    }
+  }
+}

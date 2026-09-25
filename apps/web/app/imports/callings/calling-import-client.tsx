@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { LcrExtractorInstructions } from '@/components/lcr-extractor-instructions';
 
@@ -78,6 +79,7 @@ function extractTsvFromLcrHtml(html: string): string | null {
 }
 
 export function CallingImportClient({ wardId, initialCallingDrift }: { wardId: string; initialCallingDrift: CallingDrift }) {
+  const t = useTranslations('imports.callings');
   const [callingInputMode, setCallingInputMode] = useState<'pdf' | 'paste'>('paste');
   const [callingPdfFile, setCallingPdfFile] = useState<File | null>(null);
   const [callingRawText, setCallingRawText] = useState('');
@@ -140,7 +142,7 @@ export function CallingImportClient({ wardId, initialCallingDrift }: { wardId: s
         | { error?: string };
 
       if (!response.ok || !('preview' in payload)) {
-        setCallingError('error' in payload ? (payload.error ?? 'Calling import failed') : 'Calling import failed');
+        setCallingError('error' in payload ? (payload.error ?? t('failed')) : t('failed'));
         return;
       }
 
@@ -159,7 +161,7 @@ export function CallingImportClient({ wardId, initialCallingDrift }: { wardId: s
         window.location.href = '/callings';
       }
     } catch {
-      setCallingError('Calling import failed');
+      setCallingError(t('failed'));
     } finally {
       setIsCallingSubmitting(false);
     }
@@ -173,9 +175,9 @@ export function CallingImportClient({ wardId, initialCallingDrift }: { wardId: s
 
       <section className="space-y-4 rounded-lg border bg-card p-5">
         <div className="space-y-1">
-          <h2 className="text-lg font-semibold">Import Callings Data</h2>
+          <h2 className="text-lg font-semibold">{t('dataTitle')}</h2>
           <p className="text-sm text-muted-foreground">
-            Importing replaces all active calling assignments. Use the LCR Members with Callings report.
+            {t('dataDescription')}
           </p>
         </div>
 
@@ -184,10 +186,10 @@ export function CallingImportClient({ wardId, initialCallingDrift }: { wardId: s
             drift.isStale ? 'border-amber-300 bg-amber-50 text-amber-900' : 'border-emerald-300 bg-emerald-50 text-emerald-900'
           }`}
         >
-          Drift indicator:{' '}
+          {t('drift')}{' '}
           {drift.isStale
-            ? `Stale (${drift.driftCount} differences from latest committed calling import).`
-            : 'In sync with latest committed calling import.'}
+            ? t('stale', { count: drift.driftCount })
+            : t('inSync')}
         </div>
 
         <div className="flex gap-1 rounded-md border bg-muted/30 p-1 text-sm max-w-xs">
@@ -196,14 +198,14 @@ export function CallingImportClient({ wardId, initialCallingDrift }: { wardId: s
             onClick={() => switchCallingMode('paste')}
             className={`flex-1 rounded px-3 py-1 transition-colors ${callingInputMode === 'paste' ? 'bg-background font-medium shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
           >
-            Paste text
+            {t('paste')}
           </button>
           <button
             type="button"
             onClick={() => switchCallingMode('pdf')}
             className={`flex-1 rounded px-3 py-1 transition-colors ${callingInputMode === 'pdf' ? 'bg-background font-medium shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
           >
-            Upload PDF
+            {t('upload')}
           </button>
         </div>
 
@@ -217,7 +219,7 @@ export function CallingImportClient({ wardId, initialCallingDrift }: { wardId: s
         ) : (
           <div className="space-y-1">
             <p className="text-xs text-muted-foreground">
-              Open the Members with Callings report, run the extractor bookmarklet or copy the table, and paste below.
+              {t('pasteInstructions')}
             </p>
             <textarea
               value={callingRawText}
@@ -233,19 +235,17 @@ export function CallingImportClient({ wardId, initialCallingDrift }: { wardId: s
                 }
               }}
               className="min-h-48 w-full rounded-md border bg-background p-3 font-mono text-sm"
-              placeholder={
-                'Name\tGender\tAge\tBirth Date\tOrganization\tCalling\tSustained\tSet Apart\nJane Doe\tFemale\t35\tJan 15\tRelief Society\tRelief Society President\t15 Jan 2024\tYes'
-              }
+              placeholder={t('placeholder')}
             />
           </div>
         )}
 
         <div className="flex flex-wrap gap-3">
           <Button type="button" variant="outline" onClick={() => submitCallingImport(false)} disabled={isCallingSubmitting}>
-            Dry run preview
+            {t('dryRun')}
           </Button>
           <Button type="button" onClick={() => submitCallingImport(true)} disabled={isCallingSubmitting}>
-            Commit import
+            {t('commit')}
           </Button>
         </div>
 
@@ -253,26 +253,25 @@ export function CallingImportClient({ wardId, initialCallingDrift }: { wardId: s
 
         {callingSummary ? (
           <p className="text-sm text-muted-foreground">
-            {callingSummary.commit ? 'Commit complete. Redirecting to Callings page...' : 'Preview complete.'} Parsed{' '}
-            {callingSummary.parsedCount} rows.
+            {callingSummary.commit ? t('complete') : t('previewComplete')} {t('parsed', { count: callingSummary.parsedCount })}
             {callingSummary.commit
-              ? ` ${callingSummary.replacedCount} previous callings replaced, ${callingSummary.inserted} inserted, ${callingSummary.matchedMembers} matched to members, ${callingSummary.unmatchedMembers} unmatched.`
+              ? ` ${t('summary', { replaced: callingSummary.replacedCount, inserted: callingSummary.inserted, matched: callingSummary.matchedMembers, unmatched: callingSummary.unmatchedMembers })}`
               : ''}
           </p>
         ) : null}
 
         {callingPreview.length ? (
           <div className="space-y-2">
-            <h3 className="text-sm font-semibold">Preview ({callingPreview.length} callings)</h3>
+            <h3 className="text-sm font-semibold">{t('preview', { count: callingPreview.length })}</h3>
             <div className="overflow-x-auto rounded-md border max-h-96">
               <table className="min-w-full text-sm">
                 <thead>
                   <tr className="border-b bg-muted/50 sticky top-0">
-                    <th className="px-3 py-2 text-left">Member</th>
-                    <th className="px-3 py-2 text-left">Organization</th>
-                    <th className="px-3 py-2 text-left">Calling</th>
-                    <th className="px-3 py-2 text-left">Sustained Date</th>
-                    <th className="px-3 py-2 text-left">Set Apart</th>
+                    <th className="px-3 py-2 text-left">{t('member')}</th>
+                    <th className="px-3 py-2 text-left">{t('organization')}</th>
+                    <th className="px-3 py-2 text-left">{t('calling')}</th>
+                    <th className="px-3 py-2 text-left">{t('sustained')}</th>
+                    <th className="px-3 py-2 text-left">{t('setApart')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -283,7 +282,7 @@ export function CallingImportClient({ wardId, initialCallingDrift }: { wardId: s
                       <td className="px-3 py-2">{item.organization}</td>
                       <td className="px-3 py-2">{item.callingName}</td>
                       <td className="px-3 py-2">{formatDisplayDate(item.sustainedDate)}</td>
-                      <td className="px-3 py-2">{item.setApart ? 'Yes' : 'No'}</td>
+                      <td className="px-3 py-2">{item.setApart ? t('yes') : t('no')}</td>
                     </tr>
                   ))}
                 </tbody>
