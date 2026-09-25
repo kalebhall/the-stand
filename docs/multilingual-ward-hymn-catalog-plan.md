@@ -13,7 +13,19 @@ Keep the authenticated interface user-selectable while making each ward/branch's
 
 ## Initial supported languages
 
-Use the existing locale registry: `en-US` and `es`. Keep `pt-BR` and `tl` planned until message catalogs exist. The schema and admin catalog support are extensible to those languages.
+The interface registry currently supports `en-US` and `es`. The hymn catalog is populated for `en-US`, `es`, `pt-BR`, and `tl`; `pt-BR` and `tl` remain catalog-only locales until complete interface message catalogs exist.
+
+Official catalog counts loaded by migration `0011_official_multilingual_hymn_catalogs.sql`:
+
+- Spanish (`es`): 209 standard hymns.
+- Portuguese (Brazil) (`pt-BR`): 204 standard hymns.
+- Tagalog (`tl`): 200 standard hymns.
+
+Source indexes:
+
+- https://www.churchofjesuschrist.org/study/manual/hymns?lang=spa
+- https://www.churchofjesuschrist.org/study/manual/hymns?lang=por
+- https://www.churchofjesuschrist.org/study/manual/hymns?lang=tgl
 
 ## Behavior
 
