@@ -5,6 +5,7 @@ import { ThemeToggle } from '@/app/account/preferences/theme-toggle';
 import { LanguagePreference } from '@/app/settings/language-preference';
 import { NotificationTimezoneSetting } from '@/app/settings/notification-timezone';
 import { getLocale } from 'next-intl/server';
+import { getTranslations } from 'next-intl/server';
 import { resolveLocale } from '@/src/i18n/config';
 import { requireAuthenticatedSession } from '@/src/auth/guards';
 import { canManageMeetings, canRunImports, canViewMeetings, hasRole } from '@/src/auth/roles';
@@ -18,6 +19,7 @@ export default async function SettingsPage() {
   const session = await requireAuthenticatedSession();
   const wardId = session.activeWardId;
   const locale = resolveLocale(await getLocale());
+  const t = await getTranslations('settings');
   const isStandAdmin = hasRole(session.user.roles, 'STAND_ADMIN');
   const notificationsEnabled = wardId ? await isWardModuleEnabled(wardId, session.user.id, 'notifications') : false;
   const canManageNotifications =
@@ -46,28 +48,28 @@ export default async function SettingsPage() {
   return (
     <main className="mx-auto max-w-4xl space-y-8 p-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
-        <p className="mt-2 text-muted-foreground">Manage your preferences, notifications, and ward settings.</p>
+        <h1 className="text-2xl font-semibold tracking-tight">{t('title')}</h1>
+        <p className="mt-2 text-muted-foreground">{t('description')}</p>
       </div>
 
       <section className="space-y-4 rounded-lg border bg-card p-5">
-        <h2 className="border-b pb-2 text-xl font-medium">Language</h2>
+        <h2 className="border-b pb-2 text-xl font-medium">{t('language')}</h2>
         <LanguagePreference currentLocale={locale} />
       </section>
 
       <section className="space-y-4 rounded-lg border bg-card p-5">
-        <h2 className="border-b pb-2 text-xl font-medium">Appearance</h2>
+        <h2 className="border-b pb-2 text-xl font-medium">{t('appearance')}</h2>
         <div className="flex items-center justify-between gap-4">
-          <span>Theme preference</span>
+          <span>{t('themePreference')}</span>
           <ThemeToggle />
         </div>
       </section>
 
       {session.user.hasPassword && (
         <section className="space-y-4 rounded-lg border bg-card p-5">
-          <h2 className="border-b pb-2 text-xl font-medium">Security</h2>
+          <h2 className="border-b pb-2 text-xl font-medium">{t('security')}</h2>
           <div className="pt-2">
-            <h3 className="mb-4 text-lg font-medium">Change password</h3>
+            <h3 className="mb-4 text-lg font-medium">{t('changePassword')}</h3>
             <ChangePasswordForm />
           </div>
         </section>
@@ -76,31 +78,31 @@ export default async function SettingsPage() {
       {(isStandAdmin || canManageNotifications) && wardId && (
         <section className="space-y-4 rounded-lg border bg-card p-5">
           <div>
-            <h2 className="border-b pb-2 text-xl font-medium">Ward settings</h2>
-            <p className="mt-2 text-sm text-muted-foreground">Manage ward access and program configuration.</p>
+            <h2 className="border-b pb-2 text-xl font-medium">{t('wardSettings')}</h2>
+            <p className="mt-2 text-sm text-muted-foreground">{t('wardSettingsDescription')}</p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             {isStandAdmin && (
               <form action={updateWardLocale} className="space-y-2 rounded-md border p-4 sm:col-span-2">
-                <label htmlFor="ward-default-locale" className="block text-sm font-medium">Ward hymn catalog language</label>
-                <p className="text-xs text-muted-foreground">This controls the hymn numbers and titles shown for new program editing. Your interface language remains personal.</p>
+                <label htmlFor="ward-default-locale" className="block text-sm font-medium">{t('wardHymnCatalogLanguage')}</label>
+                <p className="text-xs text-muted-foreground">{t('wardHymnCatalogDescription')}</p>
                 <select id="ward-default-locale" name="locale" defaultValue={wardLocale ?? 'en-US'} className="rounded-md border bg-background px-3 py-2 text-sm">
                   {SUPPORTED_CATALOG_LOCALES.map((catalogLocale) => <option key={catalogLocale} value={catalogLocale}>{CATALOG_LOCALE_LABELS[catalogLocale]}</option>)}
                 </select>
-                <button type="submit" className="rounded-md border px-3 py-2 text-sm font-medium hover:bg-accent">Save ward language</button>
+                <button type="submit" className="rounded-md border px-3 py-2 text-sm font-medium hover:bg-accent">{t('saveWardLanguage')}</button>
               </form>
             )}
-            {isStandAdmin && <SettingsLink href="/settings/users" label="Ward user management" />}
-            {isStandAdmin && <SettingsLink href="/settings/stand-script" label="Stand script templates" />}
-            {canManageProgramLayout && <SettingsLink href="/settings/public-layout" label="Printed program layout" />}
-            {isStandAdmin && <SettingsLink href="/settings/public-portal" label="Public portal" />}
-            {canManageNotifications && <SettingsLink href="/settings/notifications" label="Notification settings" />}
-            {canViewActivityLog && <SettingsLink href="/settings/audit-log" label="Activity log" />}
+            {isStandAdmin && <SettingsLink href="/settings/users" label={t('wardUserManagement')} />}
+            {isStandAdmin && <SettingsLink href="/settings/stand-script" label={t('standScriptTemplates')} />}
+            {canManageProgramLayout && <SettingsLink href="/settings/public-layout" label={t('printedProgramLayout')} />}
+            {isStandAdmin && <SettingsLink href="/settings/public-portal" label={t('publicPortal')} />}
+            {canManageNotifications && <SettingsLink href="/settings/notifications" label={t('notificationSettings')} />}
+            {canViewActivityLog && <SettingsLink href="/settings/audit-log" label={t('activityLog')} />}
           </div>
           {moduleSettings ? (
             <div className="border-t pt-4">
-              <h3 className="mb-2 text-lg font-medium">Modules</h3>
-              <p className="mb-4 text-sm text-muted-foreground">Turn optional workflows on or off for this ward. Existing data is preserved.</p>
+              <h3 className="mb-2 text-lg font-medium">{t('modules')}</h3>
+              <p className="mb-4 text-sm text-muted-foreground">{t('modulesDescription')}</p>
               <ModuleSettings wardId={wardId} initial={moduleSettings} />
             </div>
           ) : null}
@@ -112,7 +114,7 @@ export default async function SettingsPage() {
         </section>
       )}
 
-      {!wardId && <p role="alert">Select an active ward to manage ward settings and notifications.</p>}
+      {!wardId && <p role="alert">{t('selectActiveWard')}</p>}
     </main>
   );
 }

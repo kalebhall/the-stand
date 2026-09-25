@@ -8,7 +8,7 @@ export const STANDARD_CALLINGS: string[] = [
   'First Counselor in the Bishopric',
   'Second Counselor in the Bishopric',
   'Executive Secretary',
-  'Ward Clerk',
+  'Clerk',
   'Assistant Ward Clerk',
   'Assistant Ward Clerk (Finance)',
   'Assistant Ward Clerk (Membership)',
@@ -63,19 +63,19 @@ export const STANDARD_CALLINGS: string[] = [
   'Sunday School Teacher',
 
   // Ward Mission
-  'Ward Mission Leader',
-  'Ward Missionary',
+  'Mission Leader',
+  'Missionary',
 
   // Temple and Family History
-  'Ward Temple and Family History Consultant',
-  'Ward Temple and Family History Leader',
+  'Temple and Family History Consultant',
+  'Temple and Family History Leader',
 
   // Music
-  'Ward Music Coordinator',
-  'Ward Choir Director',
-  'Ward Organist',
+  'Music Coordinator',
+  'Choir Director',
+  'Organist',
   'Sacrament Meeting Chorister',
-  'Ward Accompanist',
+  'Accompanist',
 
   // Self-Reliance and Welfare
   'Self-Reliance Specialist',
@@ -83,11 +83,11 @@ export const STANDARD_CALLINGS: string[] = [
   'Employment Specialist',
 
   // Other Ward Callings
-  'Ward Communications Director',
-  'Ward Newsletter Editor',
-  'Ward Historian',
-  'Ward Emergency Preparedness Specialist',
-  'Ward Librarian',
+  'Communications Director',
+  'Newsletter Editor',
+  'Historian',
+  'Emergency Preparedness Specialist',
+  'Librarian',
   'Assistant Ward Librarian',
   'Sunday Meeting Schedule Coordinator'
 ];

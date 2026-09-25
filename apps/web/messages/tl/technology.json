@@ -1,0 +1,26 @@
+{
+  "technology": {
+    "title": "Checklist ng teknolohiya at streaming",
+    "description": "Kahandaan sa lifecycle ng kwarto, audio, stream, accessibility, at recording.",
+    "dashboard": "Dashboard",
+    "privacyNotice": "Iimbak lamang ang mga awtorisadong link. Huwag kailanman iimbak ang mga password, token, Wi-Fi key, o mga kredensyal sa streaming.",
+    "meeting": "Pagpupulong",
+    "noMeetings": "Walang available na mga kamakailang pagpupulong.",
+    "loadChecklist": "Checklist ng pagkarga",
+    "checklistOwner": "May-ari ng checklist",
+    "authorizedStreamLink": "Awtorisadong link ng stream (HTTPS)",
+    "neverStoreCredentials": "Huwag kailanman iimbak ang mga kredensyal sa streaming dito.",
+    "roomReady": "Handa na ang kwarto",
+    "audioReady": "Handa na ang audio",
+    "streamReady": "Handa nang mag-stream",
+    "accessibilityChecked": "Nasuri ang accessibility",
+    "recordingDeletionReminder": "Paalala sa pag-record ng pagbura",
+    "startConfirmed": "Nakumpirma na ang pagsisimula",
+    "stopConfirmed": "Nakumpirma ang paghinto",
+    "saveChecklist": "I-save ang checklist",
+    "errors": {
+      "load": "Hindi ma-load ang checklist.",
+      "save": "Hindi ma-save ang checklist."
+    }
+  }
+}

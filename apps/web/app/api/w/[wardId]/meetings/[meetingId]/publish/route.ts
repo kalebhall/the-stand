@@ -104,8 +104,8 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
       FROM ward_document_settings WHERE ward_id = $1::uuid LIMIT 1`, [wardId]);
     const profile = profileResult.rows[0] ?? {};
     const allowed = meeting.status === 'PUBLISHED'
-      ? canRepublishProgram(session.user, wardId, { allowProgramEditorRepublish: profile.allow_program_editor_republish === true })
-      : canPublishProgram(session.user, wardId, { allowProgramEditorPublish: profile.allow_program_editor_publish === true });
+      ? canRepublishProgram({ ...session.user, activeWardId: session.activeWardId }, wardId, { allowProgramEditorRepublish: profile.allow_program_editor_republish === true })
+      : canPublishProgram({ ...session.user, activeWardId: session.activeWardId }, wardId, { allowProgramEditorPublish: profile.allow_program_editor_publish === true });
     if (!allowed) { await client.query('ROLLBACK'); return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 }); }
 
     const shareResult = await client.query(`SELECT token FROM public_program_share WHERE ward_id = $1::uuid AND meeting_id = $2::uuid LIMIT 1 FOR UPDATE`, [wardId, meetingId]);

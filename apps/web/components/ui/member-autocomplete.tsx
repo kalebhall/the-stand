@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 
 type Member = {
   id: string;
@@ -21,6 +22,7 @@ type MemberAutocompleteProps = {
 };
 
 export function MemberAutocomplete({ wardId, value, onChange, placeholder, className, minAge, leadershipOnly, disabled = false }: MemberAutocompleteProps) {
+  const t = useTranslations('meetingForm');
   const [members, setMembers] = useState<Member[]>([]);
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
@@ -148,7 +150,7 @@ export function MemberAutocomplete({ wardId, value, onChange, placeholder, class
           ))}
         </ul>
       ) : null}
-      {open && loading ? <p className="mt-1 text-xs text-muted-foreground">Loading members…</p> : null}
+      {open && loading ? <p className="mt-1 text-xs text-muted-foreground">{t('loadingMembers')}</p> : null}
     </div>
   );
 }

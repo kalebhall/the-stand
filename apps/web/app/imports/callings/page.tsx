@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
+import { getTranslations } from 'next-intl/server';
 
 import { CallingImportClient } from './calling-import-client';
 import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth/guards';
@@ -29,6 +30,7 @@ type LatestCallingImportRow = {
 const MAX_DRIFT_COMPARE_RAW_TEXT_CHARS = 250_000;
 
 export default async function ImportCallingsPage() {
+  const t = await getTranslations('imports');
   const session = await requireAuthenticatedSession();
   enforcePasswordRotation(session);
 
@@ -92,15 +94,15 @@ export default async function ImportCallingsPage() {
       <main className="mx-auto w-full max-w-4xl space-y-6 p-4 sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="space-y-1">
-            <h1 className="text-2xl font-semibold tracking-tight">Import Callings</h1>
-            <p className="text-sm text-muted-foreground">Import calling assignments from LCR into The Stand.</p>
+            <h1 className="text-2xl font-semibold tracking-tight">{t('callings.title')}</h1>
+            <p className="text-sm text-muted-foreground">{t('callings.description')}</p>
           </div>
           <div className="flex items-center gap-2">
             <Link href="/callings" className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}>
-              Manage Callings
+              {t('callings.manage')}
             </Link>
             <Link href="/imports/members" className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }))}>
-              Import Members →
+              {t('callings.next')}
             </Link>
           </div>
         </div>

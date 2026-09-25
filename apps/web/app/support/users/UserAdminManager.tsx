@@ -1,11 +1,13 @@
 'use client';
 
 import { useCallback, useMemo, useState } from 'react';
+import { useLocale, useTranslations } from 'next-intl';
 
 import { Button } from '@/components/ui/button';
 
 import {
   createUser,
+  createGoogleProvisionedUser,
   updateUser,
   deleteUser,
   setUserActivation,
@@ -79,6 +81,10 @@ export default function UserAdminManager({
   globalAssignments,
   currentUserId
 }: Props) {
+  const t = useTranslations('supportUsers');
+  const locale = useLocale();
+  const formatDate = (value: string) => new Intl.DateTimeFormat(locale).format(new Date(value));
+  const formatDateTime = (value: string) => new Intl.DateTimeFormat(locale, { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value));
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all');
   const [filterRole, setFilterRole] = useState('');
@@ -156,35 +162,35 @@ export default function UserAdminManager({
       <section className="rounded-lg border bg-card p-4 text-card-foreground">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <label className="text-xs text-muted-foreground">
-            Search
+            {t('search')}
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Name or email..."
+              placeholder={t('searchPlaceholder')}
               className="mt-1 w-full rounded-md border px-3 py-2 text-sm text-foreground"
             />
           </label>
           <label className="text-xs text-muted-foreground">
-            Status
+            {t('status')}
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value as FilterStatus)}
               className="mt-1 w-full rounded-md border px-3 py-2 text-sm text-foreground"
             >
-              <option value="all">All statuses</option>
-              <option value="active">Active only</option>
-              <option value="inactive">Inactive only</option>
+              <option value="all">{t('allStatuses')}</option>
+              <option value="active">{t('activeOnly')}</option>
+              <option value="inactive">{t('inactiveOnly')}</option>
             </select>
           </label>
           <label className="text-xs text-muted-foreground">
-            Role
+            {t('role')}
             <select
               value={filterRole}
               onChange={(e) => setFilterRole(e.target.value)}
               className="mt-1 w-full rounded-md border px-3 py-2 text-sm text-foreground"
             >
-              <option value="">All roles</option>
+              <option value="">{t('allRoles')}</option>
               {allRoleNames.map((name) => (
                 <option key={name} value={name}>
                   {name}
@@ -194,27 +200,28 @@ export default function UserAdminManager({
           </label>
           <div className="flex items-end">
             <Button variant="outline" size="sm" onClick={() => setShowCreate(!showCreate)}>
-              {showCreate ? 'Cancel' : 'Create user'}
+              {showCreate ? t('cancel') : t('createUser')}
             </Button>
           </div>
         </div>
         <p className="mt-2 text-xs text-muted-foreground">
-          Showing {filteredUsers.length} of {users.length} users
+          {t('showingUsers', { shown: filteredUsers.length, total: users.length })}
         </p>
       </section>
 
       {/* Create User Form */}
       {showCreate && (
         <section className="rounded-lg border bg-card p-4 text-card-foreground">
-          <h2 className="text-lg font-semibold">Create User Account</h2>
+          <h2 className="text-lg font-semibold">{t('createUserAccount')}</h2>
           <p className="mt-1 text-sm text-muted-foreground">
             {googleOnly
-              ? 'This user will sign in with Google. No password is required.'
-              : 'Create a credential-based account. The user must change their password after first sign in.'}
+              ? t('googleOnlyDescription')
+              : t('passwordAccountDescription')}
           </p>
           <form
             action={async (formData) => {
-              await createUser(formData);
+              if (googleOnly) await createGoogleProvisionedUser(formData);
+              else await createUser(formData);
               handleCreateSubmit();
             }}
             className="mt-3 space-y-3"
@@ -222,23 +229,41 @@ export default function UserAdminManager({
             <div className="flex items-center gap-3">
               <label className="flex items-center gap-2 text-sm">
                 <input type="checkbox" checked={googleOnly} onChange={(e) => setGoogleOnly(e.target.checked)} className="rounded border" />
-                Google sign-in only (no password)
+                {t('googleOnly')}
               </label>
               <input type="hidden" name="googleOnly" value={googleOnly ? '1' : '0'} />
             </div>
             <div className="grid gap-3 md:grid-cols-2">
               <label className="text-xs text-muted-foreground">
-                Email
+                {t('email')}
                 <input name="email" required type="email" className="mt-1 w-full rounded-md border px-3 py-2 text-sm text-foreground" />
               </label>
               <label className="text-xs text-muted-foreground">
-                Display name
+                {t('displayName')}
                 <input name="displayName" className="mt-1 w-full rounded-md border px-3 py-2 text-sm text-foreground" />
               </label>
             </div>
+            {googleOnly && (
+              <div className="grid gap-3 md:grid-cols-2">
+                <label className="text-xs text-muted-foreground">
+                  {t('ward')}
+                  <select name="wardId" required className="mt-1 w-full rounded-md border px-3 py-2 text-sm text-foreground">
+                    <option value="">{t('selectWard')}</option>
+                    {wards.map((ward) => <option key={ward.id} value={ward.id}>{ward.name}</option>)}
+                  </select>
+                </label>
+                <label className="text-xs text-muted-foreground">
+                  {t('initialRole')}
+                  <select name="roleId" required className="mt-1 w-full rounded-md border px-3 py-2 text-sm text-foreground">
+                    <option value="">{t('selectRole')}</option>
+                    {wardRoles.map((role) => <option key={role.id} value={role.id}>{role.name}</option>)}
+                  </select>
+                </label>
+              </div>
+            )}
             {!googleOnly && (
               <label className="block text-xs text-muted-foreground">
-                Temporary password (min 12 characters)
+                {t('temporaryPassword')}
                 <input
                   name="password"
                   required
@@ -249,7 +274,7 @@ export default function UserAdminManager({
               </label>
             )}
             <Button type="submit" size="sm">
-              Create account
+              {t('createAccount')}
             </Button>
           </form>
         </section>
@@ -257,7 +282,7 @@ export default function UserAdminManager({
 
       {/* User List */}
       <section className="space-y-3">
-        {filteredUsers.length === 0 && <p className="text-sm text-muted-foreground">No users match the current filters.</p>}
+        {filteredUsers.length === 0 && <p className="text-sm text-muted-foreground">{t('noUsers')}</p>}
         {filteredUsers.map((user) => {
           const isEditing = editingId === user.id;
           const userWardAssignments = wardAssignmentsByUser.get(user.id) ?? [];
@@ -278,15 +303,15 @@ export default function UserAdminManager({
                     <span
                       className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${user.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
                     >
-                      {user.is_active ? 'Active' : 'Inactive'}
+                      {user.is_active ? t('active') : t('inactive')}
                     </span>
                     {!user.has_password && (
                       <span className="inline-block rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800">
-                        Google only
+                        {t('googleOnlyBadge')}
                       </span>
                     )}
                     {isSelf && (
-                      <span className="inline-block rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-800">You</span>
+                      <span className="inline-block rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-800">{t('you')}</span>
                     )}
                   </div>
                   <p className="text-sm text-muted-foreground">{user.email}</p>
@@ -306,20 +331,20 @@ export default function UserAdminManager({
                       </span>
                     ))}
                     {userGlobalAssignments.length === 0 && userWardAssignments.length === 0 && (
-                      <span className="text-xs text-muted-foreground">No roles assigned</span>
+                      <span className="text-xs text-muted-foreground">{t('noRoles')}</span>
                     )}
                   </div>
-                  <p className="text-xs text-muted-foreground">Created: {new Date(user.created_at).toLocaleDateString()}</p>
+                  <p className="text-xs text-muted-foreground">{t('created')}: {formatDate(user.created_at)}</p>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <Button variant="outline" size="sm" onClick={() => setEditingId(isEditing ? null : user.id)}>
-                    {isEditing ? 'Close' : 'Edit'}
+                    {isEditing ? t('close') : t('edit')}
                   </Button>
                   <form action={setUserActivation}>
                     <input type="hidden" name="userId" value={user.id} />
                     <input type="hidden" name="nextState" value={user.is_active ? 'INACTIVE' : 'ACTIVE'} />
                     <Button variant="outline" size="sm" type="submit">
-                      {user.is_active ? 'Deactivate' : 'Activate'}
+                      {user.is_active ? t('deactivate') : t('activate')}
                     </Button>
                   </form>
                   {!isSelf && (
@@ -329,16 +354,16 @@ export default function UserAdminManager({
                           <form action={deleteUser}>
                             <input type="hidden" name="userId" value={user.id} />
                             <Button variant="destructive" size="sm" type="submit">
-                              Confirm delete
+                              {t('confirmDelete')}
                             </Button>
                           </form>
                           <Button variant="ghost" size="sm" onClick={() => setConfirmDeleteId(null)}>
-                            Cancel
+                            {t('cancel')}
                           </Button>
                         </div>
                       ) : (
                         <Button variant="outline" size="sm" onClick={() => setConfirmDeleteId(user.id)}>
-                          Delete
+                          {t('delete')}
                         </Button>
                       )}
                     </>
@@ -351,7 +376,7 @@ export default function UserAdminManager({
                 <div className="space-y-4 border-t px-4 py-4">
                   {/* Profile Edit */}
                   <div>
-                    <h3 className="text-sm font-semibold">Edit Profile</h3>
+                    <h3 className="text-sm font-semibold">{t('editProfile')}</h3>
                     <form
                       action={async (formData) => {
                         await updateUser(formData);
@@ -361,7 +386,7 @@ export default function UserAdminManager({
                     >
                       <input type="hidden" name="userId" value={user.id} />
                       <label className="text-xs text-muted-foreground">
-                        Email
+                        {t('email')}
                         <input
                           name="email"
                           required
@@ -371,7 +396,7 @@ export default function UserAdminManager({
                         />
                       </label>
                       <label className="text-xs text-muted-foreground">
-                        Display name
+                        {t('displayName')}
                         <input
                           name="displayName"
                           defaultValue={user.display_name ?? ''}
@@ -379,14 +404,14 @@ export default function UserAdminManager({
                         />
                       </label>
                       <Button type="submit" size="sm">
-                        Save profile
+                        {t('saveProfile')}
                       </Button>
                     </form>
                   </div>
 
                   {/* Global Roles */}
                   <div>
-                    <h3 className="text-sm font-semibold">Global Roles</h3>
+                    <h3 className="text-sm font-semibold">{t('globalRoles')}</h3>
                     {userGlobalAssignments.length > 0 ? (
                       <ul className="mt-2 space-y-1">
                         {userGlobalAssignments.map((a) => (
@@ -396,21 +421,21 @@ export default function UserAdminManager({
                               <input type="hidden" name="userId" value={user.id} />
                               <input type="hidden" name="roleId" value={a.role_id} />
                               <Button variant="ghost" size="sm" type="submit">
-                                Revoke
+                                {t('revoke')}
                               </Button>
                             </form>
                           </li>
                         ))}
                       </ul>
                     ) : (
-                      <p className="mt-1 text-xs text-muted-foreground">No global roles assigned.</p>
+                      <p className="mt-1 text-xs text-muted-foreground">{t('noGlobalRoles')}</p>
                     )}
                     <form action={assignGlobalRole} className="mt-2 flex items-end gap-2">
                       <input type="hidden" name="userId" value={user.id} />
                       <label className="flex-1 text-xs text-muted-foreground">
-                        Assign global role
+                        {t('assignGlobalRole')}
                         <select name="roleId" required className="mt-1 w-full rounded-md border px-3 py-2 text-sm text-foreground">
-                          <option value="">Select role</option>
+                          <option value="">{t('selectRole')}</option>
                           {globalRoles.map((role) => (
                             <option key={role.id} value={role.id}>
                               {role.name}
@@ -419,14 +444,14 @@ export default function UserAdminManager({
                         </select>
                       </label>
                       <Button variant="outline" size="sm" type="submit">
-                        Assign
+                        {t('assign')}
                       </Button>
                     </form>
                   </div>
 
                   {/* Ward Roles */}
                   <div>
-                    <h3 className="text-sm font-semibold">Ward Roles</h3>
+                    <h3 className="text-sm font-semibold">{t('wardRoles')}</h3>
                     {standardAssignments.length > 0 ? (
                       <ul className="mt-2 space-y-1">
                         {standardAssignments.map((a) => (
@@ -443,21 +468,21 @@ export default function UserAdminManager({
                               <input type="hidden" name="wardId" value={a.ward_id} />
                               <input type="hidden" name="roleId" value={a.role_id} />
                               <Button variant="ghost" size="sm" type="submit">
-                                Revoke
+                                {t('revoke')}
                               </Button>
                             </form>
                           </li>
                         ))}
                       </ul>
                     ) : (
-                      <p className="mt-1 text-xs text-muted-foreground">No permanent ward roles assigned.</p>
+                      <p className="mt-1 text-xs text-muted-foreground">{t('noWardRoles')}</p>
                     )}
                     <form action={assignWardRole} className="mt-2 grid gap-2 md:grid-cols-[1fr_1fr_auto] md:items-end">
                       <input type="hidden" name="userId" value={user.id} />
                       <label className="text-xs text-muted-foreground">
-                        Ward
+                        {t('ward')}
                         <select name="wardId" required className="mt-1 w-full rounded-md border px-3 py-2 text-sm text-foreground">
-                          <option value="">Select ward</option>
+                          <option value="">{t('selectWard')}</option>
                           {wards.map((w) => (
                             <option key={w.id} value={w.id}>
                               {w.name}
@@ -466,9 +491,9 @@ export default function UserAdminManager({
                         </select>
                       </label>
                       <label className="text-xs text-muted-foreground">
-                        Role
+                        {t('role')}
                         <select name="roleId" required className="mt-1 w-full rounded-md border px-3 py-2 text-sm text-foreground">
-                          <option value="">Select role</option>
+                          <option value="">{t('selectRole')}</option>
                           {wardRoles.map((role) => (
                             <option key={role.id} value={role.id}>
                               {role.name}
@@ -477,16 +502,16 @@ export default function UserAdminManager({
                         </select>
                       </label>
                       <Button variant="outline" size="sm" type="submit">
-                        Assign
+                        {t('assign')}
                       </Button>
                     </form>
                   </div>
 
                   {(canGrantSupportAccess || supportAssignments.length > 0) && (
                     <div>
-                      <h3 className="text-sm font-semibold">Temporary Support Access</h3>
+                      <h3 className="text-sm font-semibold">{t('temporarySupportAccess')}</h3>
                       <p className="mt-1 text-xs text-muted-foreground">
-                        Use this only for explicit, time-boxed cross-ward troubleshooting approval.
+                        {t('temporarySupportDescription')}
                       </p>
                       {supportAssignments.length > 0 ? (
                         <ul className="mt-2 space-y-1">
@@ -501,32 +526,32 @@ export default function UserAdminManager({
                                   <span className="text-muted-foreground"> @ {a.ward_name}</span>
                                 </p>
                                 <p className="text-xs text-muted-foreground">
-                                  Expires: {a.expires_at ? new Date(a.expires_at).toLocaleString() : 'No expiration set'}
+                                  {t('expires')}: {a.expires_at ? formatDateTime(a.expires_at) : t('noExpiration')}
                                 </p>
-                                {a.grant_reason && <p className="text-xs text-muted-foreground">Reason: {a.grant_reason}</p>}
+                                {a.grant_reason && <p className="text-xs text-muted-foreground">{t('reason')}: {a.grant_reason}</p>}
                               </div>
                               <form action={revokeSupportAccess}>
                                 <input type="hidden" name="userId" value={user.id} />
                                 <input type="hidden" name="wardId" value={a.ward_id} />
                                 <input type="hidden" name="roleId" value={a.role_id} />
                                 <Button variant="ghost" size="sm" type="submit">
-                                  Revoke grant
+                                  {t('revokeGrant')}
                                 </Button>
                               </form>
                             </li>
                           ))}
                         </ul>
                       ) : (
-                        <p className="mt-2 text-xs text-muted-foreground">No active temporary support grants.</p>
+                        <p className="mt-2 text-xs text-muted-foreground">{t('noTemporaryGrants')}</p>
                       )}
 
                       {canGrantSupportAccess && (
                         <form action={grantSupportAccess} className="mt-3 grid gap-2 md:grid-cols-[1fr_1fr_160px_1.5fr_auto] md:items-end">
                           <input type="hidden" name="userId" value={user.id} />
                           <label className="text-xs text-muted-foreground">
-                            Ward
+                            {t('ward')}
                             <select name="wardId" required className="mt-1 w-full rounded-md border px-3 py-2 text-sm text-foreground">
-                              <option value="">Select ward</option>
+                              <option value="">{t('selectWard')}</option>
                               {wards.map((w) => (
                                 <option key={w.id} value={w.id}>
                                   {w.name}
@@ -535,9 +560,9 @@ export default function UserAdminManager({
                             </select>
                           </label>
                           <label className="text-xs text-muted-foreground">
-                            Role
+                            {t('role')}
                             <select name="roleId" required className="mt-1 w-full rounded-md border px-3 py-2 text-sm text-foreground">
-                              <option value="">Select role</option>
+                              <option value="">{t('selectRole')}</option>
                               {wardRoles.map((role) => (
                                 <option key={role.id} value={role.id}>
                                   {role.name}
@@ -546,7 +571,7 @@ export default function UserAdminManager({
                             </select>
                           </label>
                           <label className="text-xs text-muted-foreground">
-                            Hours
+                            {t('hours')}
                             <input
                               name="durationHours"
                               required
@@ -557,16 +582,16 @@ export default function UserAdminManager({
                             />
                           </label>
                           <label className="text-xs text-muted-foreground">
-                            Approval / reason
+                            {t('approvalReason')}
                             <input
                               name="grantReason"
                               required
-                              placeholder="Who approved and why"
+                              placeholder={t('approvalReasonPlaceholder')}
                               className="mt-1 w-full rounded-md border px-3 py-2 text-sm text-foreground"
                             />
                           </label>
                           <Button variant="outline" size="sm" type="submit">
-                            Grant access
+                            {t('grantAccess')}
                           </Button>
                         </form>
                       )}

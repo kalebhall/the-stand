@@ -133,10 +133,9 @@ async function loadSessionUserById(id: string): Promise<SessionUserDetails | nul
 
 async function ensureUserAccountForGoogleLogin(email: string, displayName: string | null): Promise<void> {
   await pool.query(
-    `INSERT INTO user_account (email, display_name)
-     VALUES ($1, $2)
-     ON CONFLICT (email)
-     DO UPDATE SET display_name = COALESCE(EXCLUDED.display_name, user_account.display_name)`,
+    `UPDATE user_account
+        SET display_name = COALESCE($2, display_name)
+      WHERE email = $1`,
     [email, displayName]
   );
 }
@@ -214,6 +213,11 @@ export const { auth, handlers, unstable_update } = NextAuth({
 
         const displayName = typeof profile.name === 'string' ? profile.name : null;
         await ensureUserAccountForGoogleLogin(email.toLowerCase(), displayName);
+        const accountResult = await pool.query(
+          'SELECT is_active FROM user_account WHERE email = $1 LIMIT 1',
+          [email.toLowerCase()]
+        );
+        if (!accountResult.rowCount || accountResult.rows[0].is_active !== true) return false;
       }
 
       return true;

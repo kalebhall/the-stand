@@ -7,7 +7,10 @@ async function login(page: Page) {
   await page.locator('input[name="email"]').fill('ward-admin@example.test');
   await page.locator('input[name="password"]').fill('WardAdminPassword123456789012');
   await page.getByRole('button', { name: 'Sign in' }).click();
-  await expect.poll(async () => Boolean((await (await page.request.get('/api/auth/session')).json())?.user)).toBe(true);
+  await page.waitForURL(/\/dashboard/, { timeout: 30_000 });
+  await expect.poll(async () => Boolean((await (await page.request.get('/api/auth/session')).json())?.user), {
+    timeout: 30_000
+  }).toBe(true);
   await page.goto('/dashboard');
   await expect(page).toHaveURL(/\/dashboard/);
 }

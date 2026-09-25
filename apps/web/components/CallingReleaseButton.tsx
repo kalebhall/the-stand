@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 
 import { Button } from '@/components/ui/button';
 
@@ -13,6 +14,7 @@ type CallingReleaseButtonProps = {
 };
 
 export function CallingReleaseButton({ wardId, callingId, memberName, callingName }: CallingReleaseButtonProps) {
+  const t = useTranslations('callings');
   const router = useRouter();
   const [confirming, setConfirming] = useState(false);
   const [releasing, setReleasing] = useState(false);
@@ -29,14 +31,14 @@ export function CallingReleaseButton({ wardId, callingId, memberName, callingNam
 
       if (!response.ok) {
         const payload = (await response.json().catch(() => null)) as { error?: string } | null;
-        setError(payload?.error ?? `Failed to release ${memberName} — ${callingName}.`);
+        setError(payload?.error ?? t('failedToRelease', { member: memberName, calling: callingName }));
         setReleasing(false);
         return;
       }
 
       router.refresh();
     } catch {
-      setError(`Failed to release ${memberName} — ${callingName}.`);
+      setError(t('failedToRelease', { member: memberName, calling: callingName }));
       setReleasing(false);
     }
   }
@@ -45,10 +47,10 @@ export function CallingReleaseButton({ wardId, callingId, memberName, callingNam
     return (
       <div className="flex items-center gap-2">
         <Button variant="outline" size="sm" type="button" disabled={releasing} onClick={() => void releaseCalling()}>
-          {releasing ? 'Releasing…' : 'Confirm release'}
+          {releasing ? t('releasing') : t('confirmRelease')}
         </Button>
         <Button variant="ghost" size="sm" type="button" disabled={releasing} onClick={() => setConfirming(false)}>
-          Cancel
+          {t('cancel')}
         </Button>
         {error ? <span className="text-xs text-destructive">{error}</span> : null}
       </div>
@@ -57,7 +59,7 @@ export function CallingReleaseButton({ wardId, callingId, memberName, callingNam
 
   return (
     <Button variant="outline" size="sm" type="button" onClick={() => setConfirming(true)}>
-      Release
+      {t('release')}
     </Button>
   );
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 
 import { CallingAutocomplete } from '@/components/ui/calling-autocomplete';
 import { MemberAutocomplete } from '@/components/ui/member-autocomplete';
@@ -13,6 +14,7 @@ type AddCallingFormProps = {
 };
 
 export function AddCallingForm({ wardId, standardCallings, onSuccess }: AddCallingFormProps) {
+  const t = useTranslations('callings');
   const [memberName, setMemberName] = useState('');
   const [callingName, setCallingName] = useState('');
   const [isAssignmentOnly, setIsAssignmentOnly] = useState(false);
@@ -37,7 +39,7 @@ export function AddCallingForm({ wardId, standardCallings, onSuccess }: AddCalli
 
       if (!res.ok) {
         const data = (await res.json().catch(() => null)) as { error?: string } | null;
-        setError(data?.error ?? 'Failed to create calling.');
+        setError(data?.error ?? t('createFailed'));
         return;
       }
 
@@ -46,7 +48,7 @@ export function AddCallingForm({ wardId, standardCallings, onSuccess }: AddCalli
       setIsAssignmentOnly(false);
       onSuccess();
     } catch {
-      setError('Network error. Please try again.');
+      setError(t('networkError'));
     } finally {
       setSubmitting(false);
     }
@@ -60,26 +62,26 @@ export function AddCallingForm({ wardId, standardCallings, onSuccess }: AddCalli
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1">
           <label className="text-sm font-medium" htmlFor="add-calling-member">
-            Member Name
+            {t('memberName')}
           </label>
           <MemberAutocomplete
             wardId={wardId}
             value={memberName}
             onChange={setMemberName}
-            placeholder="Search or type a name…"
+            placeholder={t('searchOrTypeName')}
             className={inputClass}
             minAge={11}
           />
         </div>
         <div className="space-y-1">
           <label className="text-sm font-medium" htmlFor="add-calling-name">
-            Calling
+            {t('calling')}
           </label>
           <CallingAutocomplete
             standardCallings={standardCallings}
             value={callingName}
             onChange={setCallingName}
-            placeholder="Select or type a calling…"
+            placeholder={t('selectOrTypeCalling')}
             className={inputClass}
           />
         </div>
@@ -91,11 +93,11 @@ export function AddCallingForm({ wardId, standardCallings, onSuccess }: AddCalli
           onChange={(event) => setIsAssignmentOnly(event.target.checked)}
           className="h-4 w-4 rounded border-input"
         />
-        <span>Assignment only. Skip propose, sustain, and set apart workflow.</span>
+        <span>{t('assignmentOnly')}</span>
       </label>
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
       <Button type="submit" size="sm" disabled={submitting || !memberName.trim() || !callingName.trim()}>
-        {submitting ? 'Adding…' : 'Add Calling'}
+        {submitting ? t('adding') : t('addCalling')}
       </Button>
     </form>
   );

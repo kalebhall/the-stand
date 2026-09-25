@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 
 import { Button } from '@/components/ui/button';
 import type { MembershipOrdinanceActionRow } from '@/src/church-actions/membership-ordinance';
@@ -13,6 +14,7 @@ type Props = {
 type ActionStatus = 'announced' | 'completed' | 'lcr_completed' | 'interview_completed' | 'official_record_started' | 'official_record_completed' | 'certificate_delivered';
 
 export function MembershipOrdinanceWorkspaceControls({ action, wardId }: Props) {
+  const t = useTranslations('membershipOrdinances');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -27,12 +29,12 @@ export function MembershipOrdinanceWorkspaceControls({ action, wardId }: Props) 
       });
       if (!response.ok) {
         const payload = (await response.json().catch(() => null)) as { error?: string } | null;
-        setError(payload?.error ?? 'Unable to update action.');
+        setError(payload?.error ?? t('updateActionFailed'));
         return;
       }
       window.location.reload();
     } catch {
-      setError('Unable to reach the server. Try again when online.');
+      setError(t('serverUnreachable'));
     } finally {
       setBusy(false);
     }
@@ -42,37 +44,37 @@ export function MembershipOrdinanceWorkspaceControls({ action, wardId }: Props) 
     <div className="flex flex-wrap items-center gap-2">
       {action.interviewStatus === 'needed' || action.interviewStatus === 'scheduled' ? (
         <Button size="sm" variant="outline" disabled={busy} onClick={() => void update('interview_completed')}>
-          Interview complete
+          {t('interviewComplete')}
         </Button>
       ) : null}
       {action.status === 'pending' ? (
         <Button size="sm" variant="outline" disabled={busy} onClick={() => void update('announced')}>
-          Mark announced
+          {t('markAnnounced')}
         </Button>
       ) : null}
       {action.status === 'action_needed' ? (
         <Button size="sm" disabled={busy} onClick={() => void update('completed')}>
-          Mark completed
+          {t('markCompleted')}
         </Button>
       ) : null}
       {action.status === 'completed' && action.lcrFollowUpStatus === 'needed' ? (
         <Button size="sm" variant="outline" disabled={busy} onClick={() => void update('lcr_completed')}>
-          Mark LCR updated
+          {t('markLcrUpdated')}
         </Button>
       ) : null}
       {action.recordFormNeeded && action.officialSystemFollowUpStatus === 'not_started' ? (
         <Button size="sm" variant="outline" disabled={busy} onClick={() => void update('official_record_started')}>
-          Start official-record handoff
+          {t('startOfficialRecordHandoff')}
         </Button>
       ) : null}
       {action.recordFormNeeded && action.officialSystemFollowUpStatus === 'in_progress' ? (
         <Button size="sm" variant="outline" disabled={busy} onClick={() => void update('official_record_completed')}>
-          Mark official record updated
+          {t('markOfficialRecordUpdated')}
         </Button>
       ) : null}
       {action.recordFormNeeded && action.officialSystemFollowUpStatus === 'completed' && !action.certificateOrFormDelivered ? (
         <Button size="sm" variant="outline" disabled={busy} onClick={() => void update('certificate_delivered')}>
-          Mark certificate/form delivered
+          {t('markCertificateDelivered')}
         </Button>
       ) : null}
       {error ? <span className="text-xs text-destructive">{error}</span> : null}

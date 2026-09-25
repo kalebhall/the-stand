@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { getTranslations } from 'next-intl/server';
 
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -7,51 +8,41 @@ import { auth } from '@/src/auth/auth';
 import { hasRole } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 
-const sections = [
+const sectionDefinitions = [
   {
-    title: 'Support Assignment Queue',
-    description: 'Claim, assign, and track global support work without granting ward access.',
+    key: 'queue',
     href: '/support/queue',
-    action: 'Open assignment queue'
+    actionKey: 'openQueue'
   },
   {
-    title: 'User Administration',
-    description:
-      'Review every account in the system, confirm role coverage, and activate or deactivate access when support intervention is needed.',
+    key: 'users',
     href: '/support/users',
-    action: 'Manage users'
+    actionKey: 'manageUsers'
   },
   {
-    title: 'Stake & Ward Provisioning',
-    description: 'Create new stakes and wards, then verify current provisioning records before assigning ward administrators.',
+    key: 'provisioning',
     href: '/support/provisioning',
-    action: 'Manage stakes and wards'
+    actionKey: 'manageProvisioning'
   },
   {
-    title: 'Access Requests',
-    description: 'Review incoming access requests from leaders and clerks so approved users can be provisioned in the correct ward.',
+    key: 'accessRequests',
     href: '/support/access-requests',
-    action: 'Review requests'
+    actionKey: 'reviewRequests'
   },
   {
-    title: 'Audit Log',
-    description:
-      'Review all system activity including successes and failures. Filter and sort entries by action, user, ward, or date range.',
+    key: 'auditLog',
     href: '/support/audit-log',
-    action: 'View audit log'
+    actionKey: 'viewAuditLog'
   },
   {
-    title: 'Hymn Library',
-    description:
-      "Manage the global hymn list used in meeting program autocomplete. Add, edit, or deactivate hymns from the standard hymnbook, new hymnbook, and children's songbook.",
+    key: 'hymns',
     href: '/support/hymns',
-    action: 'Manage hymns'
+    actionKey: 'manageHymns'
   },
   {
-    title: 'Deployment Health',
-    description: 'Review database, queue, backup, purge, and notification status without exposing secrets or private payloads.',
+    key: 'health',
     href: '/settings/health',
-    action: 'View deployment health'
+    actionKey: 'viewHealth'
   }
 ] as const;
 
@@ -66,6 +57,8 @@ export default async function SupportConsolePage() {
     redirect('/dashboard');
   }
 
+  const t = await getTranslations('supportConsole');
+
   const queueCount = await pool.query(
     `SELECT COUNT(*)::int AS count
        FROM support_work_item
@@ -76,20 +69,18 @@ export default async function SupportConsolePage() {
   return (
     <main className="mx-auto w-full max-w-6xl space-y-6 p-4 sm:p-6">
       <section className="space-y-2">
-        <h1 className="text-2xl font-semibold tracking-tight">Support Console</h1>
-        <p className="text-muted-foreground">
-          Centralized administration for support staff. Use the sections below to manage users, provisioning, and intake requests.
-        </p>
-        <p className="text-sm font-medium">Unassigned support work: {unassignedCount}</p>
+        <h1 className="text-2xl font-semibold tracking-tight">{t('title')}</h1>
+        <p className="text-muted-foreground">{t('description')}</p>
+        <p className="text-sm font-medium">{t('unassignedWork', { count: unassignedCount })}</p>
       </section>
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {sections.map((section) => (
+        {sectionDefinitions.map((section) => (
           <article key={section.href} className="rounded-lg border bg-card p-5 text-card-foreground shadow-sm">
-            <h2 className="text-lg font-semibold">{section.title}</h2>
-            <p className="mt-2 text-sm text-muted-foreground">{section.description}</p>
+            <h2 className="text-lg font-semibold">{t(`sections.${section.key}.title`)}</h2>
+            <p className="mt-2 text-sm text-muted-foreground">{t(`sections.${section.key}.description`)}</p>
             <Link href={section.href} className={cn(buttonVariants({ className: 'mt-4', size: 'sm', variant: 'outline' }))}>
-              {section.action}
+              {t(`actions.${section.actionKey}`)}
             </Link>
           </article>
         ))}

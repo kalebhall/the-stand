@@ -5,6 +5,7 @@ import { auth } from '@/src/auth/auth';
 import { pool } from '@/src/db/client';
 
 import { DEFAULT_LOCALE, isSupportedLocale, resolveActiveLocale } from './config';
+import { loadMessages } from './messages';
 
 async function loadPersistedLocale(): Promise<string | undefined> {
   try {
@@ -41,7 +42,7 @@ export default getRequestConfig(async () => {
 
   return {
     locale,
-    messages: (await import(`../../messages/${locale}.json`)).default,
+    messages: loadMessages(locale),
     onError(error) {
       if (locale !== DEFAULT_LOCALE) {
         console.warn('i18n_message_fallback', { locale, error: error.message });

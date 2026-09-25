@@ -5,7 +5,8 @@ import { NextIntlClientProvider } from 'next-intl';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import messages from '../messages/es.json';
+import { MESSAGE_CATALOGS } from '@/src/i18n/messages';
+const messages = MESSAGE_CATALOGS.es;
 import { InternalNotesPanel } from './InternalNotesPanel';
 
 describe('InternalNotesPanel localization', () => {

@@ -1,0 +1,32 @@
+{
+  "members": {
+    "pageTitle": "Mga Miyembro at Tala",
+    "pageDescription": "Direktoryo ng mga miyembro ng ward at mga tala ng follow-up na may limitadong pamumuno.",
+    "importMembers": "Mag-import ng mga miyembro",
+    "filterPlaceholder": "Salain ang mga miyembro ayon sa pangalan, email, o telepono…",
+    "sortBy": "Ayusin ayon sa",
+    "name": "Pangalan",
+    "age": "Edad",
+    "email": "I-email",
+    "showing": "Ipinapakita ang {shown} ng mga miyembro ng {total}",
+    "noEmail": "Walang email",
+    "noPhone": "Walang telepono",
+    "edit": "I-edit",
+    "archiving": "Nag-a-archive…",
+    "archive": "Arkibo",
+    "archiveConfirm": "I-archive ang {name}? Hindi na sila lilitaw sa mga aktibong listahan ng miyembro ngunit ang mga makasaysayang talaan ay napanatili.",
+    "editMemberInfo": "I-edit ang impormasyon ng miyembro",
+    "firstName": "Pangalan",
+    "lastName": "Apelyido",
+    "phone": "Telepono",
+    "save": "I-save",
+    "saving": "Nagse-save…",
+    "cancel": "Kanselahin",
+    "memberNotes": "Mga tala ng miyembro",
+    "noMembersImported": "Wala pang na-import na miyembro.",
+    "noMembersMatched": "Walang miyembrong tumugma sa iyong paghahanap.",
+    "importMembersNow": "Mag-import ng mga miyembro ngayon",
+    "saveFailed": "Nabigong i-save ang mga pagbabago.",
+    "archiveFailed": "Nabigong i-archive ang miyembro."
+  }
+}

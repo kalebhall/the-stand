@@ -1,0 +1,56 @@
+{
+  "bishopric": {
+    "meetingTypes": {
+      "BISHOPRIC": "Reunión del obispado",
+      "BISHOPRIC_AND_COUNCIL": "Obispado y consejo",
+      "WARD_COUNCIL": "Consejo de barrio",
+      "MISSIONARY_COORDINATION": "Coordinación misional"
+    },
+    "pageDescription": "Agenda privada de coordinación, decisiones, asignaciones y fechas límite. No forma parte de los programas públicos de las reuniones.",
+    "privacyNotice": "La visibilidad es privada y está limitada al barrio. No almacene aquí detalles confidenciales de asesoramiento.",
+    "dashboard": "Panel",
+    "newMeeting": "Nueva reunión: {meetingType}",
+    "leadershipMeetingType": "Tipo de reunión de liderazgo",
+    "meetingDate": "Fecha de la reunión",
+    "createMeeting": "Crear reunión",
+    "addPrivateAction": "Agregar acción privada",
+    "leadershipMeeting": "Reunión de liderazgo",
+    "selectMeeting": "Seleccionar reunión",
+    "actionOrAssignment": "Acción o asignación",
+    "owner": "Responsable",
+    "linkedMember": "Miembro vinculado",
+    "noLinkedMember": "Ningún miembro vinculado",
+    "linkedCalling": "Llamamiento vinculado",
+    "noLinkedCalling": "Ningún llamamiento vinculado",
+    "dueDate": "Fecha límite",
+    "openActions": "Acciones abiertas",
+    "meeting": "Reunión",
+    "ownerLabel": "Responsable",
+    "memberLabel": "Miembro",
+    "callingLabel": "Llamamiento",
+    "linkedMembershipFollowUp": "Seguimiento de membresía vinculado",
+    "dueLabel": "Límite",
+    "statusFor": "Estado de {title}",
+    "restrictedLeadershipNoteFor": "Nota restringida de liderazgo para {title}",
+    "restrictedLeadershipNote": "Nota restringida de liderazgo",
+    "addNote": "Agregar nota",
+    "restrictedNotes": "Notas restringidas",
+    "leader": "Líder",
+    "noOpenActions": "No hay acciones abiertas del obispado.",
+    "statuses": {
+      "PENDING": "Pendiente",
+      "IN_PROGRESS": "En progreso",
+      "COMPLETED": "Completada"
+    },
+    "errors": {
+      "loadLinks": "No se pudieron cargar los vínculos de miembros y llamamientos.",
+      "loadNotes": "No se pudieron cargar las notas de liderazgo.",
+      "createMeeting": "No se pudo crear la reunión.",
+      "selectMeeting": "Primero cree o seleccione una reunión de liderazgo.",
+      "createAction": "No se pudo crear la acción.",
+      "emptyNote": "La nota de liderazgo no puede estar vacía.",
+      "saveNote": "No se pudo guardar la nota de liderazgo.",
+      "updateAction": "No se pudo actualizar la acción."
+    }
+  }
+}

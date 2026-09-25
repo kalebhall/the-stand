@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { getLocale, getTranslations } from 'next-intl/server';
 
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -8,13 +9,10 @@ import { canManageMeetings } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 import {
-  getMembershipOrdinanceActionLabel,
   getMembershipOrdinanceGroup,
-  getMembershipOrdinanceNextStep,
   matchesMembershipOrdinanceFilters,
   MEMBERSHIP_ORDINANCE_ACTION_LABELS,
   MEMBERSHIP_ORDINANCE_STATUS_LABELS,
-  PRIESTHOOD_OFFICE_LABELS,
   type MembershipOrdinanceActionRow,
   type MembershipOrdinanceActionGroup
 } from '@/src/church-actions/membership-ordinance';
@@ -23,11 +21,13 @@ import { MembershipOrdinanceWorkspaceControls } from './workspace-controls';
 import { MembershipOrdinanceSection } from '@/components/MembershipOrdinanceSection';
 import { isWardModuleEnabled } from '@/src/modules/service';
 
-const GROUPS: Array<{ key: MembershipOrdinanceActionGroup; title: string; description: string }> = [
-  { key: 'needs_attention', title: 'Needs attention', description: 'Actions with follow-up, interview, LCR, or overdue work.' },
-  { key: 'upcoming', title: 'Upcoming', description: 'Planned actions that do not currently need follow-up.' },
-  { key: 'completed', title: 'Completed history', description: 'Finished actions retained for reference.' }
+const GROUPS: Array<{ key: MembershipOrdinanceActionGroup; titleKey: string; descriptionKey: string }> = [
+  { key: 'needs_attention', titleKey: 'needsAttention', descriptionKey: 'needsAttentionDescription' },
+  { key: 'upcoming', titleKey: 'upcoming', descriptionKey: 'upcomingDescription' },
+  { key: 'completed', titleKey: 'completedHistory', descriptionKey: 'completedHistoryDescription' }
 ];
+
+type Translator = (key: string, values?: Record<string, string | number>) => string;
 
 type ActionQueryRow = {
   id: string;
@@ -60,66 +60,68 @@ type ActionQueryRow = {
 
 type MeetingOptionRow = { id: string; meeting_date: string; meeting_type: string };
 
-function displayDate(value: string | null): string {
-  if (!value) return 'No date set';
-  return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }).format(
+function displayDate(value: string | null, locale: string, noDateSet: string): string {
+  if (!value) return noDateSet;
+  return new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }).format(
     new Date(`${value}T12:00:00Z`)
   );
 }
 
-function displayMeetingType(value: string): string {
-  return value
-    .split('_')
-    .map((part) => `${part.slice(0, 1)}${part.slice(1).toLowerCase()}`)
-    .join(' ');
+function getMembershipOrdinanceNextStepKey(action: MembershipOrdinanceActionRow): string {
+  if (action.lcrFollowUpStatus === 'needed') return 'updateLcr';
+  if (action.status === 'action_needed') return 'completeAction';
+  if (action.interviewStatus === 'needed') return 'scheduleInterview';
+  if (action.interviewStatus === 'scheduled') return 'completeInterview';
+  if (action.status === 'pending') return 'presentInMeeting';
+  return 'complete';
 }
 
-function ActionCard({ action, wardId }: { action: MembershipOrdinanceActionRow; wardId: string }) {
+function ActionCard({ action, wardId, locale, t }: { action: MembershipOrdinanceActionRow; wardId: string; locale: string; t: Translator }) {
   return (
     <article className="rounded-lg border bg-card p-4 shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{getMembershipOrdinanceActionLabel(action.actionType)}</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t(`action_${action.actionType}`)}</p>
           <h3 className="mt-1 text-lg font-semibold">{action.memberName}</h3>
-          {action.priesthoodOffice ? <p className="mt-1 text-sm text-muted-foreground">Office: {PRIESTHOOD_OFFICE_LABELS[action.priesthoodOffice]}</p> : null}
+          {action.priesthoodOffice ? <p className="mt-1 text-sm text-muted-foreground">{t('office')} {t(`office_${action.priesthoodOffice}`)}</p> : null}
         </div>
         <span className="rounded-full border px-2.5 py-1 text-xs font-medium">
-          {MEMBERSHIP_ORDINANCE_STATUS_LABELS[action.status]}
+          {t(`status_${action.status}`)}
         </span>
       </div>
 
       <div className="mt-3 grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
         <p>
-          <span className="font-medium text-foreground">Meeting:</span> {displayDate(action.meetingDate)} · {displayMeetingType(action.meetingType)}
+          <span className="font-medium text-foreground">{t('meeting')}</span> {displayDate(action.meetingDate, locale, t('noDateSet'))} · {t(`meetingType_${action.meetingType}`)}
         </p>
         <p>
-          <span className="font-medium text-foreground">Planned:</span> {displayDate(action.plannedDate)}
+          <span className="font-medium text-foreground">{t('planned')}</span> {displayDate(action.plannedDate, locale, t('noDateSet'))}
         </p>
         <p>
-          <span className="font-medium text-foreground">Responsible:</span> {action.responsibleLeader ?? 'Unassigned'}
+          <span className="font-medium text-foreground">{t('responsible')}</span> {action.responsibleLeader ?? t('unassigned')}
         </p>
         <p>
-          <span className="font-medium text-foreground">Next:</span> {getMembershipOrdinanceNextStep(action)}
+          <span className="font-medium text-foreground">{t('next')}</span> {t(`next_${getMembershipOrdinanceNextStepKey(action)}`)}
         </p>
       </div>
 
       <div className="mt-3 flex flex-wrap gap-2 text-xs">
         {action.interviewStatus !== 'not_required' ? (
-          <span className="rounded bg-muted px-2 py-1">Interview: {action.interviewStatus.replaceAll('_', ' ')}</span>
+          <span className="rounded bg-muted px-2 py-1">{t('interview')} {t(`interview_${action.interviewStatus}`)}</span>
         ) : null}
         {action.lcrFollowUpStatus === 'needed' ? (
-          <span className="rounded bg-amber-500/10 px-2 py-1 font-medium text-amber-700 dark:text-amber-300">LCR update needed</span>
+          <span className="rounded bg-amber-500/10 px-2 py-1 font-medium text-amber-700 dark:text-amber-300">{t('lcrUpdateNeededBadge')}</span>
         ) : null}
         {action.recordFormNeeded && action.officialSystemFollowUpStatus !== 'not_applicable' ? (
           <span className="rounded bg-blue-500/10 px-2 py-1 font-medium text-blue-700 dark:text-blue-300">
-            Official record: {action.officialSystemFollowUpStatus.replaceAll('_', ' ')}
+            {t('officialRecordBadge', { status: t(`officialRecord_${action.officialSystemFollowUpStatus}`) })}
           </span>
         ) : null}
       </div>
 
       <div className="mt-4 flex flex-wrap gap-2">
         <Link href={`/meetings/${action.meetingId}/edit`} className={cn(buttonVariants({ size: 'sm', variant: 'outline' }))}>
-          Open meeting
+          {t('openMeeting')}
         </Link>
         <MembershipOrdinanceWorkspaceControls action={action} wardId={wardId} />
       </div>
@@ -128,6 +130,8 @@ function ActionCard({ action, wardId }: { action: MembershipOrdinanceActionRow; 
 }
 
 export default async function MembershipOrdinancesPage({ searchParams }: { searchParams: Promise<{ q?: string; action?: string; status?: string; queue?: string; followup?: string }> }) {
+  const t = await getTranslations('membershipOrdinances');
+  const locale = await getLocale();
   const session = await requireAuthenticatedSession();
   enforcePasswordRotation(session);
 
@@ -190,7 +194,7 @@ export default async function MembershipOrdinancesPage({ searchParams }: { searc
     }));
     const meetingOptions = (meetingsResult.rows as MeetingOptionRow[]).map((meeting) => ({
       id: meeting.id,
-      label: `${displayDate(meeting.meeting_date)} · ${displayMeetingType(meeting.meeting_type)}`
+      label: `${displayDate(meeting.meeting_date, locale, t('noDateSet'))} · ${t(`meetingType_${meeting.meeting_type}`)}`
     }));
     const actions = allActions.filter((action) => matchesMembershipOrdinanceFilters(action, {
       query: filters.q,
@@ -211,39 +215,39 @@ export default async function MembershipOrdinancesPage({ searchParams }: { searc
         <section className="space-y-2 rounded-lg border bg-card p-5 shadow-sm">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h1 className="text-2xl font-semibold tracking-tight">Membership &amp; Ordinances</h1>
+              <h1 className="text-2xl font-semibold tracking-tight">{t('title')}</h1>
               <p className="mt-1 text-sm text-muted-foreground">
-                Track preparation and follow-up separately from calling assignments and meeting business.
+                {t('description')}
               </p>
             </div>
             <Link href="/meetings" className={cn(buttonVariants({ variant: 'outline' }))}>
-              Open meetings
+              {t('openMeetings')}
             </Link>
           </div>
           <form method="get" className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
-            <input name="q" defaultValue={filters.q ?? ''} placeholder="Search member or leader" className="rounded-md border bg-background px-3 py-2 text-sm lg:col-span-2" />
+            <input name="q" defaultValue={filters.q ?? ''} placeholder={t('searchPlaceholder')} className="rounded-md border bg-background px-3 py-2 text-sm lg:col-span-2" />
             <select name="action" defaultValue={filters.action ?? 'all'} className="rounded-md border bg-background px-3 py-2 text-sm">
-              <option value="all">All actions</option>
-              {Object.entries(MEMBERSHIP_ORDINANCE_ACTION_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+              <option value="all">{t('allActions')}</option>
+              {Object.keys(MEMBERSHIP_ORDINANCE_ACTION_LABELS).map((value) => <option key={value} value={value}>{t(`action_${value}`)}</option>)}
             </select>
             <select name="status" defaultValue={filters.status ?? 'all'} className="rounded-md border bg-background px-3 py-2 text-sm">
-              <option value="all">All statuses</option>
-              {Object.entries(MEMBERSHIP_ORDINANCE_STATUS_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+              <option value="all">{t('allStatuses')}</option>
+              {Object.keys(MEMBERSHIP_ORDINANCE_STATUS_LABELS).map((value) => <option key={value} value={value}>{t(`status_${value}`)}</option>)}
             </select>
             <select name="queue" defaultValue={filters.queue ?? 'all'} className="rounded-md border bg-background px-3 py-2 text-sm">
-              <option value="all">All queues</option>
-              {GROUPS.map((group) => <option key={group.key} value={group.key}>{group.title}</option>)}
+              <option value="all">{t('allQueues')}</option>
+              {GROUPS.map((group) => <option key={group.key} value={group.key}>{t(group.titleKey)}</option>)}
             </select>
             <select name="followup" defaultValue={filters.followup ?? 'all'} className="rounded-md border bg-background px-3 py-2 text-sm">
-              <option value="all">All follow-up</option>
-              <option value="interview">Interview needed</option>
-              <option value="lcr">LCR update needed</option>
-              <option value="official-record">Official-record handoff needed</option>
-              <option value="overdue">Overdue</option>
+              <option value="all">{t('allFollowUp')}</option>
+              <option value="interview">{t('interviewNeeded')}</option>
+              <option value="lcr">{t('lcrUpdateNeeded')}</option>
+              <option value="official-record">{t('officialRecordHandoffNeeded')}</option>
+              <option value="overdue">{t('overdue')}</option>
             </select>
-            <button type="submit" className={cn(buttonVariants({ size: 'sm' }))}>Apply filters</button>
+            <button type="submit" className={cn(buttonVariants({ size: 'sm' }))}>{t('applyFilters')}</button>
           </form>
-          <p className="mt-3 text-xs text-muted-foreground">Showing {actions.length} of {allActions.length} actions.</p>
+          <p className="mt-3 text-xs text-muted-foreground">{t('showing', { shown: actions.length, total: allActions.length })}</p>
         </section>
 
         <MembershipOrdinanceSection
@@ -260,15 +264,15 @@ export default async function MembershipOrdinancesPage({ searchParams }: { searc
           return (
             <section key={group.key} className="space-y-3">
               <div>
-                <h2 className="text-lg font-semibold">{group.title} <span className="text-muted-foreground">({groupActions.length})</span></h2>
-                <p className="text-sm text-muted-foreground">{group.description}</p>
+                <h2 className="text-lg font-semibold">{t(group.titleKey)} <span className="text-muted-foreground">({groupActions.length})</span></h2>
+                <p className="text-sm text-muted-foreground">{t(group.descriptionKey)}</p>
               </div>
               {groupActions.length ? (
                 <div className="grid gap-3 lg:grid-cols-2">
-                  {groupActions.map((action) => <ActionCard key={action.id} action={action} wardId={session.activeWardId!} />)}
+                  {groupActions.map((action) => <ActionCard key={action.id} action={action} wardId={session.activeWardId!} locale={locale} t={t} />)}
                 </div>
               ) : (
-                <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">No actions in this group.</p>
+                <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">{t('noActionsInGroup')}</p>
               )}
             </section>
           );

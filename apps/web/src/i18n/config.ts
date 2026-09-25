@@ -1,5 +1,5 @@
-export const SUPPORTED_LOCALES = ['en-US', 'es'] as const;
-export const PLANNED_LOCALES = ['pt-BR', 'tl', 'to'] as const;
+export const SUPPORTED_LOCALES = ['en-US', 'es', 'tl', 'to'] as const;
+export const PLANNED_LOCALES = ['pt-BR'] as const;
 export const SUPPORTED_CATALOG_LOCALES = [...SUPPORTED_LOCALES, ...PLANNED_LOCALES] as const;
 
 export type Locale = (typeof SUPPORTED_LOCALES)[number];
@@ -29,7 +29,9 @@ export function resolveActiveLocale(
 
 export const LOCALE_LABELS: Record<Locale, string> = {
   'en-US': 'English',
-  es: 'Español'
+  es: 'Español',
+  tl: 'Tagalog',
+  to: 'Tongan'
 };
 
 export const CATALOG_LOCALE_LABELS: Record<CatalogLocale, string> = {

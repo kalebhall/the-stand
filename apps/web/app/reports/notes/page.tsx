@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { getLocale, getTranslations } from 'next-intl/server';
 
 import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth/guards';
 import { canUseInternalNotes } from '@/src/auth/roles';
@@ -28,6 +29,8 @@ export default async function NotesReportPage({
 }: {
   searchParams: Promise<{ from?: string; to?: string; visibility?: string; target?: string; sort?: string }>;
 }) {
+  const t = await getTranslations('reports');
+  const locale = await getLocale();
   const session = await requireAuthenticatedSession();
   enforcePasswordRotation(session);
   if (
@@ -76,66 +79,66 @@ export default async function NotesReportPage({
       <main className="mx-auto w-full max-w-5xl space-y-6 p-4 sm:p-6">
         <section>
           <Link href="/reports" className="text-sm text-muted-foreground hover:text-foreground">
-            ← All reports
+            ← {t('allReports')}
           </Link>
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight">Notes report</h1>
-          <p className="text-sm text-muted-foreground">Ward notes visible to your account.</p>
+          <h1 className="mt-2 text-2xl font-semibold tracking-tight">{t('notes.title')}</h1>
+          <p className="text-sm text-muted-foreground">{t('notes.description')}</p>
         </section>
         <form className="grid gap-3 rounded-lg border bg-card p-4 sm:grid-cols-4">
           <label className="text-sm">
-            From
+            {t('notes.from')}
             <input name="from" type="date" defaultValue={from ?? ''} className="mt-1 w-full rounded-md border bg-background p-2" />
           </label>
           <label className="text-sm">
-            To
+            {t('notes.to')}
             <input name="to" type="date" defaultValue={to ?? ''} className="mt-1 w-full rounded-md border bg-background p-2" />
           </label>
           <label className="text-sm">
-            Visibility
+            {t('notes.visibility')}
             <select name="visibility" defaultValue={visibility} className="mt-1 w-full rounded-md border bg-background p-2">
-              <option value="ALL">All visible to me</option>
-              <option value="LEADERSHIP">Bishopric / clerk</option>
-              <option value="PRIVATE">My private notes</option>
+              <option value="ALL">{t('notes.allVisible')}</option>
+              <option value="LEADERSHIP">{t('notes.leadership')}</option>
+              <option value="PRIVATE">{t('notes.private')}</option>
             </select>
           </label>
           <label className="text-sm">
-            Note on
+            {t('notes.target')}
             <select name="target" defaultValue={target} className="mt-1 w-full rounded-md border bg-background p-2">
-              <option value="ALL">All targets</option>
-              <option value="MEMBER">Member</option>
-              <option value="MEETING">Meeting</option>
-              <option value="PROGRAM_ITEM">Meeting item</option>
+              <option value="ALL">{t('notes.allTargets')}</option>
+              <option value="MEMBER">{t('notes.member')}</option>
+              <option value="MEETING">{t('notes.meeting')}</option>
+              <option value="PROGRAM_ITEM">{t('notes.meetingItem')}</option>
             </select>
           </label>
           <label className="text-sm">
-            Sort by
+            {t('notes.sort')}
             <select name="sort" defaultValue={sort} className="mt-1 w-full rounded-md border bg-background p-2">
-              <option value="date">Newest</option>
-              <option value="subject">Subject</option>
-              <option value="author">Author</option>
+              <option value="date">{t('notes.newest')}</option>
+              <option value="subject">{t('notes.subject')}</option>
+              <option value="author">{t('notes.author')}</option>
             </select>
           </label>
           <button type="submit" className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground sm:col-span-4">
-            Apply filters
+            {t('applyFilters')}
           </button>
         </form>
         <section className="space-y-3">
-          <p className="text-sm text-muted-foreground">{notes.length} notes shown.</p>
+          <p className="text-sm text-muted-foreground">{t('notes.shown', { count: notes.length })}</p>
           {notes.map((note) => {
             const subject = note.member_name
-              ? `Member: ${note.member_name}`
+              ? t('notes.memberSubject', { name: note.member_name })
               : note.meeting_date
-                ? `Meeting: ${note.meeting_date}`
-                : `Meeting item: ${note.program_item_title ?? note.program_item_type ?? 'Untitled'}`;
+                ? t('notes.meetingSubject', { date: note.meeting_date })
+                : t('notes.itemSubject', { name: note.program_item_title ?? note.program_item_type ?? t('notes.untitled') });
             return (
               <article key={note.id} className="rounded-lg border bg-card p-4">
                 <div className="flex flex-wrap justify-between gap-2 text-xs text-muted-foreground">
                   <span>
                     {subject} ·{' '}
-                    {note.visibility === 'PRIVATE' ? 'Personal' : note.visibility === 'PUBLIC' ? 'Public program' : 'Bishopric / Clerk'}
+                    {note.visibility === 'PRIVATE' ? t('notes.personal') : note.visibility === 'PUBLIC' ? t('notes.publicProgram') : t('notes.bishopricClerk')}
                   </span>
                   <span>
-                    {note.created_by_email ?? 'Unknown author'} · {new Date(note.created_at).toLocaleString()}
+                    {note.created_by_email ?? t('notes.unknownAuthor')} · {new Date(note.created_at).toLocaleString(locale)}
                   </span>
                 </div>
                 <p className="mt-2 whitespace-pre-wrap text-sm">{note.note_text}</p>
@@ -143,7 +146,7 @@ export default async function NotesReportPage({
             );
           })}
           {!notes.length ? (
-            <p className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">No notes match filters.</p>
+            <p className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">{t('notes.noMatch')}</p>
           ) : null}
         </section>
       </main>
@@ -151,7 +154,7 @@ export default async function NotesReportPage({
   } catch (error) {
     await client.query('ROLLBACK');
     console.error('notes_report_load_failed', { wardId: session.activeWardId, userId: session.user.id, error });
-    throw new Error('Failed to load notes report');
+    throw new Error(t('failedLoadNotes'));
   } finally {
     client.release();
   }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 
 import { Button } from '@/components/ui/button';
 import { parseSacramentPlannerHtml, formatHistoricalDate, type HistoricalMeeting } from '@/src/imports/sacrament-planner';
@@ -18,6 +19,7 @@ type ImportResult = {
 };
 
 export function SacramentPlannerImportClient({ wardId }: { wardId: string }) {
+  const t = useTranslations('imports.planner');
   const [meetings, setMeetings] = useState<HistoricalMeeting[]>([]);
   const [fileName, setFileName] = useState('');
   const [result, setResult] = useState<ImportResult | null>(null);
@@ -47,10 +49,10 @@ export function SacramentPlannerImportClient({ wardId }: { wardId: string }) {
     try {
       const parsed = parseSacramentPlannerHtml(await file.text());
       setMeetings(parsed);
-      if (!parsed.length) setError('No completed meetings were found through August 30, 2026.');
+      if (!parsed.length) setError(t('noMeetings'));
     } catch (caught) {
       setMeetings([]);
-      setError(caught instanceof Error ? caught.message : 'Could not read the spreadsheet HTML');
+      setError(caught instanceof Error ? caught.message : t('readError'));
     }
   }
 
@@ -65,13 +67,13 @@ export function SacramentPlannerImportClient({ wardId }: { wardId: string }) {
       });
       const payload = (await response.json()) as ImportResult | { error?: string };
       if (!response.ok || !('meetingCount' in payload)) {
-        setError('error' in payload ? (payload.error ?? 'Import failed') : 'Import failed');
+        setError('error' in payload ? (payload.error ?? t('failed')) : t('failed'));
         return;
       }
       setResult(payload);
       if (commit) setMeetings([]);
     } catch {
-      setError('Import failed');
+      setError(t('failed'));
     } finally {
       setBusy(false);
     }
@@ -88,12 +90,12 @@ export function SacramentPlannerImportClient({ wardId }: { wardId: string }) {
       });
       if (!response.ok) {
         const payload = (await response.json()) as { error?: string };
-        setError(payload.error ?? 'Could not update name review');
+        setError(payload.error ?? t('reviewError'));
         return;
       }
       await loadReviews();
     } catch {
-      setError('Could not update name review');
+      setError(t('reviewError'));
     } finally {
       setBusy(false);
     }
@@ -103,10 +105,9 @@ export function SacramentPlannerImportClient({ wardId }: { wardId: string }) {
     <div className="space-y-6">
       <section className="section-panel section-panel--service space-y-4 rounded-lg border bg-card p-5 shadow-sm">
         <div className="space-y-2">
-          <h2 className="text-lg font-semibold">Upload Sacrament Planner</h2>
+          <h2 className="text-lg font-semibold">{t('uploadTitle')}</h2>
           <p className="text-sm text-muted-foreground">
-            Upload the exported <strong>Sacrament Planner.html</strong> file from your ZIP. Only dates through August 30, 2026 are included;
-            future planning columns are ignored.
+            {t('uploadDescription')}
           </p>
         </div>
         <input
@@ -115,17 +116,15 @@ export function SacramentPlannerImportClient({ wardId }: { wardId: string }) {
           onChange={(event) => void handleFile(event.target.files?.[0])}
           className="w-full rounded-md border bg-background p-2 text-sm"
         />
-        {fileName ? <p className="text-xs text-muted-foreground">Loaded: {fileName}</p> : null}
+        {fileName ? <p className="text-xs text-muted-foreground">{t('loaded', { name: fileName })}</p> : null}
       </section>
 
       {meetings.length ? (
         <section className="space-y-4 rounded-lg border bg-card p-5 shadow-sm">
           <div>
-            <h2 className="text-lg font-semibold">Import preview</h2>
+            <h2 className="text-lg font-semibold">{t('previewTitle')}</h2>
             <p className="text-sm text-muted-foreground">
-              Found {meetings.length} historical meetings from {formatHistoricalDate(meetings[0].meetingDate)} through{' '}
-              {formatHistoricalDate(meetings.at(-1)?.meetingDate ?? meetings[0].meetingDate)}. Existing meetings will be preserved and
-              skipped.
+              {t('found', { count: meetings.length, start: formatHistoricalDate(meetings[0].meetingDate), end: formatHistoricalDate(meetings.at(-1)?.meetingDate ?? meetings[0].meetingDate) })}
             </p>
           </div>
           <div className="max-h-72 overflow-auto rounded-md border">
@@ -134,7 +133,7 @@ export function SacramentPlannerImportClient({ wardId }: { wardId: string }) {
                 <li key={meeting.meetingDate} className="flex justify-between gap-4 px-3 py-2">
                   <span>{formatHistoricalDate(meeting.meetingDate)}</span>
                   <span className="text-muted-foreground">
-                    {meeting.programItems.length} program items · {meeting.meetingType}
+                    {t('items', { count: meeting.programItems.length, type: meeting.meetingType })}
                   </span>
                 </li>
               ))}
@@ -142,10 +141,10 @@ export function SacramentPlannerImportClient({ wardId }: { wardId: string }) {
           </div>
           <div className="flex flex-wrap gap-3">
             <Button type="button" variant="outline" onClick={() => void submit(false)} disabled={busy}>
-              Dry run preview
+              {t('dryRun')}
             </Button>
             <Button type="button" onClick={() => void submit(true)} disabled={busy}>
-              Import completed history
+              {t('importHistory')}
             </Button>
           </div>
         </section>
@@ -153,30 +152,29 @@ export function SacramentPlannerImportClient({ wardId }: { wardId: string }) {
 
       {result ? (
         <section className="space-y-2 rounded-lg border bg-card p-5 shadow-sm">
-          <h2 className="font-semibold">{result.commit ? 'Import complete' : 'Dry run complete'}</h2>
+          <h2 className="font-semibold">{result.commit ? t('importComplete') : t('dryRunComplete')}</h2>
           <p className="text-sm text-muted-foreground">
             {result.commit
-              ? `Imported ${result.importedMeetings} meetings and ${result.importedItems} program items.`
-              : `Reviewed ${result.meetingCount} meetings.`}{' '}
-            {result.skippedExisting} existing meetings were preserved and skipped.
+              ? t('imported', { meetings: result.importedMeetings, items: result.importedItems })
+              : t('reviewed', { count: result.meetingCount })}{' '}
+            {t('skipped', { count: result.skippedExisting })}
           </p>
           {result.unmatchedNames.length ? (
             <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm">
-              <strong>Names needing review:</strong>
+              <strong>{t('needsReview')}</strong>
               <p className="mt-1">{result.unmatchedNames.join(', ')}</p>
             </div>
           ) : (
-            <p className="text-sm text-green-700">All person entries matched confidently to existing member names.</p>
+            <p className="text-sm text-green-700">{t('allMatched')}</p>
           )}
         </section>
       ) : null}
       {reviews.length ? (
         <section className="space-y-4 rounded-lg border bg-card p-5 shadow-sm">
           <div>
-            <h2 className="text-lg font-semibold">Names needing review</h2>
+            <h2 className="text-lg font-semibold">{t('reviewTitle')}</h2>
             <p className="text-sm text-muted-foreground">
-              Choose the correct ward member to replace the source text across imported program history. If it is a guest or you are unsure,
-              ignore it and leave the original text unchanged.
+              {t('reviewDescription')}
             </p>
           </div>
           <div className="space-y-3">
@@ -185,18 +183,17 @@ export function SacramentPlannerImportClient({ wardId }: { wardId: string }) {
                 <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
                   <strong>{review.source_name}</strong>
                   <span className="text-muted-foreground">
-                    {review.occurrence_count} occurrence{review.occurrence_count === 1 ? '' : 's'} ·{' '}
-                    {formatHistoricalDate(review.first_seen_date)} to {formatHistoricalDate(review.last_seen_date)}
+                    {t('occurrence', { count: review.occurrence_count, start: formatHistoricalDate(review.first_seen_date), end: formatHistoricalDate(review.last_seen_date) })}
                   </span>
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2">
                   <select
-                    aria-label={`Match ${review.source_name} to a member`}
+                    aria-label={t('match', { name: review.source_name })}
                     value={selections[review.id] ?? ''}
                     onChange={(event) => setSelections((current) => ({ ...current, [review.id]: event.target.value }))}
                     className="min-w-64 rounded-md border bg-background px-3 py-2 text-sm"
                   >
-                    <option value="">Choose a member...</option>
+                    <option value="">{t('choose')}</option>
                     {members.map((member) => (
                       <option key={member.id} value={member.id}>
                         {member.full_name}
@@ -209,10 +206,10 @@ export function SacramentPlannerImportClient({ wardId }: { wardId: string }) {
                     onClick={() => void reviewName(review.id, 'resolve')}
                     disabled={busy || !selections[review.id]}
                   >
-                    Use selected member
+                    {t('useSelected')}
                   </Button>
                   <Button type="button" size="sm" variant="outline" onClick={() => void reviewName(review.id, 'ignore')} disabled={busy}>
-                    Keep source text
+                    {t('keepSource')}
                   </Button>
                 </div>
               </div>

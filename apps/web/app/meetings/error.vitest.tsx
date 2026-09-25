@@ -5,7 +5,8 @@ import { NextIntlClientProvider } from 'next-intl';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-import messages from '../../messages/es.json';
+import { MESSAGE_CATALOGS } from '@/src/i18n/messages';
+const messages = MESSAGE_CATALOGS.es;
 import ErrorBoundary from './error';
 
 describe('meetings error state localization', () => {

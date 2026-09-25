@@ -1,0 +1,32 @@
+{
+  "members": {
+    "pageTitle": "Kau Memipa & Ngaahi Nouti",
+    "pageDescription": "Fakahinohino ʻo e kāingalotu ʻo e uōtí mo e ngaahi fakamatala muimuiʻi fakatakimuʻa fakangatangatá.",
+    "importMembers": "Hu mai 'a e kau memipa",
+    "filterPlaceholder": "Sivi'i 'a e kau memipa 'aki honau hingoa, 'imeili, pe telefoni...",
+    "sortBy": "Fakahokohoko ʻaki ʻa e",
+    "name": "Hingoa",
+    "age": "Ta'u motu'a",
+    "email": "'Imeili",
+    "showing": "Fakahaa'i 'a e {shown} 'o e kau memipa 'o e {total}",
+    "noEmail": "'Ikai ha 'imeili",
+    "noPhone": "'Ikai ha telefoni",
+    "edit": "Fakatonutonu",
+    "archiving": "Fakatolonga...",
+    "archive": "Feitu'u tauhi lēkooti fakahisitolia",
+    "archiveConfirm": "Ko e ʻAkaivi {name}? He ʻikai ke nau toe ʻasi ʻi he ngaahi lisi ʻo e kāingalotu ʻoku lolotonga ngāué ka ʻoku tauhi ʻa e ngaahi lekooti fakahisitōliá.",
+    "editMemberInfo": "Fakatonutonu e fakamatala 'a e memipa",
+    "firstName": "Hingoa 'uluaki",
+    "lastName": "Fakaiku",
+    "phone": "Telefoni",
+    "save": "Fakahaofi",
+    "saving": "Fakahaofi...",
+    "cancel": "Kaniseli",
+    "memberNotes": "Nouti 'a e kau memipa",
+    "noMembersImported": "'Oku te'eki ke 'omi ha kau memipa.",
+    "noMembersMatched": "Naʻe ʻikai ha kāingalotu ʻe tatau mo hoʻo fekumi.",
+    "importMembersNow": "Fakahū mai ʻa e kau mēmipá he taimí ni",
+    "saveFailed": "Naʻe ʻikai lava ke fakahaofi ʻa e ngaahi liliú.",
+    "archiveFailed": "Na'e 'ikai lava ke archive 'a e memipa."
+  }
+}

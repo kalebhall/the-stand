@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 
 import { Button } from '@/components/ui/button';
 
@@ -21,13 +22,6 @@ type Props = {
   canManage: boolean;
 };
 
-const UNIT_TYPE_LABELS: Record<UnitType, string> = {
-  ward: 'Ward',
-  stake: 'Stake',
-  branch: 'Branch',
-  district: 'District'
-};
-
 const ALL_UNIT_TYPES: UnitType[] = ['ward', 'stake', 'branch', 'district'];
 
 type FormState = {
@@ -36,6 +30,23 @@ type FormState = {
   unitType: UnitType;
   sortOrder: number;
 };
+
+function errorMessage(code: string | undefined, t: (key: string) => string): string {
+  switch (code) {
+    case 'DUPLICATE':
+      return t('standardCallingDuplicate');
+    case 'VALIDATION_ERROR':
+      return t('standardCallingInvalid');
+    case 'FORBIDDEN':
+      return t('forbidden');
+    case 'UNAUTHORIZED':
+      return t('unauthorized');
+    case 'NOT_FOUND':
+      return t('standardCallingNotFound');
+    default:
+      return t('saveError');
+  }
+}
 
 const EMPTY_FORM: FormState = {
   name: '',
@@ -47,6 +58,7 @@ const EMPTY_FORM: FormState = {
 type DialogMode = { kind: 'add' } | { kind: 'edit'; calling: StandardCalling } | null;
 
 export function StandardCallingsManager({ callings, canManage }: Props) {
+  const t = useTranslations('callings');
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<UnitType>('ward');
   const [dialog, setDialog] = useState<DialogMode>(null);
@@ -81,7 +93,7 @@ export function StandardCallingsManager({ callings, canManage }: Props) {
 
   async function handleSave() {
     if (!form.name.trim()) {
-      setError('Calling name is required.');
+      setError(t('callingNameRequired'));
       return;
     }
 
@@ -113,8 +125,8 @@ export function StandardCallingsManager({ callings, canManage }: Props) {
       }
 
       if (!res.ok) {
-        const data = (await res.json().catch(() => ({}))) as { error?: string };
-        setError(data.error ?? 'An error occurred. Please try again.');
+        const data = (await res.json().catch(() => ({}))) as { code?: string };
+        setError(errorMessage(data.code, t));
         return;
       }
 
@@ -130,8 +142,8 @@ export function StandardCallingsManager({ callings, canManage }: Props) {
     try {
       const res = await fetch(`/api/standard-callings/${id}`, { method: 'DELETE' });
       if (!res.ok) {
-        const data = (await res.json().catch(() => ({}))) as { error?: string };
-        setError(data.error ?? 'Failed to delete calling.');
+        const data = (await res.json().catch(() => ({}))) as { code?: string };
+        setError(errorMessage(data.code, t));
         return;
       }
       router.refresh();
@@ -154,7 +166,7 @@ export function StandardCallingsManager({ callings, canManage }: Props) {
                 activeTab === type ? 'border-b-2 border-foreground text-foreground' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              {UNIT_TYPE_LABELS[type]}
+              {t(type)}
               <span className="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-xs font-normal text-muted-foreground">{count}</span>
             </button>
           );
@@ -163,7 +175,7 @@ export function StandardCallingsManager({ callings, canManage }: Props) {
         {canManage ? (
           <div className="ml-auto">
             <Button size="sm" onClick={openAdd}>
-              Add Calling
+              {t('addCalling')}
             </Button>
           </div>
         ) : null}
@@ -175,10 +187,10 @@ export function StandardCallingsManager({ callings, canManage }: Props) {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-muted/50">
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground">Calling Name</th>
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground">Organization</th>
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground">Sort Order</th>
-                {canManage ? <th className="px-4 py-3 text-right font-medium text-muted-foreground">Actions</th> : null}
+                <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t('callingName')}</th>
+                <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t('organization')}</th>
+                <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t('sortOrder')}</th>
+                {canManage ? <th className="px-4 py-3 text-right font-medium text-muted-foreground">{t('actions')}</th> : null}
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -191,7 +203,7 @@ export function StandardCallingsManager({ callings, canManage }: Props) {
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <Button size="sm" variant="outline" onClick={() => openEdit(calling)}>
-                          Edit
+                          {t('edit')}
                         </Button>
                         <Button
                           size="sm"
@@ -199,12 +211,12 @@ export function StandardCallingsManager({ callings, canManage }: Props) {
                           className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
                           disabled={deleting === calling.id}
                           onClick={() => {
-                            if (confirm(`Delete "${calling.name}"?`)) {
+                            if (confirm(t('deleteConfirm', { name: calling.name }))) {
                               void handleDelete(calling.id);
                             }
                           }}
                         >
-                          {deleting === calling.id ? 'Deleting…' : 'Delete'}
+                          {deleting === calling.id ? t('deleting') : t('delete')}
                         </Button>
                       </div>
                     </td>
@@ -216,7 +228,7 @@ export function StandardCallingsManager({ callings, canManage }: Props) {
         </div>
       ) : (
         <p className="py-6 text-center text-sm text-muted-foreground">
-          No {UNIT_TYPE_LABELS[activeTab].toLowerCase()} callings defined yet.
+          {t('noUnitCallings', { unit: t(activeTab).toLowerCase() })}
         </p>
       )}
 
@@ -224,39 +236,39 @@ export function StandardCallingsManager({ callings, canManage }: Props) {
       {dialog ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="w-full max-w-md rounded-lg border bg-background p-6 shadow-xl">
-            <h2 className="mb-4 text-lg font-semibold">{dialog.kind === 'add' ? 'Add Standard Calling' : 'Edit Standard Calling'}</h2>
+            <h2 className="mb-4 text-lg font-semibold">{dialog.kind === 'add' ? t('addStandardCalling') : t('editStandardCalling')}</h2>
 
             <div className="space-y-4">
               <div className="space-y-1">
                 <label className="text-sm font-medium" htmlFor="sc-name">
-                  Calling Name <span className="text-destructive">*</span>
+                  {t('callingName')} <span className="text-destructive">*</span>
                 </label>
                 <input
                   id="sc-name"
                   className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   value={form.name}
                   onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                  placeholder="e.g. Bishop"
+                  placeholder={t('callingNamePlaceholder')}
                 />
               </div>
 
               <div className="space-y-1">
                 <label className="text-sm font-medium" htmlFor="sc-org">
-                  Organization
+                  {t('organization')}
                 </label>
                 <input
                   id="sc-org"
                   className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   value={form.organization}
                   onChange={(e) => setForm((f) => ({ ...f, organization: e.target.value }))}
-                  placeholder="e.g. Bishopric"
+                  placeholder={t('organizationPlaceholder')}
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-sm font-medium" htmlFor="sc-unit">
-                    Unit Type <span className="text-destructive">*</span>
+                    {t('unitType')} <span className="text-destructive">*</span>
                   </label>
                   <select
                     id="sc-unit"
@@ -264,9 +276,9 @@ export function StandardCallingsManager({ callings, canManage }: Props) {
                     value={form.unitType}
                     onChange={(e) => setForm((f) => ({ ...f, unitType: e.target.value as UnitType }))}
                   >
-                    {ALL_UNIT_TYPES.map((t) => (
-                      <option key={t} value={t}>
-                        {UNIT_TYPE_LABELS[t]}
+                    {ALL_UNIT_TYPES.map((unitType) => (
+                      <option key={unitType} value={unitType}>
+                        {t(unitType)}
                       </option>
                     ))}
                   </select>
@@ -274,7 +286,7 @@ export function StandardCallingsManager({ callings, canManage }: Props) {
 
                 <div className="space-y-1">
                   <label className="text-sm font-medium" htmlFor="sc-sort">
-                    Sort Order
+                    {t('sortOrder')}
                   </label>
                   <input
                     id="sc-sort"
@@ -291,10 +303,10 @@ export function StandardCallingsManager({ callings, canManage }: Props) {
 
             <div className="mt-6 flex justify-end gap-2">
               <Button variant="outline" onClick={closeDialog} disabled={saving}>
-                Cancel
+                {t('cancel')}
               </Button>
               <Button onClick={() => void handleSave()} disabled={saving}>
-                {saving ? 'Saving…' : dialog.kind === 'add' ? 'Add Calling' : 'Save Changes'}
+                {saving ? t('saving') : dialog.kind === 'add' ? t('addCalling') : t('saveChanges')}
               </Button>
             </div>
           </div>

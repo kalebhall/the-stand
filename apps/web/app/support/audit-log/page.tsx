@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { getTranslations } from 'next-intl/server';
 
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -22,6 +23,8 @@ export default async function SupportAuditLogPage() {
   if (!hasRole(session.user.roles, 'SUPPORT_ADMIN')) {
     redirect('/dashboard');
   }
+
+  const t = await getTranslations('supportAuditLog');
 
   const client = await pool.connect();
 
@@ -146,12 +149,12 @@ export default async function SupportAuditLogPage() {
       <section className="space-y-2">
         <div className="flex items-center gap-3">
           <Link href="/support" className={cn(buttonVariants({ size: 'sm', variant: 'ghost' }))}>
-            &larr; Support Console
+            &larr; {t('back')}
           </Link>
         </div>
-        <h1 className="text-2xl font-semibold tracking-tight">Audit Log</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{t('title')}</h1>
         <p className="text-muted-foreground">
-          Review all system activity across wards. Filter by action type, user, date range, or search across all fields.
+          {t('description')}
         </p>
       </section>
 

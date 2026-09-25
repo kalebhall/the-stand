@@ -1,0 +1,56 @@
+{
+  "bishopric": {
+    "meetingTypes": {
+      "BISHOPRIC": "Bishopric meeting",
+      "BISHOPRIC_AND_COUNCIL": "Bishopric and council",
+      "WARD_COUNCIL": "Ward council",
+      "MISSIONARY_COORDINATION": "Missionary coordination"
+    },
+    "pageDescription": "Private coordination agenda, decisions, assignments, and due dates. Not part of public meeting programs.",
+    "privacyNotice": "Visibility is private and ward-scoped. Do not store confidential counseling details here.",
+    "dashboard": "Dashboard",
+    "newMeeting": "New {meetingType}",
+    "leadershipMeetingType": "Leadership meeting type",
+    "meetingDate": "Meeting date",
+    "createMeeting": "Create meeting",
+    "addPrivateAction": "Add private action",
+    "leadershipMeeting": "Leadership meeting",
+    "selectMeeting": "Select meeting",
+    "actionOrAssignment": "Action or assignment",
+    "owner": "Owner",
+    "linkedMember": "Linked member",
+    "noLinkedMember": "No linked member",
+    "linkedCalling": "Linked calling",
+    "noLinkedCalling": "No linked calling",
+    "dueDate": "Due date",
+    "openActions": "Open actions",
+    "meeting": "Meeting",
+    "ownerLabel": "Owner",
+    "memberLabel": "Member",
+    "callingLabel": "Calling",
+    "linkedMembershipFollowUp": "Linked membership follow-up",
+    "dueLabel": "Due",
+    "statusFor": "Status for {title}",
+    "restrictedLeadershipNoteFor": "Restricted leadership note for {title}",
+    "restrictedLeadershipNote": "Restricted leadership note",
+    "addNote": "Add note",
+    "restrictedNotes": "Restricted notes",
+    "leader": "Leader",
+    "noOpenActions": "No open bishopric actions.",
+    "statuses": {
+      "PENDING": "Pending",
+      "IN_PROGRESS": "In progress",
+      "COMPLETED": "Completed"
+    },
+    "errors": {
+      "loadLinks": "Could not load member and calling links.",
+      "loadNotes": "Could not load leadership notes.",
+      "createMeeting": "Could not create meeting.",
+      "selectMeeting": "Create or select a leadership meeting first.",
+      "createAction": "Could not create action.",
+      "emptyNote": "Leadership note cannot be empty.",
+      "saveNote": "Could not save leadership note.",
+      "updateAction": "Could not update action."
+    }
+  }
+}

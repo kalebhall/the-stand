@@ -1,0 +1,56 @@
+{
+  "bishopric": {
+    "meetingTypes": {
+      "BISHOPRIC": "Fakataha ʻa e kau pīsopelikí",
+      "BISHOPRIC_AND_COUNCIL": "Kau pīsopelikí mo e fakataha alēleá .",
+      "WARD_COUNCIL": "Fakataha alēlea fakauōtí",
+      "MISSIONARY_COORDINATION": "Fakafekauʻaki fakafaifekau ."
+    },
+    "pageDescription": "ʻAsenita fakafekauʻaki fakatāutahá, ngaahi tuʻutuʻuní, ngaahi ngāué, mo e ngaahi ʻaho ʻoku totonu ke fakahoko aí. ‘Ikai ko ha konga ‘o e ngaahi polokalama fakataha fakapule‘angá.",
+    "privacyNotice": "ʻOku fakatāutaha ʻa e ʻasi maí pea ʻoku fakauōtí. ʻOua naʻá ke tauhi heni ha ngaahi fakaikiiki fakapulipuli ʻo e faleʻí.",
+    "dashboard": "Tesipapa",
+    "newMeeting": "Fo'ou {meetingType}",
+    "leadershipMeetingType": "Fa'ahinga fakataha fakatakimu'a .",
+    "meetingDate": "'Aho fakataha",
+    "createMeeting": "Fa'u 'a e fakataha",
+    "addPrivateAction": "Tānaki atu ha ngāue fakafoʻituitui",
+    "leadershipMeeting": "Fakataha fakatakimu'a .",
+    "selectMeeting": "Fili fakataha .",
+    "actionOrAssignment": "Ngaue pe ngaue .",
+    "owner": "Tokotaha ha'ana",
+    "linkedMember": "Memipa fehokotaki",
+    "noLinkedMember": "'Ikai ha memipa 'oku fehokotaki",
+    "linkedCalling": "Ui fehokotaki",
+    "noLinkedCalling": "'Ikai ha ui 'oku fehokotaki",
+    "dueDate": "'Aho 'osi",
+    "openActions": "Ngaahi ngaue fakaava",
+    "meeting": "Fakataha",
+    "ownerLabel": "Tokotaha ha'ana",
+    "memberLabel": "Memipa",
+    "callingLabel": "Ui",
+    "linkedMembershipFollowUp": "Muimui'i 'o e memipa fehokotaki",
+    "dueLabel": "Osi",
+    "statusFor": "Tu'unga mo e {title}",
+    "restrictedLeadershipNoteFor": "Fakangatangata 'a e fakamatala fakatakimu'a ki he {title} .",
+    "restrictedLeadershipNote": "Nouti fakatakimu'a fakangatangata .",
+    "addNote": "Tānaki atu ha fakamatala",
+    "restrictedNotes": "Ngaahi fakamatala fakangatangata",
+    "leader": "Taki",
+    "noOpenActions": "ʻIkai ha ngaahi ngāue fakapīsopelikí ʻoku fakaava.",
+    "statuses": {
+      "PENDING": "Te'eki mahino",
+      "IN_PROGRESS": "'Oku lolotonga fakahoko",
+      "COMPLETED": "Fakakakato"
+    },
+    "errors": {
+      "loadLinks": "Na'e 'ikai lava ke uta 'a e memipa mo e ngaahi fehokotaki'anga ui.",
+      "loadNotes": "Naʻe ʻikai lava ke uta ha ngaahi fakamatala fakatakimuʻa.",
+      "createMeeting": "Naʻe ʻikai lava ke faʻu ha fakataha.",
+      "selectMeeting": "Faʻu pe fili ʻuluaki ha fakataha fakatakimuʻa.",
+      "createAction": "Naʻe ʻikai lava ke faʻu ha ngāue.",
+      "emptyNote": "He ʻikai lava ke ʻataʻatā ʻa e tohi fakatakimuʻá.",
+      "saveNote": "Naʻe ʻikai lava ke fakahaofi ʻa e fakamatala fakatakimuʻá.",
+      "updateAction": "Na'e 'ikai lava ke fakafo'ou 'a e ngaue."
+    }
+  }
+}

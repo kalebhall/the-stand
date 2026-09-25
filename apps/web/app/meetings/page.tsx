@@ -69,7 +69,7 @@ export default async function MeetingsPage() {
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <Link href="/manual#meetings" className="text-sm font-medium underline underline-offset-4">
-              Meeting help
+              {t('help')}
             </Link>
             {canManage ? (
               <Link href="/meetings/new" className={cn(buttonVariants())}>

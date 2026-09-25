@@ -1,9 +1,10 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { getTranslations } from 'next-intl/server';
 
 import { StandardCallingsManager, type StandardCalling } from '@/components/StandardCallingsManager';
 import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth/guards';
-import { canManageCallings, canViewCallings, hasRole } from '@/src/auth/roles';
+import { canViewCallings, hasRole } from '@/src/auth/roles';
 import { isWardModuleEnabled } from '@/src/modules/service';
 import { pool } from '@/src/db/client';
 
@@ -17,16 +18,16 @@ type StandardCallingRow = {
 };
 
 export default async function StandardCallingsPage() {
+  const t = await getTranslations('callings');
   const session = await requireAuthenticatedSession();
   enforcePasswordRotation(session);
 
-  if (!session.activeWardId || !canViewCallings({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId) || !(await isWardModuleEnabled(session.activeWardId, session.user.id, 'callings'))) {
+  const isGlobalCatalogAdmin = hasRole(session.user.roles, 'SUPPORT_ADMIN') || hasRole(session.user.roles, 'SYSTEM_ADMIN');
+  if ((!isGlobalCatalogAdmin && (!session.activeWardId || !canViewCallings({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId))) || (session.activeWardId && !isGlobalCatalogAdmin && !(await isWardModuleEnabled(session.activeWardId, session.user.id, 'callings')))) {
     redirect('/dashboard');
   }
 
-  const wardId = session.activeWardId;
-  const canManage =
-    canManageCallings({ roles: session.user.roles, activeWardId: wardId }, wardId) || hasRole(session.user.roles, 'SUPPORT_ADMIN');
+  const canManage = isGlobalCatalogAdmin;
 
   let callings: StandardCalling[] = [];
 
@@ -54,16 +55,13 @@ export default async function StandardCallingsPage() {
       <section className="space-y-1">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Link href="/callings" className="hover:underline">
-            Callings
+            {t('title')}
           </Link>
           <span>/</span>
-          <span>Standard Callings</span>
+          <span>{t('standardCallings')}</span>
         </div>
-        <h1 className="text-2xl font-semibold tracking-tight">Standard Callings</h1>
-        <p className="text-sm text-muted-foreground">
-          The reference list of calling titles used for autocomplete suggestions when adding a calling assignment. Includes ward, stake,
-          branch, and district callings.
-        </p>
+        <h1 className="text-2xl font-semibold tracking-tight">{t('standardCallings')}</h1>
+        <p className="text-sm text-muted-foreground">{t('standardCallingsDescription')}</p>
       </section>
 
       <section className="rounded-lg border bg-card p-4">

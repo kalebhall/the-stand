@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 
 import { Button } from '@/components/ui/button';
 import { downloadPortalPdf, generateQrDataUrl } from '@/src/lib/qr-pdf';
@@ -13,7 +14,9 @@ interface PublicLinkQrCardProps {
   createdDateText?: string;
 }
 
-export function PublicLinkQrCard({ wardName, title = 'Digital Program', url, label, createdDateText }: PublicLinkQrCardProps) {
+export function PublicLinkQrCard({ wardName, title, url, label, createdDateText }: PublicLinkQrCardProps) {
+  const t = useTranslations('publicProgram');
+  const displayTitle = title ?? t('digitalProgram');
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
@@ -51,7 +54,7 @@ export function PublicLinkQrCard({ wardName, title = 'Digital Program', url, lab
     try {
       await downloadPortalPdf({
         wardName,
-        title,
+        title: displayTitle,
         url
       });
     } catch (err) {
@@ -69,13 +72,13 @@ export function PublicLinkQrCard({ wardName, title = 'Digital Program', url, lab
         <p className="min-w-0 flex-1 break-all font-mono text-xs text-muted-foreground">{url}</p>
         <div className="flex flex-wrap items-center gap-1.5">
           <Button type="button" variant="outline" size="sm" onClick={handleCopy}>
-            {copied ? 'Copied!' : 'Copy link'}
+            {copied ? t('copied') : t('copyLink')}
           </Button>
           <Button type="button" variant="outline" size="sm" onClick={() => setShowQr((prev) => !prev)}>
-            {showQr ? 'Hide QR' : 'Show QR'}
+            {showQr ? t('hideQr') : t('showQr')}
           </Button>
           <Button type="button" size="sm" onClick={handleDownloadPdf} disabled={isGeneratingPdf}>
-            {isGeneratingPdf ? 'Generating PDF...' : 'Download PDF Poster'}
+            {isGeneratingPdf ? t('generatingPdf') : t('downloadPdfPoster')}
           </Button>
         </div>
       </div>
@@ -86,14 +89,14 @@ export function PublicLinkQrCard({ wardName, title = 'Digital Program', url, lab
         <div className="flex flex-col items-center justify-center rounded-md border bg-background p-4 sm:p-6">
           <div className="text-center">
             <h3 className="text-lg font-bold tracking-tight text-foreground">{wardName}</h3>
-            <p className="text-sm font-semibold text-muted-foreground">{title}</p>
+            <p className="text-sm font-semibold text-muted-foreground">{displayTitle}</p>
           </div>
           <img
             src={qrDataUrl}
-            alt={`QR code for ${title}`}
+            alt={t('qrCodeFor', { title: displayTitle })}
             className="my-3 h-48 w-48 rounded border bg-white p-2 shadow-sm sm:h-56 sm:w-56"
           />
-          <p className="text-center text-xs text-muted-foreground">Scan with your phone&apos;s camera to open the digital program.</p>
+          <p className="text-center text-xs text-muted-foreground">{t('scanQrDigitalProgram')}</p>
         </div>
       ) : null}
     </div>

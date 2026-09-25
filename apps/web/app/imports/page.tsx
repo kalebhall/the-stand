@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
+import { getTranslations } from 'next-intl/server';
 
 import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth/guards';
 import { canRunImports } from '@/src/auth/roles';
@@ -8,6 +9,7 @@ import { cn } from '@/lib/utils';
 import { isWardModuleEnabled } from '@/src/modules/service';
 
 export default async function ImportsHubPage() {
+  const t = await getTranslations('imports');
   const session = await requireAuthenticatedSession();
   enforcePasswordRotation(session);
 
@@ -18,9 +20,9 @@ export default async function ImportsHubPage() {
   return (
     <main className="mx-auto w-full max-w-4xl space-y-6 p-4 sm:p-6">
       <div className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">Imports & Sync</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{t('hub.title')}</h1>
         <p className="text-sm text-muted-foreground">
-          Import ward directory and calling records from LCR into The Stand using official file exports or the browser DOM extractor.
+          {t('hub.description')}
         </p>
       </div>
 
@@ -28,16 +30,16 @@ export default async function ImportsHubPage() {
         <section className="section-panel section-panel--resource flex flex-col justify-between rounded-lg border bg-card p-6 shadow-sm space-y-4">
           <div className="space-y-2">
             <h2 className="text-lg font-semibold flex items-center gap-2">
-              <span>👤</span> Import Members
+              <span>👤</span> {t('hub.membersTitle')}
             </h2>
-            <p className="text-sm text-muted-foreground">Import the ward Member List from LCR (names, emails, phones, ages).</p>
+            <p className="text-sm text-muted-foreground">{t('hub.membersDescription')}</p>
           </div>
           <div className="pt-2 flex flex-wrap gap-2">
             <Link href="/imports/members" className={cn(buttonVariants({ size: 'sm' }))}>
-              Open Member Importer →
+              {t('hub.memberImporter')}
             </Link>
             <Link href="/members" className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}>
-              View Members & Notes
+              {t('hub.viewMembers')}
             </Link>
           </div>
         </section>
@@ -45,33 +47,33 @@ export default async function ImportsHubPage() {
         <section className="section-panel section-panel--service flex flex-col justify-between rounded-lg border bg-card p-6 shadow-sm space-y-4">
           <div className="space-y-2">
             <h2 className="text-lg font-semibold flex items-center gap-2">
-              <span>🗂️</span> Historical Programs
+              <span>🗂️</span> {t('hub.historyTitle')}
             </h2>
             <p className="text-sm text-muted-foreground">
-              Import completed Sacrament Planner history for speaker, topic, hymn, prayer, and completeness reports.
+              {t('hub.historyDescription')}
             </p>
           </div>
           <div className="pt-2">
             <Link href="/imports/sacrament-planner" className={cn(buttonVariants({ size: 'sm' }))}>
-              Open Historical Importer →
+              {t('hub.historyImporter')}
             </Link>
           </div>
         </section>
         <section className="section-panel section-panel--service flex flex-col justify-between rounded-lg border bg-card p-6 shadow-sm space-y-4">
           <div className="space-y-2">
             <h2 className="text-lg font-semibold flex items-center gap-2">
-              <span>📋</span> Import Callings
+              <span>📋</span> {t('hub.callingsTitle')}
             </h2>
             <p className="text-sm text-muted-foreground">
-              Import the Members with Callings report from LCR (organizations, callings, sustain dates, set apart statuses).
+              {t('hub.callingsDescription')}
             </p>
           </div>
           <div className="pt-2 flex flex-wrap gap-2">
             <Link href="/imports/callings" className={cn(buttonVariants({ size: 'sm' }))}>
-              Open Callings Importer →
+              {t('hub.callingsImporter')}
             </Link>
             <Link href="/callings" className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}>
-              View Callings
+              {t('hub.viewCallings')}
             </Link>
           </div>
         </section>

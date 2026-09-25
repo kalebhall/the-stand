@@ -6,7 +6,6 @@ import { parse } from '@formatjs/icu-messageformat-parser';
 
 const messagesDir = path.resolve('apps/web/messages');
 const sourceLocale = 'en-US';
-const sourcePath = path.join(messagesDir, `${sourceLocale}.json`);
 
 function flatten(value, prefix = '', output = new Map()) {
   if (typeof value === 'string') {
@@ -24,8 +23,8 @@ function flatten(value, prefix = '', output = new Map()) {
   return output;
 }
 
-function readCatalog(fileName) {
-  const filePath = path.join(messagesDir, fileName);
+function readCatalog(locale, moduleName) {
+  const filePath = path.join(messagesDir, locale, `${moduleName}.json`);
   try {
     return JSON.parse(fs.readFileSync(filePath, 'utf8'));
   } catch (error) {
@@ -33,15 +32,28 @@ function readCatalog(fileName) {
   }
 }
 
-const source = flatten(readCatalog(`${sourceLocale}.json`));
+function localeCatalog(locale) {
+  const localeDir = path.join(messagesDir, locale);
+  return Object.assign(
+    {},
+    ...fs
+      .readdirSync(localeDir)
+      .filter((name) => name.endsWith('.json'))
+      .sort()
+      .map((name) => readCatalog(locale, name.slice(0, -'.json'.length)))
+  );
+}
+
+const locales = fs
+  .readdirSync(messagesDir, { withFileTypes: true })
+  .filter((entry) => entry.isDirectory())
+  .map((entry) => entry.name)
+  .sort();
+const source = flatten(localeCatalog(sourceLocale));
 const errors = [];
 
-for (const fileName of fs
-  .readdirSync(messagesDir)
-  .filter((name) => name.endsWith('.json'))
-  .sort()) {
-  const locale = fileName.slice(0, -'.json'.length);
-  const catalog = flatten(readCatalog(fileName));
+for (const locale of locales) {
+  const catalog = flatten(localeCatalog(locale));
   const missing = [...source.keys()].filter((key) => !catalog.has(key));
   const extra = [...catalog.keys()].filter((key) => !source.has(key));
 
@@ -62,6 +74,4 @@ if (errors.length) {
   process.exit(1);
 }
 
-console.log(
-  `Validated ${source.size} message keys across ${fs.readdirSync(messagesDir).filter((name) => name.endsWith('.json')).length} locale catalogs.`
-);
+console.log(`Validated ${source.size} message keys across ${locales.length} locale catalogs.`);

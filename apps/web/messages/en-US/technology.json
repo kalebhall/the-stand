@@ -1,0 +1,26 @@
+{
+  "technology": {
+    "title": "Technology and streaming checklist",
+    "description": "Room, audio, stream, accessibility, and recording lifecycle readiness.",
+    "dashboard": "Dashboard",
+    "privacyNotice": "Store authorized links only. Never store passwords, tokens, Wi-Fi keys, or streaming credentials.",
+    "meeting": "Meeting",
+    "noMeetings": "No recent meetings are available.",
+    "loadChecklist": "Load checklist",
+    "checklistOwner": "Checklist owner",
+    "authorizedStreamLink": "Authorized stream link (HTTPS)",
+    "neverStoreCredentials": "Never store streaming credentials here.",
+    "roomReady": "Room ready",
+    "audioReady": "Audio ready",
+    "streamReady": "Stream ready",
+    "accessibilityChecked": "Accessibility checked",
+    "recordingDeletionReminder": "Recording deletion reminder",
+    "startConfirmed": "Start confirmed",
+    "stopConfirmed": "Stop confirmed",
+    "saveChecklist": "Save checklist",
+    "errors": {
+      "load": "Could not load checklist.",
+      "save": "Could not save checklist."
+    }
+  }
+}

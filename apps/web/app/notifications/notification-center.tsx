@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useTranslations } from 'next-intl';
 
 import { getNotificationEventDefinition, NOTIFICATION_CATEGORIES, type NotificationCategory } from '@/src/notifications/events';
 
@@ -18,28 +19,17 @@ type Notification = {
 };
 
 type ListResponse = { notifications?: Notification[]; unreadCount?: number; error?: string };
-const CATEGORY_LABELS: Record<NotificationCategory, string> = {
-  CALLINGS: 'Callings',
-  MEMBERSHIP: 'Membership',
-  MEETINGS: 'Meetings',
-  NOTES: 'Notes and comments',
-  ANNOUNCEMENTS: 'Announcements',
-  CALENDAR: 'Calendar',
-  ACCESS: 'Access and permissions',
-  SYSTEM: 'System',
-  REMINDERS: 'Reminders'
-};
 
-function relativeTime(value: string): string {
+function relativeTime(value: string, t: (key: string, values?: Record<string, number>) => string): string {
   const seconds = Math.round((Date.now() - Date.parse(value)) / 1000);
   if (!Number.isFinite(seconds)) return value;
-  if (Math.abs(seconds) < 60) return 'Just now';
+  if (Math.abs(seconds) < 60) return t('justNow');
   const minutes = Math.round(seconds / 60);
-  if (Math.abs(minutes) < 60) return `${Math.abs(minutes)}m ago`;
+  if (Math.abs(minutes) < 60) return t('minutesAgo', { count: Math.abs(minutes) });
   const hours = Math.round(minutes / 60);
-  if (Math.abs(hours) < 24) return `${Math.abs(hours)}h ago`;
+  if (Math.abs(hours) < 24) return t('hoursAgo', { count: Math.abs(hours) });
   const days = Math.round(hours / 24);
-  return `${Math.abs(days)}d ago`;
+  return t('daysAgo', { count: Math.abs(days) });
 }
 
 function categoryFor(notification: Notification): NotificationCategory {
@@ -59,6 +49,7 @@ function detailEntries(details: unknown): Array<[string, string]> {
 }
 
 export function NotificationCenter({ wardId }: { wardId: string }) {
+  const t = useTranslations('notifications');
   const [filter, setFilter] = React.useState<'all' | 'unread'>('all');
   const [category, setCategory] = React.useState<NotificationCategory | ''>('');
   const [notifications, setNotifications] = React.useState<Notification[]>([]);
@@ -75,12 +66,12 @@ export function NotificationCenter({ wardId }: { wardId: string }) {
     try {
       const response = await fetch(`/api/w/${wardId}/notifications?${params}`);
       const payload = (await response.json()) as ListResponse;
-      if (!response.ok || !payload.notifications) throw new Error(payload.error ?? 'Unable to load notifications.');
+      if (!response.ok || !payload.notifications) throw new Error(payload.error ?? t('loadError'));
       setNotifications(payload.notifications);
       setUnreadCount(payload.unreadCount ?? 0);
       setStatus('ready');
     } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : 'Unable to load notifications.');
+      setError(loadError instanceof Error ? loadError.message : t('loadError'));
       setStatus('error');
     }
   }, [wardId, filter, category]);
@@ -95,7 +86,7 @@ export function NotificationCenter({ wardId }: { wardId: string }) {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ action })
     });
-    if (!response.ok) throw new Error('Unable to update notification.');
+    if (!response.ok) throw new Error(t('updateError'));
     if (action === 'dismiss') setNotifications((current) => current.filter((item) => item.id !== id));
     else setNotifications((current) => current.map((item) => (item.id === id ? { ...item, readAt: new Date().toISOString() } : item)));
     setUnreadCount((current) => (action === 'read' ? Math.max(0, current - 1) : current));
@@ -110,7 +101,7 @@ export function NotificationCenter({ wardId }: { wardId: string }) {
         try {
           await update(notification.id, 'read');
         } catch (updateError) {
-          setError(updateError instanceof Error ? updateError.message : 'Unable to mark notification read.');
+          setError(updateError instanceof Error ? updateError.message : t('markReadError'));
         }
       }
     }
@@ -120,21 +111,21 @@ export function NotificationCenter({ wardId }: { wardId: string }) {
   async function markAllRead() {
     try {
       const response = await fetch(`/api/w/${wardId}/notifications/mark-all-read`, { method: 'POST' });
-      if (!response.ok) throw new Error('Unable to mark notifications read.');
+      if (!response.ok) throw new Error(t('markReadError'));
       setNotifications((current) => current.map((item) => ({ ...item, readAt: item.readAt ?? new Date().toISOString() })));
       setUnreadCount(0);
     } catch (updateError) {
-      setError(updateError instanceof Error ? updateError.message : 'Unable to mark notifications read.');
+      setError(updateError instanceof Error ? updateError.message : t('markReadError'));
     }
   }
 
-  if (status === 'loading') return <p role="status">Loading notifications…</p>;
+  if (status === 'loading') return <p role="status">{t('loading')}</p>;
   if (status === 'error' && notifications.length === 0)
     return (
       <div className="space-y-3" role="alert">
         <p>{error}</p>
         <button className="rounded border px-3 py-2" onClick={() => void load()}>
-          Try again
+          {t('tryAgain')}
         </button>
       </div>
     );
@@ -143,36 +134,36 @@ export function NotificationCenter({ wardId }: { wardId: string }) {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-3">
         <label>
-          Show{' '}
+          {t('show')}{' '}
           <select
             className="rounded border bg-background px-2 py-1"
             value={filter}
             onChange={(event) => setFilter(event.target.value as 'all' | 'unread')}
           >
-            <option value="all">All</option>
-            <option value="unread">Unread</option>
+            <option value="all">{t('all')}</option>
+            <option value="unread">{t('unread')}</option>
           </select>
         </label>
         <label>
-          Category{' '}
+          {t('category')}{' '}
           <select
             className="rounded border bg-background px-2 py-1"
             value={category}
             onChange={(event) => setCategory(event.target.value as NotificationCategory | '')}
           >
-            <option value="">All categories</option>
+            <option value="">{t('allCategories')}</option>
             {NOTIFICATION_CATEGORIES.map((item) => (
               <option key={item} value={item}>
-                {CATEGORY_LABELS[item]}
+                {t(`categories.${item}`)}
               </option>
             ))}
           </select>
         </label>
         <button className="rounded border px-3 py-2" onClick={() => void markAllRead()} disabled={unreadCount === 0}>
-          Mark all read
+          {t('markAllRead')}
         </button>
         <span className="text-sm text-muted-foreground" aria-live="polite">
-          {unreadCount} unread
+          {unreadCount} {t('unreadCount')}
         </span>
       </div>
       {error && (
@@ -182,8 +173,8 @@ export function NotificationCenter({ wardId }: { wardId: string }) {
       )}
       {notifications.length === 0 ? (
         <div className="rounded-lg border p-8 text-center">
-          <h2 className="font-medium">No notifications</h2>
-          <p className="mt-1 text-sm text-muted-foreground">You’re all caught up.</p>
+          <h2 className="font-medium">{t('none')}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">{t('caughtUp')}</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -194,10 +185,10 @@ export function NotificationCenter({ wardId }: { wardId: string }) {
               <article key={notification.id} className={`rounded-lg border p-4 ${isUnread ? 'border-primary/50 bg-primary/5' : ''}`}>
                 <div className="flex items-start gap-3">
                   <span
-                    aria-label={`${notification.severity} notification`}
+                    aria-label={`${notification.severity} ${t('notification')}`}
                     className="mt-1 text-xs font-medium uppercase text-muted-foreground"
                   >
-                    {CATEGORY_LABELS[categoryFor(notification)]}
+                    {t(`categories.${categoryFor(notification)}`)}
                   </span>
                   <div className="min-w-0 flex-1">
                     <button
@@ -209,8 +200,8 @@ export function NotificationCenter({ wardId }: { wardId: string }) {
                     </button>
                     <p className="mt-1 text-sm text-muted-foreground">{notification.summary}</p>
                     <p className="mt-2 text-xs text-muted-foreground">
-                      {relativeTime(notification.createdAt)}
-                      {isUnread ? ' · Unread' : ''}
+                      {relativeTime(notification.createdAt, t)}
+                      {isUnread ? ` · ${t('unreadLabel')}` : ''}
                     </p>
                     {isExpanded && (
                       <div className="mt-3 space-y-2 border-t pt-3 text-sm">
@@ -227,7 +218,7 @@ export function NotificationCenter({ wardId }: { wardId: string }) {
                               if (isUnread) void update(notification.id, 'read');
                             }}
                           >
-                            Open related item
+                            {t('openRelated')}
                           </a>
                         )}
                       </div>
@@ -235,10 +226,10 @@ export function NotificationCenter({ wardId }: { wardId: string }) {
                   </div>
                   <button
                     className="text-sm underline"
-                    aria-label={`Dismiss ${notification.title}`}
+                    aria-label={`${t('dismiss')} ${notification.title}`}
                     onClick={() => void update(notification.id, 'dismiss')}
                   >
-                    Dismiss
+                    {t('dismiss')}
                   </button>
                 </div>
               </article>

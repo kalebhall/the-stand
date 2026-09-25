@@ -1,0 +1,49 @@
+{
+  "interviews": {
+    "title": "［Scheduled interviews］",
+    "description": "［Operational scheduling only. Do not record confidential interview content.］",
+    "exportCalendar": "［Export calendar］",
+    "dashboard": "［Dashboard］",
+    "offlineNotice": "［Offline — showing saved interview schedule. Read-only; changes require connection.］",
+    "savedCopy": "［Saved copy: {date}］",
+    "calendarSubscription": "［Calendar subscription］",
+    "calendarSubscriptionDescription": "［Create a private, revocable calendar URL for this ward’s scheduled interviews. Anyone with the URL can read the operational schedule.］",
+    "rotateSubscriptionUrl": "［Rotate subscription URL］",
+    "createSubscriptionUrl": "［Create subscription URL］",
+    "revokeUrl": "［Revoke URL］",
+    "newCalendarUrl": "［New calendar URL］",
+    "subscriptionCreated": "［Copy this URL now. It will not be shown again.］",
+    "subscriptionRevoked": "［Calendar subscription revoked.］",
+    "scheduleInterview": "［Schedule interview］",
+    "interviewType": "［Interview type］",
+    "defaultInterviewType": "［Membership or ordinance］",
+    "searchMember": "［Search member］",
+    "interviewer": "［Interviewer］",
+    "interviewDateTime": "［Interview date and time］",
+    "schedule": "［Schedule］",
+    "interviewSchedule": "［Interview schedule］",
+    "statusFor": "［Status for {member}］",
+    "noInterviews": "［No interviews scheduled.］",
+    "fields": {
+      "interviewType": "［interview type］",
+      "member": "［member］",
+      "interviewer": "［interviewer］",
+      "dateTime": "［interview date and time］"
+    },
+    "statuses": {
+      "SCHEDULED": "［Scheduled］",
+      "COMPLETED": "［Completed］",
+      "CANCELLED": "［Cancelled］"
+    },
+    "errors": {
+      "load": "［Unable to load interviews.］",
+      "offlineEmpty": "［No saved interview schedule is available on this device.］",
+      "createSubscription": "［Could not create calendar subscription.］",
+      "revokeSubscription": "［Could not revoke calendar subscription.］",
+      "completeRequired": "［Complete required fields: {fields}.］",
+      "invalidDate": "［Enter a valid interview date and time.］",
+      "schedule": "［Could not schedule interview.］",
+      "update": "［Could not update interview.］"
+    }
+  }
+}

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 
 import { Button } from '@/components/ui/button';
 
@@ -13,6 +14,7 @@ type CallingAssignButtonProps = {
 };
 
 export function CallingAssignButton({ wardId, callingId, memberName, callingName }: CallingAssignButtonProps) {
+  const t = useTranslations('callings');
   const router = useRouter();
   const [confirming, setConfirming] = useState(false);
   const [assigning, setAssigning] = useState(false);
@@ -29,14 +31,14 @@ export function CallingAssignButton({ wardId, callingId, memberName, callingName
 
       if (!response.ok) {
         const payload = (await response.json().catch(() => null)) as { error?: string } | null;
-        setError(payload?.error ?? `Failed to convert ${memberName} — ${callingName} to assigned.`);
+        setError(payload?.error ?? t('failedToConvert', { member: memberName, calling: callingName }));
         setAssigning(false);
         return;
       }
 
       router.refresh();
     } catch {
-      setError(`Failed to convert ${memberName} — ${callingName} to assigned.`);
+      setError(t('failedToConvert', { member: memberName, calling: callingName }));
       setAssigning(false);
     }
   }
@@ -45,10 +47,10 @@ export function CallingAssignButton({ wardId, callingId, memberName, callingName
     return (
       <div className="flex items-center gap-2">
         <Button variant="outline" size="sm" type="button" disabled={assigning} onClick={() => void convertToAssigned()}>
-          {assigning ? 'Converting…' : 'Confirm assigned'}
+          {assigning ? t('converting') : t('confirmAssigned')}
         </Button>
         <Button variant="ghost" size="sm" type="button" disabled={assigning} onClick={() => setConfirming(false)}>
-          Cancel
+          {t('cancel')}
         </Button>
         {error ? <span className="text-xs text-destructive">{error}</span> : null}
       </div>
@@ -57,7 +59,7 @@ export function CallingAssignButton({ wardId, callingId, memberName, callingName
 
   return (
     <Button variant="outline" size="sm" type="button" onClick={() => setConfirming(true)}>
-      Convert to Assigned
+      {t('convertToAssigned')}
     </Button>
   );
 }

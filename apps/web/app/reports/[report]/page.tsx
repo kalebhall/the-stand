@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
+import { getTranslations } from 'next-intl/server';
 
 import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth/guards';
 import { canUseInternalNotes } from '@/src/auth/roles';
@@ -21,6 +22,7 @@ export default async function ReportPage({
   params: Promise<{ report: string }>;
   searchParams: Promise<{ from?: string; to?: string }>;
 }) {
+  const t = await getTranslations('reports');
   const session = await requireAuthenticatedSession();
   enforcePasswordRotation(session);
   if (
@@ -50,10 +52,10 @@ export default async function ReportPage({
         <section className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <Link href="/reports" className="text-sm text-muted-foreground hover:text-foreground">
-              ← All reports
+              ← {t('allReports')}
             </Link>
-            <h1 className="mt-2 text-2xl font-semibold tracking-tight">{reportPage.title}</h1>
-            <p className="text-sm text-muted-foreground">{reportPage.description}</p>
+            <h1 className="mt-2 text-2xl font-semibold tracking-tight">{t(reportPage.titleKey)}</h1>
+            <p className="text-sm text-muted-foreground">{t(reportPage.descriptionKey)}</p>
           </div>
         </section>
         <ReportDateFilters from={from} to={to} />
@@ -62,7 +64,7 @@ export default async function ReportPage({
     );
   } catch {
     await client.query('ROLLBACK');
-    throw new Error('Failed to load report');
+    throw new Error(t('failedLoadReport'));
   } finally {
     client.release();
   }

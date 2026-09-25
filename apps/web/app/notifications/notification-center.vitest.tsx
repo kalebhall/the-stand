@@ -3,9 +3,12 @@
 import React from 'react';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { NextIntlClientProvider } from 'next-intl';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { NotificationCenter } from './notification-center';
+import { MESSAGE_CATALOGS } from '@/src/i18n/messages';
+const messages = MESSAGE_CATALOGS['en-US'];
 
 const notification = {
   id: 'n-1',
@@ -20,6 +23,14 @@ const notification = {
 };
 
 describe('NotificationCenter', () => {
+  function renderCenter() {
+    return render(
+      <NextIntlClientProvider locale="en-US" messages={messages}>
+        <NotificationCenter wardId="ward-1" />
+      </NextIntlClientProvider>
+    );
+  }
+
   afterEach(() => {
     cleanup();
     vi.restoreAllMocks();
@@ -32,7 +43,7 @@ describe('NotificationCenter', () => {
       .mockResolvedValueOnce(new Response(JSON.stringify({ success: true }), { status: 200 }));
     vi.stubGlobal('fetch', fetchMock);
     const user = userEvent.setup();
-    render(<NotificationCenter wardId="ward-1" />);
+    renderCenter();
 
     expect(await screen.findByRole('button', { name: 'Calling suggested' })).toBeVisible();
     await user.click(screen.getByRole('button', { name: 'Calling suggested' }));
@@ -51,7 +62,7 @@ describe('NotificationCenter', () => {
       .mockResolvedValueOnce(new Response(JSON.stringify({ success: true }), { status: 200 }));
     vi.stubGlobal('fetch', fetchMock);
     const user = userEvent.setup();
-    render(<NotificationCenter wardId="ward-1" />);
+    renderCenter();
 
     await screen.findByText('Calling suggested');
     await user.click(screen.getByRole('button', { name: 'Mark all read' }));

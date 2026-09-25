@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { getTranslations } from 'next-intl/server';
 
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -37,6 +38,7 @@ async function requireSupportAdmin() {
 
 export default async function SupportHymnsPage({ searchParams }: { searchParams: Promise<{ book?: string; locale?: string; q?: string }> }) {
   await requireSupportAdmin();
+  const t = await getTranslations('supportHymns');
 
   const { book: bookFilter, locale: localeFilter, q: query } = await searchParams;
   const activeBook = VALID_BOOKS.includes(bookFilter as Book) ? (bookFilter as Book) : null;
@@ -135,24 +137,24 @@ export default async function SupportHymnsPage({ searchParams }: { searchParams:
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-6 p-6">
       <section className="space-y-2">
-        <h1 className="text-2xl font-semibold">Support Console: Hymn Library</h1>
+        <h1 className="text-2xl font-semibold">{t('title')}</h1>
         <p className="text-muted-foreground">
-          Manage the language-specific hymn catalogs used by meeting program autocomplete. Each ward selects its default catalog language.
+          {t('description')}
         </p>
         <Link href="/support" className={cn(buttonVariants({ size: 'sm', variant: 'outline' }))}>
-          Back to support sections
+          {t('back')}
         </Link>
       </section>
 
       {/* Filters */}
       <form method="GET" className="flex flex-wrap gap-2">
-        <input name="q" defaultValue={query ?? ''} placeholder="Search…" className="rounded-md border px-3 py-2 text-sm" />
+        <input name="q" defaultValue={query ?? ''} placeholder={t('search')} className="rounded-md border px-3 py-2 text-sm" />
         <select name="locale" defaultValue={localeFilter ?? ''} className="rounded-md border px-3 py-2 text-sm">
-          <option value="">All languages</option>
+          <option value="">{t('allLanguages')}</option>
           {SUPPORTED_CATALOG_LOCALES.map((catalogLocale) => <option key={catalogLocale} value={catalogLocale}>{CATALOG_LOCALE_LABELS[catalogLocale]}</option>)}
         </select>
         <select name="book" defaultValue={bookFilter ?? ''} className="rounded-md border px-3 py-2 text-sm">
-          <option value="">All books</option>
+          <option value="">{t('allBooks')}</option>
           {VALID_BOOKS.map((b) => (
             <option key={b} value={b}>
               {BOOK_LABELS[b]}
@@ -160,19 +162,19 @@ export default async function SupportHymnsPage({ searchParams }: { searchParams:
           ))}
         </select>
         <button type="submit" className="rounded-md border px-3 py-2 text-sm font-medium">
-          Filter
+          {t('filter')}
         </button>
         <Link href="/support/hymns" className="rounded-md border px-3 py-2 text-sm font-medium">
-          Clear
+          {t('clear')}
         </Link>
       </form>
 
       {/* Add new hymn */}
       <section className="rounded-lg border bg-card p-4">
-        <h2 className="mb-3 font-semibold">Add hymn</h2>
+        <h2 className="mb-3 font-semibold">{t('addHymn')}</h2>
         <form action={addHymn} className="grid gap-3 sm:grid-cols-[auto_1fr_auto_auto_auto]">
-          <input name="hymnNumber" required placeholder="Number (e.g. 30, 1001, C1)" className="rounded-md border px-3 py-2 text-sm" />
-          <input name="title" required placeholder="Title" className="rounded-md border px-3 py-2 text-sm" />
+          <input name="hymnNumber" required placeholder={t('numberPlaceholder')} className="rounded-md border px-3 py-2 text-sm" />
+          <input name="title" required placeholder={t('titlePlaceholder')} className="rounded-md border px-3 py-2 text-sm" />
           <select name="locale" required defaultValue={activeLocale ?? 'en-US'} className="rounded-md border px-3 py-2 text-sm">
             {SUPPORTED_CATALOG_LOCALES.map((catalogLocale) => <option key={catalogLocale} value={catalogLocale}>{CATALOG_LOCALE_LABELS[catalogLocale]}</option>)}
           </select>
@@ -188,11 +190,11 @@ export default async function SupportHymnsPage({ searchParams }: { searchParams:
             type="number"
             required
             defaultValue={nextSortKey}
-            placeholder="Sort key"
+            placeholder={t('sortKeyPlaceholder')}
             className="w-24 rounded-md border px-3 py-2 text-sm"
           />
           <button type="submit" className="rounded-md border bg-primary px-3 py-2 text-sm font-medium text-primary-foreground">
-            Add
+            {t('add')}
           </button>
         </form>
       </section>
@@ -200,22 +202,22 @@ export default async function SupportHymnsPage({ searchParams }: { searchParams:
       {/* Hymn list */}
       <section className="space-y-2">
         <p className="text-sm text-muted-foreground">
-          {hymns.length} hymn{hymns.length !== 1 ? 's' : ''} shown
+          {hymns.length === 1 ? t('shownOne') : t('shown', { count: hymns.length })}
         </p>
         {hymns.length === 0 ? (
-          <p className="text-muted-foreground">No hymns match the current filter.</p>
+          <p className="text-muted-foreground">{t('noMatch')}</p>
         ) : (
           <div className="overflow-x-auto rounded-lg border">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-muted/50">
-                  <th className="px-3 py-2 text-left font-medium">Number</th>
-                  <th className="px-3 py-2 text-left font-medium">Language</th>
-                  <th className="px-3 py-2 text-left font-medium">Title</th>
-                  <th className="px-3 py-2 text-left font-medium">Book</th>
-                  <th className="px-3 py-2 text-left font-medium">Sort</th>
-                  <th className="px-3 py-2 text-left font-medium">Active</th>
-                  <th className="px-3 py-2 text-left font-medium">Actions</th>
+                  <th className="px-3 py-2 text-left font-medium">{t('number')}</th>
+                  <th className="px-3 py-2 text-left font-medium">{t('language')}</th>
+                  <th className="px-3 py-2 text-left font-medium">{t('titleColumn')}</th>
+                  <th className="px-3 py-2 text-left font-medium">{t('book')}</th>
+                  <th className="px-3 py-2 text-left font-medium">{t('sort')}</th>
+                  <th className="px-3 py-2 text-left font-medium">{t('active')}</th>
+                  <th className="px-3 py-2 text-left font-medium">{t('actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -226,10 +228,10 @@ export default async function SupportHymnsPage({ searchParams }: { searchParams:
                     <td className="px-3 py-2">{hymn.title}</td>
                     <td className="px-3 py-2 text-muted-foreground">{BOOK_LABELS[hymn.book as Book] ?? hymn.book}</td>
                     <td className="px-3 py-2 tabular-nums text-muted-foreground">{hymn.sort_key}</td>
-                    <td className="px-3 py-2">{hymn.is_active ? 'Yes' : 'No'}</td>
+                    <td className="px-3 py-2">{hymn.is_active ? t('yes') : t('no')}</td>
                     <td className="px-3 py-2">
                       <details className="group">
-                        <summary className="cursor-pointer text-xs underline underline-offset-2">Edit</summary>
+                        <summary className="cursor-pointer text-xs underline underline-offset-2">{t('edit')}</summary>
                         <form action={updateHymn} className="mt-2 flex flex-wrap gap-2">
                           <input type="hidden" name="id" value={hymn.id} />
                           <select name="locale" defaultValue={hymn.locale} className="rounded-md border px-2 py-1 text-xs">
@@ -264,16 +266,16 @@ export default async function SupportHymnsPage({ searchParams }: { searchParams:
                           <label className="flex items-center gap-1 text-xs">
                             <input type="hidden" name="isActive" value="0" />
                             <input type="checkbox" name="isActive" value="1" defaultChecked={hymn.is_active} />
-                            Active
+{t('active')}
                           </label>
                           <button type="submit" className="rounded-md border px-2 py-1 text-xs font-medium">
-                            Save
+                            {t('save')}
                           </button>
                         </form>
                         <form action={deleteHymn} className="mt-1">
                           <input type="hidden" name="id" value={hymn.id} />
                           <button type="submit" className="text-xs text-red-600 underline underline-offset-2">
-                            Delete
+                            {t('delete')}
                           </button>
                         </form>
                       </details>

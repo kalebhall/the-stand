@@ -1,0 +1,49 @@
+{
+  "interviews": {
+    "title": "Ngaahi ʻinitaviu kuo fakataimitēpileʻí",
+    "description": "Ko e taimi-tepile fakangaue pe. ʻOua naʻá ke lekooti ha ngaahi meʻa fakapulipuli ʻi he ʻinitaviú.",
+    "exportCalendar": "Tohimāhina ʻo e ʻave ki tuʻapuleʻangá",
+    "dashboard": "Tesipapa",
+    "offlineNotice": "Offline — fakahaaʻi ʻa e taimi-tēpile ʻinitaviu kuo fakahaofi. Lau-pe; ʻoku fie maʻu ʻe he ngaahi liliú ha fehokotaki.",
+    "savedCopy": "Ko e tatau kuo fakahaofi: {date}",
+    "calendarSubscription": "Lesisita ki he tohimāhiná",
+    "calendarSubscriptionDescription": "Fa’u ha URL tohimāhina fakatāutaha, ‘e lava ke fakafoki ki he ngaahi ‘initaviu kuo fakataimitēpile’i ‘a e uooti ko ‘ení. Ko ha taha pe 'oku 'i ai 'ene URL 'e lava ke ne lau 'a e taimi-tepile ngaue.",
+    "rotateSubscriptionUrl": "Fetongi ʻa e URL ʻo e totongi",
+    "createSubscriptionUrl": "Fa'u 'a e URL 'o e totongi",
+    "revokeUrl": "Fakafoki URL",
+    "newCalendarUrl": "URL tohimāhina foʻou",
+    "subscriptionCreated": "Kopi 'a e URL ko 'eni he taimi ni. He ʻikai ke toe fakaʻaliʻali ia.",
+    "subscriptionRevoked": "Kuo fakafoki ʻa e totongi ʻo e tohimāhiná.",
+    "scheduleInterview": "Tepileʻi ʻa e ʻinitaviú",
+    "interviewType": "Fa'ahinga 'initaviu",
+    "defaultInterviewType": "Memipasipi pe ouau .",
+    "searchMember": "Fekumi ki he memipa .",
+    "interviewer": "Tokotaha ʻinitaviu",
+    "interviewDateTime": "ʻAho mo e taimi ʻo e ʻinitaviú",
+    "schedule": "Taimi tēpile",
+    "interviewSchedule": "Taimi-tēpile ʻinitaviú",
+    "statusFor": "Tu'unga mo e {member}",
+    "noInterviews": "ʻOku ʻikai fakataimitēpileʻi ha ngaahi ʻinitaviu.",
+    "fields": {
+      "interviewType": "fa'ahinga 'initaviu",
+      "member": "mēmipa",
+      "interviewer": "tokotaha ʻinitaviú",
+      "dateTime": "'aho mo e taimi 'o e 'initaviu"
+    },
+    "statuses": {
+      "SCHEDULED": "Kuo fakataimitēpileʻi",
+      "COMPLETED": "Fakakakato",
+      "CANCELLED": "Kaniseli"
+    },
+    "errors": {
+      "load": "'Ikai lava ke uta 'a e ngaahi 'initaviu.",
+      "offlineEmpty": "ʻOku ʻikai ha taimi-tēpile ʻinitaviu kuo fakahaofi ʻoku maʻu ʻi he meʻangāue ko ʻení.",
+      "createSubscription": "Naʻe ʻikai lava ke faʻu ha totongi tohimāhina.",
+      "revokeSubscription": "Naʻe ʻikai lava ke fakafoki ʻa e totongi ʻo e tohimāhiná.",
+      "completeRequired": "Fakakakato 'a e ngaahi mala'e 'oku fie ma'u: {fields}.",
+      "invalidDate": "Fakahū ha ʻaho mo ha taimi ʻinitaviu ʻoku ʻaonga.",
+      "schedule": "Naʻe ʻikai lava ke fakataimitēpileʻi ha ʻinitaviu.",
+      "update": "Naʻe ʻikai lava ke fakafoʻou ʻa e ʻinitaviú."
+    }
+  }
+}

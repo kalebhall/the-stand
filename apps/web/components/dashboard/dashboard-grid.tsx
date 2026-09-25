@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, type DragEvent } from 'react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -16,6 +17,7 @@ type DashboardCardData = {
 };
 
 export function DashboardGrid({ wardId, cards }: { wardId: string | null; cards: DashboardCardData[] }) {
+  const t = useTranslations('dashboard');
   const visibleIds = useMemo(() => cards.map((card) => card.id), [cards]);
   const [order, setOrder] = useState<DashboardCardId[]>(visibleIds);
   const [editing, setEditing] = useState(false);
@@ -34,7 +36,7 @@ export function DashboardGrid({ wardId, cards }: { wardId: string | null; cards:
         if (!cancelled && saved) setOrder(saved);
       })
       .catch(() => {
-        if (!cancelled) setStatus('Could not load your dashboard order. Showing the default order.');
+        if (!cancelled) setStatus(t('dashboardLoadFailed'));
       });
     return () => {
       cancelled = true;
@@ -46,7 +48,7 @@ export function DashboardGrid({ wardId, cards }: { wardId: string | null; cards:
 
   async function persist(nextOrder: DashboardCardId[]) {
     setOrder(nextOrder);
-    setStatus('Saving dashboard order…');
+    setStatus(t('savingOrder'));
     try {
       const response = await fetch(`/api/w/${wardId}/dashboard-preferences`, {
         method: 'PATCH',
@@ -54,26 +56,26 @@ export function DashboardGrid({ wardId, cards }: { wardId: string | null; cards:
         body: JSON.stringify({ cardOrder: nextOrder })
       });
       if (!response.ok) throw new Error('save failed');
-      setStatus('Dashboard order saved.');
+      setStatus(t('orderSaved'));
     } catch {
-      setStatus('Could not save dashboard order. Your change is kept on this screen; try again.');
+      setStatus(t('saveOrderFailed'));
     }
   }
 
   async function reset() {
     if (!wardId) {
       setOrder(visibleIds);
-      setStatus('Dashboard order reset.');
+      setStatus(t('orderReset'));
       return;
     }
-    setStatus('Resetting dashboard order…');
+    setStatus(t('resettingOrder'));
     try {
       const response = await fetch(`/api/w/${wardId}/dashboard-preferences`, { method: 'DELETE' });
       if (!response.ok) throw new Error('reset failed');
       setOrder(visibleIds);
-      setStatus('Dashboard order reset.');
+      setStatus(t('orderReset'));
     } catch {
-      setStatus('Could not reset dashboard order.');
+      setStatus(t('resetOrderFailed'));
     }
   }
 
@@ -125,17 +127,17 @@ export function DashboardGrid({ wardId, cards }: { wardId: string | null; cards:
         {cards.length > 1 ? (
           <div className="flex gap-2">
             <button type="button" className={cn(buttonVariants({ size: 'sm', variant: editing ? 'secondary' : 'outline' }))} onClick={() => setEditing((value) => !value)}>
-              {editing ? 'Done editing' : 'Edit dashboard'}
+              {editing ? t('doneEditing') : t('editDashboard')}
             </button>
             {editing ? (
               <button type="button" className={cn(buttonVariants({ size: 'sm', variant: 'outline' }))} onClick={() => void reset()}>
-                Reset order
+                {t('resetOrder')}
               </button>
             ) : null}
           </div>
         ) : null}
       </div>
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3" aria-label="Dashboard cards">
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3" aria-label={t('dashboardCards')}>
         {orderedCards.map((card, index) => (
           <article
             key={card.id}
@@ -170,14 +172,14 @@ export function DashboardGrid({ wardId, cards }: { wardId: string | null; cards:
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">{card.title}</p>
-                {editing ? <p className="mt-1 text-xs text-muted-foreground">Drag to reorder, or use the move buttons on touch screens.</p> : null}
+                {editing ? <p className="mt-1 text-xs text-muted-foreground">{t('dragToReorder')}</p> : null}
               </div>
               {editing ? (
                 <div className="flex shrink-0 gap-1">
-                  <button type="button" className="rounded border px-2 py-1 text-xs" aria-label={`Move ${card.title} up`} disabled={index === 0} onClick={() => move(card.id, -1)}>
+                  <button type="button" className="rounded border px-2 py-1 text-xs" aria-label={t('moveUp', { title: card.title })} disabled={index === 0} onClick={() => move(card.id, -1)}>
                     ↑
                   </button>
-                  <button type="button" className="rounded border px-2 py-1 text-xs" aria-label={`Move ${card.title} down`} disabled={index === orderedCards.length - 1} onClick={() => move(card.id, 1)}>
+                  <button type="button" className="rounded border px-2 py-1 text-xs" aria-label={t('moveDown', { title: card.title })} disabled={index === orderedCards.length - 1} onClick={() => move(card.id, 1)}>
                     ↓
                   </button>
                 </div>

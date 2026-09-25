@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { LcrExtractorInstructions } from '@/components/lcr-extractor-instructions';
 
@@ -13,6 +14,7 @@ type PreviewMember = {
 };
 
 export function MemberImportClient({ wardId }: { wardId: string }) {
+  const t = useTranslations('imports.members');
   const [memberInputMode, setMemberInputMode] = useState<'pdf' | 'paste'>('paste');
   const [memberPdfFile, setMemberPdfFile] = useState<File | null>(null);
   const [rawText, setRawText] = useState('');
@@ -74,7 +76,7 @@ export function MemberImportClient({ wardId }: { wardId: string }) {
         | { error?: string };
 
       if (!response.ok || !('preview' in payload)) {
-        setError('error' in payload ? (payload.error ?? 'Import failed') : 'Import failed');
+        setError('error' in payload ? (payload.error ?? t('failed')) : t('failed'));
         return;
       }
 
@@ -91,7 +93,7 @@ export function MemberImportClient({ wardId }: { wardId: string }) {
         window.location.href = '/members';
       }
     } catch {
-      setError('Import failed');
+      setError(t('failed'));
     } finally {
       setIsSubmitting(false);
     }
@@ -103,9 +105,9 @@ export function MemberImportClient({ wardId }: { wardId: string }) {
 
       <section className="space-y-4 rounded-lg border bg-card p-5">
         <div className="space-y-1">
-          <h2 className="text-lg font-semibold">Import Membership Data</h2>
+          <h2 className="text-lg font-semibold">{t('dataTitle')}</h2>
           <p className="text-sm text-muted-foreground">
-            Upload the Member List PDF from LCR, or paste tab-delimited text from your clipboard.
+            {t('dataDescription')}
           </p>
         </div>
 
@@ -115,14 +117,14 @@ export function MemberImportClient({ wardId }: { wardId: string }) {
             onClick={() => switchMemberMode('paste')}
             className={`flex-1 rounded px-3 py-1 transition-colors ${memberInputMode === 'paste' ? 'bg-background font-medium shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
           >
-            Paste text
+            {t('paste')}
           </button>
           <button
             type="button"
             onClick={() => switchMemberMode('pdf')}
             className={`flex-1 rounded px-3 py-1 transition-colors ${memberInputMode === 'pdf' ? 'bg-background font-medium shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
           >
-            Upload PDF
+            {t('upload')}
           </button>
         </div>
 
@@ -137,27 +139,27 @@ export function MemberImportClient({ wardId }: { wardId: string }) {
           <div className="space-y-2">
             <div className="flex items-center justify-between gap-2">
               <span className="text-xs text-muted-foreground">
-                {memberLineCount > 0 ? `${memberLineCount} row${memberLineCount === 1 ? '' : 's'} pasted` : 'No data pasted yet'}
+                {memberLineCount > 0 ? t('rowsPasted', { count: memberLineCount }) : t('noData')}
               </span>
               <Button type="button" variant="outline" size="sm" onClick={copyMembershipHeader}>
-                {headerCopied ? 'Copied!' : 'Copy header row'}
+                {headerCopied ? t('copied') : t('copyHeader')}
               </Button>
             </div>
             <textarea
               value={rawText}
               onChange={(event) => setRawText(event.target.value)}
               className="min-h-48 w-full rounded-md border bg-background p-3 font-mono text-sm"
-              placeholder={'Name\tEmail\tPhone\tAge\tBirthday\tGender\nJane Doe\tjane@example.com\t801-555-0101\t35\tJan 15\tFemale'}
+              placeholder={t('placeholder')}
             />
           </div>
         )}
 
         <div className="flex flex-wrap gap-3">
           <Button type="button" variant="outline" onClick={() => submitImport(false)} disabled={isSubmitting}>
-            Dry run preview
+            {t('dryRun')}
           </Button>
           <Button type="button" onClick={() => submitImport(true)} disabled={isSubmitting}>
-            Commit import
+            {t('commit')}
           </Button>
         </div>
 
@@ -165,25 +167,23 @@ export function MemberImportClient({ wardId }: { wardId: string }) {
 
         {summary ? (
           <p className="text-sm text-muted-foreground">
-            {summary.commit ? 'Commit complete. Redirecting to Members page...' : 'Preview complete.'} Parsed {summary.parsedCount} members
-            {summary.commit
-              ? ` (${summary.inserted} inserted, ${summary.updated} updated, ${summary.archived} archived — moved out of ward).`
-              : '.'}
+            {summary.commit ? t('complete') : t('previewComplete')} {t('parsed', { count: summary.parsedCount })}
+            {summary.commit ? ` (${t('summary', { inserted: summary.inserted, updated: summary.updated, archived: summary.archived })})` : '.'}
           </p>
         ) : null}
 
         {preview.length ? (
           <div className="space-y-2">
-            <h3 className="text-sm font-semibold">Preview ({preview.length} members)</h3>
+            <h3 className="text-sm font-semibold">{t('preview', { count: preview.length })}</h3>
             <div className="overflow-x-auto rounded-md border max-h-96">
               <table className="min-w-full text-sm">
                 <thead>
                   <tr className="border-b bg-muted/50 sticky top-0">
-                    <th className="px-3 py-2 text-left">Name</th>
-                    <th className="px-3 py-2 text-left">Email</th>
-                    <th className="px-3 py-2 text-left">Phone</th>
-                    <th className="px-3 py-2 text-left">Age</th>
-                    <th className="px-3 py-2 text-left">Gender</th>
+                    <th className="px-3 py-2 text-left">{t('name')}</th>
+                    <th className="px-3 py-2 text-left">{t('email')}</th>
+                    <th className="px-3 py-2 text-left">{t('phone')}</th>
+                    <th className="px-3 py-2 text-left">{t('age')}</th>
+                    <th className="px-3 py-2 text-left">{t('gender')}</th>
                   </tr>
                 </thead>
                 <tbody>

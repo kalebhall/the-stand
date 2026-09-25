@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import { getTranslations } from 'next-intl/server';
 
 import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth/guards';
 import { canManageMeetings } from '@/src/auth/roles';
@@ -6,6 +7,7 @@ import { canManageMeetings } from '@/src/auth/roles';
 import { MeetingForm } from '../meeting-form';
 
 export default async function NewMeetingPage() {
+  const t = await getTranslations('meetings');
   const session = await requireAuthenticatedSession();
   enforcePasswordRotation(session);
 
@@ -19,8 +21,8 @@ export default async function NewMeetingPage() {
   return (
     <main className="mx-auto w-full max-w-4xl space-y-6 p-4 sm:p-6">
       <section>
-        <h1 className="text-2xl font-semibold tracking-tight">Create meeting</h1>
-        <p className="text-sm text-muted-foreground">Start a new meeting draft and build program items.</p>
+        <h1 className="text-2xl font-semibold tracking-tight">{t('newTitle')}</h1>
+        <p className="text-sm text-muted-foreground">{t('newDescription')}</p>
       </section>
       <MeetingForm wardId={session.activeWardId} mode="create" />
     </main>

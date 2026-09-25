@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { getTranslations } from 'next-intl/server';
 
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -21,6 +22,7 @@ export default async function SupportProvisioningPage() {
     redirect('/dashboard');
   }
 
+  const t = await getTranslations('supportProvisioning');
   const stakesResult = await pool.query(`SELECT id, name, created_at FROM stake ORDER BY name ASC`);
   const wardsResult = await pool.query(
     `SELECT w.id, w.stake_id, w.name, w.unit_number, s.name AS stake_name, w.created_at
@@ -40,11 +42,11 @@ export default async function SupportProvisioningPage() {
       <section className="space-y-2">
         <div className="flex items-center gap-3">
           <Link href="/support" className={cn(buttonVariants({ size: 'sm', variant: 'ghost' }))}>
-            &larr; Support Console
+            &larr; {t('back')}
           </Link>
         </div>
-        <h1 className="text-2xl font-semibold tracking-tight">Stake & Ward Provisioning</h1>
-        <p className="text-muted-foreground">Create and manage stakes and wards. Wards are assigned to a parent stake.</p>
+        <h1 className="text-2xl font-semibold tracking-tight">{t('title')}</h1>
+        <p className="text-muted-foreground">{t('description')}</p>
       </section>
 
       <StakeWardManager stakes={stakesResult.rows as StakeRow[]} wards={wardsResult.rows as WardRow[]} />

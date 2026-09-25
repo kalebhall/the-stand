@@ -2,6 +2,7 @@
 
 import { FormEvent, useMemo, useState } from 'react';
 import { signIn } from 'next-auth/react';
+import { useTranslations } from 'next-intl';
 
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -11,6 +12,7 @@ type LoginFormProps = {
 };
 
 export function LoginForm({ callbackUrl }: LoginFormProps) {
+  const t = useTranslations('auth');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -43,7 +45,7 @@ export function LoginForm({ callbackUrl }: LoginFormProps) {
     setIsSubmitting(false);
 
     if (!result?.ok) {
-      setError('Unable to sign in. Check your email and password and try again.');
+      setError(t('unableToSignIn'));
       return;
     }
 
@@ -57,7 +59,7 @@ export function LoginForm({ callbackUrl }: LoginFormProps) {
   return (
     <div className="space-y-6 rounded-lg border bg-card p-6 text-card-foreground">
       <button className={cn(buttonVariants(), 'w-full')} onClick={onGoogleSignIn} type="button">
-        Continue with Google
+        {t('continueGoogle')}
       </button>
 
       <div className="relative">
@@ -65,14 +67,14 @@ export function LoginForm({ callbackUrl }: LoginFormProps) {
           <span className="w-full border-t" />
         </div>
         <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-card px-2 text-muted-foreground">Or use email and password</span>
+          <span className="bg-card px-2 text-muted-foreground">{t('orEmailPassword')}</span>
         </div>
       </div>
 
       <form className="space-y-4" onSubmit={onCredentialsSubmit}>
         <div className="grid gap-1.5">
           <label className="text-sm font-medium" htmlFor="email">
-            Email
+            {t('email')}
           </label>
           <input
             autoComplete="email"
@@ -88,7 +90,7 @@ export function LoginForm({ callbackUrl }: LoginFormProps) {
 
         <div className="grid gap-1.5">
           <label className="text-sm font-medium" htmlFor="password">
-            Password
+            {t('password')}
           </label>
           <input
             autoComplete="current-password"
@@ -105,7 +107,7 @@ export function LoginForm({ callbackUrl }: LoginFormProps) {
         {error ? <p className="text-sm text-destructive">{error}</p> : null}
 
         <button className={cn(buttonVariants(), 'w-full')} disabled={isSubmitting} type="submit">
-          {isSubmitting ? 'Signing in...' : 'Sign in'}
+          {isSubmitting ? t('signingIn') : t('signIn')}
         </button>
       </form>
     </div>

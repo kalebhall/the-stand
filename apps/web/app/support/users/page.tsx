@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { getTranslations } from 'next-intl/server';
 
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -20,6 +21,8 @@ export default async function SupportUsersPage() {
   if (!hasRole(session.user.roles, 'SUPPORT_ADMIN')) {
     redirect('/dashboard');
   }
+
+  const t = await getTranslations('supportUsers');
 
   const client = await pool.connect();
   let usersResult, wardAssignmentsResult, globalAssignmentsResult, wardsResult, globalRolesResult, wardRolesResult;
@@ -108,11 +111,11 @@ export default async function SupportUsersPage() {
       <section className="space-y-2">
         <div className="flex items-center gap-3">
           <Link href="/support" className={cn(buttonVariants({ size: 'sm', variant: 'ghost' }))}>
-            &larr; Support Console
+            &larr; {t('back')}
           </Link>
         </div>
-        <h1 className="text-2xl font-semibold tracking-tight">User Administration</h1>
-        <p className="text-muted-foreground">Manage all user accounts, role assignments, and account status across the system.</p>
+        <h1 className="text-2xl font-semibold tracking-tight">{t('title')}</h1>
+        <p className="text-muted-foreground">{t('description')}</p>
       </section>
 
       <UserAdminManager

@@ -1,77 +1,4 @@
 {
-  "language": {
-    "label": "[Language]",
-    "description": "[Choose the language used for the application interface.]",
-    "saved": "[Language preference saved.]",
-    "saving": "[Saving language preference…]",
-    "saveFailed": "[Could not save language preference.]",
-    "loadFailed": "[Could not load saved language preference.]",
-    "english": "[English]",
-    "spanish": "[Spanish]",
-    "portugueseBrazil": "[Portuguese (Brazil)]",
-    "tagalog": "[Tagalog]"
-  },
-  "settings": {
-    "title": "[Settings]",
-    "description": "[Manage your preferences, notifications, and ward settings.]",
-    "appearance": "[Appearance]",
-    "themePreference": "[Theme preference]"
-  },
-  "dashboard": {
-    "title": "[Dashboard]",
-    "welcome": "[Welcome back, {name}.]",
-    "nextMeeting": "[Next meeting]",
-    "draftCount": "[Draft count]",
-    "drafts": "[{count, plural, =1 {# draft} other {# drafts}}]",
-    "draftStatus": "[{count, plural, =1 {# meeting} other {# meetings}} in draft status.]",
-    "membershipFollowUp": "[Membership and ordinance follow-up]",
-    "announcedActions": "[Announced actions still needing completion.]",
-    "priesthoodPreparation": "[Priesthood preparation]",
-    "priesthoodDetail": "[Ordination actions missing a typed office or confirmed approval.]",
-    "interviewFollowUp": "[Interview follow-up]",
-    "interviewDetail": "[Actions needing an interview.]",
-    "overdueActions": "[Overdue planned actions]",
-    "overdueDetail": "[Planned actions past their date and not completed.]",
-    "leadershipDue": "[Leadership due actions]",
-    "leadershipDetail": "[Private leadership assignments past due.]",
-    "scheduledInterviews": "[Scheduled interviews]",
-    "scheduledInterviewDetail": "[Operational interviews awaiting completion.]",
-    "lcrFollowUp": "[LCR follow-up]",
-    "lcrDetail": "[Completed actions still needing LCR entry.]",
-    "officialHandoff": "[Official-record handoff]",
-    "officialHandoffDetail": "[Record or form follow-up still needs completion in the official Church system.]",
-    "setApartQueue": "[Set apart queue count]",
-    "setApartDetail": "[Sustained callings awaiting set apart action.]",
-    "notificationHealth": "[Notification health]",
-    "lastImport": "[Last import summary]",
-    "technologyReadiness": "[Technology readiness]",
-    "technologyDetail": "[Upcoming meetings with incomplete room, audio, stream, accessibility, or recording checks.]",
-    "publicPortal": "[Public portal status]",
-    "noDeliveries": "[No deliveries yet]",
-    "noDeliveryDetail": "[No notification attempts recorded for this ward yet.]",
-    "noMeetings": "[No meetings scheduled]",
-    "createMeetingDetail": "[Create a meeting to unlock edit, stand, and print quick links.]",
-    "createFirstMeeting": "[Create first meeting]",
-    "noDrafts": "[No draft meetings yet.]",
-    "viewMeetings": "[View meetings]",
-    "openQueue": "[Open action queue]",
-    "reviewPreparation": "[Review preparation]",
-    "reviewInterviews": "[Review interviews]",
-    "reviewOverdue": "[Review overdue work]",
-    "openLeadership": "[Open leadership workspace]",
-    "openInterviewSchedule": "[Open interview schedule]",
-    "reviewLcr": "[Review LCR work]",
-    "reviewHandoffs": "[Review handoffs]",
-    "openCallings": "[Open callings queue]",
-    "openDiagnostics": "[Open diagnostics]",
-    "importMembers": "[Import members]",
-    "importCallings": "[Import callings]",
-    "openTechnology": "[Open technology checklist]",
-    "managePortal": "[Manage portal]",
-    "edit": "[Edit]",
-    "stand": "[Stand]",
-    "print": "[Print]"
-  },
   "meetingEditor": {
     "title": "[Edit meeting]",
     "description": "[Update meeting details, hymns, and program order.]",
@@ -134,7 +61,10 @@
     "type_WARD_CONFERENCE": "[Ward conference]",
     "type_STAKE_CONFERENCE": "[Stake conference]",
     "type_GENERAL_CONFERENCE": "[General conference]",
-    "type_UNKNOWN": "[Meeting]"
+    "type_UNKNOWN": "[Meeting]",
+    "help": "Meeting help",
+    "newTitle": "Create meeting",
+    "newDescription": "Start a new meeting draft and build program items."
   },
   "stand": {
     "title": "[At the Stand]",
@@ -221,7 +151,8 @@
     "publishFailed": "[Unable to publish meeting.]",
     "title": "[Title]",
     "visitingLeaderName": "[Visiting leader {number} name]",
-    "visitingLeaderCalling": "[Visiting leader {number} calling]"
+    "visitingLeaderCalling": "[Visiting leader {number} calling]",
+    "loadingMembers": "Loading members…"
   },
   "business": {
     "sustain": "[Sustain]",
@@ -508,7 +439,16 @@
     "offlineCopyAge": "[Offline copy age]"
   },
   "publicProgram": {
-    "title": "[No program available]",
-    "body": "[No meeting program has been posted yet.]"
+    "title": "No program available",
+    "body": "No meeting program has been posted yet.",
+    "scanQrDigitalProgram": "Scan with your phone's camera to open the digital program.",
+    "digitalProgram": "Digital Program",
+    "copied": "Copied!",
+    "copyLink": "Copy link",
+    "hideQr": "Hide QR",
+    "showQr": "Show QR",
+    "generatingPdf": "Generating PDF…",
+    "downloadPdfPoster": "Download PDF Poster",
+    "qrCodeFor": "QR code for {title}"
   }
 }
