@@ -51,7 +51,7 @@ export function MembersManagerClient({
 }) {
   const t = useTranslations('members');
   const [search, setSearch] = useState('');
-  const [sortBy, setSortBy] = useState<'name' | 'age' | 'email'>('name');
+  const [sortBy, setSortBy] = useState<'firstName' | 'lastName' | 'age' | 'email'>('lastName');
   const [actionError, setActionError] = useState<string | null>(null);
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
   const [isSavingEditId, setIsSavingEditId] = useState<string | null>(null);
@@ -74,7 +74,13 @@ export function MembersManagerClient({
     return [...filtered].sort((left, right) => {
       if (sortBy === 'age') return (left.age ?? Number.POSITIVE_INFINITY) - (right.age ?? Number.POSITIVE_INFINITY);
       if (sortBy === 'email') return (left.email ?? '').localeCompare(right.email ?? '');
-      return displayName(left).localeCompare(displayName(right));
+      if (sortBy === 'firstName') {
+        const firstCmp = (left.first_name ?? left.full_name).localeCompare(right.first_name ?? right.full_name);
+        return firstCmp !== 0 ? firstCmp : (left.last_name ?? '').localeCompare(right.last_name ?? '');
+      }
+      // lastName (default)
+      const lastCmp = (left.last_name ?? left.full_name).localeCompare(right.last_name ?? right.full_name);
+      return lastCmp !== 0 ? lastCmp : (left.first_name ?? '').localeCompare(right.first_name ?? '');
     });
   }, [members, search, sortBy]);
 
@@ -164,7 +170,8 @@ export function MembersManagerClient({
         />
         <label className="flex items-center gap-2 text-sm text-muted-foreground">{t('sortBy')}
           <select value={sortBy} onChange={(event) => setSortBy(event.target.value as typeof sortBy)} className="rounded-md border bg-background px-2 py-2 text-foreground">
-            <option value="name">{t('name')}</option>
+            <option value="lastName">{t('lastName')}</option>
+            <option value="firstName">{t('firstName')}</option>
             <option value="age">{t('age')}</option>
             <option value="email">{t('email')}</option>
           </select>
