@@ -86,18 +86,102 @@ function nextTransition(status: string): { toStatus: CallingStatus; labelKey: st
 
 type CallingSortRow = Pick<CallingQueueRow, 'member_name' | 'organization' | 'calling_name'>;
 
+// Canonical organization display order — mirrors LCR Organizations report section order.
+const ORGANIZATION_ORDER: readonly string[] = [
+  'Bishopric',
+  'Elders Quorum',
+  'Relief Society',
+  'Aaronic Priesthood Quorums',
+  'Aaronic Priesthood',
+  'Young Women',
+  'Sunday School',
+  'Primary',
+  'Ward Missionaries',
+  'Ward Mission',
+  'Temple and Family History',
+  'Young Single Adult',
+  'Other Callings',
+];
+
+function organizationRank(org: string | null | undefined): number {
+  if (!org) return ORGANIZATION_ORDER.length + 1;
+  const idx = ORGANIZATION_ORDER.findIndex((o) => org.toLowerCase().startsWith(o.toLowerCase()));
+  return idx === -1 ? ORGANIZATION_ORDER.length : idx;
+}
+
+// Calling title sort priority — mirrors LCR Organizations report calling order within each org.
+//
+// CRITICAL: more-specific patterns MUST appear BEFORE any base pattern they contain —
+// e.g. "assistant service" before "service coordinator", "ministering secretary" before "secretary".
+// The RANK number controls display order (lower = shown first).
+const CALLING_PRIORITY_RULES: ReadonlyArray<readonly [RegExp, number]> = [
+  [/\bbishop\b(?!ric)/i, 0],                           // "Bishop" but not "Bishopric..."
+  [/\bpresident\b/i, 10],
+  [/\bfirst\s+(counselor|assistant)\b/i, 20],
+  [/\bsecond\s+(counselor|assistant)\b/i, 30],
+  // Executive Secretary — assistant FIRST (its name contains "executive secretary")
+  [/\bassistant\s+executive\s+secretary\b/i, 50],
+  [/\bexecutive\s+secretary\b/i, 40],
+  // Org-head leaders (orgs that use "Leader" instead of "President")
+  [/\btemple\s+and\s+family\s+history\s+leader\b/i, 62],
+  [/\byoung\s+single\s+adult\s+leader\b/i, 62],
+  // Mission leader — assistant FIRST (contains "mission leader")
+  [/\bassistant\s+(ward\s+)?mission\s+leader\b/i, 65],
+  [/\b(ward\s+)?mission\s+leader\b/i, 60],
+  // Secretary family — specific FIRST (all contain "secretary")
+  [/\bministering\s+secretary\b/i, 110],
+  [/\bassistant\s+secretary\b/i, 80],
+  [/\bsecretary\b/i, 70],
+  // Clerk — assistant FIRST (contains "clerk")
+  [/\bassistant\s+clerk\b/i, 90],
+  [/\bclerk\b/i, 85],
+  // Consultant
+  [/\bconsultant\b/i, 95],
+  // Teacher
+  [/\bteacher\b/i, 100],
+  // Activity — assistant FIRST (contains "activity coordinator")
+  [/\bassistant\s+activity\b/i, 118],
+  [/\bactivity\s+coordinator\b/i, 115],
+  [/\bactivity\s+committee\b/i, 130],
+  // Music
+  [/\bchoir\s+director\b/i, 136],
+  [/\bmusic\s+coordinator\b/i, 138],
+  [/\bchoir\s+accompan/i, 140],
+  [/\bmusic\s+leader\b/i, 142],
+  [/\bmusic\s+adviser\b|\bmusic\s+advisor\b/i, 144],
+  [/\bpianist\b/i, 146],
+  [/\baccompanist\b/i, 148],
+  // Service — assistant FIRST (contains "service coordinator")
+  [/\bassistant\s+service\b/i, 163],
+  [/\bservice\s+coordinator\b/i, 160],
+  [/\bservice\s+committee\b/i, 175],
+  // Other functional — specific FIRST where needed
+  [/\bbuilding\s+cleaning\b/i, 190],
+  [/\bcamp\s+director\b/i, 195],
+  [/\bdirector\b/i, 198],
+  [/\badviser\b|\badvisor\b/i, 205],
+  [/\bspecialist\b/i, 215],
+  [/\bward\s+missionary\b/i, 225],
+  [/\bindexing\s+worker\b/i, 228],
+  [/\bcommittee\s+chair\b/i, 235],
+  [/\bcommittee\s+member\b/i, 245],
+  [/\bcoordinator\b/i, 250],                            // generic catch-all after all specific ones
+  [/\bleader\b/i, 255],                                 // generic catch-all (Nursery Leader, etc.)
+];
+
 function callingPriority(callingName: string): number {
-  const name = callingName.toLowerCase();
-  if (name.includes('president')) return 0;
-  if (name.includes('first counselor')) return 1;
-  if (name.includes('second counselor')) return 2;
-  if (name.includes('secretary')) return 3;
-  return 4;
+  for (const [pattern, rank] of CALLING_PRIORITY_RULES) {
+    if (pattern.test(callingName)) return rank;
+  }
+  return 999;
 }
 
 function compareCallings(left: CallingSortRow, right: CallingSortRow): number {
-  const groupCompare = (left.organization ?? '').localeCompare(right.organization ?? '');
+  const groupCompare = organizationRank(left.organization) - organizationRank(right.organization);
   if (groupCompare !== 0) return groupCompare;
+  // Within the same rank bucket, sort alphabetically by the full org name so sub-orgs are stable.
+  const nameCompare = (left.organization ?? '').localeCompare(right.organization ?? '');
+  if (nameCompare !== 0) return nameCompare;
   const priorityCompare = callingPriority(left.calling_name) - callingPriority(right.calling_name);
   if (priorityCompare !== 0) return priorityCompare;
   const callingCompare = left.calling_name.localeCompare(right.calling_name);
