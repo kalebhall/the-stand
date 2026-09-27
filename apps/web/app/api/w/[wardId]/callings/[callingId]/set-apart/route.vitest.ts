@@ -45,6 +45,7 @@ describe('POST /api/w/[wardId]/callings/[callingId]/set-apart', () => {
         rows: [{ member_name: 'Jane Doe', calling_name: 'Primary Teacher' }]
       }) // calling follow-up source assignment
       .mockResolvedValueOnce({}) // INSERT church action follow-up
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'follow-up-event-1' }] }) // INSERT calling follow-up notification event
       .mockResolvedValueOnce({
         rows: [{ calling_name: 'Primary Teacher', organization: 'Primary', member_name: 'Jane Doe', member_id: 'm-1' }]
       }) // calling_assignment SELECT

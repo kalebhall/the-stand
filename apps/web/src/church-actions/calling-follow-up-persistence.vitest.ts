@@ -23,6 +23,11 @@ describe('persistCallingLcrFollowUp', () => {
         expect.stringContaining('Record set apart in LCR')
       ])
     );
+    expect(query).toHaveBeenNthCalledWith(
+      3,
+      expect.stringContaining('INSERT INTO event_outbox'),
+      expect.arrayContaining(['ward-1', 'calling_assignment', 'calling-1', 'CALLING_REQUIRES_FOLLOW_UP'])
+    );
   });
 
   it('does not write when the transition has no LCR follow-up rule', async () => {

@@ -153,7 +153,55 @@ The first code task is the pure calling follow-up contract and regression tests.
 ## Next milestone: Phase 6 follow-up lifecycle and browser acceptance
 
 - Add completion linkage so completing an Actions to Do item updates the owning membership/priesthood handoff state without claiming LCR completion.
-- Add opt-in notifications for newly created and overdue shared follow-ups.
+- Add opt-in notifications for newly created and overdue follow-ups.
 - Keep shared follow-ups in private offline snapshots only; never public programs.
 - Add browser acceptance for priesthood completion → action appears → authorized completion → open queue removal.
 - Verify ward isolation, role restrictions, RLS, and retry idempotency end to end.
+
+## Completed Phase 6 slice: completion linkage and private offline projection
+
+- Completing a priesthood Actions to Do record updates the linked completed membership ordinance's local LCR handoff state and writes an audit event in the same transaction.
+- Open and in-progress shared follow-ups are included only in authenticated meeting offline snapshots; they are not added to public or stand rendering payloads.
+- Focused route coverage verifies the completion linkage and audit path.
+
+## Next milestone: follow-up notifications and browser acceptance
+
+- Add opt-in creation and overdue notifications through the existing ward notification outbox.
+- Add browser acceptance for priesthood completion → action appears → authorized completion → open queue removal.
+- Verify notification retry idempotency, ward isolation, and disabled-module denial in runtime fixtures.
+
+## Completed Phase 6 slice: notification producers and overdue reminder runner
+
+- Calling follow-up production now emits the existing ward-scoped `CALLING_REQUIRES_FOLLOW_UP` notification event with minimal identifiers and idempotent outbox deduplication.
+- Added `remind:church-actions` to create one overdue reminder event per open/in-progress follow-up, skipping wards where Actions to Do is disabled and enqueueing only after commit.
+- Membership/priesthood completion already uses the existing LCR-needed notification event; no direct LCR write is performed.
+
+## Remaining acceptance milestone: browser and runtime verification
+
+- Exercise the authenticated desktop/mobile flow for action appearance and completion.
+- Verify unauthorized users, disabled modules, cross-ward access, RLS, and notification retry behavior against runtime fixtures.
+- Configure and verify the production scheduler for `remind:church-actions`.
+
+## Completed acceptance slice: authenticated browser flow
+
+- Added deterministic disposable E2E fixtures for a ward admin, ward/module state, priesthood ordinance, and open shared follow-up.
+- Added Playwright coverage for authenticated Actions to Do appearance, LCR link visibility, desktop-to-mobile layout width, completion, and removal from the open queue.
+- Browser flow passed on the local disposable PostgreSQL database.
+
+## Remaining runtime blocker: reminder scheduler context
+
+- `remind:church-actions` starts successfully, but the non-superuser test runtime sees zero ward rows without an authorized ward context.
+- Production scheduler deployment must provide the repository's approved worker/RLS context before overdue reminder delivery can be called runtime-verified.
+- Do not solve this by disabling RLS or granting an unrestricted bypass role.
+
+## Completed acceptance slice: RLS-aware reminder scheduler
+
+- The reminder runner now requires `MAINTENANCE_USER_ID`, enumerates only non-revoked ward assignments for that user, sets transaction-local `app.user_id` and `app.ward_id`, and processes each ward through normal RLS.
+- Runtime verification against the disposable database processed one overdue follow-up and created one pending notification event; repeat execution is deduplicated.
+- Invalid configuration fails before opening a database connection.
+
+## Remaining deployment milestone
+
+- Add the approved maintenance user assignment and scheduler environment on the deployment host.
+- Run the deployed oneshot and read back `Result`, safe summary logs, and the pending/processed notification event.
+- Keep deployment evidence separate from local verification.

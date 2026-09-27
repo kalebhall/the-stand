@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 
+import { recordAuditEvent } from '@/src/audit/service';
 import { auth } from '@/src/auth/auth';
 import { canManageMeetings } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
@@ -41,6 +42,28 @@ export async function PATCH(request: Request, context: { params: Promise<{ wardI
       await client.query('ROLLBACK');
       return NextResponse.json({ error: 'Action not found', code: 'NOT_FOUND' }, { status: 404 });
     }
+    const action = result.rows[0] as { id: string; family: string; action_type: string; status: string; member_name: string; membership_ordinance_id: string | null };
+    if (status === 'COMPLETED' && action.membership_ordinance_id) {
+      await client.query(
+        `UPDATE meeting_membership_ordinance
+            SET lcr_follow_up_status = 'completed', lcr_updated_at = now(), updated_at = now()
+          WHERE id = $1::uuid AND ward_id = $2::uuid AND status = 'completed' AND lcr_follow_up_status = 'needed'`,
+        [action.membership_ordinance_id, wardId]
+      );
+    }
+    await recordAuditEvent(client, {
+      wardId,
+      userId: session.user.id,
+      actorName: session.user.name || session.user.email || null,
+      actorRole: session.user.roles?.[0] || null,
+      action: status === 'COMPLETED' ? 'CHURCH_ACTION_FOLLOW_UP_COMPLETED' : 'CHURCH_ACTION_FOLLOW_UP_STATUS_CHANGED',
+      entityType: 'church_action_follow_up',
+      entityId: action.id,
+      changes: { status: { old: null, new: status } },
+      details: { family: action.family, actionType: action.action_type, memberName: action.member_name },
+      source: 'manual_ui',
+      severity: 'notice'
+    });
     await client.query('COMMIT');
     return NextResponse.json({ action: result.rows[0] });
   } catch (error) {

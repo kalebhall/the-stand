@@ -2,6 +2,7 @@ import type { PoolClient } from 'pg';
 
 import { getCallingLcrFollowUp } from './calling-follow-up';
 import type { CallingStatus } from '@/src/callings/lifecycle';
+import { insertNotificationOutboxEvent } from '@/src/notifications/outbox';
 
 const RECORD_CALLINGS_URL = 'https://www.churchofjesuschrist.org/tools/help/record-callings?lang=eng';
 
@@ -45,4 +46,17 @@ export async function persistCallingLcrFollowUp(
       RECORD_CALLINGS_URL
     ]
   );
+  await insertNotificationOutboxEvent(client, {
+    wardId,
+    aggregateType: 'calling_assignment',
+    aggregateId: callingId,
+    eventType: 'CALLING_REQUIRES_FOLLOW_UP',
+    payload: {
+      callingId,
+      memberName: row.member_name,
+      callingName: row.calling_name,
+      actionType: followUp.actionType,
+      sourceEvent: `CALLING_${status}`
+    }
+  });
 }

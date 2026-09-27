@@ -97,6 +97,13 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
         ORDER BY note.created_at DESC`,
       [wardId, meetingId, session.user.id]
     );
+    const actionsToDo = await client.query(
+      `SELECT id, family, action_type, status, member_name, description, official_reference_url, due_date
+         FROM church_action_follow_up
+        WHERE ward_id = $1::uuid AND status IN ('OPEN', 'IN_PROGRESS')
+        ORDER BY due_date NULLS LAST, created_at ASC`,
+      [wardId]
+    );
     await client.query('COMMIT');
 
     const meetingDate = meeting.rows[0].meeting_date as string;
@@ -176,6 +183,16 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
         noteText: note.note_text,
         createdAt: note.created_at,
         updatedAt: note.updated_at
+      })),
+      actionsToDo: actionsToDo.rows.map((action) => ({
+        id: action.id,
+        family: action.family,
+        actionType: action.action_type,
+        status: action.status,
+        memberName: action.member_name,
+        description: action.description,
+        officialReferenceUrl: action.official_reference_url,
+        dueDate: action.due_date
       }))
     });
   } catch (error) {

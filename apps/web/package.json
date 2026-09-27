@@ -17,8 +17,10 @@
     "purge:retention": "node src/maintenance/retention-runner.mjs",
     "remind:interviews": "node --experimental-strip-types src/leadership/interview-reminder-runner.mjs",
     "remind:technology": "node --experimental-strip-types src/leadership/technology-reminder-runner.mjs",
+    "remind:church-actions": "node src/church-actions/follow-up-reminder-runner.mjs",
     "worker": "tsx src/notifications/worker-entry.ts",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "e2e:fixtures": "node scripts/e2e-fixtures.mjs"
   },
   "dependencies": {
     "argon2": "^0.41.1",
