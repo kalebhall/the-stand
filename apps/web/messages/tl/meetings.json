@@ -1,4 +1,5 @@
 {
+  "actionsToDo": {"title": "Mga Gagawin", "description": "Subaybayan ang follow-up na gawain ng ward na kailangang kumpletuhin sa mga opisyal na sistema ng Simbahan.", "family": "Pamilya", "status": "Katayuan", "all": "Lahat", "calling": "Calling", "membership": "Membership", "priesthood": "Priesthood", "open": "Bukas", "inProgress": "Isinasagawa", "completed": "Nakumpleto", "notApplicable": "Hindi naaangkop", "due": "Takdang petsa {date}", "openLcr": "Buksan ang tulong sa LCR", "markCompleted": "Markahang nakumpleto", "empty": "Walang aksyong tumutugma sa mga filter na ito."},
   "meetingEditor": {
     "title": "I-edit ang pulong",
     "description": "I-update ang mga detalye ng pulong, mga himno, at pagkakasunud-sunod ng programa.",

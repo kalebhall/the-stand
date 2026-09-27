@@ -1,4 +1,5 @@
 {
+  "actionsToDo": {"title": "Acciones pendientes", "description": "Registra el trabajo de seguimiento del barrio que aún debe completarse en los sistemas oficiales de la Iglesia.", "family": "Familia", "status": "Estado", "all": "Todas", "calling": "Llamamiento", "membership": "Membresía", "priesthood": "Sacerdocio", "open": "Abierta", "inProgress": "En progreso", "completed": "Completada", "notApplicable": "No aplica", "due": "Vence {date}", "openLcr": "Abrir ayuda de LCR", "markCompleted": "Marcar completada", "empty": "No hay acciones que coincidan con estos filtros."},
   "meetingEditor": {
     "title": "Editar reunión",
     "description": "Actualiza los detalles, himnos y orden del programa.",

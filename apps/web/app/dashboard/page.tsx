@@ -39,6 +39,7 @@ export default async function DashboardPage() {
   const canAccessPortal = Boolean(session.activeWardId) && hasRole(session.user.roles, 'STAND_ADMIN');
   const showSupportCards = dashboardModules.support;
   let setApartQueueCount = 'Unavailable';
+  let actionsToDoCount = 'Unavailable';
   let membershipActionQueueCount = 'Unavailable';
   let actionInterviewQueueCount = 'Unavailable';
   let overdueActionCount = 'Unavailable';
@@ -97,6 +98,15 @@ export default async function DashboardPage() {
             AND (a.status != 'completed' OR a.lcr_follow_up_status = 'needed')`,
         [session.activeWardId]
       );
+
+      const actionsToDoResult = dashboardModules.actionsToDo
+        ? await client.query(
+            `SELECT COUNT(*)::int AS count
+               FROM church_action_follow_up
+              WHERE ward_id = $1::uuid AND status IN ('OPEN', 'IN_PROGRESS')`,
+            [session.activeWardId]
+          )
+        : null;
 
       const bishopricDueActionResult = await client.query(
         `SELECT COUNT(*)::int AS count
@@ -169,6 +179,7 @@ export default async function DashboardPage() {
 
       await client.query('COMMIT');
       setApartQueueCount = `${result.rows[0].count} waiting`;
+      actionsToDoCount = actionsToDoResult ? `${(actionsToDoResult.rows[0] as { count: number }).count} open` : 'Unavailable';
       const actionQueue = membershipActionQueueResult.rows[0] as {
         action_needed_count: number;
         interview_count: number;
@@ -237,6 +248,7 @@ export default async function DashboardPage() {
     dashboardCards.push(card);
   };
 
+  if (dashboardModules.actionsToDo) addCard({ id: 'actions-to-do', title: t('actionsToDo'), value: actionsToDoCount, detail: t('actionsToDoDetail'), actions: [{ href: '/actions-to-do', label: t('openActionsToDo') }] });
   if (canAccessMeetings) {
     addCard({ id: 'next-meeting', title: 'Next meeting', value: nextMeetingValue, detail: nextMeetingDetail, actions: nextMeetingActions });
     addCard({ id: 'draft-count', title: t('draftCount'), value: draftCountValue, detail: draftCountDetail, actions: [{ href: '/meetings', label: t('viewMeetings') }] });

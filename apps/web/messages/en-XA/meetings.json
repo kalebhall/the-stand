@@ -1,4 +1,5 @@
 {
+  "actionsToDo": {"title": "[Actions to Do]", "description": "[Track ward follow-up work that still needs completion in official Church systems.]", "family": "[Family]", "status": "[Status]", "all": "[All]", "calling": "[Calling]", "membership": "[Membership]", "priesthood": "[Priesthood]", "open": "[Open]", "inProgress": "[In progress]", "completed": "[Completed]", "notApplicable": "[Not applicable]", "due": "[Due {date}]", "openLcr": "[Open LCR help]", "markCompleted": "[Mark completed]", "empty": "[No actions match these filters.]"},
   "meetingEditor": {
     "title": "[Edit meeting]",
     "description": "[Update meeting details, hymns, and program order.]",
