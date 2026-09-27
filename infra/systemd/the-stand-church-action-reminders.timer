@@ -1,0 +1,11 @@
+[Unit]
+Description=Run The Stand church action follow-up reminders hourly
+
+[Timer]
+OnCalendar=hourly
+Persistent=true
+RandomizedDelaySec=10m
+Unit=the-stand-church-action-reminders.service
+
+[Install]
+WantedBy=timers.target

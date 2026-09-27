@@ -203,5 +203,6 @@ The first code task is the pure calling follow-up contract and regression tests.
 ## Remaining deployment milestone
 
 - Add the approved maintenance user assignment and scheduler environment on the deployment host.
+- Install and enable `the-stand-church-action-reminders.{service,timer}`.
 - Run the deployed oneshot and read back `Result`, safe summary logs, and the pending/processed notification event.
 - Keep deployment evidence separate from local verification.

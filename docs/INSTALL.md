@@ -632,6 +632,27 @@ Timer status proves scheduling only. Successful runner logs prove the query and 
 
 ---
 
+## SECTION 10.6 — Scheduled Church Action Follow-Up Reminders
+
+The Actions to Do reminder runner uses normal PostgreSQL RLS. Set `MAINTENANCE_USER_ID` in `/opt/the-stand/app/.env` to a dedicated active user that has an active ward role in every ward this job should process. Do not use an unrestricted database role or disable RLS. The runner enumerates only that user's active ward assignments and creates idempotent outbox events for overdue follow-ups.
+
+Install and enable the repository units:
+
+```
+sudo install -m 0644 /opt/the-stand/app/infra/systemd/the-stand-church-action-reminders.service /etc/systemd/system/
+sudo install -m 0644 /opt/the-stand/app/infra/systemd/the-stand-church-action-reminders.timer /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now the-stand-church-action-reminders.timer
+sudo systemctl start the-stand-church-action-reminders.service
+sudo systemctl status the-stand-church-action-reminders.timer --no-pager
+sudo systemctl show the-stand-church-action-reminders.service -p Result -p ExecMainStatus --no-pager
+sudo journalctl -u the-stand-church-action-reminders.service -n 20 --no-pager
+```
+
+The service environment must provide `DATABASE_URL` and `MAINTENANCE_USER_ID`; keep both in the protected environment file, never in the unit or repository. Timer status proves scheduling only. A successful oneshot log with `wards`, `examined`, and `created` counts proves one execution; verify notification delivery separately through `/notifications` or notification diagnostics.
+
+---
+
 ## SECTION 10.5 — Legacy Raw Import Retention Purge
 
 Existing `the-stand-raw-import-purge.*` units remain supported for raw-only deployments. New deployments should use combined operational retention purge above. Do not run both timers, or raw purge runs twice unnecessarily.
