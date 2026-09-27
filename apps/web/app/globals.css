@@ -151,6 +151,13 @@ main h3 {
   overflow: hidden;
 }
 
+/* Autocomplete menus must escape the panel and stack above neighboring sections. */
+.section-panel:focus-within {
+  position: relative;
+  z-index: 20;
+  overflow: visible;
+}
+
 .section-panel--service {
   --section-accent: var(--section-service);
 }
