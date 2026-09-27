@@ -169,3 +169,15 @@ The first code task is the pure calling follow-up contract and regression tests.
 - Add opt-in creation and overdue notifications through the existing ward notification outbox.
 - Add browser acceptance for priesthood completion → action appears → authorized completion → open queue removal.
 - Verify notification retry idempotency, ward isolation, and disabled-module denial in runtime fixtures.
+
+## Completed Phase 6 slice: notification producers and overdue reminder runner
+
+- Calling follow-up production now emits the existing ward-scoped `CALLING_REQUIRES_FOLLOW_UP` notification event with minimal identifiers and idempotent outbox deduplication.
+- Added `remind:church-actions` to create one overdue reminder event per open/in-progress follow-up, skipping wards where Actions to Do is disabled and enqueueing only after commit.
+- Membership/priesthood completion already uses the existing LCR-needed notification event; no direct LCR write is performed.
+
+## Remaining acceptance milestone: browser and runtime verification
+
+- Exercise the authenticated desktop/mobile flow for action appearance and completion.
+- Verify unauthorized users, disabled modules, cross-ward access, RLS, and notification retry behavior against runtime fixtures.
+- Configure and verify the production scheduler for `remind:church-actions`.

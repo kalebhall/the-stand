@@ -21,7 +21,7 @@ flowchart LR
   A9["web:bootstrap.mjs<br/>1 files"]
   A10["web:calendar<br/>4 files"]
   A11["web:callings<br/>7 files"]
-  A12["web:church-actions<br/>10 files"]
+  A12["web:church-actions<br/>11 files"]
   A13["web:conducting<br/>3 files"]
   A14["web:config<br/>17 files"]
   A15["web:dashboard<br/>4 files"]
@@ -93,6 +93,7 @@ flowchart LR
   A8 -->|2| A16
   A10 -->|2| A16
   A12 -->|2| A11
+  A12 -->|2| A29
   A14 -->|2| A24
   A15 -->|2| A27
   A16 -->|2| A8
@@ -164,7 +165,7 @@ flowchart LR
 | `web:bootstrap.mjs` | 1 |
 | `web:calendar` | 4 |
 | `web:callings` | 7 |
-| `web:church-actions` | 10 |
+| `web:church-actions` | 11 |
 | `web:conducting` | 3 |
 | `web:config` | 17 |
 | `web:dashboard` | 4 |
@@ -261,6 +262,7 @@ flowchart LR
 | `web:auth` | `web:db` | 2 |
 | `web:calendar` | `web:db` | 2 |
 | `web:church-actions` | `web:callings` | 2 |
+| `web:church-actions` | `web:notifications` | 2 |
 | `web:config` | `web:lib` | 2 |
 | `web:dashboard` | `web:dashboard` | 2 |
 | `web:dashboard` | `web:modules` | 2 |
@@ -365,6 +367,7 @@ flowchart LR
 | `web:app` | `Node.js` | 3 |
 | `web:app` | `next-auth` | 3 |
 | `web:callings` | `vitest` | 3 |
+| `web:church-actions` | `pg` | 3 |
 | `web:db` | `drizzle-orm` | 3 |
 | `web:db` | `pg` | 3 |
 | `web:i18n` | `vitest` | 3 |
@@ -376,7 +379,6 @@ flowchart LR
 | `web:auth` | `Node.js` | 2 |
 | `web:calendar` | `vitest` | 2 |
 | `web:callings` | `pg` | 2 |
-| `web:church-actions` | `pg` | 2 |
 | `web:config` | `Node.js` | 2 |
 | `web:config` | `vitest` | 2 |
 | `web:dashboard` | `vitest` | 2 |
@@ -805,10 +807,11 @@ flowchart LR
 | `apps/web/src/callings/standard-callings.ts` | `web:callings` | 0 | 0 |
 | `apps/web/src/callings/transition.ts` | `web:callings` | 2 | 1 |
 | `apps/web/src/callings/transition.vitest.ts` | `web:callings` | 1 | 1 |
-| `apps/web/src/church-actions/calling-follow-up-persistence.ts` | `web:church-actions` | 2 | 1 |
+| `apps/web/src/church-actions/calling-follow-up-persistence.ts` | `web:church-actions` | 3 | 1 |
 | `apps/web/src/church-actions/calling-follow-up-persistence.vitest.ts` | `web:church-actions` | 1 | 1 |
 | `apps/web/src/church-actions/calling-follow-up.ts` | `web:church-actions` | 2 | 0 |
 | `apps/web/src/church-actions/calling-follow-up.vitest.ts` | `web:church-actions` | 1 | 1 |
+| `apps/web/src/church-actions/follow-up-reminder-runner.mjs` | `web:church-actions` | 1 | 1 |
 | `apps/web/src/church-actions/membership-ordinance-follow-up-persistence.ts` | `web:church-actions` | 0 | 1 |
 | `apps/web/src/church-actions/membership-ordinance-follow-up-persistence.vitest.ts` | `web:church-actions` | 1 | 1 |
 | `apps/web/src/church-actions/membership-ordinance.ts` | `web:church-actions` | 0 | 0 |
