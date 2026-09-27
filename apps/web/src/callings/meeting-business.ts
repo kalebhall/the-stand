@@ -121,7 +121,51 @@ export async function queueCallingBusinessLine(
     meetingId = (meetingResult.rows[0] as { id: string }).id;
   }
 
-  // 4. Insert the business line
+  // 4. Ensure the target meeting has a program position for ward business.
+  // Older/imported meetings may not have the protected default item, which would
+  // leave a queued business line stored but invisible in the program/stand view.
+  const businessItemResult = await client.query(
+    `SELECT id
+       FROM meeting_program_item
+      WHERE ward_id = $1::uuid
+        AND meeting_id = $2::uuid
+        AND item_type = 'WARD_AND_STAKE_BUSINESS'
+      ORDER BY sequence ASC
+      LIMIT 1
+      FOR UPDATE`,
+    [wardId, meetingId]
+  );
+
+  if (!businessItemResult.rowCount) {
+    const sequenceResult = await client.query(
+      `SELECT COALESCE(
+         MIN(sequence) FILTER (WHERE item_type IN ('SACRAMENT_HYMN', 'SACRAMENT')),
+         COALESCE(MAX(sequence), 0) + 1
+       )::int AS sequence
+         FROM meeting_program_item
+        WHERE ward_id = $1::uuid
+          AND meeting_id = $2::uuid`,
+      [wardId, meetingId]
+    );
+    const sequence = Number((sequenceResult.rows[0] as { sequence: number }).sequence);
+
+    await client.query(
+      `UPDATE meeting_program_item
+          SET sequence = sequence + 1
+        WHERE ward_id = $1::uuid
+          AND meeting_id = $2::uuid
+          AND sequence >= $3::int`,
+      [wardId, meetingId, sequence]
+    );
+
+    await client.query(
+      `INSERT INTO meeting_program_item (ward_id, meeting_id, sequence, item_type)
+       VALUES ($1::uuid, $2::uuid, $3::int, 'WARD_AND_STAKE_BUSINESS')`,
+      [wardId, meetingId, sequence]
+    );
+  }
+
+  // 5. Insert the business line
   await client.query(
     `INSERT INTO meeting_business_line (ward_id, meeting_id, calling_assignment_id, member_name, calling_name, action_type, status)
      VALUES ($1::uuid, $2::uuid, $3::uuid, $4::text, $5::text, $6::text, 'pending')`,

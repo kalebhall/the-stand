@@ -46,11 +46,11 @@ flowchart LR
   A34["web:test-matchers.d.ts<br/>1 files"]
   A35["web:tooling<br/>3 files"]
   A36["web:types<br/>2 files"]
-  A37["web:ui<br/>34 files"]
+  A37["web:ui<br/>35 files"]
   A38["web:version.mjs<br/>1 files"]
   A5 -->|163| A8
   A5 -->|142| A16
-  A6 -->|116| A37
+  A6 -->|117| A37
   A6 -->|92| A8
   A6 -->|57| A16
   A5 -->|52| A17
@@ -188,7 +188,7 @@ flowchart LR
 | `web:test-matchers.d.ts` | 1 |
 | `web:tooling` | 3 |
 | `web:types` | 2 |
-| `web:ui` | 34 |
+| `web:ui` | 35 |
 | `web:version.mjs` | 1 |
 
 ## Internal dependencies
@@ -198,7 +198,7 @@ flowchart LR
 | `web:document-designer` | `web:document-designer` | 180 |
 | `web:api` | `web:auth` | 163 |
 | `web:api` | `web:db` | 142 |
-| `web:app` | `web:ui` | 116 |
+| `web:app` | `web:ui` | 117 |
 | `web:app` | `web:auth` | 92 |
 | `web:app` | `web:app` | 69 |
 | `web:app` | `web:db` | 57 |
@@ -207,7 +207,7 @@ flowchart LR
 | `web:api` | `web:modules` | 50 |
 | `web:api` | `web:notifications` | 44 |
 | `web:api` | `web:api` | 36 |
-| `web:ui` | `web:ui` | 32 |
+| `web:ui` | `web:ui` | 33 |
 | `web:api` | `web:audit` | 30 |
 | `web:app` | `web:modules` | 28 |
 | `web:api` | `web:lib` | 25 |
@@ -330,14 +330,14 @@ flowchart LR
 | `web:api` | `next` | 82 |
 | `web:app` | `react` | 43 |
 | `web:api` | `vitest` | 33 |
-| `web:ui` | `react` | 31 |
+| `web:ui` | `react` | 32 |
 | `web:document-designer` | `vitest` | 25 |
 | `web:app` | `vitest` | 22 |
-| `web:ui` | `next-intl` | 21 |
+| `web:ui` | `next-intl` | 22 |
 | `web:notifications` | `vitest` | 19 |
 | `web:api` | `zod` | 16 |
+| `web:ui` | `next` | 16 |
 | `web:app` | `@testing-library/react` | 15 |
-| `web:ui` | `next` | 15 |
 | `root:tooling` | `Node.js` | 14 |
 | `web:notifications` | `pg` | 13 |
 | `web:db` | `Node.js` | 12 |
@@ -588,7 +588,7 @@ flowchart LR
 | `apps/web/app/bishopric/page.tsx` | `web:app` | 9 | 2 |
 | `apps/web/app/callings/error.tsx` | `web:app` | 0 | 1 |
 | `apps/web/app/callings/loading.tsx` | `web:app` | 0 | 1 |
-| `apps/web/app/callings/page.tsx` | `web:app` | 19 | 4 |
+| `apps/web/app/callings/page.tsx` | `web:app` | 20 | 4 |
 | `apps/web/app/callings/standard/page.tsx` | `web:app` | 5 | 3 |
 | `apps/web/app/dashboard/error.tsx` | `web:app` | 0 | 0 |
 | `apps/web/app/dashboard/loading.tsx` | `web:app` | 0 | 0 |
@@ -721,6 +721,7 @@ flowchart LR
 | `apps/web/components/CallingAssignButton.tsx` | `web:ui` | 1 | 3 |
 | `apps/web/components/CallingDeleteButton.tsx` | `web:ui` | 1 | 3 |
 | `apps/web/components/CallingReleaseButton.tsx` | `web:ui` | 1 | 3 |
+| `apps/web/components/CallingSetApartButton.tsx` | `web:ui` | 1 | 3 |
 | `apps/web/components/HymnAutocomplete.tsx` | `web:ui` | 0 | 2 |
 | `apps/web/components/HymnAutocomplete.vitest.tsx` | `web:ui` | 2 | 4 |
 | `apps/web/components/InternalNotesPanel.tsx` | `web:ui` | 3 | 2 |
