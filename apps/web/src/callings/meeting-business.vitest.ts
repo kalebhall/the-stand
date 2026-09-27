@@ -14,6 +14,7 @@ describe('meeting business queueing', () => {
       .fn()
       .mockResolvedValueOnce({ rowCount: 1, rows: [{ member_name: 'Doe, Jane', calling_name: 'Primary President' }] })
       .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'meeting-1' }] })
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'business-item-1' }] })
       .mockResolvedValueOnce({});
 
     const meetingId = await queueCallingBusinessLine({ query } as never, {
@@ -27,7 +28,7 @@ describe('meeting business queueing', () => {
     expect(query).toHaveBeenNthCalledWith(2, expect.stringContaining("meeting_type NOT IN ('STAKE_CONFERENCE', 'GENERAL_CONFERENCE')"), [
       'ward-1'
     ]);
-    expect(query).toHaveBeenNthCalledWith(3, expect.stringContaining('INSERT INTO meeting_business_line'), [
+    expect(query).toHaveBeenNthCalledWith(4, expect.stringContaining('INSERT INTO meeting_business_line'), [
       'ward-1',
       'meeting-1',
       'calling-1',
@@ -47,6 +48,7 @@ describe('meeting business queueing', () => {
       .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'conference-meeting', meeting_type: 'STAKE_CONFERENCE' }] })
       .mockResolvedValueOnce({ rows: [{ meeting_date: '2026-10-11' }] })
       .mockResolvedValueOnce({ rows: [{ id: 'replacement-meeting' }] })
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'business-item-1' }] })
       .mockResolvedValueOnce({});
 
     const meetingId = await queueCallingBusinessLine({ query } as never, {
@@ -63,6 +65,41 @@ describe('meeting business queueing', () => {
     expect(query).toHaveBeenNthCalledWith(7, expect.stringContaining("INSERT INTO meeting (ward_id, meeting_date, meeting_type, status)"), [
       'ward-1',
       '2026-10-11'
+    ]);
+  });
+
+  it('creates the ward-business program item when the target meeting is missing it', async () => {
+    const query = vi
+      .fn()
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ member_name: 'Doe, Jane', calling_name: 'Primary President' }] })
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'meeting-1' }] })
+      .mockResolvedValueOnce({ rowCount: 0, rows: [] })
+      .mockResolvedValueOnce({ rows: [{ sequence: 5 }] })
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({});
+
+    const meetingId = await queueCallingBusinessLine({ query } as never, {
+      wardId: 'ward-1',
+      callingId: 'calling-1',
+      actionType: 'RELEASE'
+    });
+
+    expect(meetingId).toBe('meeting-1');
+    expect(query).toHaveBeenNthCalledWith(4, expect.stringContaining('MIN(sequence)'), ['ward-1', 'meeting-1']);
+    expect(query).toHaveBeenNthCalledWith(5, expect.stringContaining('SET sequence = sequence + 1'), ['ward-1', 'meeting-1', 5]);
+    expect(query).toHaveBeenNthCalledWith(
+      6,
+      expect.stringContaining("'WARD_AND_STAKE_BUSINESS'"),
+      ['ward-1', 'meeting-1', 5]
+    );
+    expect(query).toHaveBeenNthCalledWith(7, expect.stringContaining('INSERT INTO meeting_business_line'), [
+      'ward-1',
+      'meeting-1',
+      'calling-1',
+      'Doe, Jane',
+      'Primary President',
+      'RELEASE'
     ]);
   });
 });
