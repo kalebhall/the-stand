@@ -3,6 +3,21 @@ import { describe, expect, it } from 'vitest';
 import { buildStandRows } from './render';
 
 describe('buildStandRows', () => {
+  it('preserves the stake-business selection on the Stand row', () => {
+    const rows = buildStandRows([
+      {
+        id: 'item-business',
+        itemType: 'WARD_AND_STAKE_BUSINESS',
+        title: '',
+        notes: '[STAKE_BUSINESS]',
+        hymnNumber: null,
+        hymnTitle: null
+      }
+    ]);
+
+    expect(rows[1]).toMatchObject({ kind: 'ward_business', includesStakeBusiness: true });
+  });
+
   it('uses default welcome text and bold placeholders for sustain phrasing', () => {
     const rows = buildStandRows([
       {

@@ -48,7 +48,7 @@ export type StandRow =
       segments: Array<{ text: string; bold: boolean }>;
       summary: string;
     }
-  | { kind: 'ward_business'; programItemId: string; programNotes?: string | null };
+  | { kind: 'ward_business'; programItemId: string; programNotes?: string | null; includesStakeBusiness?: boolean };
 
 const DEFAULT_TEMPLATE: StandTemplate = {
   welcomeText: DEFAULT_STAND_WELCOME_TEXT,
@@ -201,6 +201,7 @@ export function buildStandRows(
       rows.push({
         kind: 'ward_business',
         programItemId: item.id,
+        includesStakeBusiness: item.notes?.includes('[STAKE_BUSINESS]') ?? false,
         ...(item.programNotes?.trim() ? { programNotes: item.programNotes } : {})
       });
       continue;

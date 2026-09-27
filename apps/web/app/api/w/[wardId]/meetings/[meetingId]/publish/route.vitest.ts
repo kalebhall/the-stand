@@ -136,6 +136,13 @@ describe('POST /api/w/[wardId]/meetings/[meetingId]/publish', () => {
     expect(mocks.query).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO audit_log'), expect.arrayContaining(['PROGRAM_PUBLISHED']));
   });
 
+  it('allows core meeting publication when the optional Programs module is disabled', async () => {
+    mocks.moduleEnabled.mockResolvedValue(false);
+    const response = await POST(request(), { params: Promise.resolve(params) });
+    expect(response.status).toBe(200);
+    expect(mocks.moduleEnabled).not.toHaveBeenCalled();
+  });
+
   it('republishes with the next positive version and preserves the stable share token', async () => {
     mocks.state.meetingStatus = 'PUBLISHED';
     mocks.state.shareToken = 'stable-token';

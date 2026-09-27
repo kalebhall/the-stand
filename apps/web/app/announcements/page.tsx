@@ -80,7 +80,7 @@ export default async function AnnouncementsPage({ searchParams }: { searchParams
     const endDateInput = String(formData.get('endDate') ?? '').trim();
     const placement = String(formData.get('placement') ?? 'PROGRAM_TOP').trim();
     const isPermanent = formData.get('isPermanent') === 'on';
-    const includeInProgram = formData.get('includeInProgram') !== 'off' && formData.get('includeInProgram') !== 'false';
+    const includeInProgram = formData.get('includeInProgram') === 'on' || formData.get('includeInProgram') === 'true';
     const includeInStand = formData.get('includeInStand') === 'on' || formData.get('includeInStand') === 'true';
 
     const startDate = startDateInput.length ? startDateInput : null;
@@ -153,7 +153,7 @@ export default async function AnnouncementsPage({ searchParams }: { searchParams
     const endDateInput = String(formData.get('endDate') ?? '').trim();
     const placement = String(formData.get('placement') ?? 'PROGRAM_TOP').trim();
     const isPermanent = formData.get('isPermanent') === 'on';
-    const includeInProgram = formData.get('includeInProgram') !== 'off' && formData.get('includeInProgram') !== 'false';
+    const includeInProgram = formData.get('includeInProgram') === 'on' || formData.get('includeInProgram') === 'true';
     const includeInStand = formData.get('includeInStand') === 'on' || formData.get('includeInStand') === 'true';
 
     const startDate = startDateInput.length ? startDateInput : null;

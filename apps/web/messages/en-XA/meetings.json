@@ -137,6 +137,7 @@
     "special": "[Special]",
     "internalNotes": "[Internal notes]",
     "includesStakeBusiness": "[Includes stake business]",
+    "stakeBusinessIncluded": "[Stake business is included in this meeting.]",
     "createMeeting": "[Create meeting]",
     "savingChanges": "[Saving changes...]",
     "changesSaved": "[Changes saved]",

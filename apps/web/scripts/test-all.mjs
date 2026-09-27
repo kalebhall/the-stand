@@ -67,6 +67,7 @@ const liveSuites = [
   'src/db/ward-user-role-rls.vitest.ts',
   'src/db/module-enable-rls.vitest.ts',
   'src/db/p0-rls-isolation.vitest.ts',
+  'src/db/church-action-follow-up-rls.vitest.ts',
   'src/notifications/worker-rls.vitest.ts',
   'src/db/program-publication-schema.vitest.ts'
 ];

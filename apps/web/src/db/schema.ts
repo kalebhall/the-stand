@@ -525,6 +525,41 @@ export const meetingMembershipOrdinance = pgTable('meeting_membership_ordinance'
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
 });
 
+export const churchActionFollowUp = pgTable(
+  'church_action_follow_up',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    wardId: uuid('ward_id')
+      .notNull()
+      .references(() => ward.id, { onDelete: 'cascade' }),
+    family: text('family').notNull(),
+    actionType: text('action_type').notNull(),
+    status: text('status').notNull().default('OPEN'),
+    memberName: text('member_name').notNull(),
+    callingAssignmentId: uuid('calling_assignment_id').references(() => callingAssignment.id, { onDelete: 'cascade' }),
+    membershipOrdinanceId: uuid('membership_ordinance_id').references(() => meetingMembershipOrdinance.id, { onDelete: 'cascade' }),
+    sourceEvent: text('source_event').notNull(),
+    sourceEventId: uuid('source_event_id').notNull(),
+    description: text('description').notNull(),
+    officialSystem: text('official_system').notNull().default('LCR'),
+    officialReferenceUrl: text('official_reference_url'),
+    dueDate: date('due_date'),
+    completedAt: timestamp('completed_at', { withTimezone: true }),
+    completedByUserId: uuid('completed_by_user_id').references(() => userAccount.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
+  },
+  (table) => ({
+    churchActionFollowUpQueueIdx: index('church_action_follow_up_queue_idx').on(table.wardId, table.status, table.dueDate, table.createdAt),
+    churchActionFollowUpCallingIdx: index('church_action_follow_up_calling_idx').on(table.wardId, table.callingAssignmentId, table.status),
+    churchActionFollowUpOrdinanceIdx: index('church_action_follow_up_ordinance_idx').on(table.wardId, table.membershipOrdinanceId, table.status),
+    churchActionFollowUpSourceUnique: unique().on(table.wardId, table.actionType, table.sourceEventId),
+    churchActionFollowUpFamilyCheck: check('church_action_follow_up_family_check', sql`${table.family} IN ('CALLING', 'MEMBERSHIP', 'PRIESTHOOD')`),
+    churchActionFollowUpStatusCheck: check('church_action_follow_up_status_check', sql`${table.status} IN ('OPEN', 'IN_PROGRESS', 'COMPLETED', 'NOT_APPLICABLE')`),
+    churchActionFollowUpOfficialSystemCheck: check('church_action_follow_up_official_system_check', sql`${table.officialSystem} IN ('LCR')`)
+  })
+);
+
 export const bishopricMeeting = pgTable('bishopric_meeting', {
   id: uuid('id').defaultRandom().primaryKey(),
   wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),

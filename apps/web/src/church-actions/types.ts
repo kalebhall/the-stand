@@ -19,15 +19,30 @@ export type InterviewStatus = (typeof INTERVIEW_STATUSES)[number];
 export const LCR_FOLLOW_UP_STATUSES = ['NOT_APPLICABLE', 'NEEDED', 'COMPLETED'] as const;
 export type LcrFollowUpStatus = (typeof LCR_FOLLOW_UP_STATUSES)[number];
 
+export const CALLING_ACTION_TYPES = [
+  'CALLING_RECORDING_REVIEW',
+  'CALLING_SUSTAINING_RECORDING',
+  'CALLING_SET_APART_RECORDING',
+  'CALLING_RELEASE_RECORDING'
+] as const;
+export type CallingActionType = (typeof CALLING_ACTION_TYPES)[number];
+
 export const MEMBERSHIP_ACTION_TYPES = ['WELCOME_NEW_MEMBER', 'RECOGNIZE_BAPTIZED_CHILD', 'BAPTISM_CONFIRMATION_FOLLOW_UP', 'ATTENDANCE_LCR_HANDOFF', 'BABY_BLESSING'] as const;
 export type MembershipActionType = (typeof MEMBERSHIP_ACTION_TYPES)[number];
 
 export const PRIESTHOOD_ACTION_TYPES = ['PRIESTHOOD_ORDINATION', 'PRIESTHOOD_ADVANCEMENT'] as const;
 export type PriesthoodActionType = (typeof PRIESTHOOD_ACTION_TYPES)[number];
 
-export type ChurchActionType = MembershipActionType | PriesthoodActionType;
+export type ChurchActionType = CallingActionType | MembershipActionType | PriesthoodActionType;
 
 export type ChurchAction =
+  | {
+      family: 'CALLING';
+      actionType: CallingActionType;
+      status: FollowUpStatus;
+      interviewStatus: 'NOT_REQUIRED';
+      lcrFollowUpStatus: LcrFollowUpStatus;
+    }
   | {
       family: 'MEMBERSHIP';
       actionType: MembershipActionType;
@@ -67,5 +82,8 @@ export function requiresInterview(family: ChurchActionFamily, actionType: Church
 }
 
 export function requiresLcrFollowUp(family: ChurchActionFamily, actionType: ChurchActionType): boolean {
-  return family === 'PRIESTHOOD' && PRIESTHOOD_ACTION_TYPES.includes(actionType as PriesthoodActionType);
+  return (
+    (family === 'CALLING' && CALLING_ACTION_TYPES.includes(actionType as CallingActionType)) ||
+    (family === 'PRIESTHOOD' && PRIESTHOOD_ACTION_TYPES.includes(actionType as PriesthoodActionType))
+  );
 }
