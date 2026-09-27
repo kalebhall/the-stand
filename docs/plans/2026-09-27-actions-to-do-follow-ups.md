@@ -193,3 +193,15 @@ The first code task is the pure calling follow-up contract and regression tests.
 - `remind:church-actions` starts successfully, but the non-superuser test runtime sees zero ward rows without an authorized ward context.
 - Production scheduler deployment must provide the repository's approved worker/RLS context before overdue reminder delivery can be called runtime-verified.
 - Do not solve this by disabling RLS or granting an unrestricted bypass role.
+
+## Completed acceptance slice: RLS-aware reminder scheduler
+
+- The reminder runner now requires `MAINTENANCE_USER_ID`, enumerates only non-revoked ward assignments for that user, sets transaction-local `app.user_id` and `app.ward_id`, and processes each ward through normal RLS.
+- Runtime verification against the disposable database processed one overdue follow-up and created one pending notification event; repeat execution is deduplicated.
+- Invalid configuration fails before opening a database connection.
+
+## Remaining deployment milestone
+
+- Add the approved maintenance user assignment and scheduler environment on the deployment host.
+- Run the deployed oneshot and read back `Result`, safe summary logs, and the pending/processed notification event.
+- Keep deployment evidence separate from local verification.
