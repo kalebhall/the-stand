@@ -25,4 +25,10 @@ describe('church action follow-up model', () => {
     expect(requiresInterview('MEMBERSHIP', 'BAPTISM_CONFIRMATION_FOLLOW_UP')).toBe(false);
     expect(requiresLcrFollowUp('MEMBERSHIP', 'BAPTISM_CONFIRMATION_FOLLOW_UP')).toBe(false);
   });
+
+  it('requires LCR follow-up for calling actions without requiring a priesthood interview', () => {
+    expect(requiresInterview('CALLING', 'CALLING_SET_APART_RECORDING')).toBe(false);
+    expect(requiresLcrFollowUp('CALLING', 'CALLING_RECORDING_REVIEW')).toBe(true);
+    expect(requiresLcrFollowUp('CALLING', 'CALLING_RELEASE_RECORDING')).toBe(true);
+  });
 });
