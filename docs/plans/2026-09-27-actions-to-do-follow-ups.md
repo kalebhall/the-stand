@@ -153,7 +153,19 @@ The first code task is the pure calling follow-up contract and regression tests.
 ## Next milestone: Phase 6 follow-up lifecycle and browser acceptance
 
 - Add completion linkage so completing an Actions to Do item updates the owning membership/priesthood handoff state without claiming LCR completion.
-- Add opt-in notifications for newly created and overdue shared follow-ups.
+- Add opt-in notifications for newly created and overdue follow-ups.
 - Keep shared follow-ups in private offline snapshots only; never public programs.
 - Add browser acceptance for priesthood completion → action appears → authorized completion → open queue removal.
 - Verify ward isolation, role restrictions, RLS, and retry idempotency end to end.
+
+## Completed Phase 6 slice: completion linkage and private offline projection
+
+- Completing a priesthood Actions to Do record updates the linked completed membership ordinance's local LCR handoff state and writes an audit event in the same transaction.
+- Open and in-progress shared follow-ups are included only in authenticated meeting offline snapshots; they are not added to public or stand rendering payloads.
+- Focused route coverage verifies the completion linkage and audit path.
+
+## Next milestone: follow-up notifications and browser acceptance
+
+- Add opt-in creation and overdue notifications through the existing ward notification outbox.
+- Add browser acceptance for priesthood completion → action appears → authorized completion → open queue removal.
+- Verify notification retry idempotency, ward isolation, and disabled-module denial in runtime fixtures.
