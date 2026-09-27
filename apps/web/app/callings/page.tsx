@@ -9,6 +9,7 @@ import { AddCallingSection } from '@/components/AddCallingSection';
 import { CallingAssignButton } from '@/components/CallingAssignButton';
 import { CallingDeleteButton } from '@/components/CallingDeleteButton';
 import { CallingReleaseButton } from '@/components/CallingReleaseButton';
+import { CallingSetApartButton } from '@/components/CallingSetApartButton';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth/guards';
@@ -426,15 +427,7 @@ export default async function CallingsPage() {
                       {t('inCalling', { tenure: formatCallingTenure(item.sustained_date, item.created_at, t) })}
                     </span>
                   </span>
-                  {canManage ? (
-                    <form action={transitionCalling}>
-                      <input type="hidden" name="callingId" value={item.id} />
-                      <input type="hidden" name="toStatus" value="SET_APART" />
-                      <Button type="submit" size="sm" variant="outline">
-                        {t('markSetApart')}
-                      </Button>
-                    </form>
-                  ) : null}
+                  {canManage ? <CallingSetApartButton wardId={wardId} callingId={item.id} /> : null}
                 </li>
               ))}
             </ul>
