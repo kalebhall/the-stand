@@ -50,6 +50,7 @@ type WardBusinessSectionProps = {
   sustainTemplate?: string;
   releaseTemplate?: string;
   programNotes?: string | null;
+  includesStakeBusiness?: boolean;
 };
 
 function MembershipOrdinanceRow({ action }: { action: MembershipOrdinanceSummary }) {
@@ -289,12 +290,14 @@ export function WardBusinessSection({
   collapsible = false,
   sustainTemplate = DEFAULT_STAND_SUSTAIN_TEMPLATE,
   releaseTemplate = DEFAULT_STAND_RELEASE_TEMPLATE,
-  programNotes = null
+  programNotes = null,
+  includesStakeBusiness = false
 }: WardBusinessSectionProps) {
   const router = useRouter();
   const t = useTranslations('business');
+  const meetingsT = useTranslations('meetings');
 
-  if (!lines.length && !membershipActions.length) {
+  if (!lines.length && !membershipActions.length && !includesStakeBusiness && !programNotes?.trim()) {
     return (
       <section className="rounded-lg border bg-card p-4">
         <h2 className="text-lg font-semibold">{t('title')}</h2>
@@ -309,6 +312,7 @@ export function WardBusinessSection({
   const content = (
     <>
       {programNotes?.trim() ? <p className="mb-3 whitespace-pre-wrap text-sm text-muted-foreground">{programNotes}</p> : null}
+      {includesStakeBusiness ? <p className="mb-3 text-sm text-muted-foreground">{meetingsT('stakeBusinessIncluded')}</p> : null}
       {membershipActions.length ? (
         <div className="mb-3 space-y-2">
           <p className="text-sm font-medium">{t('membershipFollowUp')}</p>

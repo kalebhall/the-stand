@@ -400,6 +400,7 @@ export default async function StandViewPage({
                       showScript={true}
                       collapsible={true}
                       programNotes={row.programNotes}
+                      includesStakeBusiness={row.includesStakeBusiness}
                       sustainTemplate={template?.sustain_template ?? undefined}
                       releaseTemplate={template?.release_template ?? undefined}
                     />
@@ -491,6 +492,7 @@ export default async function StandViewPage({
                       showScript={false}
                       collapsible={true}
                       programNotes={row.programNotes}
+                      includesStakeBusiness={row.includesStakeBusiness}
                       sustainTemplate={template?.sustain_template ?? undefined}
                       releaseTemplate={template?.release_template ?? undefined}
                     />
