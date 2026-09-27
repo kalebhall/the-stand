@@ -36,7 +36,7 @@ BEGIN
   INSERT INTO ward (stake_id, name, unit_number) VALUES (stake_id, 'Designer Ward A', 'A') RETURNING id INTO ward_a;
   INSERT INTO ward (stake_id, name, unit_number) VALUES (stake_id, 'Designer Ward B', 'B') RETURNING id INTO ward_b;
   INSERT INTO user_account (email) VALUES ('designer@example.test') RETURNING id INTO user_a;
-  INSERT INTO role (name, scope) VALUES ('STAND_ADMIN', 'WARD') RETURNING id INTO role_id;
+  INSERT INTO role (name, scope) VALUES ('STAND_ADMIN', 'WARD') ON CONFLICT (name) DO UPDATE SET scope = EXCLUDED.scope RETURNING id INTO role_id;
   PERFORM set_config('app.user_id', user_a::text, true);
   PERFORM set_config('app.ward_id', ward_a::text, true);
   INSERT INTO ward_user_role (ward_id, user_id, role_id) VALUES (ward_a, user_a, role_id);

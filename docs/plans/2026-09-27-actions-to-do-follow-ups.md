@@ -181,3 +181,15 @@ The first code task is the pure calling follow-up contract and regression tests.
 - Exercise the authenticated desktop/mobile flow for action appearance and completion.
 - Verify unauthorized users, disabled modules, cross-ward access, RLS, and notification retry behavior against runtime fixtures.
 - Configure and verify the production scheduler for `remind:church-actions`.
+
+## Completed acceptance slice: authenticated browser flow
+
+- Added deterministic disposable E2E fixtures for a ward admin, ward/module state, priesthood ordinance, and open shared follow-up.
+- Added Playwright coverage for authenticated Actions to Do appearance, LCR link visibility, desktop-to-mobile layout width, completion, and removal from the open queue.
+- Browser flow passed on the local disposable PostgreSQL database.
+
+## Remaining runtime blocker: reminder scheduler context
+
+- `remind:church-actions` starts successfully, but the non-superuser test runtime sees zero ward rows without an authorized ward context.
+- Production scheduler deployment must provide the repository's approved worker/RLS context before overdue reminder delivery can be called runtime-verified.
+- Do not solve this by disabling RLS or granting an unrestricted bypass role.

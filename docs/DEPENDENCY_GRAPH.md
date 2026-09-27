@@ -23,7 +23,7 @@ flowchart LR
   A11["web:callings<br/>7 files"]
   A12["web:church-actions<br/>11 files"]
   A13["web:conducting<br/>3 files"]
-  A14["web:config<br/>17 files"]
+  A14["web:config<br/>18 files"]
   A15["web:dashboard<br/>4 files"]
   A16["web:db<br/>14 files"]
   A17["web:document-designer<br/>66 files"]
@@ -44,7 +44,7 @@ flowchart LR
   A32["web:reports<br/>3 files"]
   A33["web:stand<br/>10 files"]
   A34["web:test-matchers.d.ts<br/>1 files"]
-  A35["web:tooling<br/>3 files"]
+  A35["web:tooling<br/>4 files"]
   A36["web:types<br/>2 files"]
   A37["web:ui<br/>35 files"]
   A38["web:version.mjs<br/>1 files"]
@@ -167,7 +167,7 @@ flowchart LR
 | `web:callings` | 7 |
 | `web:church-actions` | 11 |
 | `web:conducting` | 3 |
-| `web:config` | 17 |
+| `web:config` | 18 |
 | `web:dashboard` | 4 |
 | `web:db` | 14 |
 | `web:document-designer` | 66 |
@@ -188,7 +188,7 @@ flowchart LR
 | `web:reports` | 3 |
 | `web:stand` | 10 |
 | `web:test-matchers.d.ts` | 1 |
-| `web:tooling` | 3 |
+| `web:tooling` | 4 |
 | `web:types` | 2 |
 | `web:ui` | 35 |
 | `web:version.mjs` | 1 |
@@ -347,13 +347,13 @@ flowchart LR
 | `web:db` | `Node.js` | 12 |
 | `web:db` | `vitest` | 10 |
 | `web:document-designer` | `zod` | 10 |
+| `web:config` | `@playwright/test` | 7 |
 | `web:document-designer` | `Node.js` | 7 |
 | `web:meetings` | `vitest` | 7 |
 | `web:tooling` | `Node.js` | 7 |
 | `web:ui` | `@testing-library/react` | 7 |
 | `web:ui` | `vitest` | 7 |
 | `web:auth` | `next-auth` | 6 |
-| `web:config` | `@playwright/test` | 6 |
 | `web:imports` | `vitest` | 6 |
 | `web:leadership` | `vitest` | 6 |
 | `web:auth` | `vitest` | 5 |
@@ -373,6 +373,7 @@ flowchart LR
 | `web:i18n` | `vitest` | 3 |
 | `web:lib` | `vitest` | 3 |
 | `web:notifications` | `bullmq` | 3 |
+| `web:tooling` | `pg` | 3 |
 | `package:shared` | `vitest` | 2 |
 | `root:other` | `Node.js` | 2 |
 | `web:api` | `pg` | 2 |
@@ -389,7 +390,6 @@ flowchart LR
 | `web:leadership` | `pg` | 2 |
 | `web:offline` | `Node.js` | 2 |
 | `web:offline` | `vitest` | 2 |
-| `web:tooling` | `pg` | 2 |
 | `package:shared` | `zod` | 1 |
 | `root:other` | `@eslint/js` | 1 |
 | `root:other` | `globals` | 1 |
@@ -443,6 +443,7 @@ flowchart LR
 | `web:reports` | `pg` | 1 |
 | `web:reports` | `vitest` | 1 |
 | `web:test-matchers.d.ts` | `@testing-library/jest-dom` | 1 |
+| `web:tooling` | `argon2` | 1 |
 | `web:ui` | `class-variance-authority` | 1 |
 | `web:ui` | `clsx` | 1 |
 | `web:ui` | `next-themes` | 1 |
@@ -763,6 +764,7 @@ flowchart LR
 | `apps/web/drizzle.config.ts` | `web:config` | 0 | 1 |
 | `apps/web/e2e/acceptance.spec.ts` | `web:config` | 0 | 1 |
 | `apps/web/e2e/accessibility.spec.ts` | `web:config` | 0 | 1 |
+| `apps/web/e2e/actions-to-do.spec.ts` | `web:config` | 0 | 1 |
 | `apps/web/e2e/print-preview.spec.ts` | `web:config` | 1 | 1 |
 | `apps/web/e2e/program-template-boundaries.spec.ts` | `web:config` | 0 | 1 |
 | `apps/web/e2e/responsive-dashboard.spec.ts` | `web:config` | 0 | 1 |
@@ -775,6 +777,7 @@ flowchart LR
 | `apps/web/playwright.config.ts` | `web:config` | 0 | 1 |
 | `apps/web/postcss.config.mjs` | `web:config` | 0 | 0 |
 | `apps/web/public/sw.js` | `web:config` | 0 | 0 |
+| `apps/web/scripts/e2e-fixtures.mjs` | `web:tooling` | 0 | 2 |
 | `apps/web/scripts/migrate.mjs` | `web:tooling` | 0 | 3 |
 | `apps/web/scripts/migrate.ts` | `web:tooling` | 0 | 3 |
 | `apps/web/scripts/test-all.mjs` | `web:tooling` | 0 | 3 |
