@@ -1,4 +1,5 @@
 {
+  "actionsToDo": {"title": "Ngaahi meʻa ke faí", "description": "Muimuiʻi ʻa e ngāue ʻo e uōtí ʻoku kei fiemaʻu ke fakakakato ʻi he ngaahi polokalama faka-Siasi ʻoku fakaʻofisiale.", "family": "Kāinga", "status": "Tuʻunga", "all": "Kotoa", "calling": "Uiui", "membership": "Memipasipi", "priesthood": "Lakanga fakataulaʻeiki", "open": "Fakaava", "inProgress": "Lolotonga fai", "completed": "Kuo kakato", "notApplicable": "ʻOku ʻikai kaunga", "due": "ʻAho ke fakakakato {date}", "openLcr": "Fakaava ʻa e tokoni LCR", "markCompleted": "Tohiʻi kuo kakato", "empty": "ʻOku ʻikai ha ngaahi meʻa ʻoku feʻunga mo e ngaahi sivi ko ʻení."},
   "meetingEditor": {
     "title": "Fakatonutonu fakataha",
     "description": "Fakafoʻou ʻa e ngaahi fakaikiiki ʻo e fakatahá, ngaahi himí, mo e fakahokohoko ʻo e polokalamá.",

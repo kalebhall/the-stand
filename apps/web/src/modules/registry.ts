@@ -32,6 +32,16 @@ const MODULES: readonly ModuleDefinition[] = [
     permissions: ['programs.view', 'programs.manage', 'programs.templates.manage']
   },
   {
+    id: 'actions-to-do',
+    name: 'Actions to Do',
+    description: 'Track ward follow-up work that still needs completion in official Church systems.',
+    version: '1.0.0',
+    defaultEnabled: false,
+    navigation: [{ href: '/actions-to-do', label: 'Actions to Do' }],
+    routes: ['/actions-to-do'],
+    permissions: ['actions-to-do.view', 'actions-to-do.manage']
+  },
+  {
     id: 'bishopric',
     name: 'Bishopric Agenda',
     description: 'Organize bishopric agenda items and follow-up actions alongside meetings.',

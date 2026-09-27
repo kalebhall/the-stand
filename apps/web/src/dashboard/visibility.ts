@@ -2,6 +2,7 @@ import type { ModuleEnablement } from '@/src/modules/types';
 
 export type DashboardModuleVisibility = {
   meetings: boolean;
+  actionsToDo: boolean;
   membership: boolean;
   callings: boolean;
   notifications: boolean;
@@ -22,6 +23,7 @@ export function getDashboardModuleVisibility(
 ): DashboardModuleVisibility {
   return {
     meetings: canViewMeetings && enablement.isEnabled(wardId, 'conducting-core'),
+    actionsToDo: canViewMeetings && enablement.isEnabled(wardId, 'actions-to-do'),
     membership: canViewMeetings && enablement.isEnabled(wardId, 'membership-ordinances'),
     callings: canViewCallings && enablement.isEnabled(wardId, 'callings'),
     notifications: canViewCallings && enablement.isEnabled(wardId, 'notifications'),

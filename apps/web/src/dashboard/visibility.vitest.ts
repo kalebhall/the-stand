@@ -20,6 +20,7 @@ describe('dashboard module visibility', () => {
 
     expect(getDashboardModuleVisibility('ward', enablement, true, true, true, true)).toEqual({
       meetings: true,
+      actionsToDo: false,
       membership: false,
       callings: false,
       notifications: false,

@@ -1,5 +1,6 @@
 export const DASHBOARD_CARD_IDS = [
   'next-meeting',
+  'actions-to-do',
   'draft-count',
   'membership-follow-up',
   'priesthood-preparation',

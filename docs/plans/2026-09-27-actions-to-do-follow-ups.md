@@ -141,3 +141,19 @@ Also run serialized disposable PostgreSQL/RLS tests and browser acceptance befor
 ## First implementation started
 
 The first code task is the pure calling follow-up contract and regression tests. It intentionally has no database or UI side effects; it establishes the domain vocabulary before persistence and route wiring.
+
+## Completed milestone: Phase 5 priesthood handoff producer
+
+- Completed priesthood ordinance actions now create one idempotent shared Actions to Do follow-up in the same transaction.
+- Aaronic and Melchizedek recording references are selected from the priesthood office.
+- Ward scope, source ordinance ID, planned date, and explicit human LCR follow-up language are preserved.
+- Completion remains local confirmation; The Stand does not write to LCR.
+- Focused producer and route regression tests cover idempotent upsert payloads and transaction integration.
+
+## Next milestone: Phase 6 follow-up lifecycle and browser acceptance
+
+- Add completion linkage so completing an Actions to Do item updates the owning membership/priesthood handoff state without claiming LCR completion.
+- Add opt-in notifications for newly created and overdue shared follow-ups.
+- Keep shared follow-ups in private offline snapshots only; never public programs.
+- Add browser acceptance for priesthood completion → action appears → authorized completion → open queue removal.
+- Verify ward isolation, role restrictions, RLS, and retry idempotency end to end.

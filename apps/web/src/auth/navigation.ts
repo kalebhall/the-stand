@@ -43,6 +43,7 @@ export function getNavigationItems(
 
   if (hasAnyRole(roles, MEETING_VIEW_ROLES) || hasRole(roles, 'STAND_ADMIN')) {
     add('conducting-core', '/meetings', true);
+    add('actions-to-do', '/actions-to-do', true);
   }
 
   if (hasAnyRole(roles, CLERK_OR_BISHOPRIC_ROLES) || hasRole(roles, 'STAND_ADMIN')) {
@@ -92,6 +93,7 @@ const NAV_GROUPS: readonly Omit<AppNavGroup, 'items'>[] = [
 const NAV_GROUP_BY_HREF: Readonly<Record<string, AppNavGroup['id']>> = {
   '/dashboard': 'workspace',
   '/meetings': 'workspace',
+  '/actions-to-do': 'workspace',
   '/announcements': 'workspace',
   '/programs': 'workspace',
   '/programs/templates': 'workspace',

@@ -64,7 +64,7 @@ describe('message catalog structure', () => {
   });
 
   it('merges the expected module-owned namespaces into each runtime catalog', () => {
-    const namespaces = ['language', 'settings', 'dashboard', 'meetingEditor', 'print', 'meetings', 'stand', 'meetingForm', 'business', 'notes', 'hymn', 'deleteMeeting', 'membership', 'offline', 'publicProgram', 'navigation', 'auth', 'shell', 'account', 'programs', 'notifications', 'manual', 'supportHymns', 'supportQueue', 'supportAccessRequests', 'supportProvisioning', 'supportUsers', 'supportAuditLog', 'supportConsole', 'members', 'membershipOrdinances', 'callings', 'bishopric', 'interviews', 'technology', 'speakers', 'reports', 'announcements', 'imports'];
+    const namespaces = ['language', 'settings', 'dashboard', 'meetingEditor', 'print', 'meetings', 'stand', 'meetingForm', 'business', 'notes', 'hymn', 'deleteMeeting', 'membership', 'offline', 'publicProgram', 'navigation', 'auth', 'shell', 'account', 'actionsToDo', 'programs', 'notifications', 'manual', 'supportHymns', 'supportQueue', 'supportAccessRequests', 'supportProvisioning', 'supportUsers', 'supportAuditLog', 'supportConsole', 'members', 'membershipOrdinances', 'callings', 'bishopric', 'interviews', 'technology', 'speakers', 'reports', 'announcements', 'imports'];
     for (const catalog of Object.values(MESSAGE_CATALOGS)) {
       expect(Object.keys(catalog).sort()).toEqual(namespaces.sort());
     }

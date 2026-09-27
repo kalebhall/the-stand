@@ -9,6 +9,7 @@ import { enqueueOutboxNotificationJob } from '@/src/notifications/queue';
 import { enqueueNotificationOutboxEvent, insertNotificationOutboxEvent } from '@/src/notifications/outbox';
 import { validateMembershipOrdinanceTransition, type MembershipOrdinanceTransition } from '@/src/church-actions/membership-ordinance';
 import { isWardModuleEnabled } from '@/src/modules/service';
+import { persistMembershipOrdinanceLcrFollowUp } from '@/src/church-actions/membership-ordinance-follow-up-persistence';
 
 export async function PATCH(request: Request, context: { params: Promise<{ wardId: string; meetingId: string; actionId: string }> }) {
   const session = await auth();
@@ -27,7 +28,8 @@ export async function PATCH(request: Request, context: { params: Promise<{ wardI
     await client.query('BEGIN');
     await setDbContext(client, { userId: session.user.id, wardId });
     const current = await client.query(
-      `SELECT a.status, a.interview_status, a.lcr_follow_up_status, a.record_form_needed, a.official_system_follow_up_status
+      `SELECT a.status, a.interview_status, a.lcr_follow_up_status, a.record_form_needed, a.official_system_follow_up_status,
+              a.member_name, a.action_type, a.priesthood_office, a.planned_date, a.details
          FROM meeting_membership_ordinance a
          JOIN meeting m ON m.id = a.meeting_id AND m.ward_id = a.ward_id
         WHERE a.id = $1::uuid AND a.ward_id = $2::uuid AND a.meeting_id = $3::uuid
@@ -45,6 +47,11 @@ export async function PATCH(request: Request, context: { params: Promise<{ wardI
       lcr_follow_up_status: 'not_applicable' | 'needed' | 'completed';
       record_form_needed: boolean;
       official_system_follow_up_status: 'not_started' | 'in_progress' | 'completed' | 'not_applicable';
+      member_name: string;
+      action_type: string;
+      priesthood_office: string | null;
+      planned_date: string | null;
+      details: string | null;
     };
     const transitionError = validateMembershipOrdinanceTransition(
       {
@@ -112,6 +119,22 @@ export async function PATCH(request: Request, context: { params: Promise<{ wardI
       action_type: string;
       lcr_follow_up_status: string;
     };
+    if (
+      status === 'completed' &&
+      currentState.status === 'action_needed' &&
+      currentState.lcr_follow_up_status === 'needed' &&
+      (currentState.action_type === 'PRIESTHOOD_ORDINATION' || currentState.action_type === 'PRIESTHOOD_ADVANCEMENT')
+    ) {
+      await persistMembershipOrdinanceLcrFollowUp(client, {
+        wardId,
+        ordinanceId: actionId,
+        memberName: currentState.member_name,
+        actionType: currentState.action_type,
+        priesthoodOffice: currentState.priesthood_office,
+        plannedDate: currentState.planned_date,
+        details: currentState.details
+      });
+    }
     if (status === 'announced' || (status === 'completed' && updatedAction.lcr_follow_up_status === 'needed')) {
       notificationEventOutboxId = await insertNotificationOutboxEvent(client, {
         wardId,

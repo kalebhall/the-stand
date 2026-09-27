@@ -42,6 +42,10 @@ describe('POST /api/w/[wardId]/callings/[callingId]/set-apart', () => {
       .mockResolvedValueOnce({}) // INSERT calling_action
       .mockResolvedValueOnce({}) // UPDATE calling_assignment (SET_APART deactivates)
       .mockResolvedValueOnce({
+        rows: [{ member_name: 'Jane Doe', calling_name: 'Primary Teacher' }]
+      }) // calling follow-up source assignment
+      .mockResolvedValueOnce({}) // INSERT church action follow-up
+      .mockResolvedValueOnce({
         rows: [{ calling_name: 'Primary Teacher', organization: 'Primary', member_name: 'Jane Doe', member_id: 'm-1' }]
       }) // calling_assignment SELECT
       .mockResolvedValueOnce({}) // INSERT audit_log

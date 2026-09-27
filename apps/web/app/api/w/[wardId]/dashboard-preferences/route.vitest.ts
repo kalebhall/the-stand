@@ -86,7 +86,7 @@ describe('dashboard preferences route', () => {
     const response = await DELETE(new Request('http://localhost'), { params: Promise.resolve({ wardId: 'ward-1' }) });
 
     expect(response.status).toBe(200);
-    expect((await response.json()).cardOrder).toHaveLength(17);
+    expect((await response.json()).cardOrder).toHaveLength(18);
     expect(client.query).toHaveBeenCalledWith(expect.stringContaining('DELETE FROM dashboard_layout_preference'), ['ward-1', 'user-1']);
   });
 });

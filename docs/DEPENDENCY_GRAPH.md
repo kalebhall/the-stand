@@ -14,14 +14,14 @@ flowchart LR
   A2["root:other<br/>2 files"]
   A3["root:tooling<br/>7 files"]
   A4["web:announcements<br/>2 files"]
-  A5["web:api<br/>127 files"]
-  A6["web:app<br/>142 files"]
+  A5["web:api<br/>129 files"]
+  A6["web:app<br/>144 files"]
   A7["web:audit<br/>2 files"]
   A8["web:auth<br/>12 files"]
   A9["web:bootstrap.mjs<br/>1 files"]
   A10["web:calendar<br/>4 files"]
   A11["web:callings<br/>7 files"]
-  A12["web:church-actions<br/>6 files"]
+  A12["web:church-actions<br/>8 files"]
   A13["web:conducting<br/>3 files"]
   A14["web:config<br/>17 files"]
   A15["web:dashboard<br/>4 files"]
@@ -48,22 +48,22 @@ flowchart LR
   A36["web:types<br/>2 files"]
   A37["web:ui<br/>35 files"]
   A38["web:version.mjs<br/>1 files"]
-  A5 -->|163| A8
-  A5 -->|142| A16
+  A5 -->|167| A8
+  A5 -->|146| A16
   A6 -->|117| A37
-  A6 -->|92| A8
-  A6 -->|57| A16
+  A6 -->|93| A8
+  A6 -->|58| A16
   A5 -->|52| A17
-  A5 -->|50| A27
+  A5 -->|52| A27
   A5 -->|44| A29
   A5 -->|30| A7
-  A6 -->|28| A27
+  A6 -->|29| A27
   A5 -->|25| A24
   A6 -->|18| A21
   A6 -->|15| A17
   A6 -->|15| A26
+  A6 -->|15| A31
   A5 -->|14| A11
-  A6 -->|13| A31
   A5 -->|10| A22
   A6 -->|8| A29
   A31 -->|8| A27
@@ -92,6 +92,7 @@ flowchart LR
   A6 -->|2| A32
   A8 -->|2| A16
   A10 -->|2| A16
+  A12 -->|2| A11
   A14 -->|2| A24
   A15 -->|2| A27
   A16 -->|2| A8
@@ -114,7 +115,7 @@ flowchart LR
   A8 -->|1| A18
   A8 -->|1| A24
   A10 -->|1| A29
-  A12 -->|1| A11
+  A11 -->|1| A12
   A14 -->|1| A9
   A14 -->|1| A20
   A14 -->|1| A26
@@ -156,14 +157,14 @@ flowchart LR
 | `root:other` | 2 |
 | `root:tooling` | 7 |
 | `web:announcements` | 2 |
-| `web:api` | 127 |
-| `web:app` | 142 |
+| `web:api` | 129 |
+| `web:app` | 144 |
 | `web:audit` | 2 |
 | `web:auth` | 12 |
 | `web:bootstrap.mjs` | 1 |
 | `web:calendar` | 4 |
 | `web:callings` | 7 |
-| `web:church-actions` | 6 |
+| `web:church-actions` | 8 |
 | `web:conducting` | 3 |
 | `web:config` | 17 |
 | `web:dashboard` | 4 |
@@ -196,28 +197,28 @@ flowchart LR
 | Importing area | Imported area | Imports |
 | --- | --- | ---: |
 | `web:document-designer` | `web:document-designer` | 180 |
-| `web:api` | `web:auth` | 163 |
-| `web:api` | `web:db` | 142 |
+| `web:api` | `web:auth` | 167 |
+| `web:api` | `web:db` | 146 |
 | `web:app` | `web:ui` | 117 |
-| `web:app` | `web:auth` | 92 |
-| `web:app` | `web:app` | 69 |
-| `web:app` | `web:db` | 57 |
+| `web:app` | `web:auth` | 93 |
+| `web:app` | `web:app` | 70 |
+| `web:app` | `web:db` | 58 |
 | `web:notifications` | `web:notifications` | 57 |
 | `web:api` | `web:document-designer` | 52 |
-| `web:api` | `web:modules` | 50 |
+| `web:api` | `web:modules` | 52 |
 | `web:api` | `web:notifications` | 44 |
 | `web:api` | `web:api` | 36 |
 | `web:ui` | `web:ui` | 33 |
 | `web:api` | `web:audit` | 30 |
-| `web:app` | `web:modules` | 28 |
+| `web:app` | `web:modules` | 29 |
 | `web:api` | `web:lib` | 25 |
 | `web:platform` | `web:platform` | 22 |
 | `web:app` | `web:i18n` | 18 |
 | `web:modules` | `web:modules` | 17 |
 | `web:app` | `web:document-designer` | 15 |
 | `web:app` | `web:meetings` | 15 |
+| `web:app` | `web:platform` | 15 |
 | `web:api` | `web:callings` | 14 |
-| `web:app` | `web:platform` | 13 |
 | `web:imports` | `web:imports` | 13 |
 | `web:meetings` | `web:meetings` | 12 |
 | `web:api` | `web:imports` | 10 |
@@ -230,6 +231,7 @@ flowchart LR
 | `web:api` | `web:conducting` | 7 |
 | `web:api` | `web:leadership` | 7 |
 | `web:api` | `web:meetings` | 6 |
+| `web:church-actions` | `web:church-actions` | 6 |
 | `web:api` | `web:i18n` | 5 |
 | `web:api` | `web:platform` | 5 |
 | `web:app` | `web:stand` | 5 |
@@ -237,7 +239,6 @@ flowchart LR
 | `web:ui` | `web:i18n` | 5 |
 | `web:app` | `web:callings` | 4 |
 | `web:callings` | `web:callings` | 4 |
-| `web:church-actions` | `web:church-actions` | 4 |
 | `web:db` | `web:db` | 4 |
 | `web:document-designer` | `web:auth` | 4 |
 | `web:lib` | `web:lib` | 4 |
@@ -259,6 +260,7 @@ flowchart LR
 | `web:app` | `web:reports` | 2 |
 | `web:auth` | `web:db` | 2 |
 | `web:calendar` | `web:db` | 2 |
+| `web:church-actions` | `web:callings` | 2 |
 | `web:config` | `web:lib` | 2 |
 | `web:dashboard` | `web:dashboard` | 2 |
 | `web:dashboard` | `web:modules` | 2 |
@@ -285,7 +287,7 @@ flowchart LR
 | `web:auth` | `web:features` | 1 |
 | `web:auth` | `web:lib` | 1 |
 | `web:calendar` | `web:notifications` | 1 |
-| `web:church-actions` | `web:callings` | 1 |
+| `web:callings` | `web:church-actions` | 1 |
 | `web:config` | `web:bootstrap.mjs` | 1 |
 | `web:config` | `web:health.mjs` | 1 |
 | `web:config` | `web:meetings` | 1 |
@@ -325,10 +327,10 @@ flowchart LR
 
 | Importing area | Package/runtime | Imports |
 | --- | --- | ---: |
-| `web:app` | `next` | 102 |
-| `web:app` | `next-intl` | 86 |
-| `web:api` | `next` | 82 |
-| `web:app` | `react` | 43 |
+| `web:app` | `next` | 103 |
+| `web:app` | `next-intl` | 88 |
+| `web:api` | `next` | 84 |
+| `web:app` | `react` | 44 |
 | `web:api` | `vitest` | 33 |
 | `web:ui` | `react` | 32 |
 | `web:document-designer` | `vitest` | 25 |
@@ -355,6 +357,7 @@ flowchart LR
 | `web:auth` | `vitest` | 5 |
 | `web:stand` | `vitest` | 5 |
 | `web:app` | `@testing-library/user-event` | 4 |
+| `web:church-actions` | `vitest` | 4 |
 | `web:modules` | `vitest` | 4 |
 | `web:platform` | `vitest` | 4 |
 | `web:ui` | `next-auth` | 4 |
@@ -362,7 +365,6 @@ flowchart LR
 | `web:app` | `Node.js` | 3 |
 | `web:app` | `next-auth` | 3 |
 | `web:callings` | `vitest` | 3 |
-| `web:church-actions` | `vitest` | 3 |
 | `web:db` | `drizzle-orm` | 3 |
 | `web:db` | `pg` | 3 |
 | `web:i18n` | `vitest` | 3 |
@@ -399,6 +401,7 @@ flowchart LR
 | `web:auth` | `next` | 1 |
 | `web:bootstrap.mjs` | `Node.js` | 1 |
 | `web:calendar` | `pg` | 1 |
+| `web:church-actions` | `pg` | 1 |
 | `web:conducting` | `vitest` | 1 |
 | `web:config` | `@testing-library/jest-dom` | 1 |
 | `web:config` | `child_process` | 1 |
@@ -453,6 +456,8 @@ flowchart LR
 | `apps/web/app/account/page.tsx` | `web:app` | 5 | 3 |
 | `apps/web/app/account/preferences/page.tsx` | `web:app` | 1 | 1 |
 | `apps/web/app/account/preferences/theme-toggle.tsx` | `web:app` | 1 | 2 |
+| `apps/web/app/actions-to-do/actions-to-do-client.tsx` | `web:app` | 0 | 2 |
+| `apps/web/app/actions-to-do/page.tsx` | `web:app` | 6 | 2 |
 | `apps/web/app/announcements/announcements-workspace-client.tsx` | `web:app` | 3 | 3 |
 | `apps/web/app/announcements/error.tsx` | `web:app` | 0 | 1 |
 | `apps/web/app/announcements/loading.tsx` | `web:app` | 0 | 1 |
@@ -488,6 +493,8 @@ flowchart LR
 | `apps/web/app/api/support/hymns/route.ts` | `web:api` | 4 | 1 |
 | `apps/web/app/api/support/queue/route.ts` | `web:api` | 5 | 2 |
 | `apps/web/app/api/support/queue/route.vitest.ts` | `web:api` | 1 | 1 |
+| `apps/web/app/api/w/[wardId]/actions-to-do/[actionId]/route.ts` | `web:api` | 5 | 1 |
+| `apps/web/app/api/w/[wardId]/actions-to-do/route.ts` | `web:api` | 5 | 1 |
 | `apps/web/app/api/w/[wardId]/announcements/[announcementId]/route.ts` | `web:api` | 7 | 1 |
 | `apps/web/app/api/w/[wardId]/announcements/route.ts` | `web:api` | 10 | 1 |
 | `apps/web/app/api/w/[wardId]/announcements/route.vitest.ts` | `web:api` | 1 | 1 |
@@ -795,8 +802,10 @@ flowchart LR
 | `apps/web/src/callings/meeting-business.ts` | `web:callings` | 0 | 1 |
 | `apps/web/src/callings/meeting-business.vitest.ts` | `web:callings` | 1 | 1 |
 | `apps/web/src/callings/standard-callings.ts` | `web:callings` | 0 | 0 |
-| `apps/web/src/callings/transition.ts` | `web:callings` | 1 | 1 |
+| `apps/web/src/callings/transition.ts` | `web:callings` | 2 | 1 |
 | `apps/web/src/callings/transition.vitest.ts` | `web:callings` | 1 | 1 |
+| `apps/web/src/church-actions/calling-follow-up-persistence.ts` | `web:church-actions` | 2 | 1 |
+| `apps/web/src/church-actions/calling-follow-up-persistence.vitest.ts` | `web:church-actions` | 1 | 1 |
 | `apps/web/src/church-actions/calling-follow-up.ts` | `web:church-actions` | 2 | 0 |
 | `apps/web/src/church-actions/calling-follow-up.vitest.ts` | `web:church-actions` | 1 | 1 |
 | `apps/web/src/church-actions/membership-ordinance.ts` | `web:church-actions` | 0 | 0 |

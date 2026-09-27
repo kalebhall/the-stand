@@ -1,6 +1,7 @@
 import type { PoolClient } from 'pg';
 
 import { canTransitionCallingStatus, type CallingStatus } from '@/src/callings/lifecycle';
+import { persistCallingLcrFollowUp } from '@/src/church-actions/calling-follow-up-persistence';
 
 export async function fetchCurrentCallingStatus(client: PoolClient, wardId: string, callingId: string): Promise<CallingStatus | null> {
   const result = await client.query(
@@ -48,6 +49,8 @@ export async function appendCallingStatus(
   if (toStatus === 'ASSIGNED') {
     await client.query('UPDATE calling_assignment SET is_active = TRUE WHERE id = $1 AND ward_id = $2', [callingId, wardId]);
   }
+
+  await persistCallingLcrFollowUp(client, { wardId, callingId, status: toStatus });
 
   return { ok: true };
 }
