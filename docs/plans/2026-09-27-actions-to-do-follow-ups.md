@@ -188,17 +188,24 @@ The first code task is the pure calling follow-up contract and regression tests.
 - Added Playwright coverage for authenticated Actions to Do appearance, LCR link visibility, desktop-to-mobile layout width, completion, and removal from the open queue.
 - Browser flow passed on the local disposable PostgreSQL database.
 
-## Remaining runtime blocker: reminder scheduler context
+## Historical runtime blocker: reminder scheduler context
 
 - `remind:church-actions` starts successfully, but the non-superuser test runtime sees zero ward rows without an authorized ward context.
 - Production scheduler deployment must provide the repository's approved worker/RLS context before overdue reminder delivery can be called runtime-verified.
 - Do not solve this by disabling RLS or granting an unrestricted bypass role.
+
+The RLS-aware runner fix below resolved this local runtime blocker. The production scheduler remains unverified until it runs on the deployment host.
 
 ## Completed acceptance slice: RLS-aware reminder scheduler
 
 - The reminder runner now requires `MAINTENANCE_USER_ID`, enumerates only non-revoked ward assignments for that user, sets transaction-local `app.user_id` and `app.ward_id`, and processes each ward through normal RLS.
 - Runtime verification against the disposable database processed one overdue follow-up and created one pending notification event; repeat execution is deduplicated.
 - Invalid configuration fails before opening a database connection.
+
+## Completed acceptance slice: Actions to Do route boundaries
+
+- Added route coverage for unauthenticated denial, cross-ward denial, disabled-module denial, and transaction-local authenticated ward context.
+- Focused route suite passed: 4 tests.
 
 ## Remaining deployment milestone
 
