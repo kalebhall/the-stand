@@ -25,7 +25,7 @@ flowchart LR
   A13["web:conducting<br/>3 files"]
   A14["web:config<br/>17 files"]
   A15["web:dashboard<br/>4 files"]
-  A16["web:db<br/>13 files"]
+  A16["web:db<br/>14 files"]
   A17["web:document-designer<br/>66 files"]
   A18["web:features<br/>2 files"]
   A19["web:hardening<br/>1 files"]
@@ -167,7 +167,7 @@ flowchart LR
 | `web:conducting` | 3 |
 | `web:config` | 17 |
 | `web:dashboard` | 4 |
-| `web:db` | 13 |
+| `web:db` | 14 |
 | `web:document-designer` | 66 |
 | `web:features` | 2 |
 | `web:hardening` | 1 |
@@ -340,9 +340,9 @@ flowchart LR
 | `web:ui` | `next` | 15 |
 | `root:tooling` | `Node.js` | 14 |
 | `web:notifications` | `pg` | 13 |
-| `web:db` | `Node.js` | 11 |
+| `web:db` | `Node.js` | 12 |
+| `web:db` | `vitest` | 10 |
 | `web:document-designer` | `zod` | 10 |
-| `web:db` | `vitest` | 9 |
 | `web:document-designer` | `Node.js` | 7 |
 | `web:meetings` | `vitest` | 7 |
 | `web:tooling` | `Node.js` | 7 |
@@ -811,6 +811,7 @@ flowchart LR
 | `apps/web/src/dashboard/visibility.vitest.ts` | `web:dashboard` | 2 | 1 |
 | `apps/web/src/db/bootstrap-support-admin.ts` | `web:db` | 3 | 1 |
 | `apps/web/src/db/bootstrap-support-admin.vitest.ts` | `web:db` | 1 | 1 |
+| `apps/web/src/db/church-action-follow-up-rls.vitest.ts` | `web:db` | 0 | 2 |
 | `apps/web/src/db/client.ts` | `web:db` | 1 | 5 |
 | `apps/web/src/db/context.ts` | `web:db` | 0 | 0 |
 | `apps/web/src/db/context.vitest.ts` | `web:db` | 1 | 1 |
