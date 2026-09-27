@@ -1,0 +1,16 @@
+[Unit]
+Description=The Stand church action follow-up reminders
+Requires=postgresql@16-main.service
+After=network.target postgresql@16-main.service
+
+[Service]
+Type=oneshot
+User=the-stand
+Group=the-stand
+WorkingDirectory=/opt/the-stand/app
+EnvironmentFile=/opt/the-stand/app/.env
+ExecStart=/usr/bin/env npm --workspace @the-stand/web run remind:church-actions
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
