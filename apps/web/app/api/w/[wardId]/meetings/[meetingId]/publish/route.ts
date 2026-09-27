@@ -20,7 +20,6 @@ import { getPublicProgramRenderLabels } from '@/src/i18n/public-program';
 import { resolveLocale } from '@/src/i18n/config';
 import type { IntroductionRoles } from '@/src/meetings/types';
 import { enqueueOutboxNotificationJob } from '@/src/notifications/queue';
-import { isWardModuleEnabled } from '@/src/modules/service';
 
 const BAD_REQUEST = (message = 'Invalid publication payload') => NextResponse.json({ error: message, code: 'BAD_REQUEST' }, { status: 400 });
 const NOT_FOUND = () => NextResponse.json({ error: 'Meeting not found', code: 'NOT_FOUND' }, { status: 404 });
@@ -82,7 +81,6 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
   const { wardId, meetingId } = await context.params;
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, { status: 401 });
   if (!canViewProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
-  if (!(await isWardModuleEnabled(wardId, session.user.id, 'programs'))) return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
 
   const client = await pool.connect();
   try {

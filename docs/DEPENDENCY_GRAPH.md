@@ -54,7 +54,7 @@ flowchart LR
   A6 -->|92| A8
   A6 -->|57| A16
   A5 -->|52| A17
-  A5 -->|51| A27
+  A5 -->|50| A27
   A5 -->|44| A29
   A5 -->|30| A7
   A6 -->|28| A27
@@ -204,7 +204,7 @@ flowchart LR
 | `web:app` | `web:db` | 57 |
 | `web:notifications` | `web:notifications` | 57 |
 | `web:api` | `web:document-designer` | 52 |
-| `web:api` | `web:modules` | 51 |
+| `web:api` | `web:modules` | 50 |
 | `web:api` | `web:notifications` | 44 |
 | `web:api` | `web:api` | 36 |
 | `web:ui` | `web:ui` | 32 |
@@ -549,7 +549,7 @@ flowchart LR
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/publication-history/rollback/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/publication-history/route.ts` | `web:api` | 6 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/publication-history/route.vitest.ts` | `web:api` | 1 | 1 |
-| `apps/web/app/api/w/[wardId]/meetings/[meetingId]/publish/route.ts` | `web:api` | 20 | 2 |
+| `apps/web/app/api/w/[wardId]/meetings/[meetingId]/publish/route.ts` | `web:api` | 19 | 2 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/publish/route.vitest.ts` | `web:api` | 2 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/render/route.ts` | `web:api` | 6 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/render/route.vitest.ts` | `web:api` | 1 | 1 |
