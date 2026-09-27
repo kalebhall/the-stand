@@ -121,6 +121,7 @@ export default async function CallingsPage() {
   async function transitionCalling(formData: FormData) {
     'use server';
 
+    const actionT = await getTranslations('callings');
     const actionSession = await requireAuthenticatedSession();
     enforcePasswordRotation(actionSession);
     if (actionSession.activeWardId) {
@@ -202,7 +203,7 @@ export default async function CallingsPage() {
     } catch (err) {
       await client.query('ROLLBACK');
       console.error('[callings transitionCalling]', err instanceof Error ? err.message : String(err));
-      throw new Error(t('failedToTransition'));
+      throw new Error(actionT('failedToTransition'));
     } finally {
       client.release();
     }
