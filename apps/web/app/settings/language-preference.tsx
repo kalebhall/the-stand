@@ -1,6 +1,5 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState, type ChangeEvent } from 'react';
 
@@ -11,7 +10,6 @@ function setLocaleCookie(locale: Locale) {
 }
 
 export function LanguagePreference({ currentLocale }: { currentLocale: Locale }) {
-  const router = useRouter();
   const t = useTranslations('language');
   const [selectedLocale, setSelectedLocale] = useState<Locale>(currentLocale);
   const [status, setStatus] = useState('');
@@ -31,7 +29,7 @@ export function LanguagePreference({ currentLocale }: { currentLocale: Locale })
         if (cancelled || !locale || locale === selectedLocale) return;
         setSelectedLocale(locale);
         setLocaleCookie(locale);
-        router.refresh();
+        window.location.reload();
       })
       .catch(() => {
         if (!cancelled) setStatus(t('loadFailed'));
@@ -40,7 +38,7 @@ export function LanguagePreference({ currentLocale }: { currentLocale: Locale })
     return () => {
       cancelled = true;
     };
-  }, [router, selectedLocale, t]);
+  }, [selectedLocale, t]);
 
   async function handleChange(event: ChangeEvent<HTMLSelectElement>) {
     const nextLocale = event.target.value;
@@ -64,7 +62,7 @@ export function LanguagePreference({ currentLocale }: { currentLocale: Locale })
       setLocaleCookie(locale);
       setSelectedLocale(locale);
       setStatus(t('saved'));
-      router.refresh();
+      window.location.reload();
     } catch {
       setStatus(t('saveFailed'));
     }
