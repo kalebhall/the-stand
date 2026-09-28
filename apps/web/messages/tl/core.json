@@ -9,9 +9,14 @@
     "english": "Ingles",
     "spanish": "Espanyol",
     "portugueseBrazil": "Portuges (Brazil)",
-    "tagalog": "Tagalog"
+    "tagalog": "Tagalog",
+    "tongan": "Tongan"
   },
   "settings": {
+    "title": "Mga Setting",
+    "description": "Pamahalaan ang iyong mga personal na kagustuhan at configuration ng ward.",
+    "appearance": "Hitsura",
+    "themePreference": "Tema",
     "changePassword": "Baguhin ang password",
     "wardSettings": "Mga setting ng ward",
     "wardSettingsDescription": "Pamahalaan ang access sa ward at ang pag-configure ng programa.",

@@ -9,9 +9,14 @@
     "english": "English",
     "spanish": "Spanish",
     "portugueseBrazil": "Portuguese (Brazil)",
-    "tagalog": "Tagalog"
+    "tagalog": "Tagalog",
+    "tongan": "Tongan"
   },
   "settings": {
+    "title": "Settings",
+    "description": "Manage your personal preferences and ward configuration.",
+    "appearance": "Appearance",
+    "themePreference": "Theme",
     "changePassword": "Change password",
     "wardSettings": "Ward settings",
     "wardSettingsDescription": "Manage ward access and program configuration.",
