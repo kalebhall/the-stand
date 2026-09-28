@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { DEFAULT_LOCALE, isSupportedCatalogLocale, isSupportedLocale, resolveActiveLocale, resolveLocale } from './config';
+import { DEFAULT_LOCALE, isSupportedCatalogLocale, isSupportedLocale, LOCALE_LABELS, resolveActiveLocale, resolveLocale } from './config';
 
 describe('locale configuration', () => {
   it('accepts only registered locales', () => {
@@ -8,6 +8,15 @@ describe('locale configuration', () => {
     expect(isSupportedLocale('es')).toBe(true);
     expect(isSupportedLocale('fr')).toBe(false);
     expect(isSupportedLocale(undefined)).toBe(false);
+  });
+
+  it('provides distinct labels for every interface locale', () => {
+    expect(LOCALE_LABELS).toEqual({
+      'en-US': 'English',
+      es: 'Español',
+      tl: 'Tagalog',
+      to: 'Tongan'
+    });
   });
 
   it('allows planned languages for hymn catalogs before UI translations are complete', () => {
