@@ -15,8 +15,10 @@ describe('hymn links', () => {
     );
   });
 
-  it('uses Church search for new-book entries and rejects incomplete hymns', () => {
-    expect(buildHymnUrl('1052', 'Joyfully Bound')).toBe('https://www.churchofjesuschrist.org/search?lang=eng&query=Joyfully%20Bound');
+  it('uses the Hymns for Home and Church page for new-book entries and rejects incomplete hymns', () => {
+    expect(buildHymnUrl('1052', 'Joyfully Bound')).toBe(
+      'https://www.churchofjesuschrist.org/study/music/hymns-for-home-and-church/joyfully-bound?lang=eng'
+    );
     expect(buildHymnUrl('1', '')).toBeNull();
     expect(hymnSlug('Come, Come, Ye Saints')).toBe('come-come-ye-saints');
   });
