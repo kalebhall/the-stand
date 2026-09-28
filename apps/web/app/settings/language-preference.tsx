@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState, type ChangeEvent } from 'react';
 
-import { SUPPORTED_LOCALES, isSupportedLocale, type Locale } from '@/src/i18n/config';
+import { LOCALE_LABELS, SUPPORTED_LOCALES, isSupportedLocale, type Locale } from '@/src/i18n/config';
 
 function setLocaleCookie(locale: Locale) {
   document.cookie = `NEXT_LOCALE=${encodeURIComponent(locale)}; Path=/; Max-Age=31536000; SameSite=Lax`;
@@ -83,7 +83,7 @@ export function LanguagePreference({ currentLocale }: { currentLocale: Locale })
       >
         {SUPPORTED_LOCALES.map((locale) => (
           <option key={locale} value={locale}>
-            {locale === 'en-US' ? t('english') : t('spanish')}
+            {LOCALE_LABELS[locale]}
           </option>
         ))}
       </select>
