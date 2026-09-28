@@ -153,6 +153,10 @@ export function buildMeetingRenderHtml({
         const notesHtml = notes ? `<p class="text-xs text-muted-foreground">${escapeHtml(notes)}</p>` : '';
         return `<article class="space-y-1"><h2 class="border-b pb-1 text-base font-semibold">${escapeHtml(labels.introduction)}</h2>${roleRows}${notesHtml}</article>`;
       }
+      if (item.itemType.toUpperCase() === 'WARD_AND_STAKE_BUSINESS') {
+        const label = escapeHtml(labels.itemLabels[item.itemType.toUpperCase()] ?? getProgramItemLabel(item.itemType));
+        return `<article class="grid grid-cols-[10rem_1fr] gap-3 border-b py-2"><p class="text-sm font-medium">${label}</p><p class="text-sm">${label}</p></article>`;
+      }
       const label = escapeHtml(labels.itemLabels[item.itemType.toUpperCase()] ?? getProgramItemLabel(item.itemType));
       const value = escapeHtml(displayHymn(item) || '—');
       const topic = displayTopic(item);

@@ -633,6 +633,26 @@ export function MeetingForm({
             ) : null}
             {item.itemType === BUSINESS_ITEM_TYPE ? (
               <div className="grid gap-3">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="space-y-1 text-sm">
+                    <span className="font-medium">{t('stakeBusinessParticipantName')}</span>
+                    <input
+                      className="w-full rounded-md border px-3 py-2"
+                      value={item.title}
+                      onChange={(event) => updateProgramItem(index, 'title', event.target.value)}
+                      placeholder={t('stakePresidencyFallback')}
+                    />
+                  </label>
+                  <label className="space-y-1 text-sm">
+                    <span className="font-medium">{t('stakeBusinessParticipantCalling')}</span>
+                    <input
+                      className="w-full rounded-md border px-3 py-2"
+                      value={item.topic ?? ''}
+                      onChange={(event) => updateProgramItem(index, 'topic', event.target.value)}
+                      placeholder={t('callingOrRole')}
+                    />
+                  </label>
+                </div>
                 <WardBusinessSection
                   wardId={wardId}
                   meetingId={meetingId ?? ''}

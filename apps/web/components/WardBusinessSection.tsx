@@ -51,6 +51,8 @@ type WardBusinessSectionProps = {
   releaseTemplate?: string;
   programNotes?: string | null;
   includesStakeBusiness?: boolean;
+  stakeBusinessParticipantName?: string | null;
+  stakeBusinessParticipantCalling?: string | null;
 };
 
 function MembershipOrdinanceRow({ action }: { action: MembershipOrdinanceSummary }) {
@@ -291,7 +293,9 @@ export function WardBusinessSection({
   sustainTemplate = DEFAULT_STAND_SUSTAIN_TEMPLATE,
   releaseTemplate = DEFAULT_STAND_RELEASE_TEMPLATE,
   programNotes = null,
-  includesStakeBusiness = false
+  includesStakeBusiness = false,
+  stakeBusinessParticipantName = null,
+  stakeBusinessParticipantCalling = null
 }: WardBusinessSectionProps) {
   const router = useRouter();
   const t = useTranslations('business');
@@ -312,7 +316,20 @@ export function WardBusinessSection({
   const content = (
     <>
       {programNotes?.trim() ? <p className="mb-3 whitespace-pre-wrap text-sm text-muted-foreground">{programNotes}</p> : null}
-      {includesStakeBusiness ? <p className="mb-3 text-sm text-muted-foreground">{meetingsT('stakeBusinessIncluded')}</p> : null}
+      {includesStakeBusiness ? (
+        <div className="mb-3 rounded-md border bg-muted/40 p-3">
+          <p className="text-sm font-medium">{meetingsT('stakeBusinessIncluded')}</p>
+          <p className="mt-2 text-lg leading-relaxed">
+            {parseBoldSegments(
+              stakeBusinessParticipantName
+                ? `At this time, we will turn the meeting over to **${stakeBusinessParticipantName}**${stakeBusinessParticipantCalling ? `, **${stakeBusinessParticipantCalling}**` : ''} for stake business.`
+                : 'At this time, we will turn the meeting over to **the stake presidency** for stake business.'
+            ).map((segment, index) =>
+              segment.bold ? <strong key={index}>{segment.text}</strong> : <span key={index}>{segment.text}</span>
+            )}
+          </p>
+        </div>
+      ) : null}
       {membershipActions.length ? (
         <div className="mb-3 space-y-2">
           <p className="text-sm font-medium">{t('membershipFollowUp')}</p>

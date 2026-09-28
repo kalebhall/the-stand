@@ -48,7 +48,14 @@ export type StandRow =
       segments: Array<{ text: string; bold: boolean }>;
       summary: string;
     }
-  | { kind: 'ward_business'; programItemId: string; programNotes?: string | null; includesStakeBusiness?: boolean };
+  | {
+      kind: 'ward_business';
+      programItemId: string;
+      programNotes?: string | null;
+      includesStakeBusiness?: boolean;
+      stakeBusinessParticipantName?: string | null;
+      stakeBusinessParticipantCalling?: string | null;
+    };
 
 const DEFAULT_TEMPLATE: StandTemplate = {
   welcomeText: DEFAULT_STAND_WELCOME_TEXT,
@@ -202,6 +209,8 @@ export function buildStandRows(
         kind: 'ward_business',
         programItemId: item.id,
         includesStakeBusiness: item.notes?.includes('[STAKE_BUSINESS]') ?? false,
+        stakeBusinessParticipantName: item.title?.trim() || null,
+        stakeBusinessParticipantCalling: item.topic?.trim() || null,
         ...(item.programNotes?.trim() ? { programNotes: item.programNotes } : {})
       });
       continue;
