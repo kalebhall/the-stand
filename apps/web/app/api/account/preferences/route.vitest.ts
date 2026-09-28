@@ -92,4 +92,21 @@ describe('account preference locale route', () => {
     expect(response.headers.get('set-cookie')).toContain('NEXT_LOCALE=es');
     expect(queryMock).toHaveBeenCalledWith(expect.stringContaining('UPDATE user_account'), ['es', 'user-1']);
   });
+
+  it('accepts Tongan as a supported interface locale', async () => {
+    authMock.mockResolvedValueOnce({ user: { id: 'user-1' } });
+    queryMock.mockResolvedValueOnce({ rows: [{ preferred_locale: 'to' }], rowCount: 1 });
+
+    const response = await PATCH(
+      new Request('http://localhost/api/account/preferences', {
+        method: 'PATCH',
+        body: JSON.stringify({ locale: 'to' })
+      })
+    );
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ locale: 'to' });
+    expect(response.headers.get('set-cookie')).toContain('NEXT_LOCALE=to');
+    expect(queryMock).toHaveBeenCalledWith(expect.stringContaining('UPDATE user_account'), ['to', 'user-1']);
+  });
 });

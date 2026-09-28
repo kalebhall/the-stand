@@ -26,7 +26,7 @@ flowchart LR
   A14["web:config<br/>18 files"]
   A15["web:dashboard<br/>4 files"]
   A16["web:db<br/>14 files"]
-  A17["web:document-designer<br/>66 files"]
+  A17["web:document-designer<br/>67 files"]
   A18["web:features<br/>2 files"]
   A19["web:hardening<br/>1 files"]
   A20["web:health.mjs<br/>1 files"]
@@ -170,7 +170,7 @@ flowchart LR
 | `web:config` | 18 |
 | `web:dashboard` | 4 |
 | `web:db` | 14 |
-| `web:document-designer` | 66 |
+| `web:document-designer` | 67 |
 | `web:features` | 2 |
 | `web:hardening` | 1 |
 | `web:health.mjs` | 1 |
@@ -197,7 +197,7 @@ flowchart LR
 
 | Importing area | Imported area | Imports |
 | --- | --- | ---: |
-| `web:document-designer` | `web:document-designer` | 180 |
+| `web:document-designer` | `web:document-designer` | 182 |
 | `web:api` | `web:auth` | 167 |
 | `web:api` | `web:db` | 146 |
 | `web:app` | `web:ui` | 117 |
@@ -329,13 +329,13 @@ flowchart LR
 
 | Importing area | Package/runtime | Imports |
 | --- | --- | ---: |
-| `web:app` | `next` | 103 |
+| `web:app` | `next` | 102 |
 | `web:app` | `next-intl` | 88 |
 | `web:api` | `next` | 84 |
 | `web:app` | `react` | 44 |
 | `web:api` | `vitest` | 35 |
 | `web:ui` | `react` | 32 |
-| `web:document-designer` | `vitest` | 25 |
+| `web:document-designer` | `vitest` | 26 |
 | `web:app` | `vitest` | 22 |
 | `web:ui` | `next-intl` | 22 |
 | `web:notifications` | `vitest` | 19 |
@@ -681,7 +681,7 @@ flowchart LR
 | `apps/web/app/settings/audit-log/WardAuditLogClient.tsx` | `web:app` | 1 | 1 |
 | `apps/web/app/settings/audit-log/page.tsx` | `web:app` | 8 | 2 |
 | `apps/web/app/settings/health/page.tsx` | `web:app` | 3 | 4 |
-| `apps/web/app/settings/language-preference.tsx` | `web:app` | 1 | 3 |
+| `apps/web/app/settings/language-preference.tsx` | `web:app` | 1 | 2 |
 | `apps/web/app/settings/module-settings.tsx` | `web:app` | 0 | 1 |
 | `apps/web/app/settings/module-settings.vitest.tsx` | `web:app` | 1 | 2 |
 | `apps/web/app/settings/notification-timezone.tsx` | `web:app` | 0 | 1 |
@@ -847,6 +847,7 @@ flowchart LR
 | `apps/web/src/document-designer/advanced-designer-flag-off.vitest.ts` | `web:document-designer` | 6 | 1 |
 | `apps/web/src/document-designer/advanced-designer.vitest.ts` | `web:document-designer` | 7 | 1 |
 | `apps/web/src/document-designer/advanced-schema.ts` | `web:document-designer` | 4 | 1 |
+| `apps/web/src/document-designer/advanced-schema.vitest.ts` | `web:document-designer` | 2 | 1 |
 | `apps/web/src/document-designer/advanced-validation.ts` | `web:document-designer` | 2 | 0 |
 | `apps/web/src/document-designer/block-renderers.ts` | `web:document-designer` | 2 | 0 |
 | `apps/web/src/document-designer/built-in-templates.ts` | `web:document-designer` | 3 | 0 |
