@@ -87,6 +87,10 @@
     "chorister": "Hiva Hiva",
     "unassigned": "Te'eki vahe",
     "visitingStakeLeader": "Taki siteiki ʻaʻahi",
+    "visitingLeaderTypePresidingAuthority": "Ma'u mafai pule",
+    "visitingLeaderTypeHighCouncilor": "Tokoni fakataha māʻolunga ʻaʻahi",
+    "visitingLeaderTypeGeneralOfficer": "ʻOfisa Siasí ʻaʻahi",
+    "visitingLeaderTypeOther": "Taki ʻaʻahi kehe",
     "item_OPENING_HYMN": "Himi kamata .",
     "item_CLOSING_HYMN": "Himi faka'osi .",
     "item_SPEAKER": "Sea",
@@ -157,6 +161,7 @@
     "title": "Kaveinga",
     "visitingLeaderName": "Taki 'a'ahi {number} hingoa .",
     "visitingLeaderCalling": "Taki 'a'ahi {number} 'oku ne ui .",
+    "visitingLeaderType": "Faʻahinga fakalangilangi ʻo e taki ʻaʻahi {number}",
     "loadingMembers": "Uta 'a e kau memipa..."
   },
   "business": {

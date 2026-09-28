@@ -87,6 +87,10 @@
     "chorister": "Chorister",
     "unassigned": "Unassigned",
     "visitingStakeLeader": "Visiting stake leader",
+    "visitingLeaderTypePresidingAuthority": "Presiding authority",
+    "visitingLeaderTypeHighCouncilor": "Visiting high councilor",
+    "visitingLeaderTypeGeneralOfficer": "Visiting General Officer",
+    "visitingLeaderTypeOther": "Other visiting leader",
     "item_OPENING_HYMN": "Opening hymn",
     "item_CLOSING_HYMN": "Closing hymn",
     "item_SPEAKER": "Speaker",
@@ -157,6 +161,7 @@
     "title": "Title",
     "visitingLeaderName": "Visiting leader {number} name",
     "visitingLeaderCalling": "Visiting leader {number} calling",
+    "visitingLeaderType": "Visiting leader {number} recognition type",
     "loadingMembers": "Loading members…"
   },
   "business": {

@@ -72,6 +72,10 @@ export type StandRenderLabels = {
   chorister: string;
   unassigned: string;
   visitingStakeLeader: string;
+  visitingPresidingAuthority?: string;
+  visitingHighCouncilor?: string;
+  visitingGeneralOfficer?: string;
+  visitingOtherLeader?: string;
 };
 
 const DEFAULT_RENDER_LABELS: StandRenderLabels = {
@@ -81,7 +85,11 @@ const DEFAULT_RENDER_LABELS: StandRenderLabels = {
   organistPianist: 'Organist / Pianist',
   chorister: 'Chorister',
   unassigned: 'Unassigned',
-  visitingStakeLeader: 'Visiting stake leader'
+  visitingStakeLeader: 'Visiting stake leader',
+  visitingPresidingAuthority: 'Presiding authority',
+  visitingHighCouncilor: 'Visiting high councilor',
+  visitingGeneralOfficer: 'Visiting General Officer',
+  visitingOtherLeader: 'Visiting leader'
 };
 
 function toDisplayLabel(itemType: string, labels: StandRenderLabels = DEFAULT_RENDER_LABELS): string {
@@ -168,7 +176,16 @@ export function buildStandRows(
         .map(([role, name]) => `${role}: ${name || labels.unassigned}`)
         .concat(
           (roles.visitingLeaders ?? []).map(
-            (leader) => `${labels.visitingStakeLeader}: ${leader.name || labels.unassigned}${leader.calling ? ` (${leader.calling})` : ''}`
+            (leader) => {
+              const typeLabel = leader.recognitionType === 'PRESIDING_AUTHORITY'
+                ? labels.visitingPresidingAuthority ?? labels.visitingStakeLeader
+                : leader.recognitionType === 'HIGH_COUNCILOR'
+                  ? labels.visitingHighCouncilor ?? labels.visitingStakeLeader
+                  : leader.recognitionType === 'GENERAL_OFFICER'
+                    ? labels.visitingGeneralOfficer ?? labels.visitingStakeLeader
+                    : labels.visitingOtherLeader ?? labels.visitingStakeLeader;
+              return `${typeLabel}: ${leader.name || labels.unassigned}${leader.calling ? ` (${leader.calling})` : ''}`;
+            }
           )
         )
         .join('\n');

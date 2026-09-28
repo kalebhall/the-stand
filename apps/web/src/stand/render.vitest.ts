@@ -269,7 +269,7 @@ describe('buildStandRows', () => {
           conducting: 'Counselor',
           organist: 'Organist',
           chorister: 'Chorister',
-          visitingLeaders: [{ name: 'President Smith', calling: 'Stake President' }]
+          visitingLeaders: [{ name: 'President Smith', calling: 'Stake President', recognitionType: 'PRESIDING_AUTHORITY' }]
         },
         hymnNumber: null,
         hymnTitle: null
@@ -280,7 +280,7 @@ describe('buildStandRows', () => {
       kind: 'standard',
       label: 'Introduction',
       details:
-        'Presiding: Bishop\nConducting: Counselor\nOrganist / Pianist: Organist\nChorister: Chorister\nVisiting stake leader: President Smith (Stake President)'
+        'Presiding: Bishop\nConducting: Counselor\nOrganist / Pianist: Organist\nChorister: Chorister\nPresiding authority: President Smith (Stake President)'
     });
   });
 
