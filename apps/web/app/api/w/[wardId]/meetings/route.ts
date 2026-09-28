@@ -7,7 +7,7 @@ import { BUILT_IN_TEMPLATES } from '@/src/document-designer/built-in-templates';
 import { inheritTemplate } from '@/src/document-designer/inheritance';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
-import { INTRODUCTION_ITEM_TYPE, isMeetingType, SPEAKER_STATUSES, validateProgramItemsForMeetingType, type IntroductionRoles, type ProgramItemInput } from '@/src/meetings/types';
+import { INTRODUCTION_ITEM_TYPE, isMeetingType, SPEAKER_STATUSES, validateProgramItemsForMeetingType, VISITING_LEADER_TYPES, type IntroductionRoles, type ProgramItemInput } from '@/src/meetings/types';
 import { enqueueOutboxNotificationJob } from '@/src/notifications/queue';
 import { enqueueNotificationOutboxEvent, insertNotificationOutboxEvent } from '@/src/notifications/outbox';
 import { insertCoreEventOutboxEvent } from '@/src/platform/events/outbox';
@@ -22,7 +22,13 @@ function getIntroductionRoles(value: unknown): IntroductionRoles | null {
   const visitingLeaders = Array.isArray(roles.visitingLeaders)
     ? roles.visitingLeaders
         .filter((leader) => Boolean(leader) && typeof leader === 'object')
-        .map((leader) => ({ name: toTrimmedString(leader.name), calling: toTrimmedString(leader.calling) }))
+        .map((leader) => ({
+          name: toTrimmedString(leader.name),
+          calling: toTrimmedString(leader.calling),
+          recognitionType: typeof leader.recognitionType === 'string' && VISITING_LEADER_TYPES.includes(leader.recognitionType as (typeof VISITING_LEADER_TYPES)[number])
+            ? leader.recognitionType
+            : 'OTHER'
+        }))
         .filter((leader) => leader.name || leader.calling)
     : [];
   return {

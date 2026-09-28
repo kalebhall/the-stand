@@ -87,6 +87,10 @@
     "chorister": "Koristerador",
     "unassigned": "Hindi itinalaga",
     "visitingStakeLeader": "Bumibisitang lider ng stake",
+    "visitingLeaderTypePresidingAuthority": "Namumunong awtoridad",
+    "visitingLeaderTypeHighCouncilor": "Bumibisitang high councilor",
+    "visitingLeaderTypeGeneralOfficer": "Bumibisitang General Officer",
+    "visitingLeaderTypeOther": "Iba pang bumibisitang lider",
     "item_OPENING_HYMN": "Pambungad na himno",
     "item_CLOSING_HYMN": "Pangwakas na himno",
     "item_SPEAKER": "Tagapagsalita",
@@ -154,6 +158,7 @@
     "title": "Pamagat",
     "visitingLeaderName": "Pangalan ng bumibisitang pinuno na {number}",
     "visitingLeaderCalling": "Tumatawag ang bumibisitang pinuno na si {number}",
+    "visitingLeaderType": "Uri ng pagkilala sa bumibisitang pinuno na {number}",
     "loadingMembers": "Naglo-load ng mga miyembro…"
   },
   "business": {

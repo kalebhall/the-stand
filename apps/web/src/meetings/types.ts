@@ -19,6 +19,9 @@ export type ProgramItemInput = {
 export const SPEAKER_STATUSES = ['PLANNED', 'INVITED', 'ACCEPTED', 'CONFIRMED', 'COMPLETED'] as const;
 export type SpeakerStatus = (typeof SPEAKER_STATUSES)[number];
 
+export const VISITING_LEADER_TYPES = ['PRESIDING_AUTHORITY', 'HIGH_COUNCILOR', 'GENERAL_OFFICER', 'OTHER'] as const;
+export type VisitingLeaderType = (typeof VISITING_LEADER_TYPES)[number];
+
 export type IntroductionRoles = {
   presiding: string;
   conducting: string;
@@ -30,6 +33,7 @@ export type IntroductionRoles = {
 export type VisitingStakeLeader = {
   name: string;
   calling: string;
+  recognitionType?: VisitingLeaderType;
 };
 
 export const INTRODUCTION_ITEM_TYPE = 'INTRODUCTION';

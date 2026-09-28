@@ -9,7 +9,7 @@ import { createLogger } from '@/src/lib/logger';
 import { setDbContext } from '@/src/db/context';
 
 const logger = createLogger('meetings');
-import { INTRODUCTION_ITEM_TYPE, isMeetingType, SPEAKER_STATUSES, validateProgramItemsForMeetingType, validateSpeakerStatusTransition, type IntroductionRoles, type ProgramItemInput } from '@/src/meetings/types';
+import { INTRODUCTION_ITEM_TYPE, isMeetingType, SPEAKER_STATUSES, validateProgramItemsForMeetingType, validateSpeakerStatusTransition, VISITING_LEADER_TYPES, type IntroductionRoles, type ProgramItemInput } from '@/src/meetings/types';
 
 function toTrimmedString(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
@@ -21,7 +21,13 @@ function getIntroductionRoles(value: unknown): IntroductionRoles | null {
   const visitingLeaders = Array.isArray(roles.visitingLeaders)
     ? roles.visitingLeaders
         .filter((leader) => Boolean(leader) && typeof leader === 'object')
-        .map((leader) => ({ name: toTrimmedString(leader.name), calling: toTrimmedString(leader.calling) }))
+        .map((leader) => ({
+          name: toTrimmedString(leader.name),
+          calling: toTrimmedString(leader.calling),
+          recognitionType: typeof leader.recognitionType === 'string' && VISITING_LEADER_TYPES.includes(leader.recognitionType as (typeof VISITING_LEADER_TYPES)[number])
+            ? leader.recognitionType
+            : 'OTHER'
+        }))
         .filter((leader) => leader.name || leader.calling)
     : [];
   return {

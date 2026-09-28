@@ -87,6 +87,10 @@
     "chorister": "Director de música",
     "unassigned": "Sin asignar",
     "visitingStakeLeader": "Líder de estaca visitante",
+    "visitingLeaderTypePresidingAuthority": "Autoridad presidente",
+    "visitingLeaderTypeHighCouncilor": "Miembro visitante del sumo consejo",
+    "visitingLeaderTypeGeneralOfficer": "Oficial General visitante",
+    "visitingLeaderTypeOther": "Otro líder visitante",
     "item_OPENING_HYMN": "Himno de apertura",
     "item_CLOSING_HYMN": "Himno de clausura",
     "item_SPEAKER": "Orador",
@@ -154,6 +158,7 @@
     "title": "Título",
     "visitingLeaderName": "Nombre del líder visitante {number}",
     "visitingLeaderCalling": "Llamamiento del líder visitante {number}",
+    "visitingLeaderType": "Tipo de reconocimiento del líder visitante {number}",
     "loadingMembers": "Cargando miembros…"
   },
   "business": {

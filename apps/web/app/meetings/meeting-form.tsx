@@ -17,7 +17,8 @@ import {
   validateProgramItemsForMeetingType,
   type IntroductionRoles,
   type ProgramItemInput,
-  type VisitingStakeLeader
+  type VisitingStakeLeader,
+  type VisitingLeaderType
 } from '@/src/meetings/types';
 import { getDefaultProgramItemsForMeetingType } from '@/src/meetings/default-program';
 import { getMeetingReadiness } from '@/src/meetings/readiness';
@@ -193,7 +194,7 @@ export function MeetingForm({
         const visitingLeaders = [...(item.introductionRoles?.visitingLeaders ?? [])];
         visitingLeaders[leaderIndex] = visitingLeaders[leaderIndex]
           ? { ...visitingLeaders[leaderIndex], [field]: value }
-          : { name: field === 'name' ? value : '', calling: field === 'calling' ? value : '' };
+          : { name: field === 'name' ? value : '', calling: field === 'calling' ? value : '', recognitionType: field === 'recognitionType' ? value as VisitingLeaderType : 'OTHER' };
         return {
           ...item,
           introductionRoles: { presiding: '', conducting: '', organist: '', chorister: '', ...item.introductionRoles, visitingLeaders }
@@ -214,7 +215,7 @@ export function MeetingForm({
                 organist: '',
                 chorister: '',
                 ...item.introductionRoles,
-                visitingLeaders: [...(item.introductionRoles?.visitingLeaders ?? []), { name: '', calling: '' }]
+                visitingLeaders: [...(item.introductionRoles?.visitingLeaders ?? []), { name: '', calling: '', recognitionType: 'OTHER' }]
               }
             }
           : item
@@ -521,7 +522,7 @@ export function MeetingForm({
                     </div>
                     <p className="text-xs text-muted-foreground">{t('privateVisitingLeaders')}</p>
                     {(item.introductionRoles?.visitingLeaders ?? []).map((leader, leaderIndex) => (
-                      <div key={leaderIndex} className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
+                      <div key={leaderIndex} className="grid gap-2 sm:grid-cols-[1fr_1fr_1fr_auto]">
                         <input
                           className="rounded-md border px-3 py-2"
                           value={leader.name}
@@ -536,6 +537,17 @@ export function MeetingForm({
                           placeholder={t('callingOrRole')}
                           aria-label={t('visitingLeaderCalling', { number: leaderIndex + 1 })}
                         />
+                        <select
+                          className="rounded-md border px-3 py-2"
+                          value={leader.recognitionType ?? 'OTHER'}
+                          onChange={(event) => updateVisitingLeader(index, leaderIndex, 'recognitionType', event.target.value)}
+                          aria-label={t('visitingLeaderType', { number: leaderIndex + 1 })}
+                        >
+                          <option value="PRESIDING_AUTHORITY">{t('visitingLeaderTypePresidingAuthority')}</option>
+                          <option value="HIGH_COUNCILOR">{t('visitingLeaderTypeHighCouncilor')}</option>
+                          <option value="GENERAL_OFFICER">{t('visitingLeaderTypeGeneralOfficer')}</option>
+                          <option value="OTHER">{t('visitingLeaderTypeOther')}</option>
+                        </select>
                         <Button
                           type="button"
                           variant="ghost"
