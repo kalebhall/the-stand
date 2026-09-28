@@ -76,6 +76,14 @@ function defaultColumns(region: DocumentRegion): RegionColumns {
   return { count: 1, ratio: '1/1', gutter: region.gutter, blockIds: [region.blocks.map((block) => block.id)] };
 }
 
+function columnsMatchRegion(columns: RegionColumns, region: DocumentRegion): boolean {
+  const blockIds = new Set(region.blocks.map((block) => String(block.id)));
+  const assigned = columns.blockIds.flat().map(String);
+  return assigned.length === blockIds.size
+    && new Set(assigned).size === assigned.length
+    && assigned.every((id) => blockIds.has(id));
+}
+
 function bifoldPanelRegionId(regionId: string, panelIndex: number): string {
   return `${regionId.slice(0, -3)}a${panelIndex.toString(16).padStart(2, '0')}`;
 }
@@ -126,8 +134,11 @@ export function normalizeToAdvanced(input: unknown): AdvancedDocumentLayout {
       const sourceRegion = sourceRegions.find((candidate) => candidate && typeof candidate === 'object' && (candidate as { id?: unknown }).id === region.id) ?? sourceRegions[regionIndex];
       const sourceRegionObject = sourceRegion && typeof sourceRegion === 'object' ? sourceRegion as { columns?: unknown } : undefined;
       const parsedColumns = sourceRegionObject?.columns !== undefined && source?.schemaVersion === ADVANCED_SCHEMA_VERSION
-        ? regionColumnsSchema.parse(sourceRegionObject.columns)
-        : (() => { const result = regionColumnsSchema.safeParse(sourceRegionObject?.columns); return result.success ? result.data : defaultColumns(region); })();
+        ? (() => {
+            const parsed = regionColumnsSchema.safeParse(sourceRegionObject.columns);
+            return parsed.success && columnsMatchRegion(parsed.data, region) ? parsed.data : defaultColumns(region);
+          })()
+        : (() => { const result = regionColumnsSchema.safeParse(sourceRegionObject?.columns); return result.success && columnsMatchRegion(result.data, region) ? result.data : defaultColumns(region); })();
       const advancedRegion: AdvancedRegion = {
         ...region,
         blocks: region.blocks.map((block, blockIndex) => {
