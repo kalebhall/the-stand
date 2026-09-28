@@ -329,7 +329,7 @@ flowchart LR
 
 | Importing area | Package/runtime | Imports |
 | --- | --- | ---: |
-| `web:app` | `next` | 103 |
+| `web:app` | `next` | 102 |
 | `web:app` | `next-intl` | 88 |
 | `web:api` | `next` | 84 |
 | `web:app` | `react` | 44 |
@@ -680,7 +680,7 @@ flowchart LR
 | `apps/web/app/settings/audit-log/WardAuditLogClient.tsx` | `web:app` | 1 | 1 |
 | `apps/web/app/settings/audit-log/page.tsx` | `web:app` | 8 | 2 |
 | `apps/web/app/settings/health/page.tsx` | `web:app` | 3 | 4 |
-| `apps/web/app/settings/language-preference.tsx` | `web:app` | 1 | 3 |
+| `apps/web/app/settings/language-preference.tsx` | `web:app` | 1 | 2 |
 | `apps/web/app/settings/module-settings.tsx` | `web:app` | 0 | 1 |
 | `apps/web/app/settings/module-settings.vitest.tsx` | `web:app` | 1 | 2 |
 | `apps/web/app/settings/notification-timezone.tsx` | `web:app` | 0 | 1 |
