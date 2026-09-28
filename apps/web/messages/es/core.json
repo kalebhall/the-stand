@@ -9,9 +9,14 @@
     "english": "Inglés",
     "spanish": "Español",
     "portugueseBrazil": "Portugués (Brasil)",
-    "tagalog": "Tagalo"
+    "tagalog": "Tagalo",
+    "tongan": "Tongano"
   },
   "settings": {
+    "title": "Configuración",
+    "description": "Administra tus preferencias personales y la configuración del barrio.",
+    "appearance": "Apariencia",
+    "themePreference": "Tema",
     "changePassword": "Cambiar contraseña",
     "wardSettings": "Configuración del barrio",
     "wardSettingsDescription": "Administra el acceso y la configuración del programa del barrio.",

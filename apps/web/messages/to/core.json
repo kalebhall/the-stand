@@ -9,9 +9,14 @@
     "english": "Lea Faka-Pilitānia",
     "spanish": "Faka-Sipēnisi",
     "portugueseBrazil": "Potukali (Pelēsila)",
-    "tagalog": "Takaloko"
+    "tagalog": "Takaloko",
+    "tongan": "Lea faka-Tonga"
   },
   "settings": {
+    "title": "Ngaahi fokotuʻutuʻu",
+    "description": "Puleʻi hoʻo ngaahi fili fakafoʻituituí mo e fokotuʻutuʻu ʻo e uōtí.",
+    "appearance": "Fōtunga",
+    "themePreference": "Tōʻo kehekehe",
     "changePassword": "Liliu lea fufuu",
     "wardSettings": "Ngaahi fokotuʻutuʻu ʻo e uōtí",
     "wardSettingsDescription": "Puleʻi ʻa e hū ki he uōtí mo e fokotuʻutuʻu ʻo e polokalamá.",
