@@ -35,11 +35,12 @@ export function buildHymnUrl(
     return `https://www.churchofjesuschrist.org/study/manual/childrens-songbook/${slug}?lang=${languageCode}`;
   }
 
-  if (/^\d+$/.test(number) && Number(number) < 1000) {
-    return `https://www.churchofjesuschrist.org/study/manual/hymns/${slug}?lang=${languageCode}`;
+  if (/^\d+$/.test(number)) {
+    if (Number(number) < 1000) {
+      return `https://www.churchofjesuschrist.org/study/manual/hymns/${slug}?lang=${languageCode}`;
+    }
+    return `https://www.churchofjesuschrist.org/study/music/hymns-for-home-and-church/${slug}?lang=${languageCode}`;
   }
 
-  // New-book URLs are not consistently published as study/manual pages yet.
-  // Church search remains an official, usable fallback for those entries.
   return `https://www.churchofjesuschrist.org/search?lang=${languageCode}&query=${encodeURIComponent(title)}`;
 }
