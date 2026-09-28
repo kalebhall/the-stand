@@ -107,6 +107,12 @@ function OfflineRow({ row, done, onToggle }: { row: StandRow; done: boolean; onT
     ) : row.kind === 'ward_business' ? (
       <>
         <p className="font-semibold">{t('wardBusiness')}</p>
+        {row.includesStakeBusiness ? (
+          <p className="mt-2 text-lg leading-relaxed">
+            At this time, we will turn the meeting over to <strong>{row.stakeBusinessParticipantName || 'the stake presidency'}</strong>
+            {row.stakeBusinessParticipantCalling ? <>, <strong>{row.stakeBusinessParticipantCalling}</strong></> : null} for stake business.
+          </p>
+        ) : null}
         <p className="mt-2 text-sm">{t('membershipReadOnly')}</p>
       </>
     ) : row.kind === 'standard' ? (

@@ -147,6 +147,28 @@ describe('buildMeetingRenderHtml', () => {
     expect(html).toContain('Finding peace through prayer');
   });
 
+  it('does not publish private stake-business participant details or markers', () => {
+    const html = buildMeetingRenderHtml({
+      meetingDate: '2026-01-04',
+      meetingType: 'SACRAMENT',
+      programItems: [
+        {
+          itemType: 'WARD_AND_STAKE_BUSINESS',
+          title: 'President Smith',
+          notes: '[STAKE_BUSINESS]',
+          topic: 'Stake President',
+          hymnNumber: null,
+          hymnTitle: null
+        }
+      ]
+    });
+
+    expect(html).toContain('WARD AND STAKE BUSINESS');
+    expect(html).not.toContain('President Smith');
+    expect(html).not.toContain('Stake President');
+    expect(html).not.toContain('[STAKE_BUSINESS]');
+  });
+
   it('uses localized labels while preserving authored program content', () => {
     const html = buildMeetingRenderHtml({
       meetingDate: '2026-01-04',

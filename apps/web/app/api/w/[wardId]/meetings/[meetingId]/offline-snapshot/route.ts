@@ -30,7 +30,7 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
       return NextResponse.json({ error: 'Meeting not found', code: 'NOT_FOUND' }, { status: 404 });
     }
     const items = await client.query(
-      `SELECT i.id, i.item_type, i.title, i.notes, i.program_notes, i.hymn_number, i.hymn_title, i.hymn_locale, i.introduction_roles,
+      `SELECT i.id, i.item_type, i.title, i.notes, i.topic, i.program_notes, i.hymn_number, i.hymn_title, i.hymn_locale, i.introduction_roles,
               m.first_name, m.last_name, m.gender
          FROM meeting_program_item i
          LEFT JOIN member m ON m.ward_id = i.ward_id AND m.full_name = i.title AND m.archived_at IS NULL
@@ -117,6 +117,7 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
         itemType: item.item_type,
         title: item.title,
         notes: item.notes,
+        topic: item.topic,
         programNotes: item.program_notes,
         hymnNumber: item.hymn_number,
         hymnTitle: item.hymn_title,

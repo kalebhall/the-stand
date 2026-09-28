@@ -8,14 +8,20 @@ describe('buildStandRows', () => {
       {
         id: 'item-business',
         itemType: 'WARD_AND_STAKE_BUSINESS',
-        title: '',
+        title: 'President Smith',
         notes: '[STAKE_BUSINESS]',
+        topic: 'Stake President',
         hymnNumber: null,
         hymnTitle: null
       }
     ]);
 
-    expect(rows[1]).toMatchObject({ kind: 'ward_business', includesStakeBusiness: true });
+    expect(rows[1]).toMatchObject({
+      kind: 'ward_business',
+      includesStakeBusiness: true,
+      stakeBusinessParticipantName: 'President Smith',
+      stakeBusinessParticipantCalling: 'Stake President'
+    });
   });
 
   it('uses default welcome text and bold placeholders for sustain phrasing', () => {
