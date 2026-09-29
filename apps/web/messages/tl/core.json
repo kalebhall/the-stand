@@ -151,6 +151,8 @@
     "closeNavigation": "Isara ang menu ng nabigasyon",
     "collapseMenu": "I-collapse ang menu",
     "expandMenu": "Palawakin ang menu",
+    "pinMenu": "I-pin na bukas ang menu",
+    "unpinMenu": "Payagan ang pag-collapse ng menu",
     "helpManual": "Tulong / Manwal",
     "settings": "Mga Setting",
     "logOut": "Mag-log out"

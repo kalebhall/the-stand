@@ -18,6 +18,7 @@ import type { EffectiveModuleSetting } from '@/src/modules/service';
 
 const NAV_GROUP_STORAGE_PREFIX = 'the-stand:navigation-groups:';
 const SIDEBAR_STORAGE_PREFIX = 'the-stand:sidebar-collapsed:';
+const SIDEBAR_PIN_STORAGE_PREFIX = 'the-stand:sidebar-pinned:';
 
 function NavigationGroups({
   groups,
@@ -91,6 +92,7 @@ export function AppShell({ session, children }: { session: Session | null; child
   const pathname = usePathname();
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isSidebarPinned, setIsSidebarPinned] = useState(true);
   const [moduleSettings, setModuleSettings] = useState<EffectiveModuleSetting[]>([]);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
   const isDevelopmentSite = process.env.NEXT_PUBLIC_APP_ENV === 'development';
@@ -119,6 +121,9 @@ export function AppShell({ session, children }: { session: Session | null; child
   const sidebarStorageKey = session?.user?.id && session.activeWardId
     ? `${SIDEBAR_STORAGE_PREFIX}${session.user.id}:${session.activeWardId}`
     : null;
+  const sidebarPinStorageKey = session?.user?.id && session.activeWardId
+    ? `${SIDEBAR_PIN_STORAGE_PREFIX}${session.user.id}:${session.activeWardId}`
+    : null;
 
   useEffect(() => {
     if (!sidebarStorageKey) return;
@@ -129,6 +134,17 @@ export function AppShell({ session, children }: { session: Session | null; child
       // Ignore unavailable local preferences.
     }
   }, [sidebarStorageKey]);
+
+  useEffect(() => {
+    if (!sidebarPinStorageKey) return;
+    setIsSidebarPinned(true);
+    try {
+      const stored = localStorage.getItem(sidebarPinStorageKey);
+      if (stored !== null) setIsSidebarPinned(stored === 'true');
+    } catch {
+      // Ignore unavailable local preferences.
+    }
+  }, [sidebarPinStorageKey]);
 
   useEffect(() => {
     if (!navigationStorageKey) return;
@@ -166,6 +182,20 @@ export function AppShell({ session, children }: { session: Session | null; child
       if (sidebarStorageKey) {
         try {
           localStorage.setItem(sidebarStorageKey, String(next));
+        } catch {
+          // Ignore unavailable local preferences.
+        }
+      }
+      return next;
+    });
+  };
+
+  const toggleSidebarPinned = () => {
+    setIsSidebarPinned((current) => {
+      const next = !current;
+      if (sidebarPinStorageKey) {
+        try {
+          localStorage.setItem(sidebarPinStorageKey, String(next));
         } catch {
           // Ignore unavailable local preferences.
         }
@@ -216,7 +246,28 @@ export function AppShell({ session, children }: { session: Session | null; child
               </span>
             ) : null}
           </div>
-          {notificationsEnabled && <NotificationBell wardId={session.activeWardId} />}
+          <div className="flex items-center gap-2">
+            {notificationsEnabled && <NotificationBell wardId={session.activeWardId} />}
+            <button
+              type="button"
+              onClick={toggleSidebarPinned}
+              className={cn('inline-flex h-8 w-8 items-center justify-center rounded-md border text-sm transition-colors hover:bg-accent', isSidebarPinned && 'bg-accent text-foreground')}
+              title={isSidebarPinned ? t('unpinMenu') : t('pinMenu')}
+              aria-label={isSidebarPinned ? t('unpinMenu') : t('pinMenu')}
+              aria-pressed={isSidebarPinned}
+            >
+              <span aria-hidden="true">📌</span>
+            </button>
+            <button
+              type="button"
+              onClick={toggleSidebar}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-md border text-lg transition-colors hover:bg-accent"
+              title={t('collapseMenu')}
+              aria-label={t('collapseMenu')}
+            >
+              <span aria-hidden="true">‹</span>
+            </button>
+          </div>
         </div>
 
         <div className="flex flex-1 flex-col justify-between overflow-y-auto px-4 py-4">
@@ -225,6 +276,9 @@ export function AppShell({ session, children }: { session: Session | null; child
             pathname={pathname}
             expandedGroups={expandedGroups}
             onToggle={toggleNavigationGroup}
+            onNavigate={() => {
+              if (!isSidebarPinned) setIsSidebarCollapsed(true);
+            }}
             ariaLabel={t('desktopNavigation')}
             translateGroup={translateGroup}
             translateItem={translateItem}
@@ -233,16 +287,6 @@ export function AppShell({ session, children }: { session: Session | null; child
           <div className="space-y-3 pt-4 border-t">
             {/* Deployment update watcher */}
             <DeploymentWatcher />
-
-            <button
-              type="button"
-              onClick={toggleSidebar}
-              className="flex w-full items-center justify-between rounded-lg border px-3 py-2 text-xs font-semibold text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-              title={t('collapseMenu')}
-            >
-              <span>{t('collapseMenu')}</span>
-              <span aria-hidden="true">‹</span>
-            </button>
 
             <div className="space-y-1 text-xs text-muted-foreground">
               <Link
@@ -279,8 +323,17 @@ export function AppShell({ session, children }: { session: Session | null; child
           <div className="flex items-center gap-3">
             <button
               type="button"
+              onClick={toggleSidebar}
+              className="hidden h-9 w-9 items-center justify-center rounded-md border text-lg hover:bg-accent md:inline-flex"
+              title={t('expandMenu')}
+              aria-label={t('expandMenu')}
+            >
+              <span aria-hidden="true">›</span>
+            </button>
+            <button
+              type="button"
               onClick={() => setIsMobileNavOpen(true)}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-md border text-lg hover:bg-accent"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-md border text-lg hover:bg-accent md:hidden"
               aria-label={t('openNavigation')}
               aria-expanded={isMobileNavOpen}
               aria-controls="mobile-navigation"
@@ -333,14 +386,26 @@ export function AppShell({ session, children }: { session: Session | null; child
                     </span>
                   ) : null}
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setIsMobileNavOpen(false)}
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-md border text-lg hover:bg-accent"
-                  aria-label={t('closeNavigation')}
-                >
-                  <span aria-hidden="true">×</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={toggleSidebarPinned}
+                    className={cn('inline-flex h-9 w-9 items-center justify-center rounded-md border text-sm hover:bg-accent', isSidebarPinned && 'bg-accent text-foreground')}
+                    title={isSidebarPinned ? t('unpinMenu') : t('pinMenu')}
+                    aria-label={isSidebarPinned ? t('unpinMenu') : t('pinMenu')}
+                    aria-pressed={isSidebarPinned}
+                  >
+                    <span aria-hidden="true">📌</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsMobileNavOpen(false)}
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-md border text-lg hover:bg-accent"
+                    aria-label={t('closeNavigation')}
+                  >
+                    <span aria-hidden="true">×</span>
+                  </button>
+                </div>
               </div>
               <div className="flex flex-1 flex-col justify-between overflow-y-auto px-4 py-4">
                 <NavigationGroups
