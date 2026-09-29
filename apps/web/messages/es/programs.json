@@ -3,6 +3,7 @@
     "designer": "Diseñador de programas",
     "upcoming": "Próximos programas",
     "description": "Elige una reunión para diseñar su programa o explora plantillas aprobadas sin cambiar la configuración pública existente.",
+    "help": "Ayuda",
     "templates": "Plantillas de {scope}",
     "noUpcoming": "No hay reuniones próximas",
     "createMeetingFirst": "Crea una reunión primero y vuelve aquí para diseñar su programa.",

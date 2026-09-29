@@ -3,6 +3,7 @@
     "designer": "Tagadisenyo ng Programa",
     "upcoming": "Mga paparating na programa",
     "description": "Pumili ng pulong para idisenyo ang programa nito, o mag-browse ng mga naaprubahang template nang hindi binabago ang mga kasalukuyang setting ng pampublikong layout.",
+    "help": "Tulong",
     "templates": "Mga template ng {scope}",
     "noUpcoming": "Walang paparating na mga pagpupulong",
     "createMeetingFirst": "Gumawa muna ng meeting, pagkatapos ay bumalik dito para idisenyo ang programa nito.",

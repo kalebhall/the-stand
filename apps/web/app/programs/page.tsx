@@ -51,7 +51,10 @@ export default async function ProgramsPage() {
           <h1 className="text-3xl font-semibold tracking-tight">{t('upcoming')}</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{t('description')}</p>
         </div>
-        <a href="/programs/templates" className={cn(buttonVariants({ variant: 'outline' }))}>{t('templates')}</a>
+        <div className="flex flex-wrap items-center gap-2">
+          <a href="/manual#programs" className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }))}>{t('help')}</a>
+          <a href="/programs/templates" className={cn(buttonVariants({ variant: 'outline' }))}>{t('templates')}</a>
+        </div>
       </section>
       <ProgramsClient meetings={meetings} />
     </main>

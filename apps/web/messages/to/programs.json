@@ -3,6 +3,7 @@
     "designer": "Tokotaha Faʻu Polokalama",
     "upcoming": "Ngaahi polokalama 'oku lolotonga hoko mai",
     "description": "Fili ha fakataha ke tisaini ʻene polokalamá, pe vakaiʻi ʻa e ngaahi sīpinga kuo fakangofuá ʻo ʻikai liliu ʻa e ngaahi tuʻunga fokotuʻutuʻu fakapuleʻanga ʻoku ʻi aí.",
+    "help": "Tokoni",
     "templates": "Ngaahi sipinga {scope}",
     "noUpcoming": "ʻIkai ha ngaahi fakataha ʻe hoko mai .",
     "createMeetingFirst": "Fa'u ha fakataha 'uluaki, pea foki mai heni ke tisaini 'ene polokalama.",

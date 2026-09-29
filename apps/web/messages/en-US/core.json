@@ -184,6 +184,8 @@
       "dashboard": "Dashboard",
       "meetings": "Meetings",
       "meeting-editor": "Meeting editor",
+      "programs": "Program design and templates",
+      "announcements": "Program announcements",
       "at-the-stand": "At the Stand",
       "offline": "Offline access",
       "business": "Ward and stake business",
@@ -191,6 +193,7 @@
       "notifications": "Notifications",
       "imports": "Imports and reports",
       "public-programs": "Public programs and portals",
+      "languages": "Multiple languages",
       "settings": "Settings and account",
       "privacy": "Privacy and official-system boundaries"
     },
@@ -199,6 +202,8 @@
       "dashboard": "Use the Dashboard as your follow-up hub. It surfaces the next meeting, drafts, calling and ordinance queues, interviews, leadership actions, notifications, imports, technology readiness, and public portal status.",
       "meetings": "Open Meetings to create or review ward meetings. From each meeting you can edit the program, open At the Stand, print the program, and—when authorized—delete the meeting.",
       "meeting-editor": "Build the program in order, add speakers and topics, manage hymns and announcements, review business items, save notes, publish a public snapshot, and preview the print or public versions.",
+      "programs": "Program Editors can prepare and organize meeting programs, reorder items, add speaker topics and program notes, apply approved templates, and save drafts. Notes marked for the program are shown to public readers; do not put private information in them.",
+      "announcements": "Program announcements can be prepared for the printed and public program. At-the-Stand announcements are a separate permission boundary and remain controlled by authorized conducting leaders. A Program Editor cannot add, change, or remove an announcement used At the Stand.",
       "at-the-stand": "Use At the Stand during the meeting for a readable conducting view. Switch between formal and compact layouts, review business and program items, and use official Church links where provided.",
       "offline": "Offline access is automatic after an authorized meeting is opened. If connectivity fails, The Stand shows the newest authorized local snapshot, its age, and pending changes. Private data is scoped to the signed-in user, ward, and meeting.",
       "business": "Use the business and membership workspaces to track presentation and follow-up status. The Stand is a coordination layer; it does not replace LCR or other official Church systems.",
@@ -206,6 +211,7 @@
       "notifications": "Manage event subscriptions and delivery preferences in Settings. The notification center shows your in-app notifications; diagnostics are available to authorized administrators.",
       "imports": "Use the import pages for preview-first membership, calling, and historical program data workflows. Review the preview before committing changes. Reports summarize structured ward data and do not write to Church systems.",
       "public-programs": "Publish only the content intended for a public audience. Public links and portals serve published snapshots, not live private meeting data. Republish after changing content that should appear publicly.",
+      "languages": "The Stand supports multiple interface languages. Choose your preferred language in Settings or your account preferences. Changing the interface language changes labels and help text, while ward content, names, notes, and published program data remain unchanged.",
       "settings": "Use Settings for language, appearance, notifications, ward features, public layout, portal configuration, and user access where your role permits. Account pages contain personal preferences and password actions.",
       "privacy": "Ward and user data is isolated by authorization boundaries. Personal notes remain private, public snapshots are explicit, and The Stand does not read from or write to LCR or other Church systems."
     }

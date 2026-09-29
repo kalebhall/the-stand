@@ -15,6 +15,14 @@ const features = [
     body: 'Keep the latest authorized meeting and private notes available when connectivity is unreliable, then sync changes when you reconnect.'
   },
   {
+    title: 'Program design and templates',
+    body: 'Prepare ordered programs, speaker topics, program notes, announcements, and approved templates with role-based editing.'
+  },
+  {
+    title: 'Multiple interface languages',
+    body: 'Use the interface in multiple supported languages while keeping ward content, names, notes, and published program data unchanged.'
+  },
+  {
     title: 'Ward and stake business',
     body: 'Track sustainings, releases, membership and ordinance follow-up, interviews, and official-system handoffs.'
   },

@@ -184,6 +184,8 @@
       "dashboard": "Panel",
       "meetings": "Reuniones",
       "meeting-editor": "Editor de reuniones",
+      "programs": "Diseño de programas y plantillas",
+      "announcements": "Anuncios del programa",
       "at-the-stand": "En el púlpito",
       "offline": "Acceso sin conexión",
       "business": "Asuntos del barrio y la estaca",
@@ -191,6 +193,7 @@
       "notifications": "Notificaciones",
       "imports": "Importaciones e informes",
       "public-programs": "Programas y portales públicos",
+      "languages": "Varios idiomas",
       "settings": "Configuración y cuenta",
       "privacy": "Privacidad y límites de sistemas oficiales"
     },
@@ -199,6 +202,8 @@
       "dashboard": "Usa el panel como centro de seguimiento. Muestra la próxima reunión, borradores, colas de llamamientos y ordenanzas, entrevistas, acciones de liderazgo, notificaciones, importaciones, preparación tecnológica y estado del portal público.",
       "meetings": "Abre Reuniones para crear o revisar reuniones del barrio. Desde cada reunión puedes editar el programa, abrir En el púlpito, imprimir el programa y, cuando estés autorizado, eliminar la reunión.",
       "meeting-editor": "Organiza el programa, agrega discursantes y temas, administra himnos y anuncios, revisa asuntos, guarda notas, publica una instantánea pública y previsualiza las versiones impresa y pública.",
+      "programs": "Los editores de programas pueden preparar y organizar programas, reordenar elementos, agregar temas de discursantes y notas del programa, aplicar plantillas aprobadas y guardar borradores. Las notas del programa se muestran al público; no incluyas información privada.",
+      "announcements": "Los anuncios del programa pueden prepararse para el programa impreso y público. Los anuncios de En el púlpito tienen un permiso separado y los controlan los líderes autorizados. Un editor de programas no puede agregar, cambiar ni eliminar un anuncio usado En el púlpito.",
       "at-the-stand": "Usa En el púlpito durante la reunión para ver una versión legible. Cambia entre diseños formal y compacto, revisa asuntos y elementos del programa y usa los enlaces oficiales de la Iglesia cuando estén disponibles.",
       "offline": "El acceso sin conexión se activa automáticamente después de abrir una reunión autorizada. Si falla la conexión, The Stand muestra la instantánea local autorizada más reciente, su antigüedad y los cambios pendientes. Los datos privados están limitados al usuario, barrio y reunión con sesión iniciada.",
       "business": "Usa los espacios de asuntos y membresía para dar seguimiento al estado de presentaciones y tareas. The Stand es una capa de coordinación; no reemplaza LCR ni otros sistemas oficiales de la Iglesia.",
@@ -206,6 +211,7 @@
       "notifications": "Administra las suscripciones de eventos y las preferencias de entrega en Configuración. El centro de notificaciones muestra tus notificaciones dentro de la aplicación; los diagnósticos están disponibles para administradores autorizados.",
       "imports": "Usa las páginas de importación para flujos de membresía, llamamientos e historial de programas con vista previa primero. Revisa la vista previa antes de confirmar. Los informes resumen datos estructurados del barrio y no escriben en sistemas de la Iglesia.",
       "public-programs": "Publica solo el contenido destinado al público. Los enlaces y portales públicos sirven instantáneas publicadas, no datos privados activos de la reunión. Vuelve a publicar después de cambiar contenido que deba aparecer públicamente.",
+      "languages": "The Stand admite varios idiomas de interfaz. Elige tu idioma preferido en Configuración o en tus preferencias de cuenta. Cambiar el idioma de la interfaz cambia las etiquetas y la ayuda, pero no modifica el contenido del barrio, los nombres, las notas ni los datos publicados del programa.",
       "settings": "Usa Configuración para el idioma, la apariencia, las notificaciones, las funciones del barrio, el diseño público, la configuración del portal y el acceso de usuarios cuando tu función lo permita. Las páginas de cuenta contienen preferencias personales y acciones de contraseña.",
       "privacy": "Los datos del barrio y del usuario están aislados mediante límites de autorización. Las notas personales permanecen privadas, las instantáneas públicas son explícitas y The Stand no lee ni escribe en LCR ni en otros sistemas de la Iglesia."
     }

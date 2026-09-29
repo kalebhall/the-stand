@@ -3,6 +3,7 @@
     "designer": "Program Designer",
     "upcoming": "Upcoming programs",
     "description": "Choose a meeting to design its program, or browse approved templates without changing the existing public layout settings.",
+    "help": "Help",
     "templates": "{scope} templates",
     "noUpcoming": "No upcoming meetings",
     "createMeetingFirst": "Create a meeting first, then return here to design its program.",
