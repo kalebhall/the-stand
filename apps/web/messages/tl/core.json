@@ -184,6 +184,8 @@
       "dashboard": "Dashboard",
       "meetings": "Mga Pagpupulong",
       "meeting-editor": "Editor ng pulong",
+      "programs": "Disenyo ng programa at mga template",
+      "announcements": "Mga anunsyo ng programa",
       "at-the-stand": "Sa Stand",
       "offline": "Pag-access nang offline",
       "business": "Negosyo sa ward at stake",
@@ -191,6 +193,7 @@
       "notifications": "Mga Abiso",
       "imports": "Mga pag-import at ulat",
       "public-programs": "Mga pampublikong programa at portal",
+      "languages": "Maraming wika",
       "settings": "Mga setting at account",
       "privacy": "Mga hangganan ng privacy at opisyal na sistema"
     },
@@ -199,6 +202,8 @@
       "dashboard": "Gamitin ang Dashboard bilang iyong follow-up hub. Ipinapakita nito ang susunod na pagpupulong, mga draft, pila ng mga tawag at ordinansa, mga panayam, mga aksyon sa pamumuno, mga abiso, mga import, kahandaan sa teknolohiya, at katayuan ng pampublikong portal.",
       "meetings": "Buksan ang Mga Pulong para gumawa o magrepaso ng mga pulong ng ward. Mula sa bawat pulong, maaari mong i-edit ang programa, buksan ang At the Stand, i-print ang programa, at—kapag pinahintulutan—burahin ang pulong.",
       "meeting-editor": "Buuin ang programa ayon sa pagkakasunod-sunod, magdagdag ng mga tagapagsalita at paksa, pamahalaan ang mga himno at anunsyo, repasuhin ang mga bagay na pangnegosyo, i-save ang mga tala, maglathala ng pampublikong snapshot, at i-preview ang mga naka-print o pampublikong bersyon.",
+      "programs": "Maaaring maghanda at mag-ayos ng mga programa ang Program Editors, baguhin ang pagkakasunod-sunod, magdagdag ng paksa ng tagapagsalita at mga tala ng programa, gumamit ng mga aprubadong template, at mag-save ng draft. Nakikita ng publiko ang mga tala ng programa; huwag maglagay ng pribadong impormasyon.",
+      "announcements": "Maaaring ihanda ang mga anunsyo ng programa para sa naka-print at pampublikong programa. Hiwalay ang pahintulot para sa mga anunsyo sa At the Stand at ito ay kontrolado ng mga awtorisadong lider. Hindi maaaring magdagdag, magbago, o magtanggal ng ganitong anunsyo ang Program Editor.",
       "at-the-stand": "Gamitin ang *At the Stand* habang nasa pulong para sa nababasang *conducting view*. Magpalipat-lipat sa pagitan ng pormal at compact na mga layout, repasuhin ang mga bagay na may kinalaman sa negosyo at programa, at gamitin ang mga opisyal na link ng Simbahan kung saan nakalaan.",
       "offline": "Awtomatiko ang offline access pagkatapos mabuksan ang isang awtorisadong meeting. Kung mabigo ang koneksyon, ipapakita ng The Stand ang pinakabagong awtorisadong lokal na snapshot, ang edad nito, at mga nakabinbing pagbabago. Ang pribadong data ay sakop ng naka-sign in na user, ward, at meeting.",
       "business": "Gamitin ang mga workspace ng negosyo at mga miyembro upang subaybayan ang katayuan ng presentasyon at follow-up. Ang Stand ay isang coordination layer; hindi nito pinapalitan ang LCR o iba pang opisyal na sistema ng Simbahan.",
@@ -206,6 +211,7 @@
       "notifications": "Pamahalaan ang mga subscription sa kaganapan at mga kagustuhan sa paghahatid sa Mga Setting. Ipinapakita ng notification center ang iyong mga in-app na notification; available ang mga diagnostic sa mga awtorisadong administrator.",
       "imports": "Gamitin ang mga pahina ng pag-import para sa mga daloy ng trabaho ng preview-first membership, calling, at historical program data. Suriin ang preview bago gumawa ng mga pagbabago. Binubuod ng mga ulat ang nakabalangkas na datos ng ward at hindi isinusulat sa mga sistema ng Simbahan.",
       "public-programs": "I-publish lamang ang nilalamang para sa pampublikong madla. Ang mga pampublikong link at portal ay naghahatid ng mga nai-publish na snapshot, hindi ng live na pribadong datos ng pulong. I-publish muli pagkatapos baguhin ang nilalamang dapat lumabas sa publiko.",
+      "languages": "Sinusuportahan ng The Stand ang maraming wika ng interface. Piliin ang gusto mong wika sa Mga Setting o sa mga kagustuhan ng account. Binabago ng wika ng interface ang mga label at tulong, ngunit hindi nito binabago ang nilalaman ng ward, mga pangalan, tala, o naka-publish na datos ng programa.",
       "settings": "Gamitin ang Mga Setting para sa wika, hitsura, mga notification, mga feature ng ward, pampublikong layout, configuration ng portal, at access ng user kung saan pinahihintulutan ng iyong tungkulin. Ang mga pahina ng account ay naglalaman ng mga personal na kagustuhan at mga aksyon sa password.",
       "privacy": "Ang datos ng ward at user ay nakahiwalay ayon sa mga hangganan ng awtorisasyon. Ang mga personal na tala ay nananatiling pribado, ang mga pampublikong snapshot ay tahasang, at ang The Stand ay hindi nagbabasa o nagsusulat sa LCR o iba pang mga sistema ng Simbahan."
     }

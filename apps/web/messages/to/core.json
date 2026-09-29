@@ -184,6 +184,8 @@
       "dashboard": "Tesipapa",
       "meetings": "Ngaahi Fakataha",
       "meeting-editor": "ʻEtita ʻo e fakatahá",
+      "programs": "Ko hono fokotuʻutuʻu ʻo e polokalamá mo e ngaahi template",
+      "announcements": "Ngaahi fanongonongo ʻo e polokalamá",
       "at-the-stand": "ʻI he Tuʻunga .",
       "offline": "Hu ki tu'a mei he 'initaneti",
       "business": "Pisinisi fakauooti mo fakasiteiki .",
@@ -191,6 +193,7 @@
       "notifications": "Ngaahi Fakatokanga",
       "imports": "Ngaahi hū mai mo e ngaahi lipooti .",
       "public-programs": "Ngaahi polokalama fakapule'anga mo e ngaahi portal .",
+      "languages": "Ngaahi lea kehekehe",
       "settings": "Ngaahi fokotuʻutuʻu mo e ʻakauni .",
       "privacy": "Fakapulipuli mo e ngaahi ngata'anga 'o e sisitemi faka'ofisiale ."
     },
@@ -199,6 +202,8 @@
       "dashboard": "Faka'aonga'i 'a e Dashboard ko ho'o hub muimui. ʻOkú ne ʻasi mai ʻa e fakataha hokó, ngaahi palaní, ngaahi laine ʻo e uiuiʻí mo e ouaú, ngaahi ʻinitaviú, ngaahi ngāue fakatakimuʻá, ngaahi fakatokanga, ngaahi hū mai, mateuteu ʻi he tekinolosiá, mo e tuʻunga ʻo e portal fakapuleʻangá.",
       "meetings": "Fakaava ʻa e Ngaahi Fakatahá ke faʻu pe vakaiʻi ʻa e ngaahi fakataha fakauōtí. Mei he fakataha takitaha te ke lava ʻo fakatonutonu ʻa e polokalamá, fakaava ʻi he ʻAt the Stand, paaki ʻa e polokalamá, pea﻿—ʻo ka fakamafaiʻi﻿—tamateʻi ʻa e fakatahá.",
       "meeting-editor": "Langa ʻa e polokalamá ʻi he hokohoko, tānaki atu ha kau lea mo ha ngaahi kaveinga, puleʻi ʻa e ngaahi himí mo e ngaahi fanongonongó, vakaiʻi ʻa e ngaahi meʻa fakapisinisí, tauhi ha ngaahi nouti, pulusi ha fakatātā fakapuleʻanga, pea tomuʻa vakaiʻi ʻa e ngaahi liliu kuo paaki pe fakapuleʻangá.",
+      "programs": "ʻE lava ʻe he kau ʻEtita Polokalamá ʻo teuteu mo fokotuʻutuʻu ʻa e ngaahi polokalama, liliu ʻa e hokohokó, tānaki ha ngaahi kaveinga ʻo e kau leá mo e ngaahi nouti ʻo e polokalamá, fakaʻaongaʻi ʻa e ngaahi template kuo fakangofua, mo tauhi ʻa e ngaahi draft. ʻOku hā ʻi he kakaí ʻa e ngaahi nouti ʻo e polokalamá; ʻoua ʻe fakahu ha fakamatala fakatāutaha.",
+      "announcements": "ʻE lava ʻo teuteu ʻa e ngaahi fanongonongo ʻo e polokalamá ki he polokalama kuo paaki mo fakapuleʻangá. ʻOku kehekehe ʻa e mafai ki he ngaahi fanongonongo ʻi he At the Stand pea ʻoku puleʻi ia ʻe he kau taki kuo fakamafaiʻí. ʻOku ʻikai lava ʻe he ʻEtita Polokalamá ʻo tānaki, liliu, pe toʻo ha fanongonongo ʻoku ngāue ʻaki ʻi he At the Stand.",
       "at-the-stand": "Ngāue‘aki ‘a e At the Stand lolotonga ‘a e fakatahá ki ha vakai fakahoko ‘oku lava ke lau. Fetongi ʻi he vahaʻa ʻo e ngaahi fokotuʻutuʻu angamahení mo e ngaahi fokotuʻutuʻu angamahení, vakaiʻi ʻa e ngaahi meʻa fakapisinisí mo e polokalamá, pea fakaʻaongaʻi ʻa e ngaahi fehokotakiʻanga fakaʻofisiale ʻo e Siasí ʻi he feituʻu ʻoku ʻoatú.",
       "offline": "ʻOku ʻotomētiki pē ʻa e hū ʻi he ʻinitanetí hili hono fakaava ha fakataha kuo fakamafaiʻi. Kapau 'oku 'ikai lava 'a e fehokotaki'anga, 'Oku fakahaa'i 'e he Tu'unga 'a e snapshot fakalotofonua fo'ou taha kuo fakamafai'i, hono ta'u motu'a, mo e ngaahi liliu 'oku kei tatali. ʻOku fakafuofuaʻi ʻa e fakamatala fakatāutahá ki he tokotaha ʻoku fakamoʻoni hingoá, uōtí, mo e fakatahá.",
       "business": "Fakaʻaongaʻi ʻa e ngaahi feituʻu ngāue ʻo e pisinisí mo e kāingalotú ke muimuiʻi ʻa e tuʻunga ʻo e fakaʻaliʻalí mo e muimuiʻí. Ko e Tuʻunga ko ha laʻipepa fakafekauʻaki; ʻoku ʻikai ke ne fetongi ʻa e LCR pe ngaahi founga fakaʻofisiale kehe ʻa e Siasí.",
@@ -206,6 +211,7 @@
       "notifications": "Pule'i 'a e ngaahi totongi 'o e ngaahi me'a 'oku hoko mo e ngaahi manako 'o e tu'uaki 'i he Settings. 'Oku fakahaa'i 'e he senitaa fakatokanga ho'o ngaahi fakatokanga 'i he app; diagnostics 'oku ma'u ia 'e he kau pule kuo fakamafai'i.",
       "imports": "Faka'aonga'i 'a e ngaahi peesi 'o e import ki he tomu'a sio-'uluaki memipa, ui, mo e polokalama fakahisitolia 'o e fakamatala workflows. Toe vakaiʻi ʻa e tomuʻa vakaiʻí kimuʻa peá ke fakahoko ha ngaahi liliú. ʻOku fakanounouʻi ʻe he ngaahi lipōtí ʻa e ngaahi fakamatala fakauooti kuo fokotuʻutuʻú pea ʻoku ʻikai ke nau tohi ki he ngaahi sisitemi ʻa e Siasí.",
       "public-programs": "Pulusi pē ‘a e ngaahi me‘a ‘oku fakataumu‘a ki ha kau fanongo fakapule‘anga. Ko e ngaahi fehokotaki'anga fakapule'anga mo e ngaahi portals 'oku nau ngaue 'aki 'a e ngaahi snapshots kuo pulusi, 'ikai ko e fakamatala fakataha fakafo'ituitui mo'ui. Toe pulusi hili hono liliu ʻo e kakano ʻoku totonu ke ʻasi fakahāhā.",
+      "languages": "ʻOku poupouʻi ʻe he Stand ʻa e ngaahi lea kehekehe ʻo e interface. Fili ho lea ʻoku ke manako aí ʻi he Settings pe ʻi he ngaahi fiemaʻu ʻo e ʻakauní. ʻOku liliu ʻe he lea ʻo e interface ʻa e ngaahi hingoa mo e tokoní, ka ʻoku ʻikai liliu ai ʻa e kakano ʻo e uōtí, ngaahi hingoá, ngaahi noutí, pe ngaahi fakamatala ʻo e polokalama kuo pulusí.",
       "settings": "Fakaʻaongaʻi ʻa e Ngaahi Fakatonutonú ki he leá, fōtungá, ngaahi fakatokanga, ngaahi meʻa ʻi he uōtí, fokotuʻutuʻu fakapuleʻangá, fokotuʻutuʻu ʻo e portal, mo e hū ʻa e tokotaha fakaʻaongaʻí ʻi he feituʻu ʻoku fakaʻatā ai ʻe ho fatongiá. ʻOku ʻi he ngaahi peesi ʻo e ʻakauní ʻa e ngaahi meʻa ʻokú ke saiʻia aí mo e ngaahi ngāue ʻo e lea fufuú.",
       "privacy": "ʻOku fakamavaheʻi ʻa e fakamatala ʻo e uōtí mo e tokotaha fakaʻaongaʻí ʻe he ngaahi ngataʻanga ʻo e fakamafaiʻí. ʻOku kei fakatāutaha pē ʻa e ngaahi fakamatala fakatāutahá, ʻoku mahino ʻa e ngaahi tā fakapuleʻangá, pea ʻoku ʻikai lau pe tohi ʻa e The Stand ki he LCR pe ngaahi sisitemi kehe ʻa e Siasí."
     }

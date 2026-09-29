@@ -27,6 +27,16 @@ const sections = [
     'Build the program in order, add speakers and topics, manage hymns and announcements, review business items, save notes, publish a public snapshot, and preview the print or public versions.'
   ],
   [
+    'programs',
+    'Program design and templates',
+    'Program Editors can prepare and organize meeting programs, reorder items, add speaker topics and program notes, apply approved templates, and save drafts. Notes marked for the program are shown to public readers; do not put private information in them.'
+  ],
+  [
+    'announcements',
+    'Program announcements',
+    'Program announcements can be prepared for the printed and public program. At-the-Stand announcements are a separate permission boundary and remain controlled by authorized conducting leaders. A Program Editor cannot add, change, or remove an announcement used At the Stand.'
+  ],
+  [
     'at-the-stand',
     'At the Stand',
     'Use At the Stand during the meeting for a readable conducting view. Switch between formal and compact layouts, review business and program items, and use official Church links where provided.'
@@ -60,6 +70,11 @@ const sections = [
     'public-programs',
     'Public programs and portals',
     'Publish only the content intended for a public audience. Public links and portals serve published snapshots, not live private meeting data. Republish after changing content that should appear publicly.'
+  ],
+  [
+    'languages',
+    'Multiple languages',
+    'The Stand supports multiple interface languages. Choose your preferred language in Settings or your account preferences. Changing the interface language changes labels and help text, while ward content, names, notes, and published program data remain unchanged.'
   ],
   [
     'settings',
