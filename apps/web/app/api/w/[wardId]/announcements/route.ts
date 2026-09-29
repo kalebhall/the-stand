@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { isAnnouncementPlacement } from '@/src/announcements/types';
 import { recordAuditEvent } from '@/src/audit/service';
 import { auth } from '@/src/auth/auth';
-import { canManageMeetings, canViewMeetings } from '@/src/auth/roles';
+import { canManageProgramAnnouncements, canManageStandAnnouncements, canViewAnnouncements } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { createLogger } from '@/src/lib/logger';
 import { setDbContext } from '@/src/db/context';
@@ -49,7 +49,8 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
   }
 
   const { wardId } = await context.params;
-  if (!(await isWardModuleEnabled(wardId, session.user.id, 'announcements')) || !canViewMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) {
+  const canManageStand = canManageStandAnnouncements({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId);
+  if (!(await isWardModuleEnabled(wardId, session.user.id, 'announcements')) || !canViewAnnouncements({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) {
     return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
   }
 
@@ -63,8 +64,9 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
       `SELECT id, title, body, start_date, end_date, is_permanent, placement, include_in_program, include_in_stand, created_at
          FROM announcement
         WHERE ward_id = $1
+          AND ($2::boolean OR include_in_program = TRUE)
         ORDER BY created_at DESC`,
-      [wardId]
+      [wardId, canManageStand]
     );
 
     await client.query('COMMIT');
@@ -99,7 +101,9 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
   }
 
   const { wardId } = await context.params;
-  if (!(await isWardModuleEnabled(wardId, session.user.id, 'announcements')) || !canManageMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) {
+  const canManageProgram = canManageProgramAnnouncements({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId);
+  const canManageStand = canManageStandAnnouncements({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId);
+  if (!(await isWardModuleEnabled(wardId, session.user.id, 'announcements')) || !canManageProgram) {
     return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
   }
 
@@ -110,7 +114,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
   const endDate = normalizeDate(body?.endDate);
   const isPermanent = Boolean(body?.isPermanent);
   const includeInProgram = body?.includeInProgram !== false;
-  const includeInStand = Boolean(body?.includeInStand);
+  const includeInStand = canManageStand && Boolean(body?.includeInStand);
   const details = body?.body?.trim() ?? '';
 
   if (!title || !isAnnouncementPlacement(placement) || (startDate && endDate && startDate > endDate)) {
