@@ -44,6 +44,7 @@ type AnnouncementsWorkspaceProps = {
   wardId: string;
   targetSunday: string;
   canManage: boolean;
+  canManageProgram: boolean;
   announcements: Announcement[];
   calendarFeeds: CalendarFeed[];
   calendarEvents: CalendarEvent[];
@@ -77,6 +78,7 @@ function formatEventDate(isoString: string, locale: string): string {
 export function AnnouncementsWorkspaceClient({
   targetSunday,
   canManage,
+  canManageProgram,
   announcements,
   calendarFeeds,
   calendarEvents,
@@ -129,7 +131,7 @@ export function AnnouncementsWorkspaceClient({
               className="rounded-md border bg-background px-3 py-1.5 text-sm font-semibold shadow-sm focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </label>
-          {canManage && (
+          {canManageProgram && (
             <Button onClick={() => setIsManualModalOpen(true)} className="font-medium shadow-sm" size="sm">
               + {t('addAnnouncement')}
             </Button>
@@ -367,6 +369,7 @@ export function AnnouncementsWorkspaceClient({
                               name="includeInStand"
                               type="checkbox"
                               defaultChecked={item.include_in_stand}
+                              disabled={!canManage}
                               className="h-4 w-4 rounded border"
                             />
                             <span>{t('announceAtStand')}</span>
@@ -421,7 +424,7 @@ export function AnnouncementsWorkspaceClient({
                                 : t('dateOnly', { date: item.start_date ?? item.end_date ?? '' })}
                           </span>
 
-                          {canManage && (
+                          {canManageProgram && (canManage || !item.include_in_stand) && (
                             <div className="flex items-center gap-2">
                               <button onClick={() => setEditingId(item.id)} className="font-medium text-primary hover:underline text-xs">
                                 {t('edit')}
@@ -532,7 +535,7 @@ export function AnnouncementsWorkspaceClient({
                 </label>
 
                 <label className="flex items-center gap-2 text-xs font-medium cursor-pointer">
-                  <input name="includeInStand" type="checkbox" defaultChecked={false} className="h-4 w-4 rounded border" />
+                  <input name="includeInStand" type="checkbox" defaultChecked={false} disabled={!canManage} className="h-4 w-4 rounded border" />
                   <span>{t('includeStandDefault')}</span>
                 </label>
 

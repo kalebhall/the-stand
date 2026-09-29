@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import { AnnouncementsWorkspaceClient } from './announcements-workspace-client';
 import { copyCalendarEventToAnnouncement, refreshCalendarFeedsForWard } from '@/src/calendar/service';
 import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth/guards';
-import { canManageMeetings, canViewMeetings } from '@/src/auth/roles';
+import { canManageProgramAnnouncements, canManageStandAnnouncements, canViewAnnouncements } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 import { getNextSunday, toYyyyMmDd } from '@/src/meetings/date';
@@ -48,11 +48,12 @@ export default async function AnnouncementsPage({ searchParams }: { searchParams
   const session = await requireAuthenticatedSession();
   enforcePasswordRotation(session);
 
-  if (!session.activeWardId || !(await isWardModuleEnabled(session.activeWardId, session.user.id, 'announcements')) || !canViewMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId)) {
+  if (!session.activeWardId || !(await isWardModuleEnabled(session.activeWardId, session.user.id, 'announcements')) || !canViewAnnouncements({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId)) {
     redirect('/dashboard');
   }
 
-  const canManage = canManageMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId);
+  const canManage = canManageStandAnnouncements({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId);
+  const canManageProgram = canManageProgramAnnouncements({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId);
 
   const queryParams = await searchParams;
   const targetSunday = queryParams.sunday && /^\d{4}-\d{2}-\d{2}$/.test(queryParams.sunday) ? queryParams.sunday : getNextSunday();
@@ -69,11 +70,12 @@ export default async function AnnouncementsPage({ searchParams }: { searchParams
 
     if (
       !actionSession.activeWardId ||
-      !canManageMeetings({ roles: actionSession.user.roles, activeWardId: actionSession.activeWardId }, actionSession.activeWardId)
+      !canManageProgramAnnouncements({ roles: actionSession.user.roles, activeWardId: actionSession.activeWardId }, actionSession.activeWardId)
     ) {
       redirect('/announcements');
     }
 
+    const canManageStand = canManageStandAnnouncements({ roles: actionSession.user.roles, activeWardId: actionSession.activeWardId }, actionSession.activeWardId);
     const title = String(formData.get('title') ?? '').trim();
     const body = String(formData.get('body') ?? '').trim();
     const startDateInput = String(formData.get('startDate') ?? '').trim();
@@ -81,7 +83,7 @@ export default async function AnnouncementsPage({ searchParams }: { searchParams
     const placement = String(formData.get('placement') ?? 'PROGRAM_TOP').trim();
     const isPermanent = formData.get('isPermanent') === 'on';
     const includeInProgram = formData.get('includeInProgram') === 'on' || formData.get('includeInProgram') === 'true';
-    const includeInStand = formData.get('includeInStand') === 'on' || formData.get('includeInStand') === 'true';
+    const includeInStand = canManageStand && (formData.get('includeInStand') === 'on' || formData.get('includeInStand') === 'true');
 
     const startDate = startDateInput.length ? startDateInput : null;
     const endDate = endDateInput.length ? endDateInput : null;
@@ -141,10 +143,12 @@ export default async function AnnouncementsPage({ searchParams }: { searchParams
 
     if (
       !actionSession.activeWardId ||
-      !canManageMeetings({ roles: actionSession.user.roles, activeWardId: actionSession.activeWardId }, actionSession.activeWardId)
+      !canManageProgramAnnouncements({ roles: actionSession.user.roles, activeWardId: actionSession.activeWardId }, actionSession.activeWardId)
     ) {
       redirect('/announcements');
     }
+
+    const canManageStand = canManageStandAnnouncements({ roles: actionSession.user.roles, activeWardId: actionSession.activeWardId }, actionSession.activeWardId);
 
     const announcementId = String(formData.get('announcementId') ?? '').trim();
     const title = String(formData.get('title') ?? '').trim();
@@ -154,7 +158,7 @@ export default async function AnnouncementsPage({ searchParams }: { searchParams
     const placement = String(formData.get('placement') ?? 'PROGRAM_TOP').trim();
     const isPermanent = formData.get('isPermanent') === 'on';
     const includeInProgram = formData.get('includeInProgram') === 'on' || formData.get('includeInProgram') === 'true';
-    const includeInStand = formData.get('includeInStand') === 'on' || formData.get('includeInStand') === 'true';
+    const includeInStand = canManageStand && (formData.get('includeInStand') === 'on' || formData.get('includeInStand') === 'true');
 
     const startDate = startDateInput.length ? startDateInput : null;
     const endDate = endDateInput.length ? endDateInput : null;
@@ -178,8 +182,8 @@ export default async function AnnouncementsPage({ searchParams }: { searchParams
                 is_permanent = $5::boolean,
                 placement = $6::text,
                 include_in_program = $7::boolean,
-                include_in_stand = $8::boolean
-          WHERE id = $9::uuid AND ward_id = $10::uuid`,
+                include_in_stand = CASE WHEN $10::boolean THEN $8::boolean ELSE include_in_stand END
+          WHERE id = $9::uuid AND ward_id = $11::uuid`,
         [
           title,
           body || null,
@@ -190,6 +194,7 @@ export default async function AnnouncementsPage({ searchParams }: { searchParams
           includeInProgram,
           includeInStand,
           announcementId,
+          canManageStand,
           actionSession.activeWardId
         ]
       );
@@ -223,10 +228,12 @@ export default async function AnnouncementsPage({ searchParams }: { searchParams
 
     if (
       !actionSession.activeWardId ||
-      !canManageMeetings({ roles: actionSession.user.roles, activeWardId: actionSession.activeWardId }, actionSession.activeWardId)
+      !canManageProgramAnnouncements({ roles: actionSession.user.roles, activeWardId: actionSession.activeWardId }, actionSession.activeWardId)
     ) {
       redirect('/announcements');
     }
+
+    const canManageStand = canManageStandAnnouncements({ roles: actionSession.user.roles, activeWardId: actionSession.activeWardId }, actionSession.activeWardId);
 
     const announcementId = String(formData.get('announcementId') ?? '').trim();
     if (!announcementId) {
@@ -239,9 +246,10 @@ export default async function AnnouncementsPage({ searchParams }: { searchParams
       await client.query('BEGIN');
       await setDbContext(client, { userId: actionSession.user.id, wardId: actionSession.activeWardId });
 
-      const deleted = await client.query('DELETE FROM announcement WHERE id = $1::uuid AND ward_id = $2::uuid RETURNING id, title', [
+      const deleted = await client.query('DELETE FROM announcement WHERE id = $1::uuid AND ward_id = $2::uuid AND ($3::boolean OR include_in_stand = FALSE) RETURNING id, title', [
         announcementId,
-        actionSession.activeWardId
+        actionSession.activeWardId,
+        canManageStand
       ]);
 
       if (deleted.rowCount) {
@@ -275,7 +283,7 @@ export default async function AnnouncementsPage({ searchParams }: { searchParams
 
     if (
       !actionSession.activeWardId ||
-      !canManageMeetings({ roles: actionSession.user.roles, activeWardId: actionSession.activeWardId }, actionSession.activeWardId)
+      !canManageStandAnnouncements({ roles: actionSession.user.roles, activeWardId: actionSession.activeWardId }, actionSession.activeWardId)
     ) {
       redirect('/announcements');
     }
@@ -311,7 +319,7 @@ export default async function AnnouncementsPage({ searchParams }: { searchParams
 
     if (
       !actionSession.activeWardId ||
-      !canManageMeetings({ roles: actionSession.user.roles, activeWardId: actionSession.activeWardId }, actionSession.activeWardId)
+      !canManageStandAnnouncements({ roles: actionSession.user.roles, activeWardId: actionSession.activeWardId }, actionSession.activeWardId)
     ) {
       redirect('/announcements');
     }
@@ -337,7 +345,7 @@ export default async function AnnouncementsPage({ searchParams }: { searchParams
 
     if (
       !actionSession.activeWardId ||
-      !canManageMeetings({ roles: actionSession.user.roles, activeWardId: actionSession.activeWardId }, actionSession.activeWardId)
+      !canManageStandAnnouncements({ roles: actionSession.user.roles, activeWardId: actionSession.activeWardId }, actionSession.activeWardId)
     ) {
       redirect('/announcements');
     }
@@ -435,7 +443,7 @@ export default async function AnnouncementsPage({ searchParams }: { searchParams
 
     if (
       !actionSession.activeWardId ||
-      !canManageMeetings({ roles: actionSession.user.roles, activeWardId: actionSession.activeWardId }, actionSession.activeWardId)
+      !canManageStandAnnouncements({ roles: actionSession.user.roles, activeWardId: actionSession.activeWardId }, actionSession.activeWardId)
     ) {
       redirect('/announcements');
     }
@@ -485,8 +493,9 @@ export default async function AnnouncementsPage({ searchParams }: { searchParams
       `SELECT id, title, body, start_date, end_date, is_permanent, placement, include_in_program, include_in_stand, created_at
          FROM announcement
         WHERE ward_id = $1::uuid
+          AND ($2::boolean OR include_in_program = TRUE)
         ORDER BY created_at DESC`,
-      [session.activeWardId]
+      [session.activeWardId, canManage]
     );
 
     const calendarFeedsResult = await client.query(
@@ -522,6 +531,7 @@ export default async function AnnouncementsPage({ searchParams }: { searchParams
         wardId={session.activeWardId}
         targetSunday={targetSunday}
         canManage={canManage}
+        canManageProgram={canManageProgram}
         announcements={announcements}
         calendarFeeds={calendarFeeds}
         calendarEvents={calendarEvents}

@@ -46,7 +46,7 @@ export function getNavigationItems(
     add('actions-to-do', '/actions-to-do', true);
   }
 
-  if (hasAnyRole(roles, CLERK_OR_BISHOPRIC_ROLES) || hasRole(roles, 'STAND_ADMIN')) {
+  if (hasAnyRole(roles, CLERK_OR_BISHOPRIC_ROLES) || hasRole(roles, 'STAND_ADMIN') || hasRole(roles, 'PROGRAM_EDITOR')) {
     add('announcements', '/announcements', true);
   }
 

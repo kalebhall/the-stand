@@ -70,6 +70,18 @@ export function canManageMeetings(session: { roles?: string[]; activeWardId?: st
   return hasRole(roles, 'STAND_ADMIN') || hasRole(roles, 'BISHOPRIC_EDITOR') || hasRole(roles, 'CLERK_EDITOR');
 }
 
+export function canViewAnnouncements(session: { roles?: string[]; activeWardId?: string | null }, wardId: string): boolean {
+  return canViewMeetings(session, wardId) || (inActiveWard(session, wardId) && hasRole(session.roles, 'PROGRAM_EDITOR'));
+}
+
+export function canManageProgramAnnouncements(session: { roles?: string[]; activeWardId?: string | null }, wardId: string): boolean {
+  return canManageMeetings(session, wardId) || (inActiveWard(session, wardId) && hasRole(session.roles, 'PROGRAM_EDITOR'));
+}
+
+export function canManageStandAnnouncements(session: { roles?: string[]; activeWardId?: string | null }, wardId: string): boolean {
+  return canManageMeetings(session, wardId);
+}
+
 function inActiveWard(session: { roles?: string[]; activeWardId?: string | null }, wardId: string): boolean {
   return session.activeWardId === wardId;
 }

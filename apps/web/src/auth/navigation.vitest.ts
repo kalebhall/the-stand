@@ -19,6 +19,7 @@ describe('getNavigationItems', () => {
     const items = getNavigationItems(['PROGRAM_EDITOR'], 'ward', allModulesEnabled());
     expect(items).toContainEqual({ href: '/programs', label: 'Programs' });
     expect(items).toContainEqual({ href: '/programs/templates', label: 'Templates' });
+    expect(items).toContainEqual({ href: '/announcements', label: 'Announcements' });
     expect(items).not.toContainEqual({ href: '/callings', label: 'Callings' });
     expect(items).not.toContainEqual({ href: '/members', label: 'Members' });
     expect(items).not.toContainEqual({ href: '/imports', label: 'Imports' });

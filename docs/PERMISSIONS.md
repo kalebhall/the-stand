@@ -47,6 +47,7 @@ WARD ROLES
 - WARD_CLERK
 - MEMBERSHIP_CLERK
 - CONDUCTOR_VIEW
+- PROGRAM_EDITOR
 
 GLOBAL roles apply across the entire system.
 WARD roles apply only within a specific ward.
@@ -229,6 +230,30 @@ Permissions:
 Restrictions:
 
 - No meeting editing
+
+---
+
+PROGRAM_EDITOR
+--------------------------------------------------
+
+Purpose:
+Prepare and organize meeting programs without controlling the live conducting workflow.
+
+Permissions:
+
+- Create and edit program items
+- Reorder program items
+- Add and edit program-only announcements
+- Use approved program templates
+- Preview draft programs
+
+Restrictions:
+
+- Cannot enable or modify announcements for At the Stand
+- Cannot publish or republish unless explicitly enabled by ward settings
+- Cannot complete meetings
+- Cannot manage users, callings, imports, or ward settings
+- Cannot manage templates by default
 
 ---
 

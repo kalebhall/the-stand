@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 
 import { isAnnouncementPlacement } from '@/src/announcements/types';
 import { auth } from '@/src/auth/auth';
-import { canManageMeetings } from '@/src/auth/roles';
+import { canManageProgramAnnouncements, canManageStandAnnouncements } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { createLogger } from '@/src/lib/logger';
 import { setDbContext } from '@/src/db/context';
@@ -33,7 +33,9 @@ export async function PUT(request: Request, context: { params: Promise<{ wardId:
   }
 
   const { wardId, announcementId } = await context.params;
-  if (!(await isWardModuleEnabled(wardId, session.user.id, 'announcements')) || !canManageMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) {
+  const canManageProgram = canManageProgramAnnouncements({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId);
+  const canManageStand = canManageStandAnnouncements({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId);
+  if (!(await isWardModuleEnabled(wardId, session.user.id, 'announcements')) || !canManageProgram) {
     return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
   }
 
@@ -44,7 +46,7 @@ export async function PUT(request: Request, context: { params: Promise<{ wardId:
   const endDate = normalizeDate(body?.endDate);
   const isPermanent = Boolean(body?.isPermanent);
   const includeInProgram = body?.includeInProgram !== false;
-  const includeInStand = Boolean(body?.includeInStand);
+  const includeInStand = canManageStand && Boolean(body?.includeInStand);
   const details = body?.body?.trim() ?? '';
 
   if (!title || !isAnnouncementPlacement(placement) || (startDate && endDate && startDate > endDate)) {
@@ -66,10 +68,10 @@ export async function PUT(request: Request, context: { params: Promise<{ wardId:
               is_permanent = $5,
               placement = $6,
               include_in_program = $7,
-              include_in_stand = $8
-        WHERE id = $9 AND ward_id = $10
+              include_in_stand = CASE WHEN $10::boolean THEN $8 ELSE include_in_stand END
+        WHERE id = $9 AND ward_id = $11
         RETURNING id`,
-      [title, details || null, startDate, endDate, isPermanent, placement, includeInProgram, includeInStand, announcementId, wardId]
+      [title, details || null, startDate, endDate, isPermanent, placement, includeInProgram, includeInStand, announcementId, canManageStand, wardId]
     );
 
     if (!updated.rowCount) {
@@ -102,7 +104,9 @@ export async function DELETE(_: Request, context: { params: Promise<{ wardId: st
   }
 
   const { wardId, announcementId } = await context.params;
-  if (!(await isWardModuleEnabled(wardId, session.user.id, 'announcements')) || !canManageMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) {
+  const canManageProgram = canManageProgramAnnouncements({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId);
+  const canManageStand = canManageStandAnnouncements({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId);
+  if (!(await isWardModuleEnabled(wardId, session.user.id, 'announcements')) || !canManageProgram) {
     return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
   }
 
@@ -112,9 +116,10 @@ export async function DELETE(_: Request, context: { params: Promise<{ wardId: st
     await client.query('BEGIN');
     await setDbContext(client, { userId: session.user.id, wardId });
 
-    const deleted = await client.query('DELETE FROM announcement WHERE id = $1 AND ward_id = $2 RETURNING id, title', [
+    const deleted = await client.query('DELETE FROM announcement WHERE id = $1 AND ward_id = $2 AND ($3::boolean OR include_in_stand = FALSE) RETURNING id, title', [
       announcementId,
-      wardId
+      wardId,
+      canManageStand
     ]);
 
     if (!deleted.rowCount) {

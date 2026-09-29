@@ -1,9 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { authMock, canManageMeetingsMock, canViewMeetingsMock, moduleEnabledMock, setDbContextMock, queryMock, releaseMock, connectMock } = vi.hoisted(() => ({
+const { authMock, canManageMeetingsMock, canViewMeetingsMock, canManageProgramAnnouncementsMock, canManageStandAnnouncementsMock, canViewAnnouncementsMock, moduleEnabledMock, setDbContextMock, queryMock, releaseMock, connectMock } = vi.hoisted(() => ({
   authMock: vi.fn(),
   canManageMeetingsMock: vi.fn(),
   canViewMeetingsMock: vi.fn(),
+  canManageProgramAnnouncementsMock: vi.fn(),
+  canManageStandAnnouncementsMock: vi.fn(),
+  canViewAnnouncementsMock: vi.fn(),
   moduleEnabledMock: vi.fn(),
   setDbContextMock: vi.fn(),
   queryMock: vi.fn(),
@@ -14,7 +17,10 @@ const { authMock, canManageMeetingsMock, canViewMeetingsMock, moduleEnabledMock,
 vi.mock('@/src/auth/auth', () => ({ auth: authMock }));
 vi.mock('@/src/auth/roles', () => ({
   canManageMeetings: canManageMeetingsMock,
-  canViewMeetings: canViewMeetingsMock
+  canViewMeetings: canViewMeetingsMock,
+  canManageProgramAnnouncements: canManageProgramAnnouncementsMock,
+  canManageStandAnnouncements: canManageStandAnnouncementsMock,
+  canViewAnnouncements: canViewAnnouncementsMock
 }));
 vi.mock('@/src/modules/service', () => ({ isWardModuleEnabled: moduleEnabledMock }));
 vi.mock('@/src/db/context', () => ({ setDbContext: setDbContextMock }));
@@ -36,6 +42,9 @@ describe('GET and POST /api/w/[wardId]/announcements', () => {
     });
     canViewMeetingsMock.mockReturnValue(true);
     canManageMeetingsMock.mockReturnValue(true);
+    canViewAnnouncementsMock.mockReturnValue(true);
+    canManageProgramAnnouncementsMock.mockReturnValue(true);
+    canManageStandAnnouncementsMock.mockReturnValue(true);
     moduleEnabledMock.mockResolvedValue(true);
 
     connectMock.mockResolvedValue({
@@ -87,6 +96,25 @@ describe('GET and POST /api/w/[wardId]/announcements', () => {
     ]);
   });
 
+  it('forces Program Editor announcements to remain out of At the Stand', async () => {
+    authMock.mockResolvedValue({ user: { id: 'user-1', roles: ['PROGRAM_EDITOR'] }, activeWardId: 'ward-1' });
+    canManageProgramAnnouncementsMock.mockReturnValue(true);
+    canManageStandAnnouncementsMock.mockReturnValue(false);
+    queryMock
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({ rows: [{ id: 'ann-program' }] })
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({});
+
+    const res = await POST(new Request('http://localhost/api/w/ward-1/announcements', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: 'Program only', includeInProgram: true, includeInStand: true })
+    }), { params: Promise.resolve({ wardId: 'ward-1' }) });
+
+    expect(res.status).toBe(201);
+    expect(queryMock).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO announcement'), expect.arrayContaining([true, false]));
+  });
   it('creates an announcement with default program true and stand false', async () => {
     queryMock
       .mockResolvedValueOnce({}) // BEGIN

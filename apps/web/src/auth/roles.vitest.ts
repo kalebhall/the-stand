@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest';
 import {
   canAssignRole,
   canManageMeetings,
+  canManageProgramAnnouncements,
+  canManageStandAnnouncements,
   canManageWardUsers,
   canUseInternalNotes,
   canViewCallings,
@@ -72,6 +74,13 @@ describe('program permissions', () => {
 
   const active = { roles: ['PROGRAM_EDITOR'], activeWardId: 'ward-a' };
 
+  it('allows Program Editor program announcements but not stand announcements', () => {
+    const editor = { roles: ['PROGRAM_EDITOR'], activeWardId: 'ward-a' };
+    expect(canManageProgramAnnouncements(editor, 'ward-a')).toBe(true);
+    expect(canManageStandAnnouncements(editor, 'ward-a')).toBe(false);
+    expect(canManageProgramAnnouncements(editor, 'ward-b')).toBe(false);
+    expect(canManageStandAnnouncements({ roles: ['BISHOPRIC_EDITOR'], activeWardId: 'ward-a' }, 'ward-a')).toBe(true);
+  });
   it('limits PROGRAM_EDITOR to the active ward and program helpers', () => {
     expect(canViewProgramDesigner(active, 'ward-a')).toBe(true);
     expect(canEditProgramDesign(active, 'ward-a')).toBe(true);
