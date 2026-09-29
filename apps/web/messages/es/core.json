@@ -151,6 +151,8 @@
     "closeNavigation": "Cerrar menú de navegación",
     "collapseMenu": "Contraer menú",
     "expandMenu": "Expandir menú",
+    "pinMenu": "Mantener el menú abierto",
+    "unpinMenu": "Permitir que el menú se contraiga",
     "helpManual": "Ayuda / Manual",
     "settings": "Configuración",
     "logOut": "Cerrar sesión"

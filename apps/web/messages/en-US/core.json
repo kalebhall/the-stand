@@ -151,6 +151,8 @@
     "closeNavigation": "Close navigation menu",
     "collapseMenu": "Collapse menu",
     "expandMenu": "Expand menu",
+    "pinMenu": "Pin menu open",
+    "unpinMenu": "Allow menu to collapse",
     "helpManual": "Help / Manual",
     "settings": "Settings",
     "logOut": "Log out"
