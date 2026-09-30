@@ -157,6 +157,17 @@
     "frontCover": "Front cover",
     "insideLeft": "Inside left",
     "insideRight": "Inside right",
-    "backCover": "Back cover"
+    "backCover": "Back cover",
+    "baptismPrograms": "Baptism programs",
+    "baptismProgramsDescription": "Create and maintain ward-scoped baptism program drafts.",
+    "baptismDate": "Date",
+    "baptismTitle": "Title",
+    "baptismLocation": "Location",
+    "baptismParticipantName": "Participant name",
+    "baptismSaveChanges": "Save changes",
+    "baptismCancel": "Cancel",
+    "baptismCreate": "Create baptism program",
+    "baptismEdit": "Edit",
+    "baptismFailedLoad": "Failed to load baptism programs"
   }
 }

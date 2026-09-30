@@ -157,6 +157,17 @@
     "frontCover": "Pabalat sa harap",
     "insideLeft": "Kaliwa sa loob",
     "insideRight": "Sa loob kanan",
-    "backCover": "Panlikod na takip"
+    "backCover": "Panlikod na takip",
+    "baptismPrograms": "Mga programa ng binyag",
+    "baptismProgramsDescription": "Gumawa at pamahalaan ang mga draft ng programa ng binyag ng ward.",
+    "baptismDate": "Petsa",
+    "baptismTitle": "Pamagat",
+    "baptismLocation": "Lugar",
+    "baptismParticipantName": "Pangalan ng kalahok",
+    "baptismSaveChanges": "I-save ang mga pagbabago",
+    "baptismCancel": "Kanselahin",
+    "baptismCreate": "Gumawa ng programa ng binyag",
+    "baptismEdit": "I-edit",
+    "baptismFailedLoad": "Nabigong i-load ang mga programa ng binyag"
   }
 }

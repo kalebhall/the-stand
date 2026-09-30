@@ -157,6 +157,17 @@
     "frontCover": "Portada",
     "insideLeft": "Interior izquierdo",
     "insideRight": "Interior derecho",
-    "backCover": "Contraportada"
+    "backCover": "Contraportada",
+    "baptismPrograms": "Programas de bautismo",
+    "baptismProgramsDescription": "Crea y administra borradores de programas de bautismo del barrio.",
+    "baptismDate": "Fecha",
+    "baptismTitle": "Título",
+    "baptismLocation": "Lugar",
+    "baptismParticipantName": "Nombre del participante",
+    "baptismSaveChanges": "Guardar cambios",
+    "baptismCancel": "Cancelar",
+    "baptismCreate": "Crear programa de bautismo",
+    "baptismEdit": "Editar",
+    "baptismFailedLoad": "No se pudieron cargar los programas de bautismo"
   }
 }

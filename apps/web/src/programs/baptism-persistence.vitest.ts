@@ -26,6 +26,7 @@ describe('baptism Programs persistence', () => {
     const client = { query: vi.fn().mockResolvedValue({ rows: [{
       schema_version: 1,
       document_json: document,
+      source_id: 'event-1',
       source_version: '3',
       revision: 1,
       updated_by_user_id: 'user-1',
@@ -43,6 +44,7 @@ describe('baptism Programs persistence', () => {
     const client = { query: vi.fn().mockResolvedValue({ rows: [{
       schema_version: 1,
       document_json: document,
+      source_id: 'event-1',
       source_version: '3',
       revision: 2,
       updated_by_user_id: 'user-1',

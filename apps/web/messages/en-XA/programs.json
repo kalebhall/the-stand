@@ -157,6 +157,17 @@
     "frontCover": "［Fřøñţ çøvëř］",
     "insideLeft": "［Ïñšïðë ľëfţ］",
     "insideRight": "［Ïñšïðë řïĝħţ］",
-    "backCover": "［Bäçķ çøvëř］"
+    "backCover": "［Bäçķ çøvëř］",
+    "baptismPrograms": "［Bäþţïšmë þřøĝřämš］",
+    "baptismProgramsDescription": "［Çřëäţë äñð mäïñţäïñ ŵäřð-šçøþëð bäþţïšmë þřøĝřäm ðřäƒţš．］",
+    "baptismDate": "［Ðäţë］",
+    "baptismTitle": "［Ţïţľë］",
+    "baptismLocation": "［Łøçäţïøñ］",
+    "baptismParticipantName": "［Þäřţïçïþäñţ ñämë］",
+    "baptismSaveChanges": "［Šävë çħäñĝëš］",
+    "baptismCancel": "［Çäñçëľ］",
+    "baptismCreate": "［Çřëäţë bäþţïšmë þřøĝřäm］",
+    "baptismEdit": "［Ëðïţ］",
+    "baptismFailedLoad": "［Fäïľëð ţø ľøäð bäþţïšmë þřøĝřämš］"
   }
 }

@@ -14,8 +14,8 @@ flowchart LR
   A2["root:other<br/>2 files"]
   A3["root:tooling<br/>7 files"]
   A4["web:announcements<br/>2 files"]
-  A5["web:api<br/>133 files"]
-  A6["web:app<br/>145 files"]
+  A5["web:api<br/>134 files"]
+  A6["web:app<br/>147 files"]
   A7["web:audit<br/>2 files"]
   A8["web:auth<br/>12 files"]
   A9["web:bootstrap.mjs<br/>1 files"]
@@ -49,16 +49,16 @@ flowchart LR
   A37["web:types<br/>2 files"]
   A38["web:ui<br/>35 files"]
   A39["web:version.mjs<br/>1 files"]
-  A5 -->|169| A8
-  A5 -->|148| A16
+  A5 -->|171| A8
+  A5 -->|150| A16
   A6 -->|118| A38
-  A6 -->|93| A8
+  A6 -->|95| A8
   A6 -->|58| A16
-  A5 -->|53| A27
+  A5 -->|54| A27
   A5 -->|52| A17
   A5 -->|44| A29
   A5 -->|31| A7
-  A6 -->|29| A27
+  A6 -->|30| A27
   A5 -->|25| A24
   A6 -->|18| A21
   A6 -->|15| A17
@@ -70,6 +70,7 @@ flowchart LR
   A31 -->|8| A27
   A5 -->|7| A13
   A5 -->|7| A23
+  A5 -->|7| A32
   A32 -->|7| A17
   A5 -->|6| A26
   A5 -->|5| A21
@@ -77,7 +78,6 @@ flowchart LR
   A6 -->|5| A34
   A8 -->|5| A27
   A38 -->|5| A21
-  A5 -->|4| A32
   A6 -->|4| A11
   A17 -->|4| A8
   A27 -->|4| A13
@@ -161,8 +161,8 @@ flowchart LR
 | `root:other` | 2 |
 | `root:tooling` | 7 |
 | `web:announcements` | 2 |
-| `web:api` | 133 |
-| `web:app` | 145 |
+| `web:api` | 134 |
+| `web:app` | 147 |
 | `web:audit` | 2 |
 | `web:auth` | 12 |
 | `web:bootstrap.mjs` | 1 |
@@ -202,20 +202,20 @@ flowchart LR
 | Importing area | Imported area | Imports |
 | --- | --- | ---: |
 | `web:document-designer` | `web:document-designer` | 183 |
-| `web:api` | `web:auth` | 169 |
-| `web:api` | `web:db` | 148 |
+| `web:api` | `web:auth` | 171 |
+| `web:api` | `web:db` | 150 |
 | `web:app` | `web:ui` | 118 |
-| `web:app` | `web:auth` | 93 |
-| `web:app` | `web:app` | 71 |
+| `web:app` | `web:auth` | 95 |
+| `web:app` | `web:app` | 72 |
 | `web:app` | `web:db` | 58 |
 | `web:notifications` | `web:notifications` | 57 |
-| `web:api` | `web:modules` | 53 |
+| `web:api` | `web:modules` | 54 |
 | `web:api` | `web:document-designer` | 52 |
 | `web:api` | `web:notifications` | 44 |
 | `web:api` | `web:api` | 39 |
 | `web:ui` | `web:ui` | 33 |
 | `web:api` | `web:audit` | 31 |
-| `web:app` | `web:modules` | 29 |
+| `web:app` | `web:modules` | 30 |
 | `web:programs` | `web:programs` | 27 |
 | `web:api` | `web:lib` | 25 |
 | `web:platform` | `web:platform` | 22 |
@@ -236,6 +236,7 @@ flowchart LR
 | `web:stand` | `web:stand` | 8 |
 | `web:api` | `web:conducting` | 7 |
 | `web:api` | `web:leadership` | 7 |
+| `web:api` | `web:programs` | 7 |
 | `web:church-actions` | `web:church-actions` | 7 |
 | `web:programs` | `web:document-designer` | 7 |
 | `web:api` | `web:meetings` | 6 |
@@ -244,7 +245,6 @@ flowchart LR
 | `web:app` | `web:stand` | 5 |
 | `web:auth` | `web:modules` | 5 |
 | `web:ui` | `web:i18n` | 5 |
-| `web:api` | `web:programs` | 4 |
 | `web:app` | `web:callings` | 4 |
 | `web:callings` | `web:callings` | 4 |
 | `web:db` | `web:db` | 4 |
@@ -336,10 +336,10 @@ flowchart LR
 
 | Importing area | Package/runtime | Imports |
 | --- | --- | ---: |
-| `web:app` | `next` | 103 |
-| `web:app` | `next-intl` | 88 |
-| `web:api` | `next` | 85 |
-| `web:app` | `react` | 45 |
+| `web:app` | `next` | 104 |
+| `web:app` | `next-intl` | 89 |
+| `web:api` | `next` | 86 |
+| `web:app` | `react` | 46 |
 | `web:api` | `vitest` | 36 |
 | `web:ui` | `react` | 32 |
 | `web:document-designer` | `vitest` | 26 |
@@ -513,6 +513,7 @@ flowchart LR
 | `apps/web/app/api/w/[wardId]/announcements/route.ts` | `web:api` | 10 | 1 |
 | `apps/web/app/api/w/[wardId]/announcements/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/audit-log/route.ts` | `web:api` | 5 | 1 |
+| `apps/web/app/api/w/[wardId]/baptism-programs/[eventId]/route.ts` | `web:api` | 8 | 1 |
 | `apps/web/app/api/w/[wardId]/baptism-programs/route.ts` | `web:api` | 8 | 1 |
 | `apps/web/app/api/w/[wardId]/baptism-programs/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/bishopric/[meetingId]/actions/[actionId]/route.ts` | `web:api` | 7 | 1 |
@@ -673,6 +674,8 @@ flowchart LR
 | `apps/web/app/programs/[meetingId]/page.tsx` | `web:app` | 5 | 1 |
 | `apps/web/app/programs/[meetingId]/program-designer-client.tsx` | `web:app` | 8 | 3 |
 | `apps/web/app/programs/[meetingId]/program-designer-client.vitest.tsx` | `web:app` | 4 | 3 |
+| `apps/web/app/programs/baptism/baptism-programs-client.tsx` | `web:app` | 0 | 2 |
+| `apps/web/app/programs/baptism/page.tsx` | `web:app` | 4 | 1 |
 | `apps/web/app/programs/page.tsx` | `web:app` | 9 | 2 |
 | `apps/web/app/programs/programs-client.tsx` | `web:app` | 0 | 2 |
 | `apps/web/app/programs/programs-client.vitest.tsx` | `web:app` | 3 | 3 |

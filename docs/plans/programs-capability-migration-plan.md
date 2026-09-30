@@ -18,7 +18,7 @@ The first supported source remains `STAND_MEETING` / `SACRAMENT_PROGRAM`. Future
 
 ## Current execution status
 
-**In progress — Milestone 4, Tasks 1–2, persistence foundation, and authenticated source/document route foundation.** Baptism is the first non-sacrament candidate. The generic contracts now support `BAPTISM_PROGRAM` / `BAPTISM_EVENT`, with an event-only source contract that excludes member IDs, ordinance records, and private notes. A small `STANDARD_BAPTISM` template identifier, typed adapter/service/registry coverage, a ward-scoped `program_document` persistence boundary with live RLS coverage, and an authenticated source/document route are in place. Editor/public/print integration, complete route/browser acceptance, and localization remain before the Milestone 4 gate can be called complete.
+**In progress — Milestone 4, Tasks 1–2, persistence, protected source/document workflow, and initial editor UI.** Baptism is the first non-sacrament candidate. The generic contracts support `BAPTISM_PROGRAM` / `BAPTISM_EVENT`; the ward-scoped source/document persistence and authenticated create/list/update routes are in place, with a localized initial editor page. The page currently edits baptism source/display fields and does not yet provide generic layout editing, publication, print/public rendering, or browser acceptance.
 
 First-slice files:
 
@@ -40,9 +40,11 @@ First-slice files:
 - `apps/web/src/db/program-document-rls.vitest.ts`
 - `apps/web/app/api/w/[wardId]/baptism-programs/route.ts`
 - `apps/web/app/api/w/[wardId]/baptism-programs/route.vitest.ts`
+- `apps/web/app/api/w/[wardId]/baptism-programs/[eventId]/route.ts`
+- `apps/web/app/programs/baptism/page.tsx`
+- `apps/web/app/programs/baptism/baptism-programs-client.tsx`
 
 Architecture updates:
-
 
 - `docs/architecture/domain-boundaries.md`
 - `docs/architecture/module-contracts.md`
