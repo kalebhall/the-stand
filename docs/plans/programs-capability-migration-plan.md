@@ -224,6 +224,8 @@ API contract tests, public privacy tests, abuse/rate-limit tests, and immutable 
 
 ## Milestone 6 — Extraction decision
 
+**Status:** Decided to keep Programs as an internal modular capability; see [`docs/decisions/programs-extraction-decision.md`](../decisions/programs-extraction-decision.md).
+
 **Outcome:** Make a data-based decision about a standalone Programs product.
 
 Extract only if all or most of these are true:
