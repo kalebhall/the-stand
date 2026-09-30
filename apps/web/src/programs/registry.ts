@@ -1,10 +1,12 @@
 import type { ProgramType, ProgramSourceType } from './contracts';
+import { baptismProgramAdapter } from './baptism-adapter';
 import { sacramentMeetingProgramAdapter } from './sacrament-meeting-adapter';
+import type { ProgramSourceAdapter } from './source-adapter';
 
 export type ProgramRegistration = {
   readonly programType: ProgramType;
   readonly sourceType: ProgramSourceType;
-  readonly adapter: typeof sacramentMeetingProgramAdapter;
+  readonly adapter: ProgramSourceAdapter<any, any, any>;
 };
 
 function assertUniqueRegistryKeys(registrations: readonly ProgramRegistration[]): void {
@@ -22,6 +24,11 @@ export const PROGRAM_REGISTRY = [
     programType: sacramentMeetingProgramAdapter.programType,
     sourceType: sacramentMeetingProgramAdapter.sourceType,
     adapter: sacramentMeetingProgramAdapter
+  },
+  {
+    programType: baptismProgramAdapter.programType,
+    sourceType: baptismProgramAdapter.sourceType,
+    adapter: baptismProgramAdapter
   }
 ] as const satisfies readonly ProgramRegistration[];
 

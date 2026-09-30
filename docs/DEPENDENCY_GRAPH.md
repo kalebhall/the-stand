@@ -41,7 +41,7 @@ flowchart LR
   A29["web:notifications<br/>40 files"]
   A30["web:offline<br/>3 files"]
   A31["web:platform<br/>14 files"]
-  A32["web:programs<br/>10 files"]
+  A32["web:programs<br/>12 files"]
   A33["web:reports<br/>3 files"]
   A34["web:stand<br/>10 files"]
   A35["web:test-matchers.d.ts<br/>1 files"]
@@ -188,7 +188,7 @@ flowchart LR
 | `web:notifications` | 40 |
 | `web:offline` | 3 |
 | `web:platform` | 14 |
-| `web:programs` | 10 |
+| `web:programs` | 12 |
 | `web:reports` | 3 |
 | `web:stand` | 10 |
 | `web:test-matchers.d.ts` | 1 |
@@ -218,12 +218,12 @@ flowchart LR
 | `web:app` | `web:modules` | 29 |
 | `web:api` | `web:lib` | 25 |
 | `web:platform` | `web:platform` | 22 |
+| `web:programs` | `web:programs` | 22 |
 | `web:app` | `web:i18n` | 18 |
 | `web:modules` | `web:modules` | 17 |
 | `web:app` | `web:document-designer` | 15 |
 | `web:app` | `web:meetings` | 15 |
 | `web:app` | `web:platform` | 15 |
-| `web:programs` | `web:programs` | 15 |
 | `web:api` | `web:callings` | 14 |
 | `web:imports` | `web:imports` | 13 |
 | `web:meetings` | `web:meetings` | 12 |
@@ -365,11 +365,11 @@ flowchart LR
 | `web:leadership` | `vitest` | 6 |
 | `web:auth` | `vitest` | 5 |
 | `web:church-actions` | `vitest` | 5 |
+| `web:programs` | `vitest` | 5 |
 | `web:stand` | `vitest` | 5 |
 | `web:app` | `@testing-library/user-event` | 4 |
 | `web:modules` | `vitest` | 4 |
 | `web:platform` | `vitest` | 4 |
-| `web:programs` | `vitest` | 4 |
 | `web:ui` | `next-auth` | 4 |
 | `web:api` | `Node.js` | 3 |
 | `web:app` | `Node.js` | 3 |
@@ -1064,14 +1064,16 @@ flowchart LR
 | `apps/web/src/platform/permissions/index.ts` | `web:platform` | 6 | 0 |
 | `apps/web/src/platform/platform-facades.vitest.ts` | `web:platform` | 7 | 1 |
 | `apps/web/src/platform/tenancy/context.ts` | `web:platform` | 1 | 0 |
+| `apps/web/src/programs/baptism-adapter.ts` | `web:programs` | 2 | 0 |
+| `apps/web/src/programs/baptism-adapter.vitest.ts` | `web:programs` | 2 | 1 |
 | `apps/web/src/programs/contracts.ts` | `web:programs` | 0 | 1 |
 | `apps/web/src/programs/persistence.ts` | `web:programs` | 4 | 0 |
 | `apps/web/src/programs/persistence.vitest.ts` | `web:programs` | 2 | 1 |
-| `apps/web/src/programs/registry.ts` | `web:programs` | 2 | 0 |
+| `apps/web/src/programs/registry.ts` | `web:programs` | 4 | 0 |
 | `apps/web/src/programs/registry.vitest.ts` | `web:programs` | 1 | 1 |
 | `apps/web/src/programs/sacrament-meeting-adapter.ts` | `web:programs` | 3 | 0 |
 | `apps/web/src/programs/sacrament-meeting-adapter.vitest.ts` | `web:programs` | 2 | 1 |
-| `apps/web/src/programs/service.ts` | `web:programs` | 3 | 0 |
+| `apps/web/src/programs/service.ts` | `web:programs` | 4 | 0 |
 | `apps/web/src/programs/service.vitest.ts` | `web:programs` | 1 | 1 |
 | `apps/web/src/programs/source-adapter.ts` | `web:programs` | 1 | 0 |
 | `apps/web/src/reports/aggregations.ts` | `web:reports` | 0 | 1 |

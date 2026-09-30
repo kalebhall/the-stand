@@ -62,6 +62,7 @@ Programs currently exposes a small static contract in `apps/web/src/programs/`:
 - `persistence.ts` is a compatibility facade over legacy meeting-document storage; it does not create a second source of truth.
 - `/api/w/[wardId]/programs/[programId]` is the first authenticated internal adapter over the generic contract; it is not a public feed.
 - `SACRAMENT_PROGRAM` with `STAND_MEETING` is the first registration.
+- `BAPTISM_PROGRAM` with `BAPTISM_EVENT` is the first non-sacrament registration. Its source contract carries only event/program display data; member IDs, ordinance records, and private notes remain outside Programs.
 
 The sacrament adapter may use existing document-designer services during migration, but future modules must not reach through it into meeting repositories. Public output remains snapshot-based and private source fields remain outside the public render input.
 

@@ -18,7 +18,7 @@ The first supported source remains `STAND_MEETING` / `SACRAMENT_PROGRAM`. Future
 
 ## Current execution status
 
-**Complete — Milestone 3, Tasks 1–5.** The existing sacrament Program Designer route now delegates legacy document reads, creation, and revision-checked writes through the Programs persistence facade. A generic authenticated internal route (`/api/w/[wardId]/programs/[programId]`) now exposes the generic document contract. The existing Programs page/client remains a compatibility UI adapter, preserving current UX and `PROGRAM_EDITOR` boundaries. No public route, public snapshot, At-the-Stand behavior, or permission scope was broadened. Milestone 4 is next: prove the abstraction with one non-sacrament program type.
+**In progress — Milestone 4, Tasks 1–2.** Baptism is the first non-sacrament candidate. The generic contracts now support `BAPTISM_PROGRAM` / `BAPTISM_EVENT`, with an event-only source contract that excludes member IDs, ordinance records, and private notes. A small `STANDARD_BAPTISM` template identifier and typed adapter/service/registry coverage are in place. Persistence, editor/public/print integration, authorization, and live ward-isolation coverage remain before the Milestone 4 gate can be called complete.
 
 First-slice files:
 
