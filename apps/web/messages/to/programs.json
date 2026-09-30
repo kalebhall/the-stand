@@ -157,6 +157,17 @@
     "frontCover": "Ko e takafi ʻi muʻá",
     "insideLeft": "Loto toʻohema",
     "insideRight": "Loto toʻomataʻu",
-    "backCover": "Ko e takafi mui"
+    "backCover": "Ko e takafi mui",
+    "baptismPrograms": "Ngaahi polokalama papitaiso",
+    "baptismProgramsDescription": "Faʻu mo tauhi ʻa e ngaahi palani polokalama papitaiso ʻo e uōtí.",
+    "baptismDate": "ʻAho",
+    "baptismTitle": "Hingoa",
+    "baptismLocation": "Feituʻu",
+    "baptismParticipantName": "Hingoa ʻo e tokotaha kau ki aí",
+    "baptismSaveChanges": "Fakahaofi ʻa e ngaahi liliú",
+    "baptismCancel": "Kaniseli",
+    "baptismCreate": "Faʻu ha polokalama papitaiso",
+    "baptismEdit": "Fakatonutonu",
+    "baptismFailedLoad": "Naʻe ʻikai lava ke uta ʻa e ngaahi polokalama papitaisó"
   }
 }

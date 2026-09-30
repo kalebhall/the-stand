@@ -25,7 +25,7 @@ async function programsEnabled(client: Awaited<ReturnType<typeof pool.connect>>,
       LIMIT 1`,
     [wardId]
   );
-  return result.rows[0]?.enabled !== false;
+  return result.rows[0]?.enabled === true;
 }
 
 function safeSource(value: unknown, sourceId: string, sourceVersion: string | null): Pick<BaptismProgramSource, 'eventId' | 'eventVersion' | 'date' | 'title' | 'location' | 'participantDisplayName' | 'programItems'> | null {

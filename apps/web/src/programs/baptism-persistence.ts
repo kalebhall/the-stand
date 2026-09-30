@@ -27,6 +27,9 @@ function requireBaptismDocument(document: ProgramDocument): ProgramDocument<Bapt
 function mapPersisted(row: Record<string, unknown>): PersistedBaptismProgramDocument {
   if (Number(row.schema_version) !== 1) throw new InvalidProgramPersistenceInputError(`Unsupported baptism program schema version: ${row.schema_version}`);
   const document = requireBaptismDocument(row.document_json as ProgramDocument);
+  if (document.source.sourceId !== String(row.source_id) || document.source.sourceVersion !== String(row.source_version)) {
+    throw new InvalidProgramPersistenceInputError('Persisted baptism document source identity is inconsistent.');
+  }
   return {
     ...document,
     source: { ...document.source, sourceVersion: row.source_version == null ? null : String(row.source_version) },
