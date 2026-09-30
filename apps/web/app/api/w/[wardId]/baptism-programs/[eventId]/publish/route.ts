@@ -8,20 +8,7 @@ import { setDbContext } from '@/src/db/context';
 import { isWardModuleEnabled } from '@/src/modules/service';
 import { loadBaptismProgramDocument } from '@/src/programs/baptism-persistence';
 import { baptismProgramSourceSchema } from '@/src/programs/baptism-adapter';
-
-function escapeHtml(value: string): string {
-  return value.replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character] ?? character);
-}
-
-function publicDocument(document: NonNullable<Awaited<ReturnType<typeof loadBaptismProgramDocument>>>) {
-  return { id: document.id, programType: document.programType, source: document.source, schemaVersion: document.schemaVersion, metadata: document.metadata, payload: document.payload };
-}
-
-function renderBaptismProgram(document: NonNullable<Awaited<ReturnType<typeof loadBaptismProgramDocument>>>): string {
-  const payload = document.payload;
-  const items = payload.items.map((item) => `<li><strong>${escapeHtml(item.label)}</strong>${item.content ? `<div>${escapeHtml(item.content)}</div>` : ''}</li>`).join('');
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="robots" content="noindex,nofollow"><title>${escapeHtml(document.metadata.title)}</title><style>body{font-family:system-ui,sans-serif;max-width:760px;margin:3rem auto;padding:0 1rem;line-height:1.5}h1{margin-bottom:.25rem}dl{display:grid;grid-template-columns:max-content 1fr;gap:.25rem 1rem}dt{font-weight:700}li{margin:.75rem 0}</style></head><body><h1>${escapeHtml(document.metadata.title)}</h1><dl><dt>Date</dt><dd>${escapeHtml(document.metadata.date)}</dd>${document.metadata.location ? `<dt>Location</dt><dd>${escapeHtml(document.metadata.location)}</dd>` : ''}<dt>Participant</dt><dd>${escapeHtml(payload.participantDisplayName)}</dd></dl><ol>${items}</ol></body></html>`;
-}
+import { publicBaptismDocument, renderBaptismProgram } from '@/src/programs/baptism-renderer';
 
 export async function POST(request: Request, context: { params: Promise<{ wardId: string; eventId: string }> }) {
   const { wardId, eventId } = await context.params;
@@ -54,7 +41,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     const versionResult = await client.query(`SELECT COALESCE(MAX(version), 0)::int + 1 AS next_version FROM program_publication WHERE ward_id = $1::uuid AND program_type = 'BAPTISM_PROGRAM' AND source_type = 'BAPTISM_EVENT' AND source_id = $2::text`, [wardId, eventId]);
     const version = Number(versionResult.rows[0]?.next_version);
     const token = randomBytes(24).toString('base64url');
-    const publicJson = publicDocument(document);
+    const publicJson = publicBaptismDocument(document);
     const expirationDays = profile.public_program_expiration_days == null ? null : Number(profile.public_program_expiration_days);
     const expiresAt = expirationDays !== null && Number.isInteger(expirationDays) && expirationDays > 0
       ? new Date(Date.now() + expirationDays * 24 * 60 * 60 * 1000)
