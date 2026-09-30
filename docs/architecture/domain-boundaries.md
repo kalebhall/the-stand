@@ -36,7 +36,9 @@ Core may depend on Platform. Core must not import Optional Modules.
 
 ### Optional module
 
-An optional module owns a capability that can be disabled with a documented fallback. Initial candidates include callings, membership/LCR import, announcements, notifications, interviews, technology checklists, public sharing surfaces, advanced program design, templates, media, reports, and calendar integrations.
+An optional module owns a capability that can be disabled with a documented fallback. Initial candidates include callings, membership/LCR import, announcements, notifications, interviews, technology checklists, public sharing surfaces, Programs, templates, media, reports, and calendar integrations.
+
+Programs owns reusable program documents, layouts, templates, and publication adapters. The first source is the Stand sacrament meeting; it must consume typed Core contracts rather than Core persistence internals.
 
 Optional modules may consume Core contracts and Platform services. They must not import another module's persistence internals.
 

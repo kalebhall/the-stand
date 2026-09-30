@@ -51,6 +51,17 @@ A module must not receive permissions merely by being registered.
 
 Modules reference Core IDs through contracts. They do not import another module's repositories or tables.
 
+### Programs contract
+
+Programs currently exposes a small static contract in `apps/web/src/programs/`:
+
+- `ProgramDocument` identifies a program type, source reference, schema version, metadata, and payload.
+- `ProgramSourceAdapter` translates a source record into editor data, render input, and a program document.
+- `PROGRAM_REGISTRY` statically registers the supported type/source pair; it is not runtime plugin loading.
+- `SACRAMENT_PROGRAM` with `STAND_MEETING` is the first registration.
+
+The sacrament adapter may use existing document-designer services during migration, but future modules must not reach through it into meeting repositories. Public output remains snapshot-based and private source fields remain outside the public render input.
+
 ## Extension mechanisms
 
 Use these in order of necessity:
