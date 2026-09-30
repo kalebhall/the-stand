@@ -14,8 +14,8 @@ flowchart LR
   A2["root:other<br/>2 files"]
   A3["root:tooling<br/>7 files"]
   A4["web:announcements<br/>2 files"]
-  A5["web:api<br/>134 files"]
-  A6["web:app<br/>147 files"]
+  A5["web:api<br/>135 files"]
+  A6["web:app<br/>148 files"]
   A7["web:audit<br/>2 files"]
   A8["web:auth<br/>12 files"]
   A9["web:bootstrap.mjs<br/>1 files"]
@@ -49,12 +49,12 @@ flowchart LR
   A37["web:types<br/>2 files"]
   A38["web:ui<br/>35 files"]
   A39["web:version.mjs<br/>1 files"]
-  A5 -->|171| A8
-  A5 -->|150| A16
+  A5 -->|173| A8
+  A5 -->|152| A16
   A6 -->|118| A38
   A6 -->|95| A8
-  A6 -->|58| A16
-  A5 -->|54| A27
+  A6 -->|59| A16
+  A5 -->|55| A27
   A5 -->|52| A17
   A5 -->|44| A29
   A5 -->|31| A7
@@ -66,11 +66,11 @@ flowchart LR
   A6 -->|15| A31
   A5 -->|14| A11
   A5 -->|10| A22
+  A5 -->|9| A32
   A6 -->|8| A29
   A31 -->|8| A27
   A5 -->|7| A13
   A5 -->|7| A23
-  A5 -->|7| A32
   A32 -->|7| A17
   A5 -->|6| A26
   A5 -->|5| A21
@@ -161,8 +161,8 @@ flowchart LR
 | `root:other` | 2 |
 | `root:tooling` | 7 |
 | `web:announcements` | 2 |
-| `web:api` | 134 |
-| `web:app` | 147 |
+| `web:api` | 135 |
+| `web:app` | 148 |
 | `web:audit` | 2 |
 | `web:auth` | 12 |
 | `web:bootstrap.mjs` | 1 |
@@ -202,14 +202,14 @@ flowchart LR
 | Importing area | Imported area | Imports |
 | --- | --- | ---: |
 | `web:document-designer` | `web:document-designer` | 183 |
-| `web:api` | `web:auth` | 171 |
-| `web:api` | `web:db` | 150 |
+| `web:api` | `web:auth` | 173 |
+| `web:api` | `web:db` | 152 |
 | `web:app` | `web:ui` | 118 |
 | `web:app` | `web:auth` | 95 |
 | `web:app` | `web:app` | 72 |
-| `web:app` | `web:db` | 58 |
+| `web:app` | `web:db` | 59 |
 | `web:notifications` | `web:notifications` | 57 |
-| `web:api` | `web:modules` | 54 |
+| `web:api` | `web:modules` | 55 |
 | `web:api` | `web:document-designer` | 52 |
 | `web:api` | `web:notifications` | 44 |
 | `web:api` | `web:api` | 39 |
@@ -228,6 +228,7 @@ flowchart LR
 | `web:imports` | `web:imports` | 13 |
 | `web:meetings` | `web:meetings` | 12 |
 | `web:api` | `web:imports` | 10 |
+| `web:api` | `web:programs` | 9 |
 | `web:app` | `web:notifications` | 8 |
 | `web:auth` | `web:auth` | 8 |
 | `web:i18n` | `web:i18n` | 8 |
@@ -236,7 +237,6 @@ flowchart LR
 | `web:stand` | `web:stand` | 8 |
 | `web:api` | `web:conducting` | 7 |
 | `web:api` | `web:leadership` | 7 |
-| `web:api` | `web:programs` | 7 |
 | `web:church-actions` | `web:church-actions` | 7 |
 | `web:programs` | `web:document-designer` | 7 |
 | `web:api` | `web:meetings` | 6 |
@@ -336,9 +336,9 @@ flowchart LR
 
 | Importing area | Package/runtime | Imports |
 | --- | --- | ---: |
-| `web:app` | `next` | 104 |
+| `web:app` | `next` | 105 |
 | `web:app` | `next-intl` | 89 |
-| `web:api` | `next` | 86 |
+| `web:api` | `next` | 87 |
 | `web:app` | `react` | 46 |
 | `web:api` | `vitest` | 36 |
 | `web:ui` | `react` | 32 |
@@ -367,11 +367,11 @@ flowchart LR
 | `web:auth` | `vitest` | 5 |
 | `web:church-actions` | `vitest` | 5 |
 | `web:stand` | `vitest` | 5 |
+| `web:api` | `Node.js` | 4 |
 | `web:app` | `@testing-library/user-event` | 4 |
 | `web:modules` | `vitest` | 4 |
 | `web:platform` | `vitest` | 4 |
 | `web:ui` | `next-auth` | 4 |
-| `web:api` | `Node.js` | 3 |
 | `web:app` | `Node.js` | 3 |
 | `web:app` | `next-auth` | 3 |
 | `web:callings` | `vitest` | 3 |
@@ -513,6 +513,7 @@ flowchart LR
 | `apps/web/app/api/w/[wardId]/announcements/route.ts` | `web:api` | 10 | 1 |
 | `apps/web/app/api/w/[wardId]/announcements/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/audit-log/route.ts` | `web:api` | 5 | 1 |
+| `apps/web/app/api/w/[wardId]/baptism-programs/[eventId]/publish/route.ts` | `web:api` | 7 | 2 |
 | `apps/web/app/api/w/[wardId]/baptism-programs/[eventId]/route.ts` | `web:api` | 8 | 1 |
 | `apps/web/app/api/w/[wardId]/baptism-programs/route.ts` | `web:api` | 8 | 1 |
 | `apps/web/app/api/w/[wardId]/baptism-programs/route.vitest.ts` | `web:api` | 1 | 1 |
@@ -666,6 +667,7 @@ flowchart LR
 | `apps/web/app/notifications/page.tsx` | `web:app` | 5 | 3 |
 | `apps/web/app/p/[meetingToken]/route.ts` | `web:app` | 1 | 1 |
 | `apps/web/app/p/[meetingToken]/route.vitest.ts` | `web:app` | 1 | 1 |
+| `apps/web/app/p/baptism/[token]/route.ts` | `web:app` | 1 | 1 |
 | `apps/web/app/p/ward/[portalToken]/route.ts` | `web:app` | 2 | 1 |
 | `apps/web/app/p/ward/[portalToken]/route.vitest.ts` | `web:app` | 1 | 1 |
 | `apps/web/app/page.tsx` | `web:app` | 4 | 1 |
