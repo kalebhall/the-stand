@@ -78,9 +78,11 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
     await client.query(
       `UPDATE meeting
           SET status = $3::text,
+              completed_at = now(),
+              completed_by_user_id = $4::uuid,
               updated_at = now()
         WHERE id = $1::uuid AND ward_id = $2::uuid`,
-      [meetingId, wardId, nextStatus]
+      [meetingId, wardId, nextStatus, session.user.id]
     );
 
     const outboxResult = await client.query(
