@@ -41,7 +41,7 @@ flowchart LR
   A29["web:notifications<br/>40 files"]
   A30["web:offline<br/>3 files"]
   A31["web:platform<br/>14 files"]
-  A32["web:programs<br/>8 files"]
+  A32["web:programs<br/>10 files"]
   A33["web:reports<br/>3 files"]
   A34["web:stand<br/>10 files"]
   A35["web:test-matchers.d.ts<br/>1 files"]
@@ -82,6 +82,7 @@ flowchart LR
   A27 -->|4| A31
   A29 -->|4| A16
   A31 -->|4| A8
+  A32 -->|4| A17
   A5 -->|3| A12
   A5 -->|3| A18
   A6 -->|3| A18
@@ -139,7 +140,6 @@ flowchart LR
   A29 -->|1| A28
   A29 -->|1| A31
   A31 -->|1| A30
-  A32 -->|1| A17
   A34 -->|1| A26
   A38 -->|1| A8
   A38 -->|1| A12
@@ -187,7 +187,7 @@ flowchart LR
 | `web:notifications` | 40 |
 | `web:offline` | 3 |
 | `web:platform` | 14 |
-| `web:programs` | 8 |
+| `web:programs` | 10 |
 | `web:reports` | 3 |
 | `web:stand` | 10 |
 | `web:test-matchers.d.ts` | 1 |
@@ -222,10 +222,10 @@ flowchart LR
 | `web:app` | `web:document-designer` | 15 |
 | `web:app` | `web:meetings` | 15 |
 | `web:app` | `web:platform` | 15 |
+| `web:programs` | `web:programs` | 15 |
 | `web:api` | `web:callings` | 14 |
 | `web:imports` | `web:imports` | 13 |
 | `web:meetings` | `web:meetings` | 12 |
-| `web:programs` | `web:programs` | 12 |
 | `web:api` | `web:imports` | 10 |
 | `web:app` | `web:notifications` | 8 |
 | `web:auth` | `web:auth` | 8 |
@@ -251,6 +251,7 @@ flowchart LR
 | `web:modules` | `web:platform` | 4 |
 | `web:notifications` | `web:db` | 4 |
 | `web:platform` | `web:auth` | 4 |
+| `web:programs` | `web:document-designer` | 4 |
 | `web:api` | `web:church-actions` | 3 |
 | `web:api` | `web:features` | 3 |
 | `web:app` | `web:features` | 3 |
@@ -317,7 +318,6 @@ flowchart LR
 | `web:notifications` | `web:platform` | 1 |
 | `web:offline` | `web:offline` | 1 |
 | `web:platform` | `web:offline` | 1 |
-| `web:programs` | `web:document-designer` | 1 |
 | `web:reports` | `web:reports` | 1 |
 | `web:stand` | `web:meetings` | 1 |
 | `web:ui` | `web:auth` | 1 |
@@ -367,6 +367,7 @@ flowchart LR
 | `web:app` | `@testing-library/user-event` | 4 |
 | `web:modules` | `vitest` | 4 |
 | `web:platform` | `vitest` | 4 |
+| `web:programs` | `vitest` | 4 |
 | `web:ui` | `next-auth` | 4 |
 | `web:api` | `Node.js` | 3 |
 | `web:app` | `Node.js` | 3 |
@@ -378,7 +379,6 @@ flowchart LR
 | `web:i18n` | `vitest` | 3 |
 | `web:lib` | `vitest` | 3 |
 | `web:notifications` | `bullmq` | 3 |
-| `web:programs` | `vitest` | 3 |
 | `web:tooling` | `pg` | 3 |
 | `package:shared` | `vitest` | 2 |
 | `root:other` | `Node.js` | 2 |
@@ -1061,6 +1061,8 @@ flowchart LR
 | `apps/web/src/platform/platform-facades.vitest.ts` | `web:platform` | 7 | 1 |
 | `apps/web/src/platform/tenancy/context.ts` | `web:platform` | 1 | 0 |
 | `apps/web/src/programs/contracts.ts` | `web:programs` | 0 | 1 |
+| `apps/web/src/programs/persistence.ts` | `web:programs` | 4 | 0 |
+| `apps/web/src/programs/persistence.vitest.ts` | `web:programs` | 2 | 1 |
 | `apps/web/src/programs/registry.ts` | `web:programs` | 2 | 0 |
 | `apps/web/src/programs/registry.vitest.ts` | `web:programs` | 1 | 1 |
 | `apps/web/src/programs/sacrament-meeting-adapter.ts` | `web:programs` | 3 | 0 |
