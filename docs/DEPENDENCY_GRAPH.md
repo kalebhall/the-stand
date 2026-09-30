@@ -14,7 +14,7 @@ flowchart LR
   A2["root:other<br/>2 files"]
   A3["root:tooling<br/>7 files"]
   A4["web:announcements<br/>2 files"]
-  A5["web:api<br/>135 files"]
+  A5["web:api<br/>136 files"]
   A6["web:app<br/>148 files"]
   A7["web:audit<br/>2 files"]
   A8["web:auth<br/>12 files"]
@@ -41,7 +41,7 @@ flowchart LR
   A29["web:notifications<br/>40 files"]
   A30["web:offline<br/>3 files"]
   A31["web:platform<br/>14 files"]
-  A32["web:programs<br/>14 files"]
+  A32["web:programs<br/>15 files"]
   A33["web:reports<br/>3 files"]
   A34["web:stand<br/>10 files"]
   A35["web:test-matchers.d.ts<br/>1 files"]
@@ -49,12 +49,12 @@ flowchart LR
   A37["web:types<br/>2 files"]
   A38["web:ui<br/>35 files"]
   A39["web:version.mjs<br/>1 files"]
-  A5 -->|173| A8
-  A5 -->|152| A16
+  A5 -->|175| A8
+  A5 -->|154| A16
   A6 -->|118| A38
   A6 -->|95| A8
   A6 -->|59| A16
-  A5 -->|55| A27
+  A5 -->|56| A27
   A5 -->|52| A17
   A5 -->|44| A29
   A5 -->|31| A7
@@ -65,8 +65,8 @@ flowchart LR
   A6 -->|15| A26
   A6 -->|15| A31
   A5 -->|14| A11
+  A5 -->|13| A32
   A5 -->|10| A22
-  A5 -->|9| A32
   A6 -->|8| A29
   A31 -->|8| A27
   A5 -->|7| A13
@@ -161,7 +161,7 @@ flowchart LR
 | `root:other` | 2 |
 | `root:tooling` | 7 |
 | `web:announcements` | 2 |
-| `web:api` | 135 |
+| `web:api` | 136 |
 | `web:app` | 148 |
 | `web:audit` | 2 |
 | `web:auth` | 12 |
@@ -188,7 +188,7 @@ flowchart LR
 | `web:notifications` | 40 |
 | `web:offline` | 3 |
 | `web:platform` | 14 |
-| `web:programs` | 14 |
+| `web:programs` | 15 |
 | `web:reports` | 3 |
 | `web:stand` | 10 |
 | `web:test-matchers.d.ts` | 1 |
@@ -202,21 +202,21 @@ flowchart LR
 | Importing area | Imported area | Imports |
 | --- | --- | ---: |
 | `web:document-designer` | `web:document-designer` | 183 |
-| `web:api` | `web:auth` | 173 |
-| `web:api` | `web:db` | 152 |
+| `web:api` | `web:auth` | 175 |
+| `web:api` | `web:db` | 154 |
 | `web:app` | `web:ui` | 118 |
 | `web:app` | `web:auth` | 95 |
 | `web:app` | `web:app` | 72 |
 | `web:app` | `web:db` | 59 |
 | `web:notifications` | `web:notifications` | 57 |
-| `web:api` | `web:modules` | 55 |
+| `web:api` | `web:modules` | 56 |
 | `web:api` | `web:document-designer` | 52 |
 | `web:api` | `web:notifications` | 44 |
 | `web:api` | `web:api` | 39 |
 | `web:ui` | `web:ui` | 33 |
 | `web:api` | `web:audit` | 31 |
 | `web:app` | `web:modules` | 30 |
-| `web:programs` | `web:programs` | 27 |
+| `web:programs` | `web:programs` | 28 |
 | `web:api` | `web:lib` | 25 |
 | `web:platform` | `web:platform` | 22 |
 | `web:app` | `web:i18n` | 18 |
@@ -225,10 +225,10 @@ flowchart LR
 | `web:app` | `web:meetings` | 15 |
 | `web:app` | `web:platform` | 15 |
 | `web:api` | `web:callings` | 14 |
+| `web:api` | `web:programs` | 13 |
 | `web:imports` | `web:imports` | 13 |
 | `web:meetings` | `web:meetings` | 12 |
 | `web:api` | `web:imports` | 10 |
-| `web:api` | `web:programs` | 9 |
 | `web:app` | `web:notifications` | 8 |
 | `web:auth` | `web:auth` | 8 |
 | `web:i18n` | `web:i18n` | 8 |
@@ -338,7 +338,7 @@ flowchart LR
 | --- | --- | ---: |
 | `web:app` | `next` | 105 |
 | `web:app` | `next-intl` | 89 |
-| `web:api` | `next` | 87 |
+| `web:api` | `next` | 88 |
 | `web:app` | `react` | 46 |
 | `web:api` | `vitest` | 36 |
 | `web:ui` | `react` | 32 |
@@ -513,7 +513,8 @@ flowchart LR
 | `apps/web/app/api/w/[wardId]/announcements/route.ts` | `web:api` | 10 | 1 |
 | `apps/web/app/api/w/[wardId]/announcements/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/audit-log/route.ts` | `web:api` | 5 | 1 |
-| `apps/web/app/api/w/[wardId]/baptism-programs/[eventId]/publish/route.ts` | `web:api` | 7 | 2 |
+| `apps/web/app/api/w/[wardId]/baptism-programs/[eventId]/print/route.ts` | `web:api` | 8 | 1 |
+| `apps/web/app/api/w/[wardId]/baptism-programs/[eventId]/publish/route.ts` | `web:api` | 8 | 2 |
 | `apps/web/app/api/w/[wardId]/baptism-programs/[eventId]/route.ts` | `web:api` | 8 | 1 |
 | `apps/web/app/api/w/[wardId]/baptism-programs/route.ts` | `web:api` | 8 | 1 |
 | `apps/web/app/api/w/[wardId]/baptism-programs/route.vitest.ts` | `web:api` | 1 | 1 |
@@ -1074,6 +1075,7 @@ flowchart LR
 | `apps/web/src/programs/baptism-adapter.vitest.ts` | `web:programs` | 2 | 1 |
 | `apps/web/src/programs/baptism-persistence.ts` | `web:programs` | 4 | 0 |
 | `apps/web/src/programs/baptism-persistence.vitest.ts` | `web:programs` | 3 | 1 |
+| `apps/web/src/programs/baptism-renderer.ts` | `web:programs` | 1 | 0 |
 | `apps/web/src/programs/contracts.ts` | `web:programs` | 0 | 1 |
 | `apps/web/src/programs/persistence.ts` | `web:programs` | 6 | 0 |
 | `apps/web/src/programs/persistence.vitest.ts` | `web:programs` | 2 | 1 |
