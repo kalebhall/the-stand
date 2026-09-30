@@ -33,6 +33,7 @@ export async function GET(_: Request, context: { params: Promise<{ token: string
       publicationVersion: Number(row.version),
       publishedAt: row.published_at,
       programType: 'BAPTISM_PROGRAM' as const,
+      source: { type: document.source.sourceType, version: document.source.sourceVersion },
       title: document.metadata.title,
       date: document.metadata.date,
       location: document.metadata.location ?? null,
