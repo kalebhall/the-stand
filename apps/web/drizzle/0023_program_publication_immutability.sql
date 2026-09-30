@@ -20,6 +20,9 @@ CREATE POLICY program_publication_pointer_isolation
   )
   WITH CHECK (ward_id = app.current_ward_id() AND app.has_active_ward_access(ward_id));
 
+ALTER TABLE public.program_publication_pointer NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE public.program_publication NO FORCE ROW LEVEL SECURITY;
+
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'program_publication_identity_unique') THEN
@@ -37,6 +40,9 @@ BEGIN
   END IF;
 END
 $$;
+
+ALTER TABLE public.program_publication_pointer FORCE ROW LEVEL SECURITY;
+ALTER TABLE public.program_publication FORCE ROW LEVEL SECURITY;
 
 CREATE OR REPLACE FUNCTION public.prevent_program_publication_mutation()
 RETURNS trigger
