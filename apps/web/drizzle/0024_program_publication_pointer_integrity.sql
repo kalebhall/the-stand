@@ -1,3 +1,6 @@
+ALTER TABLE public.program_publication_pointer NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE public.program_publication NO FORCE ROW LEVEL SECURITY;
+
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'program_publication_identity_unique') THEN
@@ -15,3 +18,6 @@ BEGIN
   END IF;
 END
 $$;
+
+ALTER TABLE public.program_publication_pointer FORCE ROW LEVEL SECURITY;
+ALTER TABLE public.program_publication FORCE ROW LEVEL SECURITY;
