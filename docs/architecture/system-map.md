@@ -14,7 +14,8 @@ Next.js application (apps/web)
 └── src/
     ├── platform-like services and adapters
     ├── conducting workflow logic
-    └── optional capability areas
+    ├── optional capability areas
+    │   └── Programs (static registry + source adapters)
 
 PostgreSQL + Drizzle
 ├── ward-scoped data and RLS
@@ -70,6 +71,8 @@ Platform owns identity, ward/stake context, authorization, RLS context, audit re
 ## Adapter surfaces
 
 The Next.js `app/` tree, database access, renderers, PDF/print output, worker entrypoints, imports, and external integrations are adapters around domain and platform contracts. Existing code may combine roles today. The file map records the intended ownership without claiming that the current implementation has already been separated.
+
+Programs is an optional capability, not a replacement for the Core meeting model. `apps/web/src/programs/` owns the typed program contract and source adapters; the existing document-designer and meeting routes remain compatibility adapters until a later vertical slice proves a migration.
 
 ## Phase 0 non-goals
 

@@ -31,6 +31,7 @@ This is the Phase 0 classification of every current directory directly under `ap
 - `meetings/` — **core**. Meeting lifecycle, program data, readiness, basic rendering, and public-layout primitives support the protected conducting workflow.
 - `notes/` — **core**. Conducting notes are explicitly required during the meeting, so the minimum note contract belongs in Core. Optional leadership/private note enhancements must remain separate and permissioned.
 - `notifications/` — **optional module**. Notification preferences, delivery, reminders, and queue consumers can be disabled; Core meeting state remains usable without them.
+- `programs/` — **optional module**. Reusable program contracts, static program registrations, and source adapters. The first adapter translates Stand sacrament-meeting data; existing meeting/document-designer behavior remains the compatibility implementation until a later migration slice.
 - `offline/` — **platform**. Context generation, storage, synchronization lifecycle, and cleanup are cross-cutting. Core and modules may declare namespaced data through this platform.
 - `reports/` — **optional module**. Reports have their own read models and can be disabled without changing preparation or conducting.
 - `stand/` — **core**. At-the-Stand presentation and basic meeting rendering are central to conducting.

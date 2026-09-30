@@ -18,16 +18,25 @@ The first supported source remains `STAND_MEETING` / `SACRAMENT_PROGRAM`. Future
 
 ## Current execution status
 
-**In progress — Milestone 0, Tasks 1–4.** The initial generic contract, adapter interface, sacrament adapter facade, and focused adapter tests now exist. Runtime routes, persistence, permissions, and public behavior are unchanged. Architecture reference documents and the static registry remain pending.
+**Complete — Milestone 0, Tasks 1–5.** The generic contract, adapter interface, sacrament adapter facade, focused tests, static registry, and architecture boundary documentation now exist. Runtime routes, persistence, permissions, and public behavior remain unchanged. Milestone 1 is next: consume the static registry through a real Programs service boundary without introducing runtime plugin loading.
 
-Current first-slice files:
+First-slice files:
 
 - `apps/web/src/programs/contracts.ts`
 - `apps/web/src/programs/source-adapter.ts`
 - `apps/web/src/programs/sacrament-meeting-adapter.ts`
 - `apps/web/src/programs/sacrament-meeting-adapter.vitest.ts`
+- `apps/web/src/programs/registry.ts`
+- `apps/web/src/programs/registry.vitest.ts`
 
-Evidence so far: the repository test command passed with **700 tests passed and 11 skipped**, including live PostgreSQL/RLS suites; typecheck and `git diff --check` passed. This is not yet Milestone 0 complete because the architecture docs and registry work remain.
+Architecture updates:
+
+- `docs/architecture/domain-boundaries.md`
+- `docs/architecture/module-contracts.md`
+- `docs/architecture/system-map.md`
+- `docs/architecture/existing-file-map.md`
+
+Evidence: the repository test command passed with **702 tests passed and 11 skipped**, including live PostgreSQL/RLS suites; typecheck, lint, production build, dependency graph check, and `git diff --check` passed.
 
 ## Current repository facts
 
