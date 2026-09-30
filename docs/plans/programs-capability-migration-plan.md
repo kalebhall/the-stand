@@ -18,7 +18,7 @@ The first supported source remains `STAND_MEETING` / `SACRAMENT_PROGRAM`. Future
 
 ## Current execution status
 
-**Complete — Milestone 1, Tasks 1–6.** The static registry is now consumed through a typed Programs service boundary. Unsupported program types fail before adapter work, source versions flow into stable source references, and the sacrament adapter remains the only registered implementation. Navigation, permissions, routes, persistence, and public behavior remain unchanged. Milestone 2 is next: add a generic persistence facade over the existing meeting/document records.
+**Complete — Milestone 2, Tasks 1–6.** The Programs persistence facade now maps the legacy `meeting_document` record into a generic sacrament program document and writes back through the existing optimistic-concurrency persistence function. No new table or migration was needed. Ward scope, stable meeting IDs, source-template metadata, revision metadata, and unsupported schema-version handling are preserved. Milestone 3 is next: route and UI extraction behind this facade.
 
 First-slice files:
 
@@ -30,6 +30,8 @@ First-slice files:
 - `apps/web/src/programs/registry.vitest.ts`
 - `apps/web/src/programs/service.ts`
 - `apps/web/src/programs/service.vitest.ts`
+- `apps/web/src/programs/persistence.ts`
+- `apps/web/src/programs/persistence.vitest.ts`
 
 Architecture updates:
 
