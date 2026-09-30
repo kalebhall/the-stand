@@ -1,11 +1,13 @@
 import type { DocumentLayout } from '@/src/document-designer/types';
+import { parseAdvancedLayout, type AdvancedDocumentLayout } from '@/src/document-designer/advanced-schema';
 import { saveMeetingDocument, type Queryable } from '@/src/document-designer/persistence';
+import { parseDocumentLayout } from '@/src/document-designer/schema';
 
 import type { ProgramDocument, ProgramSourceRef } from './contracts';
 import { requireProgramRegistration } from './service';
 
 export type SacramentProgramPersistencePayload = {
-  layout: DocumentLayout;
+  layout: DocumentLayout | AdvancedDocumentLayout;
   theme: Record<string, unknown>;
   sourceTemplateId?: string | null;
   sourceTemplateVersion?: number | null;
@@ -106,6 +108,9 @@ export async function saveProgramDocument(
   }
 ): Promise<PersistedProgramDocument | null> {
   const registration = requireProgramRegistration(input.document.programType);
+  if (registration.programType !== 'SACRAMENT_PROGRAM' || registration.sourceType !== 'STAND_MEETING') {
+    throw new InvalidProgramPersistenceInputError('The legacy meeting-document facade only persists SACRAMENT_PROGRAM documents.');
+  }
   const meetingId = requireStandMeetingSource(input.document.source);
   const row = await saveMeetingDocument(client, {
     wardId: input.wardId,
@@ -113,7 +118,7 @@ export async function saveProgramDocument(
     documentType: 'SACRAMENT_PROGRAM',
     sourceTemplateId: input.document.payload.sourceTemplateId,
     sourceTemplateVersion: input.document.payload.sourceTemplateVersion,
-    schemaVersion: input.document.schemaVersion,
+    schemaVersion: input.document.payload.layout.schemaVersion,
     layout: input.document.payload.layout,
     theme: input.document.payload.theme,
     updatedByUserId: input.updatedByUserId,
@@ -147,7 +152,7 @@ export async function loadProgramDocument(
   const row = result.rows[0] as {
     meeting_id: string;
     schema_version: number;
-    layout_json: DocumentLayout;
+    layout_json: unknown;
     theme_json: Record<string, unknown>;
     source_template_id?: string | null;
     source_template_version?: number | null;
@@ -157,7 +162,22 @@ export async function loadProgramDocument(
     meeting_date: string;
   } | undefined;
   if (!row) return null;
-  if (row.schema_version !== 1) throw new InvalidProgramPersistenceInputError(`Unsupported persisted program schema version: ${row.schema_version}`);
+  let parsedLayout: DocumentLayout | AdvancedDocumentLayout;
+  try {
+    const rawSchemaVersion = row.layout_json && typeof row.layout_json === 'object' && 'schemaVersion' in row.layout_json
+      ? (row.layout_json as { schemaVersion?: unknown }).schemaVersion
+      : undefined;
+    if (rawSchemaVersion !== row.schema_version) {
+      throw new Error('Persisted layout schema version does not match its database version.');
+    }
+    parsedLayout = row.schema_version === 2 ? parseAdvancedLayout(row.layout_json) : parseDocumentLayout(row.layout_json);
+  } catch {
+    throw new InvalidProgramPersistenceInputError('Persisted program layout failed schema validation.');
+  }
+  const layoutSchemaVersion = parsedLayout.schemaVersion;
+  if ((row.schema_version !== 1 && row.schema_version !== 2) || row.schema_version !== layoutSchemaVersion) {
+    throw new InvalidProgramPersistenceInputError(`Unsupported or inconsistent persisted layout schema version: ${row.schema_version}`);
+  }
   return {
     id: documentId(row.meeting_id),
     programType: registration.programType,
@@ -165,7 +185,7 @@ export async function loadProgramDocument(
     schemaVersion: 1,
     metadata: { title: 'Sacrament Meeting', date: row.meeting_date, location: null },
     payload: {
-      layout: row.layout_json,
+      layout: parsedLayout,
       theme: row.theme_json,
       sourceTemplateId: row.source_template_id ?? null,
       sourceTemplateVersion: row.source_template_version ?? null

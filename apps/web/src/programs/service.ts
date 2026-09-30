@@ -1,6 +1,7 @@
 import type { ProgramDocument } from './contracts';
 import { getProgramRegistration, hasProgramType, type ProgramRegistration } from './registry';
 import type { SacramentMeetingProgramSource } from './sacrament-meeting-adapter';
+import type { BaptismProgramSource } from './baptism-adapter';
 
 export class UnknownProgramTypeError extends Error {
   constructor(programType: string) {
@@ -28,6 +29,22 @@ export function buildProgramDocument(
 ): ProgramDocument {
   const registration = requireProgramRegistration(programType);
   if (registration.programType !== 'SACRAMENT_PROGRAM' || registration.sourceType !== 'STAND_MEETING') {
+    throw new UnknownProgramTypeError(programType);
+  }
+  return registration.adapter.toDocument(source, payload);
+}
+
+export function buildBaptismProgramDocument(
+  programType: string,
+  source: BaptismProgramSource,
+  payload: unknown,
+  requestedWardId: string
+): ProgramDocument {
+  if (source.wardId !== requestedWardId) {
+    throw new Error('Baptism program source does not belong to the requested ward.');
+  }
+  const registration = requireProgramRegistration(programType);
+  if (registration.programType !== 'BAPTISM_PROGRAM' || registration.sourceType !== 'BAPTISM_EVENT') {
     throw new UnknownProgramTypeError(programType);
   }
   return registration.adapter.toDocument(source, payload);

@@ -25,7 +25,9 @@ export type SacramentMeetingProgramRenderInput = ReturnType<typeof buildPublicPr
 export const sacramentMeetingProgramAdapter: ProgramSourceAdapter<
   SacramentMeetingProgramSource,
   SacramentMeetingProgramEditorData,
-  SacramentMeetingProgramRenderInput
+  SacramentMeetingProgramRenderInput,
+  'SACRAMENT_PROGRAM',
+  'STAND_MEETING'
 > = {
   programType: 'SACRAMENT_PROGRAM',
   sourceType: 'STAND_MEETING',

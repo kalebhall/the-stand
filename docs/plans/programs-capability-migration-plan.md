@@ -18,7 +18,7 @@ The first supported source remains `STAND_MEETING` / `SACRAMENT_PROGRAM`. Future
 
 ## Current execution status
 
-**Complete — Milestone 3, Tasks 1–5.** The existing sacrament Program Designer route now delegates legacy document reads, creation, and revision-checked writes through the Programs persistence facade. A generic authenticated internal route (`/api/w/[wardId]/programs/[programId]`) now exposes the generic document contract. The existing Programs page/client remains a compatibility UI adapter, preserving current UX and `PROGRAM_EDITOR` boundaries. No public route, public snapshot, At-the-Stand behavior, or permission scope was broadened. Milestone 4 is next: prove the abstraction with one non-sacrament program type.
+**In progress — Milestone 4, Tasks 1–2.** Baptism is the first non-sacrament candidate. The generic contracts now support `BAPTISM_PROGRAM` / `BAPTISM_EVENT`, with an event-only source contract that excludes member IDs, ordinance records, and private notes. A small `STANDARD_BAPTISM` template identifier and typed adapter/service/registry coverage are in place. Persistence, editor/public/print integration, authorization, and live ward-isolation coverage remain before the Milestone 4 gate can be called complete.
 
 First-slice files:
 
@@ -32,8 +32,7 @@ First-slice files:
 - `apps/web/src/programs/service.vitest.ts`
 - `apps/web/src/programs/persistence.ts`
 - `apps/web/src/programs/persistence.vitest.ts`
-- `apps/web/app/api/w/[wardId]/programs/[programId]/route.ts`
-- `apps/web/app/api/w/[wardId]/programs/[programId]/route.vitest.ts`
+
 
 Architecture updates:
 
@@ -42,7 +41,7 @@ Architecture updates:
 - `docs/architecture/system-map.md`
 - `docs/architecture/existing-file-map.md`
 
-Evidence: the repository test command passed with **702 tests passed and 11 skipped**, including live PostgreSQL/RLS suites; typecheck, lint, production build, dependency graph check, and `git diff --check` passed.
+Evidence: the repository unit/component and live PostgreSQL/RLS command passed with **716 tests passed and 11 skipped** after the current hardening patch; typecheck, lint, production build, dependency graph check, and `git diff --check` passed. Full browser acceptance is not green: 7 of 13 tests passed and 6 failed in the local fixture/runtime. CI and CodeQL for PR #366 passed; deployment has not occurred.
 
 ## Current repository facts
 

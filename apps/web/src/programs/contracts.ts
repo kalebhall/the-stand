@@ -2,10 +2,10 @@ import { z } from 'zod';
 
 export const PROGRAM_SCHEMA_VERSION = 1 as const;
 
-export const PROGRAM_TYPES = ['SACRAMENT_PROGRAM'] as const;
+export const PROGRAM_TYPES = ['SACRAMENT_PROGRAM', 'BAPTISM_PROGRAM'] as const;
 export type ProgramType = (typeof PROGRAM_TYPES)[number];
 
-export const PROGRAM_SOURCE_TYPES = ['STAND_MEETING'] as const;
+export const PROGRAM_SOURCE_TYPES = ['STAND_MEETING', 'BAPTISM_EVENT'] as const;
 export type ProgramSourceType = (typeof PROGRAM_SOURCE_TYPES)[number];
 
 export const programSourceRefSchema = z.object({
@@ -28,11 +28,18 @@ export const programDocumentSchema = z.object({
   source: programSourceRefSchema,
   schemaVersion: z.literal(PROGRAM_SCHEMA_VERSION),
   metadata: programMetadataSchema,
-  payload: z.unknown()
+  payload: z.any()
 }).strict();
 
-export type ProgramDocument<TPayload = unknown> = Omit<z.infer<typeof programDocumentSchema>, 'payload'> & { payload: TPayload };
+export type ProgramDocument<TPayload = unknown> = {
+  id: string;
+  programType: ProgramType;
+  source: ProgramSourceRef;
+  schemaVersion: typeof PROGRAM_SCHEMA_VERSION;
+  metadata: ProgramMetadata;
+  payload: TPayload;
+};
 
 export function parseProgramDocument(input: unknown): ProgramDocument {
-  return programDocumentSchema.parse(input);
+  return programDocumentSchema.parse(input) as ProgramDocument;
 }

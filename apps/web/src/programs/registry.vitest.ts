@@ -12,6 +12,11 @@ describe('program registry', () => {
     expect(hasProgramType('FUNERAL_PROGRAM')).toBe(false);
   });
 
+  it('registers baptism as the first non-sacrament program type', () => {
+    expect(getProgramRegistration('BAPTISM_PROGRAM')?.sourceType).toBe('BAPTISM_EVENT');
+    expect(hasProgramType('BAPTISM_PROGRAM')).toBe(true);
+  });
+
   it('rejects duplicate program types before registration', () => {
     expect(() => validateProgramRegistry([sacramentRegistration, sacramentRegistration])).toThrow(/duplicate program types/);
   });
