@@ -41,7 +41,7 @@ flowchart LR
   A29["web:notifications<br/>40 files"]
   A30["web:offline<br/>3 files"]
   A31["web:platform<br/>14 files"]
-  A32["web:programs<br/>15 files"]
+  A32["web:programs<br/>16 files"]
   A33["web:reports<br/>3 files"]
   A34["web:stand<br/>10 files"]
   A35["web:test-matchers.d.ts<br/>1 files"]
@@ -188,7 +188,7 @@ flowchart LR
 | `web:notifications` | 40 |
 | `web:offline` | 3 |
 | `web:platform` | 14 |
-| `web:programs` | 15 |
+| `web:programs` | 16 |
 | `web:reports` | 3 |
 | `web:stand` | 10 |
 | `web:test-matchers.d.ts` | 1 |
@@ -216,7 +216,7 @@ flowchart LR
 | `web:ui` | `web:ui` | 33 |
 | `web:api` | `web:audit` | 31 |
 | `web:app` | `web:modules` | 30 |
-| `web:programs` | `web:programs` | 28 |
+| `web:programs` | `web:programs` | 30 |
 | `web:api` | `web:lib` | 25 |
 | `web:platform` | `web:platform` | 22 |
 | `web:app` | `web:i18n` | 18 |
@@ -357,13 +357,13 @@ flowchart LR
 | `web:config` | `@playwright/test` | 7 |
 | `web:document-designer` | `Node.js` | 7 |
 | `web:meetings` | `vitest` | 7 |
+| `web:programs` | `vitest` | 7 |
 | `web:tooling` | `Node.js` | 7 |
 | `web:ui` | `@testing-library/react` | 7 |
 | `web:ui` | `vitest` | 7 |
 | `web:auth` | `next-auth` | 6 |
 | `web:imports` | `vitest` | 6 |
 | `web:leadership` | `vitest` | 6 |
-| `web:programs` | `vitest` | 6 |
 | `web:auth` | `vitest` | 5 |
 | `web:church-actions` | `vitest` | 5 |
 | `web:stand` | `vitest` | 5 |
@@ -1076,6 +1076,7 @@ flowchart LR
 | `apps/web/src/programs/baptism-persistence.ts` | `web:programs` | 4 | 0 |
 | `apps/web/src/programs/baptism-persistence.vitest.ts` | `web:programs` | 3 | 1 |
 | `apps/web/src/programs/baptism-renderer.ts` | `web:programs` | 1 | 0 |
+| `apps/web/src/programs/baptism-renderer.vitest.ts` | `web:programs` | 2 | 1 |
 | `apps/web/src/programs/contracts.ts` | `web:programs` | 0 | 1 |
 | `apps/web/src/programs/persistence.ts` | `web:programs` | 6 | 0 |
 | `apps/web/src/programs/persistence.vitest.ts` | `web:programs` | 2 | 1 |
