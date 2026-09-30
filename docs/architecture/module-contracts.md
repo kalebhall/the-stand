@@ -61,6 +61,7 @@ Programs currently exposes a small static contract in `apps/web/src/programs/`:
 - `service.ts` is the narrow lookup/build boundary; unsupported program types fail before adapter work.
 - `persistence.ts` is a compatibility facade over legacy meeting-document storage; it does not create a second source of truth.
 - `baptism-persistence.ts` stores baptism Program documents in the ward-scoped `program_document` boundary with optimistic revision checks; it resolves the baptism event through the ward-scoped `program_source_event` source registry before saving, and does not store member or ordinance records. Both tables require active ward context and `app.has_active_ward_access` through RLS.
+- `app/api/w/[wardId]/baptism-programs/route.ts` is the first authenticated baptism source/document workflow boundary. It requires the active ward, Programs enablement, and the existing Program Editor capability; it is not a public route and does not yet provide editor, publication, or print rendering.
 - The generic persistence facade currently supports the existing sacrament route through legacy `meeting_document`; it does not yet claim a generic read route for other program types.
 - `SACRAMENT_PROGRAM` with `STAND_MEETING` is the first registration.
 - `BAPTISM_PROGRAM` with `BAPTISM_EVENT` is the first non-sacrament registration. Its source contract carries only event/program display data; member IDs, ordinance records, and private notes remain outside Programs.
