@@ -24,6 +24,67 @@ export class InvalidProgramPersistenceInputError extends Error {
   }
 }
 
+export type LegacyProgramDocumentRow = Record<string, unknown>;
+
+export async function loadProgramDocumentRecord(client: Queryable, input: { wardId: string; meetingId: string }): Promise<LegacyProgramDocumentRow | null> {
+  const result = await client.query(
+    `SELECT md.id, md.source_template_id, md.source_template_version, md.schema_version, md.layout_json, md.theme_json, md.revision,
+            t.name AS source_template_name
+       FROM meeting_document md
+       LEFT JOIN document_template t ON t.id = md.source_template_id
+      WHERE md.meeting_id = $1::uuid AND md.ward_id = $2::uuid AND md.document_type = 'SACRAMENT_PROGRAM'
+      LIMIT 1`,
+    [input.meetingId, input.wardId]
+  );
+  return (result.rows[0] as LegacyProgramDocumentRow | undefined) ?? null;
+}
+
+export async function ensureProgramDocument(
+  client: Queryable,
+  input: { wardId: string; meetingId: string; userId: string; defaultLayout: DocumentLayout }
+): Promise<LegacyProgramDocumentRow> {
+  const existing = await client.query(
+    `SELECT id, source_template_id, source_template_version, schema_version, layout_json, theme_json, revision
+       FROM meeting_document
+      WHERE meeting_id = $1::uuid AND ward_id = $2::uuid AND document_type = 'SACRAMENT_PROGRAM'
+      LIMIT 1 FOR UPDATE`,
+    [input.meetingId, input.wardId]
+  );
+  if (existing.rows[0]) return existing.rows[0] as LegacyProgramDocumentRow;
+  const inserted = await client.query(
+    `INSERT INTO meeting_document (ward_id, meeting_id, document_type, source_template_id, source_template_version, schema_version, layout_json, theme_json, revision, updated_by_user_id)
+     VALUES ($1::uuid, $2::uuid, 'SACRAMENT_PROGRAM', NULL, NULL, $3::int, $4::jsonb, $5::jsonb, 1, $6::uuid)
+     RETURNING id, source_template_id, source_template_version, schema_version, layout_json, theme_json, revision`,
+    [input.wardId, input.meetingId, input.defaultLayout.schemaVersion, JSON.stringify(input.defaultLayout), JSON.stringify(input.defaultLayout.theme), input.userId]
+  );
+  return inserted.rows[0] as LegacyProgramDocumentRow;
+}
+
+export async function updateProgramDocument(
+  client: Queryable,
+  input: {
+    id: string;
+    wardId: string;
+    schemaVersion: number;
+    sourceTemplateId: string | null;
+    sourceTemplateVersion: number | null;
+    layout: unknown;
+    theme: unknown;
+    updatedByUserId: string;
+    expectedRevision: number;
+  }
+): Promise<{ id: string; revision: number } | null> {
+  const result = await client.query(
+    `UPDATE meeting_document
+        SET schema_version = $3::int, source_template_id = $4::uuid, source_template_version = $5::int, layout_json = $6::jsonb, theme_json = $7::jsonb, revision = revision + 1, updated_by_user_id = $8::uuid, updated_at = now()
+      WHERE id = $1::uuid AND ward_id = $2::uuid AND revision = $9::int
+      RETURNING id, revision`,
+    [input.id, input.wardId, input.schemaVersion, input.sourceTemplateId, input.sourceTemplateVersion, JSON.stringify(input.layout), JSON.stringify(input.theme), input.updatedByUserId, input.expectedRevision]
+  );
+  const row = result.rows[0] as { id: string; revision: number } | undefined;
+  return row ? { id: row.id, revision: Number(row.revision) } : null;
+}
+
 function requireStandMeetingSource(source: ProgramSourceRef): string {
   if (source.sourceType !== 'STAND_MEETING' || !source.sourceId.trim()) {
     throw new InvalidProgramPersistenceInputError('SACRAMENT_PROGRAM requires a STAND_MEETING source.');

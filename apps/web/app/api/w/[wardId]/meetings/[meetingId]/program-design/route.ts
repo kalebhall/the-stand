@@ -16,6 +16,7 @@ import { setDbContext } from '@/src/db/context';
 import { isAdvancedDesignerEnabled, isAdvancedDesignerFeatureEnabled } from '@/src/features/advanced-designer';
 import type { DocumentLayout } from '@/src/document-designer/types';
 import { isWardModuleEnabled } from '@/src/modules/service';
+import { ensureProgramDocument, loadProgramDocumentRecord, updateProgramDocument } from '@/src/programs/persistence';
 
 const saveSchema = z.object({ expectedRevision: z.number().int().positive(), document: z.unknown(), templateId: z.string().trim().min(1).optional(), mode: z.enum(['SIMPLE', 'ADVANCED']).default('SIMPLE') }).strict();
 const fullPageFallback = () => BUILT_IN_TEMPLATES.find((template) => template.key === 'full-page-standard')!.layout;
@@ -32,15 +33,7 @@ async function readContext(client: Awaited<ReturnType<typeof pool.connect>>, war
     [meetingId, wardId]
   );
   if (!meetingResult.rows[0]) return null;
-  const documentResult = await client.query(
-    `SELECT md.id, md.source_template_id, md.source_template_version, md.schema_version, md.layout_json, md.theme_json, md.revision,
-            t.name AS source_template_name
-       FROM meeting_document md
-       LEFT JOIN document_template t ON t.id = md.source_template_id
-      WHERE md.meeting_id = $1::uuid AND md.ward_id = $2::uuid AND md.document_type = 'SACRAMENT_PROGRAM'
-      LIMIT 1`,
-    [meetingId, wardId]
-  );
+
   const itemsResult = await client.query(
     `SELECT item_type, title, topic, hymn_title, sequence
        FROM meeting_program_item
@@ -53,7 +46,7 @@ async function readContext(client: Awaited<ReturnType<typeof pool.connect>>, war
     [wardId]
   );
   const meeting = meetingResult.rows[0] as { id: string; meeting_date: string; meeting_type: string; ward_name: string | null };
-  const row = documentResult.rows[0] as Record<string, unknown> | undefined;
+  const row = await loadProgramDocumentRecord(client, { wardId, meetingId });
   const layout = row?.layout_json ?? fullPageFallback();
   const revision = Number(row?.revision ?? 1);
   const profile = { allowAdvancedProgramDesigner: (settingsResult.rows[0] as { allow_advanced_program_designer?: boolean } | undefined)?.allow_advanced_program_designer === true };
@@ -63,22 +56,7 @@ async function readContext(client: Awaited<ReturnType<typeof pool.connect>>, war
 }
 
 async function ensureDocument(client: Awaited<ReturnType<typeof pool.connect>>, wardId: string, meetingId: string, userId: string) {
-  const existing = await client.query(
-    `SELECT id, source_template_id, source_template_version, schema_version, layout_json, theme_json, revision
-       FROM meeting_document
-      WHERE meeting_id = $1::uuid AND ward_id = $2::uuid AND document_type = 'SACRAMENT_PROGRAM'
-      LIMIT 1 FOR UPDATE`,
-    [meetingId, wardId]
-  );
-  if (existing.rows[0]) return existing.rows[0] as Record<string, unknown>;
-  const layout = fullPageFallback();
-  const inserted = await client.query(
-    `INSERT INTO meeting_document (ward_id, meeting_id, document_type, source_template_id, source_template_version, schema_version, layout_json, theme_json, revision, updated_by_user_id)
-     VALUES ($1::uuid, $2::uuid, 'SACRAMENT_PROGRAM', NULL, NULL, $3::int, $4::jsonb, $5::jsonb, 1, $6::uuid)
-     RETURNING id, source_template_id, source_template_version, schema_version, layout_json, theme_json, revision`,
-    [wardId, meetingId, layout.schemaVersion, JSON.stringify(layout), JSON.stringify(layout.theme), userId]
-  );
-  return inserted.rows[0] as Record<string, unknown>;
+  return ensureProgramDocument(client, { wardId, meetingId, userId, defaultLayout: fullPageFallback() });
 }
 
 export async function GET(_: Request, context: { params: Promise<{ wardId: string; meetingId: string }> }) {
@@ -213,17 +191,21 @@ export async function PUT(request: Request, context: { params: Promise<{ wardId:
       return errorResponse('Invalid program design', 'BAD_REQUEST', 400);
     }
     const persistedSchemaVersion = persistedLayout.schemaVersion;
-    const updated = await client.query(
-      `UPDATE meeting_document
-          SET schema_version = $3::int, source_template_id = $4::uuid, source_template_version = $5::int, layout_json = $6::jsonb, theme_json = $7::jsonb, revision = revision + 1, updated_by_user_id = $8::uuid, updated_at = now()
-        WHERE id = $1::uuid AND ward_id = $2::uuid AND revision = $9::int
-        RETURNING id, revision`,
-      [current.id, wardId, persistedSchemaVersion, sourceTemplateId, sourceTemplateVersion, JSON.stringify(persistedLayout), JSON.stringify(persistedLayout.theme), session.user.id, revision]
-    );
-    if (!updated.rows[0]) { await client.query('ROLLBACK'); return errorResponse('The program changed in another session', 'REVISION_CONFLICT', 409); }
-    await recordAuditEvent(client, { wardId, userId: session.user.id, actorName: session.user.name || session.user.email || null, action: 'PROGRAM_DESIGN_UPDATED', entityType: 'meeting_document', entityId: String(current.id), details: { meetingId, revision: Number((updated.rows[0] as { revision: number }).revision) }, source: 'manual_ui', severity: 'notice' });
+    const updated = await updateProgramDocument(client, {
+      id: String(current.id),
+      wardId,
+      schemaVersion: persistedSchemaVersion,
+      sourceTemplateId,
+      sourceTemplateVersion,
+      layout: persistedLayout,
+      theme: persistedLayout.theme,
+      updatedByUserId: session.user.id,
+      expectedRevision: revision
+    });
+    if (!updated) { await client.query('ROLLBACK'); return errorResponse('The program changed in another session', 'REVISION_CONFLICT', 409); }
+    await recordAuditEvent(client, { wardId, userId: session.user.id, actorName: session.user.name || session.user.email || null, action: 'PROGRAM_DESIGN_UPDATED', entityType: 'meeting_document', entityId: String(current.id), details: { meetingId, revision: updated.revision }, source: 'manual_ui', severity: 'notice' });
     await client.query('COMMIT');
-    return NextResponse.json({ success: true, revision: Number((updated.rows[0] as { revision: number }).revision), document: persistedLayout });
+    return NextResponse.json({ success: true, revision: updated.revision, document: persistedLayout });
   } catch {
     await client.query('ROLLBACK').catch(() => undefined);
     return errorResponse('Failed to save program design', 'INTERNAL_ERROR', 500);

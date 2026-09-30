@@ -14,7 +14,7 @@ flowchart LR
   A2["root:other<br/>2 files"]
   A3["root:tooling<br/>7 files"]
   A4["web:announcements<br/>2 files"]
-  A5["web:api<br/>131 files"]
+  A5["web:api<br/>133 files"]
   A6["web:app<br/>145 files"]
   A7["web:audit<br/>2 files"]
   A8["web:auth<br/>12 files"]
@@ -49,13 +49,13 @@ flowchart LR
   A37["web:types<br/>2 files"]
   A38["web:ui<br/>35 files"]
   A39["web:version.mjs<br/>1 files"]
-  A5 -->|167| A8
-  A5 -->|146| A16
+  A5 -->|169| A8
+  A5 -->|148| A16
   A6 -->|118| A38
   A6 -->|93| A8
   A6 -->|58| A16
+  A5 -->|53| A27
   A5 -->|52| A17
-  A5 -->|52| A27
   A5 -->|44| A29
   A5 -->|31| A7
   A6 -->|29| A27
@@ -88,6 +88,7 @@ flowchart LR
   A6 -->|3| A18
   A6 -->|3| A23
   A5 -->|2| A4
+  A5 -->|2| A32
   A6 -->|2| A4
   A6 -->|2| A12
   A6 -->|2| A30
@@ -160,7 +161,7 @@ flowchart LR
 | `root:other` | 2 |
 | `root:tooling` | 7 |
 | `web:announcements` | 2 |
-| `web:api` | 131 |
+| `web:api` | 133 |
 | `web:app` | 145 |
 | `web:audit` | 2 |
 | `web:auth` | 12 |
@@ -201,17 +202,17 @@ flowchart LR
 | Importing area | Imported area | Imports |
 | --- | --- | ---: |
 | `web:document-designer` | `web:document-designer` | 182 |
-| `web:api` | `web:auth` | 167 |
-| `web:api` | `web:db` | 146 |
+| `web:api` | `web:auth` | 169 |
+| `web:api` | `web:db` | 148 |
 | `web:app` | `web:ui` | 118 |
 | `web:app` | `web:auth` | 93 |
 | `web:app` | `web:app` | 71 |
 | `web:app` | `web:db` | 58 |
 | `web:notifications` | `web:notifications` | 57 |
+| `web:api` | `web:modules` | 53 |
 | `web:api` | `web:document-designer` | 52 |
-| `web:api` | `web:modules` | 52 |
 | `web:api` | `web:notifications` | 44 |
-| `web:api` | `web:api` | 38 |
+| `web:api` | `web:api` | 39 |
 | `web:ui` | `web:ui` | 33 |
 | `web:api` | `web:audit` | 31 |
 | `web:app` | `web:modules` | 29 |
@@ -260,6 +261,7 @@ flowchart LR
 | `web:conducting` | `web:conducting` | 3 |
 | `web:maintenance` | `web:maintenance` | 3 |
 | `web:api` | `web:announcements` | 2 |
+| `web:api` | `web:programs` | 2 |
 | `web:app` | `web:announcements` | 2 |
 | `web:app` | `web:church-actions` | 2 |
 | `web:app` | `web:offline` | 2 |
@@ -336,9 +338,9 @@ flowchart LR
 | --- | --- | ---: |
 | `web:app` | `next` | 103 |
 | `web:app` | `next-intl` | 88 |
-| `web:api` | `next` | 84 |
+| `web:api` | `next` | 85 |
 | `web:app` | `react` | 45 |
-| `web:api` | `vitest` | 35 |
+| `web:api` | `vitest` | 36 |
 | `web:ui` | `react` | 32 |
 | `web:document-designer` | `vitest` | 26 |
 | `web:app` | `vitest` | 22 |
@@ -561,7 +563,7 @@ flowchart LR
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/offline-sync/route.ts` | `web:api` | 5 | 2 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/program-design/pdf/route.ts` | `web:api` | 10 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/program-design/print-validate/route.ts` | `web:api` | 7 | 1 |
-| `apps/web/app/api/w/[wardId]/meetings/[meetingId]/program-design/route.ts` | `web:api` | 15 | 2 |
+| `apps/web/app/api/w/[wardId]/meetings/[meetingId]/program-design/route.ts` | `web:api` | 16 | 2 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/program-design/route.vitest.ts` | `web:api` | 2 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/program-design/validate/route.ts` | `web:api` | 1 | 0 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/publication-history/rollback/route.ts` | `web:api` | 7 | 1 |
@@ -597,6 +599,8 @@ flowchart LR
 | `apps/web/app/api/w/[wardId]/portal/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/program-settings/route.ts` | `web:api` | 7 | 3 |
 | `apps/web/app/api/w/[wardId]/program-settings/route.vitest.ts` | `web:api` | 1 | 1 |
+| `apps/web/app/api/w/[wardId]/programs/[programId]/route.ts` | `web:api` | 6 | 1 |
+| `apps/web/app/api/w/[wardId]/programs/[programId]/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/public-layout/route.ts` | `web:api` | 7 | 1 |
 | `apps/web/app/api/w/[wardId]/public-layout/route.vitest.ts` | `web:api` | 2 | 1 |
 | `apps/web/app/api/w/[wardId]/speakers/[programItemId]/route.ts` | `web:api` | 6 | 1 |

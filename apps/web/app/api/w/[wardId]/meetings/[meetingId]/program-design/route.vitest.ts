@@ -42,9 +42,9 @@ describe('program design route', () => {
       .mockResolvedValueOnce({})
       .mockResolvedValueOnce({})
       .mockResolvedValueOnce({ rows: [{ id: 'meeting-1', meeting_date: '2026-09-20', meeting_type: 'SACRAMENT', ward_name: 'Freedom Park Ward' }] })
-      .mockResolvedValueOnce({ rows: [documentRow] })
       .mockResolvedValueOnce({ rows: [{ item_type: 'SPEAKER', title: 'Alex Hall', topic: 'Faith', hymn_title: null, sequence: 2 }] })
       .mockResolvedValueOnce({ rows: [{ allow_advanced_program_designer: false }] })
+      .mockResolvedValueOnce({ rows: [documentRow] })
       .mockResolvedValueOnce({ rows: [documentRow] })
       .mockResolvedValueOnce({});
     const response = await GET(new Request('http://localhost'), params());
@@ -97,9 +97,9 @@ describe('program design route', () => {
       .mockResolvedValueOnce({})
       .mockResolvedValueOnce({})
       .mockResolvedValueOnce({ rows: [{ id: 'meeting-1', meeting_date: '2026-09-20', meeting_type: 'SACRAMENT', ward_name: 'Freedom Park Ward' }] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [documentRow] })
-      .mockResolvedValueOnce({ rows: [] })
-      .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({});
     const response = await POST(new Request('http://localhost', { method: 'POST', body: JSON.stringify({ document: layout }) }), params());
     expect(response.status).toBe(200);
