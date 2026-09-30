@@ -25,7 +25,7 @@ flowchart LR
   A13["web:conducting<br/>3 files"]
   A14["web:config<br/>18 files"]
   A15["web:dashboard<br/>4 files"]
-  A16["web:db<br/>14 files"]
+  A16["web:db<br/>15 files"]
   A17["web:document-designer<br/>67 files"]
   A18["web:features<br/>2 files"]
   A19["web:hardening<br/>1 files"]
@@ -41,7 +41,7 @@ flowchart LR
   A29["web:notifications<br/>40 files"]
   A30["web:offline<br/>3 files"]
   A31["web:platform<br/>14 files"]
-  A32["web:programs<br/>12 files"]
+  A32["web:programs<br/>14 files"]
   A33["web:reports<br/>3 files"]
   A34["web:stand<br/>10 files"]
   A35["web:test-matchers.d.ts<br/>1 files"]
@@ -70,8 +70,8 @@ flowchart LR
   A31 -->|8| A27
   A5 -->|7| A13
   A5 -->|7| A23
+  A32 -->|7| A17
   A5 -->|6| A26
-  A32 -->|6| A17
   A5 -->|5| A21
   A5 -->|5| A31
   A6 -->|5| A34
@@ -172,7 +172,7 @@ flowchart LR
 | `web:conducting` | 3 |
 | `web:config` | 18 |
 | `web:dashboard` | 4 |
-| `web:db` | 14 |
+| `web:db` | 15 |
 | `web:document-designer` | 67 |
 | `web:features` | 2 |
 | `web:hardening` | 1 |
@@ -188,7 +188,7 @@ flowchart LR
 | `web:notifications` | 40 |
 | `web:offline` | 3 |
 | `web:platform` | 14 |
-| `web:programs` | 12 |
+| `web:programs` | 14 |
 | `web:reports` | 3 |
 | `web:stand` | 10 |
 | `web:test-matchers.d.ts` | 1 |
@@ -216,9 +216,9 @@ flowchart LR
 | `web:ui` | `web:ui` | 33 |
 | `web:api` | `web:audit` | 31 |
 | `web:app` | `web:modules` | 29 |
+| `web:programs` | `web:programs` | 27 |
 | `web:api` | `web:lib` | 25 |
 | `web:platform` | `web:platform` | 22 |
-| `web:programs` | `web:programs` | 21 |
 | `web:app` | `web:i18n` | 18 |
 | `web:modules` | `web:modules` | 17 |
 | `web:app` | `web:document-designer` | 15 |
@@ -237,8 +237,8 @@ flowchart LR
 | `web:api` | `web:conducting` | 7 |
 | `web:api` | `web:leadership` | 7 |
 | `web:church-actions` | `web:church-actions` | 7 |
+| `web:programs` | `web:document-designer` | 7 |
 | `web:api` | `web:meetings` | 6 |
-| `web:programs` | `web:document-designer` | 6 |
 | `web:api` | `web:i18n` | 5 |
 | `web:api` | `web:platform` | 5 |
 | `web:app` | `web:stand` | 5 |
@@ -350,9 +350,9 @@ flowchart LR
 | `web:ui` | `next` | 16 |
 | `web:app` | `@testing-library/react` | 15 |
 | `root:tooling` | `Node.js` | 14 |
+| `web:db` | `Node.js` | 13 |
 | `web:notifications` | `pg` | 13 |
-| `web:db` | `Node.js` | 12 |
-| `web:db` | `vitest` | 10 |
+| `web:db` | `vitest` | 11 |
 | `web:document-designer` | `zod` | 10 |
 | `web:config` | `@playwright/test` | 7 |
 | `web:document-designer` | `Node.js` | 7 |
@@ -363,9 +363,9 @@ flowchart LR
 | `web:auth` | `next-auth` | 6 |
 | `web:imports` | `vitest` | 6 |
 | `web:leadership` | `vitest` | 6 |
+| `web:programs` | `vitest` | 6 |
 | `web:auth` | `vitest` | 5 |
 | `web:church-actions` | `vitest` | 5 |
-| `web:programs` | `vitest` | 5 |
 | `web:stand` | `vitest` | 5 |
 | `web:app` | `@testing-library/user-event` | 4 |
 | `web:modules` | `vitest` | 4 |
@@ -849,6 +849,7 @@ flowchart LR
 | `apps/web/src/db/document-designer-rls.vitest.ts` | `web:db` | 0 | 2 |
 | `apps/web/src/db/module-enable-rls.vitest.ts` | `web:db` | 0 | 2 |
 | `apps/web/src/db/p0-rls-isolation.vitest.ts` | `web:db` | 0 | 2 |
+| `apps/web/src/db/program-document-rls.vitest.ts` | `web:db` | 0 | 2 |
 | `apps/web/src/db/program-publication-schema.vitest.ts` | `web:db` | 0 | 4 |
 | `apps/web/src/db/schema.ts` | `web:db` | 0 | 2 |
 | `apps/web/src/db/template-administration-schema.vitest.ts` | `web:db` | 0 | 3 |
@@ -1064,6 +1065,8 @@ flowchart LR
 | `apps/web/src/platform/tenancy/context.ts` | `web:platform` | 1 | 0 |
 | `apps/web/src/programs/baptism-adapter.ts` | `web:programs` | 2 | 1 |
 | `apps/web/src/programs/baptism-adapter.vitest.ts` | `web:programs` | 2 | 1 |
+| `apps/web/src/programs/baptism-persistence.ts` | `web:programs` | 4 | 0 |
+| `apps/web/src/programs/baptism-persistence.vitest.ts` | `web:programs` | 3 | 1 |
 | `apps/web/src/programs/contracts.ts` | `web:programs` | 0 | 1 |
 | `apps/web/src/programs/persistence.ts` | `web:programs` | 6 | 0 |
 | `apps/web/src/programs/persistence.vitest.ts` | `web:programs` | 2 | 1 |

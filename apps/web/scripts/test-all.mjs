@@ -69,7 +69,8 @@ const liveSuites = [
   'src/db/p0-rls-isolation.vitest.ts',
   'src/db/church-action-follow-up-rls.vitest.ts',
   'src/notifications/worker-rls.vitest.ts',
-  'src/db/program-publication-schema.vitest.ts'
+  'src/db/program-publication-schema.vitest.ts',
+  'src/db/program-document-rls.vitest.ts'
 ];
 
 console.log('=== Live PostgreSQL/RLS suite (serialized) ===');

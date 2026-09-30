@@ -31,6 +31,11 @@ export type BaptismProgramRenderInput = {
   participantDisplayName: string;
   items: BaptismProgramSource['programItems'];
 };
+export type BaptismProgramPayload = {
+  template: BaptismProgramTemplate;
+  participantDisplayName: string;
+  items: BaptismProgramSource['programItems'];
+};
 
 export const BAPTISM_PROGRAM_TEMPLATES = ['STANDARD_BAPTISM'] as const;
 export type BaptismProgramTemplate = (typeof BAPTISM_PROGRAM_TEMPLATES)[number];
@@ -52,7 +57,14 @@ export const baptismProgramSourceSchema = z.object({
 }).strict();
 
 export const baptismProgramPayloadSchema = z.object({
-  template: z.enum(BAPTISM_PROGRAM_TEMPLATES)
+  template: z.enum(BAPTISM_PROGRAM_TEMPLATES),
+  participantDisplayName: z.string().min(1).max(500),
+  items: z.array(z.object({
+    key: z.string().min(1).max(100),
+    label: z.string().min(1).max(500),
+    content: z.string().max(2000).nullable().optional(),
+    sequence: z.number().int().nonnegative()
+  }).strict()).max(100)
 }).strict();
 
 function parseSource(source: BaptismProgramSource): BaptismProgramSource {
@@ -105,7 +117,11 @@ export const baptismProgramAdapter: ProgramSourceAdapter<
         date: parsed.date,
         location: parsed.location ?? null
       },
-      payload: parsedPayload
+      payload: {
+        ...parsedPayload,
+        participantDisplayName: parsed.participantDisplayName,
+        items: parsed.programItems
+      }
     };
   }
 };

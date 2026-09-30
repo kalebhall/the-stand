@@ -1066,6 +1066,47 @@ export const meetingDocument = pgTable(
   })
 );
 
+export const programDocument = pgTable(
+  'program_document',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
+    programType: text('program_type').notNull(),
+    sourceType: text('source_type').notNull(),
+    sourceId: text('source_id').notNull(),
+    sourceVersion: text('source_version'),
+    schemaVersion: integer('schema_version').notNull(),
+    documentJson: jsonb('document_json').notNull(),
+    revision: integer('revision').notNull().default(1),
+    updatedByUserId: uuid('updated_by_user_id').references(() => userAccount.id, { onDelete: 'set null' }),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
+  },
+  (table) => ({
+    programDocumentSourceUnique: unique().on(table.wardId, table.programType, table.sourceType, table.sourceId),
+    programDocumentWardTypeIdx: index('program_document_ward_type_idx').on(table.wardId, table.programType, table.sourceType, table.updatedAt),
+    programDocumentRevisionPositive: check('program_document_revision_positive', sql`${table.revision} > 0`),
+    programDocumentSchemaVersionPositive: check('program_document_schema_version_positive', sql`${table.schemaVersion} > 0`)
+  })
+);
+
+export const programSourceEvent = pgTable(
+  'program_source_event',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    wardId: uuid('ward_id').notNull().references(() => ward.id, { onDelete: 'cascade' }),
+    sourceType: text('source_type').notNull(),
+    sourceId: text('source_id').notNull(),
+    sourceVersion: text('source_version'),
+    sourceJson: jsonb('source_json').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
+  },
+  (table) => ({
+    programSourceEventIdentityUnique: unique().on(table.wardId, table.sourceType, table.sourceId),
+    programSourceEventWardTypeIdx: index('program_source_event_ward_type_idx').on(table.wardId, table.sourceType, table.updatedAt)
+  })
+);
+
 export const wardDocumentSettings = pgTable('ward_document_settings', {
   wardId: uuid('ward_id').primaryKey().references(() => ward.id, { onDelete: 'cascade' }),
   defaultSacramentTemplateId: uuid('default_sacrament_template_id').references(() => documentTemplate.id, { onDelete: 'set null' }),

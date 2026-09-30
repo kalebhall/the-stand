@@ -18,7 +18,7 @@ The first supported source remains `STAND_MEETING` / `SACRAMENT_PROGRAM`. Future
 
 ## Current execution status
 
-**In progress — Milestone 4, Tasks 1–2.** Baptism is the first non-sacrament candidate. The generic contracts now support `BAPTISM_PROGRAM` / `BAPTISM_EVENT`, with an event-only source contract that excludes member IDs, ordinance records, and private notes. A small `STANDARD_BAPTISM` template identifier and typed adapter/service/registry coverage are in place. Persistence, editor/public/print integration, authorization, and live ward-isolation coverage remain before the Milestone 4 gate can be called complete.
+**In progress — Milestone 4, Tasks 1–2 plus persistence foundation.** Baptism is the first non-sacrament candidate. The generic contracts now support `BAPTISM_PROGRAM` / `BAPTISM_EVENT`, with an event-only source contract that excludes member IDs, ordinance records, and private notes. A small `STANDARD_BAPTISM` template identifier, typed adapter/service/registry coverage, and a new ward-scoped `program_document` persistence boundary with live RLS coverage are in place. Editor/public/print integration, route authorization, and browser acceptance remain before the Milestone 4 gate can be called complete.
 
 First-slice files:
 
@@ -32,6 +32,12 @@ First-slice files:
 - `apps/web/src/programs/service.vitest.ts`
 - `apps/web/src/programs/persistence.ts`
 - `apps/web/src/programs/persistence.vitest.ts`
+- `apps/web/src/programs/baptism-persistence.ts`
+- `apps/web/src/programs/baptism-persistence.vitest.ts`
+- `apps/web/drizzle/0019_program_document.sql`
+- `apps/web/drizzle/0021_program_source_event.sql` — ward-scoped authoritative source-event registry used to bind baptism persistence to an existing source event.
+- `apps/web/drizzle/0020_program_document_access_policy.sql`
+- `apps/web/src/db/program-document-rls.vitest.ts`
 
 
 Architecture updates:
@@ -41,7 +47,7 @@ Architecture updates:
 - `docs/architecture/system-map.md`
 - `docs/architecture/existing-file-map.md`
 
-Evidence: the repository unit/component and live PostgreSQL/RLS command passed with **716 tests passed and 11 skipped** after the current hardening patch; typecheck, lint, production build, dependency graph check, and `git diff --check` passed. Full browser acceptance is not green: 7 of 13 tests passed and 6 failed in the local fixture/runtime. CI and CodeQL for PR #366 passed; deployment has not occurred.
+Evidence: the repository unit/component and live PostgreSQL/RLS command passed with **721 tests passed and 12 skipped** after the persistence foundation; typecheck, lint, production build, dependency graph check, and `git diff --check` passed. Browser acceptance is not yet applicable to the unexposed persistence foundation.
 
 ## Current repository facts
 
