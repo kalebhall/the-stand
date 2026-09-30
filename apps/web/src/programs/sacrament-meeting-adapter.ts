@@ -8,6 +8,7 @@ export type SacramentMeetingProgramSource = {
   meetingId: string;
   meetingDate: string;
   meetingType: string;
+  sourceVersion?: string | null;
   wardName?: string | null;
   programItems: Array<{
     itemType: string;
@@ -29,7 +30,10 @@ export const sacramentMeetingProgramAdapter: ProgramSourceAdapter<
   programType: 'SACRAMENT_PROGRAM',
   sourceType: 'STAND_MEETING',
   resolveSourceRef(source) {
-    return { sourceType: 'STAND_MEETING', sourceId: source.meetingId };
+    return { sourceType: 'STAND_MEETING', sourceId: source.meetingId, sourceVersion: this.getSourceVersion(source) };
+  },
+  getSourceVersion(source) {
+    return source.sourceVersion ?? null;
   },
   toEditorData(source) {
     return source;
@@ -41,7 +45,7 @@ export const sacramentMeetingProgramAdapter: ProgramSourceAdapter<
     return {
       id: `stand-meeting-program:${source.meetingId}`,
       programType: 'SACRAMENT_PROGRAM',
-      source: { sourceType: 'STAND_MEETING', sourceId: source.meetingId },
+      source: this.resolveSourceRef(source),
       schemaVersion: 1,
       metadata: {
         title: 'Sacrament Meeting',

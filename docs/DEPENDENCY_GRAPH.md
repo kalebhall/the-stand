@@ -41,7 +41,7 @@ flowchart LR
   A29["web:notifications<br/>40 files"]
   A30["web:offline<br/>3 files"]
   A31["web:platform<br/>14 files"]
-  A32["web:programs<br/>6 files"]
+  A32["web:programs<br/>8 files"]
   A33["web:reports<br/>3 files"]
   A34["web:stand<br/>10 files"]
   A35["web:test-matchers.d.ts<br/>1 files"]
@@ -187,7 +187,7 @@ flowchart LR
 | `web:notifications` | 40 |
 | `web:offline` | 3 |
 | `web:platform` | 14 |
-| `web:programs` | 6 |
+| `web:programs` | 8 |
 | `web:reports` | 3 |
 | `web:stand` | 10 |
 | `web:test-matchers.d.ts` | 1 |
@@ -225,13 +225,13 @@ flowchart LR
 | `web:api` | `web:callings` | 14 |
 | `web:imports` | `web:imports` | 13 |
 | `web:meetings` | `web:meetings` | 12 |
+| `web:programs` | `web:programs` | 12 |
 | `web:api` | `web:imports` | 10 |
 | `web:app` | `web:notifications` | 8 |
 | `web:auth` | `web:auth` | 8 |
 | `web:i18n` | `web:i18n` | 8 |
 | `web:leadership` | `web:leadership` | 8 |
 | `web:platform` | `web:modules` | 8 |
-| `web:programs` | `web:programs` | 8 |
 | `web:stand` | `web:stand` | 8 |
 | `web:api` | `web:conducting` | 7 |
 | `web:api` | `web:leadership` | 7 |
@@ -378,6 +378,7 @@ flowchart LR
 | `web:i18n` | `vitest` | 3 |
 | `web:lib` | `vitest` | 3 |
 | `web:notifications` | `bullmq` | 3 |
+| `web:programs` | `vitest` | 3 |
 | `web:tooling` | `pg` | 3 |
 | `package:shared` | `vitest` | 2 |
 | `root:other` | `Node.js` | 2 |
@@ -395,7 +396,6 @@ flowchart LR
 | `web:leadership` | `pg` | 2 |
 | `web:offline` | `Node.js` | 2 |
 | `web:offline` | `vitest` | 2 |
-| `web:programs` | `vitest` | 2 |
 | `package:shared` | `zod` | 1 |
 | `root:other` | `@eslint/js` | 1 |
 | `root:other` | `globals` | 1 |
@@ -1065,6 +1065,8 @@ flowchart LR
 | `apps/web/src/programs/registry.vitest.ts` | `web:programs` | 1 | 1 |
 | `apps/web/src/programs/sacrament-meeting-adapter.ts` | `web:programs` | 3 | 0 |
 | `apps/web/src/programs/sacrament-meeting-adapter.vitest.ts` | `web:programs` | 2 | 1 |
+| `apps/web/src/programs/service.ts` | `web:programs` | 3 | 0 |
+| `apps/web/src/programs/service.vitest.ts` | `web:programs` | 1 | 1 |
 | `apps/web/src/programs/source-adapter.ts` | `web:programs` | 1 | 0 |
 | `apps/web/src/reports/aggregations.ts` | `web:reports` | 0 | 1 |
 | `apps/web/src/reports/aggregations.vitest.ts` | `web:reports` | 1 | 1 |

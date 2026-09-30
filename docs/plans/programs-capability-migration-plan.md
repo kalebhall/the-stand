@@ -18,7 +18,7 @@ The first supported source remains `STAND_MEETING` / `SACRAMENT_PROGRAM`. Future
 
 ## Current execution status
 
-**Complete — Milestone 0, Tasks 1–5.** The generic contract, adapter interface, sacrament adapter facade, focused tests, static registry, and architecture boundary documentation now exist. Runtime routes, persistence, permissions, and public behavior remain unchanged. Milestone 1 is next: consume the static registry through a real Programs service boundary without introducing runtime plugin loading.
+**Complete — Milestone 1, Tasks 1–6.** The static registry is now consumed through a typed Programs service boundary. Unsupported program types fail before adapter work, source versions flow into stable source references, and the sacrament adapter remains the only registered implementation. Navigation, permissions, routes, persistence, and public behavior remain unchanged. Milestone 2 is next: add a generic persistence facade over the existing meeting/document records.
 
 First-slice files:
 
@@ -28,6 +28,8 @@ First-slice files:
 - `apps/web/src/programs/sacrament-meeting-adapter.vitest.ts`
 - `apps/web/src/programs/registry.ts`
 - `apps/web/src/programs/registry.vitest.ts`
+- `apps/web/src/programs/service.ts`
+- `apps/web/src/programs/service.vitest.ts`
 
 Architecture updates:
 

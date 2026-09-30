@@ -17,7 +17,7 @@ const source = {
 
 describe('sacrament meeting program adapter', () => {
   it('keeps a stable Stand source reference and program identity', () => {
-    expect(sacramentMeetingProgramAdapter.resolveSourceRef(source)).toEqual({ sourceType: 'STAND_MEETING', sourceId: 'meeting-1' });
+    expect(sacramentMeetingProgramAdapter.resolveSourceRef(source)).toEqual({ sourceType: 'STAND_MEETING', sourceId: 'meeting-1', sourceVersion: null });
     expect(sacramentMeetingProgramAdapter.toDocument(source, { layout: 'draft' }).id).toBe('stand-meeting-program:meeting-1');
   });
 
