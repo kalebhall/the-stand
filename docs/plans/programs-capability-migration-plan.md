@@ -18,7 +18,7 @@ The first supported source remains `STAND_MEETING` / `SACRAMENT_PROGRAM`. Future
 
 ## Current execution status
 
-**In progress — Milestone 4, Tasks 1–2 plus persistence foundation.** Baptism is the first non-sacrament candidate. The generic contracts now support `BAPTISM_PROGRAM` / `BAPTISM_EVENT`, with an event-only source contract that excludes member IDs, ordinance records, and private notes. A small `STANDARD_BAPTISM` template identifier, typed adapter/service/registry coverage, and a new ward-scoped `program_document` persistence boundary with live RLS coverage are in place. Editor/public/print integration, route authorization, and browser acceptance remain before the Milestone 4 gate can be called complete.
+**In progress — Milestone 4, Tasks 1–2, persistence foundation, and authenticated source/document route foundation.** Baptism is the first non-sacrament candidate. The generic contracts now support `BAPTISM_PROGRAM` / `BAPTISM_EVENT`, with an event-only source contract that excludes member IDs, ordinance records, and private notes. A small `STANDARD_BAPTISM` template identifier, typed adapter/service/registry coverage, a ward-scoped `program_document` persistence boundary with live RLS coverage, and an authenticated source/document route are in place. Editor/public/print integration, complete route/browser acceptance, and localization remain before the Milestone 4 gate can be called complete.
 
 First-slice files:
 
@@ -38,9 +38,11 @@ First-slice files:
 - `apps/web/drizzle/0021_program_source_event.sql` — ward-scoped authoritative source-event registry used to bind baptism persistence to an existing source event.
 - `apps/web/drizzle/0020_program_document_access_policy.sql`
 - `apps/web/src/db/program-document-rls.vitest.ts`
-
+- `apps/web/app/api/w/[wardId]/baptism-programs/route.ts`
+- `apps/web/app/api/w/[wardId]/baptism-programs/route.vitest.ts`
 
 Architecture updates:
+
 
 - `docs/architecture/domain-boundaries.md`
 - `docs/architecture/module-contracts.md`
