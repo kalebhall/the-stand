@@ -37,7 +37,7 @@ describe('baptism program adapter', () => {
       items: source.programItems
     });
     expect(renderInput).not.toHaveProperty('wardId');
-    expect(buildBaptismProgramDocument('BAPTISM_PROGRAM', source, { template: 'STANDARD_BAPTISM' }, 'ward-1')).toMatchObject({
+    expect(buildBaptismProgramDocument('BAPTISM_PROGRAM', source, { template: 'STANDARD_BAPTISM', participantDisplayName: source.participantDisplayName, items: source.programItems }, 'ward-1')).toMatchObject({
       id: 'baptism-event-program:baptism-1',
       programType: 'BAPTISM_PROGRAM',
       payload: { template: 'STANDARD_BAPTISM' }
@@ -47,6 +47,6 @@ describe('baptism program adapter', () => {
   it('rejects unregistered templates and extra source fields at the runtime boundary', () => {
     expect(() => baptismProgramAdapter.toDocument(source, { template: 'PRIVATE_TEMPLATE' })).toThrow();
     expect(() => baptismProgramAdapter.toRenderInput({ ...source, privateNote: 'do not publish' } as typeof source & { privateNote: string })).toThrow();
-    expect(() => buildBaptismProgramDocument('BAPTISM_PROGRAM', source, { template: 'STANDARD_BAPTISM' }, 'ward-2')).toThrow(/requested ward/);
+    expect(() => buildBaptismProgramDocument('BAPTISM_PROGRAM', source, { template: 'STANDARD_BAPTISM', participantDisplayName: source.participantDisplayName, items: source.programItems }, 'ward-2')).toThrow(/requested ward/);
   });
 });
