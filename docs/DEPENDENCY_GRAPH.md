@@ -41,16 +41,17 @@ flowchart LR
   A29["web:notifications<br/>40 files"]
   A30["web:offline<br/>3 files"]
   A31["web:platform<br/>14 files"]
-  A32["web:reports<br/>3 files"]
-  A33["web:stand<br/>10 files"]
-  A34["web:test-matchers.d.ts<br/>1 files"]
-  A35["web:tooling<br/>4 files"]
-  A36["web:types<br/>2 files"]
-  A37["web:ui<br/>35 files"]
-  A38["web:version.mjs<br/>1 files"]
+  A32["web:programs<br/>6 files"]
+  A33["web:reports<br/>3 files"]
+  A34["web:stand<br/>10 files"]
+  A35["web:test-matchers.d.ts<br/>1 files"]
+  A36["web:tooling<br/>4 files"]
+  A37["web:types<br/>2 files"]
+  A38["web:ui<br/>35 files"]
+  A39["web:version.mjs<br/>1 files"]
   A5 -->|167| A8
   A5 -->|146| A16
-  A6 -->|118| A37
+  A6 -->|118| A38
   A6 -->|93| A8
   A6 -->|58| A16
   A5 -->|52| A17
@@ -72,9 +73,9 @@ flowchart LR
   A5 -->|6| A26
   A5 -->|5| A21
   A5 -->|5| A31
-  A6 -->|5| A33
+  A6 -->|5| A34
   A8 -->|5| A27
-  A37 -->|5| A21
+  A38 -->|5| A21
   A6 -->|4| A11
   A17 -->|4| A8
   A27 -->|4| A13
@@ -89,7 +90,7 @@ flowchart LR
   A6 -->|2| A4
   A6 -->|2| A12
   A6 -->|2| A30
-  A6 -->|2| A32
+  A6 -->|2| A33
   A8 -->|2| A16
   A10 -->|2| A16
   A12 -->|2| A11
@@ -102,13 +103,13 @@ flowchart LR
   A27 -->|2| A16
   A31 -->|2| A7
   A31 -->|2| A16
-  A37 -->|2| A27
-  A37 -->|2| A32
+  A38 -->|2| A27
+  A38 -->|2| A33
   A2 -->|1| A20
   A5 -->|1| A10
   A5 -->|1| A15
   A5 -->|1| A28
-  A5 -->|1| A33
+  A5 -->|1| A34
   A6 -->|1| A10
   A6 -->|1| A13
   A6 -->|1| A15
@@ -124,7 +125,7 @@ flowchart LR
   A17 -->|1| A16
   A17 -->|1| A26
   A18 -->|1| A8
-  A20 -->|1| A38
+  A20 -->|1| A39
   A21 -->|1| A8
   A21 -->|1| A16
   A22 -->|1| A16
@@ -138,16 +139,17 @@ flowchart LR
   A29 -->|1| A28
   A29 -->|1| A31
   A31 -->|1| A30
-  A33 -->|1| A26
-  A37 -->|1| A8
-  A37 -->|1| A12
-  A37 -->|1| A15
-  A37 -->|1| A22
-  A37 -->|1| A24
-  A37 -->|1| A26
-  A37 -->|1| A28
-  A37 -->|1| A30
-  A37 -->|1| A33
+  A32 -->|1| A17
+  A34 -->|1| A26
+  A38 -->|1| A8
+  A38 -->|1| A12
+  A38 -->|1| A15
+  A38 -->|1| A22
+  A38 -->|1| A24
+  A38 -->|1| A26
+  A38 -->|1| A28
+  A38 -->|1| A30
+  A38 -->|1| A34
 ```
 
 ## Area inventory
@@ -185,6 +187,7 @@ flowchart LR
 | `web:notifications` | 40 |
 | `web:offline` | 3 |
 | `web:platform` | 14 |
+| `web:programs` | 6 |
 | `web:reports` | 3 |
 | `web:stand` | 10 |
 | `web:test-matchers.d.ts` | 1 |
@@ -228,6 +231,7 @@ flowchart LR
 | `web:i18n` | `web:i18n` | 8 |
 | `web:leadership` | `web:leadership` | 8 |
 | `web:platform` | `web:modules` | 8 |
+| `web:programs` | `web:programs` | 8 |
 | `web:stand` | `web:stand` | 8 |
 | `web:api` | `web:conducting` | 7 |
 | `web:api` | `web:leadership` | 7 |
@@ -313,6 +317,7 @@ flowchart LR
 | `web:notifications` | `web:platform` | 1 |
 | `web:offline` | `web:offline` | 1 |
 | `web:platform` | `web:offline` | 1 |
+| `web:programs` | `web:document-designer` | 1 |
 | `web:reports` | `web:reports` | 1 |
 | `web:stand` | `web:meetings` | 1 |
 | `web:ui` | `web:auth` | 1 |
@@ -390,6 +395,7 @@ flowchart LR
 | `web:leadership` | `pg` | 2 |
 | `web:offline` | `Node.js` | 2 |
 | `web:offline` | `vitest` | 2 |
+| `web:programs` | `vitest` | 2 |
 | `package:shared` | `zod` | 1 |
 | `root:other` | `@eslint/js` | 1 |
 | `root:other` | `globals` | 1 |
@@ -440,6 +446,7 @@ flowchart LR
 | `web:notifications` | `nodemailer` | 1 |
 | `web:platform` | `next-auth` | 1 |
 | `web:platform` | `pg` | 1 |
+| `web:programs` | `zod` | 1 |
 | `web:reports` | `pg` | 1 |
 | `web:reports` | `vitest` | 1 |
 | `web:test-matchers.d.ts` | `@testing-library/jest-dom` | 1 |
@@ -1053,6 +1060,12 @@ flowchart LR
 | `apps/web/src/platform/permissions/index.ts` | `web:platform` | 6 | 0 |
 | `apps/web/src/platform/platform-facades.vitest.ts` | `web:platform` | 7 | 1 |
 | `apps/web/src/platform/tenancy/context.ts` | `web:platform` | 1 | 0 |
+| `apps/web/src/programs/contracts.ts` | `web:programs` | 0 | 1 |
+| `apps/web/src/programs/registry.ts` | `web:programs` | 2 | 0 |
+| `apps/web/src/programs/registry.vitest.ts` | `web:programs` | 1 | 1 |
+| `apps/web/src/programs/sacrament-meeting-adapter.ts` | `web:programs` | 3 | 0 |
+| `apps/web/src/programs/sacrament-meeting-adapter.vitest.ts` | `web:programs` | 2 | 1 |
+| `apps/web/src/programs/source-adapter.ts` | `web:programs` | 1 | 0 |
 | `apps/web/src/reports/aggregations.ts` | `web:reports` | 0 | 1 |
 | `apps/web/src/reports/aggregations.vitest.ts` | `web:reports` | 1 | 1 |
 | `apps/web/src/reports/pages.ts` | `web:reports` | 0 | 0 |
