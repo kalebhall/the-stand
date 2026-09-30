@@ -15,7 +15,7 @@ flowchart LR
   A3["root:tooling<br/>7 files"]
   A4["web:announcements<br/>2 files"]
   A5["web:api<br/>136 files"]
-  A6["web:app<br/>148 files"]
+  A6["web:app<br/>149 files"]
   A7["web:audit<br/>2 files"]
   A8["web:auth<br/>12 files"]
   A9["web:bootstrap.mjs<br/>1 files"]
@@ -53,7 +53,7 @@ flowchart LR
   A5 -->|154| A16
   A6 -->|118| A38
   A6 -->|95| A8
-  A6 -->|59| A16
+  A6 -->|60| A16
   A5 -->|56| A27
   A5 -->|52| A17
   A5 -->|44| A29
@@ -91,7 +91,9 @@ flowchart LR
   A5 -->|2| A4
   A6 -->|2| A4
   A6 -->|2| A12
+  A6 -->|2| A24
   A6 -->|2| A30
+  A6 -->|2| A32
   A6 -->|2| A33
   A8 -->|2| A16
   A10 -->|2| A16
@@ -115,7 +117,6 @@ flowchart LR
   A6 -->|1| A10
   A6 -->|1| A13
   A6 -->|1| A15
-  A6 -->|1| A24
   A8 -->|1| A18
   A8 -->|1| A24
   A10 -->|1| A29
@@ -162,7 +163,7 @@ flowchart LR
 | `root:tooling` | 7 |
 | `web:announcements` | 2 |
 | `web:api` | 136 |
-| `web:app` | 148 |
+| `web:app` | 149 |
 | `web:audit` | 2 |
 | `web:auth` | 12 |
 | `web:bootstrap.mjs` | 1 |
@@ -207,7 +208,7 @@ flowchart LR
 | `web:app` | `web:ui` | 118 |
 | `web:app` | `web:auth` | 95 |
 | `web:app` | `web:app` | 72 |
-| `web:app` | `web:db` | 59 |
+| `web:app` | `web:db` | 60 |
 | `web:notifications` | `web:notifications` | 57 |
 | `web:api` | `web:modules` | 56 |
 | `web:api` | `web:document-designer` | 52 |
@@ -264,7 +265,9 @@ flowchart LR
 | `web:api` | `web:announcements` | 2 |
 | `web:app` | `web:announcements` | 2 |
 | `web:app` | `web:church-actions` | 2 |
+| `web:app` | `web:lib` | 2 |
 | `web:app` | `web:offline` | 2 |
+| `web:app` | `web:programs` | 2 |
 | `web:app` | `web:reports` | 2 |
 | `web:auth` | `web:db` | 2 |
 | `web:calendar` | `web:db` | 2 |
@@ -291,7 +294,6 @@ flowchart LR
 | `web:app` | `web:calendar` | 1 |
 | `web:app` | `web:conducting` | 1 |
 | `web:app` | `web:dashboard` | 1 |
-| `web:app` | `web:lib` | 1 |
 | `web:audit` | `web:audit` | 1 |
 | `web:auth` | `web:features` | 1 |
 | `web:auth` | `web:lib` | 1 |
@@ -336,7 +338,7 @@ flowchart LR
 
 | Importing area | Package/runtime | Imports |
 | --- | --- | ---: |
-| `web:app` | `next` | 105 |
+| `web:app` | `next` | 106 |
 | `web:app` | `next-intl` | 89 |
 | `web:api` | `next` | 88 |
 | `web:app` | `react` | 46 |
@@ -668,6 +670,7 @@ flowchart LR
 | `apps/web/app/notifications/page.tsx` | `web:app` | 5 | 3 |
 | `apps/web/app/p/[meetingToken]/route.ts` | `web:app` | 1 | 1 |
 | `apps/web/app/p/[meetingToken]/route.vitest.ts` | `web:app` | 1 | 1 |
+| `apps/web/app/p/baptism/[token]/feed/route.ts` | `web:app` | 4 | 1 |
 | `apps/web/app/p/baptism/[token]/route.ts` | `web:app` | 1 | 1 |
 | `apps/web/app/p/ward/[portalToken]/route.ts` | `web:app` | 2 | 1 |
 | `apps/web/app/p/ward/[portalToken]/route.vitest.ts` | `web:app` | 1 | 1 |
