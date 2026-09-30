@@ -37,7 +37,7 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
     if (!isMeetingStatus(status)) throw new Error('Meeting has an invalid status.');
     const nextStatus = transitionMeetingStatus(status, 'reopen');
     await client.query(
-      'UPDATE meeting SET status = $3::text, updated_at = now() WHERE id = $1::uuid AND ward_id = $2::uuid',
+      'UPDATE meeting SET status = $3::text, completed_at = NULL, completed_by_user_id = NULL, updated_at = now() WHERE id = $1::uuid AND ward_id = $2::uuid',
       [meetingId, wardId, nextStatus]
     );
     await recordAuditEvent(client, {

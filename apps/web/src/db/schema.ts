@@ -236,6 +236,8 @@ export const meeting = pgTable(
     meetingType: text('meeting_type').notNull(),
     location: text('location'),
     status: text('status').notNull().default('DRAFT'),
+    completedAt: timestamp('completed_at', { withTimezone: true }),
+    completedByUserId: uuid('completed_by_user_id').references(() => userAccount.id, { onDelete: 'set null' }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
   },

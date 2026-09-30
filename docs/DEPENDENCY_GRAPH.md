@@ -15,7 +15,7 @@ flowchart LR
   A3["root:tooling<br/>7 files"]
   A4["web:announcements<br/>2 files"]
   A5["web:api<br/>131 files"]
-  A6["web:app<br/>144 files"]
+  A6["web:app<br/>145 files"]
   A7["web:audit<br/>2 files"]
   A8["web:auth<br/>12 files"]
   A9["web:bootstrap.mjs<br/>1 files"]
@@ -50,7 +50,7 @@ flowchart LR
   A38["web:version.mjs<br/>1 files"]
   A5 -->|167| A8
   A5 -->|146| A16
-  A6 -->|117| A37
+  A6 -->|118| A37
   A6 -->|93| A8
   A6 -->|58| A16
   A5 -->|52| A17
@@ -159,7 +159,7 @@ flowchart LR
 | `root:tooling` | 7 |
 | `web:announcements` | 2 |
 | `web:api` | 131 |
-| `web:app` | 144 |
+| `web:app` | 145 |
 | `web:audit` | 2 |
 | `web:auth` | 12 |
 | `web:bootstrap.mjs` | 1 |
@@ -200,9 +200,9 @@ flowchart LR
 | `web:document-designer` | `web:document-designer` | 182 |
 | `web:api` | `web:auth` | 167 |
 | `web:api` | `web:db` | 146 |
-| `web:app` | `web:ui` | 117 |
+| `web:app` | `web:ui` | 118 |
 | `web:app` | `web:auth` | 93 |
-| `web:app` | `web:app` | 70 |
+| `web:app` | `web:app` | 71 |
 | `web:app` | `web:db` | 58 |
 | `web:notifications` | `web:notifications` | 57 |
 | `web:api` | `web:document-designer` | 52 |
@@ -329,10 +329,10 @@ flowchart LR
 
 | Importing area | Package/runtime | Imports |
 | --- | --- | ---: |
-| `web:app` | `next` | 102 |
+| `web:app` | `next` | 103 |
 | `web:app` | `next-intl` | 88 |
 | `web:api` | `next` | 84 |
-| `web:app` | `react` | 44 |
+| `web:app` | `react` | 45 |
 | `web:api` | `vitest` | 35 |
 | `web:ui` | `react` | 32 |
 | `web:document-designer` | `vitest` | 26 |
@@ -634,10 +634,11 @@ flowchart LR
 | `apps/web/app/meetings/error.vitest.tsx` | `web:app` | 2 | 4 |
 | `apps/web/app/meetings/loading.tsx` | `web:app` | 0 | 1 |
 | `apps/web/app/meetings/loading.vitest.tsx` | `web:app` | 2 | 4 |
+| `apps/web/app/meetings/meeting-completion-button.tsx` | `web:app` | 1 | 2 |
 | `apps/web/app/meetings/meeting-form.tsx` | `web:app` | 11 | 3 |
 | `apps/web/app/meetings/meeting-form.vitest.tsx` | `web:app` | 2 | 4 |
 | `apps/web/app/meetings/new/page.tsx` | `web:app` | 3 | 2 |
-| `apps/web/app/meetings/page.tsx` | `web:app` | 9 | 3 |
+| `apps/web/app/meetings/page.tsx` | `web:app` | 10 | 3 |
 | `apps/web/app/members/members-manager-client.tsx` | `web:app` | 3 | 3 |
 | `apps/web/app/members/members-manager-client.vitest.tsx` | `web:app` | 0 | 1 |
 | `apps/web/app/members/page.tsx` | `web:app` | 8 | 3 |

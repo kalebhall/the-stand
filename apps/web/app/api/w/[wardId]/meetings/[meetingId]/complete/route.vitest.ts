@@ -42,7 +42,7 @@ describe('POST /api/w/[wardId]/meetings/[meetingId]/complete', () => {
 
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ success: true, meetingId: 'meeting-1', eventOutboxId: 'event-1', announcedBusinessLineCount: 0 });
-    expect(queryMock).toHaveBeenCalledWith(expect.stringContaining('SET status = $3::text'), ['meeting-1', 'ward-1', 'COMPLETED']);
+    expect(queryMock).toHaveBeenCalledWith(expect.stringContaining('completed_by_user_id = $4::uuid'), ['meeting-1', 'ward-1', 'COMPLETED', 'user-1']);
     expect(queryMock).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO event_outbox'), [
       'ward-1', 'meeting-1', JSON.stringify({ meetingId: 'meeting-1', announcedBusinessLines: [] })
     ]);

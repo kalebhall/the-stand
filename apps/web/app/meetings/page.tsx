@@ -12,6 +12,7 @@ import { setDbContext } from '@/src/platform/db/context';
 import { formatMeetingDateForDisplay } from '@/src/meetings/date';
 
 import { DeleteMeetingButton } from './delete-meeting-button';
+import { MeetingCompletionButton } from './meeting-completion-button';
 
 type MeetingRow = {
   id: string;
@@ -58,6 +59,8 @@ export default async function MeetingsPage() {
     await client.query('COMMIT');
 
     const meetings = meetingsResult.rows as MeetingRow[];
+    const activeMeetings = meetings.filter((meeting) => meeting.status !== 'COMPLETED');
+    const completedMeetings = meetings.filter((meeting) => meeting.status === 'COMPLETED');
     const canManage = canManageMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId);
 
     return (
@@ -79,9 +82,9 @@ export default async function MeetingsPage() {
           </div>
         </section>
 
-        {meetings.length ? (
+        {activeMeetings.length ? (
           <section className="space-y-3">
-            {meetings.map((meeting) => (
+            {activeMeetings.map((meeting) => (
               <article
                 key={meeting.id}
                 className="section-panel flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-card p-4"
@@ -102,6 +105,7 @@ export default async function MeetingsPage() {
                     </Link>
                   ) : null}
                   {canManage ? <DeleteMeetingButton wardId={wardId} meetingId={meeting.id} /> : null}
+                  {canManage && meeting.status === 'PUBLISHED' ? <MeetingCompletionButton wardId={wardId} meetingId={meeting.id} action="complete" label={t('markFinished')} confirmMessage={t('confirmFinish')} /> : null}
                   <Link href={`/stand/${meeting.id}`} className={cn(buttonVariants({ size: 'sm', variant: 'outline' }))}>
                     {t('atStand')}
                   </Link>
@@ -112,7 +116,7 @@ export default async function MeetingsPage() {
               </article>
             ))}
           </section>
-        ) : (
+        ) : completedMeetings.length === 0 ? (
           <section className="section-panel rounded-lg border bg-card p-8 text-center">
             <h2 className="text-lg font-semibold">{t('noScheduled')}</h2>
             <p className="mt-2 text-sm text-muted-foreground">{t('noScheduledDetail')}</p>
@@ -122,7 +126,28 @@ export default async function MeetingsPage() {
               </Link>
             ) : null}
           </section>
-        )}
+        ) : null}
+        {completedMeetings.length ? (
+          <details className="section-panel rounded-lg border bg-card p-4">
+            <summary className="cursor-pointer font-semibold">{t('finishedMeetings', { count: completedMeetings.length })}</summary>
+            <section className="mt-3 space-y-3">
+              {completedMeetings.map((meeting) => (
+                <article key={meeting.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-muted/20 p-4">
+                  <div>
+                    <p className="text-base font-semibold">{formatMeetingDateForDisplay(meeting.meeting_date)}</p>
+                    <p className="text-sm text-muted-foreground">{t(MEETING_TYPE_KEYS[meeting.meeting_type as keyof typeof MEETING_TYPE_KEYS] ?? 'type_UNKNOWN')}</p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="rounded-full border px-2 py-1 text-xs font-medium">{t('status_COMPLETED')}</span>
+                    {canManage ? <MeetingCompletionButton wardId={wardId} meetingId={meeting.id} action="reopen" label={t('reopen')} confirmMessage={t('confirmReopen')} /> : null}
+                    <Link href={`/stand/${meeting.id}`} className={cn(buttonVariants({ size: 'sm', variant: 'outline' }))}>{t('atStand')}</Link>
+                    <Link href={`/meetings/${meeting.id}/print`} className={cn(buttonVariants({ size: 'sm', variant: 'outline' }))}>{t('print')}</Link>
+                  </div>
+                </article>
+              ))}
+            </section>
+          </details>
+        ) : null}
       </main>
     );
   } catch {
