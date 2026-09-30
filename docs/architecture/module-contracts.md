@@ -58,6 +58,7 @@ Programs currently exposes a small static contract in `apps/web/src/programs/`:
 - `ProgramDocument` identifies a program type, source reference, schema version, metadata, and payload.
 - `ProgramSourceAdapter` translates a source record into editor data, render input, and a program document.
 - `PROGRAM_REGISTRY` statically registers the supported type/source pair; it is not runtime plugin loading.
+- `service.ts` is the narrow lookup/build boundary; unsupported program types fail before adapter work.
 - `SACRAMENT_PROGRAM` with `STAND_MEETING` is the first registration.
 
 The sacrament adapter may use existing document-designer services during migration, but future modules must not reach through it into meeting repositories. Public output remains snapshot-based and private source fields remain outside the public render input.
