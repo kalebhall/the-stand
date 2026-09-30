@@ -1,13 +1,17 @@
-import type { ProgramType, ProgramSourceType } from './contracts';
+import type { ProgramType } from './contracts';
 import { baptismProgramAdapter } from './baptism-adapter';
 import { sacramentMeetingProgramAdapter } from './sacrament-meeting-adapter';
-import type { ProgramSourceAdapter } from './source-adapter';
-
-export type ProgramRegistration = {
-  readonly programType: ProgramType;
-  readonly sourceType: ProgramSourceType;
-  readonly adapter: ProgramSourceAdapter<any, any, any>;
-};
+export type ProgramRegistration =
+  | {
+      readonly programType: 'SACRAMENT_PROGRAM';
+      readonly sourceType: 'STAND_MEETING';
+      readonly adapter: typeof sacramentMeetingProgramAdapter;
+    }
+  | {
+      readonly programType: 'BAPTISM_PROGRAM';
+      readonly sourceType: 'BAPTISM_EVENT';
+      readonly adapter: typeof baptismProgramAdapter;
+    };
 
 function assertUniqueRegistryKeys(registrations: readonly ProgramRegistration[]): void {
   if (new Set(registrations.map((registration) => registration.programType)).size !== registrations.length) {

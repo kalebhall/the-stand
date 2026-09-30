@@ -1,4 +1,5 @@
 import type { DocumentLayout } from './types';
+import type { AdvancedDocumentLayout } from './advanced-schema';
 
 export type QueryResult<T = Record<string, unknown>> = {
   rows: T[];
@@ -27,7 +28,7 @@ export type MeetingDocumentInput = {
   sourceTemplateId?: string | null;
   sourceTemplateVersion?: number | null;
   schemaVersion: number;
-  layout: DocumentLayout;
+  layout: DocumentLayout | AdvancedDocumentLayout;
   theme: Record<string, unknown>;
   updatedByUserId: string;
   expectedRevision?: number;

@@ -37,8 +37,12 @@ export function buildProgramDocument(
 export function buildBaptismProgramDocument(
   programType: string,
   source: BaptismProgramSource,
-  payload: unknown
+  payload: unknown,
+  requestedWardId: string
 ): ProgramDocument {
+  if (source.wardId !== requestedWardId) {
+    throw new Error('Baptism program source does not belong to the requested ward.');
+  }
   const registration = requireProgramRegistration(programType);
   if (registration.programType !== 'BAPTISM_PROGRAM' || registration.sourceType !== 'BAPTISM_EVENT') {
     throw new UnknownProgramTypeError(programType);

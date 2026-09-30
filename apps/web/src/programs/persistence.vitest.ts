@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { DEFAULT_DOCUMENT_LAYOUT } from '@/src/document-designer/schema';
 
-import { loadProgramDocument, saveProgramDocument } from './persistence';
+import { InvalidProgramPersistenceInputError, loadProgramDocument, saveProgramDocument } from './persistence';
 
 const document = {
   id: 'stand-meeting-program:meeting-1',
@@ -52,5 +52,92 @@ describe('Programs persistence facade', () => {
   it('returns null when the legacy optimistic-concurrency update affects no row', async () => {
     const client = { query: vi.fn().mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [] }) };
     await expect(saveProgramDocument(client, { wardId: 'ward-1', document, updatedByUserId: 'user-1', expectedRevision: 99 })).resolves.toBeNull();
+  });
+
+  it('loads advanced schema-v2 layouts without confusing layout and program schema versions', async () => {
+    const client = { query: vi.fn().mockResolvedValue({ rows: [{
+      meeting_id: 'meeting-1',
+      schema_version: 2,
+      layout_json: { ...DEFAULT_DOCUMENT_LAYOUT, schemaVersion: 2 },
+      theme_json: DEFAULT_DOCUMENT_LAYOUT.theme,
+      source_template_id: null,
+      source_template_version: null,
+      revision: 6,
+      updated_by_user_id: 'user-1',
+      updated_at: '2026-10-01T00:00:00Z',
+      meeting_date: '2026-10-04'
+    }] }) };
+
+    await expect(loadProgramDocument(client, { wardId: 'ward-1', meetingId: 'meeting-1' })).resolves.toMatchObject({
+      schemaVersion: 1,
+      payload: { layout: { schemaVersion: 2 } }
+    });
+  });
+
+  it('writes the persisted layout schema version when saving an advanced layout', async () => {
+    const client = { query: vi.fn().mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [{ revision: 7, updated_by_user_id: 'user-1', updated_at: '2026-10-01T00:00:00Z' }] }) };
+    const advancedLayout = { ...DEFAULT_DOCUMENT_LAYOUT, schemaVersion: 2 } as never;
+    await saveProgramDocument(client, {
+      wardId: 'ward-1',
+      document: { ...document, payload: { ...document.payload, layout: advancedLayout } },
+      updatedByUserId: 'user-1',
+      expectedRevision: 6
+    });
+    expect(client.query).toHaveBeenLastCalledWith(expect.stringContaining('WHERE meeting_document.revision = $10::int'), expect.arrayContaining([2, 6]));
+  });
+
+  it('does not persist non-sacrament documents through the legacy meeting facade', async () => {
+    const client = { query: vi.fn() };
+    await expect(saveProgramDocument(client, {
+      wardId: 'ward-1',
+      document: {
+        id: 'baptism-event-program:event-1',
+        programType: 'BAPTISM_PROGRAM',
+        source: { sourceType: 'BAPTISM_EVENT', sourceId: 'event-1' },
+        schemaVersion: 1,
+        metadata: { title: 'Baptism', date: '2026-10-11', location: null },
+        payload: { layout: DEFAULT_DOCUMENT_LAYOUT, theme: DEFAULT_DOCUMENT_LAYOUT.theme }
+      },
+      updatedByUserId: 'user-1'
+    })).rejects.toThrow(InvalidProgramPersistenceInputError);
+    expect(client.query).not.toHaveBeenCalled();
+  });
+
+  it('rejects malformed persisted layout JSON with a typed persistence error', async () => {
+    const client = { query: vi.fn().mockResolvedValue({ rows: [{
+      meeting_id: 'meeting-1',
+      schema_version: 1,
+      layout_json: null,
+      theme_json: DEFAULT_DOCUMENT_LAYOUT.theme,
+      revision: 1,
+      meeting_date: '2026-10-04'
+    }] }) };
+    await expect(loadProgramDocument(client, { wardId: 'ward-1', meetingId: 'meeting-1' })).rejects.toThrow(InvalidProgramPersistenceInputError);
+  });
+
+  it('rejects inconsistent and invalid advanced layout metadata', async () => {
+    const invalidAdvancedLayout = structuredClone(DEFAULT_DOCUMENT_LAYOUT) as Record<string, unknown>;
+    invalidAdvancedLayout.schemaVersion = 2;
+    const firstBlock = ((invalidAdvancedLayout.pages as Array<Record<string, unknown>>)[0].regions as Array<Record<string, unknown>>)[0].blocks as Array<Record<string, unknown>>;
+    firstBlock[0].styleOverrides = { fontSize: 1 };
+    const client = { query: vi.fn().mockResolvedValue({ rows: [{
+      meeting_id: 'meeting-1',
+      schema_version: 2,
+      layout_json: invalidAdvancedLayout,
+      theme_json: DEFAULT_DOCUMENT_LAYOUT.theme,
+      revision: 1,
+      meeting_date: '2026-10-04'
+    }] }) };
+    await expect(loadProgramDocument(client, { wardId: 'ward-1', meetingId: 'meeting-1' })).rejects.toThrow(InvalidProgramPersistenceInputError);
+
+    client.query.mockResolvedValue({ rows: [{
+      meeting_id: 'meeting-1',
+      schema_version: 2,
+      layout_json: DEFAULT_DOCUMENT_LAYOUT,
+      theme_json: DEFAULT_DOCUMENT_LAYOUT.theme,
+      revision: 1,
+      meeting_date: '2026-10-04'
+    }] });
+    await expect(loadProgramDocument(client, { wardId: 'ward-1', meetingId: 'meeting-1' })).rejects.toThrow(InvalidProgramPersistenceInputError);
   });
 });

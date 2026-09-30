@@ -32,8 +32,7 @@ First-slice files:
 - `apps/web/src/programs/service.vitest.ts`
 - `apps/web/src/programs/persistence.ts`
 - `apps/web/src/programs/persistence.vitest.ts`
-- `apps/web/app/api/w/[wardId]/programs/[programId]/route.ts`
-- `apps/web/app/api/w/[wardId]/programs/[programId]/route.vitest.ts`
+
 
 Architecture updates:
 
@@ -42,7 +41,7 @@ Architecture updates:
 - `docs/architecture/system-map.md`
 - `docs/architecture/existing-file-map.md`
 
-Evidence: the repository test command passed with **702 tests passed and 11 skipped**, including live PostgreSQL/RLS suites; typecheck, lint, production build, dependency graph check, and `git diff --check` passed.
+Evidence: the repository unit/component and live PostgreSQL/RLS command passed with **716 tests passed and 11 skipped** after the current hardening patch; typecheck, lint, production build, dependency graph check, and `git diff --check` passed. Full browser acceptance is not green: 7 of 13 tests passed and 6 failed in the local fixture/runtime. CI and CodeQL for PR #366 passed; deployment has not occurred.
 
 ## Current repository facts
 
