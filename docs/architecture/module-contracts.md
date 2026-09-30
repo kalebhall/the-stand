@@ -60,6 +60,7 @@ Programs currently exposes a small static contract in `apps/web/src/programs/`:
 - `PROGRAM_REGISTRY` statically registers the supported type/source pair; it is not runtime plugin loading.
 - `service.ts` is the narrow lookup/build boundary; unsupported program types fail before adapter work.
 - `persistence.ts` is a compatibility facade over legacy meeting-document storage; it does not create a second source of truth.
+- `/api/w/[wardId]/programs/[programId]` is the first authenticated internal adapter over the generic contract; it is not a public feed.
 - `SACRAMENT_PROGRAM` with `STAND_MEETING` is the first registration.
 
 The sacrament adapter may use existing document-designer services during migration, but future modules must not reach through it into meeting repositories. Public output remains snapshot-based and private source fields remain outside the public render input.
