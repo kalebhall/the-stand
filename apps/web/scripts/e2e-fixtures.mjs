@@ -18,6 +18,7 @@ const ids = {
   share: '77777777-7777-4777-8777-777777777777',
   portal: '88888888-8888-4888-8888-888888888888',
   calling: '99999999-9999-4999-8999-999999999999',
+  callingAction: 'aaaaaaa1-1111-4111-8111-aaaaaaaaaaaa',
   ordinance: '44444444-4444-4444-8444-444444444444',
   followUp: '55555555-5555-4555-8555-555555555555'
 };
@@ -32,6 +33,7 @@ try {
   await client.query(`DELETE FROM public_program_portal WHERE id = $1::uuid AND ward_id = $2::uuid`, [ids.portal, ids.ward]);
   await client.query(`DELETE FROM public_program_share WHERE id = $1::uuid AND ward_id = $2::uuid`, [ids.share, ids.ward]);
   await client.query(`DELETE FROM meeting_business_line WHERE meeting_id = $1::uuid AND ward_id = $2::uuid`, [ids.meeting, ids.ward]);
+  await client.query(`DELETE FROM calling_action WHERE id = $1::uuid AND ward_id = $2::uuid`, [ids.callingAction, ids.ward]);
   await client.query(`DELETE FROM calling_assignment WHERE id = $1::uuid AND ward_id = $2::uuid`, [ids.calling, ids.ward]);
   await client.query(`DELETE FROM church_action_follow_up WHERE id = $1::uuid AND ward_id = $2::uuid`, [ids.followUp, ids.ward]);
   await client.query(`DELETE FROM meeting_membership_ordinance WHERE id = $1::uuid AND ward_id = $2::uuid`, [ids.ordinance, ids.ward]);
@@ -52,6 +54,7 @@ try {
   await client.query(`INSERT INTO ward_module_enablement (ward_id, module_id, enabled, updated_by_user_id) VALUES ($1::uuid, 'actions-to-do', true, $2::uuid), ($1::uuid, 'programs', true, $2::uuid)`, [ids.ward, ids.user]);
   await client.query(`INSERT INTO meeting (id, ward_id, meeting_date, meeting_type, status) VALUES ($1::uuid, $2::uuid, CURRENT_DATE, 'SACRAMENT', 'PUBLISHED') ON CONFLICT (id) DO UPDATE SET status = 'PUBLISHED', meeting_date = CURRENT_DATE`, [ids.meeting, ids.ward]);
   await client.query(`INSERT INTO calling_assignment (id, ward_id, member_name, organization, calling_name, sustained_date, set_apart, is_active) VALUES ($1::uuid, $2::uuid, 'Jane Doe', 'Primary', 'Primary President', CURRENT_DATE, true, true)`, [ids.calling, ids.ward]);
+  await client.query(`INSERT INTO calling_action (id, ward_id, calling_assignment_id, action_status) VALUES ($1::uuid, $2::uuid, $3::uuid, 'EXTENDED')`, [ids.callingAction, ids.ward, ids.calling]);
   await client.query(`INSERT INTO meeting_business_line (ward_id, meeting_id, calling_assignment_id, member_name, calling_name, action_type, status) VALUES ($1::uuid, $2::uuid, $3::uuid, 'Jane Doe', 'Primary President', 'SUSTAIN', 'pending')`, [ids.ward, ids.meeting, ids.calling]);
   await client.query(`INSERT INTO meeting_program_render (id, ward_id, meeting_id, version, render_html, layout_json, render_data_json, document_type, published_by_user_id, publication_metadata_json) VALUES ($1::uuid, $2::uuid, $3::uuid, 1, $4, '{"schemaVersion":1}'::jsonb, '{"schemaVersion":1}'::jsonb, 'SACRAMENT_PROGRAM', $5::uuid, '{}'::jsonb) ON CONFLICT (id) DO NOTHING`, [ids.render, ids.ward, ids.meeting, '<html><head><title>E2E Ward A</title></head><body><strong>Jane Doe</strong><span>Primary President</span><p>E2E Ward A</p></body></html>', ids.user]);
   await client.query(`INSERT INTO public_program_share (id, ward_id, meeting_id, token, active_render_id) VALUES ($1::uuid, $2::uuid, $3::uuid, 'meeting-token-e2e', $4::uuid)`, [ids.share, ids.ward, ids.meeting, ids.render]);
