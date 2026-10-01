@@ -14,6 +14,7 @@ const ids = {
   wardB: '22222222-2222-4222-8222-222222222222',
   user: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
   meeting: '33333333-3333-4333-8333-333333333333',
+  programItem: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
   render: '66666666-6666-4666-8666-666666666666',
   share: '77777777-7777-4777-8777-777777777777',
   portal: '88888888-8888-4888-8888-888888888888',
@@ -32,6 +33,7 @@ try {
   await client.query(`DELETE FROM public_program_share WHERE token = 'meeting-token-e2e' AND ward_id = $1::uuid`, [ids.ward]);
   await client.query(`DELETE FROM public_program_portal WHERE id = $1::uuid AND ward_id = $2::uuid`, [ids.portal, ids.ward]);
   await client.query(`DELETE FROM public_program_share WHERE id = $1::uuid AND ward_id = $2::uuid`, [ids.share, ids.ward]);
+  await client.query(`DELETE FROM meeting_program_item WHERE id = $1::uuid AND ward_id = $2::uuid`, [ids.programItem, ids.ward]);
   await client.query(`DELETE FROM meeting_business_line WHERE meeting_id = $1::uuid AND ward_id = $2::uuid`, [ids.meeting, ids.ward]);
   await client.query(`DELETE FROM calling_action WHERE id = $1::uuid AND ward_id = $2::uuid`, [ids.callingAction, ids.ward]);
   await client.query(`DELETE FROM calling_assignment WHERE id = $1::uuid AND ward_id = $2::uuid`, [ids.calling, ids.ward]);
@@ -53,6 +55,7 @@ try {
   await client.query(`INSERT INTO ward_user_role (ward_id, user_id, role_id) VALUES ($1::uuid, $2::uuid, $3::uuid) ON CONFLICT (ward_id, user_id, role_id) DO UPDATE SET revoked_at = NULL`, [ids.ward, ids.user, roleId]);
   await client.query(`INSERT INTO ward_module_enablement (ward_id, module_id, enabled, updated_by_user_id) VALUES ($1::uuid, 'actions-to-do', true, $2::uuid), ($1::uuid, 'programs', true, $2::uuid)`, [ids.ward, ids.user]);
   await client.query(`INSERT INTO meeting (id, ward_id, meeting_date, meeting_type, status) VALUES ($1::uuid, $2::uuid, CURRENT_DATE, 'SACRAMENT', 'PUBLISHED') ON CONFLICT (id) DO UPDATE SET status = 'PUBLISHED', meeting_date = CURRENT_DATE`, [ids.meeting, ids.ward]);
+  await client.query(`INSERT INTO meeting_program_item (id, ward_id, meeting_id, sequence, item_type, title, notes, hymn_locale) VALUES ($1::uuid, $2::uuid, $3::uuid, 30, 'WARD_AND_STAKE_BUSINESS', '', '', 'en-US')`, [ids.programItem, ids.ward, ids.meeting]);
   await client.query(`INSERT INTO calling_assignment (id, ward_id, member_name, organization, calling_name, sustained_date, set_apart, is_active) VALUES ($1::uuid, $2::uuid, 'Jane Doe', 'Primary', 'Primary President', CURRENT_DATE, true, true)`, [ids.calling, ids.ward]);
   await client.query(`INSERT INTO calling_action (id, ward_id, calling_assignment_id, action_status) VALUES ($1::uuid, $2::uuid, $3::uuid, 'EXTENDED')`, [ids.callingAction, ids.ward, ids.calling]);
   await client.query(`INSERT INTO meeting_business_line (ward_id, meeting_id, calling_assignment_id, member_name, calling_name, action_type, status) VALUES ($1::uuid, $2::uuid, $3::uuid, 'Jane Doe', 'Primary President', 'SUSTAIN', 'pending')`, [ids.ward, ids.meeting, ids.calling]);
@@ -62,11 +65,13 @@ try {
   const fixtureState = await client.query(`
     SELECT
       (SELECT ward_id = $1::uuid AND meeting_type = 'SACRAMENT' AND status = 'PUBLISHED' FROM meeting WHERE id = $2::uuid) AS meeting_ok,
-      (SELECT ward_id = $1::uuid AND meeting_id = $2::uuid AND render_html LIKE '%E2E Ward A%' AND render_html LIKE '%Jane Doe%' FROM meeting_program_render WHERE id = $3::uuid) AS render_ok,
-      (SELECT ward_id = $1::uuid AND meeting_id = $2::uuid AND active_render_id = $3::uuid FROM public_program_share WHERE token = 'meeting-token-e2e') AS share_ok,
-      (SELECT ward_id = $1::uuid FROM public_program_portal WHERE token = 'portal-token-e2e') AS portal_ok`, [ids.ward, ids.meeting, ids.render]);
+      (SELECT ward_id = $1::uuid AND meeting_id = $2::uuid AND item_type = 'WARD_AND_STAKE_BUSINESS' FROM meeting_program_item WHERE id = $3::uuid) AS program_item_ok,
+      (SELECT ward_id = $1::uuid AND calling_assignment_id = $4::uuid AND action_status = 'EXTENDED' FROM calling_action WHERE id = $5::uuid) AS calling_action_ok,
+      (SELECT ward_id = $1::uuid AND meeting_id = $2::uuid AND render_html LIKE '%E2E Ward A%' AND render_html LIKE '%Jane Doe%' FROM meeting_program_render WHERE id = $6::uuid) AS render_ok,
+      (SELECT ward_id = $1::uuid AND meeting_id = $2::uuid AND active_render_id = $6::uuid FROM public_program_share WHERE token = 'meeting-token-e2e') AS share_ok,
+      (SELECT ward_id = $1::uuid FROM public_program_portal WHERE token = 'portal-token-e2e') AS portal_ok`, [ids.ward, ids.meeting, ids.programItem, ids.calling, ids.callingAction, ids.render]);
   const state = fixtureState.rows[0];
-  if (!state?.meeting_ok || !state.render_ok || !state.share_ok || !state.portal_ok) {
+  if (!state?.meeting_ok || !state?.program_item_ok || !state?.calling_action_ok || !state?.render_ok || !state?.share_ok || !state?.portal_ok) {
     throw new Error('E2E public fixture readback validation failed');
   }
   await client.query(`INSERT INTO meeting_membership_ordinance (id, ward_id, meeting_id, member_name, action_type, status, lcr_follow_up_status, priesthood_office, planned_date) VALUES ($1::uuid, $2::uuid, $3::uuid, 'John Doe', 'PRIESTHOOD_ORDINATION', 'completed', 'needed', 'ELDER', CURRENT_DATE)`, [ids.ordinance, ids.ward, ids.meeting]);
