@@ -19,7 +19,7 @@ try {
   await client.query(`DELETE FROM church_action_follow_up WHERE id = $1::uuid`, [ids.followUp]);
   await client.query(`DELETE FROM meeting_membership_ordinance WHERE id = $1::uuid`, [ids.ordinance]);
   await client.query(`DELETE FROM meeting WHERE id = $1::uuid`, [ids.meeting]);
-  await client.query(`DELETE FROM ward_module_enablement WHERE ward_id = $1::uuid AND module_id = 'actions-to-do'`, [ids.ward]);
+  await client.query(`DELETE FROM ward_module_enablement WHERE ward_id IN ($1::uuid, $2::uuid)`, [ids.ward, ids.wardB]);
   await client.query(`DELETE FROM ward_user_role WHERE user_id = $1::uuid`, [ids.user]);
   await client.query(`DELETE FROM user_account WHERE id = $1::uuid`, [ids.user]);
   await client.query(`DELETE FROM ward WHERE id IN ($1::uuid, $2::uuid)`, [ids.ward, ids.wardB]);
