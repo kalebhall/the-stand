@@ -171,8 +171,7 @@ export default async function StandViewPage({
          ) latest_calling ON TRUE
         WHERE b.ward_id = $2::uuid
           AND source_meeting.meeting_type NOT IN ('STAKE_CONFERENCE', 'GENERAL_CONFERENCE')
-          AND EXISTS (SELECT 1 FROM meeting route_meeting WHERE route_meeting.id = $1::uuid AND route_meeting.meeting_type NOT IN ('STAKE_CONFERENCE', 'GENERAL_CONFERENCE'))
-          AND (b.action_type <> 'SUSTAIN' OR b.calling_assignment_id IS NULL OR latest_calling.action_status = 'EXTENDED')
+          AND EXISTS (SELECT 1 FROM meeting route_meeting WHERE route_meeting.id = $1::uuid AND route_meeting.ward_id = $2::uuid AND route_meeting.meeting_type NOT IN ('STAKE_CONFERENCE', 'GENERAL_CONFERENCE'))
           AND (b.meeting_id = $1::uuid OR (
             b.action_type = 'SUSTAIN'
             AND b.calling_assignment_id IS NOT NULL
