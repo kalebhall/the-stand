@@ -28,8 +28,6 @@ try {
   await client.query(`INSERT INTO ward (id, stake_id, name, unit_number) VALUES ($1::uuid, $2::uuid, 'E2E Ward A', '85510'), ($3::uuid, $2::uuid, 'E2E Ward B', '85511')`, [ids.ward, ids.stake, ids.wardB]);
   const hash = await argon2.hash('WardAdminPassword123456789012');
   await client.query(`INSERT INTO user_account (id, email, display_name, password_hash, must_change_password, is_active) VALUES ($1::uuid, 'ward-admin@example.test', 'E2E Ward Admin', $2, false, true)`, [ids.user, hash]);
-  const supportRole = await client.query(`INSERT INTO role (name, scope) VALUES ('SUPPORT_ADMIN', 'GLOBAL') ON CONFLICT (name) DO UPDATE SET scope = EXCLUDED.scope RETURNING id`);
-  await client.query(`INSERT INTO user_global_role (user_id, role_id) VALUES ($1::uuid, $2::uuid) ON CONFLICT DO NOTHING`, [ids.user, supportRole.rows[0].id]);
   const role = await client.query(`INSERT INTO role (name, scope) VALUES ('BISHOPRIC_EDITOR', 'WARD') ON CONFLICT (name) DO UPDATE SET scope = EXCLUDED.scope RETURNING id`);
   await client.query(`SELECT set_config('app.user_id', $1, true)`, [ids.user]);
   await client.query(`SELECT set_config('app.ward_id', $1, true)`, [ids.ward]);

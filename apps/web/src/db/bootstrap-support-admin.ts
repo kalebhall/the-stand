@@ -35,11 +35,26 @@ export async function ensureSupportAdminBootstrap(): Promise<void> {
       FROM user_account u
       INNER JOIN user_global_role ugr ON ugr.user_id = u.id
       INNER JOIN role r ON r.id = ugr.role_id
-     WHERE r.name = 'SUPPORT_ADMIN'
-     LIMIT 1`
+     WHERE r.name = 'SUPPORT_ADMIN' AND u.email = $1
+     LIMIT 1`,
+    [supportEmail]
   );
 
   if (roleResult.rowCount && roleResult.rowCount > 0) {
+    const isE2eDatabase = process.env.E2E_TEST_MODE === '1'
+      && process.env.NODE_ENV !== 'production'
+      && Boolean(process.env.TEST_DATABASE_URL)
+      && process.env.DATABASE_URL === process.env.TEST_DATABASE_URL;
+    if (isE2eDatabase) {
+      const password = process.env.SUPPORT_ADMIN_INITIAL_PASSWORD;
+      if (!password) throw new Error('SUPPORT_ADMIN_INITIAL_PASSWORD is required in E2E_TEST_MODE');
+      const hash = await hashPassword(password);
+      await pool.query(
+        `UPDATE user_account SET password_hash = $1, must_change_password = true, is_active = true
+         WHERE email = $2`,
+        [hash, supportEmail]
+      );
+    }
     return;
   }
 
