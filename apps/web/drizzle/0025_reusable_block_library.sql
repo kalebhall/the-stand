@@ -51,11 +51,18 @@ CREATE POLICY reusable_block_read ON public.reusable_block FOR SELECT USING (
 );
 
 DROP POLICY IF EXISTS reusable_block_write ON public.reusable_block;
-CREATE POLICY reusable_block_write ON public.reusable_block FOR ALL USING (
-  app.has_active_ward_access(app.current_ward_id()) AND ((scope_type = 'PERSONAL' AND scope_id = app.current_ward_id() AND owner_user_id = app.current_user_id()) OR
+CREATE POLICY reusable_block_write ON public.reusable_block FOR UPDATE USING (
+  app.has_active_ward_access(app.current_ward_id()) AND status = 'ACTIVE' AND ((scope_type = 'PERSONAL' AND scope_id = app.current_ward_id() AND owner_user_id = app.current_user_id()) OR
   (scope_type = 'WARD' AND scope_id = app.current_ward_id()) OR
   (scope_type = 'STAKE' AND app.is_stake_admin(scope_id)))
 ) WITH CHECK (
+  app.has_active_ward_access(app.current_ward_id()) AND ((scope_type = 'PERSONAL' AND scope_id = app.current_ward_id() AND owner_user_id = app.current_user_id()) OR
+  (scope_type = 'WARD' AND scope_id = app.current_ward_id()) OR
+  (scope_type = 'STAKE' AND app.is_stake_admin(scope_id)))
+);
+
+DROP POLICY IF EXISTS reusable_block_insert ON public.reusable_block;
+CREATE POLICY reusable_block_insert ON public.reusable_block FOR INSERT WITH CHECK (
   app.has_active_ward_access(app.current_ward_id()) AND ((scope_type = 'PERSONAL' AND scope_id = app.current_ward_id() AND owner_user_id = app.current_user_id()) OR
   (scope_type = 'WARD' AND scope_id = app.current_ward_id()) OR
   (scope_type = 'STAKE' AND app.is_stake_admin(scope_id)))
@@ -75,8 +82,8 @@ CREATE OR REPLACE FUNCTION app.prevent_reusable_block_scope_mutation()
 RETURNS trigger LANGUAGE plpgsql SECURITY INVOKER
 SET search_path = pg_catalog, public, app AS $$
 BEGIN
-  IF NEW.scope_type IS DISTINCT FROM OLD.scope_type OR NEW.scope_id IS DISTINCT FROM OLD.scope_id OR NEW.owner_user_id IS DISTINCT FROM OLD.owner_user_id THEN
-    RAISE EXCEPTION 'Reusable block scope is immutable' USING ERRCODE = '55000';
+  IF NEW.scope_type IS DISTINCT FROM OLD.scope_type OR NEW.scope_id IS DISTINCT FROM OLD.scope_id OR NEW.owner_user_id IS DISTINCT FROM OLD.owner_user_id OR (NEW.current_version IS DISTINCT FROM OLD.current_version AND pg_trigger_depth() = 0) OR NEW.created_by_user_id IS DISTINCT FROM OLD.created_by_user_id THEN
+    RAISE EXCEPTION 'Reusable block identity and version fields are immutable' USING ERRCODE = '55000';
   END IF;
   RETURN NEW;
 END;
