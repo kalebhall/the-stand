@@ -15,7 +15,7 @@ flowchart LR
   A3["root:tooling<br/>7 files"]
   A4["web:announcements<br/>2 files"]
   A5["web:api<br/>136 files"]
-  A6["web:app<br/>149 files"]
+  A6["web:app<br/>150 files"]
   A7["web:audit<br/>2 files"]
   A8["web:auth<br/>12 files"]
   A9["web:bootstrap.mjs<br/>1 files"]
@@ -60,7 +60,7 @@ flowchart LR
   A5 -->|31| A7
   A6 -->|30| A27
   A5 -->|25| A24
-  A6 -->|18| A21
+  A6 -->|19| A21
   A6 -->|15| A17
   A6 -->|15| A26
   A6 -->|15| A31
@@ -163,7 +163,7 @@ flowchart LR
 | `root:tooling` | 7 |
 | `web:announcements` | 2 |
 | `web:api` | 136 |
-| `web:app` | 149 |
+| `web:app` | 150 |
 | `web:audit` | 2 |
 | `web:auth` | 12 |
 | `web:bootstrap.mjs` | 1 |
@@ -207,7 +207,7 @@ flowchart LR
 | `web:api` | `web:db` | 154 |
 | `web:app` | `web:ui` | 118 |
 | `web:app` | `web:auth` | 95 |
-| `web:app` | `web:app` | 72 |
+| `web:app` | `web:app` | 73 |
 | `web:app` | `web:db` | 60 |
 | `web:notifications` | `web:notifications` | 57 |
 | `web:api` | `web:modules` | 56 |
@@ -220,7 +220,7 @@ flowchart LR
 | `web:programs` | `web:programs` | 30 |
 | `web:api` | `web:lib` | 25 |
 | `web:platform` | `web:platform` | 22 |
-| `web:app` | `web:i18n` | 18 |
+| `web:app` | `web:i18n` | 19 |
 | `web:modules` | `web:modules` | 17 |
 | `web:app` | `web:document-designer` | 15 |
 | `web:app` | `web:meetings` | 15 |
@@ -339,18 +339,18 @@ flowchart LR
 | Importing area | Package/runtime | Imports |
 | --- | --- | ---: |
 | `web:app` | `next` | 106 |
-| `web:app` | `next-intl` | 89 |
+| `web:app` | `next-intl` | 90 |
 | `web:api` | `next` | 88 |
 | `web:app` | `react` | 46 |
 | `web:api` | `vitest` | 36 |
 | `web:ui` | `react` | 32 |
 | `web:document-designer` | `vitest` | 27 |
-| `web:app` | `vitest` | 22 |
+| `web:app` | `vitest` | 23 |
 | `web:ui` | `next-intl` | 22 |
 | `web:notifications` | `vitest` | 19 |
 | `web:api` | `zod` | 16 |
+| `web:app` | `@testing-library/react` | 16 |
 | `web:ui` | `next` | 16 |
-| `web:app` | `@testing-library/react` | 15 |
 | `root:tooling` | `Node.js` | 14 |
 | `web:db` | `Node.js` | 13 |
 | `web:notifications` | `pg` | 13 |
@@ -687,6 +687,7 @@ flowchart LR
 | `apps/web/app/programs/programs-client.vitest.tsx` | `web:app` | 3 | 3 |
 | `apps/web/app/programs/templates/[templateId]/page.tsx` | `web:app` | 4 | 1 |
 | `apps/web/app/programs/templates/[templateId]/template-detail-client.tsx` | `web:app` | 0 | 3 |
+| `apps/web/app/programs/templates/[templateId]/template-detail-client.vitest.tsx` | `web:app` | 2 | 3 |
 | `apps/web/app/programs/templates/admin/page.tsx` | `web:app` | 4 | 2 |
 | `apps/web/app/programs/templates/admin/template-admin-client.tsx` | `web:app` | 0 | 2 |
 | `apps/web/app/programs/templates/admin/template-admin-client.vitest.tsx` | `web:app` | 2 | 3 |
