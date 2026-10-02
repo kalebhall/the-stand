@@ -63,6 +63,8 @@ describe('ProgramDesignerClient', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Add to panel' }));
     expect(screen.getByRole('region', { name: 'Inside right' })).toHaveTextContent('Custom Text');
     fireEvent.click(screen.getByRole('button', { name: 'Phone preview' }));
+    expect(screen.getByRole('button', { name: 'Phone preview' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'Edit' })).toHaveAttribute('aria-pressed', 'false');
     expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
     expect(screen.getByRole('region', { name: 'Inside right' })).toBeInTheDocument();
