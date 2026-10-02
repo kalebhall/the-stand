@@ -32,6 +32,10 @@ describe('ProgramDesignerClient', () => {
     expect(await screen.findByRole('region', { name: 'Document canvas' })).toBeInTheDocument();
     expect(screen.getByRole('complementary', { name: 'Approved blocks' })).toBeInTheDocument();
     expect(screen.getByRole('complementary', { name: 'Properties' })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Blocks' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Core sections' })).toHaveAttribute('aria-pressed', 'false');
+    fireEvent.click(screen.getByRole('button', { name: 'Media' }));
+    expect(screen.getAllByText('No blocks in this category.').length).toBeGreaterThan(0);
     await new Promise((resolve) => setTimeout(resolve, 30));
     expect(fetchMock).toHaveBeenCalledTimes(3);
     expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
@@ -61,6 +65,12 @@ describe('ProgramDesignerClient', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Advanced Mode' }));
     fireEvent.change(screen.getByLabelText('Target panel'), { target: { value: '2' } });
     fireEvent.click(screen.getByRole('button', { name: 'Add to panel' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Add to panel' }));
+    expect(screen.getByRole('region', { name: 'Inside right' })).toHaveTextContent('Custom Text');
+    const moveCustomTextUp = screen.getAllByRole('button', { name: 'Move Custom Text up' }).at(-1);
+    expect(moveCustomTextUp).toBeDefined();
+    expect(moveCustomTextUp).not.toBeDisabled();
+    fireEvent.click(moveCustomTextUp!);
     expect(screen.getByRole('region', { name: 'Inside right' })).toHaveTextContent('Custom Text');
     fireEvent.click(screen.getByRole('button', { name: 'Phone preview' }));
     expect(screen.getByRole('button', { name: 'Phone preview' })).toHaveAttribute('aria-pressed', 'true');
