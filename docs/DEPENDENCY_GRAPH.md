@@ -26,7 +26,7 @@ flowchart LR
   A14["web:config<br/>18 files"]
   A15["web:dashboard<br/>4 files"]
   A16["web:db<br/>15 files"]
-  A17["web:document-designer<br/>67 files"]
+  A17["web:document-designer<br/>69 files"]
   A18["web:features<br/>2 files"]
   A19["web:hardening<br/>1 files"]
   A20["web:health.mjs<br/>1 files"]
@@ -174,7 +174,7 @@ flowchart LR
 | `web:config` | 18 |
 | `web:dashboard` | 4 |
 | `web:db` | 15 |
-| `web:document-designer` | 67 |
+| `web:document-designer` | 69 |
 | `web:features` | 2 |
 | `web:hardening` | 1 |
 | `web:health.mjs` | 1 |
@@ -202,7 +202,7 @@ flowchart LR
 
 | Importing area | Imported area | Imports |
 | --- | --- | ---: |
-| `web:document-designer` | `web:document-designer` | 183 |
+| `web:document-designer` | `web:document-designer` | 188 |
 | `web:api` | `web:auth` | 175 |
 | `web:api` | `web:db` | 154 |
 | `web:app` | `web:ui` | 118 |
@@ -344,7 +344,7 @@ flowchart LR
 | `web:app` | `react` | 46 |
 | `web:api` | `vitest` | 36 |
 | `web:ui` | `react` | 32 |
-| `web:document-designer` | `vitest` | 26 |
+| `web:document-designer` | `vitest` | 27 |
 | `web:app` | `vitest` | 22 |
 | `web:ui` | `next-intl` | 22 |
 | `web:notifications` | `vitest` | 19 |
@@ -920,6 +920,8 @@ flowchart LR
 | `apps/web/src/document-designer/render-types.ts` | `web:document-designer` | 2 | 0 |
 | `apps/web/src/document-designer/renderer.ts` | `web:document-designer` | 5 | 0 |
 | `apps/web/src/document-designer/renderer.vitest.ts` | `web:document-designer` | 3 | 1 |
+| `apps/web/src/document-designer/reusable-blocks.ts` | `web:document-designer` | 4 | 0 |
+| `apps/web/src/document-designer/reusable-blocks.vitest.ts` | `web:document-designer` | 1 | 1 |
 | `apps/web/src/document-designer/sacrament-program.ts` | `web:document-designer` | 6 | 1 |
 | `apps/web/src/document-designer/schema.ts` | `web:document-designer` | 7 | 1 |
 | `apps/web/src/document-designer/schema.vitest.ts` | `web:document-designer` | 4 | 2 |
