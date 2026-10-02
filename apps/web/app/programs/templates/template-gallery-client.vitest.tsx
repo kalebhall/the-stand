@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor, cleanup } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, cleanup } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import { MESSAGE_CATALOGS } from '@/src/i18n/messages';
 
@@ -12,11 +12,15 @@ const renderWithMessages = (ui: React.ReactNode) => render(<NextIntlClientProvid
 describe('TemplateGalleryClient', () => {
   it('groups built-ins and exposes copy only when authorized', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ templates: [
-      { id: 'classic-bifold', source: 'BUILT_IN', scopeType: 'SYSTEM', name: 'Classic Bifold', description: 'Folded', status: 'PUBLISHED' }
+      { id: 'classic-bifold', source: 'BUILT_IN', scopeType: 'SYSTEM', name: 'Classic Bifold', description: 'Folded', status: 'PUBLISHED', thumbnail: '/program-templates/classic-bifold.svg' }
     ] }) }));
     renderWithMessages(<TemplateGalleryClient wardId="ward-1" canCopy />);
     expect(await screen.findByText('Classic Bifold')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Duplicate and customize' })).toBeInTheDocument();
+    const preview = screen.getByRole('img', { name: 'Classic Bifold Template preview' });
+    expect(preview).toHaveAttribute('src', '/program-templates/classic-bifold.svg');
+    fireEvent.error(preview);
+    expect(screen.getByLabelText('Classic Bifold Template preview')).toBeInTheDocument();
     expect(screen.getByText('Scope')).toBeInTheDocument();
     expect(screen.getByText('Version')).toBeInTheDocument();
   });

@@ -41,12 +41,17 @@ function isLocked(template: Template): boolean {
   return template.scopeType === 'SYSTEM' || template.scopeType === 'STAKE' || Boolean(template.version?.lock && typeof template.version.lock === 'object' && Object.keys(template.version.lock).length > 0);
 }
 
+function isApprovedThumbnail(value: string | undefined): value is string {
+  return /^\/program-templates\/[A-Za-z0-9._-]+\.svg$/.test(value ?? '');
+}
+
 export function TemplateGalleryClient({ wardId, canCopy }: { wardId: string; canCopy: boolean }) {
   const t = useTranslations('programs');
   const [templates, setTemplates] = useState<Template[]>([]);
   const [status, setStatus] = useState(t('loadingTemplates'));
   const [copying, setCopying] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [failedThumbnails, setFailedThumbnails] = useState<Set<string>>(() => new Set());
 
   useEffect(() => {
     let active = true;
@@ -120,9 +125,10 @@ export function TemplateGalleryClient({ wardId, canCopy }: { wardId: string; can
           {entries.length ? <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{entries.map((template) => {
             const locked = isLocked(template);
             const detailsId = `template-details-${template.id}`;
+            const thumbnail = isApprovedThumbnail(template.thumbnail) && !failedThumbnails.has(template.id) ? template.thumbnail : null;
             return (
               <article key={template.id} className="rounded-lg border bg-card p-4 shadow-sm">
-                <div className="mb-4 flex h-24 items-center justify-center rounded-md border bg-muted text-xs text-muted-foreground" aria-label={`${template.name} ${t('preview')}`}>{t('preview')}</div>
+                <div className="mb-4 flex h-32 items-center justify-center overflow-hidden rounded-md border bg-muted text-xs text-muted-foreground">{thumbnail ? <img src={thumbnail} alt={`${template.name} ${t('preview')}`} className="h-full w-full object-contain" onError={() => setFailedThumbnails((current) => new Set(current).add(template.id))} /> : <div className="flex h-full w-3/4 items-center justify-center rounded-sm border bg-background px-3 text-center shadow-sm" aria-label={`${template.name} ${t('preview')}`}>{t('preview')}</div>}</div>
                 <div className="flex items-start justify-between gap-2">
                   <h3 className="font-semibold">{template.name}</h3>
                   {locked ? <span className="rounded-full border px-2 py-0.5 text-xs" title={t('lockedSourceTitle')}>{t('lockedSource')}</span> : null}
