@@ -25,7 +25,7 @@ flowchart LR
   A13["web:conducting<br/>3 files"]
   A14["web:config<br/>18 files"]
   A15["web:dashboard<br/>4 files"]
-  A16["web:db<br/>15 files"]
+  A16["web:db<br/>17 files"]
   A17["web:document-designer<br/>69 files"]
   A18["web:features<br/>2 files"]
   A19["web:hardening<br/>1 files"]
@@ -173,7 +173,7 @@ flowchart LR
 | `web:conducting` | 3 |
 | `web:config` | 18 |
 | `web:dashboard` | 4 |
-| `web:db` | 15 |
+| `web:db` | 17 |
 | `web:document-designer` | 69 |
 | `web:features` | 2 |
 | `web:hardening` | 1 |
@@ -350,11 +350,11 @@ flowchart LR
 | `web:notifications` | `vitest` | 19 |
 | `web:api` | `zod` | 16 |
 | `web:app` | `@testing-library/react` | 16 |
+| `web:db` | `Node.js` | 16 |
 | `web:ui` | `next` | 16 |
 | `root:tooling` | `Node.js` | 14 |
-| `web:db` | `Node.js` | 13 |
+| `web:db` | `vitest` | 13 |
 | `web:notifications` | `pg` | 13 |
-| `web:db` | `vitest` | 11 |
 | `web:document-designer` | `zod` | 10 |
 | `web:config` | `@playwright/test` | 7 |
 | `web:document-designer` | `Node.js` | 7 |
@@ -863,6 +863,8 @@ flowchart LR
 | `apps/web/src/db/p0-rls-isolation.vitest.ts` | `web:db` | 0 | 2 |
 | `apps/web/src/db/program-document-rls.vitest.ts` | `web:db` | 0 | 2 |
 | `apps/web/src/db/program-publication-schema.vitest.ts` | `web:db` | 0 | 4 |
+| `apps/web/src/db/reusable-block-library-rls.vitest.ts` | `web:db` | 0 | 2 |
+| `apps/web/src/db/reusable-block-library-schema.vitest.ts` | `web:db` | 0 | 3 |
 | `apps/web/src/db/schema.ts` | `web:db` | 0 | 2 |
 | `apps/web/src/db/template-administration-schema.vitest.ts` | `web:db` | 0 | 3 |
 | `apps/web/src/db/ward-user-role-rls.vitest.ts` | `web:db` | 0 | 2 |

@@ -337,6 +337,52 @@ export const documentTemplateVersion = pgTable(
   })
 );
 
+export const reusableBlock = pgTable(
+  'reusable_block',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    scopeType: text('scope_type').notNull(),
+    scopeId: uuid('scope_id').notNull(),
+    ownerUserId: uuid('owner_user_id').references(() => userAccount.id, { onDelete: 'cascade' }),
+    blockType: text('block_type').notNull(),
+    name: text('name').notNull(),
+    description: text('description'),
+    status: text('status').notNull().default('ACTIVE'),
+    currentVersion: integer('current_version').notNull().default(0),
+    createdByUserId: uuid('created_by_user_id').references(() => userAccount.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
+  },
+  (table) => ({
+    reusableBlockScopeIdx: index('reusable_block_scope_idx').on(table.scopeType, table.scopeId, table.status, table.blockType),
+    reusableBlockOwnerIdx: index('reusable_block_owner_idx').on(table.ownerUserId, table.status),
+    reusableBlockScopeOwnerCheck: check('reusable_block_scope_owner_check', sql`(${table.scopeType} = 'PERSONAL' AND ${table.ownerUserId} IS NOT NULL) OR (${table.scopeType} IN ('WARD', 'STAKE') AND ${table.ownerUserId} IS NULL)`),
+    reusableBlockScopeTypeCheck: check('reusable_block_scope_type_check', sql`${table.scopeType} IN ('PERSONAL', 'WARD', 'STAKE')`),
+    reusableBlockNameCheck: check('reusable_block_name_check', sql`length(btrim(${table.name})) BETWEEN 1 AND 200`),
+    reusableBlockStatusCheck: check('reusable_block_status_check', sql`${table.status} IN ('ACTIVE', 'ARCHIVED')`),
+    reusableBlockVersionPositiveCheck: check('reusable_block_version_positive_check', sql`${table.currentVersion} >= 0`),
+    reusableBlockTypeCheck: check('reusable_block_type_check', sql`${table.blockType} IN ('CUSTOM_TEXT', 'IMAGE', 'DIVIDER', 'SPACER', 'QR_CODE', 'CUSTOM_LINK')`)
+  })
+);
+
+export const reusableBlockVersion = pgTable(
+  'reusable_block_version',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    reusableBlockId: uuid('reusable_block_id').notNull().references(() => reusableBlock.id, { onDelete: 'cascade' }),
+    version: integer('version').notNull(),
+    snapshotJson: jsonb('snapshot_json').notNull(),
+    createdByUserId: uuid('created_by_user_id').references(() => userAccount.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+  },
+  (table) => ({
+    reusableBlockVersionUnique: unique().on(table.reusableBlockId, table.version),
+    reusableBlockVersionCreatedIdx: index('reusable_block_version_created_idx').on(table.reusableBlockId, table.createdAt.desc()),
+    reusableBlockVersionPositiveCheck: check('reusable_block_version_positive_check', sql`${table.version} > 0`),
+    reusableBlockSnapshotObjectCheck: check('reusable_block_snapshot_object_check', sql`jsonb_typeof(${table.snapshotJson}) = 'object'`)
+  })
+);
+
 export const meetingProgramRender = pgTable(
   'meeting_program_render',
   {
