@@ -63,6 +63,7 @@ BEGIN
   END;
   IF NOT rejected THEN RAISE EXCEPTION 'version gap was accepted'; END IF;
 
+  rejected := false;
   BEGIN
     UPDATE reusable_block SET scope_type = 'PERSONAL', owner_user_id = user_a WHERE id = block_id;
   EXCEPTION WHEN SQLSTATE '55000' THEN
