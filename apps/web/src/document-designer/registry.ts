@@ -83,7 +83,7 @@ export const structuredText = (max: number) =>
         !/\bon[a-z]+\s*=/i.test(value),
       'Markup and executable payloads are not allowed'
     );
-export const boundedLabel = z.string().min(1).max(500);
+export const boundedLabel = z.string().trim().min(1).max(500);
 
 const unique = (values: readonly string[]) => new Set(values).size === values.length;
 const isPrintBehavior = (value: string): value is PrintBehavior => PRINT_BEHAVIORS.includes(value as PrintBehavior);

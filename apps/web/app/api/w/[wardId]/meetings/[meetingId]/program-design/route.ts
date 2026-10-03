@@ -237,11 +237,11 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
         if (!enabled) { await client.query('ROLLBACK'); return errorResponse('Advanced Mode is not enabled for this ward', 'FORBIDDEN', 403); }
         const advanced = parseAdvancedLayout(body.data.document);
         warnings = [];
-        validatePublicDocumentLayout(downgradeToV1(projectAdvancedLayoutForPublic(advanced)), ['MEETING_PROGRAM', 'ANNOUNCEMENTS', 'QR_CODE']);
+        validatePublicDocumentLayout(downgradeToV1(projectAdvancedLayoutForPublic(advanced)), ['MEETING_PROGRAM', 'ANNOUNCEMENTS', 'QR_CODE', 'CUSTOM_LINK']);
       } else {
         const validated = validateSimpleModeDraft(body.data.document, currentSimpleLayout);
         warnings = validated.warnings;
-        validatePublicDocumentLayout(validated.layout, ['MEETING_PROGRAM', 'ANNOUNCEMENTS', 'QR_CODE']);
+        validatePublicDocumentLayout(validated.layout, ['MEETING_PROGRAM', 'ANNOUNCEMENTS', 'QR_CODE', 'CUSTOM_LINK']);
       }
     } catch (error) {
       await client.query('ROLLBACK');
