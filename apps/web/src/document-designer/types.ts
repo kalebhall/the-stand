@@ -53,6 +53,8 @@ export interface DocumentBlockBase<TType extends string = BlockType> {
   visibility: VisibilityMode;
   printBehavior: PrintBehavior;
   digitalBehavior: DigitalBehavior;
+  reusableBlockId?: string;
+  reusableBlockVersion?: number;
   lock?: DocumentLock;
 }
 

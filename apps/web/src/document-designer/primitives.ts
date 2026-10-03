@@ -66,6 +66,8 @@ export const documentBlockBaseSchema = z
     visibility: z.enum(VISIBILITY_MODES),
     printBehavior: z.enum(PRINT_BEHAVIORS),
     digitalBehavior: z.enum(DIGITAL_BEHAVIORS),
+    reusableBlockId: idSchema.optional(),
+    reusableBlockVersion: z.number().int().positive().optional(),
     lock: documentLockSchema.optional()
   })
   .strict();

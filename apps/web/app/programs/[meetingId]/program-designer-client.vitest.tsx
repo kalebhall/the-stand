@@ -37,11 +37,12 @@ describe('ProgramDesignerClient', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Media' }));
     expect(screen.getAllByText('No blocks in this category.').length).toBeGreaterThan(0);
     await new Promise((resolve) => setTimeout(resolve, 30));
-    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(fetchMock).toHaveBeenCalledTimes(4);
     expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
       '/api/w/ward-1/meetings/meeting-1/program-design',
       '/api/w/ward-1/document-templates',
-      '/api/w/ward-1/media'
+      '/api/w/ward-1/media',
+      '/api/w/ward-1/reusable-blocks'
     ]);
   });
 
