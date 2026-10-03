@@ -1,5 +1,6 @@
 import { parseDocumentLayout } from './schema';
 import { isAdvancedLayout, parseAdvancedLayout, projectAdvancedLayoutForOutput, downgradeToV1 } from './advanced-schema';
+import { resolveReusableBlockSource } from './reusable-block-sources';
 import { allBlocks, validatePublicDocumentLayout } from './public-safety';
 import type { DocumentBlock, DocumentLayout } from './types';
 import type { ResolvedDocumentData } from './render-types';
@@ -22,9 +23,15 @@ export function resolveDocumentData(
   options: { public?: boolean; target?: 'PRINT' | 'DIGITAL'; explicitPublicBlockTypes?: readonly string[]; advancedProjection?: boolean } = {}
 ): { layout: DocumentLayout; data: ResolvedDocumentData } {
   const advancedLayout = isAdvancedLayout(inputLayout) ? parseAdvancedLayout(inputLayout) : null;
+  if (advancedLayout) for (const page of advancedLayout.pages) for (const region of page.regions) for (const block of region.blocks) {
+    if (block.source && block.type === 'CUSTOM_TEXT') block.config = { ...block.config, text: resolveReusableBlockSource(block.source, source) ?? '' };
+  }
   let layout: DocumentLayout = advancedLayout
     ? downgradeToV1(advancedLayout)
     : parseDocumentLayout(inputLayout);
+  for (const page of layout.pages) for (const region of page.regions) for (const block of region.blocks) {
+    if (block.source && block.type === 'CUSTOM_TEXT') block.config = { ...block.config, text: resolveReusableBlockSource(block.source, source) ?? '' };
+  }
   const configuredValues = Object.fromEntries(
     allBlocks(advancedLayout ? downgradeToV1(advancedLayout) : layout).flatMap((block) => {
       const config = block.config as { text?: string };

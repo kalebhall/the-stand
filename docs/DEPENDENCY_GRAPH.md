@@ -26,7 +26,7 @@ flowchart LR
   A14["web:config<br/>18 files"]
   A15["web:dashboard<br/>4 files"]
   A16["web:db<br/>17 files"]
-  A17["web:document-designer<br/>70 files"]
+  A17["web:document-designer<br/>72 files"]
   A18["web:features<br/>2 files"]
   A19["web:hardening<br/>1 files"]
   A20["web:health.mjs<br/>1 files"]
@@ -174,7 +174,7 @@ flowchart LR
 | `web:config` | 18 |
 | `web:dashboard` | 4 |
 | `web:db` | 17 |
-| `web:document-designer` | 70 |
+| `web:document-designer` | 72 |
 | `web:features` | 2 |
 | `web:hardening` | 1 |
 | `web:health.mjs` | 1 |
@@ -202,7 +202,7 @@ flowchart LR
 
 | Importing area | Imported area | Imports |
 | --- | --- | ---: |
-| `web:document-designer` | `web:document-designer` | 189 |
+| `web:document-designer` | `web:document-designer` | 194 |
 | `web:api` | `web:auth` | 179 |
 | `web:api` | `web:db` | 156 |
 | `web:app` | `web:ui` | 118 |
@@ -344,7 +344,7 @@ flowchart LR
 | `web:app` | `react` | 46 |
 | `web:api` | `vitest` | 36 |
 | `web:ui` | `react` | 32 |
-| `web:document-designer` | `vitest` | 27 |
+| `web:document-designer` | `vitest` | 28 |
 | `web:app` | `vitest` | 23 |
 | `web:ui` | `next-intl` | 22 |
 | `web:notifications` | `vitest` | 19 |
@@ -880,7 +880,7 @@ flowchart LR
 | `apps/web/src/document-designer/built-in-templates.ts` | `web:document-designer` | 3 | 0 |
 | `apps/web/src/document-designer/compatibility-render.vitest.ts` | `web:document-designer` | 4 | 1 |
 | `apps/web/src/document-designer/constants.ts` | `web:document-designer` | 0 | 0 |
-| `apps/web/src/document-designer/data-resolver.ts` | `web:document-designer` | 5 | 0 |
+| `apps/web/src/document-designer/data-resolver.ts` | `web:document-designer` | 6 | 0 |
 | `apps/web/src/document-designer/data-resolver.vitest.ts` | `web:document-designer` | 2 | 1 |
 | `apps/web/src/document-designer/history.ts` | `web:document-designer` | 1 | 0 |
 | `apps/web/src/document-designer/inheritance.ts` | `web:document-designer` | 2 | 0 |
@@ -925,8 +925,10 @@ flowchart LR
 | `apps/web/src/document-designer/render-types.ts` | `web:document-designer` | 2 | 0 |
 | `apps/web/src/document-designer/renderer.ts` | `web:document-designer` | 5 | 0 |
 | `apps/web/src/document-designer/renderer.vitest.ts` | `web:document-designer` | 3 | 1 |
-| `apps/web/src/document-designer/reusable-block-library.ts` | `web:document-designer` | 1 | 1 |
-| `apps/web/src/document-designer/reusable-blocks.ts` | `web:document-designer` | 4 | 0 |
+| `apps/web/src/document-designer/reusable-block-library.ts` | `web:document-designer` | 2 | 1 |
+| `apps/web/src/document-designer/reusable-block-sources.ts` | `web:document-designer` | 1 | 0 |
+| `apps/web/src/document-designer/reusable-block-sources.vitest.ts` | `web:document-designer` | 1 | 1 |
+| `apps/web/src/document-designer/reusable-blocks.ts` | `web:document-designer` | 5 | 0 |
 | `apps/web/src/document-designer/reusable-blocks.vitest.ts` | `web:document-designer` | 1 | 1 |
 | `apps/web/src/document-designer/sacrament-program.ts` | `web:document-designer` | 6 | 1 |
 | `apps/web/src/document-designer/schema.ts` | `web:document-designer` | 7 | 1 |

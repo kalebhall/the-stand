@@ -1,4 +1,6 @@
 import { BLOCK_WIDTHS, DIGITAL_BEHAVIORS, PRINT_BEHAVIORS, VISIBILITY_MODES } from './constants';
+import { assertReusableBlockSourceReference, type ReusableBlockSourceReference } from './reusable-block-sources';
+
 import { idSchema } from './primitives';
 import { sacramentProgramRegistry } from './sacrament-program';
 import type { BlockType, DigitalBehavior, DocumentBlock, DocumentId, PrintBehavior, VisibilityMode, BlockWidth } from './types';
@@ -33,6 +35,7 @@ export type ReusableBlockSnapshot<TType extends ReusableBlockType = ReusableBloc
   version: number;
   blockType: TType;
   config: ReusableBlockConfig<TType>;
+  source?: ReusableBlockSourceReference;
 };
 
 export type ReusableBlockCatalogEntry<TType extends ReusableBlockType = ReusableBlockType> = {
@@ -92,6 +95,8 @@ export function assertReusableBlockSnapshot(snapshot: ReusableBlockSnapshot): vo
     throw new Error('Invalid reusable block output behavior');
   }
   if (snapshot.printBehavior === 'PRINT_ONLY' && snapshot.digitalBehavior === 'LINK') throw new Error('PRINT_ONLY blocks cannot use digital links');
+  if (snapshot.source && snapshot.blockType !== 'CUSTOM_TEXT') throw new Error('Source-driven reusable blocks currently support custom text only');
+  if (snapshot.source) assertReusableBlockSourceReference(snapshot.source);
   if (!sacramentProgramRegistry[snapshot.blockType].configSchema.safeParse(snapshot.config).success) throw new Error('Invalid reusable block configuration');
 }
 
