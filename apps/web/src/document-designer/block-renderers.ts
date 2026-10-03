@@ -13,6 +13,10 @@ function textFor(block: DocumentBlock, data: ResolvedDocumentData): string {
   return config.text ?? '';
 }
 
+function safeHref(value: unknown): value is string {
+  if (typeof value !== 'string' || value.length > 2048) return false;
+  try { const url = new URL(value); return url.protocol === 'https:' && !url.username && !url.password; } catch { return false; }
+}
 export function renderDocumentBlock(block: DocumentBlock, data: ResolvedDocumentData, target: RenderTarget): string {
   if (block.visibility === 'HIDDEN') return '';
   if (block.printBehavior === 'DIGITAL_ONLY' && target === 'PRINT') return '';
@@ -35,8 +39,12 @@ export function renderDocumentBlock(block: DocumentBlock, data: ResolvedDocument
       .join('');
     return `<section class="document-block document-block--meeting-program"><h2>Program</h2><ol>${items}</ol></section>`;
   }
-  if (block.type === 'QR_CODE' && data.publicUrl) {
-    return `<a class="document-block document-block--qr" href="${escapeDocumentHtml(data.publicUrl)}" aria-label="Open digital program">Open digital program</a>`;
+  if (block.type === 'QR_CODE') {
+    const config = block.config as { href?: unknown; label?: unknown };
+    const href = safeHref(config.href) ? config.href : (safeHref(data.publicUrl) ? data.publicUrl : null);
+    const label = typeof config.label === 'string' && config.label.trim() ? config.label.trim() : 'Open digital program';
+    if (!href) return '';
+    return `<a class="document-block document-block--qr${block.digitalBehavior === 'LINK' ? ' document-block--digital-link' : ''}" href="${escapeDocumentHtml(href)}" aria-label="${escapeDocumentHtml(label)}">${escapeDocumentHtml(label)}</a>`;
   }
   if (block.type === 'IMAGE') {
     const config = block.config as { assetId: string | null; alt: string; isDecorative: boolean };
@@ -45,8 +53,9 @@ export function renderDocumentBlock(block: DocumentBlock, data: ResolvedDocument
     return `<img class="document-block document-block--image" src="${escapeDocumentHtml(asset.url)}" alt="${escapeDocumentHtml(asset.isDecorative ? '' : (asset.altText ?? config.alt))}"${asset.isDecorative ? ' aria-hidden="true"' : ''} />`;
   }
   if (block.type === 'CUSTOM_LINK') {
-    const config = block.config as { label: string; href: string };
-    return `<a class="document-block document-block--link" href="${escapeDocumentHtml(config.href)}">${escapeDocumentHtml(config.label)}</a>`;
+    const config = block.config as { label?: unknown; href?: unknown };
+    if (!safeHref(config.href) || typeof config.label !== 'string' || !config.label.trim()) return '';
+    return `<a class="document-block document-block--link${block.digitalBehavior === 'LINK' ? ' document-block--digital-link' : ''}" href="${escapeDocumentHtml(config.href)}">${escapeDocumentHtml(config.label.trim())}</a>`;
   }
 
   const text = textFor(block, data);

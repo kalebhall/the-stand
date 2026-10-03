@@ -7,6 +7,11 @@ import type { PrintRenderMetadata } from './print-types';
 import type { DocumentBlock, DocumentLayout } from './types';
 import type { ResolvedDocumentData } from './render-types';
 
+function safePrintHref(value: unknown): value is string {
+  if (typeof value !== 'string' || value.length > 2048) return false;
+  try { const url = new URL(value); return url.protocol === 'https:' && !url.username && !url.password; } catch { return false; }
+}
+
 export type PdfRenderOptions = { metadata: PrintRenderMetadata; title?: string };
 
 function blockText(block: DocumentBlock, data: ResolvedDocumentData): string {
@@ -135,7 +140,16 @@ export async function renderDocumentPdf(layout: DocumentLayout | AdvancedDocumen
       } else writeText('[Approved image]', layout.theme.baseFontSize, false);
       continue;
     }
-    if (block.type === 'QR_CODE' && data.publicUrl) { writeText(`Digital program: ${data.publicUrl}`, layout.theme.baseFontSize, false); continue; }
+    if (block.type === 'QR_CODE' || block.type === 'CUSTOM_LINK') {
+      const config = block.config as { href?: unknown; label?: unknown };
+      const href = block.type === 'QR_CODE'
+        ? (safePrintHref(config.href) ? config.href : (safePrintHref(data.publicUrl) ? data.publicUrl : null))
+        : (safePrintHref(config.href) ? config.href : null);
+      if (!href) continue;
+      const label = typeof config.label === 'string' && config.label.trim() ? config.label.trim() : 'Digital program';
+      writeText(`${label}: ${href}`, layout.theme.baseFontSize, false);
+      continue;
+    }
     if (block.type === 'SPACER') { const height = Math.min(20, Number((block.config as { height: number }).height) / 3); ensureSpace(height); y += height; continue; }
     const text = blockText(block, data);
     const heading = block.type === 'DOCUMENT_TITLE' || block.type === 'WARD_NAME' || block.type === 'MEETING_INFO';
