@@ -112,11 +112,18 @@ export function validateSimpleModeDraft(input: unknown, currentInput: unknown): 
   return { layout, warnings: [] };
 }
 
-export function buildPublicPreviewSource(meeting: { meetingDate: string; meetingType: string; wardName?: string | null }, programItems: Array<{ itemType: string; title?: string | null; topic?: string | null; hymnTitle?: string | null; sequence: number }>) {
+export function buildPublicPreviewSource(
+  meeting: { meetingDate: string; meetingType: string; wardName?: string | null },
+  programItems: Array<{ itemType: string; title?: string | null; topic?: string | null; hymnTitle?: string | null; sequence: number; introductionRoles?: { presiding?: string | null; conducting?: string | null } | null }>
+) {
+  const introduction = programItems.find((item) => item.itemType === 'INTRODUCTION')?.introductionRoles;
+  const presiding = introduction?.presiding?.trim() ?? '';
+  const conducting = introduction?.conducting?.trim() ?? '';
   return {
     meetingDate: meeting.meetingDate,
     meetingType: meeting.meetingType,
     wardName: meeting.wardName ?? null,
+    ...(introduction ? { publicValues: { PRESIDING_CONDUCTING: JSON.stringify({ presiding, conducting }) } } : {}),
     programItems: programItems.map((item) => ({
       order: item.sequence,
       label: item.title || item.hymnTitle || item.itemType.replaceAll('_', ' '),

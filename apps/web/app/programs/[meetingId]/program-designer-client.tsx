@@ -14,7 +14,7 @@ import type { PrintValidationResult } from '@/src/document-designer/print-types'
 
 import { moveBlock, modeClass, setBlockVisibility, setTheme, type DesignerMode, type SaveState } from './designer-state';
 
-type PreviewSource = { meetingDate: string; meetingType: string; wardName?: string | null; programItems: Array<{ order: number; label: string; details?: string | null }>; media?: Partial<Record<string, { url: string; altText: string | null; isDecorative: boolean }>> };
+type PreviewSource = { meetingDate: string; meetingType: string; wardName?: string | null; publicValues?: Partial<Record<DocumentBlock['type'], string | null>>; programItems: Array<{ order: number; label: string; details?: string | null }>; media?: Partial<Record<string, { url: string; altText: string | null; isDecorative: boolean }>> };
 type LoadedDocument = { id: string; layout: DocumentLayout; advancedLayout?: AdvancedDocumentLayout; theme: DocumentLayout['theme']; revision: number; sourceTemplateId: string | null; sourceTemplateVersion: number | null };
 
 type Props = { wardId: string; meetingId: string };

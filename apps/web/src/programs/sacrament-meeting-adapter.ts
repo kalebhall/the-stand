@@ -16,6 +16,7 @@ export type SacramentMeetingProgramSource = {
     topic?: string | null;
     hymnTitle?: string | null;
     sequence: number;
+    introductionRoles?: { presiding?: string | null; conducting?: string | null } | null;
   }>;
 };
 

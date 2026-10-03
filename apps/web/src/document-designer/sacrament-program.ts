@@ -105,7 +105,7 @@ const sacramentProgramRegistryDefinition = {
     { ...publicSafe, allowedDataModes: automaticModes }
   ),
   MEETING_PROGRAM: definition('MEETING_PROGRAM', meetingProgramConfig, { items: [] }, { ...publicFields, allowedDataModes: allModes }),
-  PRESIDING_CONDUCTING: definition('PRESIDING_CONDUCTING', textConfig, { text: '' }, { ...internal, allowedDataModes: automaticModes }),
+  PRESIDING_CONDUCTING: definition('PRESIDING_CONDUCTING', textConfig, { text: '' }, { ...publicFields, allowedDataModes: automaticModes }),
   MUSIC_LEADERS: definition('MUSIC_LEADERS', textConfig, { text: '' }, { ...publicFields, allowedDataModes: automaticModes }),
   SPEAKERS: definition('SPEAKERS', textConfig, { text: '' }, { ...publicFields, allowedDataModes: automaticModes }),
   WARD_STAKE_BUSINESS: definition('WARD_STAKE_BUSINESS', textConfig, { text: '' }, { ...publicFields, allowedDataModes: allModes }),

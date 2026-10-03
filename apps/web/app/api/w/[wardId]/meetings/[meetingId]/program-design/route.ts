@@ -35,7 +35,7 @@ async function readContext(client: Awaited<ReturnType<typeof pool.connect>>, war
   if (!meetingResult.rows[0]) return null;
 
   const itemsResult = await client.query(
-    `SELECT item_type, title, topic, hymn_title, sequence
+    `SELECT item_type, title, topic, hymn_title, sequence, introduction_roles
        FROM meeting_program_item
       WHERE meeting_id = $1::uuid AND ward_id = $2::uuid
       ORDER BY sequence ASC`,
@@ -50,8 +50,8 @@ async function readContext(client: Awaited<ReturnType<typeof pool.connect>>, war
   const layout = row?.layout_json ?? fullPageFallback();
   const revision = Number(row?.revision ?? 1);
   const profile = { allowAdvancedProgramDesigner: (settingsResult.rows[0] as { allow_advanced_program_designer?: boolean } | undefined)?.allow_advanced_program_designer === true };
-  const items = itemsResult.rows as Array<{ item_type: string; title: string | null; topic: string | null; hymn_title: string | null; sequence: number }>;
-  const previewSource = buildPublicPreviewSource({ meetingDate: meeting.meeting_date, meetingType: meeting.meeting_type, wardName: meeting.ward_name }, items.map((item) => ({ itemType: item.item_type, title: item.title, topic: item.topic, hymnTitle: item.hymn_title, sequence: item.sequence })));
+  const items = itemsResult.rows as Array<{ item_type: string; title: string | null; topic: string | null; hymn_title: string | null; sequence: number; introduction_roles: { presiding?: string | null; conducting?: string | null } | null }>;
+  const previewSource = buildPublicPreviewSource({ meetingDate: meeting.meeting_date, meetingType: meeting.meeting_type, wardName: meeting.ward_name }, items.map((item) => ({ itemType: item.item_type, title: item.title, topic: item.topic, hymnTitle: item.hymn_title, sequence: item.sequence, introductionRoles: item.introduction_roles })));
   return { meeting, row, layout, revision, profile, items, previewSource };
 }
 
@@ -237,11 +237,11 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
         if (!enabled) { await client.query('ROLLBACK'); return errorResponse('Advanced Mode is not enabled for this ward', 'FORBIDDEN', 403); }
         const advanced = parseAdvancedLayout(body.data.document);
         warnings = [];
-        validatePublicDocumentLayout(downgradeToV1(projectAdvancedLayoutForPublic(advanced)), ['MEETING_PROGRAM', 'ANNOUNCEMENTS', 'QR_CODE', 'CUSTOM_LINK']);
+        validatePublicDocumentLayout(downgradeToV1(projectAdvancedLayoutForPublic(advanced)), ['MEETING_PROGRAM', 'ANNOUNCEMENTS', 'PRESIDING_CONDUCTING', 'QR_CODE', 'CUSTOM_LINK']);
       } else {
         const validated = validateSimpleModeDraft(body.data.document, currentSimpleLayout);
         warnings = validated.warnings;
-        validatePublicDocumentLayout(validated.layout, ['MEETING_PROGRAM', 'ANNOUNCEMENTS', 'QR_CODE', 'CUSTOM_LINK']);
+        validatePublicDocumentLayout(validated.layout, ['MEETING_PROGRAM', 'ANNOUNCEMENTS', 'PRESIDING_CONDUCTING', 'QR_CODE', 'CUSTOM_LINK']);
       }
     } catch (error) {
       await client.query('ROLLBACK');
