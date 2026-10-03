@@ -1,17 +1,26 @@
 import { NextResponse } from 'next/server';
 
 import { auth } from '@/src/auth/auth';
-import { canViewProgramDesigner } from '@/src/auth/roles';
+import { canManageStakeTemplates, canViewProgramDesigner } from '@/src/auth/roles';
 import { isWardModuleEnabled } from '@/src/modules/service';
 import { getBuiltInTemplate } from '@/src/document-designer/built-in-templates';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 
+async function wardBelongsToStake(wardId: string, stakeId: string): Promise<boolean> {
+  const client = await pool.connect();
+  try {
+    const result = await client.query('SELECT 1 FROM ward WHERE id = $1::uuid AND stake_id = $2::uuid LIMIT 1', [wardId, stakeId]);
+    return result.rowCount === 1;
+  } finally {
+    client.release();
+  }
+}
 export async function GET(_: Request, context: { params: Promise<{ wardId: string; templateId: string }> }) {
   const session = await auth();
   const { wardId, templateId } = await context.params;
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, { status: 401 });
-  if (!canViewProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
+  if (!canViewProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId) && !(session.activeStakeId && await wardBelongsToStake(wardId, session.activeStakeId) && canManageStakeTemplates(session, session.activeStakeId))) return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
   if (!(await isWardModuleEnabled(wardId, session.user.id, 'programs'))) return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
 
   const builtIn = getBuiltInTemplate(templateId);
@@ -42,10 +51,16 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
               t.source_template_id, t.source_template_version,
               v.id AS version_id, v.version, v.schema_version, v.layout_json, v.theme_json, v.lock_json
          FROM document_template t
-         LEFT JOIN document_template_version v ON v.id = t.current_published_version_id
-        WHERE t.id = $1::uuid
+         LEFT JOIN LATERAL (
+           SELECT v.id, v.version, v.schema_version, v.layout_json, v.theme_json, v.lock_json
+             FROM document_template_version v
+            WHERE v.template_id = t.id
+            ORDER BY CASE WHEN t.status = 'PUBLISHED' AND v.id = t.current_published_version_id THEN 0 ELSE 1 END, v.version DESC
+            LIMIT 1
+         ) v ON true
+          WHERE t.id = $1::uuid
           AND t.document_type = 'SACRAMENT_PROGRAM'
-          AND ((t.scope_type = 'STAKE' AND t.status = 'PUBLISHED' AND t.scope_id = (SELECT stake_id FROM ward WHERE id = $2::uuid))
+          AND ((t.scope_type = 'STAKE' AND t.status IN ('PUBLISHED', 'DRAFT') AND t.scope_id = (SELECT stake_id FROM ward WHERE id = $2::uuid))
             OR (t.scope_type = 'WARD' AND t.scope_id = $2::uuid)
             OR (t.scope_type = 'PERSONAL_DRAFT' AND t.scope_id = $2::uuid AND t.created_by_user_id = $3::uuid))
         LIMIT 1`,
@@ -56,6 +71,10 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
       return NextResponse.json({ error: 'Template not found', code: 'NOT_FOUND' }, { status: 404 });
     }
     const row = result.rows[0] as Record<string, unknown>;
+    if (row.scope_type === 'STAKE' && row.status === 'DRAFT' && !(session.activeStakeId && await wardBelongsToStake(wardId, session.activeStakeId) && canManageStakeTemplates(session, session.activeStakeId))) {
+      await client.query('ROLLBACK');
+      return NextResponse.json({ error: 'Template not found', code: 'NOT_FOUND' }, { status: 404 });
+    }
     const template = {
       id: row.id,
       key: row.template_key,
