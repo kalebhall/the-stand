@@ -14,7 +14,7 @@ flowchart LR
   A2["root:other<br/>2 files"]
   A3["root:tooling<br/>7 files"]
   A4["web:announcements<br/>2 files"]
-  A5["web:api<br/>136 files"]
+  A5["web:api<br/>138 files"]
   A6["web:app<br/>150 files"]
   A7["web:audit<br/>2 files"]
   A8["web:auth<br/>12 files"]
@@ -26,7 +26,7 @@ flowchart LR
   A14["web:config<br/>18 files"]
   A15["web:dashboard<br/>4 files"]
   A16["web:db<br/>17 files"]
-  A17["web:document-designer<br/>69 files"]
+  A17["web:document-designer<br/>70 files"]
   A18["web:features<br/>2 files"]
   A19["web:hardening<br/>1 files"]
   A20["web:health.mjs<br/>1 files"]
@@ -49,13 +49,13 @@ flowchart LR
   A37["web:types<br/>2 files"]
   A38["web:ui<br/>35 files"]
   A39["web:version.mjs<br/>1 files"]
-  A5 -->|175| A8
-  A5 -->|154| A16
+  A5 -->|179| A8
+  A5 -->|156| A16
   A6 -->|118| A38
   A6 -->|95| A8
   A6 -->|60| A16
   A5 -->|56| A27
-  A5 -->|52| A17
+  A5 -->|54| A17
   A5 -->|44| A29
   A5 -->|31| A7
   A6 -->|30| A27
@@ -71,10 +71,10 @@ flowchart LR
   A31 -->|8| A27
   A5 -->|7| A13
   A5 -->|7| A23
+  A5 -->|7| A31
   A32 -->|7| A17
   A5 -->|6| A26
   A5 -->|5| A21
-  A5 -->|5| A31
   A6 -->|5| A34
   A8 -->|5| A27
   A38 -->|5| A21
@@ -162,7 +162,7 @@ flowchart LR
 | `root:other` | 2 |
 | `root:tooling` | 7 |
 | `web:announcements` | 2 |
-| `web:api` | 136 |
+| `web:api` | 138 |
 | `web:app` | 150 |
 | `web:audit` | 2 |
 | `web:auth` | 12 |
@@ -174,7 +174,7 @@ flowchart LR
 | `web:config` | 18 |
 | `web:dashboard` | 4 |
 | `web:db` | 17 |
-| `web:document-designer` | 69 |
+| `web:document-designer` | 70 |
 | `web:features` | 2 |
 | `web:hardening` | 1 |
 | `web:health.mjs` | 1 |
@@ -202,16 +202,16 @@ flowchart LR
 
 | Importing area | Imported area | Imports |
 | --- | --- | ---: |
-| `web:document-designer` | `web:document-designer` | 188 |
-| `web:api` | `web:auth` | 175 |
-| `web:api` | `web:db` | 154 |
+| `web:document-designer` | `web:document-designer` | 189 |
+| `web:api` | `web:auth` | 179 |
+| `web:api` | `web:db` | 156 |
 | `web:app` | `web:ui` | 118 |
 | `web:app` | `web:auth` | 95 |
 | `web:app` | `web:app` | 73 |
 | `web:app` | `web:db` | 60 |
 | `web:notifications` | `web:notifications` | 57 |
 | `web:api` | `web:modules` | 56 |
-| `web:api` | `web:document-designer` | 52 |
+| `web:api` | `web:document-designer` | 54 |
 | `web:api` | `web:notifications` | 44 |
 | `web:api` | `web:api` | 39 |
 | `web:ui` | `web:ui` | 33 |
@@ -238,11 +238,11 @@ flowchart LR
 | `web:stand` | `web:stand` | 8 |
 | `web:api` | `web:conducting` | 7 |
 | `web:api` | `web:leadership` | 7 |
+| `web:api` | `web:platform` | 7 |
 | `web:church-actions` | `web:church-actions` | 7 |
 | `web:programs` | `web:document-designer` | 7 |
 | `web:api` | `web:meetings` | 6 |
 | `web:api` | `web:i18n` | 5 |
-| `web:api` | `web:platform` | 5 |
 | `web:app` | `web:stand` | 5 |
 | `web:auth` | `web:modules` | 5 |
 | `web:ui` | `web:i18n` | 5 |
@@ -339,8 +339,8 @@ flowchart LR
 | Importing area | Package/runtime | Imports |
 | --- | --- | ---: |
 | `web:app` | `next` | 106 |
+| `web:api` | `next` | 90 |
 | `web:app` | `next-intl` | 90 |
-| `web:api` | `next` | 88 |
 | `web:app` | `react` | 46 |
 | `web:api` | `vitest` | 36 |
 | `web:ui` | `react` | 32 |
@@ -355,7 +355,7 @@ flowchart LR
 | `root:tooling` | `Node.js` | 14 |
 | `web:db` | `vitest` | 13 |
 | `web:notifications` | `pg` | 13 |
-| `web:document-designer` | `zod` | 10 |
+| `web:document-designer` | `zod` | 11 |
 | `web:config` | `@playwright/test` | 7 |
 | `web:document-designer` | `Node.js` | 7 |
 | `web:meetings` | `vitest` | 7 |
@@ -608,6 +608,8 @@ flowchart LR
 | `apps/web/app/api/w/[wardId]/program-settings/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/public-layout/route.ts` | `web:api` | 7 | 1 |
 | `apps/web/app/api/w/[wardId]/public-layout/route.vitest.ts` | `web:api` | 2 | 1 |
+| `apps/web/app/api/w/[wardId]/reusable-blocks/[blockId]/route.ts` | `web:api` | 5 | 1 |
+| `apps/web/app/api/w/[wardId]/reusable-blocks/route.ts` | `web:api` | 5 | 1 |
 | `apps/web/app/api/w/[wardId]/speakers/[programItemId]/route.ts` | `web:api` | 6 | 1 |
 | `apps/web/app/api/w/[wardId]/users/[userId]/roles/[roleId]/route.ts` | `web:api` | 7 | 1 |
 | `apps/web/app/api/w/[wardId]/users/[userId]/roles/route.ts` | `web:api` | 7 | 1 |
@@ -923,6 +925,7 @@ flowchart LR
 | `apps/web/src/document-designer/render-types.ts` | `web:document-designer` | 2 | 0 |
 | `apps/web/src/document-designer/renderer.ts` | `web:document-designer` | 5 | 0 |
 | `apps/web/src/document-designer/renderer.vitest.ts` | `web:document-designer` | 3 | 1 |
+| `apps/web/src/document-designer/reusable-block-library.ts` | `web:document-designer` | 1 | 1 |
 | `apps/web/src/document-designer/reusable-blocks.ts` | `web:document-designer` | 4 | 0 |
 | `apps/web/src/document-designer/reusable-blocks.vitest.ts` | `web:document-designer` | 1 | 1 |
 | `apps/web/src/document-designer/sacrament-program.ts` | `web:document-designer` | 6 | 1 |
