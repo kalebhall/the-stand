@@ -5,9 +5,9 @@ for The Stand using Given / When / Then format.
 
 All scenarios must pass before release candidate approval.
 
-====================================================================
+====
 SECTION 1 — SYSTEM BOOTSTRAP
-====================================================================
+====
 
 Scenario: Support Admin bootstrap user is created on first startup
 Given the system has no users
