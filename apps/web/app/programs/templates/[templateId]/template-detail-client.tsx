@@ -18,7 +18,7 @@ function isApprovedThumbnail(value: string | undefined): value is string {
   return /^\/program-templates\/[A-Za-z0-9._-]+\.svg$/.test(value ?? '');
 }
 
-export function TemplateDetailClient({ wardId, templateId, canCopy }: { wardId: string; templateId: string; canCopy: boolean }) {
+export function TemplateDetailClient({ wardId, templateId, canCopy, canEdit = false }: { wardId: string; templateId: string; canCopy: boolean; canEdit?: boolean }) {
   const t = useTranslations('programs');
   const [template, setTemplate] = useState<Template | null>(null);
   const [message, setMessage] = useState(t('loadingTemplate'));
@@ -84,6 +84,7 @@ export function TemplateDetailClient({ wardId, templateId, canCopy }: { wardId: 
       </section>
       <div className="flex flex-wrap gap-3">
         <Link href="/programs" className="rounded-md border px-4 py-2 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{t('useInProgram')}</Link>
+        {canEdit && template.status === 'DRAFT' ? <Link href={`/programs/templates/${encodeURIComponent(templateId)}/studio`} className="rounded-md border px-4 py-2 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">Open Template Studio</Link> : null}
         <button type="button" disabled={!canCopy || duplicating || template.status !== 'PUBLISHED'} onClick={() => void duplicateTemplate()} className="rounded-md border px-4 py-2 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{duplicating ? t('duplicating') : t('duplicateCustomize')}</button>
       </div>
       {message ? <p role="status" aria-live="polite" className="text-sm text-muted-foreground">{message}</p> : null}

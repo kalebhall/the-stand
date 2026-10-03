@@ -15,7 +15,7 @@ flowchart LR
   A3["root:tooling<br/>7 files"]
   A4["web:announcements<br/>2 files"]
   A5["web:api<br/>138 files"]
-  A6["web:app<br/>150 files"]
+  A6["web:app<br/>152 files"]
   A7["web:audit<br/>2 files"]
   A8["web:auth<br/>12 files"]
   A9["web:bootstrap.mjs<br/>1 files"]
@@ -52,13 +52,13 @@ flowchart LR
   A5 -->|179| A8
   A5 -->|156| A16
   A6 -->|118| A38
-  A6 -->|95| A8
-  A6 -->|60| A16
+  A6 -->|97| A8
+  A6 -->|62| A16
   A5 -->|56| A27
   A5 -->|54| A17
   A5 -->|44| A29
   A5 -->|31| A7
-  A6 -->|30| A27
+  A6 -->|31| A27
   A5 -->|25| A24
   A6 -->|19| A21
   A6 -->|15| A17
@@ -163,7 +163,7 @@ flowchart LR
 | `root:tooling` | 7 |
 | `web:announcements` | 2 |
 | `web:api` | 138 |
-| `web:app` | 150 |
+| `web:app` | 152 |
 | `web:audit` | 2 |
 | `web:auth` | 12 |
 | `web:bootstrap.mjs` | 1 |
@@ -206,9 +206,9 @@ flowchart LR
 | `web:api` | `web:auth` | 179 |
 | `web:api` | `web:db` | 156 |
 | `web:app` | `web:ui` | 118 |
-| `web:app` | `web:auth` | 95 |
-| `web:app` | `web:app` | 73 |
-| `web:app` | `web:db` | 60 |
+| `web:app` | `web:auth` | 97 |
+| `web:app` | `web:app` | 74 |
+| `web:app` | `web:db` | 62 |
 | `web:notifications` | `web:notifications` | 57 |
 | `web:api` | `web:modules` | 56 |
 | `web:api` | `web:document-designer` | 54 |
@@ -216,7 +216,7 @@ flowchart LR
 | `web:api` | `web:api` | 39 |
 | `web:ui` | `web:ui` | 33 |
 | `web:api` | `web:audit` | 31 |
-| `web:app` | `web:modules` | 30 |
+| `web:app` | `web:modules` | 31 |
 | `web:programs` | `web:programs` | 30 |
 | `web:api` | `web:lib` | 25 |
 | `web:platform` | `web:platform` | 22 |
@@ -338,10 +338,10 @@ flowchart LR
 
 | Importing area | Package/runtime | Imports |
 | --- | --- | ---: |
-| `web:app` | `next` | 106 |
+| `web:app` | `next` | 108 |
 | `web:api` | `next` | 90 |
 | `web:app` | `next-intl` | 90 |
-| `web:app` | `react` | 46 |
+| `web:app` | `react` | 47 |
 | `web:api` | `vitest` | 36 |
 | `web:ui` | `react` | 32 |
 | `web:document-designer` | `vitest` | 28 |
@@ -687,7 +687,9 @@ flowchart LR
 | `apps/web/app/programs/page.tsx` | `web:app` | 9 | 2 |
 | `apps/web/app/programs/programs-client.tsx` | `web:app` | 0 | 2 |
 | `apps/web/app/programs/programs-client.vitest.tsx` | `web:app` | 3 | 3 |
-| `apps/web/app/programs/templates/[templateId]/page.tsx` | `web:app` | 4 | 1 |
+| `apps/web/app/programs/templates/[templateId]/page.tsx` | `web:app` | 5 | 1 |
+| `apps/web/app/programs/templates/[templateId]/studio/page.tsx` | `web:app` | 5 | 1 |
+| `apps/web/app/programs/templates/[templateId]/studio/template-studio-client.tsx` | `web:app` | 0 | 2 |
 | `apps/web/app/programs/templates/[templateId]/template-detail-client.tsx` | `web:app` | 0 | 3 |
 | `apps/web/app/programs/templates/[templateId]/template-detail-client.vitest.tsx` | `web:app` | 2 | 3 |
 | `apps/web/app/programs/templates/admin/page.tsx` | `web:app` | 4 | 2 |
