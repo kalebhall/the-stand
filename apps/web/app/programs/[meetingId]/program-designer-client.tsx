@@ -116,6 +116,7 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
   const filteredPanelBlocks = (panelIndex: number) => panelBlocks(panelIndex).filter((block) => blockCategoryFilter === 'ALL' || blockCategory(block) === blockCategoryFilter);
   const panelForBlock = (blockId: string) => document?.layout.pages[0]?.regions.findIndex((region) => region.blocks.some((block) => block.id === blockId)) ?? -1;
   const selectedBlock = allBlocks.find((block) => block.id === selectedBlockId) ?? allBlocks[0];
+  const selectedReusable = selectedBlock?.reusableBlockId ? reusableBlocks.find((item) => item.id === selectedBlock.reusableBlockId) : undefined;
   const isBifold = document?.layout.fold === 'BIFOLD';
   const panelLabels = isBifold ? PANEL_LABELS.map((key) => t(key)) : (document?.layout.pages[0]?.regions.map((_, index) => `Region ${index + 1}`) ?? []);
 
@@ -251,6 +252,23 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
     runLayoutOperation(() => applyAdvanced(addBlock(current, 0, selectedPanelIndex, block)));
   }
 
+  function updateSelectedFromReusableVersion(item: ReusableLibraryItem) {
+    if (!selectedBlock) return;
+    const snapshot = item.snapshot_json;
+    const current = currentAdvanced();
+    if (!current) return;
+    const advancedBlock = current.pages.flatMap((page) => page.regions).flatMap((region) => region.blocks).find((block) => block.id === selectedBlock.id) ?? selectedBlock;
+    const replacement = { ...advancedBlock, type: snapshot.blockType, width: snapshot.width, dataMode: snapshot.visibility === 'HIDE_WHEN_EMPTY' ? 'AUTO' as const : 'MANUAL' as const, visibility: snapshot.visibility, printBehavior: snapshot.printBehavior, digitalBehavior: snapshot.digitalBehavior, config: snapshot.config, source: snapshot.source, reusableBlockId: item.id, reusableBlockVersion: item.current_version } as DocumentBlock;
+    const next = structuredClone(current);
+    for (const page of next.pages) for (const region of page.regions) {
+      const index = region.blocks.findIndex((block) => block.id === selectedBlock.id);
+      if (index >= 0) region.blocks[index] = replacement;
+    }
+    if (!advancedEditing) setAdvancedEditing(true);
+    runLayoutOperation(() => applyAdvanced(next));
+    if (document) void save(next, document.revision, undefined, 'ADVANCED');
+  }
+
   async function saveSelectedAsReusableBlock() {
     if (!selectedBlock || !reusableName.trim()) return;
     setStatus('saving');
@@ -370,6 +388,7 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
         </section>
         <aside className="space-y-4 rounded-xl border bg-card p-3 shadow-sm lg:sticky lg:top-16" aria-label={t('properties')}>
           <section><h2 className="font-semibold">{t('properties')}</h2>{selectedBlock ? <div className="mt-3 space-y-3"><p className="text-sm font-medium">{blockLabel(selectedBlock)}</p><label className="block space-y-1 text-sm"><span>{t('visibility')}</span><select className="w-full rounded-md border px-2 py-2" value={selectedBlock.visibility} onChange={(event) => advancedEditing ? updateAdvancedVisibility(event.target.value as DocumentBlock['visibility']) : updateLayout(setBlockVisibility(document.layout, selectedBlock.id, event.target.value as 'VISIBLE' | 'HIDDEN' | 'HIDE_WHEN_EMPTY'))}><option value="VISIBLE">Visible</option><option value="HIDDEN">Hidden</option><option value="HIDE_WHEN_EMPTY">Hide when empty</option></select></label>{advancedEditing ? <label className="block space-y-1 text-sm"><span>Width</span><select className="w-full rounded-md border px-2 py-2" value={selectedBlock.width} onChange={(event) => { const current = currentAdvanced(); if (current) runLayoutOperation(() => applyAdvanced(resizeBlock(current, selectedBlock.id, event.target.value as 'FULL' | 'TWO_THIRDS' | 'HALF' | 'ONE_THIRD'))); }}><option value="FULL">Full</option><option value="TWO_THIRDS">Two thirds</option><option value="HALF">Half</option><option value="ONE_THIRD">One third</option></select></label> : null}{'text' in selectedBlock.config ? <label className="block space-y-1 text-sm"><span>Text</span><textarea className="min-h-24 w-full rounded-md border p-2" value={String(selectedBlock.config.text)} onChange={(event) => updateSelectedBlock((block) => ({ ...block, config: { ...block.config, text: event.target.value } } as DocumentBlock))} /></label> : null}</div> : <p className="mt-2 text-sm text-muted-foreground">Select a block to edit safe properties.</p>}</section>
+          {selectedReusable && selectedBlock?.reusableBlockVersion && selectedReusable.current_version > selectedBlock.reusableBlockVersion ? <section className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900"><p>Newer reusable version available: v{selectedReusable.current_version} (this block uses v{selectedBlock.reusableBlockVersion}).</p><div className="mt-2 flex gap-2"><button type="button" className="rounded border px-2 py-1" onClick={() => updateSelectedFromReusableVersion(selectedReusable)}>Update block</button><button type="button" className="rounded border px-2 py-1" onClick={() => setMessage('Keeping current reusable block version')}>Keep current</button></div></section> : null}
           {selectedBlock && REUSABLE_BLOCK_TYPES.has(selectedBlock.type) ? <section className="border-t pt-4"><h2 className="font-semibold">Save as reusable block</h2><div className="mt-3 space-y-2"><input className="w-full rounded-md border px-2 py-2 text-sm" placeholder="Name" value={reusableName} onChange={(event) => setReusableName(event.target.value)} /><textarea className="w-full rounded-md border p-2 text-sm" placeholder="Description (optional)" value={reusableDescription} onChange={(event) => setReusableDescription(event.target.value)} /><select className="w-full rounded-md border px-2 py-2 text-sm" value={reusableScope} onChange={(event) => setReusableScope(event.target.value as typeof reusableScope)}><option value="PERSONAL">Personal</option><option value="WARD">Ward</option><option value="STAKE">Stake</option></select><button type="button" className="w-full rounded-md border px-3 py-2 text-sm" disabled={!reusableName.trim() || status === 'saving'} onClick={() => void saveSelectedAsReusableBlock().catch((error: unknown) => setMessage(error instanceof Error ? error.message : 'Unable to save reusable block'))}>Save selected block</button></div></section> : null}
           <section><h2 className="font-semibold">{t('theme')}</h2><div className="mt-3 space-y-3"><label className="block space-y-1 text-sm"><span>{t('font')}</span><select className="w-full rounded-md border px-2 py-2" value={document.layout.theme.fontFamily} onChange={(event) => updateTheme({ fontFamily: event.target.value as DocumentLayout['theme']['fontFamily'] })}><option value="SYSTEM_SANS">{t('systemSans')}</option><option value="SERIF">{t('serif')}</option><option value="MONOSPACE">{t('monospace')}</option></select></label><label className="block space-y-1 text-sm"><span>Base font size</span><input className="w-full rounded-md border px-2 py-2" type="number" min={8} max={32} value={document.layout.theme.baseFontSize} onChange={(event) => updateTheme({ baseFontSize: Number(event.target.value) })} /></label></div></section>
           {status === 'conflict' ? <div className="space-y-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900"><p>{message}</p><button type="button" className="rounded border px-2 py-1" onClick={() => void load().catch((error: unknown) => setMessage(error instanceof Error ? error.message : 'Reload failed'))}>{t('reloadServer')}</button></div> : null}
