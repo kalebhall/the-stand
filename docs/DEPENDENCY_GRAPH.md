@@ -126,6 +126,7 @@ flowchart LR
   A14 -->|1| A26
   A17 -->|1| A7
   A17 -->|1| A16
+  A17 -->|1| A24
   A17 -->|1| A26
   A18 -->|1| A8
   A20 -->|1| A39
@@ -202,7 +203,7 @@ flowchart LR
 
 | Importing area | Imported area | Imports |
 | --- | --- | ---: |
-| `web:document-designer` | `web:document-designer` | 194 |
+| `web:document-designer` | `web:document-designer` | 195 |
 | `web:api` | `web:auth` | 179 |
 | `web:api` | `web:db` | 156 |
 | `web:app` | `web:ui` | 118 |
@@ -304,6 +305,7 @@ flowchart LR
 | `web:config` | `web:meetings` | 1 |
 | `web:document-designer` | `web:audit` | 1 |
 | `web:document-designer` | `web:db` | 1 |
+| `web:document-designer` | `web:lib` | 1 |
 | `web:document-designer` | `web:meetings` | 1 |
 | `web:features` | `web:auth` | 1 |
 | `web:features` | `web:features` | 1 |
@@ -901,8 +903,8 @@ flowchart LR
 | `apps/web/src/document-designer/meeting-document-service.vitest.ts` | `web:document-designer` | 2 | 1 |
 | `apps/web/src/document-designer/overflow.ts` | `web:document-designer` | 7 | 0 |
 | `apps/web/src/document-designer/pdf-download.ts` | `web:document-designer` | 0 | 1 |
-| `apps/web/src/document-designer/pdf-renderer.ts` | `web:document-designer` | 6 | 1 |
-| `apps/web/src/document-designer/pdf-renderer.vitest.ts` | `web:document-designer` | 4 | 1 |
+| `apps/web/src/document-designer/pdf-renderer.ts` | `web:document-designer` | 7 | 1 |
+| `apps/web/src/document-designer/pdf-renderer.vitest.ts` | `web:document-designer` | 5 | 1 |
 | `apps/web/src/document-designer/persistence.ts` | `web:document-designer` | 2 | 0 |
 | `apps/web/src/document-designer/persistence.vitest.ts` | `web:document-designer` | 2 | 1 |
 | `apps/web/src/document-designer/preview-contract.ts` | `web:document-designer` | 4 | 0 |

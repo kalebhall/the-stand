@@ -1,5 +1,6 @@
 import { jsPDF } from 'jspdf';
 
+import { generateQrDataUrl } from '../lib/qr-pdf';
 import { allBlocks } from './public-safety';
 import { isAdvancedLayout, type AdvancedDocumentLayout } from './advanced-schema';
 import { getPhysicalPage, getFoldPanels } from './print-layout';
@@ -140,13 +141,28 @@ export async function renderDocumentPdf(layout: DocumentLayout | AdvancedDocumen
       } else writeText('[Approved image]', layout.theme.baseFontSize, false);
       continue;
     }
-    if (block.type === 'QR_CODE' || block.type === 'CUSTOM_LINK') {
+    if (block.type === 'QR_CODE') {
       const config = block.config as { href?: unknown; label?: unknown };
-      const href = block.type === 'QR_CODE'
-        ? (safePrintHref(config.href) ? config.href : (safePrintHref(data.publicUrl) ? data.publicUrl : null))
-        : (safePrintHref(config.href) ? config.href : null);
+      const href = safePrintHref(config.href) ? config.href : (safePrintHref(data.publicUrl) ? data.publicUrl : null);
       if (!href) continue;
       const label = typeof config.label === 'string' && config.label.trim() ? config.label.trim() : 'Digital program';
+      const caption = `${label}: ${href}`;
+      const captionSize = Math.max(8, layout.theme.baseFontSize - 1);
+      const qrDataUrl = await generateQrDataUrl(href);
+      const qrSize = Math.min(45, currentWidth());
+      doc.setFontSize(captionSize);
+      const captionLines = doc.splitTextToSize(caption, currentWidth()).length;
+      ensureSpace(qrSize + 3 + captionLines * lineHeight + 3);
+      doc.addImage(qrDataUrl, 'PNG', currentX(), y, qrSize, qrSize, undefined, 'FAST');
+      y += qrSize + 3;
+      writeText(caption, captionSize, false);
+      continue;
+    }
+    if (block.type === 'CUSTOM_LINK') {
+      const config = block.config as { href?: unknown; label?: unknown };
+      const href = safePrintHref(config.href) ? config.href : null;
+      if (!href) continue;
+      const label = typeof config.label === 'string' && config.label.trim() ? config.label.trim() : 'Link';
       writeText(`${label}: ${href}`, layout.theme.baseFontSize, false);
       continue;
     }
