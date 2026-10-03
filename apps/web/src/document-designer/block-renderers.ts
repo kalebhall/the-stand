@@ -30,6 +30,13 @@ export function renderDocumentBlock(block: DocumentBlock, data: ResolvedDocument
     const height = (block.config as { height: number }).height;
     return `<div class="document-block document-block--spacer" style="height:${Math.min(height, 720)}px" aria-hidden="true"></div>`;
   }
+  if (block.type === 'PRESIDING_CONDUCTING') {
+    let roles: { presiding?: string; conducting?: string } = {};
+    try { roles = JSON.parse(data.values.PRESIDING_CONDUCTING ?? '{}') as typeof roles; } catch { roles = {}; }
+    const rows = [['Presiding', roles.presiding ?? ''], ['Conducting', roles.conducting ?? '']].filter(([, value]) => value.trim());
+    if (!rows.length && block.visibility === 'HIDE_WHEN_EMPTY') return '';
+    return `<dl class="document-block document-block--key-values">${rows.map(([label, value]) => `<div class="document-key-value"><dt>${label}</dt><dd>${escapeDocumentHtml(value)}</dd></div>`).join('')}</dl>`;
+  }
   if (block.type === 'MEETING_PROGRAM') {
     if (!data.meetingItems.length && block.visibility === 'HIDE_WHEN_EMPTY') return '';
     const items = data.meetingItems
