@@ -30,6 +30,7 @@ const blockCategory = (block: DocumentBlock): Exclude<BlockCategory, 'ALL'> => {
 };
 const blockIcon = (category: Exclude<BlockCategory, 'ALL'>) => ({ CORE: '▦', REUSABLE: '✦', MEDIA: '▧', LINKS: '⌁' })[category];
 const blockDescriptionKey = (category: Exclude<BlockCategory, 'ALL'>) => ({ CORE: 'coreSectionsDescription', REUSABLE: 'reusableBlocksDescription', MEDIA: 'mediaBlocksDescription', LINKS: 'linksAndQrDescription' })[category];
+const REUSABLE_BLOCK_TYPES = new Set(['CUSTOM_TEXT', 'IMAGE', 'DIVIDER', 'SPACER', 'QR_CODE', 'CUSTOM_LINK']);
 const PANEL_LABELS = ['frontCover', 'insideLeft', 'insideRight', 'backCover'] as const;
 
 
@@ -42,6 +43,9 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
   const [templates, setTemplates] = useState<TemplateOption[]>([]);
   const [media, setMedia] = useState<MediaAssetResponse[]>([]);
   const [reusableBlocks, setReusableBlocks] = useState<ReusableLibraryItem[]>([]);
+  const [reusableName, setReusableName] = useState('');
+  const [reusableDescription, setReusableDescription] = useState('');
+  const [reusableScope, setReusableScope] = useState<'PERSONAL' | 'WARD' | 'STAKE'>('PERSONAL');
 
   const [selectedTemplateId, setSelectedTemplateId] = useState('');
   const [mode, setMode] = useState<DesignerMode>('EDIT');
@@ -247,6 +251,29 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
     runLayoutOperation(() => applyAdvanced(addBlock(current, 0, selectedPanelIndex, block)));
   }
 
+  async function saveSelectedAsReusableBlock() {
+    if (!selectedBlock || !reusableName.trim()) return;
+    setStatus('saving');
+    let persisted = false;
+    try {
+      const response = await fetch(`/api/w/${wardId}/reusable-blocks`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ scope: reusableScope, name: reusableName.trim(), description: reusableDescription.trim() || null, snapshot: { version: 1, blockType: selectedBlock.type, config: selectedBlock.config, width: selectedBlock.width, visibility: selectedBlock.visibility, printBehavior: selectedBlock.printBehavior, digitalBehavior: selectedBlock.digitalBehavior } }) });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error ?? 'Unable to save reusable block');
+      persisted = true;
+      const libraryResponse = await fetch(`/api/w/${wardId}/reusable-blocks`);
+      const libraryBody = await libraryResponse.json();
+      if (!libraryResponse.ok) throw new Error(libraryBody.error ?? 'Reusable block was saved but the library could not be refreshed');
+      setReusableBlocks(libraryBody.blocks ?? []);
+      setReusableName('');
+      setReusableDescription('');
+      setStatus('saved');
+      setMessage('Reusable block saved');
+    } catch (error: unknown) {
+      setStatus(persisted ? 'saved' : 'error');
+      setMessage(error instanceof Error ? (persisted ? `${error.message}. Reload the page before retrying.` : error.message) : 'Unable to save reusable block');
+    }
+  }
+
   function removeSelectedAdvancedBlock() {
     const current = currentAdvanced();
     if (current && selectedBlockId) runLayoutOperation(() => applyAdvanced(removeBlock(current, selectedBlockId)));
@@ -343,6 +370,7 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
         </section>
         <aside className="space-y-4 rounded-xl border bg-card p-3 shadow-sm lg:sticky lg:top-16" aria-label={t('properties')}>
           <section><h2 className="font-semibold">{t('properties')}</h2>{selectedBlock ? <div className="mt-3 space-y-3"><p className="text-sm font-medium">{blockLabel(selectedBlock)}</p><label className="block space-y-1 text-sm"><span>{t('visibility')}</span><select className="w-full rounded-md border px-2 py-2" value={selectedBlock.visibility} onChange={(event) => advancedEditing ? updateAdvancedVisibility(event.target.value as DocumentBlock['visibility']) : updateLayout(setBlockVisibility(document.layout, selectedBlock.id, event.target.value as 'VISIBLE' | 'HIDDEN' | 'HIDE_WHEN_EMPTY'))}><option value="VISIBLE">Visible</option><option value="HIDDEN">Hidden</option><option value="HIDE_WHEN_EMPTY">Hide when empty</option></select></label>{advancedEditing ? <label className="block space-y-1 text-sm"><span>Width</span><select className="w-full rounded-md border px-2 py-2" value={selectedBlock.width} onChange={(event) => { const current = currentAdvanced(); if (current) runLayoutOperation(() => applyAdvanced(resizeBlock(current, selectedBlock.id, event.target.value as 'FULL' | 'TWO_THIRDS' | 'HALF' | 'ONE_THIRD'))); }}><option value="FULL">Full</option><option value="TWO_THIRDS">Two thirds</option><option value="HALF">Half</option><option value="ONE_THIRD">One third</option></select></label> : null}{'text' in selectedBlock.config ? <label className="block space-y-1 text-sm"><span>Text</span><textarea className="min-h-24 w-full rounded-md border p-2" value={String(selectedBlock.config.text)} onChange={(event) => updateSelectedBlock((block) => ({ ...block, config: { ...block.config, text: event.target.value } } as DocumentBlock))} /></label> : null}</div> : <p className="mt-2 text-sm text-muted-foreground">Select a block to edit safe properties.</p>}</section>
+          {selectedBlock && REUSABLE_BLOCK_TYPES.has(selectedBlock.type) ? <section className="border-t pt-4"><h2 className="font-semibold">Save as reusable block</h2><div className="mt-3 space-y-2"><input className="w-full rounded-md border px-2 py-2 text-sm" placeholder="Name" value={reusableName} onChange={(event) => setReusableName(event.target.value)} /><textarea className="w-full rounded-md border p-2 text-sm" placeholder="Description (optional)" value={reusableDescription} onChange={(event) => setReusableDescription(event.target.value)} /><select className="w-full rounded-md border px-2 py-2 text-sm" value={reusableScope} onChange={(event) => setReusableScope(event.target.value as typeof reusableScope)}><option value="PERSONAL">Personal</option><option value="WARD">Ward</option><option value="STAKE">Stake</option></select><button type="button" className="w-full rounded-md border px-3 py-2 text-sm" disabled={!reusableName.trim() || status === 'saving'} onClick={() => void saveSelectedAsReusableBlock().catch((error: unknown) => setMessage(error instanceof Error ? error.message : 'Unable to save reusable block'))}>Save selected block</button></div></section> : null}
           <section><h2 className="font-semibold">{t('theme')}</h2><div className="mt-3 space-y-3"><label className="block space-y-1 text-sm"><span>{t('font')}</span><select className="w-full rounded-md border px-2 py-2" value={document.layout.theme.fontFamily} onChange={(event) => updateTheme({ fontFamily: event.target.value as DocumentLayout['theme']['fontFamily'] })}><option value="SYSTEM_SANS">{t('systemSans')}</option><option value="SERIF">{t('serif')}</option><option value="MONOSPACE">{t('monospace')}</option></select></label><label className="block space-y-1 text-sm"><span>Base font size</span><input className="w-full rounded-md border px-2 py-2" type="number" min={8} max={32} value={document.layout.theme.baseFontSize} onChange={(event) => updateTheme({ baseFontSize: Number(event.target.value) })} /></label></div></section>
           {status === 'conflict' ? <div className="space-y-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900"><p>{message}</p><button type="button" className="rounded border px-2 py-1" onClick={() => void load().catch((error: unknown) => setMessage(error instanceof Error ? error.message : 'Reload failed'))}>{t('reloadServer')}</button></div> : null}
           {status === 'error' ? <button type="button" className="rounded-md border px-3 py-2 text-sm" onClick={() => document && void save(document.layout, document.revision)}>{t('retrySave')}</button> : null}
