@@ -222,7 +222,14 @@ export function projectAdvancedLayoutForOutput(
         .filter((block) => {
           if (block.visibilityRule !== 'WHEN_DATA_EXISTS') return true;
           if (!data) return true;
-          if (block.type === 'MEETING_PROGRAM') return data.meetingItems.length > 0;
+          if (block.type === 'MEETING_PROGRAM') {
+            const rawLeadership = data.values.PRESIDING_CONDUCTING;
+            let hasLeadership = false;
+            if (typeof rawLeadership === 'string') {
+              try { const leadership = JSON.parse(rawLeadership) as { presiding?: string; conducting?: string }; hasLeadership = Boolean(leadership.presiding?.trim() || leadership.conducting?.trim()); } catch { hasLeadership = false; }
+            }
+            return data.meetingItems.length > 0 || hasLeadership;
+          }
           const value = data.values[block.type];
           return Array.isArray(value) ? value.length > 0 : value !== null && value !== undefined && value !== '';
         })

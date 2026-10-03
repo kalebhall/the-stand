@@ -5,7 +5,7 @@ import type { DocumentLayout } from './types';
 import type { ResolvedDocumentData } from './render-types';
 
 const data: ResolvedDocumentData = { meetingDate: '2026-01-01', meetingType: 'SACRAMENT', wardName: 'Ward', values: {}, meetingItems: [], warnings: [], media: {} };
-const publicTypes = ['MEETING_PROGRAM', 'ANNOUNCEMENTS', 'QR_CODE', 'CUSTOM_TEXT', 'CUSTOM_LINK', 'IMAGE'];
+const publicTypes = ['MEETING_PROGRAM', 'PRESIDING_CONDUCTING', 'ANNOUNCEMENTS', 'QR_CODE', 'CUSTOM_TEXT', 'CUSTOM_LINK', 'IMAGE'];
 const baseLayout = () => adaptLegacyLayoutToDocument({ preset: 'FULL_PAGE', announcementMode: 'AFTER_PROGRAM', coverMode: 'NONE' });
 
 describe('publication validation', () => {

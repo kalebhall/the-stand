@@ -3,6 +3,7 @@ import { getTranslations } from 'next-intl/server';
 
 import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth/guards';
 import { canManageStakeTemplates, canManageSystemTemplates } from '@/src/auth/roles';
+import { isAdvancedDesignerFeatureEnabled } from '@/src/features/advanced-designer';
 import { isWardModuleEnabled } from '@/src/modules/service';
 import { TemplateAdminClient } from './template-admin-client';
 
@@ -10,7 +11,7 @@ export default async function TemplateAdministrationPage() {
   const t = await getTranslations('programs');
   const session = await requireAuthenticatedSession();
   enforcePasswordRotation(session);
-  if (!session.activeWardId || !(await isWardModuleEnabled(session.activeWardId, session.user.id, 'programs'))) redirect('/dashboard');
+  if (!session.activeWardId || !isAdvancedDesignerFeatureEnabled() || !(await isWardModuleEnabled(session.activeWardId, session.user.id, 'programs'))) redirect('/dashboard');
   const canSystem = canManageSystemTemplates({ roles: session.user.roles });
   const canStake = Boolean(session.activeStakeId && canManageStakeTemplates({
     roles: session.user.roles,

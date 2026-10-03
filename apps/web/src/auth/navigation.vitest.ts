@@ -17,7 +17,7 @@ describe('getNavigationItems', () => {
 
   it('shows Programs to program users but excludes unrelated workflows', () => {
     const items = getNavigationItems(['PROGRAM_EDITOR'], 'ward', allModulesEnabled());
-    expect(items).toContainEqual({ href: '/programs', label: 'Programs' });
+    expect(items).toContainEqual({ href: '/programs', label: 'Program Studio' });
     expect(items).toContainEqual({ href: '/programs/templates', label: 'Templates' });
     expect(items).toContainEqual({ href: '/announcements', label: 'Announcements' });
     expect(items).not.toContainEqual({ href: '/callings', label: 'Callings' });
@@ -99,9 +99,9 @@ describe('canViewDashboardPublicPortalStatus', () => {
 describe('getNavigationGroups', () => {
   it('preserves canonical item order while assigning visible items to fixed groups', () => {
     const groups = getNavigationGroups(['STAND_ADMIN'], 'ward', allModulesEnabled());
-    expect(groups.map((group) => group.id)).toEqual(['workspace', 'ward', 'ministry', 'administration']);
-    expect(groups[0]?.items.map((item) => item.href)).toEqual(['/dashboard', '/meetings', '/actions-to-do', '/announcements', '/programs', '/programs/templates']);
-    expect(groups[1]?.items.map((item) => item.href)).toEqual(['/bishopric', '/interviews', '/technology']);
+    expect(groups.map((group) => group.id)).toEqual(['workspace', 'programs', 'ward', 'ministry', 'administration']);
+    expect(groups[0]?.items.map((item) => item.href)).toEqual(['/dashboard', '/meetings', '/actions-to-do', '/announcements']);
+    expect(groups[1]?.items.map((item) => item.href)).toEqual(['/programs', '/programs/templates']);
   });
 
   it('omits empty groups and keeps support isolated to support users', () => {
