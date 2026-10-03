@@ -66,6 +66,7 @@ export const documentBlockBaseSchema = z
     visibility: z.enum(VISIBILITY_MODES),
     printBehavior: z.enum(PRINT_BEHAVIORS),
     digitalBehavior: z.enum(DIGITAL_BEHAVIORS),
+    source: z.object({ key: z.enum(['MEETING_DATE', 'MEETING_TIME', 'MEETING_TYPE', 'WARD_NAME', 'MEETING_LOCATION']), fallbackText: z.string().max(500).optional() }).strict().optional(),
     reusableBlockId: idSchema.optional(),
     reusableBlockVersion: z.number().int().positive().optional(),
     lock: documentLockSchema.optional()

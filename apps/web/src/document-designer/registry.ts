@@ -97,6 +97,9 @@ export function createDocumentBlockSchema<TRegistry extends DocumentBlockRegistr
         config: definition.configSchema
       })
       .superRefine((block, context) => {
+        if (block.source && block.type !== 'CUSTOM_TEXT') {
+          context.addIssue({ code: z.ZodIssueCode.custom, path: ['source'], message: 'Source-driven references are currently supported only for custom text blocks' });
+        }
         if (!definition.allowedDataModes.includes(block.dataMode)) {
           context.addIssue({ code: z.ZodIssueCode.custom, path: ['dataMode'], message: 'Data mode is not allowed for this block' });
         }

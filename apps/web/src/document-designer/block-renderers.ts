@@ -6,9 +6,10 @@ export function escapeDocumentHtml(value: string): string {
 }
 
 function textFor(block: DocumentBlock, data: ResolvedDocumentData): string {
+  const config = block.config as { text?: string };
+  if (block.type === 'CUSTOM_TEXT' && typeof config.text === 'string') return config.text;
   const resolved = data.values[block.type];
   if (typeof resolved === 'string') return resolved;
-  const config = block.config as { text?: string };
   return config.text ?? '';
 }
 

@@ -53,6 +53,7 @@ export interface DocumentBlockBase<TType extends string = BlockType> {
   visibility: VisibilityMode;
   printBehavior: PrintBehavior;
   digitalBehavior: DigitalBehavior;
+  source?: { key: 'MEETING_DATE' | 'MEETING_TIME' | 'MEETING_TYPE' | 'WARD_NAME' | 'MEETING_LOCATION'; fallbackText?: string };
   reusableBlockId?: string;
   reusableBlockVersion?: number;
   lock?: DocumentLock;

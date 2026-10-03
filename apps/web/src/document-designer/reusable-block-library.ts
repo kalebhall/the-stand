@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { REUSABLE_BLOCK_SCOPES, REUSABLE_BLOCK_TYPES, assertReusableBlockSnapshot, type ReusableBlockScope, type ReusableBlockSnapshot } from './reusable-blocks';
+import { REUSABLE_BLOCK_SOURCE_KEYS } from './reusable-block-sources';
 
 const uuid = z.string().uuid();
 
@@ -11,7 +12,8 @@ export const reusableBlockSnapshotSchema = z.object({
   width: z.string(),
   visibility: z.string(),
   printBehavior: z.string(),
-  digitalBehavior: z.string()
+  digitalBehavior: z.string(),
+  source: z.object({ key: z.enum(REUSABLE_BLOCK_SOURCE_KEYS), fallbackText: z.string().max(500).optional() }).strict().optional()
 }).strict();
 
 export const createReusableBlockSchema = z.object({

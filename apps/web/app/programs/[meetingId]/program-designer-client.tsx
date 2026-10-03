@@ -18,7 +18,7 @@ type PreviewSource = { meetingDate: string; meetingType: string; wardName?: stri
 type LoadedDocument = { id: string; layout: DocumentLayout; advancedLayout?: AdvancedDocumentLayout; theme: DocumentLayout['theme']; revision: number; sourceTemplateId: string | null; sourceTemplateVersion: number | null };
 
 type Props = { wardId: string; meetingId: string };
-type ReusableLibraryItem = { id: string; name: string; description: string | null; current_version: number; snapshot_json: { blockType: DocumentBlock['type']; config: DocumentBlock['config']; width: DocumentBlock['width']; visibility: DocumentBlock['visibility']; printBehavior: DocumentBlock['printBehavior']; digitalBehavior: DocumentBlock['digitalBehavior'] } };
+type ReusableLibraryItem = { id: string; name: string; description: string | null; current_version: number; snapshot_json: { blockType: DocumentBlock['type']; config: DocumentBlock['config']; width: DocumentBlock['width']; visibility: DocumentBlock['visibility']; printBehavior: DocumentBlock['printBehavior']; digitalBehavior: DocumentBlock['digitalBehavior']; source?: DocumentBlock['source'] } };
 
 const blockLabel = (block: DocumentBlock) => block.type.replaceAll('_', ' ').toLowerCase().replace(/(^|\s)\S/g, (letter) => letter.toUpperCase());
 type BlockCategory = 'ALL' | 'CORE' | 'REUSABLE' | 'MEDIA' | 'LINKS';
@@ -244,7 +244,7 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
 
   function insertReusableBlock(item: ReusableLibraryItem) {
     const snapshot = item.snapshot_json;
-    const block = { id: crypto.randomUUID() as DocumentBlock['id'], type: snapshot.blockType, width: snapshot.width, dataMode: snapshot.visibility === 'HIDE_WHEN_EMPTY' ? 'AUTO' as const : 'MANUAL' as const, visibility: snapshot.visibility, printBehavior: snapshot.printBehavior, digitalBehavior: snapshot.digitalBehavior, config: snapshot.config, reusableBlockId: item.id, reusableBlockVersion: item.current_version } as DocumentBlock;
+    const block = { id: crypto.randomUUID() as DocumentBlock['id'], type: snapshot.blockType, width: snapshot.width, dataMode: snapshot.visibility === 'HIDE_WHEN_EMPTY' ? 'AUTO' as const : 'MANUAL' as const, visibility: snapshot.visibility, printBehavior: snapshot.printBehavior, digitalBehavior: snapshot.digitalBehavior, config: snapshot.config, source: snapshot.source, reusableBlockId: item.id, reusableBlockVersion: item.current_version } as DocumentBlock;
     const current = currentAdvanced();
     if (!current) return;
     if (!advancedEditing) setAdvancedEditing(true);
@@ -256,7 +256,7 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
     setStatus('saving');
     let persisted = false;
     try {
-      const response = await fetch(`/api/w/${wardId}/reusable-blocks`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ scope: reusableScope, name: reusableName.trim(), description: reusableDescription.trim() || null, snapshot: { version: 1, blockType: selectedBlock.type, config: selectedBlock.config, width: selectedBlock.width, visibility: selectedBlock.visibility, printBehavior: selectedBlock.printBehavior, digitalBehavior: selectedBlock.digitalBehavior } }) });
+      const response = await fetch(`/api/w/${wardId}/reusable-blocks`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ scope: reusableScope, name: reusableName.trim(), description: reusableDescription.trim() || null, snapshot: { version: 1, blockType: selectedBlock.type, config: selectedBlock.config, width: selectedBlock.width, visibility: selectedBlock.visibility, printBehavior: selectedBlock.printBehavior, digitalBehavior: selectedBlock.digitalBehavior, source: selectedBlock.source, } }) });
       const body = await response.json();
       if (!response.ok) throw new Error(body.error ?? 'Unable to save reusable block');
       persisted = true;
