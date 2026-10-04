@@ -1,4 +1,4 @@
-import type { DocumentLayout } from '@/src/document-designer/types';
+import type { DocumentLayout, DocumentBlock } from '@/src/document-designer/types';
 import { parseAdvancedLayout, type AdvancedDocumentLayout } from '@/src/document-designer/advanced-schema';
 import { saveMeetingDocument, type Queryable } from '@/src/document-designer/persistence';
 import { parseDocumentLayout } from '@/src/document-designer/schema';
@@ -28,6 +28,40 @@ export class InvalidProgramPersistenceInputError extends Error {
 
 export type LegacyProgramDocumentRow = Record<string, unknown>;
 
+const PRESIDING_CONDUCTING_BLOCK_ID = '00000000-0000-4000-8000-000000000014';
+
+function presidingConductingBlock(): DocumentBlock {
+  return {
+    id: PRESIDING_CONDUCTING_BLOCK_ID,
+    type: 'PRESIDING_CONDUCTING',
+    width: 'FULL',
+    dataMode: 'AUTO',
+    visibility: 'VISIBLE',
+    printBehavior: 'PRINT_AND_DIGITAL',
+    digitalBehavior: 'NORMAL',
+    config: { text: '' }
+  } as DocumentBlock;
+}
+
+/** Backfill old persisted documents so leadership rows are part of the editable layout. */
+export function ensurePresidingConductingBlock(input: unknown): DocumentLayout | AdvancedDocumentLayout {
+  const schemaVersion = input && typeof input === 'object' && 'schemaVersion' in input ? (input as { schemaVersion?: unknown }).schemaVersion : 1;
+  if (schemaVersion === 2) {
+    const layout = parseAdvancedLayout(input);
+    if (layout.pages.some((page) => page.regions.some((region) => region.blocks.some((block) => block.type === 'PRESIDING_CONDUCTING')))) return layout;
+    const next = structuredClone(layout);
+    const region = next.pages[0]?.regions[0];
+    if (region) region.blocks.splice(Math.max(region.blocks.findIndex((block) => block.type === 'MEETING_PROGRAM'), 0), 0, presidingConductingBlock());
+    return parseAdvancedLayout(next);
+  }
+  const layout = parseDocumentLayout(input);
+  if (layout.pages.some((page) => page.regions.some((region) => region.blocks.some((block) => block.type === 'PRESIDING_CONDUCTING')))) return layout;
+  const next = structuredClone(layout);
+  const region = next.pages[0]?.regions[0];
+  if (region) region.blocks.splice(Math.max(region.blocks.findIndex((block) => block.type === 'MEETING_PROGRAM'), 0), 0, presidingConductingBlock());
+  return parseDocumentLayout(next);
+}
+
 export async function loadProgramDocumentRecord(client: Queryable, input: { wardId: string; meetingId: string }): Promise<LegacyProgramDocumentRow | null> {
   const result = await client.query(
     `SELECT md.id, md.source_template_id, md.source_template_version, md.schema_version, md.layout_json, md.theme_json, md.revision,
@@ -52,7 +86,21 @@ export async function ensureProgramDocument(
       LIMIT 1 FOR UPDATE`,
     [input.meetingId, input.wardId]
   );
-  if (existing.rows[0]) return existing.rows[0] as LegacyProgramDocumentRow;
+  if (existing.rows[0]) {
+    const row = existing.rows[0] as LegacyProgramDocumentRow;
+    const layout = ensurePresidingConductingBlock(row.layout_json);
+    if (JSON.stringify(layout) !== JSON.stringify(row.layout_json)) {
+      const updated = await client.query(
+        `UPDATE meeting_document
+            SET layout_json = $2::jsonb, schema_version = $3::int, revision = revision + 1, updated_by_user_id = $4::uuid, updated_at = now()
+          WHERE id = $1::uuid
+          RETURNING id, source_template_id, source_template_version, schema_version, layout_json, theme_json, revision`,
+        [row.id, JSON.stringify(layout), layout.schemaVersion, input.userId]
+      );
+      return updated.rows[0] as LegacyProgramDocumentRow;
+    }
+    return row;
+  }
   const inserted = await client.query(
     `INSERT INTO meeting_document (ward_id, meeting_id, document_type, source_template_id, source_template_version, schema_version, layout_json, theme_json, revision, updated_by_user_id)
      VALUES ($1::uuid, $2::uuid, 'SACRAMENT_PROGRAM', NULL, NULL, $3::int, $4::jsonb, $5::jsonb, 1, $6::uuid)
