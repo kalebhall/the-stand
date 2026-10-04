@@ -10,7 +10,7 @@ export type AppNavItem = {
 };
 
 export type AppNavGroup = {
-  id: 'workspace' | 'programs' | 'ward' | 'ministry' | 'administration' | 'support';
+  id: 'workspace' | 'program-studio' | 'ward' | 'ministry' | 'administration' | 'support';
   label: string;
   items: AppNavItem[];
 };
@@ -84,7 +84,7 @@ export function getNavigationItems(
 
 const NAV_GROUPS: readonly Omit<AppNavGroup, 'items'>[] = [
   { id: 'workspace', label: 'Workspace' },
-  { id: 'programs', label: 'Programs' },
+  { id: 'program-studio', label: 'Program Studio' },
   { id: 'ward', label: 'Ward Operations' },
   { id: 'ministry', label: 'People and Ministry' },
   { id: 'administration', label: 'Administration' },
@@ -96,9 +96,9 @@ const NAV_GROUP_BY_HREF: Readonly<Record<string, AppNavGroup['id']>> = {
   '/meetings': 'workspace',
   '/actions-to-do': 'workspace',
   '/announcements': 'workspace',
-  '/programs': 'programs',
-  '/programs/templates': 'programs',
-  '/programs/templates/admin': 'programs',
+  '/programs': 'program-studio',
+  '/programs/templates': 'program-studio',
+  '/programs/templates/admin': 'program-studio',
   '/bishopric': 'ward',
   '/interviews': 'ward',
   '/technology': 'ward',
