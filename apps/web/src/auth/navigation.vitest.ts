@@ -99,7 +99,7 @@ describe('canViewDashboardPublicPortalStatus', () => {
 describe('getNavigationGroups', () => {
   it('preserves canonical item order while assigning visible items to fixed groups', () => {
     const groups = getNavigationGroups(['STAND_ADMIN'], 'ward', allModulesEnabled());
-    expect(groups.map((group) => group.id)).toEqual(['workspace', 'programs', 'ward', 'ministry', 'administration']);
+    expect(groups.map((group) => group.id)).toEqual(['workspace', 'program-studio', 'ward', 'ministry', 'administration']);
     expect(groups[0]?.items.map((item) => item.href)).toEqual(['/dashboard', '/meetings', '/actions-to-do', '/announcements']);
     expect(groups[1]?.items.map((item) => item.href)).toEqual(['/programs', '/programs/templates']);
   });

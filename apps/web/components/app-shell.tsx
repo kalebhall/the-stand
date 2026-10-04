@@ -212,11 +212,11 @@ export function AppShell({ session, children }: { session: Session | null; child
   for (const module of moduleSettings) moduleEnablement.setEnabled(session.activeWardId ?? 'default', module.id, module.enabled);
   const notificationsEnabled = moduleSettings.some((module) => module.id === 'notifications' && module.enabled);
   const navGroups = getNavigationGroups(session.user.roles, session.activeWardId ?? undefined, moduleEnablement);
-  const translateGroup = (id: AppNavGroup['id']): string => tn(id);
+  const translateGroup = (id: AppNavGroup['id']): string => id === 'program-studio' ? tn('programStudio') : tn(id);
   const translateItem = (href: string, fallback: string): string => {
     const keys: Record<string, string> = {
-      '/dashboard': 'dashboard', '/meetings': 'meetings', '/announcements': 'announcements', '/programs': 'programs',
-      '/programs/templates': 'templates', '/programs/templates/admin': 'templateAdministration', '/bishopric': 'bishopric',
+      '/dashboard': 'dashboard', '/meetings': 'meetings', '/announcements': 'announcements', '/programs': 'programDesigner',
+      '/programs/templates': 'templateGallery', '/programs/templates/admin': 'templateAdministration', '/bishopric': 'bishopric',
       '/interviews': 'interviews', '/technology': 'technology', '/members': 'members', '/callings': 'callings',
       '/speakers': 'speakers', '/membership-ordinances': 'membershipOrdinances', '/notifications': 'notifications',
       '/reports': 'reports', '/imports': 'imports', '/support': 'supportConsole'
