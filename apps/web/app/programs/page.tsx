@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 
 import { buttonVariants } from '@/components/ui/button';
@@ -47,15 +48,25 @@ export default async function ProgramsPage() {
     <main className="mx-auto w-full max-w-6xl space-y-6 p-4 sm:p-6">
       <section className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-sm font-medium text-muted-foreground">{t('designer')}</p>
-          <h1 className="text-3xl font-semibold tracking-tight">{t('upcoming')}</h1>
-          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{t('description')}</p>
+          <h1 className="text-3xl font-semibold tracking-tight">{t('studioTitle')}</h1>
+          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{t('studioDescription')}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <a href="/manual#programs" className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }))}>{t('help')}</a>
           <a href="/programs/templates" className={cn(buttonVariants({ variant: 'outline' }))}>{t('templates')}</a>
         </div>
       </section>
+      <section aria-label={t('programTypes')} className="grid gap-4 sm:grid-cols-2">
+        <a href="#sacrament-programs" className="rounded-lg border bg-card p-5 transition-colors hover:border-primary hover:bg-accent/30">
+          <h2 className="text-lg font-semibold">{t('sacramentPrograms')}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">{t('sacramentProgramsDescription')}</p>
+        </a>
+        <Link href="/programs/baptism" className="rounded-lg border bg-card p-5 transition-colors hover:border-primary hover:bg-accent/30">
+          <h2 className="text-lg font-semibold">{t('baptismPrograms')}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">{t('baptismProgramsDescription')}</p>
+        </Link>
+      </section>
+      <h2 id="sacrament-programs" className="scroll-mt-6 text-xl font-semibold">{t('upcoming')}</h2>
       <ProgramsClient meetings={meetings} />
     </main>
   );

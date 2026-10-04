@@ -1,5 +1,10 @@
 {
   "programs": {
+    "studioTitle": "Estudio de programas",
+    "studioDescription": "Prepara programas para reuniones sacramentales y bautismos. Elige un tipo de programa para continuar.",
+    "programTypes": "Tipos de programa",
+    "sacramentPrograms": "Programas de reuniones sacramentales",
+    "sacramentProgramsDescription": "Selecciona una próxima reunión abajo para editar su programa.",
     "designer": "Diseñador de programas",
     "upcoming": "Próximos programas",
     "description": "Elige una reunión para diseñar su programa o explora plantillas aprobadas sin cambiar la configuración pública existente.",

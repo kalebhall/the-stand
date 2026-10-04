@@ -1,5 +1,10 @@
 {
   "programs": {
+    "studioTitle": "Program Studio",
+    "studioDescription": "Prepare sacrament meeting and baptism programs. Choose a program type to continue.",
+    "programTypes": "Program types",
+    "sacramentPrograms": "Sacrament meeting programs",
+    "sacramentProgramsDescription": "Select an upcoming meeting below to edit its program.",
     "designer": "Program Designer",
     "upcoming": "Upcoming programs",
     "description": "Choose a meeting to design its program, or browse approved templates without changing the existing public layout settings.",

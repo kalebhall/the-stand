@@ -1,5 +1,10 @@
 {
   "programs": {
+    "studioTitle": "Program Studio",
+    "studioDescription": "Maghanda ng mga programa para sa sacrament meeting at binyag. Pumili ng uri ng programa upang magpatuloy.",
+    "programTypes": "Mga uri ng programa",
+    "sacramentPrograms": "Mga programa ng sacrament meeting",
+    "sacramentProgramsDescription": "Pumili ng paparating na pulong sa ibaba upang i-edit ang programa nito.",
     "designer": "Tagadisenyo ng Programa",
     "upcoming": "Mga paparating na programa",
     "description": "Pumili ng pulong para idisenyo ang programa nito, o mag-browse ng mga naaprubahang template nang hindi binabago ang mga kasalukuyang setting ng pampublikong layout.",

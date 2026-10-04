@@ -8,7 +8,7 @@ import type { Session } from 'next-auth';
 
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { getNavigationGroups, type AppNavGroup } from '@/src/auth/navigation';
+import { getNavigationGroups, isActiveNavigationItem, type AppNavGroup } from '@/src/auth/navigation';
 import { DeploymentWatcher } from '@/components/deployment-watcher';
 import { SiteLogo } from '@/components/site-logo';
 import { NotificationBell } from '@/components/notification-bell';
@@ -42,7 +42,7 @@ function NavigationGroups({
   return (
     <nav className="space-y-3" aria-label={ariaLabel}>
       {groups.map((group) => {
-        const hasActiveItem = group.items.some((item) => pathname === item.href || pathname?.startsWith(`${item.href}/`));
+        const hasActiveItem = group.items.some((item) => isActiveNavigationItem(pathname, item.href));
         const isExpanded = hasActiveItem || (expandedGroups[group.id] ?? true);
         return (
           <section key={group.id} aria-labelledby={`${group.id}-navigation-heading`}>
@@ -59,7 +59,7 @@ function NavigationGroups({
             {isExpanded ? (
               <div id={`${group.id}-navigation-links`} className="mt-1 space-y-1.5">
                 {group.items.map((item) => {
-                  const isActive = pathname === item.href || pathname?.startsWith(`${item.href}/`);
+                  const isActive = isActiveNavigationItem(pathname, item.href);
                   return (
                     <Link
                       key={item.href}
@@ -212,10 +212,10 @@ export function AppShell({ session, children }: { session: Session | null; child
   for (const module of moduleSettings) moduleEnablement.setEnabled(session.activeWardId ?? 'default', module.id, module.enabled);
   const notificationsEnabled = moduleSettings.some((module) => module.id === 'notifications' && module.enabled);
   const navGroups = getNavigationGroups(session.user.roles, session.activeWardId ?? undefined, moduleEnablement);
-  const translateGroup = (id: AppNavGroup['id']): string => id === 'program-studio' ? tn('programStudio') : tn(id);
+  const translateGroup = (id: AppNavGroup['id']): string => tn(id);
   const translateItem = (href: string, fallback: string): string => {
     const keys: Record<string, string> = {
-      '/dashboard': 'dashboard', '/meetings': 'meetings', '/announcements': 'announcements', '/programs': 'programDesigner',
+      '/dashboard': 'dashboard', '/meetings': 'meetings', '/announcements': 'announcements', '/programs': 'programStudio', '/programs/baptism': 'baptismPrograms',
       '/programs/templates': 'templateGallery', '/programs/templates/admin': 'templateAdministration', '/bishopric': 'bishopric',
       '/interviews': 'interviews', '/technology': 'technology', '/members': 'members', '/callings': 'callings',
       '/speakers': 'speakers', '/membership-ordinances': 'membershipOrdinances', '/notifications': 'notifications',

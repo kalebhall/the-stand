@@ -120,6 +120,7 @@
   },
   "navigation": {
     "workspace": "Feitu'u ngaue",
+    "programs": "Ngaahi Polokalama",
     "ward": "Ngaahi Ngāue ʻa e Uōtí",
     "ministry": "Kakai mo e Potungaue .",
     "administration": "Pule'anga",
@@ -128,6 +129,7 @@
     "meetings": "Ngaahi Fakataha",
     "announcements": "Ngaahi Fanongonongo",
     "programStudio": "Program Studio",
+    "baptismPrograms": "Ngaahi Polokalama Papitaiso",
     "programDesigner": "Program Designer",
     "templateGallery": "Template Gallery",
     "templateAdministration": "Pule'i 'o e Tepile",

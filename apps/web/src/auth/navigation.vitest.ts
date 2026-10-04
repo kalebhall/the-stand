@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { canViewDashboardPublicPortalStatus, getNavigationGroups, getNavigationItems } from '@/src/auth/navigation';
+import { canViewDashboardPublicPortalStatus, getNavigationGroups, getNavigationItems, isActiveNavigationItem } from '@/src/auth/navigation';
 import { createModuleEnablement } from '@/src/modules/enablement';
 import { DEFAULT_MODULE_REGISTRY } from '@/src/modules/registry';
 
@@ -18,6 +18,7 @@ describe('getNavigationItems', () => {
   it('shows Programs to program users but excludes unrelated workflows', () => {
     const items = getNavigationItems(['PROGRAM_EDITOR'], 'ward', allModulesEnabled());
     expect(items).toContainEqual({ href: '/programs', label: 'Program Studio' });
+    expect(items).toContainEqual({ href: '/programs/baptism', label: 'Baptism Programs' });
     expect(items).toContainEqual({ href: '/programs/templates', label: 'Templates' });
     expect(items).toContainEqual({ href: '/announcements', label: 'Announcements' });
     expect(items).not.toContainEqual({ href: '/callings', label: 'Callings' });
@@ -30,6 +31,7 @@ describe('getNavigationItems', () => {
     expect(getNavigationItems(['STAKE_ADMIN'], 'ward', enablement)).toContainEqual({ href: '/programs/templates/admin', label: 'Template Administration' });
     expect(getNavigationItems(['STAKE_ADMIN'], 'ward', enablement)).not.toContainEqual({ href: '/programs/templates', label: 'Templates' });
     expect(getNavigationItems(['STAKE_ADMIN'], 'ward', enablement)).not.toContainEqual({ href: '/programs', label: 'Programs' });
+    expect(getNavigationItems(['STAKE_ADMIN'], 'ward', enablement)).not.toContainEqual({ href: '/programs/baptism', label: 'Baptism Programs' });
     expect(getNavigationItems(['SYSTEM_ADMIN'], 'ward', enablement)).toContainEqual({ href: '/programs/templates/admin', label: 'Template Administration' });
     expect(getNavigationItems(['SUPPORT_ADMIN'], 'ward', enablement)).toContainEqual({ href: '/programs/templates/admin', label: 'Template Administration' });
   });
@@ -83,6 +85,30 @@ describe('getNavigationItems', () => {
     expect(hrefs).not.toContain('/interviews');
     expect(hrefs).not.toContain('/speakers');
   });
+  it('keeps baptism programs available when advanced document design is off', () => {
+    const items = getNavigationItems(['PROGRAM_EDITOR'], 'ward', allModulesEnabled(), DEFAULT_MODULE_REGISTRY, false);
+    expect(items).toContainEqual({ href: '/programs/baptism', label: 'Baptism Programs' });
+    expect(items.map((item) => item.href)).not.toContain('/programs');
+    expect(items.map((item) => item.href)).not.toContain('/programs/templates');
+    const groups = getNavigationGroups(['PROGRAM_EDITOR'], 'ward', allModulesEnabled(), DEFAULT_MODULE_REGISTRY, false);
+    expect(groups.find((group) => group.id === 'programs')?.items.map((item) => item.href)).toEqual(['/programs/baptism']);
+  });
+  it('does not expose program routes when the ward Programs module is off', () => {
+    const enablement = createModuleEnablement({ ward: { programs: false } });
+    expect(getNavigationGroups(['STAND_ADMIN'], 'ward', enablement).some((group) => group.id === 'programs')).toBe(false);
+  });
+});
+
+describe('isActiveNavigationItem', () => {
+  it('highlights only the matching program type and its editor', () => {
+    expect(isActiveNavigationItem('/programs', '/programs')).toBe(true);
+    expect(isActiveNavigationItem('/programs/123', '/programs')).toBe(true);
+    expect(isActiveNavigationItem('/programs/baptism', '/programs')).toBe(false);
+    expect(isActiveNavigationItem('/programs/baptism/123', '/programs/baptism')).toBe(true);
+    expect(isActiveNavigationItem('/programs/templates', '/programs')).toBe(false);
+    expect(isActiveNavigationItem('/programs/templates/admin', '/programs/templates')).toBe(false);
+    expect(isActiveNavigationItem('/programs/templates/admin', '/programs/templates/admin')).toBe(true);
+  });
 });
 
 describe('canViewDashboardPublicPortalStatus', () => {
@@ -99,9 +125,9 @@ describe('canViewDashboardPublicPortalStatus', () => {
 describe('getNavigationGroups', () => {
   it('preserves canonical item order while assigning visible items to fixed groups', () => {
     const groups = getNavigationGroups(['STAND_ADMIN'], 'ward', allModulesEnabled());
-    expect(groups.map((group) => group.id)).toEqual(['workspace', 'program-studio', 'ward', 'ministry', 'administration']);
+    expect(groups.map((group) => group.id)).toEqual(['workspace', 'programs', 'ward', 'ministry', 'administration']);
     expect(groups[0]?.items.map((item) => item.href)).toEqual(['/dashboard', '/meetings', '/actions-to-do', '/announcements']);
-    expect(groups[1]?.items.map((item) => item.href)).toEqual(['/programs', '/programs/templates']);
+    expect(groups[1]?.items.map((item) => item.href)).toEqual(['/programs', '/programs/baptism', '/programs/templates']);
   });
 
   it('omits empty groups and keeps support isolated to support users', () => {

@@ -342,7 +342,7 @@ flowchart LR
 
 | Importing area | Package/runtime | Imports |
 | --- | --- | ---: |
-| `web:app` | `next` | 108 |
+| `web:app` | `next` | 109 |
 | `web:app` | `next-intl` | 92 |
 | `web:api` | `next` | 90 |
 | `web:app` | `react` | 48 |
@@ -688,7 +688,7 @@ flowchart LR
 | `apps/web/app/programs/[meetingId]/program-designer-client.vitest.tsx` | `web:app` | 4 | 3 |
 | `apps/web/app/programs/baptism/baptism-programs-client.tsx` | `web:app` | 0 | 2 |
 | `apps/web/app/programs/baptism/page.tsx` | `web:app` | 4 | 1 |
-| `apps/web/app/programs/page.tsx` | `web:app` | 9 | 2 |
+| `apps/web/app/programs/page.tsx` | `web:app` | 9 | 3 |
 | `apps/web/app/programs/programs-client.tsx` | `web:app` | 0 | 2 |
 | `apps/web/app/programs/programs-client.vitest.tsx` | `web:app` | 3 | 3 |
 | `apps/web/app/programs/templates/[templateId]/page.tsx` | `web:app` | 6 | 1 |

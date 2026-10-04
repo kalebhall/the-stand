@@ -10,10 +10,18 @@ export type AppNavItem = {
 };
 
 export type AppNavGroup = {
-  id: 'workspace' | 'program-studio' | 'ward' | 'ministry' | 'administration' | 'support';
+  id: 'workspace' | 'programs' | 'ward' | 'ministry' | 'administration' | 'support';
   label: string;
   items: AppNavItem[];
 };
+
+export function isActiveNavigationItem(pathname: string | null, href: string): boolean {
+  if (pathname === href) return true;
+  if (!pathname) return false;
+  if (href === '/programs') return /^\/programs\/[^/]+$/.test(pathname) && pathname !== '/programs/baptism' && pathname !== '/programs/templates';
+  if (href === '/programs/templates') return pathname.startsWith('/programs/templates/') && !pathname.startsWith('/programs/templates/admin');
+  return pathname.startsWith(`${href}/`);
+}
 
 const CLERK_OR_BISHOPRIC_ROLES = ['BISHOPRIC_EDITOR', 'CLERK_EDITOR', 'WARD_CLERK', 'MEMBERSHIP_CLERK'] as const;
 const MEETING_VIEW_ROLES = [...CLERK_OR_BISHOPRIC_ROLES, 'CONDUCTOR_VIEW'] as const;
@@ -52,8 +60,9 @@ export function getNavigationItems(
 
   const canViewPrograms = hasRole(roles, 'PROGRAM_EDITOR') || hasRole(roles, 'BISHOPRIC_EDITOR') || hasRole(roles, 'STAND_ADMIN');
   const canAdministerTemplates = hasRole(roles, 'STAKE_ADMIN') || hasRole(roles, 'SYSTEM_ADMIN') || hasRole(roles, 'SUPPORT_ADMIN');
+  if (advancedDesignerEnabled) add('programs', '/programs', canViewPrograms);
+  add('programs', '/programs/baptism', canViewPrograms);
   if (advancedDesignerEnabled) {
-    add('programs', '/programs', canViewPrograms);
     add('programs', '/programs/templates', canViewPrograms);
     add('programs', '/programs/templates/admin', canAdministerTemplates);
   }
@@ -84,7 +93,7 @@ export function getNavigationItems(
 
 const NAV_GROUPS: readonly Omit<AppNavGroup, 'items'>[] = [
   { id: 'workspace', label: 'Workspace' },
-  { id: 'program-studio', label: 'Program Studio' },
+  { id: 'programs', label: 'Programs' },
   { id: 'ward', label: 'Ward Operations' },
   { id: 'ministry', label: 'People and Ministry' },
   { id: 'administration', label: 'Administration' },
@@ -96,9 +105,10 @@ const NAV_GROUP_BY_HREF: Readonly<Record<string, AppNavGroup['id']>> = {
   '/meetings': 'workspace',
   '/actions-to-do': 'workspace',
   '/announcements': 'workspace',
-  '/programs': 'program-studio',
-  '/programs/templates': 'program-studio',
-  '/programs/templates/admin': 'program-studio',
+  '/programs': 'programs',
+  '/programs/baptism': 'programs',
+  '/programs/templates': 'programs',
+  '/programs/templates/admin': 'programs',
   '/bishopric': 'ward',
   '/interviews': 'ward',
   '/technology': 'ward',
