@@ -11,6 +11,7 @@ import { requireAuthenticatedSession } from '@/src/auth/guards';
 import { canManageMeetings, canRunImports, canViewMeetings, hasRole } from '@/src/auth/roles';
 import { getWardModuleSettings, isWardModuleEnabled } from '@/src/modules/service';
 import { ModuleSettings } from '@/app/settings/module-settings';
+import { AdvancedDesignerSetting } from '@/app/settings/advanced-designer-setting';
 import { pool } from '@/src/db/client';
 import { CATALOG_LOCALE_LABELS, isSupportedCatalogLocale, SUPPORTED_CATALOG_LOCALES } from '@/src/i18n/config';
 import { revalidatePath } from 'next/cache';
@@ -32,6 +33,7 @@ export default async function SettingsPage() {
   const canViewActivityLog = wardId ? canRunImports({ roles: session.user.roles, activeWardId: wardId }, wardId) : false;
   const canManageProgramLayout = wardId ? canManageMeetings({ roles: session.user.roles, activeWardId: wardId }, wardId) : false;
   const moduleSettings = wardId && isStandAdmin ? await getWardModuleSettings(wardId, session.user.id) : null;
+  const programsEnabled = moduleSettings?.some((module) => module.id === 'programs' && module.enabled) ?? false;
   const wardLocale = wardId && isStandAdmin
     ? ((await pool.query('SELECT default_locale FROM ward WHERE id = $1::uuid', [wardId])).rows[0]?.default_locale ?? 'en-US')
     : null;
@@ -95,6 +97,7 @@ export default async function SettingsPage() {
             {isStandAdmin && <SettingsLink href="/settings/users" label={t('wardUserManagement')} />}
             {isStandAdmin && <SettingsLink href="/settings/stand-script" label={t('standScriptTemplates')} />}
             {canManageProgramLayout && <SettingsLink href="/settings/public-layout" label={t('printedProgramLayout')} />}
+            {isStandAdmin && programsEnabled && <AdvancedDesignerSetting key={wardId} wardId={wardId} />}
             {isStandAdmin && <SettingsLink href="/settings/public-portal" label={t('publicPortal')} />}
             {canManageNotifications && <SettingsLink href="/settings/notifications" label={t('notificationSettings')} />}
             {canViewActivityLog && <SettingsLink href="/settings/audit-log" label={t('activityLog')} />}

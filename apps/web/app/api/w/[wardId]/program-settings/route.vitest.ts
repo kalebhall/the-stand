@@ -38,7 +38,7 @@ function setupClient(overrides: Record<string, unknown> = {}) {
     query: vi.fn(async (sql: string, values?: readonly unknown[]) => {
       if (sql === 'SELECT set_config($1, $2, true)') return { rows: [] };
       if (sql.startsWith('SELECT ward_id')) return { rows: [currentRow] };
-      if (sql.startsWith('INSERT INTO ward_document_settings')) return { rows: [{ ...currentRow, allow_advanced_program_designer: true, public_program_expiration_days: values && values.length > 7 ? values[7] : currentRow.public_program_expiration_days }] };
+      if (sql.startsWith('INSERT INTO ward_document_settings')) return { rows: [{ ...currentRow, allow_advanced_program_designer: values?.[1], public_program_expiration_days: values && values.length > 7 ? values[7] : currentRow.public_program_expiration_days }] };
       if (sql === 'BEGIN' || sql === 'COMMIT' || sql === 'ROLLBACK') return { rows: [] };
       return { rows: [], ...overrides };
     }),
@@ -102,6 +102,17 @@ describe('program settings route', () => {
     expect(await response.json()).toMatchObject({ settings: { allowAdvancedProgramDesigner: true } });
     expect(recordAuditEventMock).toHaveBeenCalledWith(client, expect.objectContaining({ action: 'PROGRAM_SETTINGS_UPDATED' }));
     expect(client.query).toHaveBeenCalledWith(expect.stringContaining('ON CONFLICT (ward_id)'), expect.arrayContaining(['ward-a', true]));
+  });
+
+  it('persists disabling the advanced designer without changing the role boundary', async () => {
+    const client = setupClient({ allow_advanced_program_designer: true });
+    const response = await PATCH(new Request('http://localhost', {
+      method: 'PATCH',
+      body: JSON.stringify({ allowAdvancedProgramDesigner: false })
+    }), context);
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ settings: { allowAdvancedProgramDesigner: false } });
+    expect(client.query).toHaveBeenCalledWith(expect.stringContaining('ON CONFLICT (ward_id)'), expect.arrayContaining(['ward-a', false]));
   });
 
   it('validates and audits expiration policy changes, including clearing the policy', async () => {
