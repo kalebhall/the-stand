@@ -120,6 +120,7 @@
   },
   "navigation": {
     "workspace": "Lugar ng Trabaho",
+    "programs": "Mga Programa",
     "ward": "Mga Operasyon sa Ward",
     "ministry": "Mga Tao at Ministeryo",
     "administration": "Administrasyon",
@@ -128,6 +129,7 @@
     "meetings": "Mga Pagpupulong",
     "announcements": "Mga Anunsyo",
     "programStudio": "Program Studio",
+    "baptismPrograms": "Mga Programa ng Binyag",
     "programDesigner": "Program Designer",
     "templateGallery": "Template Gallery",
     "templateAdministration": "Administrasyon ng Template",

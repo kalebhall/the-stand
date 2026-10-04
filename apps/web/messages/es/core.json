@@ -120,6 +120,7 @@
   },
   "navigation": {
     "workspace": "Espacio de trabajo",
+    "programs": "Programas",
     "ward": "Operaciones del barrio",
     "ministry": "Personas y ministración",
     "administration": "Administración",
@@ -128,6 +129,7 @@
     "meetings": "Reuniones",
     "announcements": "Anuncios",
     "programStudio": "Estudio de programas",
+    "baptismPrograms": "Programas de bautismo",
     "programDesigner": "Diseñador de programas",
     "templateGallery": "Galería de plantillas",
     "templateAdministration": "Administración de plantillas",

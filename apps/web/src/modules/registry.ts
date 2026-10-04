@@ -25,6 +25,7 @@ const MODULES: readonly ModuleDefinition[] = [
     defaultEnabled: false,
     navigation: [
       { href: '/programs', label: 'Program Studio' },
+      { href: '/programs/baptism', label: 'Baptism Programs' },
       { href: '/programs/templates', label: 'Templates' },
       { href: '/programs/templates/admin', label: 'Template Administration' }
     ],

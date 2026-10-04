@@ -120,6 +120,7 @@
   },
   "navigation": {
     "workspace": "Workspace",
+    "programs": "[Programs]",
     "ward": "Ward Operations",
     "ministry": "People and Ministry",
     "administration": "Administration",
@@ -128,6 +129,7 @@
     "meetings": "Meetings",
     "announcements": "Announcements",
     "programStudio": "[Program Studio]",
+    "baptismPrograms": "[Baptism Programs]",
     "programDesigner": "[Program Designer]",
     "templateGallery": "[Template Gallery]",
     "templateAdministration": "Template Administration",

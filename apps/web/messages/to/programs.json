@@ -1,5 +1,10 @@
 {
   "programs": {
+    "studioTitle": "Program Studio",
+    "studioDescription": "Teuteu ʻa e ngaahi polokalama ki he houalotu sākalamēnití mo e papitaisó. Fili ha faʻahinga polokalama ke hoko atu.",
+    "programTypes": "Ngaahi faʻahinga polokalama",
+    "sacramentPrograms": "Ngaahi polokalama houalotu sākalamēnití",
+    "sacramentProgramsDescription": "Fili ha fakataha ʻe hoko mai ʻi lalo ke fakatonutonu hono polokalamá.",
     "designer": "Tokotaha Faʻu Polokalama",
     "upcoming": "Ngaahi polokalama 'oku lolotonga hoko mai",
     "description": "Fili ha fakataha ke tisaini ʻene polokalamá, pe vakaiʻi ʻa e ngaahi sīpinga kuo fakangofuá ʻo ʻikai liliu ʻa e ngaahi tuʻunga fokotuʻutuʻu fakapuleʻanga ʻoku ʻi aí.",

@@ -113,6 +113,7 @@ Authorization and ward context are enforced server-side and by PostgreSQL RLS. T
 
 ## Follow-up
 
+- Programs navigation milestone: rename the former Program Studio group to Programs; show a Program Studio landing link, Baptism Programs only for authorized program roles, Template Gallery only when the advanced designer feature is enabled, and template administration only to its existing admin roles. Group membership remains a projection of module/role-authorized links; program items remain content inside each program, not sidebar links. The landing page must distinguish sacrament programs and baptism programs without exposing a route that the current role cannot use. Verify desktop/mobile navigation, direct page authorization, localization, and full gates before release.
 - Collect user feedback before expanding dashboard personalization beyond ordering and collapse state.
 - Keep permissions, module enablement, and card contents server-defined.
 
