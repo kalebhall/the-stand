@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { DEFAULT_DOCUMENT_LAYOUT } from '@/src/document-designer/schema';
 
-import { InvalidProgramPersistenceInputError, loadProgramDocument, saveProgramDocument } from './persistence';
+import { ensurePresidingConductingBlock, InvalidProgramPersistenceInputError, loadProgramDocument, saveProgramDocument } from './persistence';
 
 const document = {
   id: 'stand-meeting-program:meeting-1',
@@ -14,6 +14,18 @@ const document = {
 };
 
 describe('Programs persistence facade', () => {
+  it('backfills the leadership row into old persisted layouts before editing', () => {
+    const legacy = structuredClone(DEFAULT_DOCUMENT_LAYOUT);
+    legacy.pages[0].regions[0].blocks = legacy.pages[0].regions[0].blocks.filter((block: { type: string }) => block.type !== 'PRESIDING_CONDUCTING');
+    const normalized = ensurePresidingConductingBlock(legacy);
+    const blocks = normalized.pages[0].regions[0].blocks as Array<{ type: string }>;
+    expect(blocks.map((block) => block.type)).toContain('PRESIDING_CONDUCTING');
+    const leadershipIndex = blocks.findIndex((block) => block.type === 'PRESIDING_CONDUCTING');
+    const programIndex = blocks.findIndex((block) => block.type === 'MEETING_PROGRAM');
+    expect(leadershipIndex).toBeGreaterThanOrEqual(0);
+    if (programIndex >= 0) expect(leadershipIndex).toBeLessThan(programIndex);
+  });
+
   it('loads the legacy meeting_document row as a generic program document', async () => {
     const client = { query: vi.fn().mockResolvedValue({ rows: [{
       meeting_id: 'meeting-1',
