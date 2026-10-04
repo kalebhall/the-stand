@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { recordAuditEvent } from '@/src/audit/service';
 import { auth } from '@/src/auth/auth';
 import { canManageWardProgramTemplates, canViewProgramDesigner } from '@/src/auth/roles';
+import { isAdvancedDesignerFeatureEnabled } from '@/src/features/advanced-designer';
 import { isWardModuleEnabled } from '@/src/modules/service';
 import { BUILT_IN_TEMPLATES } from '@/src/document-designer/built-in-templates';
 import { loadProgramPermissionProfile, parseTemplateLayout, templateResponse, type TemplateDbRow } from '@/src/document-designer/template-service';
@@ -47,7 +48,7 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
   const { wardId } = await context.params;
   if (!session?.user?.id) return unauthorized();
   if (!canViewProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) return forbidden();
-  if (!(await isWardModuleEnabled(wardId, session.user.id, 'programs'))) return forbidden();
+  if (!isAdvancedDesignerFeatureEnabled() || !(await isWardModuleEnabled(wardId, session.user.id, 'programs'))) return forbidden();
 
   const client = await pool.connect();
   try {
@@ -83,7 +84,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
   const { wardId } = await context.params;
   if (!session?.user?.id) return unauthorized();
   if (!canViewProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) return forbidden();
-  if (!(await isWardModuleEnabled(wardId, session.user.id, 'programs'))) return forbidden();
+  if (!isAdvancedDesignerFeatureEnabled() || !(await isWardModuleEnabled(wardId, session.user.id, 'programs'))) return forbidden();
   const parsed = createSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: 'Invalid template payload', code: 'BAD_REQUEST' }, { status: 400 });
   let layout;

@@ -11,7 +11,7 @@ export type LegacyPublicLayout = {
   coverImageAltText?: string | null;
 };
 
-export const COMPATIBILITY_PUBLIC_BLOCK_TYPES = ['DOCUMENT_TITLE', 'WARD_NAME', 'MEETING_INFO', 'MEETING_PROGRAM', 'ANNOUNCEMENTS', 'QR_CODE', 'CUSTOM_LINK', 'IMAGE'] as const;
+export const COMPATIBILITY_PUBLIC_BLOCK_TYPES = ['DOCUMENT_TITLE', 'WARD_NAME', 'MEETING_INFO', 'PRESIDING_CONDUCTING', 'MEETING_PROGRAM', 'ANNOUNCEMENTS', 'QR_CODE', 'CUSTOM_LINK', 'IMAGE'] as const;
 
 const uuid = (suffix: number) => `00000000-0000-4000-8000-${suffix.toString(16).padStart(12, '0')}`;
 
@@ -33,9 +33,10 @@ export function adaptLegacyLayoutToDocument(legacy: LegacyPublicLayout): Documen
     block('DOCUMENT_TITLE', 1, { text: 'Sacrament Meeting' }, 'MANUAL'),
     block('WARD_NAME', 2, { text: 'Ward' }),
     block('MEETING_INFO', 3, { includeDate: true, includeTime: true, includeLocation: true }),
-    block('MEETING_PROGRAM', 4, { items: [] }),
-    block('ANNOUNCEMENTS', 5, { text: '' }),
-    block('QR_CODE', 6, { href: 'https://example.com', label: 'Open digital program' }, 'MANUAL')
+    block('PRESIDING_CONDUCTING', 4, { text: '' }),
+    block('MEETING_PROGRAM', 5, { items: [] }),
+    block('ANNOUNCEMENTS', 6, { text: '' }),
+    block('QR_CODE', 7, { href: 'https://example.com', label: 'Open digital program' }, 'MANUAL')
   ];
   const layout = {
     id: idSchema.parse(uuid(1)),

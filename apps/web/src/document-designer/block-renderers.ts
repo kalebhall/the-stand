@@ -38,13 +38,16 @@ export function renderDocumentBlock(block: DocumentBlock, data: ResolvedDocument
     return `<dl class="document-block document-block--key-values">${rows.map(([label, value]) => `<div class="document-key-value"><dt>${label}</dt><dd>${escapeDocumentHtml(value)}</dd></div>`).join('')}</dl>`;
   }
   if (block.type === 'MEETING_PROGRAM') {
-    if (!data.meetingItems.length && block.visibility === 'HIDE_WHEN_EMPTY') return '';
-    const items = data.meetingItems
-      .slice()
-      .sort((a, b) => a.order - b.order)
-      .map((item) => `<li><span class="document-program__label">${escapeDocumentHtml(item.label)}</span>${item.details ? `<span class="document-program__details">${escapeDocumentHtml(item.details)}</span>` : ''}</li>`)
-      .join('');
-    return `<section class="document-block document-block--meeting-program"><h2>Program</h2><ol>${items}</ol></section>`;
+    let leadership: { presiding?: string; conducting?: string } = {};
+    try { leadership = JSON.parse(data.values.PRESIDING_CONDUCTING ?? '{}') as typeof leadership; } catch { leadership = {}; }
+    const hasLeadership = Boolean(leadership.presiding?.trim() || leadership.conducting?.trim());
+    if (!data.meetingItems.length && !hasLeadership && block.visibility === 'HIDE_WHEN_EMPTY') return '';
+    const rows = [
+      ['Presiding', leadership.presiding ?? ''],
+      ['Conducting', leadership.conducting ?? ''],
+      ...data.meetingItems.slice().sort((a, b) => a.order - b.order).map((item) => [item.label, item.details?.trim() || '—'] as const)
+    ].filter(([, value]) => value.trim());
+    return `<section class="document-block document-block--meeting-program"><h2>Program</h2><dl class="document-key-values">${rows.map(([label, value]) => `<div class="document-key-value"><dt>${escapeDocumentHtml(label)}</dt><dd>${escapeDocumentHtml(value)}</dd></div>`).join('')}</dl></section>`;
   }
   if (block.type === 'QR_CODE') {
     const config = block.config as { href?: unknown; label?: unknown };

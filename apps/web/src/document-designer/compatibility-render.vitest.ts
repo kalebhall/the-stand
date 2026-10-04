@@ -19,7 +19,7 @@ describe('document designer compatibility renderer', () => {
   it('resolves safe meeting data without private source fields', () => {
     const { layout, data } = resolveDocumentData(adaptLegacyLayoutToDocument(legacy), source, {
       public: true,
-      explicitPublicBlockTypes: ['MEETING_PROGRAM', 'ANNOUNCEMENTS', 'QR_CODE']
+      explicitPublicBlockTypes: ['MEETING_PROGRAM', 'PRESIDING_CONDUCTING', 'ANNOUNCEMENTS', 'QR_CODE']
     });
     expect(layout.metadata).toMatchObject({ legacyPreset: 'FULL_PAGE' });
     expect(data.values.WARD_NAME).toBe('Freedom Park Ward');
@@ -37,17 +37,17 @@ describe('document designer compatibility renderer', () => {
   it('requires explicit approval for public-with-fields blocks', () => {
     const layout = adaptLegacyLayoutToDocument(legacy);
     expect(() => validatePublicDocumentLayout(layout)).toThrow(/explicit public approval/);
-    expect(() => validatePublicDocumentLayout(layout, ['MEETING_PROGRAM', 'ANNOUNCEMENTS', 'QR_CODE'])).not.toThrow();
+    expect(() => validatePublicDocumentLayout(layout, ['MEETING_PROGRAM', 'PRESIDING_CONDUCTING', 'ANNOUNCEMENTS', 'QR_CODE'])).not.toThrow();
   });
 
   it('renders deterministic logical digital and print HTML with escaped content', () => {
     const { layout, data } = resolveDocumentData(adaptLegacyLayoutToDocument(legacy), {
       ...source,
       wardName: '<Ward>'
-    }, { public: true, explicitPublicBlockTypes: ['MEETING_PROGRAM', 'ANNOUNCEMENTS', 'QR_CODE'] });
-    const digital = renderDocumentHtml({ layout, data, public: true, explicitPublicBlockTypes: ['MEETING_PROGRAM', 'ANNOUNCEMENTS', 'QR_CODE'] });
-    const digitalAgain = renderDocumentHtml({ layout, data, public: true, explicitPublicBlockTypes: ['MEETING_PROGRAM', 'ANNOUNCEMENTS', 'QR_CODE'] });
-    const print = renderDocumentHtml({ layout, data, target: 'PRINT', public: true, explicitPublicBlockTypes: ['MEETING_PROGRAM', 'ANNOUNCEMENTS', 'QR_CODE'] });
+    }, { public: true, explicitPublicBlockTypes: ['MEETING_PROGRAM', 'PRESIDING_CONDUCTING', 'ANNOUNCEMENTS', 'QR_CODE'] });
+    const digital = renderDocumentHtml({ layout, data, public: true, explicitPublicBlockTypes: ['MEETING_PROGRAM', 'PRESIDING_CONDUCTING', 'ANNOUNCEMENTS', 'QR_CODE'] });
+    const digitalAgain = renderDocumentHtml({ layout, data, public: true, explicitPublicBlockTypes: ['MEETING_PROGRAM', 'PRESIDING_CONDUCTING', 'ANNOUNCEMENTS', 'QR_CODE'] });
+    const print = renderDocumentHtml({ layout, data, target: 'PRINT', public: true, explicitPublicBlockTypes: ['MEETING_PROGRAM', 'PRESIDING_CONDUCTING', 'ANNOUNCEMENTS', 'QR_CODE'] });
     expect(digital.html).toBe(digitalAgain.html);
     expect(digital.html).toContain('&lt;Ward&gt;');
     expect(digital.html).toContain('Opening hymn');

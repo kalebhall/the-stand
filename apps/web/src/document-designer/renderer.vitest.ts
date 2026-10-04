@@ -13,7 +13,7 @@ describe('generic document renderer', () => {
       wardName: '<Ward>',
       programItems: [{ order: 1, label: 'Opening hymn', details: 'Hymn 2' }]
     });
-    const options = { public: true, explicitPublicBlockTypes: ['MEETING_PROGRAM', 'ANNOUNCEMENTS', 'QR_CODE'] } as const;
+    const options = { public: true, explicitPublicBlockTypes: ['MEETING_PROGRAM', 'PRESIDING_CONDUCTING', 'ANNOUNCEMENTS', 'QR_CODE'] } as const;
     const first = renderDocumentHtml({ layout, data, ...options });
     const second = renderDocumentHtml({ layout, data, ...options });
     const print = renderDocumentHtml({ layout, data, target: 'PRINT', ...options });

@@ -16,7 +16,16 @@ function safePrintHref(value: unknown): value is string {
 export type PdfRenderOptions = { metadata: PrintRenderMetadata; title?: string };
 
 function blockText(block: DocumentBlock, data: ResolvedDocumentData): string {
-  if (block.type === 'MEETING_PROGRAM') return data.meetingItems.slice().sort((a, b) => a.order - b.order).map((item, index) => `${index + 1}. ${item.label}${item.details ? ` — ${item.details}` : ''}`).join('\n');
+  if (block.type === 'PRESIDING_CONDUCTING') {
+    let leadership: { presiding?: string; conducting?: string } = {};
+    try { leadership = JSON.parse(data.values.PRESIDING_CONDUCTING ?? '{}') as typeof leadership; } catch { leadership = {}; }
+    return [['Presiding', leadership.presiding ?? ''], ['Conducting', leadership.conducting ?? '']].filter(([, value]) => value.trim()).map(([label, value]) => `${label}: ${value}`).join('\n');
+  }
+  if (block.type === 'MEETING_PROGRAM') {
+    let leadership: { presiding?: string; conducting?: string } = {};
+    try { leadership = JSON.parse(data.values.PRESIDING_CONDUCTING ?? '{}') as typeof leadership; } catch { leadership = {}; }
+    return [['Presiding', leadership.presiding ?? ''], ['Conducting', leadership.conducting ?? ''], ...data.meetingItems.slice().sort((a, b) => a.order - b.order).map((item) => [item.label, item.details?.trim() || '—'] as const)].filter(([, value]) => value.trim()).map(([label, value]) => `${label}: ${value}`).join('\n');
+  }
   if (block.type === 'DIVIDER') return '────────────────────────';
   if (block.type === 'SPACER' || block.type === 'IMAGE' || block.type === 'QR_CODE') return '';
   const resolved = data.values[block.type];

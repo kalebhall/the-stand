@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 
 import { auth } from '@/src/auth/auth';
 import { canViewProgramDesigner, hasRole } from '@/src/auth/roles';
+import { isAdvancedDesignerFeatureEnabled } from '@/src/features/advanced-designer';
+import { isWardModuleEnabled } from '@/src/modules/service';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/platform/db/context';
 import { createReusableBlockSchema, scopeOwner, uuid, validateReusableSnapshot } from '@/src/document-designer/reusable-block-library';
@@ -17,6 +19,7 @@ function isActiveStakeAdmin(session: { activeStakeId?: string | null; stakeAssig
 async function access(wardId: string, manage = false) {
   const session = await auth();
   if (!session?.user?.id) return { response: errorResponse(401, 'Unauthorized', 'UNAUTHORIZED') };
+  if (!isAdvancedDesignerFeatureEnabled() || !(await isWardModuleEnabled(wardId, session.user.id, 'programs'))) return { response: errorResponse(403, 'Program Studio is disabled', 'MODULE_DISABLED') };
   if (!canViewProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId) && !(session.activeWardId === wardId && isActiveStakeAdmin(session))) return { response: errorResponse(403, 'Forbidden', 'FORBIDDEN') };
   if (manage && !hasRole(session.user.roles, 'STAND_ADMIN') && !hasRole(session.user.roles, 'PROGRAM_EDITOR') && !isActiveStakeAdmin(session)) return { response: errorResponse(403, 'Reusable block management is not permitted', 'FORBIDDEN') };
   return { session };

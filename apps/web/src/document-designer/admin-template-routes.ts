@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 import { recordAuditEvent } from '@/src/audit/service';
 import { canManageStakeTemplates, canManageSystemTemplates, type TemplateAuthorizationSession } from '@/src/auth/roles';
+import { isAdvancedDesignerFeatureEnabled } from '@/src/features/advanced-designer';
 import { pool } from '@/src/db/client';
 import { parseTemplateLayout } from './template-service';
 import { checkTemplateLocks } from './template-locks';
@@ -106,6 +107,7 @@ function errorResponse(error: unknown, fallback: string) {
 
 export async function listTemplates(session: Session | null | undefined, scope: Scope, scopeId: string | null) {
   if (!session?.user?.id) return unauthorized();
+  if (!isAdvancedDesignerFeatureEnabled()) return forbidden();
   if (scope === 'STAKE' && !scopeId) return forbidden();
   if (!authorized(session, scope, scopeId ?? '')) return forbidden();
   try {
@@ -120,6 +122,7 @@ export async function listTemplates(session: Session | null | undefined, scope: 
 
 export async function createTemplate(request: Request, session: Session | null | undefined, scope: Scope, scopeId: string | null) {
   if (!session?.user?.id) return unauthorized();
+  if (!isAdvancedDesignerFeatureEnabled()) return forbidden();
   if (scope === 'STAKE' && !scopeId) return forbidden();
   if (!authorized(session, scope, scopeId ?? '')) return forbidden();
   const body = templateMetadataSchema.safeParse(await request.json().catch(() => null));
@@ -150,6 +153,7 @@ export async function createTemplate(request: Request, session: Session | null |
 
 export async function detail(session: Session | null | undefined, scope: Scope, scopeId: string | null, templateId: string) {
   if (!session || !session.user.id) return unauthorized();
+  if (!isAdvancedDesignerFeatureEnabled()) return forbidden();
   if (!authorized(session, scope, scopeId ?? '')) return forbidden();
   try {
     const response = await withTransaction(session, async (client) => {
@@ -164,6 +168,7 @@ export async function detail(session: Session | null | undefined, scope: Scope, 
 
 export async function patchDetail(request: Request, session: Session | null | undefined, scope: Scope, scopeId: string | null, templateId: string) {
   if (!session || !session.user.id) return unauthorized();
+  if (!isAdvancedDesignerFeatureEnabled()) return forbidden();
   if (!authorized(session, scope, scopeId ?? '')) return forbidden();
   const body = patchMetadataSchema.safeParse(await request.json().catch(() => null));
   if (!body.success || Object.keys(body.data).length === 0) return NextResponse.json({ error: 'Invalid template metadata payload', code: 'BAD_REQUEST' }, { status: 400 });
@@ -187,6 +192,7 @@ export async function patchDetail(request: Request, session: Session | null | un
 
 export async function versions(session: Session | null | undefined, scope: Scope, scopeId: string | null, templateId: string, request: Request, method: 'GET' | 'POST') {
   if (!session || !session.user.id) return unauthorized();
+  if (!isAdvancedDesignerFeatureEnabled()) return forbidden();
   if (!authorized(session, scope, scopeId ?? '')) return forbidden();
   if (method === 'GET') {
     try { const response = await withTransaction(session, async (client) => { const row = await loadOwnedTemplate(client, scope, scopeId, templateId); if (!row) throw new Error('NOT_FOUND'); const result = await client.query('SELECT id, version, schema_version, layout_json, theme_json, lock_json, created_by_user_id, created_at FROM document_template_version WHERE template_id = $1::uuid ORDER BY version DESC', [templateId]); return { template: { id: row.id, name: row.name, scopeType: row.scope_type, status: row.status }, versions: result.rows }; }); return NextResponse.json(response); } catch (error) { return errorResponse(error, 'Failed to list template versions'); }
@@ -214,13 +220,15 @@ export async function versions(session: Session | null | undefined, scope: Scope
 }
 
 export async function publish(session: Session | null | undefined, scope: Scope, scopeId: string | null, templateId: string, request: Request) {
-  if (!session || !session.user.id) return unauthorized(); if (!authorized(session, scope, scopeId ?? '')) return forbidden();
+  if (!session || !session.user.id) return unauthorized();
+  if (!isAdvancedDesignerFeatureEnabled()) return forbidden(); if (!authorized(session, scope, scopeId ?? '')) return forbidden();
   const body = publishSchema.safeParse(await request.json().catch(() => ({}))); if (!body.success) return NextResponse.json({ error: 'Invalid publish payload', code: 'BAD_REQUEST' }, { status: 400 });
   try { const response = await withTransaction(session, async (client) => { const row = await loadOwnedTemplate(client, scope, scopeId, templateId); if (!row) throw new Error('NOT_FOUND'); if (row.status === 'ARCHIVED') throw new Error('IMMUTABLE_TEMPLATE'); const version = body.data.version ?? Number((await client.query('SELECT MAX(version)::int AS version FROM document_template_version WHERE template_id = $1::uuid', [templateId])).rows[0]?.version); const found = await client.query('SELECT id FROM document_template_version WHERE template_id = $1::uuid AND version = $2::int', [templateId, version]); if (!found.rows[0]) throw new Error('VERSION_NOT_FOUND'); await client.query(`UPDATE document_template SET status = 'PUBLISHED', current_published_version_id = $2::uuid, published_by_user_id = $3::uuid, published_at = now(), updated_at = now() WHERE id = $1::uuid`, [templateId, (found.rows[0] as Record<string, unknown>).id, session.user.id]); await recordAuditEvent(client, { wardId: null, userId: session.user.id, actorName: actorName(session), action: scope === 'STAKE' ? 'STAKE_TEMPLATE_PUBLISHED' : 'SYSTEM_TEMPLATE_PUBLISHED', entityType: 'document_template', entityId: templateId, details: { version }, source: 'api', severity: 'notice' }); return { success: true, templateId, version, status: 'PUBLISHED' }; }); return NextResponse.json(response); } catch (error) { if (error instanceof Error && error.message === 'VERSION_NOT_FOUND') return NextResponse.json({ error: 'Template version not found', code: 'NOT_FOUND' }, { status: 404 }); if (error instanceof Error && error.message === 'IMMUTABLE_TEMPLATE') return NextResponse.json({ error: 'Archived templates cannot be published', code: 'IMMUTABLE_TEMPLATE' }, { status: 409 }); return errorResponse(error, 'Failed to publish document template'); }
 }
 
 export async function archive(session: Session | null | undefined, scope: Scope, scopeId: string | null, templateId: string) {
-  if (!session || !session.user.id) return unauthorized(); if (!authorized(session, scope, scopeId ?? '')) return forbidden();
+  if (!session || !session.user.id) return unauthorized();
+  if (!isAdvancedDesignerFeatureEnabled()) return forbidden(); if (!authorized(session, scope, scopeId ?? '')) return forbidden();
   try { const response = await withTransaction(session, async (client) => { const row = await loadOwnedTemplate(client, scope, scopeId, templateId); if (!row) throw new Error('NOT_FOUND'); await client.query("UPDATE document_template SET status = 'ARCHIVED', updated_at = now() WHERE id = $1::uuid", [templateId]); await recordAuditEvent(client, { wardId: null, userId: session.user.id, actorName: actorName(session), action: scope === 'STAKE' ? 'STAKE_TEMPLATE_ARCHIVED' : 'SYSTEM_TEMPLATE_ARCHIVED', entityType: 'document_template', entityId: templateId, source: 'api', severity: 'notice' }); return { success: true, templateId, status: 'ARCHIVED' }; }); return NextResponse.json(response); } catch (error) { return errorResponse(error, 'Failed to archive document template'); }
 }
 

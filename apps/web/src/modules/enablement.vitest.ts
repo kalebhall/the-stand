@@ -69,8 +69,8 @@ describe('module enablement harness', () => {
     const wardANavigation = getNavigationItems(['STAND_ADMIN'], 'ward-a', enablement);
     const wardBNavigation = getNavigationItems(['STAND_ADMIN'], 'ward-b', enablement);
 
-    expect(wardANavigation).not.toContainEqual({ href: '/programs', label: 'Programs' });
-    expect(wardBNavigation).toContainEqual({ href: '/programs', label: 'Programs' });
+    expect(wardANavigation).not.toContainEqual({ href: '/programs', label: 'Program Studio' });
+    expect(wardBNavigation).toContainEqual({ href: '/programs', label: 'Program Studio' });
     expect(hasModulePermission({ activeWardId: 'ward-a' }, 'ward-a', 'programs.view', enablement)).toBe(false);
     expect(hasModulePermission({ activeWardId: 'ward-b', roles: ['STAND_ADMIN'] }, 'ward-b', 'programs.view', enablement)).toBe(true);
     expect(hasModulePermission({ activeWardId: 'ward-b' }, 'ward-a', 'programs.view', enablement)).toBe(false);
