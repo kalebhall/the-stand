@@ -4,12 +4,12 @@ ALTER TABLE notification_delivery
   ADD COLUMN IF NOT EXISTS attempts integer NOT NULL DEFAULT 0,
   ADD COLUMN IF NOT EXISTS next_attempt_at timestamptz;
 
+ALTER TABLE notification_delivery
+  DROP CONSTRAINT IF EXISTS notification_delivery_delivery_status_check;
+
 UPDATE notification_delivery
    SET delivery_status = 'failed'
  WHERE delivery_status = 'failure';
-
-ALTER TABLE notification_delivery
-  DROP CONSTRAINT IF EXISTS notification_delivery_delivery_status_check;
 
 ALTER TABLE notification_delivery
   ADD CONSTRAINT notification_delivery_delivery_status_check
