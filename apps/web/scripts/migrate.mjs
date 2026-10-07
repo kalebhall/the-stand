@@ -93,6 +93,7 @@ try {
       await client.query(sql);
       await client.query('INSERT INTO public._migrations (name) VALUES ($1)', [file]);
       await client.query('COMMIT');
+      await client.query("SELECT pg_catalog.set_config('search_path', 'public', false)");
       console.log(`  Applied successfully.`);
       count++;
     } catch (err) {
