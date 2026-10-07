@@ -51,9 +51,16 @@ describe('POST /api/w/[wardId]/meetings', () => {
           meetingDate: '2026-01-04',
           meetingType: 'SACRAMENT',
           programItems: [
-            { itemType: 'INTRODUCTION', title: '', notes: '', introductionRoles: { presiding: 'Bishop', conducting: 'Counselor', organist: 'Organist', chorister: 'Chorister' }, hymnNumber: '', hymnTitle: '' },
+            {
+              itemType: 'INTRODUCTION',
+              title: '',
+              notes: '',
+              introductionRoles: { presiding: 'Bishop', conducting: 'Counselor', organist: 'Organist', chorister: 'Chorister' },
+              hymnNumber: '',
+              hymnTitle: ''
+            },
             { itemType: 'ANNOUNCEMENT', title: '', notes: '', hymnNumber: '', hymnTitle: '' },
-            { itemType: 'OPENING_HYMN', title: '', notes: '', hymnNumber: '2', hymnTitle: 'The Spirit of God' },
+            { itemType: 'OPENING_HYMN', title: '', notes: '', hymnNumber: '2', hymnTitle: 'The Spirit of God', hymnLocale: 'es' },
             { itemType: 'SPEAKER', title: 'Jane Doe', notes: '', topic: 'Missionary report', hymnNumber: '', hymnTitle: '' }
           ]
         })
@@ -63,9 +70,41 @@ describe('POST /api/w/[wardId]/meetings', () => {
 
     expect(response.status).toBe(201);
     expect(await response.json()).toEqual({ id: 'meeting-1' });
-    expect(queryMock).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO meeting_program_item'), expect.arrayContaining(['ward-1', 'meeting-1', 3, 'OPENING_HYMN']));
-    expect(queryMock).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO meeting_program_item'), expect.arrayContaining(['ward-1', 'meeting-1', 4, 'SPEAKER']));
-    expect(queryMock).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO audit_log'), expect.arrayContaining(['ward-1', 'user-1', 'MEETING_CREATED']));
+    expect(queryMock).toHaveBeenCalledWith(
+      expect.stringContaining('INSERT INTO meeting_program_item'),
+      expect.arrayContaining(['ward-1', 'meeting-1', 3, 'OPENING_HYMN'])
+    );
+    expect(queryMock).toHaveBeenCalledWith(
+      expect.stringContaining('hymn_locale'),
+      expect.arrayContaining(['ward-1', 'meeting-1', 3, 'OPENING_HYMN', 'es'])
+    );
+    expect(queryMock).toHaveBeenCalledWith(
+      expect.stringContaining('INSERT INTO meeting_program_item'),
+      expect.arrayContaining(['ward-1', 'meeting-1', 4, 'SPEAKER'])
+    );
+    expect(queryMock).toHaveBeenCalledWith(
+      expect.stringContaining('INSERT INTO audit_log'),
+      expect.arrayContaining(['ward-1', 'user-1', 'MEETING_CREATED'])
+    );
     expect(releaseMock).toHaveBeenCalled();
+  });
+
+  it('rejects unsupported source-row types before opening a transaction', async () => {
+    const response = await POST(
+      new Request('http://localhost', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          meetingDate: '2026-01-04',
+          meetingType: 'SACRAMENT',
+          programItems: [{ itemType: 'UNKNOWN_ITEM', title: '', notes: '', hymnNumber: '', hymnTitle: '' }]
+        })
+      }),
+      { params: Promise.resolve({ wardId: 'ward-1' }) }
+    );
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error: 'Unsupported program item type', code: 'BAD_REQUEST' });
+    expect(connectMock).not.toHaveBeenCalled();
   });
 });

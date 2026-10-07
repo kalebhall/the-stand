@@ -1,7 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { authMock, canManageMeetingsMock, setDbContextMock, queryMock, releaseMock, connectMock, recordAuditEventMock } = vi.hoisted(() => ({
-  authMock: vi.fn(), canManageMeetingsMock: vi.fn(), setDbContextMock: vi.fn(), queryMock: vi.fn(), releaseMock: vi.fn(), connectMock: vi.fn(), recordAuditEventMock: vi.fn()
+  authMock: vi.fn(),
+  canManageMeetingsMock: vi.fn(),
+  setDbContextMock: vi.fn(),
+  queryMock: vi.fn(),
+  releaseMock: vi.fn(),
+  connectMock: vi.fn(),
+  recordAuditEventMock: vi.fn()
 }));
 
 vi.mock('@/src/auth/auth', () => ({ auth: authMock }));
@@ -24,11 +30,39 @@ describe('DELETE membership ordinance action audit', () => {
   });
 
   it('records deleted action previous state before commit', async () => {
-    queryMock.mockResolvedValueOnce({}).mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'action-1', member_name: 'Jane Doe', action_type: 'BABY_BLESSING', status: 'pending', interview_status: 'not_required', lcr_follow_up_status: 'not_applicable', official_system_follow_up_status: 'not_applicable' }] }).mockResolvedValueOnce({});
-    const response = await DELETE(new Request('http://localhost'), { params: Promise.resolve({ wardId: 'ward-1', meetingId: 'meeting-1', actionId: 'action-1' }) });
+    queryMock
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({ rows: [{ id: 'ward-1' }] })
+      .mockResolvedValueOnce({ rows: [{ enabled: true }] })
+      .mockResolvedValueOnce({
+        rowCount: 1,
+        rows: [
+          {
+            id: 'action-1',
+            member_name: 'Jane Doe',
+            action_type: 'BABY_BLESSING',
+            status: 'pending',
+            interview_status: 'not_required',
+            lcr_follow_up_status: 'not_applicable',
+            official_system_follow_up_status: 'not_applicable'
+          }
+        ]
+      })
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({});
+    const response = await DELETE(new Request('http://localhost'), {
+      params: Promise.resolve({ wardId: 'ward-1', meetingId: 'meeting-1', actionId: 'action-1' })
+    });
 
     expect(response.status).toBe(200);
-    expect(recordAuditEventMock).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ action: 'MEMBERSHIP_ORDINANCE_DELETED', previousState: expect.objectContaining({ member_name: 'Jane Doe' }), changes: { deleted: { old: false, new: true } } }));
+    expect(recordAuditEventMock).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        action: 'MEMBERSHIP_ORDINANCE_DELETED',
+        previousState: expect.objectContaining({ member_name: 'Jane Doe' }),
+        changes: { deleted: { old: false, new: true } }
+      })
+    );
     expect(queryMock).toHaveBeenLastCalledWith('COMMIT');
   });
 });

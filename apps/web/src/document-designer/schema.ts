@@ -31,10 +31,25 @@ export const documentPageSchema = createDocumentPageSchema(documentBlockSchema);
 
 export const documentLayoutSchema = createDocumentLayoutSchema(createDocumentBlockSchema(sacramentProgramRegistry));
 
+const publicLayoutMetadataSchema = z
+  .object({
+    documentTitleSource: z.enum(['LEGACY_DEFAULT', 'AUTHORED']).optional(),
+    legacyPreset: z.string().optional(),
+    announcementMode: z.string().optional(),
+    coverMode: z.string().optional(),
+    coverImageUrl: z.string().nullable().optional(),
+    coverImageAltText: z.string().nullable().optional(),
+    builtInKey: z.string().optional(),
+    name: z.string().optional(),
+    description: z.string().optional()
+  })
+  .strict()
+  .transform(({ documentTitleSource }) => (documentTitleSource ? { documentTitleSource } : {}));
+
 export function createPublicDocumentLayoutSchema(explicitPublicFields: readonly string[] = []) {
   return createDocumentLayoutSchema(
     createPublicDocumentBlockSchema(sacramentProgramRegistry, explicitPublicFields),
-    z.object({}).strict().optional()
+    publicLayoutMetadataSchema.optional()
   );
 }
 
@@ -63,6 +78,7 @@ export const DEFAULT_DOCUMENT_LAYOUT = {
     baseFontSize: 12,
     accentColor: '#1f2937'
   },
+  metadata: { documentTitleSource: 'LEGACY_DEFAULT' },
   pages: [
     {
       id: idSchema.parse(DEFAULT_PAGE_ID),

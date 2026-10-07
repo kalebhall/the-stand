@@ -5,8 +5,9 @@ import { redirect } from 'next/navigation';
 import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth/guards';
 import { hasRole } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
+import { setDbContext } from '@/src/db/context';
 
- type HealthState = 'HEALTHY' | 'DEGRADED' | 'NOT_CONFIGURED' | 'UNAVAILABLE';
+type HealthState = 'HEALTHY' | 'DEGRADED' | 'NOT_CONFIGURED' | 'UNAVAILABLE';
 
 type HealthCheck = {
   name: string;
@@ -15,11 +16,12 @@ type HealthCheck = {
 };
 
 function CheckCard({ check }: { check: HealthCheck }) {
-  const tone = check.state === 'HEALTHY'
-    ? 'border-green-500/40 bg-green-500/10'
-    : check.state === 'DEGRADED'
-      ? 'border-amber-500/40 bg-amber-500/10'
-      : 'border-muted bg-muted/30';
+  const tone =
+    check.state === 'HEALTHY'
+      ? 'border-green-500/40 bg-green-500/10'
+      : check.state === 'DEGRADED'
+        ? 'border-amber-500/40 bg-amber-500/10'
+        : 'border-muted bg-muted/30';
 
   return (
     <article className={`rounded-lg border p-5 ${tone}`}>
@@ -45,7 +47,11 @@ async function checkDatabase(): Promise<HealthCheck> {
 
 async function checkQueue(): Promise<HealthCheck> {
   if (!process.env.REDIS_URL) {
-    return { name: 'Notification queue', state: 'NOT_CONFIGURED', detail: 'REDIS_URL is not configured; notification jobs remain persisted in the database until a worker is configured.' };
+    return {
+      name: 'Notification queue',
+      state: 'NOT_CONFIGURED',
+      detail: 'REDIS_URL is not configured; notification jobs remain persisted in the database until a worker is configured.'
+    };
   }
 
   let closeQueue: (() => Promise<void>) | undefined;
@@ -73,37 +79,74 @@ async function checkBackups(): Promise<HealthCheck> {
   try {
     await access(backupDirectory);
     const files = await readdir(backupDirectory);
-    const backups = await Promise.all(files.filter((file) => file.endsWith('.sql.gz')).map(async (file) => ({ file, modified: (await stat(path.join(backupDirectory, file))).mtimeMs })));
+    const backups = await Promise.all(
+      files
+        .filter((file) => file.endsWith('.sql.gz'))
+        .map(async (file) => ({ file, modified: (await stat(path.join(backupDirectory, file))).mtimeMs }))
+    );
     const latest = backups.sort((a, b) => b.modified - a.modified)[0];
     return latest
-      ? { name: 'Backups', state: 'HEALTHY', detail: `Backup directory reachable; latest SQL backup is ${latest.file}. Restore verification remains a separate operation.` }
+      ? {
+          name: 'Backups',
+          state: 'HEALTHY',
+          detail: `Backup directory reachable; latest SQL backup is ${latest.file}. Restore verification remains a separate operation.`
+        }
       : { name: 'Backups', state: 'DEGRADED', detail: 'Backup directory reachable, but no SQL backup files were found.' };
   } catch {
     return { name: 'Backups', state: 'UNAVAILABLE', detail: 'Backup directory could not be read. No path details are shown.' };
   }
 }
 
-async function checkPurge(): Promise<HealthCheck> {
+async function checkPurge(context: { userId: string; wardId: string | null }): Promise<HealthCheck> {
+  if (!context.wardId)
+    return { name: 'Raw-import purge', state: 'UNAVAILABLE', detail: 'Select an active ward before checking purge status.' };
+  const client = await pool.connect();
   try {
-    const result = await pool.query("SELECT COUNT(*)::int AS count FROM import_run WHERE raw_text <> '[purged]'");
+    await client.query('BEGIN');
+    await setDbContext(client, context as { userId: string; wardId: string });
+    const result = await client.query("SELECT COUNT(*)::int AS count FROM import_run WHERE raw_text <> '[purged]'");
     const remaining = Number(result.rows[0]?.count ?? 0);
+    await client.query('COMMIT');
     return remaining === 0
       ? { name: 'Raw-import purge', state: 'HEALTHY', detail: 'No unpurged raw import payloads found.' }
-      : { name: 'Raw-import purge', state: 'DEGRADED', detail: `${remaining} raw import payload(s) remain unpurged; review retention job status.` };
+      : {
+          name: 'Raw-import purge',
+          state: 'DEGRADED',
+          detail: `${remaining} raw import payload(s) remain unpurged; review retention job status.`
+        };
   } catch {
+    await client.query('ROLLBACK').catch(() => undefined);
     return { name: 'Raw-import purge', state: 'UNAVAILABLE', detail: 'Purge status could not be queried.' };
+  } finally {
+    client.release();
   }
 }
 
-async function checkNotifications(): Promise<HealthCheck> {
+async function checkNotifications(context: { userId: string; wardId: string | null }): Promise<HealthCheck> {
+  if (!context.wardId)
+    return { name: 'Notification worker', state: 'UNAVAILABLE', detail: 'Select an active ward before checking notification status.' };
+  const client = await pool.connect();
   try {
-    const result = await pool.query("SELECT COUNT(*) FILTER (WHERE delivery_status = 'failure')::int AS failures, MAX(attempted_at) AS last_attempt FROM notification_delivery WHERE channel IN ('IN_APP', 'EMAIL')");
+    await client.query('BEGIN');
+    await setDbContext(client, context as { userId: string; wardId: string });
+    const result = await client.query(
+      "SELECT COUNT(*) FILTER (WHERE delivery_status IN ('failed', 'failure'))::int AS failures, MAX(attempted_at) AS last_attempt FROM notification_delivery WHERE ward_id = $1::uuid AND channel IN ('IN_APP', 'EMAIL', 'webhook')",
+      [context.wardId]
+    );
     const row = result.rows[0] as { failures?: number; last_attempt?: string | null } | undefined;
     const failures = Number(row?.failures ?? 0);
     const lastAttempt = row?.last_attempt ? new Date(row.last_attempt).toISOString() : 'none recorded';
-    return { name: 'Notification worker', state: failures > 0 ? 'DEGRADED' : 'HEALTHY', detail: `${failures} recorded delivery failures; last delivery attempt: ${lastAttempt}. Worker process liveness is monitored outside this page.` };
+    await client.query('COMMIT');
+    return {
+      name: 'Notification worker',
+      state: failures > 0 ? 'DEGRADED' : 'HEALTHY',
+      detail: `${failures} recorded delivery failures; last delivery attempt: ${lastAttempt}. Worker process liveness is monitored outside this page.`
+    };
   } catch {
+    await client.query('ROLLBACK').catch(() => undefined);
     return { name: 'Notification worker', state: 'UNAVAILABLE', detail: 'Notification delivery status could not be queried.' };
+  } finally {
+    client.release();
   }
 }
 
@@ -115,18 +158,33 @@ export default async function HealthPage() {
     redirect('/dashboard');
   }
 
-  const checks = await Promise.all([checkDatabase(), checkQueue(), checkBackups(), checkPurge(), checkNotifications()]);
+  const healthContext = { userId: session.user.id, wardId: session.activeWardId };
+  const checks = await Promise.all([
+    checkDatabase(),
+    checkQueue(),
+    checkBackups(),
+    checkPurge(healthContext),
+    checkNotifications(healthContext)
+  ]);
 
   return (
     <main className="mx-auto w-full max-w-5xl space-y-6 p-4 sm:p-6" aria-labelledby="health-heading">
       <header>
-        <h1 id="health-heading" className="text-2xl font-semibold tracking-tight">Deployment health</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Operational checks for authorized administrators. Secrets, connection strings, and private payloads are never displayed.</p>
+        <h1 id="health-heading" className="text-2xl font-semibold tracking-tight">
+          Deployment health
+        </h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Operational checks for authorized administrators. Secrets, connection strings, and private payloads are never displayed.
+        </p>
       </header>
       <section className="grid gap-4 md:grid-cols-2" aria-label="Deployment health checks">
-        {checks.map((check) => <CheckCard key={check.name} check={check} />)}
+        {checks.map((check) => (
+          <CheckCard key={check.name} check={check} />
+        ))}
       </section>
-      <p className="text-sm text-muted-foreground">Backup restore, worker process liveness, and purge scheduling still require deployment-level monitoring and drills.</p>
+      <p className="text-sm text-muted-foreground">
+        Backup restore, worker process liveness, and purge scheduling still require deployment-level monitoring and drills.
+      </p>
     </main>
   );
 }

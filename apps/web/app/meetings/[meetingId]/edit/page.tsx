@@ -12,7 +12,9 @@ import { canManageMeetings, canUseInternalNotes, canViewProgramDesigner } from '
 import { isAnnouncementActiveForDate } from '@/src/announcements/types';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
+import { isWardModuleEnabled } from '@/src/modules/service';
 import type { IntroductionRoles, ProgramItemInput } from '@/src/meetings/types';
+import { computeProgramItemsRevision, type ProgramItemSourceRow } from '@/src/meetings/program-item-source';
 import { formatDateTimeForDisplay } from '@/src/meetings/date';
 
 import { MeetingForm } from '../../meeting-form';
@@ -35,6 +37,7 @@ type ProgramItemRow = {
   hymn_locale: string | null;
   introduction_roles: IntroductionRoles | null;
   speaker_status: ProgramItemInput['speakerStatus'];
+  sequence: number;
 };
 
 type MeetingRenderVersionRow = {
@@ -62,6 +65,8 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ me
   ) {
     redirect('/meetings');
   }
+  const programsEnabled = await isWardModuleEnabled(session.activeWardId, session.user.id, 'programs');
+  const includeInternalNotes = canUseInternalNotes({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId);
 
   const { meetingId } = await params;
   const client = await pool.connect();
@@ -81,7 +86,7 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ me
     }
 
     const programItemsResult = await client.query(
-      `SELECT id, item_type, title, notes, topic, program_notes, hymn_number, hymn_title, hymn_locale, introduction_roles, speaker_status
+      `SELECT id, item_type, title, ${includeInternalNotes ? 'notes' : 'NULL::text AS notes'}, topic, program_notes, hymn_number, hymn_title, hymn_locale, introduction_roles, speaker_status, sequence
          FROM meeting_program_item
         WHERE meeting_id = $1 AND ward_id = $2
         ORDER BY sequence ASC`,
@@ -146,30 +151,33 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ me
       [session.activeWardId]
     );
 
-    const notesResult = await client.query(
-      `SELECT note.id, note.program_item_id, note.visibility, note.note_text, note.created_at, ua.email AS created_by_email
-         FROM internal_note note
-         LEFT JOIN user_account ua ON ua.id = note.created_by_user_id
-        WHERE note.ward_id = $1::uuid
-          AND (
-            note.meeting_id = $2::uuid
-            OR note.program_item_id IN (
-              SELECT id FROM meeting_program_item WHERE meeting_id = $2::uuid AND ward_id = $1::uuid
-            )
-          )
-          AND (note.visibility IN ('LEADERSHIP', 'PUBLIC') OR note.created_by_user_id = $3::uuid)
-        ORDER BY note.created_at DESC`,
-      [session.activeWardId, meetingId, session.user.id]
-    );
+    const notesResult = includeInternalNotes
+      ? await client.query(
+          `SELECT note.id, note.program_item_id, note.visibility, note.note_text, note.created_at, ua.email AS created_by_email
+             FROM internal_note note
+             LEFT JOIN user_account ua ON ua.id = note.created_by_user_id
+            WHERE note.ward_id = $1::uuid
+              AND (
+                note.meeting_id = $2::uuid
+                OR note.program_item_id IN (
+                  SELECT id FROM meeting_program_item WHERE meeting_id = $2::uuid AND ward_id = $1::uuid
+                )
+              )
+              AND (note.visibility IN ('LEADERSHIP', 'PUBLIC') OR note.created_by_user_id = $3::uuid)
+            ORDER BY note.created_at DESC`,
+          [session.activeWardId, meetingId, session.user.id]
+        )
+      : { rows: [] };
 
     await client.query('COMMIT');
 
     const meeting = meetingResult.rows[0] as MeetingRow;
+    const programItemsRevision = computeProgramItemsRevision(programItemsResult.rows as ProgramItemSourceRow[], { includeInternalNotes });
     const programItems = (programItemsResult.rows as ProgramItemRow[]).map((item) => ({
       id: item.id,
       itemType: item.item_type,
       title: item.title ?? '',
-      notes: item.notes ?? '',
+      notes: includeInternalNotes ? (item.notes ?? '') : '',
       topic: item.topic ?? '',
       programNotes: item.program_notes ?? '',
       hymnNumber: item.hymn_number ?? '',
@@ -182,7 +190,7 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ me
     const businessLines = businessLinesResult.rows as BusinessLine[];
     const membershipActions = membershipActionsResult.rows as MembershipOrdinanceAction[];
     const notes = notesResult.rows as InternalNoteRow[];
-    const canUseNotes = canUseInternalNotes({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId);
+    const canUseNotes = includeInternalNotes;
     const standAnnouncements = (announcementsResult.rows as AnnouncementRow[])
       .filter((announcement) =>
         isAnnouncementActiveForDate(
@@ -200,9 +208,14 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ me
             <p className="text-sm text-muted-foreground">{t('description')}</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            {canViewProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId) ? <Link href={`/programs/${meeting.id}`} className={cn(buttonVariants({ variant: 'default' }))}>Program Designer</Link> : null}
+            {programsEnabled &&
+            canViewProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId) ? (
+              <Link href={`/programs/${meeting.id}`} className={cn(buttonVariants({ variant: 'default' }))}>
+                {t('programDesigner')}
+              </Link>
+            ) : null}
             <Link href="/manual#meeting-editor" className="text-sm font-medium underline underline-offset-4">
-              Editor help
+              {t('editorHelp')}
             </Link>
             <Link href={`/stand/${meeting.id}`} className={cn(buttonVariants({ variant: 'outline' }))}>
               {t('atStand')}
@@ -249,6 +262,7 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ me
           initialMeetingDate={meeting.meeting_date}
           initialMeetingType={meeting.meeting_type}
           initialProgramItems={programItems}
+          initialProgramItemsRevision={programItemsRevision}
           publishedVersionCount={versions.length}
           internalNotes={notes}
           canUseInternalNotes={canUseNotes}

@@ -4,6 +4,7 @@ import { resolveDocumentData } from './data-resolver';
 import { adaptLegacyLayoutToDocument } from './legacy-layout-adapter';
 import { PublicSafetyError, validatePublicDocumentLayout } from './public-safety';
 import { renderDocumentHtml } from './renderer';
+import { getPublicProgramRenderLabels } from '@/src/i18n/public-program';
 
 const legacy = { preset: 'FULL_PAGE' as const, announcementMode: 'AFTER_PROGRAM' as const, coverMode: 'NONE' as const };
 
@@ -19,7 +20,7 @@ describe('document designer compatibility renderer', () => {
   it('resolves safe meeting data without private source fields', () => {
     const { layout, data } = resolveDocumentData(adaptLegacyLayoutToDocument(legacy), source, {
       public: true,
-      explicitPublicBlockTypes: ['MEETING_PROGRAM', 'PRESIDING_CONDUCTING', 'ANNOUNCEMENTS', 'QR_CODE']
+      explicitPublicBlockTypes: ['MEETING_PROGRAM', 'PRESIDING_CONDUCTING', 'MUSIC_LEADERS', 'ANNOUNCEMENTS', 'QR_CODE']
     });
     expect(layout.metadata).toMatchObject({ legacyPreset: 'FULL_PAGE' });
     expect(data.values.WARD_NAME).toBe('Freedom Park Ward');
@@ -37,21 +38,74 @@ describe('document designer compatibility renderer', () => {
   it('requires explicit approval for public-with-fields blocks', () => {
     const layout = adaptLegacyLayoutToDocument(legacy);
     expect(() => validatePublicDocumentLayout(layout)).toThrow(/explicit public approval/);
-    expect(() => validatePublicDocumentLayout(layout, ['MEETING_PROGRAM', 'PRESIDING_CONDUCTING', 'ANNOUNCEMENTS', 'QR_CODE'])).not.toThrow();
+    expect(() =>
+      validatePublicDocumentLayout(layout, ['MEETING_PROGRAM', 'PRESIDING_CONDUCTING', 'MUSIC_LEADERS', 'ANNOUNCEMENTS', 'QR_CODE'])
+    ).not.toThrow();
   });
 
   it('renders deterministic logical digital and print HTML with escaped content', () => {
-    const { layout, data } = resolveDocumentData(adaptLegacyLayoutToDocument(legacy), {
-      ...source,
-      wardName: '<Ward>'
-    }, { public: true, explicitPublicBlockTypes: ['MEETING_PROGRAM', 'PRESIDING_CONDUCTING', 'ANNOUNCEMENTS', 'QR_CODE'] });
-    const digital = renderDocumentHtml({ layout, data, public: true, explicitPublicBlockTypes: ['MEETING_PROGRAM', 'PRESIDING_CONDUCTING', 'ANNOUNCEMENTS', 'QR_CODE'] });
-    const digitalAgain = renderDocumentHtml({ layout, data, public: true, explicitPublicBlockTypes: ['MEETING_PROGRAM', 'PRESIDING_CONDUCTING', 'ANNOUNCEMENTS', 'QR_CODE'] });
-    const print = renderDocumentHtml({ layout, data, target: 'PRINT', public: true, explicitPublicBlockTypes: ['MEETING_PROGRAM', 'PRESIDING_CONDUCTING', 'ANNOUNCEMENTS', 'QR_CODE'] });
+    const { layout, data } = resolveDocumentData(
+      adaptLegacyLayoutToDocument(legacy),
+      {
+        ...source,
+        wardName: '<Ward>'
+      },
+      { public: true, explicitPublicBlockTypes: ['MEETING_PROGRAM', 'PRESIDING_CONDUCTING', 'MUSIC_LEADERS', 'ANNOUNCEMENTS', 'QR_CODE'] }
+    );
+    const digital = renderDocumentHtml({
+      layout,
+      data,
+      public: true,
+      explicitPublicBlockTypes: ['MEETING_PROGRAM', 'PRESIDING_CONDUCTING', 'MUSIC_LEADERS', 'ANNOUNCEMENTS', 'QR_CODE']
+    });
+    const digitalAgain = renderDocumentHtml({
+      layout,
+      data,
+      public: true,
+      explicitPublicBlockTypes: ['MEETING_PROGRAM', 'PRESIDING_CONDUCTING', 'MUSIC_LEADERS', 'ANNOUNCEMENTS', 'QR_CODE']
+    });
+    const print = renderDocumentHtml({
+      layout,
+      data,
+      target: 'PRINT',
+      public: true,
+      explicitPublicBlockTypes: ['MEETING_PROGRAM', 'PRESIDING_CONDUCTING', 'MUSIC_LEADERS', 'ANNOUNCEMENTS', 'QR_CODE']
+    });
     expect(digital.html).toBe(digitalAgain.html);
     expect(digital.html).toContain('&lt;Ward&gt;');
     expect(digital.html).toContain('Opening hymn');
     expect(print.metadata.target).toBe('PRINT');
     expect(print.html).toContain('document-fold--none');
+  });
+
+  it('uses localized labels in document digital and print output', () => {
+    const { layout, data } = resolveDocumentData(
+      adaptLegacyLayoutToDocument(legacy),
+      {
+        ...source,
+        publicValues: { PRESIDING_CONDUCTING: JSON.stringify({ presiding: 'Bishop Hall', conducting: 'Sister Hall' }) },
+        renderLabels: getPublicProgramRenderLabels('es', 'SACRAMENT')
+      },
+      { public: true, explicitPublicBlockTypes: ['MEETING_PROGRAM', 'PRESIDING_CONDUCTING', 'MUSIC_LEADERS', 'ANNOUNCEMENTS', 'QR_CODE'] }
+    );
+    const digital = renderDocumentHtml({
+      layout,
+      data,
+      public: true,
+      explicitPublicBlockTypes: ['MEETING_PROGRAM', 'PRESIDING_CONDUCTING', 'MUSIC_LEADERS', 'ANNOUNCEMENTS', 'QR_CODE']
+    });
+    const print = renderDocumentHtml({
+      layout,
+      data,
+      target: 'PRINT',
+      public: true,
+      explicitPublicBlockTypes: ['MEETING_PROGRAM', 'PRESIDING_CONDUCTING', 'MUSIC_LEADERS', 'ANNOUNCEMENTS', 'QR_CODE']
+    });
+
+    expect(digital.html).toContain('Programa de la reunión sacramental');
+    expect(digital.html).toContain('Preside');
+    expect(digital.html).toContain('Dirige');
+    expect(digital.html).toContain('aria-label="Programa de la reunión sacramental"');
+    expect(print.html).toContain('Programa de la reunión sacramental');
   });
 });

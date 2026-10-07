@@ -27,13 +27,10 @@ export function validateModuleChange(registry: ModuleRegistry, moduleId: string,
   return module;
 }
 
-export function buildEffectiveModuleSettings(
-  registry: ModuleRegistry,
-  overrides: ReadonlyMap<string, boolean>
-): EffectiveModuleSetting[] {
+export function buildEffectiveModuleSettings(registry: ModuleRegistry, overrides: ReadonlyMap<string, boolean>): EffectiveModuleSetting[] {
   return registry.modules.map((module) => {
     const overridden = overrides.has(module.id);
-    const enabled = module.id === CORE_MODULE_ID ? true : overrides.get(module.id) ?? module.defaultEnabled;
+    const enabled = module.id === CORE_MODULE_ID ? true : (overrides.get(module.id) ?? module.defaultEnabled);
     return {
       id: module.id,
       name: module.name,
@@ -51,7 +48,11 @@ function rowsToOverrides(rows: readonly OverrideRow[]): Map<string, boolean> {
   return new Map(rows.map((row) => [row.module_id, row.enabled]));
 }
 
-async function withWardTransaction<T>(wardId: string, userId: string, operation: (client: Awaited<ReturnType<typeof pool.connect>>) => Promise<T>): Promise<T> {
+async function withWardTransaction<T>(
+  wardId: string,
+  userId: string,
+  operation: (client: Awaited<ReturnType<typeof pool.connect>>) => Promise<T>
+): Promise<T> {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -79,7 +80,9 @@ export async function getWardModuleSettings(
   userId: string,
   registry: ModuleRegistry = DEFAULT_MODULE_REGISTRY
 ): Promise<EffectiveModuleSetting[]> {
-  return withWardTransaction(wardId, userId, async (client) => buildEffectiveModuleSettings(registry, rowsToOverrides(await readOverrides(client))));
+  return withWardTransaction(wardId, userId, async (client) =>
+    buildEffectiveModuleSettings(registry, rowsToOverrides(await readOverrides(client)))
+  );
 }
 
 export async function isWardModuleEnabled(
@@ -92,6 +95,20 @@ export async function isWardModuleEnabled(
   return modules.find((module) => module.id === moduleId)?.enabled ?? false;
 }
 
+export async function isWardModuleEnabledInTransaction(
+  client: Awaited<ReturnType<typeof pool.connect>>,
+  wardId: string,
+  moduleId: string,
+  registry: ModuleRegistry = DEFAULT_MODULE_REGISTRY
+): Promise<boolean> {
+  await client.query('SELECT id FROM ward WHERE id = $1::uuid FOR UPDATE', [wardId]);
+  const result = await client.query(
+    'SELECT enabled FROM ward_module_enablement WHERE ward_id = app.current_ward_id() AND module_id = $1::text LIMIT 1 FOR UPDATE',
+    [moduleId]
+  );
+  return result.rows[0]?.enabled ?? registry.get(moduleId)?.defaultEnabled ?? false;
+}
+
 export async function setWardModuleEnabled(
   wardId: string,
   userId: string,
@@ -101,6 +118,7 @@ export async function setWardModuleEnabled(
 ): Promise<EffectiveModuleSetting[]> {
   validateModuleChange(registry, moduleId, enabled);
   return withWardTransaction(wardId, userId, async (client) => {
+    await client.query('SELECT id FROM ward WHERE id = app.current_ward_id() FOR UPDATE');
     const previous = await client.query(
       'SELECT module_id, enabled FROM ward_module_enablement WHERE ward_id = app.current_ward_id() AND module_id = $1::text FOR UPDATE',
       [moduleId]

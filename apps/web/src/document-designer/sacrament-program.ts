@@ -45,9 +45,15 @@ const meetingProgramConfig = z
       }
     }
   });
-const imageConfig = z.object({ assetId: z.string().uuid().nullable(), alt: structuredText(500), isDecorative: z.boolean() }).strict();
+const imageConfig = z
+  .object({
+    assetId: z.string().uuid().nullable(),
+    alt: structuredText(500),
+    isDecorative: z.boolean()
+  })
+  .strict();
 const linkConfig = z.object({ label: boundedLabel, href: safeUrlSchema }).strict();
-const qrConfig = z.object({ href: safeUrlSchema, label: boundedLabel }).strict();
+const qrConfig = z.object({ href: safeUrlSchema.nullable(), label: z.string().trim().max(500) }).strict();
 const spacerConfig = z.object({ height: z.number().finite().positive().max(720) }).strict();
 const dividerConfig = z.object({ style: z.enum(['SOLID', 'DOTTED']) }).strict();
 
@@ -126,12 +132,7 @@ const sacramentProgramRegistryDefinition = {
   SCRIPTURE: definition('SCRIPTURE', textConfig, { text: '' }, { ...publicFields, allowedDataModes: allModes }),
   QUOTE: definition('QUOTE', textConfig, { text: '' }, { ...publicFields, allowedDataModes: allModes }),
   CUSTOM_TEXT: definition('CUSTOM_TEXT', textConfig, { text: '' }, { ...publicFields, allowedDataModes: allModes }),
-  IMAGE: definition(
-    'IMAGE',
-    imageConfig,
-    { assetId: null, alt: '', isDecorative: true },
-    { ...publicFields, allowedDataModes: allModes }
-  ),
+  IMAGE: definition('IMAGE', imageConfig, { assetId: null, alt: '', isDecorative: true }, { ...publicFields, allowedDataModes: allModes }),
   DIVIDER: definition('DIVIDER', dividerConfig, { style: 'SOLID' }, { ...publicSafe, allowedDataModes: allModes }),
   SPACER: definition('SPACER', spacerConfig, { height: 24 }, { ...publicSafe, allowedDataModes: allModes }),
   QR_CODE: definition(

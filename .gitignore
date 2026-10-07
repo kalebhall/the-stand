@@ -1,6 +1,7 @@
 node_modules/
 dist/
 .next/
+test-results/
 *.tsbuildinfo
 .migrations-applied.json
 .env

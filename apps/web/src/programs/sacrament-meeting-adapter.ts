@@ -8,15 +8,22 @@ export type SacramentMeetingProgramSource = {
   meetingId: string;
   meetingDate: string;
   meetingType: string;
+  locale?: string | null;
   sourceVersion?: string | null;
   wardName?: string | null;
   programItems: Array<{
     itemType: string;
     title?: string | null;
     topic?: string | null;
+    programNotes?: string | null;
     hymnTitle?: string | null;
     sequence: number;
-    introductionRoles?: { presiding?: string | null; conducting?: string | null } | null;
+    introductionRoles?: {
+      presiding?: string | null;
+      conducting?: string | null;
+      organist?: string | null;
+      chorister?: string | null;
+    } | null;
   }>;
 };
 
@@ -42,7 +49,10 @@ export const sacramentMeetingProgramAdapter: ProgramSourceAdapter<
     return source;
   },
   toRenderInput(source) {
-    return buildPublicPreviewSource(source, source.programItems);
+    return buildPublicPreviewSource(
+      { meetingDate: source.meetingDate, meetingType: source.meetingType, wardName: source.wardName, locale: source.locale },
+      source.programItems
+    );
   },
   toDocument(source, payload): ProgramDocument {
     return {

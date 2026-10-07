@@ -5,6 +5,7 @@ import { recordAuditEvent } from '@/src/audit/service';
 import { auth } from '@/src/auth/auth';
 import { canUseInternalNotes } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
+import { isSourceManaged } from '@/src/meetings/program-item-source';
 import { setDbContext } from '@/src/db/context';
 import { enqueueOutboxNotificationJob } from '@/src/notifications/queue';
 import { enqueueNotificationOutboxEvent, insertNotificationOutboxEvent } from '@/src/notifications/outbox';
@@ -41,6 +42,36 @@ export async function PUT(request: Request, context: { params: Promise<{ wardId:
       await client.query('ROLLBACK');
       return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
     }
+    if (note.visibility === 'PUBLIC' && note.program_item_id) {
+      const itemReference = await client.query(
+        'SELECT meeting_id FROM meeting_program_item WHERE id = $1::uuid AND ward_id = $2::uuid LIMIT 1',
+        [note.program_item_id, wardId]
+      );
+      if (!itemReference.rowCount) {
+        await client.query('ROLLBACK');
+        return NextResponse.json({ error: 'Note target not found', code: 'NOT_FOUND' }, { status: 404 });
+      }
+      await client.query('SELECT id FROM meeting WHERE id = $1::uuid AND ward_id = $2::uuid FOR UPDATE', [
+        itemReference.rows[0].meeting_id,
+        wardId
+      ]);
+      const programItem = await client.query(
+        'SELECT item_type, program_notes FROM meeting_program_item WHERE id = $1::uuid AND ward_id = $2::uuid FOR UPDATE',
+        [note.program_item_id, wardId]
+      );
+      if (!programItem.rowCount) {
+        await client.query('ROLLBACK');
+        return NextResponse.json({ error: 'Note target not found', code: 'NOT_FOUND' }, { status: 404 });
+      }
+      if (isSourceManaged(String(programItem.rows[0].item_type))) {
+        await client.query('ROLLBACK');
+        return NextResponse.json({ error: 'This program entry is source-managed', code: 'SOURCE_MANAGED' }, { status: 422 });
+      }
+      if ((programItem.rows[0].program_notes ?? '') !== note.note_text) {
+        await client.query('ROLLBACK');
+        return NextResponse.json({ error: 'The program item changed while this note was being edited', code: 'CONFLICT' }, { status: 409 });
+      }
+    }
     await client.query('UPDATE internal_note SET note_text = $1::text, updated_at = now() WHERE id = $2::uuid AND ward_id = $3::uuid', [
       parsed.data.noteText,
       noteId,
@@ -68,7 +99,7 @@ export async function PUT(request: Request, context: { params: Promise<{ wardId:
       aggregateType: 'internal_note',
       aggregateId: noteId,
       eventType: 'NOTE_UPDATED',
-      payload: { noteId }
+      payload: { noteId, visibility: note.visibility, actorUserId: session.user.id }
     });
     await client.query('COMMIT');
     enqueueNotificationOutboxEvent(enqueueOutboxNotificationJob, wardId, eventOutboxId);

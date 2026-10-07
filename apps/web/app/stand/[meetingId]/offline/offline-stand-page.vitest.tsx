@@ -79,6 +79,7 @@ describe('OfflineStandPage', () => {
     offline.loadOfflineSnapshot.mockResolvedValue({
       userId: 'user-1',
       wardId: 'ward-1',
+      locale: 'en-US',
       meeting: { id: 'meeting-1', meetingDate: '2026-09-20', meetingType: 'SACRAMENT' },
       standRows: [],
       businessLines: [
@@ -112,6 +113,7 @@ describe('OfflineStandPage', () => {
     const snapshot = {
       userId: 'user-1',
       wardId: 'ward-1',
+      locale: 'en-US',
       meeting: { id: 'meeting-1', meetingDate: '2026-09-20', meetingType: 'SACRAMENT' },
       standRows: [],
       businessLines: [
@@ -165,6 +167,7 @@ describe('OfflineStandPage', () => {
     const snapshot = {
       userId: 'user-1',
       wardId: 'ward-1',
+      locale: 'en-US',
       meeting: { id: 'meeting-1', meetingDate: '2026-09-20', meetingType: 'SACRAMENT' },
       standRows: [],
       businessLines: [
@@ -233,6 +236,7 @@ describe('OfflineStandPage', () => {
     offline.loadOfflineSnapshot.mockResolvedValue({
       userId: 'user-1',
       wardId: 'ward-1',
+      locale: 'en-US',
       meeting: { id: 'meeting-1', meetingDate: '2026-09-20', meetingType: 'SACRAMENT' },
       standRows: [],
       businessLines: [],
@@ -269,6 +273,7 @@ describe('OfflineStandPage', () => {
     offline.loadOfflineSnapshot.mockResolvedValue({
       userId: 'user-1',
       wardId: 'ward-1',
+      locale: 'en-US',
       meeting: { id: 'meeting-1', meetingDate: '2026-09-20', meetingType: 'SACRAMENT' },
       standRows: [],
       businessLines: [],
@@ -298,6 +303,7 @@ describe('OfflineStandPage', () => {
     const firstSnapshot = {
       userId: 'user-1',
       wardId: 'ward-1',
+      locale: 'en-US',
       meeting: { id: 'meeting-1', meetingDate: '2026-09-20', meetingType: 'SACRAMENT' },
       standRows: [],
       businessLines: [],

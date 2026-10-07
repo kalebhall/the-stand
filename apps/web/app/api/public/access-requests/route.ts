@@ -50,8 +50,6 @@ export async function POST(request: Request) {
        SELECT 'SUPPORT_WORK_ITEM', id, 'SUPPORT_REQUEST_CREATED',
               jsonb_build_object('sourceType', 'ACCESS_REQUEST', 'sourceId', source_id::text)
          FROM inserted_work_item
-       ON CONFLICT (event_type, aggregate_id)
-       DO UPDATE SET payload = EXCLUDED.payload, updated_at = now(), status = 'pending'
        RETURNING id
      )
      SELECT id AS request_id, (SELECT id FROM inserted_event) AS global_event_id

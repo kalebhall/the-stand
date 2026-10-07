@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useSession } from 'next-auth/react';
 import type { StandRow } from '@/src/stand/render';
 import {
@@ -109,8 +109,12 @@ function OfflineRow({ row, done, onToggle }: { row: StandRow; done: boolean; onT
         <p className="font-semibold">{t('wardBusiness')}</p>
         {row.includesStakeBusiness ? (
           <p className="mt-2 text-lg leading-relaxed">
-            At this time, we will turn the meeting over to <strong>{row.stakeBusinessParticipantName || 'the stake presidency'}</strong>
-            {row.stakeBusinessParticipantCalling ? <>, <strong>{row.stakeBusinessParticipantCalling}</strong></> : null} for stake business.
+            {row.stakeBusinessParticipantName
+              ? t(row.stakeBusinessParticipantCalling ? 'stakeBusinessTurnoverNamedWithCalling' : 'stakeBusinessTurnoverNamed', {
+                  name: row.stakeBusinessParticipantName,
+                  ...(row.stakeBusinessParticipantCalling ? { calling: row.stakeBusinessParticipantCalling } : {})
+                })
+              : t('stakeBusinessTurnoverPresidency')}
           </p>
         ) : null}
         <p className="mt-2 text-sm">{t('membershipReadOnly')}</p>
@@ -159,6 +163,7 @@ function OfflineRow({ row, done, onToggle }: { row: StandRow; done: boolean; onT
 
 export default function OfflineStandPage({ meetingId }: { meetingId: string }) {
   const t = useTranslations('offline');
+  const locale = useLocale();
   const offlineAgeLabels: OfflineAgeLabels = {
     unknownAge: t('unknownAge'),
     lessThanMinuteAgo: t('lessThanMinuteAgo'),
@@ -424,6 +429,10 @@ export default function OfflineStandPage({ meetingId }: { meetingId: string }) {
       .then(async (value) => {
         if (cancelled || contextGeneration.current !== generation) return;
         if (value && (value.userId !== userId || value.wardId !== activeWardId || value.meeting.id !== meetingId)) return;
+        if (value && value.locale !== locale) {
+          setError(t('localeMismatch'));
+          return;
+        }
         setSnapshot(value);
         await refreshPending(generation);
       })
@@ -433,7 +442,7 @@ export default function OfflineStandPage({ meetingId }: { meetingId: string }) {
     return () => {
       cancelled = true;
     };
-  }, [activeWardId, meetingId, refreshPending, t, userId]);
+  }, [activeWardId, meetingId, refreshPending, t, locale, userId]);
 
   async function deleteOfflineData() {
     if (!window.confirm(t('deleteConfirm'))) return;
@@ -712,13 +721,13 @@ export default function OfflineStandPage({ meetingId }: { meetingId: string }) {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Link href="/manual#offline" className="text-sm font-medium underline underline-offset-4">
-              Offline help
+              {t('offlineHelp')}
             </Link>
             <span className="rounded-full border px-3 py-1 text-sm">{navigator.onLine ? t('online') : t('offline')}</span>
           </div>
         </div>
         <p className="mt-2 text-xs text-muted-foreground" aria-live="polite">
-          {t('savedAt', { date: new Date(snapshot.savedAt).toLocaleString() })} (
+          {t('savedAt', { date: new Date(snapshot.savedAt).toLocaleString(locale) })} (
           {formatOfflineAge(snapshot.savedAt, Date.now(), offlineAgeLabels)}) · {pending} {t(pending === 1 ? 'change' : 'changes')}
           {syncing ? ` · ${t('syncing')}` : ''}
         </p>
@@ -819,7 +828,7 @@ export default function OfflineStandPage({ meetingId }: { meetingId: string }) {
                 <li key={note.id} className="rounded border p-2">
                   <span className="text-xs text-muted-foreground">
                     {note.pending ? `${t('pendingSync')} · ` : ''}
-                    {new Date(note.createdAt).toLocaleString()}
+                    {new Date(note.createdAt).toLocaleString(locale)}
                   </span>
                   {editingNoteId === note.id ? (
                     <>

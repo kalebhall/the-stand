@@ -57,6 +57,47 @@ describe('notification recipients', () => {
     expect(query.mock.calls[0]?.[0]).toContain('wur.user_id <>');
   });
 
+  it('does not send default notifications for private note events', async () => {
+    const query = vi.fn();
+    const client = { query } as Parameters<typeof resolveNotificationRecipients>[0];
+    const result = await resolveNotificationRecipients(client, {
+      wardId: 'ward-1',
+      eventType: 'NOTE_CREATED',
+      actorUserId: 'user-1',
+      visibility: 'PRIVATE'
+    });
+
+    expect(result).toEqual([]);
+    expect(query).not.toHaveBeenCalled();
+  });
+
+  it('limits explicit private-note recipients to active ward members', async () => {
+    const query = vi.fn().mockResolvedValue({ rows: [{ user_id: 'user-2' }] });
+    const result = await resolveNotificationRecipients(
+      { query },
+      {
+        wardId: 'ward-1',
+        eventType: 'NOTE_CREATED',
+        actorUserId: 'user-1',
+        explicitUserIds: ['user-2', 'user-outside-ward'],
+        visibility: 'PRIVATE'
+      }
+    );
+
+    expect(result).toEqual(['user-2']);
+    expect(query).toHaveBeenCalledWith(expect.stringContaining('wur.revoked_at IS NULL'), [
+      'ward-1',
+      'user-2',
+      'user-outside-ward',
+      'STAND_ADMIN',
+      'BISHOPRIC_EDITOR',
+      'CLERK_EDITOR',
+      'WARD_CLERK',
+      'MEMBERSHIP_CLERK',
+      'user-1'
+    ]);
+  });
+
   it('rejects unknown event names before resolving recipients', () => {
     expect(isKnownNotificationEvent('NOT_REAL')).toBe(false);
   });

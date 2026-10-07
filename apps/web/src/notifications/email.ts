@@ -90,13 +90,16 @@ export function emailProviderConfigured(): boolean {
   return provider === 'smtp' || provider === 'webhook' || (!provider && Boolean(process.env.NOTIFICATION_EMAIL_WEBHOOK_URL));
 }
 
-export async function deliverNotificationEmail(message: NotificationEmailMessage): Promise<{ externalId?: string }> {
+export async function deliverNotificationEmail(
+  message: NotificationEmailMessage,
+  options: { idempotencyKey?: string } = {}
+): Promise<{ externalId?: string }> {
   const provider = configuredProvider();
   if (provider === 'disabled') {
     throw new Error('Email delivery unavailable: configure NOTIFICATION_EMAIL_PROVIDER=smtp and SMTP_HOST, or select webhook.');
   }
 
-  if (provider === 'webhook') return deliverThroughWebhook(message);
+  if (provider === 'webhook') return deliverThroughWebhook(message, options.idempotencyKey);
 
   const host = process.env.SMTP_HOST?.trim();
   const port = Number(process.env.SMTP_PORT ?? '587');
@@ -109,6 +112,9 @@ export async function deliverNotificationEmail(message: NotificationEmailMessage
     host,
     port,
     secure: process.env.SMTP_SECURE === 'true' || port === 465,
+    connectionTimeout: 10_000,
+    greetingTimeout: 10_000,
+    socketTimeout: 30_000,
     auth: process.env.SMTP_USER ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASSWORD ?? '' } : undefined
   });
   const result = await transporter.sendMail({
@@ -117,18 +123,23 @@ export async function deliverNotificationEmail(message: NotificationEmailMessage
     replyTo: process.env.NOTIFICATION_EMAIL_REPLY_TO?.trim() || undefined,
     subject: message.subject,
     text: message.text,
-    html: message.html
+    html: message.html,
+    messageId: options.idempotencyKey ? `<${options.idempotencyKey}@the-stand>` : undefined
   });
   return { externalId: result.messageId };
 }
 
-async function deliverThroughWebhook(message: NotificationEmailMessage): Promise<{ externalId?: string }> {
+async function deliverThroughWebhook(message: NotificationEmailMessage, idempotencyKey?: string): Promise<{ externalId?: string }> {
   const providerUrl = process.env.NOTIFICATION_EMAIL_WEBHOOK_URL;
   if (!providerUrl) throw new Error('Email delivery unavailable: NOTIFICATION_EMAIL_WEBHOOK_URL is not configured.');
   const response = await fetch(providerUrl, {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(message)
+    headers: {
+      'content-type': 'application/json',
+      ...(idempotencyKey ? { 'idempotency-key': idempotencyKey } : {})
+    },
+    body: JSON.stringify(message),
+    signal: AbortSignal.timeout(15_000)
   });
   if (!response.ok) throw new Error(`Email provider failed (${response.status}): ${(await response.text()).slice(0, 500)}`);
   return { externalId: response.headers.get('x-delivery-id') ?? undefined };

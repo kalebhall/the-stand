@@ -322,8 +322,16 @@ export function WardBusinessSection({
           <p className="mt-2 text-lg leading-relaxed">
             {parseBoldSegments(
               stakeBusinessParticipantName
-                ? `At this time, we will turn the meeting over to **${stakeBusinessParticipantName}**${stakeBusinessParticipantCalling ? `, **${stakeBusinessParticipantCalling}**` : ''} for stake business.`
-                : 'At this time, we will turn the meeting over to **the stake presidency** for stake business.'
+                ? meetingsT(
+                    stakeBusinessParticipantCalling
+                      ? 'offline.stakeBusinessTurnoverNamedWithCalling'
+                      : 'offline.stakeBusinessTurnoverNamed',
+                    {
+                      name: stakeBusinessParticipantName,
+                      ...(stakeBusinessParticipantCalling ? { calling: stakeBusinessParticipantCalling } : {})
+                    }
+                  )
+                : meetingsT('offline.stakeBusinessTurnoverPresidency')
             ).map((segment, index) =>
               segment.bold ? <strong key={index}>{segment.text}</strong> : <span key={index}>{segment.text}</span>
             )}

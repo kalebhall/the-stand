@@ -17,6 +17,7 @@ export type RecipientPolicyContext = {
   eventType: NotificationEventType;
   actorUserId?: string;
   explicitUserIds?: string[];
+  visibility?: 'PUBLIC' | 'LEADERSHIP' | 'PRIVATE';
 };
 
 const CALLING_EVENTS = new Set<NotificationEventType>([
@@ -58,6 +59,7 @@ const MEETING_EVENTS = new Set<NotificationEventType>([
 const NOTE_EVENTS = new Set<NotificationEventType>([
   'NOTE_CREATED',
   'NOTE_UPDATED',
+  'NOTE_DELETED',
   'NOTE_MENTIONED',
   'COMMENT_CREATED',
   'COMMENT_UPDATED'
@@ -117,7 +119,9 @@ export function getExplicitRecipientIds(context: RecipientPolicyContext): string
 }
 
 export async function resolveNotificationRecipients(client: DbClient, context: RecipientPolicyContext): Promise<string[]> {
-  const policy = getRecipientPolicyKey(context.eventType);
+  const nonPublicNote = NOTE_EVENTS.has(context.eventType) && context.visibility !== 'PUBLIC';
+  const restrictedNote = nonPublicNote && context.visibility !== 'LEADERSHIP';
+  const policy = restrictedNote ? 'NO_DEFAULT_RECIPIENTS' : getRecipientPolicyKey(context.eventType);
   const roles = getRecipientRoles(policy);
   const explicitIds = getExplicitRecipientIds(context);
 
@@ -140,7 +144,15 @@ export async function resolveNotificationRecipients(client: DbClient, context: R
     conditions.push(`r.name IN (${rolePlaceholders.join(', ')})`);
   }
   if (explicitPlaceholders.length > 0) {
-    conditions.push(`wur.user_id IN (${explicitPlaceholders.join(', ')})`);
+    if (nonPublicNote) {
+      const noteReaderPlaceholders = getRecipientRoles('INTERNAL_NOTE_READERS').map((role) => {
+        values.push(role);
+        return `$${values.length}::text`;
+      });
+      conditions.push(`wur.user_id IN (${explicitPlaceholders.join(', ')}) AND r.name IN (${noteReaderPlaceholders.join(', ')})`);
+    } else {
+      conditions.push(`wur.user_id IN (${explicitPlaceholders.join(', ')})`);
+    }
   }
   if (context.actorUserId && !CALLING_EVENTS.has(context.eventType)) {
     values.push(context.actorUserId);
@@ -150,6 +162,7 @@ export async function resolveNotificationRecipients(client: DbClient, context: R
   const result = await client.query(
     `SELECT DISTINCT wur.user_id
        FROM ward_user_role wur
+       JOIN user_account u ON u.id = wur.user_id AND u.is_active = true
        JOIN role r ON r.id = wur.role_id
       WHERE wur.ward_id = $1::uuid
         AND wur.revoked_at IS NULL

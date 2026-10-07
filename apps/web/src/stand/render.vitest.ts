@@ -31,7 +31,8 @@ describe('buildStandRows', () => {
         itemType: 'SUSTAINING',
         title: 'Jane Smith',
         member: { gender: 'F' },
-        notes: 'Relief Society President',
+        notes: 'private text that must not be used',
+        operationalCallingName: 'Relief Society President',
         hymnNumber: null,
         hymnTitle: null
       }
@@ -53,6 +54,34 @@ describe('buildStandRows', () => {
     }
   });
 
+  it('uses conducting-safe derived fields when private notes are redacted', () => {
+    const rows = buildStandRows([
+      {
+        id: 'item-sustain',
+        itemType: 'SUSTAINING',
+        title: 'Jane Smith',
+        member: { gender: 'F' },
+        notes: null,
+        operationalCallingName: 'Relief Society President',
+        hymnNumber: null,
+        hymnTitle: null
+      },
+      {
+        id: 'item-business',
+        itemType: 'WARD_AND_STAKE_BUSINESS',
+        title: 'President Smith',
+        notes: null,
+        includesStakeBusiness: true,
+        topic: 'Stake President',
+        hymnNumber: null,
+        hymnTitle: null
+      }
+    ]);
+
+    expect(rows[1]).toMatchObject({ kind: 'sustain', summary: 'President Jane Smith — Relief Society President' });
+    expect(rows[2]).toMatchObject({ kind: 'ward_business', includesStakeBusiness: true });
+  });
+
   it('supports template overrides and standard label rendering', () => {
     const rows = buildStandRows(
       [
@@ -69,7 +98,8 @@ describe('buildStandRows', () => {
           itemType: 'RELEASE',
           title: 'John Doe',
           member: { gender: 'M' },
-          notes: 'Elders Quorum President',
+          notes: 'private text that must not be used',
+          operationalCallingName: 'Elders Quorum President',
           hymnNumber: null,
           hymnTitle: null
         }
@@ -302,7 +332,15 @@ describe('buildStandRows', () => {
 
   it('uses the hymn catalog locale stored on the historical program item', () => {
     const rows = buildStandRows([
-      { id: 'historical-hymn', itemType: 'OPENING_HYMN', title: '', notes: '', hymnNumber: '1', hymnTitle: 'The Morning Breaks', hymnLocale: 'es' }
+      {
+        id: 'historical-hymn',
+        itemType: 'OPENING_HYMN',
+        title: '',
+        notes: '',
+        hymnNumber: '1',
+        hymnTitle: 'The Morning Breaks',
+        hymnLocale: 'es'
+      }
     ]);
 
     expect(rows[1]).toMatchObject({

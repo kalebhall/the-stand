@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -22,16 +22,33 @@ import {
 } from '@/src/meetings/types';
 import { getDefaultProgramItemsForMeetingType } from '@/src/meetings/default-program';
 import { getMeetingReadiness } from '@/src/meetings/readiness';
+import { getPublicProgramRenderLabels } from '@/src/i18n/public-program';
+import { resolveLocale } from '@/src/i18n/config';
+import { isHymnItem } from '@/src/meetings/program-item-contracts';
 
 import { DeleteMeetingButton } from './delete-meeting-button';
 import { cn } from '@/lib/utils';
 
 const PERSON_ITEM_TYPES = new Set(['INVOCATION', 'SPEAKER', 'BENEDICTION']);
-const HYMN_ITEM_TYPES = new Set(['OPENING_HYMN', 'REST_HYMN', 'CLOSING_HYMN', 'SPECIAL_HYMN', 'SACRAMENT_HYMN']);
+const HYMN_ITEM_TYPES = new Set(['HYMN', 'OPENING_HYMN', 'REST_HYMN', 'CLOSING_HYMN', 'SPECIAL_HYMN', 'SACRAMENT_HYMN']);
 const PLACEHOLDER_ITEM_TYPES = new Set(['SACRAMENT', 'TESTIMONIES']);
 const ANNOUNCEMENT_ITEM_TYPE = 'ANNOUNCEMENT';
-const PROTECTED_ITEM_TYPES = new Set([INTRODUCTION_ITEM_TYPE, ANNOUNCEMENT_ITEM_TYPE]);
+const PROTECTED_ITEM_TYPES = new Set([
+  INTRODUCTION_ITEM_TYPE,
+  ANNOUNCEMENT_ITEM_TYPE,
+  'PRESIDING',
+  'CONDUCTING',
+  'ORGANIST_PIANIST',
+  'CHORISTER',
+  'SUSTAINING',
+  'RELEASE'
+]);
+
+function isProtectedProgramItem(itemType: string): boolean {
+  return PROTECTED_ITEM_TYPES.has(itemType.toUpperCase());
+}
 const BUSINESS_ITEM_TYPE = 'WARD_AND_STAKE_BUSINESS';
+const CALLING_ACTION_ITEM_TYPES = new Set(['SUSTAINING', 'RELEASE']);
 const HYMN_POSITION_TO_ITEM_TYPE: Record<string, string> = {
   OPENING: 'OPENING_HYMN',
   SACRAMENT: 'SACRAMENT_HYMN',
@@ -64,6 +81,7 @@ type MeetingFormProps = {
   initialMeetingDate?: string;
   initialMeetingType?: string;
   initialProgramItems?: ProgramItemInput[];
+  initialProgramItemsRevision?: string;
   publishedVersionCount?: number;
   internalNotes?: InternalNoteRow[];
   canUseInternalNotes?: boolean;
@@ -82,6 +100,7 @@ const PROGRAM_ITEM_TYPES = [
   'SPEAKER',
   'REST_HYMN',
   'TESTIMONIES',
+  'SPECIAL_MUSICAL_NUMBER',
   'CLOSING_HYMN',
   'BENEDICTION'
 ];
@@ -102,6 +121,7 @@ export function MeetingForm({
   initialMeetingDate = '',
   initialMeetingType = 'SACRAMENT',
   initialProgramItems = [],
+  initialProgramItemsRevision,
   publishedVersionCount = 0,
   internalNotes = [],
   canUseInternalNotes = false,
@@ -114,15 +134,23 @@ export function MeetingForm({
   const itemTitleLabel = (itemType: string) => (HYMN_ITEM_TYPES.has(itemType) || itemType === BUSINESS_ITEM_TYPE ? t('title') : t('name'));
   const [meetingDate, setMeetingDate] = useState(toYyyyMmDd(initialMeetingDate));
   const [meetingType, setMeetingType] = useState(initialMeetingType);
+  const locale = useLocale();
+  const itemLabels = getPublicProgramRenderLabels(resolveLocale(locale), meetingType).itemLabels;
   const [programItems, setProgramItems] = useState<ProgramItemInput[]>(
     initialProgramItems.length ? initialProgramItems : getDefaultProgramItemsForMeetingType(initialMeetingType)
   );
+  const programItemsRevisionRef = useRef(initialProgramItemsRevision);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const readiness = useMemo(() => getMeetingReadiness(programItems), [programItems]);
   const [publishing, setPublishing] = useState(false);
   const [publishedCount, setPublishedCount] = useState(publishedVersionCount);
   const [autosaveStatus, setAutosaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [autosaveRetryNonce, setAutosaveRetryNonce] = useState(0);
+  const [autosaveConflict, setAutosaveConflict] = useState<{
+    currentProgramItems: ProgramItemInput[];
+    sourceRevision: string;
+  } | null>(null);
 
   const [newItemType, setNewItemType] = useState('SPEAKER');
   const autosaveSnapshot = useRef(
@@ -133,42 +161,80 @@ export function MeetingForm({
     })
   );
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const autosaveInFlight = useRef(false);
+  const autosavePending = useRef(false);
+  const latestDraftRef = useRef({
+    meetingDate: toYyyyMmDd(initialMeetingDate),
+    meetingType: initialMeetingType,
+    programItems: initialProgramItems.length ? initialProgramItems : getDefaultProgramItemsForMeetingType(initialMeetingType)
+  });
+
+  latestDraftRef.current = { meetingDate, meetingType, programItems };
 
   const canSave = useMemo(() => Boolean(meetingDate && meetingType), [meetingDate, meetingType]);
 
   useEffect(() => {
     if (mode !== 'edit' || !meetingId) return;
     if (!canSave) return;
+    if (autosaveConflict) return;
     const snapshot = JSON.stringify({ meetingDate, meetingType, programItems });
     if (autosaveSnapshot.current === snapshot) return;
-    autosaveSnapshot.current = snapshot;
     if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
     autosaveTimer.current = setTimeout(() => {
+      if (autosaveInFlight.current) {
+        autosavePending.current = true;
+        return;
+      }
+      autosaveInFlight.current = true;
       void (async () => {
+        let succeeded = false;
         setAutosaveStatus('saving');
         setError(null);
         try {
           const response = await fetch(`/api/w/${wardId}/meetings/${meetingId}`, {
             method: 'PUT',
             headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ meetingDate, meetingType, programItems })
+            body: JSON.stringify({ meetingDate, meetingType, programItems, expectedProgramItemsRevision: programItemsRevisionRef.current })
           });
           if (!response.ok) {
             setAutosaveStatus('error');
+            if (response.status === 409) {
+              const body = (await response.json().catch(() => null)) as {
+                sourceRevision?: string;
+                currentProgramItems?: ProgramItemInput[];
+              } | null;
+              if (body?.sourceRevision && Array.isArray(body.currentProgramItems)) {
+                setAutosaveConflict({ currentProgramItems: body.currentProgramItems, sourceRevision: body.sourceRevision });
+              }
+              setError(t('saveChangesFailed'));
+              return;
+            }
             setError(t('saveChangesFailed'));
             return;
           }
+          const payload = (await response.json()) as { sourceRevision?: string };
+          if (payload.sourceRevision) {
+            programItemsRevisionRef.current = payload.sourceRevision;
+          }
+          autosaveSnapshot.current = snapshot;
+          succeeded = true;
           setAutosaveStatus('saved');
         } catch {
           setAutosaveStatus('error');
           setError(t('saveChangesFailed'));
+        } finally {
+          autosaveInFlight.current = false;
+          if (succeeded && autosavePending.current) {
+            autosavePending.current = false;
+            setAutosaveRetryNonce((current) => current + 1);
+          }
         }
       })();
     }, 600);
     return () => {
       if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
     };
-  }, [canSave, meetingDate, meetingId, meetingType, mode, programItems, wardId]);
+  }, [autosaveConflict, autosaveRetryNonce, canSave, meetingDate, meetingId, meetingType, mode, programItems, t, wardId]);
 
   function updateProgramItem(index: number, field: keyof ProgramItemInput, value: string) {
     setProgramItems((current) => current.map((item, itemIndex) => (itemIndex === index ? { ...item, [field]: value } : item)));
@@ -194,7 +260,11 @@ export function MeetingForm({
         const visitingLeaders = [...(item.introductionRoles?.visitingLeaders ?? [])];
         visitingLeaders[leaderIndex] = visitingLeaders[leaderIndex]
           ? { ...visitingLeaders[leaderIndex], [field]: value }
-          : { name: field === 'name' ? value : '', calling: field === 'calling' ? value : '', recognitionType: field === 'recognitionType' ? value as VisitingLeaderType : 'OTHER' };
+          : {
+              name: field === 'name' ? value : '',
+              calling: field === 'calling' ? value : '',
+              recognitionType: field === 'recognitionType' ? (value as VisitingLeaderType) : 'OTHER'
+            };
         return {
           ...item,
           introductionRoles: { presiding: '', conducting: '', organist: '', chorister: '', ...item.introductionRoles, visitingLeaders }
@@ -395,7 +465,7 @@ export function MeetingForm({
               <select className="rounded-md border px-3 py-2" value={newItemType} onChange={(event) => setNewItemType(event.target.value)}>
                 {PROGRAM_ITEM_TYPES.map((value) => (
                   <option key={value} value={value}>
-                    {getProgramItemLabel(value)}
+                    {itemLabels[value] ?? getProgramItemLabel(value)}
                   </option>
                 ))}
               </select>
@@ -437,18 +507,18 @@ export function MeetingForm({
           <article
             key={`${item.itemType}-${index}`}
             className={cn('program-item space-y-3 rounded-md border p-3', getProgramItemAccentClass(item.itemType))}
-            draggable={!PROTECTED_ITEM_TYPES.has(item.itemType)}
+            draggable={!isProtectedProgramItem(item.itemType)}
             onDragStart={
-              PROTECTED_ITEM_TYPES.has(item.itemType)
+              isProtectedProgramItem(item.itemType)
                 ? undefined
                 : (event) => {
                     event.dataTransfer.setData('text/program-item-index', String(index));
                     event.dataTransfer.effectAllowed = 'move';
                   }
             }
-            onDragOver={PROTECTED_ITEM_TYPES.has(item.itemType) ? undefined : (event) => event.preventDefault()}
+            onDragOver={isProtectedProgramItem(item.itemType) ? undefined : (event) => event.preventDefault()}
             onDrop={
-              PROTECTED_ITEM_TYPES.has(item.itemType)
+              isProtectedProgramItem(item.itemType)
                 ? undefined
                 : (event) => {
                     event.preventDefault();
@@ -461,15 +531,17 @@ export function MeetingForm({
             <div className="program-item-header flex items-center justify-between gap-3">
               <div className="flex min-w-0 items-center gap-2">
                 <span
-                  className={cn('text-muted-foreground', PROTECTED_ITEM_TYPES.has(item.itemType) ? 'opacity-0' : 'cursor-grab')}
+                  className={cn('text-muted-foreground', isProtectedProgramItem(item.itemType) ? 'opacity-0' : 'cursor-grab')}
                   aria-hidden="true"
-                  title={PROTECTED_ITEM_TYPES.has(item.itemType) ? undefined : t('dragToReorder')}
+                  title={isProtectedProgramItem(item.itemType) ? undefined : t('dragToReorder')}
                 >
                   ⋮⋮
                 </span>
-                <h3 className="truncate text-sm font-semibold">{getProgramItemLabel(item.itemType)}</h3>
+                <h3 className="truncate text-sm font-semibold">
+                  {itemLabels[item.itemType.toUpperCase()] ?? getProgramItemLabel(item.itemType)}
+                </h3>
               </div>
-              {!PROTECTED_ITEM_TYPES.has(item.itemType) ? (
+              {!isProtectedProgramItem(item.itemType) ? (
                 <Button
                   type="button"
                   variant="ghost"
@@ -561,7 +633,7 @@ export function MeetingForm({
                     ))}
                   </div>
                 </div>
-              ) : !HYMN_ITEM_TYPES.has(item.itemType) && item.itemType !== BUSINESS_ITEM_TYPE ? (
+              ) : !isHymnItem(item.itemType) && item.itemType !== BUSINESS_ITEM_TYPE ? (
                 <div className="space-y-1 text-sm">
                   <span className="font-medium">{itemTitleLabel(item.itemType)}</span>
                   {PERSON_ITEM_TYPES.has(item.itemType) ? (
@@ -600,15 +672,16 @@ export function MeetingForm({
                     />
                   ) : (
                     <input
-                      className="w-full rounded-md border px-3 py-2"
+                      className={cn('w-full rounded-md border px-3 py-2', CALLING_ACTION_ITEM_TYPES.has(item.itemType) && 'bg-muted')}
                       value={item.title}
+                      readOnly={CALLING_ACTION_ITEM_TYPES.has(item.itemType)}
                       onChange={(event) => updateProgramItem(index, 'title', event.target.value)}
                     />
                   )}
                 </div>
               ) : null}
 
-              {HYMN_ITEM_TYPES.has(item.itemType) ? (
+              {isHymnItem(item.itemType) ? (
                 <div className="space-y-1 text-sm sm:col-span-2">
                   <span className="font-medium">{t('hymn')}</span>
                   <div className="space-y-2">
@@ -616,6 +689,7 @@ export function MeetingForm({
                       <select
                         className="w-full rounded-md border px-3 py-2"
                         value={ITEM_TYPE_TO_HYMN_POSITION[item.itemType]}
+                        disabled={Boolean(item.id)}
                         onChange={(event) => updateHymnPosition(index, event.target.value)}
                       >
                         <option value="OPENING">{t('opening')}</option>
@@ -696,6 +770,42 @@ export function MeetingForm({
       </section>
 
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
+      {autosaveConflict ? (
+        <section role="alert" className="space-y-2 rounded border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950">
+          <p>{t('programConflict')}</p>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setProgramItems(autosaveConflict.currentProgramItems);
+                programItemsRevisionRef.current = autosaveConflict.sourceRevision;
+                autosaveSnapshot.current = JSON.stringify({
+                  meetingDate,
+                  meetingType,
+                  programItems: autosaveConflict.currentProgramItems
+                });
+                setAutosaveConflict(null);
+                setError(null);
+                setAutosaveStatus('saved');
+              }}
+            >
+              {t('useServerProgram')}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                programItemsRevisionRef.current = autosaveConflict.sourceRevision;
+                setAutosaveConflict(null);
+                setAutosaveRetryNonce((current) => current + 1);
+              }}
+            >
+              {t('keepLocalProgram')}
+            </Button>
+          </div>
+        </section>
+      ) : null}
 
       <div className="flex flex-wrap gap-2">
         {mode === 'create' ? (
@@ -703,15 +813,22 @@ export function MeetingForm({
             {t('createMeeting')}
           </Button>
         ) : (
-          <span className="self-center text-sm text-muted-foreground" role="status" aria-live="polite">
-            {autosaveStatus === 'saving'
-              ? t('savingChanges')
-              : autosaveStatus === 'saved'
-                ? t('changesSaved')
-                : autosaveStatus === 'error'
-                  ? t('changesNotSaved')
-                  : t('saveAutomatically')}
-          </span>
+          <>
+            <span className="self-center text-sm text-muted-foreground" role="status" aria-live="polite">
+              {autosaveStatus === 'saving'
+                ? t('savingChanges')
+                : autosaveStatus === 'saved'
+                  ? t('changesSaved')
+                  : autosaveStatus === 'error'
+                    ? t('changesNotSaved')
+                    : t('saveAutomatically')}
+            </span>
+            {autosaveStatus === 'error' && !autosaveConflict ? (
+              <Button type="button" variant="outline" onClick={() => setAutosaveRetryNonce((current) => current + 1)}>
+                {t('retrySave')}
+              </Button>
+            ) : null}
+          </>
         )}
         {mode === 'edit' ? (
           <Button type="button" variant="outline" onClick={onPublish} disabled={publishing || !meetingId}>

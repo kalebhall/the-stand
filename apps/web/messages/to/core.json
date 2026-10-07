@@ -169,7 +169,10 @@
     "unpinMenu": "Tuku ke mapipiki ʻa e menu",
     "helpManual": "Tokoni / Tohi Fakahinohino",
     "settings": "Ngaahi fokotuʻutuʻu",
-    "logOut": "Hu ki tu'a"
+    "logOut": "Hū atu",
+    "logoutConfirmation": "ʻOku ke fiemālie ke hū atu?",
+    "logoutError": "Naʻe ʻikai lava ke hū atu. Vakaiʻi hoʻo fakafehokotakí pea toe feinga.",
+    "loggingOut": "ʻOku hū atu..."
   },
   "account": {
     "title": "Fakakaukau Fakalukufua ʻo e ʻAkauní",

@@ -332,6 +332,7 @@ CREATE FUNCTION public.lookup_public_media_asset(p_token text) RETURNS TABLE(sto
          FROM public.meeting_program_render r
          JOIN public.ward rw ON rw.id = r.ward_id
         WHERE r.render_html ILIKE ('%' || m.public_token || '%')
+          AND r.published_at IS NOT NULL
           AND (
             m.scope_type = 'SYSTEM'
             OR (m.scope_type = 'WARD' AND r.ward_id = m.ward_id)
@@ -4899,6 +4900,13 @@ CREATE POLICY media_asset_read ON public.media_asset FOR SELECT USING (((status 
 
 
 --
+-- Name: media_asset media_asset_public_token_read; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY media_asset_public_token_read ON public.media_asset FOR SELECT USING (((status = 'ACTIVE'::text) AND (lower(public_token) = NULLIF(current_setting('app.public_media_token'::text, true), ''::text))));
+
+
+--
 -- Name: media_asset media_asset_update; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -4960,6 +4968,13 @@ ALTER TABLE public.meeting_program_render ENABLE ROW LEVEL SECURITY;
 CREATE POLICY meeting_program_render_public_token_read ON public.meeting_program_render FOR SELECT USING ((EXISTS ( SELECT 1
    FROM public.public_program_share pps
   WHERE ((pps.meeting_id = meeting_program_render.meeting_id) AND (pps.token = app.current_public_meeting_token())))));
+
+
+--
+-- Name: meeting_program_render meeting_program_render_public_media_token_read; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY meeting_program_render_public_media_token_read ON public.meeting_program_render FOR SELECT USING (((published_at IS NOT NULL) AND (render_html ILIKE (('%'::text || NULLIF(current_setting('app.public_media_token'::text, true), ''::text)) || '%'::text))));
 
 
 --

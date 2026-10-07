@@ -4,10 +4,22 @@ import { auth } from '@/src/auth/auth';
 import { canManageMeetings } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
-import { isWardSacramentPriesthoodActionAllowed, validatePriesthoodOffice, type PriesthoodOffice } from '@/src/church-actions/membership-ordinance';
-import { isWardModuleEnabled } from '@/src/modules/service';
+import {
+  isWardSacramentPriesthoodActionAllowed,
+  validatePriesthoodOffice,
+  type PriesthoodOffice
+} from '@/src/church-actions/membership-ordinance';
+import { isWardModuleEnabled, isWardModuleEnabledInTransaction } from '@/src/modules/service';
 
-const ACTION_TYPES = new Set(['WELCOME_NEW_MEMBER', 'RECOGNIZE_BAPTIZED_CHILD', 'BAPTISM_CONFIRMATION_FOLLOW_UP', 'ATTENDANCE_LCR_HANDOFF', 'BABY_BLESSING', 'PRIESTHOOD_ORDINATION', 'PRIESTHOOD_ADVANCEMENT']);
+const ACTION_TYPES = new Set([
+  'WELCOME_NEW_MEMBER',
+  'RECOGNIZE_BAPTIZED_CHILD',
+  'BAPTISM_CONFIRMATION_FOLLOW_UP',
+  'ATTENDANCE_LCR_HANDOFF',
+  'BABY_BLESSING',
+  'PRIESTHOOD_ORDINATION',
+  'PRIESTHOOD_ADVANCEMENT'
+]);
 const PRIESTHOOD_ACTION_TYPES = new Set(['PRIESTHOOD_ORDINATION', 'PRIESTHOOD_ADVANCEMENT']);
 
 function trimmed(value: unknown): string | null {
@@ -18,7 +30,10 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
   const session = await auth();
   const { wardId, meetingId } = await context.params;
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, { status: 401 });
-  if (!(await isWardModuleEnabled(wardId, session.user.id, 'membership-ordinances')) || !canManageMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) {
+  if (
+    !(await isWardModuleEnabled(wardId, session.user.id, 'membership-ordinances')) ||
+    !canManageMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)
+  ) {
     return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
   }
 
@@ -62,11 +77,18 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
   const ordinanceDate = trimmed(body?.ordinanceDate);
   const baptismDate = trimmed(body?.baptismDate);
   const confirmationDate = trimmed(body?.confirmationDate);
-  const baptismStatus = typeof body?.baptismStatus === 'string' && ['planned', 'completed', 'cancelled'].includes(body.baptismStatus) ? body.baptismStatus : null;
-  const confirmationStatus = typeof body?.confirmationStatus === 'string' && ['planned', 'completed', 'cancelled'].includes(body.confirmationStatus) ? body.confirmationStatus : null;
+  const baptismStatus =
+    typeof body?.baptismStatus === 'string' && ['planned', 'completed', 'cancelled'].includes(body.baptismStatus)
+      ? body.baptismStatus
+      : null;
+  const confirmationStatus =
+    typeof body?.confirmationStatus === 'string' && ['planned', 'completed', 'cancelled'].includes(body.confirmationStatus)
+      ? body.confirmationStatus
+      : null;
   const lcrFollowUpStatus = PRIESTHOOD_ACTION_TYPES.has(actionType) ? 'needed' : 'not_applicable';
   const recordFormNeeded = actionType === 'BAPTISM_CONFIRMATION_FOLLOW_UP' || actionType === 'ATTENDANCE_LCR_HANDOFF';
-  const officialSystemReferenceUrl = actionType === 'ATTENDANCE_LCR_HANDOFF' ? 'https://www.churchofjesuschrist.org/tools/help/record-attendance' : null;
+  const officialSystemReferenceUrl =
+    actionType === 'ATTENDANCE_LCR_HANDOFF' ? 'https://www.churchofjesuschrist.org/tools/help/record-attendance' : null;
   if (!memberName || !ACTION_TYPES.has(actionType) || !validatePriesthoodOffice(actionType, priesthoodOffice)) {
     return NextResponse.json({ error: 'Member name and valid action type are required.', code: 'INVALID_INPUT' }, { status: 400 });
   }
@@ -78,18 +100,37 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
   try {
     await client.query('BEGIN');
     await setDbContext(client, { userId: session.user.id, wardId });
-    const meeting = await client.query('SELECT id, meeting_type FROM meeting WHERE id = $1::uuid AND ward_id = $2::uuid LIMIT 1', [meetingId, wardId]);
+    if (!(await isWardModuleEnabledInTransaction(client, wardId, 'membership-ordinances'))) {
+      await client.query('ROLLBACK');
+      return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
+    }
+    const meeting = await client.query('SELECT id, meeting_type FROM meeting WHERE id = $1::uuid AND ward_id = $2::uuid LIMIT 1', [
+      meetingId,
+      wardId
+    ]);
     if (!meeting.rowCount) {
       await client.query('ROLLBACK');
       return NextResponse.json({ error: 'Meeting not found.', code: 'NOT_FOUND' }, { status: 404 });
     }
     if (['STAKE_CONFERENCE', 'GENERAL_CONFERENCE'].includes(meeting.rows[0].meeting_type)) {
       await client.query('ROLLBACK');
-      return NextResponse.json({ error: 'Membership and ordinance actions are not available for conference meetings.', code: 'CONFERENCE_NOT_ALLOWED' }, { status: 422 });
+      return NextResponse.json(
+        { error: 'Membership and ordinance actions are not available for conference meetings.', code: 'CONFERENCE_NOT_ALLOWED' },
+        { status: 422 }
+      );
     }
-    if (actionType.startsWith('PRIESTHOOD_') && !isWardSacramentPriesthoodActionAllowed(meeting.rows[0].meeting_type, priesthoodOffice as PriesthoodOffice | null)) {
+    if (
+      actionType.startsWith('PRIESTHOOD_') &&
+      !isWardSacramentPriesthoodActionAllowed(meeting.rows[0].meeting_type, priesthoodOffice as PriesthoodOffice | null)
+    ) {
       await client.query('ROLLBACK');
-      return NextResponse.json({ error: 'Elder and high priest sustainings or setting-apart actions belong to stake leadership, not a ward sacrament meeting.', code: 'STAKE_SCOPE_REQUIRED' }, { status: 422 });
+      return NextResponse.json(
+        {
+          error: 'Elder and high priest sustainings or setting-apart actions belong to stake leadership, not a ward sacrament meeting.',
+          code: 'STAKE_SCOPE_REQUIRED'
+        },
+        { status: 422 }
+      );
     }
     const result = await client.query(
       `INSERT INTO meeting_membership_ordinance (ward_id, meeting_id, member_name, action_type, priesthood_office, reason, details, planned_date, interview_status, interview_date, interviewer_name, approval_confirmed, presenting_leader, performing_priesthood_holder, ordinance_date, baptism_date, confirmation_date, baptism_status, confirmation_status, responsible_leader, lcr_follow_up_status, record_form_needed, official_system_reference_url)

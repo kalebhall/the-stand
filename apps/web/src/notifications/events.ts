@@ -44,6 +44,7 @@ export const NOTIFICATION_EVENT_TYPES = [
   'MEETING_MISSING_REQUIRED_INFORMATION',
   'NOTE_CREATED',
   'NOTE_UPDATED',
+  'NOTE_DELETED',
   'NOTE_MENTIONED',
   'COMMENT_CREATED',
   'COMMENT_UPDATED',
@@ -260,6 +261,7 @@ const EVENT_DEFINITIONS: Record<NotificationEventType, NotificationEventDefiniti
   }),
   NOTE_CREATED: definition('NOTE_CREATED', { category: 'NOTES', label: 'Note added', defaultChannels: inApp, severity: 'info' }),
   NOTE_UPDATED: definition('NOTE_UPDATED', { category: 'NOTES', label: 'Note updated', defaultChannels: inApp, severity: 'info' }),
+  NOTE_DELETED: definition('NOTE_DELETED', { category: 'NOTES', label: 'Note deleted', defaultChannels: inApp, severity: 'info' }),
   NOTE_MENTIONED: definition('NOTE_MENTIONED', {
     category: 'NOTES',
     label: 'You were mentioned in a note',

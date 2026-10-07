@@ -23,8 +23,6 @@ export async function insertGlobalNotificationEvent(
   const result = await client.query(
     `INSERT INTO global_event_outbox (aggregate_type, aggregate_id, event_type, payload)
      VALUES ($1::text, $2::uuid, $3::text, $4::jsonb)
-     ON CONFLICT (event_type, aggregate_id)
-     DO UPDATE SET payload = EXCLUDED.payload, updated_at = now(), status = 'pending'
      RETURNING id`,
     [params.aggregateType, params.aggregateId, params.eventType, JSON.stringify(params.payload ?? {})]
   );
