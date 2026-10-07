@@ -41,10 +41,10 @@ export async function ensureSupportAdminBootstrap(): Promise<void> {
   );
 
   if (roleResult.rowCount && roleResult.rowCount > 0) {
-    const isE2eDatabase = process.env.E2E_TEST_MODE === '1'
-      && process.env.NODE_ENV !== 'production'
-      && Boolean(process.env.TEST_DATABASE_URL)
-      && process.env.DATABASE_URL === process.env.TEST_DATABASE_URL;
+    const isE2eDatabase =
+      process.env.E2E_TEST_MODE === '1' &&
+      Boolean(process.env.TEST_DATABASE_URL) &&
+      process.env.DATABASE_URL === process.env.TEST_DATABASE_URL;
     if (isE2eDatabase) {
       const password = process.env.SUPPORT_ADMIN_INITIAL_PASSWORD;
       if (!password) throw new Error('SUPPORT_ADMIN_INITIAL_PASSWORD is required in E2E_TEST_MODE');

@@ -1,4 +1,4 @@
-import { DEFAULT_STAND_RELEASE_TEMPLATE, DEFAULT_STAND_SUSTAIN_TEMPLATE, DEFAULT_STAND_WELCOME_TEXT } from './default-template';
+import { getDefaultStandTemplate } from './default-template';
 import { formatAtStandMemberName, type MemberDisplayInfo } from './member-display';
 import { buildHymnUrl } from './hymn-links';
 import type { IntroductionRoles } from '../meetings/types';
@@ -9,6 +9,8 @@ export type StandProgramItem = {
   title: string | null;
   member?: MemberDisplayInfo;
   notes: string | null;
+  operationalCallingName?: string | null;
+  includesStakeBusiness?: boolean;
   topic?: string | null;
   programNotes?: string | null;
   hymnNumber: string | null;
@@ -57,14 +59,8 @@ export type StandRow =
       stakeBusinessParticipantCalling?: string | null;
     };
 
-const DEFAULT_TEMPLATE: StandTemplate = {
-  welcomeText: DEFAULT_STAND_WELCOME_TEXT,
-  sustainTemplate: DEFAULT_STAND_SUSTAIN_TEMPLATE,
-  releaseTemplate: DEFAULT_STAND_RELEASE_TEMPLATE
-};
-
 export type StandRenderLabels = {
-  itemLabels?: Record<string, string>;
+  itemLabels: Record<string, string>;
   introduction: string;
   presiding: string;
   conducting: string;
@@ -76,9 +72,11 @@ export type StandRenderLabels = {
   visitingHighCouncilor?: string;
   visitingGeneralOfficer?: string;
   visitingOtherLeader?: string;
+  defaultTemplates?: StandTemplate;
 };
 
 const DEFAULT_RENDER_LABELS: StandRenderLabels = {
+  itemLabels: {},
   introduction: 'Introduction',
   presiding: 'Presiding',
   conducting: 'Conducting',
@@ -120,8 +118,8 @@ function getMemberAndCalling(
   item: StandProgramItem,
   labels: StandRenderLabels = DEFAULT_RENDER_LABELS
 ): { memberName: string; callingName: string } {
-  const memberName = item.title?.trim() ? formatAtStandMemberName(item.title, item.member, item.notes ?? undefined) : 'the member';
-  const callingName = item.notes?.trim() || toDisplayLabel(item.itemType, labels);
+  const callingName = item.operationalCallingName?.trim() || toDisplayLabel(item.itemType, labels);
+  const memberName = item.title?.trim() ? formatAtStandMemberName(item.title, item.member, callingName) : 'the member';
   return { memberName, callingName };
 }
 
@@ -152,9 +150,11 @@ export function buildStandRows(
   labels: StandRenderLabels = DEFAULT_RENDER_LABELS
 ): StandRow[] {
   const template: StandTemplate = {
-    welcomeText: templateOverrides?.welcomeText ?? DEFAULT_TEMPLATE.welcomeText,
-    sustainTemplate: templateOverrides?.sustainTemplate ?? DEFAULT_TEMPLATE.sustainTemplate,
-    releaseTemplate: templateOverrides?.releaseTemplate ?? DEFAULT_TEMPLATE.releaseTemplate
+    welcomeText: templateOverrides?.welcomeText ?? labels.defaultTemplates?.welcomeText ?? getDefaultStandTemplate('en-US').welcomeText,
+    sustainTemplate:
+      templateOverrides?.sustainTemplate ?? labels.defaultTemplates?.sustainTemplate ?? getDefaultStandTemplate('en-US').sustainTemplate,
+    releaseTemplate:
+      templateOverrides?.releaseTemplate ?? labels.defaultTemplates?.releaseTemplate ?? getDefaultStandTemplate('en-US').releaseTemplate
   };
 
   const rows: StandRow[] = [{ kind: 'welcome', text: template.welcomeText }];
@@ -175,18 +175,17 @@ export function buildStandRows(
       ]
         .map(([role, name]) => `${role}: ${name || labels.unassigned}`)
         .concat(
-          (roles.visitingLeaders ?? []).map(
-            (leader) => {
-              const typeLabel = leader.recognitionType === 'PRESIDING_AUTHORITY'
-                ? labels.visitingPresidingAuthority ?? labels.visitingStakeLeader
+          (roles.visitingLeaders ?? []).map((leader) => {
+            const typeLabel =
+              leader.recognitionType === 'PRESIDING_AUTHORITY'
+                ? (labels.visitingPresidingAuthority ?? labels.visitingStakeLeader)
                 : leader.recognitionType === 'HIGH_COUNCILOR'
-                  ? labels.visitingHighCouncilor ?? labels.visitingStakeLeader
+                  ? (labels.visitingHighCouncilor ?? labels.visitingStakeLeader)
                   : leader.recognitionType === 'GENERAL_OFFICER'
-                    ? labels.visitingGeneralOfficer ?? labels.visitingStakeLeader
-                    : labels.visitingOtherLeader ?? labels.visitingStakeLeader;
-              return `${typeLabel}: ${leader.name || labels.unassigned}${leader.calling ? ` (${leader.calling})` : ''}`;
-            }
-          )
+                    ? (labels.visitingGeneralOfficer ?? labels.visitingStakeLeader)
+                    : (labels.visitingOtherLeader ?? labels.visitingStakeLeader);
+            return `${typeLabel}: ${leader.name || labels.unassigned}${leader.calling ? ` (${leader.calling})` : ''}`;
+          })
         )
         .join('\n');
       rows.push({
@@ -225,7 +224,7 @@ export function buildStandRows(
       rows.push({
         kind: 'ward_business',
         programItemId: item.id,
-        includesStakeBusiness: item.notes?.includes('[STAKE_BUSINESS]') ?? false,
+        includesStakeBusiness: item.includesStakeBusiness ?? item.notes?.includes('[STAKE_BUSINESS]') ?? false,
         stakeBusinessParticipantName: item.title?.trim() || null,
         stakeBusinessParticipantCalling: item.topic?.trim() || null,
         ...(item.programNotes?.trim() ? { programNotes: item.programNotes } : {})

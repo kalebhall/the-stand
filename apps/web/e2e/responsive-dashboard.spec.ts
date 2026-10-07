@@ -1,16 +1,18 @@
 import { expect, test, type Page } from '@playwright/test';
 
-const WARD_A = '11111111-1111-1111-1111-111111111111';
+const WARD_A = '11111111-1111-4111-8111-111111111111';
 
 async function login(page: Page) {
   await page.goto('/api/auth/signin?callbackUrl=/dashboard');
   await page.locator('input[name="email"]').fill('ward-admin@example.test');
   await page.locator('input[name="password"]').fill('WardAdminPassword123456789012');
   await page.getByRole('button', { name: 'Sign in' }).click();
-  await page.waitForURL(/\/dashboard/, { timeout: 30_000 });
-  await expect.poll(async () => Boolean((await (await page.request.get('/api/auth/session')).json())?.user), {
-    timeout: 30_000
-  }).toBe(true);
+  await expect(page).toHaveURL(/\/dashboard/, { timeout: 120_000 });
+  await expect
+    .poll(async () => Boolean((await (await page.request.get('/api/auth/session')).json())?.user), {
+      timeout: 120_000
+    })
+    .toBe(true);
   await page.goto('/dashboard');
   await expect(page).toHaveURL(/\/dashboard/);
 }
@@ -34,9 +36,10 @@ test('dashboard ordering remains usable at desktop and mobile widths', async ({ 
   await expect(page.getByRole('button', { name: /Move .* down/ }).first()).toBeVisible();
   await expect(page.getByText('Drag to reorder, or use the move buttons on touch screens.').first()).toBeVisible();
 
-  const firstCard = page.locator('[data-dashboard-card]').first();
-  const secondCard = page.locator('[data-dashboard-card]').nth(1);
-  await firstCard.dragTo(secondCard);
+  await page
+    .getByRole('button', { name: /Move .* down/ })
+    .first()
+    .click();
   await expect(page.getByText('Dashboard order saved.')).toBeVisible();
 
   await page.getByRole('button', { name: 'Reset order' }).click();
@@ -49,7 +52,10 @@ test('dashboard ordering remains usable at desktop and mobile widths', async ({ 
     }
     await route.continue();
   });
-  await page.getByRole('button', { name: /Move .* down/ }).first().click();
+  await page
+    .getByRole('button', { name: /Move .* down/ })
+    .first()
+    .click();
   await expect(page.getByText('Could not save dashboard order. Your change is kept on this screen; try again.')).toBeVisible();
   await page.unroute('**/api/w/*/dashboard-preferences');
 

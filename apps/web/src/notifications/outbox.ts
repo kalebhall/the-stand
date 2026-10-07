@@ -18,8 +18,6 @@ export async function insertNotificationOutboxEvent(
   const result = await client.query(
     `INSERT INTO event_outbox (ward_id, aggregate_type, aggregate_id, event_type, payload)
      VALUES ($1::uuid, $2::text, $3::uuid, $4::text, $5::jsonb)
-     ON CONFLICT (ward_id, event_type, aggregate_id)
-     DO UPDATE SET payload = EXCLUDED.payload, updated_at = now(), status = 'pending'
      RETURNING id`,
     [params.wardId, params.aggregateType, params.aggregateId, params.eventType, JSON.stringify(params.payload ?? {})]
   );

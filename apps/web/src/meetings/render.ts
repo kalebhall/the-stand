@@ -17,6 +17,7 @@ export type MeetingRenderItem = {
 export type MeetingRenderInput = {
   meetingDate: string;
   meetingType: string;
+  wardName?: string;
   programItems: MeetingRenderItem[];
   announcements?: AnnouncementRenderItem[];
   publicUrl?: string;
@@ -42,6 +43,8 @@ export type MeetingRenderLabels = {
   qrDigitalProgram: string;
   qrCode: string;
   itemLabels: Record<string, string>;
+  documentRegion?: string;
+  documentColumn?: string;
   meetingTypeLabel?: string;
 };
 
@@ -106,6 +109,7 @@ function renderAnnouncementBlock(items: AnnouncementRenderItem[], labels: Meetin
 export function buildMeetingRenderHtml({
   meetingDate,
   meetingType,
+  wardName,
   programItems,
   announcements = [],
   publicUrl,
@@ -116,6 +120,7 @@ export function buildMeetingRenderHtml({
   const selectedLayout = layout ?? { preset: 'FULL_PAGE' as const, announcementMode: 'AFTER_PROGRAM' as const, coverMode: 'NONE' as const };
   const escapedDate = escapeHtml(meetingDate);
   const escapedType = escapeHtml(labels.meetingTypeLabel ?? meetingType.replaceAll('_', ' '));
+  const escapedWard = wardName ? `<p class="text-sm text-muted-foreground">${escapeHtml(wardName)}</p>` : '';
   const layoutClass = `public-program public-program--${selectedLayout.preset.toLowerCase()}`;
   const foldGuide = selectedLayout.preset === 'FULL_PAGE' ? '' : '<div class="print-fold-guides" aria-hidden="true"></div>';
   const printStyles = `<style>@media print { .public-program { max-width: none !important; color: #000 !important; } .public-program--single_sheet_bifold, .public-program--tri_fold_bulletin { column-gap: 0.25in; column-fill: auto; height: 10in; } .public-program--single_sheet_bifold { column-count: 2; } .public-program--tri_fold_bulletin { column-count: 3; } .public-program--single_sheet_bifold .public-program__cover, .public-program--tri_fold_bulletin .public-program__cover { column-span: all; } .public-program--single_sheet_bifold article, .public-program--tri_fold_bulletin article, .print-fold-guides { break-inside: avoid; } .public-program--single_sheet_bifold section, .public-program--tri_fold_bulletin section { break-inside: avoid; } .print-fold-guides { position: absolute; inset: 0; pointer-events: none; border-left: 1px dashed #999; border-right: 1px dashed #999; } .public-program--single_sheet_bifold .print-fold-guides { left: 50%; right: 50%; } .public-program--tri_fold_bulletin .print-fold-guides { left: 33.333%; right: 33.333%; } .public-program__qr { display: inline-block; width: 1.25in; height: 1.25in; } .public-program__qr svg { width: 100%; height: 100%; background: #fff; fill: #000; padding: 0.08in; } .public-program--full_page { column-count: 1; } } @media screen { .print-fold-guides { display: none; } }</style>`;
@@ -135,6 +140,7 @@ export function buildMeetingRenderHtml({
       : activeAnnouncements.filter((item) => selectedLayout.announcementMode === 'BACK_PANEL' || item.placement === 'PROGRAM_BOTTOM');
 
   const itemsHtml = programItems
+    .filter((item) => item.itemType.toUpperCase() !== 'WARD_AND_STAKE_BUSINESS')
     .map((item) => {
       if (item.itemType.toUpperCase() === INTRODUCTION_ITEM_TYPE) {
         const roles = item.introductionRoles ?? { presiding: '', conducting: '', organist: '', chorister: '' };
@@ -149,22 +155,15 @@ export function buildMeetingRenderHtml({
               `<div class="grid grid-cols-[10rem_1fr] gap-3 border-b py-2"><p class="text-sm font-medium">${escapeHtml(role)}</p><p class="text-sm">${escapeHtml(name || '—')}</p></div>`
           )
           .join('');
-        const notes = item.programNotes?.trim() || item.notes?.trim();
+        const notes = item.programNotes?.trim();
         const notesHtml = notes ? `<p class="text-xs text-muted-foreground">${escapeHtml(notes)}</p>` : '';
         return `<article class="space-y-1"><h2 class="border-b pb-1 text-base font-semibold">${escapeHtml(labels.introduction)}</h2>${roleRows}${notesHtml}</article>`;
-      }
-      if (item.itemType.toUpperCase() === 'WARD_AND_STAKE_BUSINESS') {
-        const label = escapeHtml(labels.itemLabels[item.itemType.toUpperCase()] ?? getProgramItemLabel(item.itemType));
-        return `<article class="grid grid-cols-[10rem_1fr] gap-3 border-b py-2"><p class="text-sm font-medium">${label}</p><p class="text-sm">${label}</p></article>`;
       }
       const label = escapeHtml(labels.itemLabels[item.itemType.toUpperCase()] ?? getProgramItemLabel(item.itemType));
       const value = escapeHtml(displayHymn(item) || '—');
       const topic = displayTopic(item);
       const topicHtml = topic ? `<p class="text-sm text-muted-foreground">${escapeHtml(topic)}</p>` : '';
-      const notes =
-        (item.programNotes ?? item.notes)
-          ? `<p class="text-xs text-muted-foreground">${escapeHtml(item.programNotes ?? item.notes ?? '')}</p>`
-          : '';
+      const notes = item.programNotes ? `<p class="text-xs text-muted-foreground">${escapeHtml(item.programNotes)}</p>` : '';
 
       return `<article class="grid grid-cols-[10rem_1fr] gap-3 border-b py-2"><p class="text-sm font-medium">${label}</p><div class="space-y-1"><p class="text-sm">${value}</p>${topicHtml}${notes}</div></article>`;
     })
@@ -174,5 +173,5 @@ export function buildMeetingRenderHtml({
     (line) => `<p class="text-xs leading-relaxed text-muted-foreground">${escapeHtml(line)}</p>`
   ).join('');
 
-  return `${printStyles}<main class="${layoutClass} mx-auto max-w-3xl space-y-6 p-4 sm:p-8" aria-labelledby="public-program-title" data-layout-preset="${selectedLayout.preset}" data-announcement-mode="${selectedLayout.announcementMode}"><header class="public-program__cover space-y-2 border-b pb-4 text-center"><h1 id="public-program-title" class="text-2xl font-semibold">${escapeHtml(labels.programTitle)}</h1><p class="text-sm text-muted-foreground">${escapedDate}</p><p class="text-sm text-muted-foreground">${escapedType}</p>${cover}</header>${foldGuide}${renderAnnouncementBlock(topAnnouncements, labels)}<section class="space-y-2">${itemsHtml}</section>${renderAnnouncementBlock(bottomAnnouncements, labels)}<section class="space-y-2"><h2 class="text-base font-semibold">${escapeHtml(labels.sacramentPrayers)}</h2>${prayersHtml}</section>${renderQrCode(publicUrl, labels)}</main>`;
+  return `${printStyles}<main class="${layoutClass} mx-auto max-w-3xl space-y-6 p-4 sm:p-8" aria-labelledby="public-program-title" data-layout-preset="${selectedLayout.preset}" data-announcement-mode="${selectedLayout.announcementMode}"><header class="public-program__cover space-y-2 border-b pb-4 text-center"><h1 id="public-program-title" class="text-2xl font-semibold">${escapeHtml(labels.programTitle)}</h1>${escapedWard}<p class="text-sm text-muted-foreground">${escapedDate}</p><p class="text-sm text-muted-foreground">${escapedType}</p>${cover}</header>${foldGuide}${renderAnnouncementBlock(topAnnouncements, labels)}<section class="space-y-2">${itemsHtml}</section>${renderAnnouncementBlock(bottomAnnouncements, labels)}<section class="space-y-2"><h2 class="text-base font-semibold">${escapeHtml(labels.sacramentPrayers)}</h2>${prayersHtml}</section>${renderQrCode(publicUrl, labels)}</main>`;
 }

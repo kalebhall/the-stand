@@ -3,16 +3,23 @@ import { notFound, redirect } from 'next/navigation';
 
 import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth/guards';
 import { canViewMeetings } from '@/src/auth/roles';
-import { isAdvancedDesignerFeatureEnabled } from '@/src/features/advanced-designer';
+
 import { resolveDocumentData } from '@/src/document-designer/data-resolver';
 import { renderDocumentHtml } from '@/src/document-designer/renderer';
+import { isAdvancedLayout, parseAdvancedLayout, projectAdvancedLayoutForOutput } from '@/src/document-designer/advanced-schema';
+import { parseDocumentLayout } from '@/src/document-designer/schema';
+import {
+  adaptLegacyLayoutToAdvancedDocument,
+  COMPATIBILITY_PUBLIC_BLOCK_TYPES,
+  LEGACY_COVER_ASSET_ID
+} from '@/src/document-designer/legacy-layout-adapter';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 import { toYyyyMmDd } from '@/src/meetings/date';
-import { buildMeetingRenderHtml } from '@/src/meetings/render';
-import { getPublicProgramRenderLabels } from '@/src/i18n/public-program';
-import { resolveLocale } from '@/src/i18n/config';
+import { buildPublicPreviewSource } from '@/src/document-designer/meeting-document-service';
+
 import type { IntroductionRoles } from '@/src/meetings/types';
+import type { ResolvedDocumentData } from '@/src/document-designer/render-types';
 
 type MeetingRow = {
   meeting_date: string;
@@ -26,7 +33,7 @@ type MeetingRow = {
 type ProgramItemRow = {
   item_type: string;
   title: string | null;
-  notes: string | null;
+
   topic: string | null;
   program_notes: string | null;
   hymn_number: string | null;
@@ -48,6 +55,8 @@ type AnnouncementRow = {
 type RenderRow = {
   render_html: string;
   version: number;
+  layout_json: unknown;
+  render_data_json: ResolvedDocumentData;
 };
 
 type LayoutRow = {
@@ -57,7 +66,6 @@ type LayoutRow = {
   cover_image_url: string | null;
   cover_image_alt_text: string | null;
 };
-
 
 export default async function PrintMeetingPage({
   params,
@@ -81,7 +89,7 @@ export default async function PrintMeetingPage({
   const requestedVersion = Number.isInteger(versionNumber) && versionNumber > 0 ? versionNumber : null;
   const hasExplicitVersion = version !== undefined;
   const wardId = session.activeWardId;
-  const advancedDesignerEnabled = isAdvancedDesignerFeatureEnabled();
+
   const client = await pool.connect();
 
   try {
@@ -108,7 +116,7 @@ export default async function PrintMeetingPage({
         ? { rowCount: 0, rows: [] }
         : hasExplicitVersion && requestedVersion
           ? await client.query(
-              `SELECT r.render_html, r.version
+              `SELECT r.render_html, r.version, r.layout_json, r.render_data_json
                  FROM meeting_program_render r
                  LEFT JOIN public_program_share s
                    ON s.ward_id = r.ward_id AND s.meeting_id = r.meeting_id AND s.active_render_id = r.id
@@ -123,7 +131,7 @@ export default async function PrintMeetingPage({
               [meetingId, session.activeWardId, requestedVersion]
             )
           : await client.query(
-              `SELECT r.render_html, r.version
+              `SELECT r.render_html, r.version, r.layout_json, r.render_data_json
                  FROM public_program_share s
                  JOIN meeting_program_render r
                    ON r.id = s.active_render_id AND r.ward_id = s.ward_id AND r.meeting_id = s.meeting_id
@@ -138,12 +146,22 @@ export default async function PrintMeetingPage({
               [meetingId, session.activeWardId]
             );
 
-    if (renderResult.rowCount && advancedDesignerEnabled) {
+    if (renderResult.rowCount) {
       const publishedRender = renderResult.rows[0] as RenderRow;
+      const publishedLayout = isAdvancedLayout(publishedRender.layout_json)
+        ? projectAdvancedLayoutForOutput(parseAdvancedLayout(publishedRender.layout_json), 'PRINT', publishedRender.render_data_json)
+        : parseDocumentLayout(publishedRender.layout_json);
+      const printHtml = renderDocumentHtml({
+        layout: publishedLayout,
+        data: publishedRender.render_data_json,
+        target: 'PRINT',
+        public: true,
+        explicitPublicBlockTypes: COMPATIBILITY_PUBLIC_BLOCK_TYPES
+      }).html;
       await client.query('COMMIT');
       return (
         <>
-          <div dangerouslySetInnerHTML={{ __html: publishedRender.render_html }} />
+          <div dangerouslySetInnerHTML={{ __html: printHtml }} />
           <p className="mx-auto max-w-3xl px-4 pb-8 text-right text-xs text-muted-foreground sm:px-8">
             {tPrint('publishedVersion', { version: publishedRender.version })}
           </p>
@@ -161,7 +179,7 @@ export default async function PrintMeetingPage({
     const meetingDate = toYyyyMmDd(meeting.meeting_date);
 
     const programResult = await client.query(
-      `SELECT id, item_type, title, notes, topic, program_notes, hymn_number, hymn_title, hymn_locale, introduction_roles
+      `SELECT id, item_type, title, topic, program_notes, hymn_number, hymn_title, hymn_locale, introduction_roles
          FROM meeting_program_item
         WHERE meeting_id = $1::uuid AND ward_id = $2::uuid
         ORDER BY sequence ASC`,
@@ -197,7 +215,7 @@ export default async function PrintMeetingPage({
     };
 
     const meetingDocumentResult = await client.query(
-      'SELECT layout_json FROM meeting_document WHERE meeting_id = $1::uuid AND ward_id = $2::uuid AND document_type = \'SACRAMENT_PROGRAM\' LIMIT 1',
+      "SELECT layout_json FROM meeting_document WHERE meeting_id = $1::uuid AND ward_id = $2::uuid AND document_type = 'SACRAMENT_PROGRAM' LIMIT 1",
       [meetingId, session.activeWardId]
     );
     const meetingDocumentLayout = meetingDocumentResult.rows?.[0]?.layout_json as unknown;
@@ -211,86 +229,94 @@ export default async function PrintMeetingPage({
             OR (scope_type = 'STAKE' AND stake_id = (SELECT stake_id FROM ward WHERE id = $1::uuid)))`,
       [session.activeWardId]
     );
-    const media = Object.fromEntries((mediaResult.rows as Array<{ id: string; alt_text: string | null; is_decorative: boolean }>).map((item) => [item.id, { url: `/api/w/${encodeURIComponent(wardId)}/media/${encodeURIComponent(item.id)}`, altText: item.alt_text, isDecorative: item.is_decorative }]));
+    const media = {
+      ...Object.fromEntries(
+        (mediaResult.rows as Array<{ id: string; alt_text: string | null; is_decorative: boolean }>).map((item) => [
+          item.id,
+          {
+            url: `/api/w/${encodeURIComponent(wardId)}/media/${encodeURIComponent(item.id)}`,
+            altText: item.alt_text,
+            isDecorative: item.is_decorative
+          }
+        ])
+      ),
+      ...(!meetingDocumentLayout && layout.cover_mode === 'AUTHORIZED_IMAGE' && layout.cover_image_url
+        ? { [LEGACY_COVER_ASSET_ID]: { url: layout.cover_image_url, altText: layout.cover_image_alt_text, isDecorative: false } }
+        : {})
+    };
 
-    if (meetingDocumentLayout) {
+    const publicSource = buildPublicPreviewSource(
+      {
+        meetingDate,
+        meetingType: meeting.meeting_type,
+        wardName: meeting.ward_name,
+        locale: meeting.default_locale
+      },
+      (programResult.rows as ProgramItemRow[]).map((item, sequence) => ({
+        sequence,
+        itemType: item.item_type,
+        title: item.title,
+        topic: item.topic,
+        programNotes: item.program_notes,
+        hymnNumber: item.hymn_number,
+        hymnTitle: item.hymn_title,
+        introductionRoles: item.introduction_roles
+      }))
+    );
+
+    {
       const { layout: documentLayout, data } = resolveDocumentData(
-        meetingDocumentLayout,
+        meetingDocumentLayout ??
+          adaptLegacyLayoutToAdvancedDocument({
+            preset: layout.preset,
+            announcementMode: layout.announcement_mode,
+            coverMode: layout.cover_mode,
+            coverImageUrl: layout.cover_image_url,
+            coverImageAltText: layout.cover_image_alt_text
+          }),
         {
-          meetingDate,
-          meetingType: meeting.meeting_type,
-          wardName: meeting.ward_name,
+          ...publicSource,
           location: meeting.location,
-          programItems: (programResult.rows as ProgramItemRow[]).map((item, order) => ({
-            order,
-            label: item.title ?? item.hymn_title ?? item.item_type,
-            details: item.topic ?? null
-          })),
           publicValues: {
+            ...publicSource.publicValues,
             ANNOUNCEMENTS: (announcementResult.rows as AnnouncementRow[]).map((item) => item.title).join(' · ')
           },
           media
         },
-        { target: 'PRINT', advancedProjection: advancedDesignerEnabled }
+        {
+          target: 'PRINT',
+          public: true,
+          explicitPublicBlockTypes: COMPATIBILITY_PUBLIC_BLOCK_TYPES,
+          advancedProjection: true,
+          preserveAdvancedLayout: true
+        }
       );
       const compatibilityHtml = renderDocumentHtml({
         layout: documentLayout,
         data,
         target: 'PRINT',
-        public: false,
+        public: true,
+        explicitPublicBlockTypes: COMPATIBILITY_PUBLIC_BLOCK_TYPES
       }).html;
       await client.query('COMMIT');
-      return <div dangerouslySetInnerHTML={{ __html: compatibilityHtml }} />;
+      return (
+        <>
+          <div dangerouslySetInnerHTML={{ __html: compatibilityHtml }} />
+          {!meetingDocumentLayout && meeting.status === 'PUBLISHED' ? (
+            <p className="mx-auto max-w-3xl px-4 pb-8 text-right text-xs text-muted-foreground sm:px-8">{tPrint('snapshotUnavailable')}</p>
+          ) : null}
+        </>
+      );
     }
-
-    const renderLabels = getPublicProgramRenderLabels(resolveLocale(meeting.default_locale), meeting.meeting_type);
-
-    const renderHtml = buildMeetingRenderHtml({
-      meetingDate,
-      meetingType: meeting.meeting_type,
-      programItems: (programResult.rows as ProgramItemRow[]).map((item) => ({
-        itemType: item.item_type,
-        title: item.title,
-        notes: item.notes,
-        topic: item.topic,
-        programNotes: item.program_notes,
-        hymnNumber: item.hymn_number,
-        hymnTitle: item.hymn_title,
-        hymnLocale: item.hymn_locale ?? 'en-US',
-        introductionRoles: item.introduction_roles
-      })),
-      announcements: (announcementResult.rows as AnnouncementRow[]).map((item) => ({
-        title: item.title,
-        body: item.body,
-        startDate: toYyyyMmDd(item.start_date) || null,
-        endDate: toYyyyMmDd(item.end_date) || null,
-        isPermanent: item.is_permanent,
-        placement: item.placement,
-        includeInProgram: item.include_in_program
-      })),
-      layout: {
-        preset: layout.preset,
-        announcementMode: layout.announcement_mode,
-        coverMode: layout.cover_mode,
-        coverImageUrl: layout.cover_image_url,
-        coverImageAltText: layout.cover_image_alt_text
-      },
-      labels: renderLabels
-    });
-
-    await client.query('COMMIT');
-
-    return (
-      <>
-        <div dangerouslySetInnerHTML={{ __html: renderHtml }} />
-        {meeting.status === 'PUBLISHED' ? (
-          <p className="mx-auto max-w-3xl px-4 pb-8 text-right text-xs text-muted-foreground sm:px-8">{tPrint('snapshotUnavailable')}</p>
-        ) : null}
-      </>
-    );
   } catch (error) {
     await client.query('ROLLBACK').catch(() => undefined);
-    if (error && typeof error === 'object' && 'digest' in error && typeof error.digest === 'string' && error.digest.startsWith('NEXT_HTTP_ERROR_F')) {
+    if (
+      error &&
+      typeof error === 'object' &&
+      'digest' in error &&
+      typeof error.digest === 'string' &&
+      error.digest.startsWith('NEXT_HTTP_ERROR_F')
+    ) {
       throw error;
     }
     console.error('[Fatal Print View Error]', error);

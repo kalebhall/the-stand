@@ -111,7 +111,7 @@ export interface ImageBlock extends DocumentBlockBase<'IMAGE'> {
   config: { assetId: string | null; alt: string; isDecorative: boolean };
 }
 export interface QrCodeBlock extends DocumentBlockBase<'QR_CODE'> {
-  config: { href: string; label: string };
+  config: { href: string | null; label: string };
 }
 export interface CustomLinkBlock extends DocumentBlockBase<'CUSTOM_LINK'> {
   config: { label: string; href: string };

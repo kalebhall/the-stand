@@ -18,16 +18,8 @@ type TemplateRow = {
   priesthood_advancement_template: string;
 };
 
-const DEFAULT_WELCOME = 'Welcome to The Church of Jesus Christ of Latter-day Saints.';
-import {
-  DEFAULT_STAND_BUSINESS_TEMPLATES,
-  DEFAULT_STAND_RELEASE_TEMPLATE,
-  DEFAULT_STAND_SUSTAIN_TEMPLATE
-} from '@/src/stand/default-template';
+import { DEFAULT_STAND_BUSINESS_TEMPLATES, getDefaultStandTemplate } from '@/src/stand/default-template';
 import { TEMPLATE_CLASSIFICATIONS } from '@/src/stand/template-classification';
-
-const DEFAULT_SUSTAIN = DEFAULT_STAND_SUSTAIN_TEMPLATE;
-const DEFAULT_RELEASE = DEFAULT_STAND_RELEASE_TEMPLATE;
 
 export default async function StandScriptSettingsPage() {
   const session = await requireAuthenticatedSession();
@@ -44,6 +36,7 @@ export default async function StandScriptSettingsPage() {
   const client = await pool.connect();
 
   let template: TemplateRow | null = null;
+  let wardLocale = 'en-US';
 
   try {
     await client.query('BEGIN');
@@ -53,6 +46,9 @@ export default async function StandScriptSettingsPage() {
       'SELECT welcome_text, sustain_template, release_template, welcome_new_member_template, recognize_baptized_child_template, baby_blessing_template, priesthood_ordination_template, priesthood_advancement_template FROM ward_stand_template WHERE ward_id = $1 LIMIT 1',
       [wardId]
     );
+
+    const wardResult = await client.query('SELECT default_locale FROM ward WHERE id = $1::uuid LIMIT 1', [wardId]);
+    wardLocale = String(wardResult.rows[0]?.default_locale ?? 'en-US');
 
     if (templateResult.rowCount) {
       template = templateResult.rows[0] as TemplateRow;
@@ -75,9 +71,11 @@ export default async function StandScriptSettingsPage() {
       redirect('/dashboard');
     }
 
-    const welcomeText = String(formData.get('welcomeText') ?? '').trim() || DEFAULT_WELCOME;
-    const sustainTemplate = String(formData.get('sustainTemplate') ?? '').trim() || DEFAULT_SUSTAIN;
-    const releaseTemplate = String(formData.get('releaseTemplate') ?? '').trim() || DEFAULT_RELEASE;
+    const wardResult = await pool.query('SELECT default_locale FROM ward WHERE id = $1::uuid LIMIT 1', [session.activeWardId]);
+    const localizedDefaults = getDefaultStandTemplate(String(wardResult.rows[0]?.default_locale ?? 'en-US'));
+    const welcomeText = String(formData.get('welcomeText') ?? '').trim() || localizedDefaults.welcomeText;
+    const sustainTemplate = String(formData.get('sustainTemplate') ?? '').trim() || localizedDefaults.sustainTemplate;
+    const releaseTemplate = String(formData.get('releaseTemplate') ?? '').trim() || localizedDefaults.releaseTemplate;
     const welcomeNewMemberTemplate =
       String(formData.get('welcomeNewMemberTemplate') ?? '').trim() || DEFAULT_STAND_BUSINESS_TEMPLATES.WELCOME_NEW_MEMBER;
     const babyBlessingTemplate =
@@ -139,6 +137,8 @@ export default async function StandScriptSettingsPage() {
     revalidatePath('/settings/stand-script');
   }
 
+  const localizedDefaults = getDefaultStandTemplate(wardLocale);
+
   return (
     <main className="mx-auto max-w-4xl space-y-6 p-6">
       <div>
@@ -153,7 +153,7 @@ export default async function StandScriptSettingsPage() {
           <span className="font-medium">Welcome text</span>
           <textarea
             name="welcomeText"
-            defaultValue={template?.welcome_text ?? DEFAULT_WELCOME}
+            defaultValue={template?.welcome_text ?? localizedDefaults.welcomeText}
             className="min-h-20 w-full rounded-md border px-3 py-2"
             required
           />
@@ -163,7 +163,7 @@ export default async function StandScriptSettingsPage() {
           <span className="font-medium">Sustain phrasing</span>
           <textarea
             name="sustainTemplate"
-            defaultValue={template?.sustain_template ?? DEFAULT_SUSTAIN}
+            defaultValue={template?.sustain_template ?? localizedDefaults.sustainTemplate}
             className="min-h-20 w-full rounded-md border px-3 py-2"
             required
           />
@@ -173,7 +173,7 @@ export default async function StandScriptSettingsPage() {
           <span className="font-medium">Release phrasing</span>
           <textarea
             name="releaseTemplate"
-            defaultValue={template?.release_template ?? DEFAULT_RELEASE}
+            defaultValue={template?.release_template ?? localizedDefaults.releaseTemplate}
             className="min-h-20 w-full rounded-md border px-3 py-2"
             required
           />

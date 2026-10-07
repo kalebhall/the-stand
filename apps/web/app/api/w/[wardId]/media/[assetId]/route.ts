@@ -4,7 +4,7 @@ import { recordAuditEvent } from '@/src/audit/service';
 import { canDeleteProgramMedia, canViewMeetings, canViewProgramDesigner } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
-import { isWardModuleEnabled } from '@/src/modules/service';
+import { isWardModuleEnabledInTransaction } from '@/src/modules/service';
 import { archiveWardMedia, MediaServiceError } from '@/src/document-designer/media-service';
 import { readMedia } from '@/src/document-designer/media-storage';
 
@@ -12,14 +12,18 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
   const session = await auth();
   const { wardId, assetId } = await context.params;
   if (!session?.user?.id || session.activeWardId !== wardId) return new NextResponse(null, { status: 404 });
-  const canReadMedia = canViewMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)
-    || canViewProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId);
+  const canReadMedia =
+    canViewMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId) ||
+    canViewProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId);
   if (!canReadMedia) return new NextResponse(null, { status: 404 });
-  if (!(await isWardModuleEnabled(wardId, session.user.id, 'programs'))) return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
     await setDbContext(client, { userId: session.user.id, wardId });
+    if (!(await isWardModuleEnabledInTransaction(client, wardId, 'programs'))) {
+      await client.query('ROLLBACK');
+      return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
+    }
     const result = await client.query(
       `SELECT m.storage_key, m.mime_type, m.alt_text, m.is_decorative
          FROM media_asset m
@@ -42,7 +46,12 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
     await client.query('COMMIT');
     return new NextResponse(body as unknown as BodyInit, {
       status: 200,
-      headers: { 'Content-Type': asset.mime_type, 'Content-Length': String(body.byteLength), 'Cache-Control': 'private, max-age=300', 'X-Content-Type-Options': 'nosniff' }
+      headers: {
+        'Content-Type': asset.mime_type,
+        'Content-Length': String(body.byteLength),
+        'Cache-Control': 'private, max-age=300',
+        'X-Content-Type-Options': 'nosniff'
+      }
     });
   } catch (error) {
     await client.query('ROLLBACK').catch(() => undefined);
@@ -57,12 +66,18 @@ export async function DELETE(_: Request, context: { params: Promise<{ wardId: st
   const session = await auth();
   const { wardId, assetId } = await context.params;
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, { status: 401 });
-  if (!(await isWardModuleEnabled(wardId, session.user.id, 'programs'))) return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
     await setDbContext(client, { userId: session.user.id, wardId });
-    const settings = await client.query('SELECT allow_program_editor_delete_media FROM ward_document_settings WHERE ward_id = $1::uuid LIMIT 1', [wardId]);
+    if (!(await isWardModuleEnabledInTransaction(client, wardId, 'programs'))) {
+      await client.query('ROLLBACK');
+      return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
+    }
+    const settings = await client.query(
+      'SELECT allow_program_editor_delete_media FROM ward_document_settings WHERE ward_id = $1::uuid LIMIT 1',
+      [wardId]
+    );
     const profile = { allowProgramEditorDeleteMedia: settings.rows[0]?.allow_program_editor_delete_media === true };
     if (!canDeleteProgramMedia({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId, profile)) {
       await client.query('ROLLBACK');
@@ -87,8 +102,30 @@ export async function DELETE(_: Request, context: { params: Promise<{ wardId: st
     await client.query('ROLLBACK').catch(() => undefined);
     const serviceCode = error instanceof MediaServiceError ? error.code : 'INTERNAL_ERROR';
     const databaseCode = error && typeof error === 'object' && 'code' in error ? String((error as { code?: unknown }).code) : null;
-    const code = databaseCode === '42501' ? 'FORBIDDEN' : serviceCode === 'MEDIA_REFERENCED' ? 'MEDIA_REFERENCED' : serviceCode === 'MEDIA_NOT_FOUND' ? 'NOT_FOUND' : 'INTERNAL_ERROR';
+    const code =
+      databaseCode === '42501'
+        ? 'FORBIDDEN'
+        : serviceCode === 'MEDIA_REFERENCED'
+          ? 'MEDIA_REFERENCED'
+          : serviceCode === 'MEDIA_NOT_FOUND'
+            ? 'NOT_FOUND'
+            : 'INTERNAL_ERROR';
     const status = code === 'FORBIDDEN' ? 403 : code === 'MEDIA_REFERENCED' ? 409 : code === 'NOT_FOUND' ? 404 : 500;
-    return NextResponse.json({ error: code === 'FORBIDDEN' ? 'Forbidden' : code === 'MEDIA_REFERENCED' ? 'Media asset is referenced by a document or published program' : code === 'NOT_FOUND' ? 'Media asset was not found' : 'Unable to archive media', code }, { status });
-  } finally { client.release(); }
+    return NextResponse.json(
+      {
+        error:
+          code === 'FORBIDDEN'
+            ? 'Forbidden'
+            : code === 'MEDIA_REFERENCED'
+              ? 'Media asset is referenced by a document or published program'
+              : code === 'NOT_FOUND'
+                ? 'Media asset was not found'
+                : 'Unable to archive media',
+        code
+      },
+      { status }
+    );
+  } finally {
+    client.release();
+  }
 }

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 
 import { auth } from '@/src/auth/auth';
 import { canManageMeetings } from '@/src/auth/roles';
-import { isWardModuleEnabled } from '@/src/modules/service';
+import { isWardModuleEnabled, isWardModuleEnabledInTransaction } from '@/src/modules/service';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 import { SPEAKER_STATUSES, validateSpeakerStatusTransition, type SpeakerStatus } from '@/src/meetings/types';
@@ -31,16 +31,35 @@ export async function PATCH(request: Request, context: { params: Promise<{ wardI
   try {
     await client.query('BEGIN');
     await setDbContext(client, { userId: session.user.id, wardId });
+    if (!(await isWardModuleEnabledInTransaction(client, wardId, 'leadership'))) {
+      await client.query('ROLLBACK');
+      return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
+    }
     const currentResult = await client.query(
-      `SELECT speaker_status, topic FROM meeting_program_item WHERE id = $1::uuid AND ward_id = $2::uuid AND item_type = 'SPEAKER' FOR UPDATE`,
+      `SELECT i.speaker_status, i.topic, i.meeting_id
+         FROM meeting_program_item i
+        WHERE i.id = $1::uuid AND i.ward_id = $2::uuid AND i.item_type = 'SPEAKER'`,
       [programItemId, wardId]
     );
     if (!currentResult.rowCount) {
       await client.query('ROLLBACK');
       return NextResponse.json({ error: 'Speaker not found.', code: 'SPEAKER_NOT_FOUND' }, { status: 404 });
     }
-    const currentStatus = (currentResult.rows[0].speaker_status ?? 'PLANNED') as SpeakerStatus;
-    const error = validateSpeakerStatusTransition(currentStatus, nextStatus as SpeakerStatus, topic || currentResult.rows[0].topic);
+    await client.query('SELECT id FROM meeting WHERE id = $1::uuid AND ward_id = $2::uuid FOR UPDATE', [
+      currentResult.rows[0].meeting_id,
+      wardId
+    ]);
+    const lockedResult = await client.query(
+      `SELECT speaker_status, topic FROM meeting_program_item
+        WHERE id = $1::uuid AND ward_id = $2::uuid AND item_type = 'SPEAKER' FOR UPDATE`,
+      [programItemId, wardId]
+    );
+    if (!lockedResult.rowCount) {
+      await client.query('ROLLBACK');
+      return NextResponse.json({ error: 'Speaker not found.', code: 'SPEAKER_NOT_FOUND' }, { status: 404 });
+    }
+    const currentStatus = (lockedResult.rows[0].speaker_status ?? 'PLANNED') as SpeakerStatus;
+    const error = validateSpeakerStatusTransition(currentStatus, nextStatus as SpeakerStatus, topic || lockedResult.rows[0].topic);
     if (error) {
       await client.query('ROLLBACK');
       return NextResponse.json({ error, code: 'INVALID_SPEAKER_TRANSITION' }, { status: 400 });

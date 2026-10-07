@@ -6,7 +6,8 @@ const state = vi.hoisted(() => ({
   client: undefined as { query: ReturnType<typeof vi.fn>; release: ReturnType<typeof vi.fn> } | undefined,
   setDbContext: vi.fn(),
   processCoreEventOutbox: vi.fn(),
-  recordCoreEventOutboxFailure: vi.fn()
+  recordCoreEventOutboxFailure: vi.fn(),
+  processNotificationDelivery: vi.fn()
 }));
 
 vi.mock('@/src/db/client', () => ({
@@ -27,13 +28,15 @@ vi.mock('@/src/notifications/queue', () => ({
 vi.mock('@/src/notifications/digests', () => ({ processNotificationDigest: vi.fn() }));
 vi.mock('@/src/notifications/global-email', () => ({ processGlobalEmailDelivery: vi.fn() }));
 vi.mock('@/src/notifications/global-runner', () => ({ processGlobalOutboxEvent: vi.fn() }));
+vi.mock('@/src/notifications/local-delivery', () => ({ processNotificationDelivery: state.processNotificationDelivery }));
 vi.mock('@/src/notifications/runner', () => ({ processOutboxEvent: vi.fn() }));
 
 describe('notifications worker Core failure bookkeeping', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     state.client = {
-      query: vi.fn()
+      query: vi
+        .fn()
         .mockResolvedValueOnce({ rows: [] })
         .mockResolvedValueOnce({ rows: [{ event_type: 'CORE_MEETING_CREATED' }] })
         .mockResolvedValueOnce({ rows: [] })
@@ -47,13 +50,15 @@ describe('notifications worker Core failure bookkeeping', () => {
   it('rolls back the handler transaction and records exactly one retry in a fresh transaction', async () => {
     const handler = createNotificationWorkerHandler();
 
-    await expect(handler({
-      data: {
-        kind: 'outbox-event',
-        wardId: '11111111-1111-4111-8111-111111111111',
-        eventOutboxId: '33333333-3333-4333-8333-333333333333'
-      }
-    })).rejects.toThrow('handler failed');
+    await expect(
+      handler({
+        data: {
+          kind: 'outbox-event',
+          wardId: '11111111-1111-4111-8111-111111111111',
+          eventOutboxId: '33333333-3333-4333-8333-333333333333'
+        }
+      })
+    ).rejects.toThrow('handler failed');
 
     const queries = state.client?.query.mock.calls.map(([query]) => query) ?? [];
     expect(queries).toEqual(['BEGIN', expect.stringContaining('SELECT event_type'), 'ROLLBACK', 'BEGIN', 'COMMIT']);
@@ -64,6 +69,26 @@ describe('notifications worker Core failure bookkeeping', () => {
       eventOutboxId: '33333333-3333-4333-8333-333333333333',
       errorMessage: 'handler failed'
     });
+    expect(state.client?.release).toHaveBeenCalledOnce();
+  });
+
+  it('routes local delivery jobs outside the outbox transaction with their ward context', async () => {
+    const handler = createNotificationWorkerHandler();
+
+    await handler({
+      data: {
+        kind: 'local-notification-delivery',
+        wardId: '11111111-1111-4111-8111-111111111111',
+        notificationDeliveryId: '44444444-4444-4444-8444-444444444444'
+      }
+    });
+
+    expect(state.processNotificationDelivery).toHaveBeenCalledWith(
+      expect.anything(),
+      '44444444-4444-4444-8444-444444444444',
+      '11111111-1111-4111-8111-111111111111'
+    );
+    expect(state.client?.query).not.toHaveBeenCalled();
     expect(state.client?.release).toHaveBeenCalledOnce();
   });
 });

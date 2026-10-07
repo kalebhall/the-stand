@@ -31,6 +31,22 @@ export type MediaAsset = {
   updated_at: string;
 };
 
-export type MediaAssetResponse = Omit<MediaAsset, 'storage_key' | 'public_token'> & {
+export type MediaAssetResponse = Pick<
+  MediaAsset,
+  | 'id'
+  | 'scope_type'
+  | 'ward_id'
+  | 'stake_id'
+  | 'filename'
+  | 'mime_type'
+  | 'byte_size'
+  | 'pixel_width'
+  | 'pixel_height'
+  | 'alt_text'
+  | 'is_decorative'
+  | 'status'
+  | 'created_at'
+  | 'updated_at'
+> & {
   url: string | null;
 };

@@ -43,20 +43,24 @@ export type AdvancedDocumentLayout = Omit<DocumentLayout, 'schemaVersion' | 'pag
 
 export const visibilityRuleSchema = z.enum(['ALWAYS', 'WHEN_DATA_EXISTS', 'WHEN_PUBLIC']);
 
-export const styleOverridesSchema = z.object({
-  fontFamily: z.enum(['SYSTEM_SANS', 'SERIF', 'MONOSPACE']).optional(),
-  fontSize: z.number().finite().min(8).max(32).optional(),
-  align: z.enum(['LEFT', 'CENTER', 'RIGHT']).optional(),
-  spacing: z.number().finite().min(0).max(72).optional(),
-  border: z.enum(['NONE', 'SOLID', 'DOTTED']).optional()
-}).strict();
+export const styleOverridesSchema = z
+  .object({
+    fontFamily: z.enum(['SYSTEM_SANS', 'SERIF', 'MONOSPACE']).optional(),
+    fontSize: z.number().finite().min(8).max(32).optional(),
+    align: z.enum(['LEFT', 'CENTER', 'RIGHT']).optional(),
+    spacing: z.number().finite().min(0).max(72).optional(),
+    border: z.enum(['NONE', 'SOLID', 'DOTTED']).optional()
+  })
+  .strict();
 
-export const regionColumnsSchema = z.object({
-  count: z.preprocess((value) => String(value), z.enum(['1', '2', '3']).transform(Number as unknown as (value: string) => ColumnCount)),
-  ratio: z.enum(['1/1', '1/3+2/3', '2/3+1/3']),
-  gutter: z.number().finite().min(0).max(72),
-  blockIds: z.array(z.array(z.string().uuid())).max(3)
-}).strict();
+export const regionColumnsSchema = z
+  .object({
+    count: z.preprocess((value) => String(value), z.enum(['1', '2', '3']).transform(Number as unknown as (value: string) => ColumnCount)),
+    ratio: z.enum(['1/1', '1/3+2/3', '2/3+1/3']),
+    gutter: z.number().finite().min(0).max(72),
+    blockIds: z.array(z.array(z.string().uuid())).max(3)
+  })
+  .strict();
 
 const advancedExtras = new Set(['columns', 'styleOverrides', 'visibilityRule', 'digitalOrder']);
 
@@ -79,40 +83,48 @@ function defaultColumns(region: DocumentRegion): RegionColumns {
 function columnsMatchRegion(columns: RegionColumns, region: DocumentRegion): boolean {
   const blockIds = new Set(region.blocks.map((block) => String(block.id)));
   const assigned = columns.blockIds.flat().map(String);
-  return assigned.length === blockIds.size
-    && new Set(assigned).size === assigned.length
-    && assigned.every((id) => blockIds.has(id));
+  return assigned.length === blockIds.size && new Set(assigned).size === assigned.length && assigned.every((id) => blockIds.has(id));
 }
 
 function bifoldPanelRegionId(regionId: string, panelIndex: number): string {
   return `${regionId.slice(0, -3)}a${panelIndex.toString(16).padStart(2, '0')}`;
 }
 
-function splitBifoldPanels(layout: DocumentLayout): DocumentLayout {
-  if (layout.fold !== 'BIFOLD' || layout.pages[0]?.regions.length !== 1) return layout;
-  const page = layout.pages[0];
-  const source = page.regions[0];
-  const panelBlocks: DocumentBlock[][] = [[], [], [], []];
-  for (const block of source.blocks) {
-    const panel = block.type === 'QR_CODE' || block.type === 'IMAGE' ? 3
-      : block.type === 'MEETING_PROGRAM' || block.type === 'ANNOUNCEMENTS' || block.type === 'SPEAKERS' ? 1
-        : 0;
-    panelBlocks[panel].push(block);
-  }
-  const regions: DocumentRegion[] = panelBlocks.map((blocks, panelIndex) => ({
-    ...source,
-    id: (panelIndex === 0 ? source.id : bifoldPanelRegionId(source.id, panelIndex)) as DocumentRegion['id'],
-    ratio: 0.25,
-    blocks
-  }));
-  return { ...layout, pages: [{ ...page, regions }] };
+function splitFoldPanels(layout: DocumentLayout): DocumentLayout {
+  if (layout.fold === 'NONE') return layout;
+  const panelCount = layout.fold === 'TRIFOLD' ? 3 : 2;
+  return {
+    ...layout,
+    pages: layout.pages.map((page) => {
+      if (page.regions.length !== 1) return page;
+      const source = page.regions[0];
+      const panelBlocks: DocumentBlock[][] = Array.from({ length: panelCount * 2 }, () => [] as DocumentBlock[]);
+      for (const block of source.blocks) {
+        const panel =
+          block.type === 'QR_CODE' || block.type === 'IMAGE'
+            ? panelCount - 1
+            : block.type === 'MEETING_PROGRAM' || block.type === 'ANNOUNCEMENTS' || block.type === 'SPEAKERS'
+              ? Math.min(1, panelCount - 1)
+              : 0;
+        panelBlocks[panel].push(block);
+      }
+      const regions: DocumentRegion[] = panelBlocks.map((blocks, panelIndex) => ({
+        ...source,
+        id: (panelIndex === 0 ? source.id : bifoldPanelRegionId(source.id, panelIndex)) as DocumentRegion['id'],
+        ratio: 1 / (panelCount * 2),
+        blocks
+      }));
+      return { ...page, regions };
+    })
+  };
 }
 
 function validateColumns(region: AdvancedRegion): void {
   const { columns } = region;
   if (columns.count === 1 && columns.ratio !== '1/1') throw new Error('One-column regions must use the 1/1 ratio');
   if (columns.count === 3 && columns.ratio !== '1/1') throw new Error('Three-column regions use equal columns');
-  if (columns.count === 2 && !['1/1', '1/3+2/3', '2/3+1/3'].includes(columns.ratio)) throw new Error('Two-column regions require a supported split ratio');
+  if (columns.count === 2 && !['1/1', '1/3+2/3', '2/3+1/3'].includes(columns.ratio))
+    throw new Error('Two-column regions require a supported split ratio');
   if (columns.gutter !== region.gutter) throw new Error('Column gutter must match the region gutter');
   if (columns.blockIds.length !== columns.count) throw new Error('Column containers must match column count');
   const blockIds = new Set<string>(region.blocks.map((block) => block.id));
@@ -124,29 +136,77 @@ function validateColumns(region: AdvancedRegion): void {
 
 export function normalizeToAdvanced(input: unknown): AdvancedDocumentLayout {
   const source = input as { schemaVersion?: unknown } | null;
-  const base = splitBifoldPanels(parseDocumentLayout(stripAdvancedFields(input)));
-  const sourcePages = source && typeof source === 'object' && Array.isArray((source as { pages?: unknown }).pages) ? (source as { pages: unknown[] }).pages : [];
+  const base = splitFoldPanels(parseDocumentLayout(stripAdvancedFields(input)));
+  const sourcePages =
+    source && typeof source === 'object' && Array.isArray((source as { pages?: unknown }).pages)
+      ? (source as { pages: unknown[] }).pages
+      : [];
+  const sourceBlocksById = new Map<string, Record<string, unknown>>();
+  for (const sourcePage of sourcePages) {
+    const sourceRegions =
+      sourcePage && typeof sourcePage === 'object' && Array.isArray((sourcePage as { regions?: unknown }).regions)
+        ? (sourcePage as { regions: unknown[] }).regions
+        : [];
+    for (const sourceRegion of sourceRegions) {
+      const sourceBlocks =
+        sourceRegion && typeof sourceRegion === 'object' && Array.isArray((sourceRegion as { blocks?: unknown }).blocks)
+          ? (sourceRegion as { blocks: unknown[] }).blocks
+          : [];
+      for (const sourceBlock of sourceBlocks) {
+        if (sourceBlock && typeof sourceBlock === 'object' && typeof (sourceBlock as { id?: unknown }).id === 'string')
+          sourceBlocksById.set((sourceBlock as { id: string }).id, sourceBlock as Record<string, unknown>);
+      }
+    }
+  }
   const pages = base.pages.map((page, pageIndex) => ({
     ...page,
     regions: page.regions.map((region, regionIndex) => {
       const sourcePage = sourcePages[pageIndex] as { regions?: unknown[] } | undefined;
       const sourceRegions = sourcePage && Array.isArray(sourcePage.regions) ? sourcePage.regions : [];
-      const sourceRegion = sourceRegions.find((candidate) => candidate && typeof candidate === 'object' && (candidate as { id?: unknown }).id === region.id) ?? sourceRegions[regionIndex];
-      const sourceRegionObject = sourceRegion && typeof sourceRegion === 'object' ? sourceRegion as { columns?: unknown } : undefined;
-      const parsedColumns = sourceRegionObject?.columns !== undefined && source?.schemaVersion === ADVANCED_SCHEMA_VERSION
-        ? (() => {
-            const parsed = regionColumnsSchema.safeParse(sourceRegionObject.columns);
-            return parsed.success && columnsMatchRegion(parsed.data, region) ? parsed.data : defaultColumns(region);
-          })()
-        : (() => { const result = regionColumnsSchema.safeParse(sourceRegionObject?.columns); return result.success && columnsMatchRegion(result.data, region) ? result.data : defaultColumns(region); })();
+      const sourceRegion =
+        sourceRegions.find((candidate) => candidate && typeof candidate === 'object' && (candidate as { id?: unknown }).id === region.id) ??
+        sourceRegions[regionIndex];
+      const sourceRegionObject = sourceRegion && typeof sourceRegion === 'object' ? (sourceRegion as { columns?: unknown }) : undefined;
+      const isLegacyPanelRepair = source?.schemaVersion === ADVANCED_SCHEMA_VERSION && base.fold !== 'NONE' && sourceRegions.length === 1;
+      const parsedColumns =
+        sourceRegionObject?.columns !== undefined && source?.schemaVersion === ADVANCED_SCHEMA_VERSION
+          ? (() => {
+              const parsed = regionColumnsSchema.safeParse(sourceRegionObject.columns);
+              if (!parsed.success) {
+                if (isLegacyPanelRepair) return defaultColumns(region);
+                throw new Error(`Invalid schema-v2 region columns: ${parsed.error.message}`);
+              }
+              if (!columnsMatchRegion(parsed.data, region)) {
+                if (isLegacyPanelRepair) return defaultColumns(region);
+                throw new Error('Schema-v2 region columns do not match the region blocks');
+              }
+              return parsed.data;
+            })()
+          : (() => {
+              const result = regionColumnsSchema.safeParse(sourceRegionObject?.columns);
+              return result.success && columnsMatchRegion(result.data, region) ? result.data : defaultColumns(region);
+            })();
       const advancedRegion: AdvancedRegion = {
         ...region,
         blocks: region.blocks.map((block, blockIndex) => {
-          const sourceBlocks = sourceRegionObject && Array.isArray((sourceRegionObject as { blocks?: unknown[] }).blocks) ? (sourceRegionObject as { blocks: unknown[] }).blocks : [];
-          const sourceBlock = sourceBlocks.find((candidate) => candidate && typeof candidate === 'object' && (candidate as { id?: unknown }).id === block.id) ?? sourceBlocks[blockIndex];
+          const sourceBlocks =
+            sourceRegionObject && Array.isArray((sourceRegionObject as { blocks?: unknown[] }).blocks)
+              ? (sourceRegionObject as { blocks: unknown[] }).blocks
+              : [];
+          const sourceBlock =
+            sourceBlocksById.get(block.id) ??
+            sourceBlocks.find(
+              (candidate) => candidate && typeof candidate === 'object' && (candidate as { id?: unknown }).id === block.id
+            ) ??
+            sourceBlocks[blockIndex];
           if (!sourceBlock || typeof sourceBlock !== 'object') return block as AdvancedBlock;
           const value = sourceBlock as Record<string, unknown>;
-          return { ...block, ...(value.styleOverrides !== undefined ? { styleOverrides: value.styleOverrides } : {}), ...(value.visibilityRule !== undefined ? { visibilityRule: value.visibilityRule } : {}), ...(value.digitalOrder !== undefined ? { digitalOrder: value.digitalOrder } : {}) } as AdvancedBlock;
+          return {
+            ...block,
+            ...(value.styleOverrides !== undefined ? { styleOverrides: value.styleOverrides } : {}),
+            ...(value.visibilityRule !== undefined ? { visibilityRule: value.visibilityRule } : {}),
+            ...(value.digitalOrder !== undefined ? { digitalOrder: value.digitalOrder } : {})
+          } as AdvancedBlock;
         }),
         columns: parsedColumns
       };
@@ -163,20 +223,98 @@ export function downgradeToV1(layout: AdvancedDocumentLayout): DocumentLayout {
 }
 
 export function mergeSimpleIntoAdvanced(previous: AdvancedDocumentLayout, simple: DocumentLayout): AdvancedDocumentLayout {
+  const simpleAdvanced = normalizeToAdvanced(simple);
+  const structureChanged =
+    previous.fold !== simpleAdvanced.fold ||
+    previous.pages.length !== simpleAdvanced.pages.length ||
+    previous.pages.some((page, pageIndex) => {
+      const nextPage = simpleAdvanced.pages[pageIndex];
+      return (
+        !nextPage ||
+        page.regions.length !== nextPage.regions.length ||
+        page.regions.some((region, regionIndex) => region.id !== nextPage.regions[regionIndex]?.id)
+      );
+    });
+  if (structureChanged) {
+    const previousBlocks = new Map(
+      previous.pages.flatMap((page) => page.regions.flatMap((region) => region.blocks)).map((block) => [block.id, block])
+    );
+    const next = structuredClone(simpleAdvanced);
+    next.pages = next.pages.map((page) => ({
+      ...page,
+      regions: page.regions.map((region) => ({
+        ...region,
+        blocks: region.blocks.map((block) => {
+          const previousBlock = previousBlocks.get(block.id);
+          return previousBlock
+            ? {
+                ...block,
+                styleOverrides: previousBlock.styleOverrides,
+                visibilityRule: previousBlock.visibilityRule,
+                digitalOrder: previousBlock.digitalOrder,
+                lock: previousBlock.lock
+              }
+            : block;
+        })
+      }))
+    }));
+    return parseAdvancedLayout(next);
+  }
   const next = structuredClone(previous);
   next.paper = simple.paper;
   next.orientation = simple.orientation;
   next.fold = simple.fold;
   next.theme = simple.theme;
-  const simpleBlocks = new Map(allSimpleBlocks(simple).map((block) => [block.id, block]));
+  const simpleBlocks = new Map(allSimpleBlocks(simple).map((block) => [String(block.id), block]));
+  const simpleRegions = new Map(simpleAdvanced.pages.flatMap((page) => page.regions).map((region) => [region.id, region]));
   next.pages = next.pages.map((page) => ({
     ...page,
     regions: page.regions.map((region) => ({
       ...region,
-      blocks: region.blocks.map((block) => {
-        const replacement = simpleBlocks.get(block.id);
-        return replacement ? { ...block, width: replacement.width, dataMode: replacement.dataMode, visibility: replacement.visibility, printBehavior: replacement.printBehavior, digitalBehavior: replacement.digitalBehavior, config: replacement.config, lock: block.lock } : block;
-      })
+      ...(simpleRegions.has(region.id)
+        ? {
+            ratio: simpleRegions.get(region.id)!.ratio,
+            gutter: simpleRegions.get(region.id)!.gutter,
+            columns: { ...region.columns, gutter: simpleRegions.get(region.id)!.gutter }
+          }
+        : {}),
+      blocks: (() => {
+        const simpleRegion = simpleRegions.get(region.id);
+        const order = simpleRegion?.blocks.map((block) => String(block.id)) ?? region.blocks.map((block) => String(block.id));
+        const blocksById = new Map(region.blocks.map((block) => [String(block.id), block]));
+        return order.map((blockId) => {
+          const block = blocksById.get(blockId);
+          const replacement = simpleBlocks.get(blockId);
+          if (!block) return replacement as AdvancedBlock;
+          return replacement
+            ? {
+                ...block,
+                width: replacement.width,
+                dataMode: replacement.dataMode,
+                visibility: replacement.visibility,
+                printBehavior: replacement.printBehavior,
+                digitalBehavior: replacement.digitalBehavior,
+                config: replacement.config,
+                lock: block.lock
+              }
+            : block;
+        });
+      })(),
+      columns: (() => {
+        const simpleRegion = simpleRegions.get(region.id);
+        if (!simpleRegion) return region.columns;
+        const order = simpleRegion.blocks.map((block) => String(block.id));
+        const allowed = new Set(order);
+        const columns = region.columns.blockIds.map((column) => column.filter((blockId) => allowed.has(blockId)));
+        const assigned = new Set(columns.flat());
+        for (const blockId of order) if (!assigned.has(blockId)) columns[0].push(blockId);
+        const position = new Map(order.map((blockId, index) => [blockId, index]));
+        return {
+          ...region.columns,
+          gutter: simpleRegion.gutter,
+          blockIds: columns.map((column) => column.sort((left, right) => position.get(left)! - position.get(right)!))
+        };
+      })()
     }))
   })) as AdvancedDocumentLayout['pages'];
   return parseAdvancedLayout(next as unknown);
@@ -188,15 +326,17 @@ function allSimpleBlocks(layout: DocumentLayout): DocumentBlock[] {
 
 export function parseAdvancedLayout(input: unknown): AdvancedDocumentLayout {
   const layout = normalizeToAdvanced(input);
-  for (const page of layout.pages) for (const region of page.regions) {
-    validateColumns(region);
-    for (const block of region.blocks) {
-      if (block.width && !BLOCK_WIDTHS.includes(block.width)) throw new Error('Unsupported block width');
-      if (block.styleOverrides) styleOverridesSchema.parse(block.styleOverrides);
-      if (block.visibilityRule !== undefined) visibilityRuleSchema.parse(block.visibilityRule);
-      if (block.digitalOrder !== undefined && (!Number.isInteger(block.digitalOrder) || block.digitalOrder < 0)) throw new Error('Invalid digital order');
+  for (const page of layout.pages)
+    for (const region of page.regions) {
+      validateColumns(region);
+      for (const block of region.blocks) {
+        if (block.width && !BLOCK_WIDTHS.includes(block.width)) throw new Error('Unsupported block width');
+        if (block.styleOverrides) styleOverridesSchema.parse(block.styleOverrides);
+        if (block.visibilityRule !== undefined) visibilityRuleSchema.parse(block.visibilityRule);
+        if (block.digitalOrder !== undefined && (!Number.isInteger(block.digitalOrder) || block.digitalOrder < 0))
+          throw new Error('Invalid digital order');
+      }
     }
-  }
   return layout;
 }
 
@@ -212,31 +352,58 @@ export function projectAdvancedLayoutForOutput(
   const projected = structuredClone(layout);
   projected.pages = projected.pages.map((page) => ({
     ...page,
-    regions: page.regions.map((region) => ({
-      ...region,
-      blocks: region.blocks
+    regions: page.regions.map((region) => {
+      const blocks = region.blocks
         .filter((block) => block.visibility !== 'HIDDEN')
         .filter((block) => target !== 'PRINT' || block.printBehavior !== 'DIGITAL_ONLY')
         .filter((block) => target !== 'DIGITAL' || block.printBehavior !== 'PRINT_ONLY')
-        .filter((block) => block.visibilityRule !== 'WHEN_PUBLIC' || target === 'PUBLIC')
+        .filter((block) => block.visibilityRule !== 'WHEN_PUBLIC' || target === 'PUBLIC' || target === 'PRINT')
         .filter((block) => {
           if (block.visibilityRule !== 'WHEN_DATA_EXISTS') return true;
           if (!data) return true;
+          if (block.type === 'PRESIDING_CONDUCTING') {
+            const rawLeadership = data.values.PRESIDING_CONDUCTING;
+            if (typeof rawLeadership !== 'string') return false;
+            try {
+              const leadership = JSON.parse(rawLeadership) as { presiding?: string; conducting?: string };
+              return Boolean(leadership.presiding?.trim() || leadership.conducting?.trim());
+            } catch {
+              return false;
+            }
+          }
           if (block.type === 'MEETING_PROGRAM') {
             const rawLeadership = data.values.PRESIDING_CONDUCTING;
             let hasLeadership = false;
             if (typeof rawLeadership === 'string') {
-              try { const leadership = JSON.parse(rawLeadership) as { presiding?: string; conducting?: string }; hasLeadership = Boolean(leadership.presiding?.trim() || leadership.conducting?.trim()); } catch { hasLeadership = false; }
+              try {
+                const leadership = JSON.parse(rawLeadership) as { presiding?: string; conducting?: string };
+                hasLeadership = Boolean(leadership.presiding?.trim() || leadership.conducting?.trim());
+              } catch {
+                hasLeadership = false;
+              }
             }
             return data.meetingItems.length > 0 || hasLeadership;
           }
           const value = data.values[block.type];
           return Array.isArray(value) ? value.length > 0 : value !== null && value !== undefined && value !== '';
         })
-        .sort((a, b) => target === 'DIGITAL'
-          ? (a.digitalOrder ?? Number.MAX_SAFE_INTEGER) - (b.digitalOrder ?? Number.MAX_SAFE_INTEGER)
-          : 0)
-    }))
+        .sort((a, b) =>
+          target === 'DIGITAL' ? (a.digitalOrder ?? Number.MAX_SAFE_INTEGER) - (b.digitalOrder ?? Number.MAX_SAFE_INTEGER) : 0
+        );
+      const retained = new Set(blocks.map((block) => String(block.id)));
+      const columns = region.columns.blockIds.map((column) => column.filter((blockId) => retained.has(blockId)));
+      const assigned = new Set(columns.flat());
+      for (const block of blocks) if (!assigned.has(String(block.id))) columns[0].push(block.id);
+      const position = new Map(blocks.map((block, index) => [String(block.id), index]));
+      return {
+        ...region,
+        blocks,
+        columns: {
+          ...region.columns,
+          blockIds: columns.map((column) => column.sort((left, right) => position.get(left)! - position.get(right)!))
+        }
+      };
+    })
   }));
   return projected;
 }

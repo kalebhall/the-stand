@@ -1,26 +1,30 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { authMock, connectMock, recordAuditEventMock, listReadableMediaMock, createWardMediaMock, archiveWardMediaMock, moduleEnabledMock } = vi.hoisted(() => ({
-  authMock: vi.fn(),
-  connectMock: vi.fn(),
-  recordAuditEventMock: vi.fn(),
-  listReadableMediaMock: vi.fn(),
-  createWardMediaMock: vi.fn(),
-  archiveWardMediaMock: vi.fn(),
-  moduleEnabledMock: vi.fn()
-}));
+const { authMock, connectMock, recordAuditEventMock, listReadableMediaMock, createWardMediaMock, archiveWardMediaMock, moduleEnabledMock } =
+  vi.hoisted(() => ({
+    authMock: vi.fn(),
+    connectMock: vi.fn(),
+    recordAuditEventMock: vi.fn(),
+    listReadableMediaMock: vi.fn(),
+    createWardMediaMock: vi.fn(),
+    archiveWardMediaMock: vi.fn(),
+    moduleEnabledMock: vi.fn()
+  }));
 
 vi.mock('@/src/auth/auth', () => ({ auth: authMock }));
 vi.mock('@/src/db/client', () => ({ pool: { connect: connectMock } }));
 vi.mock('@/src/audit/service', () => ({ recordAuditEvent: recordAuditEventMock }));
-vi.mock('@/src/modules/service', () => ({ isWardModuleEnabled: moduleEnabledMock }));
+vi.mock('@/src/modules/service', () => ({ isWardModuleEnabled: moduleEnabledMock, isWardModuleEnabledInTransaction: moduleEnabledMock }));
 vi.mock('@/src/document-designer/media-service', () => ({
   listReadableMedia: listReadableMediaMock,
   createWardMedia: createWardMediaMock,
   archiveWardMedia: archiveWardMediaMock,
   MediaServiceError: class MediaServiceError extends Error {
     code: string;
-    constructor(code: string, message: string) { super(message); this.code = code; }
+    constructor(code: string, message: string) {
+      super(message);
+      this.code = code;
+    }
   }
 }));
 
@@ -85,9 +89,14 @@ describe('media routes', () => {
     const response = await POST(uploadRequest(), wardContext);
     expect(response.status).toBe(201);
     expect(createWardMediaMock).toHaveBeenCalledWith(client, expect.objectContaining({ wardId: 'ward-a', userId: 'user-a' }));
-    expect(recordAuditEventMock).toHaveBeenCalledWith(client, expect.objectContaining({
-      action: 'MEDIA_UPLOADED', entityId: 'asset-a', wardId: 'ward-a'
-    }));
+    expect(recordAuditEventMock).toHaveBeenCalledWith(
+      client,
+      expect.objectContaining({
+        action: 'MEDIA_UPLOADED',
+        entityId: 'asset-a',
+        wardId: 'ward-a'
+      })
+    );
     expect(client.query).toHaveBeenCalledWith('COMMIT');
   });
 
@@ -103,9 +112,14 @@ describe('media routes', () => {
     const response = await DELETE(new Request('http://localhost', { method: 'DELETE' }), assetContext);
     expect(response.status).toBe(200);
     expect(archiveWardMediaMock).toHaveBeenCalledWith(client, 'ward-a', 'asset-a');
-    expect(recordAuditEventMock).toHaveBeenCalledWith(client, expect.objectContaining({
-      action: 'MEDIA_ARCHIVED', entityId: 'asset-a', wardId: 'ward-a'
-    }));
+    expect(recordAuditEventMock).toHaveBeenCalledWith(
+      client,
+      expect.objectContaining({
+        action: 'MEDIA_ARCHIVED',
+        entityId: 'asset-a',
+        wardId: 'ward-a'
+      })
+    );
     expect(client.query).toHaveBeenCalledWith('COMMIT');
   });
 });

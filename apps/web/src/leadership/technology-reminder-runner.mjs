@@ -51,7 +51,7 @@ async function main() {
       const result = await client.query(
         `INSERT INTO event_outbox (ward_id, aggregate_type, aggregate_id, event_type, payload)
          VALUES ($1::uuid, 'meeting', $2::uuid, 'MEETING_TECHNOLOGY_REMINDER', $3::jsonb)
-         ON CONFLICT (ward_id, event_type, aggregate_id) DO NOTHING
+         ON CONFLICT (ward_id, event_type, aggregate_id) WHERE event_type = 'MEETING_TECHNOLOGY_REMINDER' DO NOTHING
          RETURNING id`,
         [
           meeting.ward_id,

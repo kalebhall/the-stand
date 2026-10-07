@@ -88,8 +88,6 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
     const outboxResult = await client.query(
       `INSERT INTO event_outbox (ward_id, aggregate_type, aggregate_id, event_type, payload)
        VALUES ($1::uuid, 'meeting', $2::uuid, 'MEETING_COMPLETED', $3::jsonb)
-       ON CONFLICT (ward_id, event_type, aggregate_id)
-       DO UPDATE SET payload = EXCLUDED.payload, updated_at = now(), status = 'pending'
        RETURNING id`,
       [wardId, meetingId, JSON.stringify({ meetingId, announcedBusinessLines })]
     );
@@ -101,8 +99,6 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
       const releaseOutboxResult = await client.query(
         `INSERT INTO event_outbox (ward_id, aggregate_type, aggregate_id, event_type, payload)
          VALUES ($1::uuid, 'meeting_business_line', $2::uuid, 'CALLING_RELEASE_ANNOUNCED', $3::jsonb)
-         ON CONFLICT (ward_id, event_type, aggregate_id)
-         DO UPDATE SET payload = EXCLUDED.payload, updated_at = now(), status = 'pending'
          RETURNING id`,
         [
           wardId,

@@ -3,7 +3,13 @@ import { setDbContext } from '@/src/db/context';
 import { processNotificationDigest } from '@/src/notifications/digests';
 import { processGlobalEmailDelivery } from '@/src/notifications/global-email';
 import { processGlobalOutboxEvent } from '@/src/notifications/global-runner';
-import { enqueueDigestNotificationJob, enqueueGlobalEmailDeliveryJob, type NotificationQueueJob } from '@/src/notifications/queue';
+import { processNotificationDelivery } from '@/src/notifications/local-delivery';
+import {
+  enqueueDigestNotificationJob,
+  enqueueGlobalEmailDeliveryJob,
+  enqueueLocalNotificationDeliveryJob,
+  type NotificationQueueJob
+} from '@/src/notifications/queue';
 import { processOutboxEvent } from '@/src/notifications/runner';
 import { processCoreEventOutbox, recordCoreEventOutboxFailure, isCoreEventOutboxType } from '@/src/platform/events/outbox';
 
@@ -23,9 +29,19 @@ export function createNotificationWorkerHandler(): (job: { data: NotificationQue
       return;
     }
 
+    if (job.data.kind === 'local-notification-delivery') {
+      try {
+        await processNotificationDelivery(client, job.data.notificationDeliveryId, job.data.wardId);
+      } finally {
+        client.release();
+      }
+      return;
+    }
+
     try {
       await client.query('BEGIN');
-      let digestJobs = [] as Awaited<ReturnType<typeof processOutboxEvent>>;
+      let digestJobs: Awaited<ReturnType<typeof processOutboxEvent>>['digestJobs'] = [];
+      let localDeliveryIds: string[] = [];
       let emailDeliveryIds: string[] = [];
       if (job.data.kind === 'global-outbox-event') {
         emailDeliveryIds = await processGlobalOutboxEvent(client, job.data.globalEventOutboxId);
@@ -41,7 +57,9 @@ export function createNotificationWorkerHandler(): (job: { data: NotificationQue
             coreEventJob = { wardId: job.data.wardId, eventOutboxId: job.data.eventOutboxId };
             await processCoreEventOutbox(client, { wardId: job.data.wardId, eventOutboxId: job.data.eventOutboxId });
           } else {
-            digestJobs = await processOutboxEvent(client, { wardId: job.data.wardId, eventOutboxId: job.data.eventOutboxId });
+            const result = await processOutboxEvent(client, { wardId: job.data.wardId, eventOutboxId: job.data.eventOutboxId });
+            digestJobs = result.digestJobs;
+            localDeliveryIds = result.localDeliveryIds;
           }
         } else {
           await processNotificationDigest(client, {
@@ -52,6 +70,17 @@ export function createNotificationWorkerHandler(): (job: { data: NotificationQue
         }
       }
       await client.query('COMMIT');
+      for (const notificationDeliveryId of localDeliveryIds) {
+        if (job.data.kind !== 'outbox-event') continue;
+        try {
+          await enqueueLocalNotificationDeliveryJob({ wardId: job.data.wardId, notificationDeliveryId });
+        } catch (error) {
+          console.error('[notifications-worker] failed to enqueue local notification delivery after commit', {
+            notificationDeliveryId,
+            error: error instanceof Error ? error.message : String(error)
+          });
+        }
+      }
       for (const emailDeliveryId of emailDeliveryIds) {
         try {
           await enqueueGlobalEmailDeliveryJob({ globalNotificationDeliveryId: emailDeliveryId });

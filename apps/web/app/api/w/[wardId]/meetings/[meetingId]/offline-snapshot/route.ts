@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
 
 import { auth } from '@/src/auth/auth';
-import { canViewMeetings } from '@/src/auth/roles';
+import { canUseInternalNotes, canViewMeetings } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
-import { isWardModuleEnabled } from '@/src/modules/service';
+import { isWardModuleEnabledInTransaction } from '@/src/modules/service';
 import { isCoreAnnouncementActiveForDate } from '@/src/conducting/core';
 import { buildStandRows } from '@/src/stand/render';
+import { getStandRenderLabels, resolvePublicLocale } from '@/src/i18n/public-program';
 
 export async function GET(_: Request, context: { params: Promise<{ wardId: string; meetingId: string }> }) {
   const session = await auth();
@@ -15,28 +16,46 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
   if (!canViewMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) {
     return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
   }
-  const technologyEnabled = await isWardModuleEnabled(wardId, session.user.id, 'technology-checklist');
+  const includeInternalNotes = canUseInternalNotes({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId);
 
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
     await setDbContext(client, { userId: session.user.id, wardId });
+    const technologyEnabled = await isWardModuleEnabledInTransaction(client, wardId, 'technology-checklist');
+    const actionsToDoEnabled = await isWardModuleEnabledInTransaction(client, wardId, 'actions-to-do');
+    const membershipOrdinancesEnabled = await isWardModuleEnabledInTransaction(client, wardId, 'membership-ordinances');
     const meeting = await client.query(
-      'SELECT m.id, m.meeting_date, m.meeting_type, w.default_locale FROM meeting m JOIN ward w ON w.id = m.ward_id WHERE m.id = $1::uuid AND m.ward_id = $2::uuid LIMIT 1',
-      [meetingId, wardId]
+      'SELECT m.id, m.meeting_date, m.meeting_type, w.default_locale, u.preferred_locale AS user_preferred_locale FROM meeting m JOIN ward w ON w.id = m.ward_id JOIN user_account u ON u.id = $3::uuid WHERE m.id = $1::uuid AND m.ward_id = $2::uuid LIMIT 1',
+      [meetingId, wardId, session.user.id]
     );
     if (!meeting.rowCount) {
       await client.query('ROLLBACK');
       return NextResponse.json({ error: 'Meeting not found', code: 'NOT_FOUND' }, { status: 404 });
     }
     const items = await client.query(
-      `SELECT i.id, i.item_type, i.title, i.notes, i.topic, i.program_notes, i.hymn_number, i.hymn_title, i.hymn_locale, i.introduction_roles,
+      `SELECT i.id, i.item_type, i.title, CASE WHEN $3::boolean THEN i.notes ELSE NULL END AS notes,
+              stand_business.calling_name AS stand_calling_name,
+              CASE WHEN upper(i.item_type) = 'WARD_AND_STAKE_BUSINESS' AND i.notes LIKE '%[STAKE_BUSINESS]%' THEN TRUE ELSE FALSE END AS includes_stake_business,
+              i.topic, i.program_notes, i.hymn_number, i.hymn_title, i.hymn_locale,
+              CASE WHEN $3::boolean THEN i.introduction_roles ELSE (i.introduction_roles - 'visitingLeaders') END AS introduction_roles,
               m.first_name, m.last_name, m.gender
          FROM meeting_program_item i
-         LEFT JOIN member m ON m.ward_id = i.ward_id AND m.full_name = i.title AND m.archived_at IS NULL
+        LEFT JOIN LATERAL (
+          SELECT b.calling_name
+            FROM meeting_business_line b
+           WHERE b.meeting_id = i.meeting_id
+             AND b.ward_id = i.ward_id
+             AND upper(i.item_type) IN ('SUSTAINING', 'RELEASE')
+             AND b.member_name = i.title
+             AND b.action_type = CASE WHEN upper(i.item_type) LIKE '%SUSTAIN%' THEN 'SUSTAIN' ELSE 'RELEASE' END
+           ORDER BY b.created_at DESC
+           LIMIT 1
+        ) stand_business ON TRUE
+        LEFT JOIN member m ON m.ward_id = i.ward_id AND m.full_name = i.title AND m.archived_at IS NULL
         WHERE i.meeting_id = $1::uuid AND i.ward_id = $2::uuid
         ORDER BY i.sequence ASC`,
-      [meetingId, wardId]
+      [meetingId, wardId, includeInternalNotes]
     );
     const template = await client.query(
       'SELECT welcome_text, sustain_template, release_template FROM ward_stand_template WHERE ward_id = $1::uuid LIMIT 1',
@@ -61,13 +80,13 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
         WHERE b.ward_id = $2::uuid
           AND source_meeting.meeting_type NOT IN ('STAKE_CONFERENCE', 'GENERAL_CONFERENCE')
           AND EXISTS (SELECT 1 FROM meeting route_meeting WHERE route_meeting.id = $1::uuid AND route_meeting.meeting_type NOT IN ('STAKE_CONFERENCE', 'GENERAL_CONFERENCE'))
-          AND (b.action_type <> 'SUSTAIN' OR b.calling_assignment_id IS NULL OR latest_calling.action_status = 'EXTENDED')
           AND (b.meeting_id = $1::uuid OR (b.action_type = 'SUSTAIN' AND b.calling_assignment_id IS NOT NULL AND source_meeting.meeting_date <= $3::date AND latest_calling.action_status = 'EXTENDED'))
         ORDER BY b.created_at ASC`,
       [meetingId, wardId, meeting.rows[0].meeting_date]
     );
-    const membershipActions = await client.query(
-      `SELECT a.id, a.member_name, a.action_type, a.priesthood_office,
+    const membershipActions = membershipOrdinancesEnabled
+      ? await client.query(
+          `SELECT a.id, a.member_name, a.action_type, a.priesthood_office,
               CASE WHEN a.meeting_id <> $1::uuid AND a.status = 'pending' THEN 'action_needed' ELSE a.status END AS status,
               a.planned_date, a.interview_status, a.baptism_date, a.confirmation_date, a.baptism_status, a.confirmation_status, a.responsible_leader, a.lcr_follow_up_status,
               (a.meeting_id <> $1::uuid) AS carried_forward
@@ -78,36 +97,46 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
           AND EXISTS (SELECT 1 FROM meeting route_meeting WHERE route_meeting.id = $1::uuid AND route_meeting.meeting_type NOT IN ('STAKE_CONFERENCE', 'GENERAL_CONFERENCE'))
           AND (a.meeting_id = $1::uuid OR (source_meeting.meeting_date <= $3::date AND a.status <> 'completed'))
         ORDER BY a.created_at ASC`,
-      [meetingId, wardId, meeting.rows[0].meeting_date]
-    );
-    const technology = technologyEnabled ? await client.query(
-      `SELECT owner_name, room_ready, audio_ready, stream_ready, accessibility_checked, authorized_link, start_confirmed_at, stop_confirmed_at, recording_deletion_reminder
+          [meetingId, wardId, meeting.rows[0].meeting_date]
+        )
+      : { rows: [] };
+    const technology = technologyEnabled
+      ? await client.query(
+          `SELECT owner_name, room_ready, audio_ready, stream_ready, accessibility_checked, authorized_link, start_confirmed_at, stop_confirmed_at, recording_deletion_reminder
          FROM meeting_technology_checklist
         WHERE meeting_id = $1::uuid AND ward_id = $2::uuid
         LIMIT 1`,
-      [meetingId, wardId]
-    ) : { rows: [] };
-    const notes = await client.query(
-      `SELECT note.id, note.visibility, note.note_text, note.created_at, note.updated_at
-         FROM internal_note note
-        WHERE note.ward_id = $1::uuid
-          AND (note.meeting_id = $2::uuid OR note.program_item_id IN (SELECT id FROM meeting_program_item WHERE meeting_id = $2::uuid AND ward_id = $1::uuid))
-          AND note.visibility = 'PRIVATE'
-          AND note.created_by_user_id = $3::uuid
-        ORDER BY note.created_at DESC`,
-      [wardId, meetingId, session.user.id]
-    );
-    const actionsToDo = await client.query(
-      `SELECT id, family, action_type, status, member_name, description, official_reference_url, due_date
-         FROM church_action_follow_up
-        WHERE ward_id = $1::uuid AND status IN ('OPEN', 'IN_PROGRESS')
-        ORDER BY due_date NULLS LAST, created_at ASC`,
-      [wardId]
-    );
+          [meetingId, wardId]
+        )
+      : { rows: [] };
+    const notes = includeInternalNotes
+      ? await client.query(
+          `SELECT note.id, note.visibility, note.note_text, note.created_at, note.updated_at
+             FROM internal_note note
+            WHERE note.ward_id = $1::uuid
+              AND (note.meeting_id = $2::uuid OR note.program_item_id IN (SELECT id FROM meeting_program_item WHERE meeting_id = $2::uuid AND ward_id = $1::uuid))
+              AND note.visibility = 'PRIVATE'
+              AND note.created_by_user_id = $3::uuid
+            ORDER BY note.created_at DESC`,
+          [wardId, meetingId, session.user.id]
+        )
+      : { rows: [] };
+    const actionsToDo = actionsToDoEnabled
+      ? await client.query(
+          `SELECT id, family, action_type, status, member_name, description, official_reference_url, due_date
+             FROM church_action_follow_up
+            WHERE ward_id = $1::uuid AND status IN ('OPEN', 'IN_PROGRESS')
+            ORDER BY due_date NULLS LAST, created_at ASC`,
+          [wardId]
+        )
+      : { rows: [] };
     await client.query('COMMIT');
 
     const meetingDate = meeting.rows[0].meeting_date as string;
     const hymnLocale = meeting.rows[0].default_locale as string;
+    const userLocale = meeting.rows[0].user_preferred_locale as string | null;
+    const renderLocale = resolvePublicLocale(userLocale, hymnLocale);
+    const renderLabels = getStandRenderLabels(renderLocale);
     const activeAnnouncements = announcements.rows.filter((item) =>
       isCoreAnnouncementActiveForDate({ startDate: item.start_date, endDate: item.end_date, isPermanent: item.is_permanent }, meetingDate)
     );
@@ -116,7 +145,9 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
         id: item.id,
         itemType: item.item_type,
         title: item.title,
-        notes: item.notes,
+        notes: null,
+        operationalCallingName: item.stand_calling_name,
+        includesStakeBusiness: item.includes_stake_business,
         topic: item.topic,
         programNotes: item.program_notes,
         hymnNumber: item.hymn_number,
@@ -132,12 +163,14 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
             releaseTemplate: template.rows[0].release_template
           }
         : undefined,
-      activeAnnouncements.map((item) => ({ title: item.title, body: item.body, includeInStand: item.include_in_stand }))
+      activeAnnouncements.map((item) => ({ title: item.title, body: item.body, includeInStand: item.include_in_stand })),
+      renderLabels
     );
 
     return NextResponse.json({
       userId: session.user.id,
       wardId,
+      locale: renderLocale,
       meeting: { id: meetingId, meetingDate, meetingType: meeting.rows[0].meeting_type },
       standRows,
       businessLines: business.rows.map((line) => ({

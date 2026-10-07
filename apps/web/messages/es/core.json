@@ -169,7 +169,10 @@
     "unpinMenu": "Permitir que el menú se contraiga",
     "helpManual": "Ayuda / Manual",
     "settings": "Configuración",
-    "logOut": "Cerrar sesión"
+    "logOut": "Cerrar sesión",
+    "logoutConfirmation": "¿Está seguro de que desea cerrar sesión?",
+    "logoutError": "No se pudo cerrar sesión. Compruebe la conexión e inténtelo de nuevo.",
+    "loggingOut": "Cerrando sesión..."
   },
   "account": {
     "title": "Resumen de la cuenta",

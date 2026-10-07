@@ -7,7 +7,10 @@ import { isCoreEventPayload } from './core';
 const CORE_EVENT_TYPES = new Set(['CORE_MEETING_CREATED', 'CORE_MEETING_COMPLETED']);
 
 export type EventOutboxDbClient = {
-  query: (text: string, values?: unknown[]) => Promise<{
+  query: (
+    text: string,
+    values?: unknown[]
+  ) => Promise<{
     rows: Array<Record<string, unknown>>;
     rowCount?: number | null;
   }>;
@@ -23,7 +26,7 @@ export async function insertCoreEventOutboxEvent(client: DbClient, event: CoreEv
   const result = await client.query(
     `INSERT INTO event_outbox (ward_id, aggregate_type, aggregate_id, event_type, payload)
      VALUES ($1::uuid, 'core_event', $2::uuid, $3::text, $4::jsonb)
-     ON CONFLICT (ward_id, event_type, aggregate_id)
+     ON CONFLICT (ward_id, event_type, aggregate_id) WHERE aggregate_type = 'core_event'
      DO UPDATE SET payload = EXCLUDED.payload, updated_at = now()
        WHERE event_outbox.status = 'pending'
      RETURNING id`,
@@ -48,10 +51,7 @@ export function isCoreEventOutboxType(eventType: string): boolean {
   return CORE_EVENT_TYPES.has(eventType);
 }
 
-export async function processCoreEventOutbox(
-  client: DbClient,
-  params: { wardId: string; eventOutboxId: string }
-): Promise<void> {
+export async function processCoreEventOutbox(client: DbClient, params: { wardId: string; eventOutboxId: string }): Promise<void> {
   const result = await client.query(
     `SELECT id, aggregate_id, event_type, payload, status, available_at <= now() AS available_now
        FROM event_outbox
@@ -62,7 +62,14 @@ export async function processCoreEventOutbox(
   );
 
   if (!result.rowCount) throw new Error(`Core event outbox ${params.eventOutboxId} is not visible for ward ${params.wardId}`);
-  const row = result.rows[0] as { id: string; aggregate_id: string; event_type: string; payload: unknown; status: string; available_now: boolean };
+  const row = result.rows[0] as {
+    id: string;
+    aggregate_id: string;
+    event_type: string;
+    payload: unknown;
+    status: string;
+    available_now: boolean;
+  };
   if (!isCoreEventOutboxType(row.event_type)) throw new Error(`Unsupported Core event outbox type ${row.event_type}`);
   if (row.status !== 'pending' || !row.available_now) return;
 
@@ -94,7 +101,9 @@ export async function processCoreEventOutbox(
         AND ward_id = app.current_ward_id()`,
     [params.wardId]
   );
-  const overrides = new Map((settingsResult.rows as Array<{ module_id: string; enabled: boolean }>).map((setting) => [setting.module_id, setting.enabled]));
+  const overrides = new Map(
+    (settingsResult.rows as Array<{ module_id: string; enabled: boolean }>).map((setting) => [setting.module_id, setting.enabled])
+  );
   const enabled = new Map(buildEffectiveModuleSettings(DEFAULT_MODULE_REGISTRY, overrides).map((setting) => [setting.id, setting.enabled]));
 
   await client.query(
@@ -104,7 +113,12 @@ export async function processCoreEventOutbox(
     [row.id, params.wardId]
   );
 
-  await dispatchCoreEvent(event, params.wardId, DEFAULT_MODULE_REGISTRY, (wardId, moduleId) => wardId === params.wardId && (enabled.get(moduleId) ?? false));
+  await dispatchCoreEvent(
+    event,
+    params.wardId,
+    DEFAULT_MODULE_REGISTRY,
+    (wardId, moduleId) => wardId === params.wardId && (enabled.get(moduleId) ?? false)
+  );
 
   await client.query(
     `UPDATE event_outbox

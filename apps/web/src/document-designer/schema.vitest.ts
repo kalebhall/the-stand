@@ -25,6 +25,7 @@ import type {
 } from './types';
 import { sacramentProgramLayoutSchema, sacramentProgramRegistry } from './sacrament-program';
 import { createPublicDocumentBlockSchema } from './registry';
+import { adaptLegacyLayoutToDocument } from './legacy-layout-adapter';
 
 const validLayout = {
   ...DEFAULT_DOCUMENT_LAYOUT,
@@ -98,6 +99,18 @@ describe('document designer schema', () => {
       publicDocumentLayoutSchema.safeParse({ ...validLayout, metadata: { privateNotes: 'leadership-only', userId: 'secret' } }).success
     ).toBe(false);
     expect(publicDocumentLayoutSchema.safeParse({ ...validLayout, metadata: {} }).success).toBe(true);
+  });
+
+  it('projects known legacy metadata through the public boundary', () => {
+    const result = createPublicDocumentLayoutSchema([
+      'PRESIDING_CONDUCTING',
+      'MUSIC_LEADERS',
+      'MEETING_PROGRAM',
+      'ANNOUNCEMENTS',
+      'QR_CODE'
+    ]).safeParse(adaptLegacyLayoutToDocument({ preset: 'FULL_PAGE', announcementMode: 'AFTER_PROGRAM', coverMode: 'NONE' }));
+    if (!result.success) throw new Error(JSON.stringify(result.error.issues));
+    expect(result.data.metadata).toEqual({ documentTitleSource: 'LEGACY_DEFAULT' });
   });
 
   it('parses a minimal valid sacrament layout', () => {

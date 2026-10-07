@@ -7,7 +7,17 @@ import { BUILT_IN_TEMPLATES } from '@/src/document-designer/built-in-templates';
 import { inheritTemplate } from '@/src/document-designer/inheritance';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
-import { INTRODUCTION_ITEM_TYPE, isMeetingType, SPEAKER_STATUSES, validateProgramItemsForMeetingType, VISITING_LEADER_TYPES, type IntroductionRoles, type ProgramItemInput } from '@/src/meetings/types';
+import { validateProtectedProgramOrder } from '@/src/meetings/program-item-rules';
+import {
+  INTRODUCTION_ITEM_TYPE,
+  isMeetingType,
+  SPEAKER_STATUSES,
+  SUPPORTED_PROGRAM_ITEM_TYPES,
+  validateProgramItemsForMeetingType,
+  VISITING_LEADER_TYPES,
+  type IntroductionRoles,
+  type ProgramItemInput
+} from '@/src/meetings/types';
 import { enqueueOutboxNotificationJob } from '@/src/notifications/queue';
 import { enqueueNotificationOutboxEvent, insertNotificationOutboxEvent } from '@/src/notifications/outbox';
 import { insertCoreEventOutboxEvent } from '@/src/platform/events/outbox';
@@ -25,9 +35,11 @@ function getIntroductionRoles(value: unknown): IntroductionRoles | null {
         .map((leader) => ({
           name: toTrimmedString(leader.name),
           calling: toTrimmedString(leader.calling),
-          recognitionType: typeof leader.recognitionType === 'string' && VISITING_LEADER_TYPES.includes(leader.recognitionType as (typeof VISITING_LEADER_TYPES)[number])
-            ? leader.recognitionType
-            : 'OTHER'
+          recognitionType:
+            typeof leader.recognitionType === 'string' &&
+            VISITING_LEADER_TYPES.includes(leader.recognitionType as (typeof VISITING_LEADER_TYPES)[number])
+              ? leader.recognitionType
+              : 'OTHER'
         }))
         .filter((leader) => leader.name || leader.calling)
     : [];
@@ -58,9 +70,12 @@ async function insertProgramItems(
     const itemType = toTrimmedString(item?.itemType);
     if (!itemType) continue;
 
-    const speakerStatus = itemType === 'SPEAKER'
-      ? (SPEAKER_STATUSES.includes(item?.speakerStatus as (typeof SPEAKER_STATUSES)[number]) ? item?.speakerStatus : 'PLANNED')
-      : null;
+    const speakerStatus =
+      itemType === 'SPEAKER'
+        ? SPEAKER_STATUSES.includes(item?.speakerStatus as (typeof SPEAKER_STATUSES)[number])
+          ? item?.speakerStatus
+          : 'PLANNED'
+        : null;
     const values = [
       wardId,
       meetingId,
@@ -72,12 +87,13 @@ async function insertProgramItems(
       toTrimmedString(item?.programNotes),
       toTrimmedString(item?.hymnNumber),
       toTrimmedString(item?.hymnTitle),
+      toTrimmedString(item?.hymnLocale) || 'en-US',
       itemType === INTRODUCTION_ITEM_TYPE ? JSON.stringify(getIntroductionRoles(item?.introductionRoles)) : null,
       speakerStatus
     ];
     await client.query(
-      `INSERT INTO meeting_program_item (ward_id, meeting_id, sequence, item_type, title, notes, topic, program_notes, hymn_number, hymn_title, introduction_roles, speaker_status)
-       VALUES ($1, $2, $3, $4, NULLIF($5, ''), NULLIF($6, ''), NULLIF($7, ''), NULLIF($8, ''), NULLIF($9, ''), NULLIF($10, ''), $11::jsonb, $12::text)`,
+      `INSERT INTO meeting_program_item (ward_id, meeting_id, sequence, item_type, title, notes, topic, program_notes, hymn_number, hymn_title, hymn_locale, introduction_roles, speaker_status)
+       VALUES ($1, $2, $3, $4, NULLIF($5, ''), NULLIF($6, ''), NULLIF($7, ''), NULLIF($8, ''), NULLIF($9, ''), NULLIF($10, ''), $11::text, $12::jsonb, $13::text)`,
       values
     );
   }
@@ -151,7 +167,11 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
   } | null;
   const meetingDate = toTrimmedString(body?.meetingDate);
   const meetingType = toTrimmedString(body?.meetingType);
-  const programItems = Array.isArray(body?.programItems) ? body.programItems : [];
+  const submittedProgramItems = Array.isArray(body?.programItems) ? body.programItems : [];
+  const programItems = submittedProgramItems.map((item) => ({
+    ...item,
+    itemType: toTrimmedString(item?.itemType).toUpperCase()
+  }));
 
   if (!meetingDate || !isMeetingType(meetingType)) {
     return NextResponse.json({ error: 'Invalid meeting payload', code: 'BAD_REQUEST' }, { status: 400 });
@@ -159,26 +179,23 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
   const programRuleError = validateProgramItemsForMeetingType(meetingType, programItems);
   if (programRuleError) return NextResponse.json({ error: programRuleError, code: 'MEETING_TYPE_RULE' }, { status: 422 });
 
-  const legacyIntroductionTypes = new Set(['PRESIDING', 'CONDUCTING', 'ORGANIST_PIANIST', 'CHORISTER']);
-  const introductionIndexes = programItems.reduce<number[]>((indexes, item, index) => {
+  const supportedItemTypes = new Set<string>(SUPPORTED_PROGRAM_ITEM_TYPES);
+  for (const item of programItems) {
     const itemType = toTrimmedString(item?.itemType).toUpperCase();
-    if (legacyIntroductionTypes.has(itemType) || itemType === INTRODUCTION_ITEM_TYPE) indexes.push(index);
-    return indexes;
-  }, []);
-  const announcementIndexes = programItems.reduce<number[]>((indexes, item, index) => {
-    if (toTrimmedString(item?.itemType).toUpperCase() === 'ANNOUNCEMENT') indexes.push(index);
-    return indexes;
-  }, []);
-  const requiresIntroduction = !['STAKE_CONFERENCE', 'GENERAL_CONFERENCE'].includes(meetingType);
-  const expectedAnnouncementIndex = requiresIntroduction ? 1 : 0;
-  if (
-    (requiresIntroduction && (introductionIndexes.length !== 1 || introductionIndexes[0] !== 0)) ||
-    (!requiresIntroduction && introductionIndexes.length) ||
-    announcementIndexes.length !== 1 ||
-    announcementIndexes[0] !== expectedAnnouncementIndex
-  ) {
-    return NextResponse.json({ error: 'Invalid protected Introduction item', code: 'BAD_REQUEST' }, { status: 400 });
+    if (!itemType || !supportedItemTypes.has(itemType)) {
+      return NextResponse.json({ error: 'Unsupported program item type', code: 'BAD_REQUEST' }, { status: 400 });
+    }
   }
+
+  const protectedOrderError = validateProtectedProgramOrder(
+    meetingType,
+    programItems.map((item, index) => ({ itemType: toTrimmedString(item?.itemType), sequence: index + 1 }))
+  );
+  if (protectedOrderError)
+    return NextResponse.json(
+      { error: 'Invalid protected program order', code: protectedOrderError.code, reason: protectedOrderError.reason },
+      { status: 400 }
+    );
 
   const client = await pool.connect();
 
@@ -200,7 +217,8 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
       'SELECT default_sacrament_template_id FROM ward_document_settings WHERE ward_id = $1::uuid LIMIT 1',
       [wardId]
     );
-    const defaultTemplateId = (settingsResult.rows?.[0] as { default_sacrament_template_id?: string | null } | undefined)?.default_sacrament_template_id ?? null;
+    const defaultTemplateId =
+      (settingsResult.rows?.[0] as { default_sacrament_template_id?: string | null } | undefined)?.default_sacrament_template_id ?? null;
     let sourceTemplateId: string | null = null;
     let sourceTemplateVersion: number | null = null;
     let sourceLayout: unknown = BUILT_IN_TEMPLATES.find((template) => template.key === 'full-page-standard')?.layout;
@@ -224,7 +242,16 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     await client.query(
       `INSERT INTO meeting_document (ward_id, meeting_id, document_type, source_template_id, source_template_version, schema_version, layout_json, theme_json, revision, updated_by_user_id)
        VALUES ($1::uuid, $2::uuid, 'SACRAMENT_PROGRAM', $3::uuid, $4::int, $5::int, $6::jsonb, $7::jsonb, 1, $8::uuid)`,
-      [wardId, inserted.rows[0].id, inherited.sourceTemplateId, inherited.sourceTemplateVersion, inherited.layout.schemaVersion, JSON.stringify(inherited.layout), JSON.stringify(inherited.theme), session.user.id]
+      [
+        wardId,
+        inserted.rows[0].id,
+        inherited.sourceTemplateId,
+        inherited.sourceTemplateVersion,
+        inherited.layout.schemaVersion,
+        JSON.stringify(inherited.layout),
+        JSON.stringify(inherited.theme),
+        session.user.id
+      ]
     );
 
     await recordAuditEvent(client, {

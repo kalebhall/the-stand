@@ -2,8 +2,22 @@ import { Worker } from 'bullmq';
 
 import { pool } from '@/src/db/client';
 import { createNotificationWorkerHandler } from '@/src/notifications/worker-handler';
-import { enqueueGlobalEmailDeliveryJob, enqueueGlobalNotificationJob, enqueueOutboxNotificationJob, NOTIFICATION_QUEUE_NAME, type NotificationQueueJob } from '@/src/notifications/queue';
-import { findPendingGlobalEmailDeliveries, findPendingGlobalOutboxEvents, findPendingOutboxEvents } from '@/src/notifications/recovery';
+import {
+  enqueueDigestNotificationJob,
+  enqueueGlobalEmailDeliveryJob,
+  enqueueGlobalNotificationJob,
+  enqueueLocalNotificationDeliveryJob,
+  enqueueOutboxNotificationJob,
+  NOTIFICATION_QUEUE_NAME,
+  type NotificationQueueJob
+} from '@/src/notifications/queue';
+import {
+  findPendingDigestDeliveries,
+  findPendingGlobalEmailDeliveries,
+  findPendingGlobalOutboxEvents,
+  findPendingLocalNotificationDeliveries,
+  findPendingOutboxEvents
+} from '@/src/notifications/recovery';
 import { createDueSupportReminderEvents } from '@/src/notifications/support-reminders';
 
 function getRedisConnectionUrl(): string {
@@ -14,14 +28,10 @@ function getRedisConnectionUrl(): string {
   return redisUrl;
 }
 
-const worker = new Worker<NotificationQueueJob>(
-  NOTIFICATION_QUEUE_NAME,
-  createNotificationWorkerHandler(),
-  {
-    connection: { url: getRedisConnectionUrl() },
-    concurrency: 10
-  }
-);
+const worker = new Worker<NotificationQueueJob>(NOTIFICATION_QUEUE_NAME, createNotificationWorkerHandler(), {
+  connection: { url: getRedisConnectionUrl() },
+  concurrency: 10
+});
 
 async function recoverPendingOutboxEvents(): Promise<void> {
   const client = await pool.connect();
@@ -29,6 +39,8 @@ async function recoverPendingOutboxEvents(): Promise<void> {
     const events = await findPendingOutboxEvents(client);
     const globalEvents = await findPendingGlobalOutboxEvents(client);
     const globalEmailDeliveries = await findPendingGlobalEmailDeliveries(client);
+    const localDeliveries = await findPendingLocalNotificationDeliveries(client);
+    const digestDeliveries = await findPendingDigestDeliveries(client);
     for (const event of events) {
       await enqueueOutboxNotificationJob(event);
     }
@@ -38,8 +50,22 @@ async function recoverPendingOutboxEvents(): Promise<void> {
     for (const delivery of globalEmailDeliveries) {
       await enqueueGlobalEmailDeliveryJob(delivery);
     }
-    if (events.length > 0 || globalEvents.length > 0 || globalEmailDeliveries.length > 0) {
-      console.info(`[notifications-worker] re-enqueued ${events.length + globalEvents.length + globalEmailDeliveries.length} pending notification job(s)`);
+    for (const delivery of localDeliveries) {
+      await enqueueLocalNotificationDeliveryJob(delivery);
+    }
+    for (const delivery of digestDeliveries) {
+      await enqueueDigestNotificationJob({ kind: 'digest-delivery', ...delivery });
+    }
+    if (
+      events.length > 0 ||
+      globalEvents.length > 0 ||
+      globalEmailDeliveries.length > 0 ||
+      localDeliveries.length > 0 ||
+      digestDeliveries.length > 0
+    ) {
+      console.info(
+        `[notifications-worker] re-enqueued ${events.length + globalEvents.length + globalEmailDeliveries.length + localDeliveries.length + digestDeliveries.length} pending notification job(s)`
+      );
     }
   } catch (error) {
     console.error('[notifications-worker] pending outbox recovery failed', {

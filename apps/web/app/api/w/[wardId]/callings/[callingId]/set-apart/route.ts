@@ -20,7 +20,10 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
   }
 
   const { wardId, callingId } = await context.params;
-  if (!(await isWardModuleEnabled(wardId, session.user.id, 'callings')) || !canManageCallings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) {
+  if (
+    !(await isWardModuleEnabled(wardId, session.user.id, 'callings')) ||
+    !canManageCallings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)
+  ) {
     return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
   }
 
@@ -80,8 +83,6 @@ export async function POST(_: Request, context: { params: Promise<{ wardId: stri
     const outboxResult = await client.query(
       `INSERT INTO event_outbox (ward_id, aggregate_type, aggregate_id, event_type, payload)
        VALUES ($1, 'calling_assignment', $2, 'CALLING_SET_APART', $3::jsonb)
-       ON CONFLICT (ward_id, event_type, aggregate_id)
-       DO UPDATE SET payload = EXCLUDED.payload, updated_at = now(), status = 'pending'
        RETURNING id`,
       [
         wardId,

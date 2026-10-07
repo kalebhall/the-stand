@@ -62,8 +62,6 @@ export async function createUser(formData: FormData) {
        SELECT 'SUPPORT_WORK_ITEM', id, 'USER_REQUIRES_ASSIGNMENT',
               jsonb_build_object('sourceType', 'USER_ACCOUNT', 'sourceId', source_id::text)
          FROM inserted_work_item
-       ON CONFLICT (event_type, aggregate_id)
-       DO UPDATE SET payload = EXCLUDED.payload, updated_at = now(), status = 'pending'
        RETURNING id
      )
      SELECT id, email, (SELECT id FROM inserted_event) AS global_event_id FROM inserted_user`,
@@ -87,7 +85,9 @@ export async function createUser(formData: FormData) {
 
 export async function createGoogleProvisionedUser(formData: FormData) {
   const actingSession = await requireSupportAdmin();
-  const email = String(formData.get('email') ?? '').trim().toLowerCase();
+  const email = String(formData.get('email') ?? '')
+    .trim()
+    .toLowerCase();
   const displayNameRaw = String(formData.get('displayName') ?? '').trim();
   const displayName = displayNameRaw.length ? displayNameRaw : null;
   const wardId = String(formData.get('wardId') ?? '');
@@ -107,10 +107,7 @@ export async function createGoogleProvisionedUser(formData: FormData) {
       return;
     }
 
-    const existing = await client.query(
-      `SELECT id, password_hash, is_active FROM user_account WHERE email = $1 FOR UPDATE`,
-      [email]
-    );
+    const existing = await client.query(`SELECT id, password_hash, is_active FROM user_account WHERE email = $1 FOR UPDATE`, [email]);
     let userId: string;
     if (existing.rowCount) {
       if (existing.rows[0].password_hash || !existing.rows[0].is_active) {

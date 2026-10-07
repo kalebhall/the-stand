@@ -1,4 +1,4 @@
-import { getTranslations } from 'next-intl/server';
+import { getTranslations, getLocale } from 'next-intl/server';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 
@@ -11,10 +11,12 @@ import { canManageCallings, canUseInternalNotes, canViewMeetings } from '@/src/a
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 import { isCoreAnnouncementActiveForDate } from '@/src/conducting/core';
+import { isWardModuleEnabledInTransaction } from '@/src/modules/service';
 import { buildStandRows } from '@/src/stand/render';
 import { formatAtStandMemberName } from '@/src/stand/member-display';
 import { OfflineStandButton } from '@/components/offline-stand-button';
 import type { IntroductionRoles } from '@/src/meetings/types';
+import { getStandRenderLabels, resolvePublicLocale } from '@/src/i18n/public-program';
 
 type ProgramItemRow = {
   id: string;
@@ -24,6 +26,8 @@ type ProgramItemRow = {
   last_name: string | null;
   gender: string | null;
   notes: string | null;
+  stand_calling_name: string | null;
+  includes_stake_business: boolean;
   topic: string | null;
   program_notes: string | null;
   hymn_number: string | null;
@@ -99,6 +103,7 @@ export default async function StandViewPage({
 }) {
   const session = await requireAuthenticatedSession();
   const t = await getTranslations('stand');
+  const interfaceLocale = await getLocale();
   enforcePasswordRotation(session);
 
   if (!session.activeWardId || !canViewMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId)) {
@@ -110,17 +115,19 @@ export default async function StandViewPage({
   const { meetingId } = await params;
   const { mode } = await searchParams;
   const selectedMode = mode === 'compact' ? 'compact' : 'formal';
+  const includeInternalNotes = canUseInternalNotes({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId);
 
   const client = await pool.connect();
 
   try {
     await client.query('BEGIN');
     await setDbContext(client, { userId: session.user.id, wardId: session.activeWardId });
+    const membershipOrdinancesEnabled = await isWardModuleEnabledInTransaction(client, session.activeWardId, 'membership-ordinances');
 
-    const meetingResult = await client.query('SELECT m.id, m.meeting_date, m.meeting_type, w.default_locale FROM meeting m JOIN ward w ON w.id = m.ward_id WHERE m.id = $1 AND m.ward_id = $2 LIMIT 1', [
-      meetingId,
-      session.activeWardId
-    ]);
+    const meetingResult = await client.query(
+      'SELECT m.id, m.meeting_date, m.meeting_type, w.default_locale FROM meeting m JOIN ward w ON w.id = m.ward_id WHERE m.id = $1 AND m.ward_id = $2 LIMIT 1',
+      [meetingId, session.activeWardId]
+    );
 
     if (!meetingResult.rowCount) {
       await client.query('ROLLBACK');
@@ -131,13 +138,28 @@ export default async function StandViewPage({
     const hymnLocale = meetingResult.rows[0].default_locale as string;
 
     const programResult = await client.query(
-      `SELECT i.id, i.item_type, i.title, i.notes, i.topic, i.program_notes, i.hymn_number, i.hymn_title, i.hymn_locale, i.introduction_roles,
+      `SELECT i.id, i.item_type, i.title, stand_business.calling_name AS stand_calling_name,
+              CASE WHEN $3::boolean THEN i.notes ELSE NULL END AS notes,
+              CASE WHEN upper(i.item_type) = 'WARD_AND_STAKE_BUSINESS' AND i.notes LIKE '%[STAKE_BUSINESS]%' THEN TRUE ELSE FALSE END AS includes_stake_business,
+              i.topic, i.program_notes, i.hymn_number, i.hymn_title, i.hymn_locale,
+              CASE WHEN $3::boolean THEN i.introduction_roles ELSE (i.introduction_roles - 'visitingLeaders') END AS introduction_roles,
               m.first_name, m.last_name, m.gender
          FROM meeting_program_item i
-         LEFT JOIN member m ON m.ward_id = i.ward_id AND m.full_name = i.title AND m.archived_at IS NULL
+        LEFT JOIN LATERAL (
+          SELECT b.calling_name
+            FROM meeting_business_line b
+           WHERE b.meeting_id = i.meeting_id
+             AND b.ward_id = i.ward_id
+             AND upper(i.item_type) IN ('SUSTAINING', 'RELEASE')
+             AND b.member_name = i.title
+             AND b.action_type = CASE WHEN upper(i.item_type) LIKE '%SUSTAIN%' THEN 'SUSTAIN' ELSE 'RELEASE' END
+           ORDER BY b.created_at DESC
+           LIMIT 1
+        ) stand_business ON TRUE
+        LEFT JOIN member m ON m.ward_id = i.ward_id AND m.full_name = i.title AND m.archived_at IS NULL
         WHERE i.meeting_id = $1::uuid AND i.ward_id = $2::uuid
         ORDER BY i.sequence ASC`,
-      [meetingId, session.activeWardId]
+      [meetingId, session.activeWardId, includeInternalNotes]
     );
 
     const templateResult = await client.query(
@@ -182,8 +204,9 @@ export default async function StandViewPage({
       [meetingId, session.activeWardId, meetingDate]
     );
 
-    const membershipActionsResult = await client.query(
-      `SELECT a.id, a.member_name, a.action_type, a.priesthood_office, a.reason, a.details,
+    const membershipActionsResult = membershipOrdinancesEnabled
+      ? await client.query(
+          `SELECT a.id, a.member_name, a.action_type, a.priesthood_office, a.reason, a.details,
               CASE WHEN a.meeting_id <> $1::uuid AND a.status = 'pending' THEN 'action_needed' ELSE a.status END AS status,
               a.approval_confirmed, a.presenting_leader, a.performing_priesthood_holder, a.ordinance_date, a.baptism_date, a.confirmation_date, a.baptism_status, a.confirmation_status,
               m.meeting_date AS source_meeting_date,
@@ -195,22 +218,25 @@ export default async function StandViewPage({
           AND EXISTS (SELECT 1 FROM meeting route_meeting WHERE route_meeting.id = $1::uuid AND route_meeting.meeting_type NOT IN ('STAKE_CONFERENCE', 'GENERAL_CONFERENCE'))
           AND (a.meeting_id = $1::uuid OR (m.meeting_date <= $3::date AND a.status <> 'completed'))
         ORDER BY a.created_at ASC`,
-      [meetingId, session.activeWardId, meetingDate]
-    );
+          [meetingId, session.activeWardId, meetingDate]
+        )
+      : { rows: [] };
 
-    const notesResult = await client.query(
-      `SELECT note.id, note.program_item_id, note.visibility, note.note_text, note.created_at, ua.email AS created_by_email
-         FROM internal_note note
-         LEFT JOIN user_account ua ON ua.id = note.created_by_user_id
-        WHERE note.ward_id = $1::uuid
-          AND note.meeting_id IS NULL
-          AND note.program_item_id IN (
-            SELECT id FROM meeting_program_item WHERE meeting_id = $2::uuid AND ward_id = $1::uuid
-          )
-          AND (note.visibility IN ('LEADERSHIP', 'PUBLIC') OR note.created_by_user_id = $3::uuid)
-        ORDER BY note.created_at DESC`,
-      [session.activeWardId, meetingId, session.user.id]
-    );
+    const notesResult = includeInternalNotes
+      ? await client.query(
+          `SELECT note.id, note.program_item_id, note.visibility, note.note_text, note.created_at, ua.email AS created_by_email
+             FROM internal_note note
+             LEFT JOIN user_account ua ON ua.id = note.created_by_user_id
+            WHERE note.ward_id = $1::uuid
+              AND note.meeting_id IS NULL
+              AND note.program_item_id IN (
+                SELECT id FROM meeting_program_item WHERE meeting_id = $2::uuid AND ward_id = $1::uuid
+              )
+              AND (note.visibility IN ('LEADERSHIP', 'PUBLIC') OR note.created_by_user_id = $3::uuid)
+            ORDER BY note.created_at DESC`,
+          [session.activeWardId, meetingId, session.user.id]
+        )
+      : { rows: [] };
 
     await client.query('COMMIT');
 
@@ -266,31 +292,11 @@ export default async function StandViewPage({
     const canUseNotes = canUseInternalNotes({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId);
     const canManage = canManageCallings({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId);
     const renderLabels = {
-      introduction: t('introduction'),
-      presiding: t('presiding'),
-      conducting: t('conducting'),
-      organistPianist: t('organistPianist'),
-      chorister: t('chorister'),
-      unassigned: t('unassigned'),
-      visitingStakeLeader: t('visitingStakeLeader'),
-      visitingPresidingAuthority: t('visitingLeaderTypePresidingAuthority'),
-      visitingHighCouncilor: t('visitingLeaderTypeHighCouncilor'),
-      visitingGeneralOfficer: t('visitingLeaderTypeGeneralOfficer'),
-      visitingOtherLeader: t('visitingLeaderTypeOther'),
+      ...getStandRenderLabels(resolvePublicLocale(interfaceLocale, hymnLocale)),
       sacrament: t('sacrament'),
       breadPrayer: t('breadPrayer'),
       waterPrayer: t('waterPrayer'),
-      scripture: t('scripture'),
-      itemLabels: {
-        OPENING_HYMN: t('item_OPENING_HYMN'),
-        CLOSING_HYMN: t('item_CLOSING_HYMN'),
-        SPEAKER: t('item_SPEAKER'),
-        INVOCATION: t('item_INVOCATION'),
-        BENEDICTION: t('item_BENEDICTION'),
-        SPECIAL_MUSICAL_NUMBER: t('item_SPECIAL_MUSICAL_NUMBER'),
-        ANNOUNCEMENT: t('item_ANNOUNCEMENT'),
-        WARD_AND_STAKE_BUSINESS: t('item_WARD_AND_STAKE_BUSINESS')
-      }
+      scripture: t('scripture')
     };
     const standRows = buildStandRows(
       (programResult.rows as ProgramItemRow[]).map((item) => ({
@@ -298,7 +304,9 @@ export default async function StandViewPage({
         itemType: item.item_type,
         title: item.title,
         member: { firstName: item.first_name, lastName: item.last_name, gender: item.gender },
-        notes: item.notes,
+        notes: null,
+        operationalCallingName: item.stand_calling_name,
+        includesStakeBusiness: item.includes_stake_business,
         topic: item.topic,
         programNotes: item.program_notes,
         hymnNumber: item.hymn_number,
@@ -321,7 +329,7 @@ export default async function StandViewPage({
           <h1 className="text-xl font-semibold sm:text-2xl">{t('title')}</h1>
           <div className="flex flex-wrap items-center gap-2">
             <Link href="/manual#at-the-stand" className="text-sm font-medium underline underline-offset-4">
-              Stand help
+              {t('standHelp')}
             </Link>
             <div className="flex gap-2" role="tablist" aria-label={t('viewMode')}>
               <Link

@@ -169,7 +169,10 @@
     "unpinMenu": "Allow menu to collapse",
     "helpManual": "Help / Manual",
     "settings": "Settings",
-    "logOut": "Log out"
+    "logOut": "[Log out]",
+    "logoutConfirmation": "[Are you sure you want to log out?]",
+    "logoutError": "[Unable to log out. Check your connection and try again.]",
+    "loggingOut": "[Logging out...]"
   },
   "account": {
     "title": "Account Overview",

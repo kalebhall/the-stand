@@ -86,13 +86,23 @@ describe('buildMeetingRenderHtml', () => {
     const html = buildMeetingRenderHtml({
       meetingDate: '<script>alert(1)</script>',
       meetingType: 'SACRAMENT',
-      programItems: [{ itemType: 'SPEAKER', title: '<b>Elder</b>', notes: 'Use <unsafe>', hymnNumber: null, hymnTitle: null }]
+      programItems: [
+        {
+          itemType: 'SPEAKER',
+          title: '<b>Elder</b>',
+          notes: 'Private note',
+          programNotes: 'Use <unsafe>',
+          hymnNumber: null,
+          hymnTitle: null
+        }
+      ]
     });
 
     expect(html).not.toContain('<script>alert(1)</script>');
     expect(html).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');
     expect(html).toContain('&lt;b&gt;Elder&lt;/b&gt;');
     expect(html).toContain('Use &lt;unsafe&gt;');
+    expect(html).not.toContain('Private note');
   });
 
   it('filters out announcements with includeInProgram = false', () => {
@@ -147,7 +157,7 @@ describe('buildMeetingRenderHtml', () => {
     expect(html).toContain('Finding peace through prayer');
   });
 
-  it('does not publish private stake-business participant details or markers', () => {
+  it('does not publish stake-business rows or private details', () => {
     const html = buildMeetingRenderHtml({
       meetingDate: '2026-01-04',
       meetingType: 'SACRAMENT',
@@ -163,7 +173,7 @@ describe('buildMeetingRenderHtml', () => {
       ]
     });
 
-    expect(html).toContain('WARD AND STAKE BUSINESS');
+    expect(html).not.toContain('WARD AND STAKE BUSINESS');
     expect(html).not.toContain('President Smith');
     expect(html).not.toContain('Stake President');
     expect(html).not.toContain('[STAKE_BUSINESS]');

@@ -27,9 +27,9 @@ function getPool(): Pool {
     }
     _pool = new Pool({
       connectionString,
-      // Allow up to 20 concurrent connections.
+      // Allow enough concurrency for Next.js route fan-out without queueing user requests behind stale clients.
       // Each request can need 1 client for its lifetime (BEGIN→COMMIT).
-      max: 20,
+      max: 40,
       // Wait up to 15s for a connection before failing.
       // 5s was too short under moderate load bursts.
       connectionTimeoutMillis: 15000,
@@ -39,7 +39,10 @@ function getPool(): Pool {
       query_timeout: 10000,
       // Detect dead TCP connections between requests.
       keepAlive: true,
-      keepAliveInitialDelayMillis: 10000
+      keepAliveInitialDelay: 10000,
+      // Recycle connections before long-lived development/test sessions or network middleboxes can expire them.
+      maxLifetimeSeconds: 300,
+      maxUses: 100
     });
     const activePool = _pool;
     const poolEvents = activePool as Pool & EventEmitter;

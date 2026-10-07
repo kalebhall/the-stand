@@ -169,7 +169,10 @@
     "unpinMenu": "Payagan ang pag-collapse ng menu",
     "helpManual": "Tulong / Manwal",
     "settings": "Mga Setting",
-    "logOut": "Mag-log out"
+    "logOut": "Mag-log out",
+    "logoutConfirmation": "Sigurado ka bang gusto mong mag-log out?",
+    "logoutError": "Hindi makapag-log out. Suriin ang koneksyon at subukan muli.",
+    "loggingOut": "Nagre-log out..."
   },
   "account": {
     "title": "Pangkalahatang-ideya ng Account",

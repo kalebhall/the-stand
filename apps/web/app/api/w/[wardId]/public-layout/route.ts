@@ -5,10 +5,10 @@ import { auth } from '@/src/auth/auth';
 import { canManageMeetings } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
-import { isWardModuleEnabled } from '@/src/modules/service';
+import { isWardModuleEnabledInTransaction } from '@/src/modules/service';
 import { validatePublicLayout } from '@/src/meetings/public-layout';
 
-const text = (value: unknown) => typeof value === 'string' ? value.trim() : '';
+const text = (value: unknown) => (typeof value === 'string' ? value.trim() : '');
 
 type LayoutRow = {
   preset: string;
@@ -21,7 +21,8 @@ type LayoutRow = {
 function getAccess(wardId: string) {
   return auth().then(async (session) => {
     if (!session?.user?.id) return { response: NextResponse.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, { status: 401 }) };
-    if (!canManageMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId) || !(await isWardModuleEnabled(wardId, session.user.id, 'programs'))) return { response: NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 }) };
+    if (!canManageMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId))
+      return { response: NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 }) };
     return { session };
   });
 }
@@ -34,9 +35,24 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
   try {
     await client.query('BEGIN');
     await setDbContext(client, { userId: access.session.user.id, wardId });
-    const result = await client.query('SELECT preset, announcement_mode, cover_mode, cover_image_url, cover_image_alt_text FROM public_program_layout WHERE ward_id = $1::uuid LIMIT 1', [wardId]);
+    if (!(await isWardModuleEnabledInTransaction(client, wardId, 'programs'))) {
+      await client.query('ROLLBACK');
+      return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
+    }
+    const result = await client.query(
+      'SELECT preset, announcement_mode, cover_mode, cover_image_url, cover_image_alt_text FROM public_program_layout WHERE ward_id = $1::uuid LIMIT 1',
+      [wardId]
+    );
     await client.query('COMMIT');
-    return NextResponse.json({ layout: result.rows[0] ?? { preset: 'SINGLE_SHEET_BIFOLD', announcement_mode: 'AFTER_PROGRAM', cover_mode: 'NONE', cover_image_url: null, cover_image_alt_text: null } });
+    return NextResponse.json({
+      layout: result.rows[0] ?? {
+        preset: 'SINGLE_SHEET_BIFOLD',
+        announcement_mode: 'AFTER_PROGRAM',
+        cover_mode: 'NONE',
+        cover_image_url: null,
+        cover_image_alt_text: null
+      }
+    });
   } catch {
     await client.query('ROLLBACK');
     return NextResponse.json({ error: 'Failed to load public layout', code: 'INTERNAL_ERROR' }, { status: 500 });
@@ -49,7 +65,13 @@ export async function PATCH(request: Request, context: { params: Promise<{ wardI
   const { wardId } = await context.params;
   const access = await getAccess(wardId);
   if (access.response) return access.response;
-  const body = await request.json().catch(() => null) as { preset?: string; announcementMode?: string; coverMode?: string; coverImageUrl?: string; coverImageAltText?: string } | null;
+  const body = (await request.json().catch(() => null)) as {
+    preset?: string;
+    announcementMode?: string;
+    coverMode?: string;
+    coverImageUrl?: string;
+    coverImageAltText?: string;
+  } | null;
   const preset = text(body?.preset);
   const announcementMode = text(body?.announcementMode);
   const coverMode = text(body?.coverMode);
@@ -62,10 +84,26 @@ export async function PATCH(request: Request, context: { params: Promise<{ wardI
   try {
     await client.query('BEGIN');
     await setDbContext(client, { userId: access.session.user.id, wardId });
-    const beforeResult = await client.query('SELECT preset, announcement_mode, cover_mode, cover_image_url, cover_image_alt_text FROM public_program_layout WHERE ward_id = $1::uuid LIMIT 1', [wardId]);
+    if (!(await isWardModuleEnabledInTransaction(client, wardId, 'programs'))) {
+      await client.query('ROLLBACK');
+      return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
+    }
+    const beforeResult = await client.query(
+      'SELECT preset, announcement_mode, cover_mode, cover_image_url, cover_image_alt_text FROM public_program_layout WHERE ward_id = $1::uuid LIMIT 1',
+      [wardId]
+    );
     const before = beforeResult.rows[0] as LayoutRow | undefined;
-    const after = { preset, announcement_mode: announcementMode, cover_mode: coverMode, cover_image_url: coverImageUrl || null, cover_image_alt_text: coverImageAltText || null };
-    const result = await client.query(`INSERT INTO public_program_layout (ward_id, preset, announcement_mode, cover_mode, cover_image_url, cover_image_alt_text, updated_by_user_id) VALUES ($1::uuid, $2::text, $3::text, $4::text, NULLIF($5::text, ''), NULLIF($6::text, ''), $7::uuid) ON CONFLICT (ward_id) DO UPDATE SET preset = EXCLUDED.preset, announcement_mode = EXCLUDED.announcement_mode, cover_mode = EXCLUDED.cover_mode, cover_image_url = EXCLUDED.cover_image_url, cover_image_alt_text = EXCLUDED.cover_image_alt_text, updated_by_user_id = EXCLUDED.updated_by_user_id, updated_at = now() RETURNING preset, announcement_mode, cover_mode, cover_image_url, cover_image_alt_text`, [wardId, preset, announcementMode, coverMode, coverImageUrl, coverImageAltText, access.session.user.id]);
+    const after = {
+      preset,
+      announcement_mode: announcementMode,
+      cover_mode: coverMode,
+      cover_image_url: coverImageUrl || null,
+      cover_image_alt_text: coverImageAltText || null
+    };
+    const result = await client.query(
+      `INSERT INTO public_program_layout (ward_id, preset, announcement_mode, cover_mode, cover_image_url, cover_image_alt_text, updated_by_user_id) VALUES ($1::uuid, $2::text, $3::text, $4::text, NULLIF($5::text, ''), NULLIF($6::text, ''), $7::uuid) ON CONFLICT (ward_id) DO UPDATE SET preset = EXCLUDED.preset, announcement_mode = EXCLUDED.announcement_mode, cover_mode = EXCLUDED.cover_mode, cover_image_url = EXCLUDED.cover_image_url, cover_image_alt_text = EXCLUDED.cover_image_alt_text, updated_by_user_id = EXCLUDED.updated_by_user_id, updated_at = now() RETURNING preset, announcement_mode, cover_mode, cover_image_url, cover_image_alt_text`,
+      [wardId, preset, announcementMode, coverMode, coverImageUrl, coverImageAltText, access.session.user.id]
+    );
     const changes = buildFieldDiff(before ? { ...before } : null, after, []);
     if (changes) {
       await recordAuditEvent(client, {

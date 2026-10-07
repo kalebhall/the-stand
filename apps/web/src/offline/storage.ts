@@ -12,10 +12,29 @@ export type OfflineProgress = Record<string, boolean>;
 export type OfflineStandSnapshot = {
   userId: string;
   wardId: string;
+  locale: string;
   meeting: { id: string; meetingDate: string; meetingType: string };
   standRows: Array<Record<string, unknown>>;
-  businessLines: Array<{ id: string; memberName: string; callingName: string; actionType: string; status: string; carriedForward?: boolean; updatedAt?: string }>;
-  technology?: { ownerName: string | null; roomReady: boolean; audioReady: boolean; streamReady: boolean; accessibilityChecked: boolean; authorizedLink: string | null; recordingDeletionReminder: boolean; startConfirmedAt: string | null; stopConfirmedAt: string | null } | null;
+  businessLines: Array<{
+    id: string;
+    memberName: string;
+    callingName: string;
+    actionType: string;
+    status: string;
+    carriedForward?: boolean;
+    updatedAt?: string;
+  }>;
+  technology?: {
+    ownerName: string | null;
+    roomReady: boolean;
+    audioReady: boolean;
+    streamReady: boolean;
+    accessibilityChecked: boolean;
+    authorizedLink: string | null;
+    recordingDeletionReminder: boolean;
+    startConfirmedAt: string | null;
+    stopConfirmedAt: string | null;
+  } | null;
   membershipActions?: Array<{
     id: string;
     memberName: string;
@@ -121,7 +140,10 @@ function isPendingDeletionMarker(value: string | null): boolean {
 
 function serializeContextTransition<T>(operation: () => Promise<T>): Promise<T> {
   const next = contextTransition.then(operation, operation);
-  contextTransition = next.then(() => undefined, () => undefined);
+  contextTransition = next.then(
+    () => undefined,
+    () => undefined
+  );
   return next;
 }
 
@@ -129,10 +151,7 @@ export function isOfflineContextMatch(context: OfflineContext | undefined, userI
   return context?.userId === userId && context.wardId === wardId;
 }
 
-export function isOfflineAuthorizationMatch(
-  context: OfflineContext | undefined,
-  authorization: OfflineAuthorization | undefined
-): boolean {
+export function isOfflineAuthorizationMatch(context: OfflineContext | undefined, authorization: OfflineAuthorization | undefined): boolean {
   if (!authorization?.wardId) return false;
   return isOfflineContextMatch(context, authorization.userId, authorization.wardId);
 }
@@ -140,7 +159,8 @@ export function isOfflineAuthorizationMatch(
 export function parseOfflineAuthorization(value: unknown): OfflineAuthorization | undefined {
   if (!isRecord(value)) return undefined;
   const body = value;
-  if (!body.user || typeof body.user !== 'object' || typeof body.activeWardId !== 'string' && body.activeWardId !== null) return undefined;
+  if (!body.user || typeof body.user !== 'object' || (typeof body.activeWardId !== 'string' && body.activeWardId !== null))
+    return undefined;
   const user = body.user;
   return isRecord(user) && typeof user.id === 'string' ? { userId: user.id, wardId: body.activeWardId } : undefined;
 }
@@ -171,7 +191,7 @@ const ENGLISH_OFFLINE_AGE_LABELS: OfflineAgeLabels = {
   hourAgo: (count) => `${count} hour ago`,
   hoursAgo: (count) => `${count} hours ago`,
   dayAgo: (count) => `${count} day ago`,
-  daysAgo: (count) => `${count} days ago`,
+  daysAgo: (count) => `${count} days ago`
 };
 
 export function formatOfflineAge(savedAt: string, now = Date.now(), labels: OfflineAgeLabels = ENGLISH_OFFLINE_AGE_LABELS): string {
@@ -307,9 +327,10 @@ export function saveOfflineSnapshot(snapshot: OfflineStandSnapshot): Promise<voi
 
 export async function loadOfflineSnapshot(userId: string, wardId: string, meetingId: string): Promise<OfflineStandSnapshot | null> {
   if (isOfflineDeletionPending()) return null;
-  const snapshot = (await storeRequest<OfflineStandSnapshot | undefined>(SNAPSHOT_STORE, 'readonly', (store) =>
-    store.get(snapshotKey(userId, wardId, meetingId))
-  )) ?? null;
+  const snapshot =
+    (await storeRequest<OfflineStandSnapshot | undefined>(SNAPSHOT_STORE, 'readonly', (store) =>
+      store.get(snapshotKey(userId, wardId, meetingId))
+    )) ?? null;
   if (isOfflineDeletionPending()) return null;
   if (snapshot && ['STAKE_CONFERENCE', 'GENERAL_CONFERENCE'].includes(snapshot.meeting.meetingType)) {
     return { ...snapshot, businessLines: [], membershipActions: [] };
@@ -331,9 +352,9 @@ export async function saveOfflineInterviewSnapshot(snapshot: OfflineInterviewSna
 
 export async function loadOfflineInterviewSnapshot(userId: string, wardId: string): Promise<OfflineInterviewSnapshot | null> {
   if (isOfflineDeletionPending()) return null;
-  const snapshot = (await storeRequest<OfflineInterviewSnapshot | undefined>(INTERVIEW_STORE, 'readonly', (store) =>
-    store.get(`${userId}:${wardId}`)
-  )) ?? null;
+  const snapshot =
+    (await storeRequest<OfflineInterviewSnapshot | undefined>(INTERVIEW_STORE, 'readonly', (store) => store.get(`${userId}:${wardId}`))) ??
+    null;
   return isOfflineDeletionPending() ? null : snapshot;
 }
 
@@ -355,9 +376,17 @@ export function cacheOfflinePage(meetingId: string, expectedEpoch = offlineWrite
   const deletionMarker = getDeletionMarker();
   if (offlineDeletionRequests > 0 || isPendingDeletionMarker(deletionMarker)) return Promise.resolve();
   return serializeContextTransition(async () => {
-    if (offlineDeletionRequests > 0 || isPendingDeletionMarker(getDeletionMarker()) || getDeletionMarker() !== deletionMarker || expectedEpoch !== offlineWriteEpoch || !('caches' in globalThis)) return;
+    if (
+      offlineDeletionRequests > 0 ||
+      isPendingDeletionMarker(getDeletionMarker()) ||
+      getDeletionMarker() !== deletionMarker ||
+      expectedEpoch !== offlineWriteEpoch ||
+      !('caches' in globalThis)
+    )
+      return;
     const cache = await caches.open(OFFLINE_CACHE_NAME);
-    if (expectedEpoch !== offlineWriteEpoch || isPendingDeletionMarker(getDeletionMarker()) || getDeletionMarker() !== deletionMarker) return;
+    if (expectedEpoch !== offlineWriteEpoch || isPendingDeletionMarker(getDeletionMarker()) || getDeletionMarker() !== deletionMarker)
+      return;
     await cache.add(`/stand/${meetingId}/offline`);
     if (expectedEpoch !== offlineWriteEpoch || isPendingDeletionMarker(getDeletionMarker()) || getDeletionMarker() !== deletionMarker) {
       await caches.delete(OFFLINE_CACHE_NAME);
@@ -368,7 +397,13 @@ export function cacheOfflinePage(meetingId: string, expectedEpoch = offlineWrite
 export async function removeOfflineMutation(id: string, expectedEpoch = offlineWriteEpoch): Promise<void> {
   const deletionMarker = getDeletionMarker();
   await serializeContextTransition(async () => {
-    if (offlineDeletionRequests > 0 || isPendingDeletionMarker(getDeletionMarker()) || getDeletionMarker() !== deletionMarker || expectedEpoch !== offlineWriteEpoch) return;
+    if (
+      offlineDeletionRequests > 0 ||
+      isPendingDeletionMarker(getDeletionMarker()) ||
+      getDeletionMarker() !== deletionMarker ||
+      expectedEpoch !== offlineWriteEpoch
+    )
+      return;
     await storeRequest(MUTATION_STORE, 'readwrite', (store) => store.delete(id));
   });
 }

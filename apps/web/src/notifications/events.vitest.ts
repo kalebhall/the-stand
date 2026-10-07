@@ -19,6 +19,7 @@ describe('notification event registry', () => {
         'MEETING_REPUBLISHED',
         'NOTE_CREATED',
         'NOTE_UPDATED',
+        'NOTE_DELETED',
         'ACCESS_REQUEST_SUBMITTED',
         'SYSTEM_FAILURE'
       ])

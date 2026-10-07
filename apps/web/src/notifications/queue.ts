@@ -2,7 +2,6 @@ import type { NotificationDigestFrequency } from './email-preferences';
 
 const NOTIFICATION_QUEUE_NAME = 'notification-outbox';
 
-
 export type OutboxNotificationQueueJob = {
   kind: 'outbox-event';
   wardId: string;
@@ -28,7 +27,18 @@ export type GlobalEmailDeliveryQueueJob = {
   globalNotificationDeliveryId: string;
 };
 
-export type NotificationQueueJob = OutboxNotificationQueueJob | GlobalOutboxNotificationQueueJob | GlobalEmailDeliveryQueueJob | NotificationDigestQueueJob;
+export type LocalNotificationDeliveryQueueJob = {
+  kind: 'local-notification-delivery';
+  wardId: string;
+  notificationDeliveryId: string;
+};
+
+export type NotificationQueueJob =
+  | OutboxNotificationQueueJob
+  | GlobalOutboxNotificationQueueJob
+  | GlobalEmailDeliveryQueueJob
+  | LocalNotificationDeliveryQueueJob
+  | NotificationDigestQueueJob;
 
 function getRedisConnectionUrl(): string | null {
   const redisUrl = process.env.REDIS_URL?.trim();
@@ -101,13 +111,17 @@ export async function enqueueGlobalNotificationJob(payload: { globalEventOutboxI
       }
     }
 
-    await queue.add('process-global-outbox-event', { kind: 'global-outbox-event', globalEventOutboxId: payload.globalEventOutboxId }, {
-      jobId,
-      removeOnComplete: 1000,
-      removeOnFail: 5000,
-      attempts: 5,
-      backoff: { type: 'exponential', delay: 5000 }
-    });
+    await queue.add(
+      'process-global-outbox-event',
+      { kind: 'global-outbox-event', globalEventOutboxId: payload.globalEventOutboxId },
+      {
+        jobId,
+        removeOnComplete: 1000,
+        removeOnFail: 5000,
+        attempts: 5,
+        backoff: { type: 'exponential', delay: 5000 }
+      }
+    );
   } finally {
     await queue.close();
   }
@@ -123,13 +137,44 @@ export async function enqueueGlobalEmailDeliveryJob(payload: { globalNotificatio
       if (state === 'failed' || state === 'completed') await existingJob.remove();
       else return;
     }
-    await queue.add('process-global-email-delivery', { kind: 'global-email-delivery', globalNotificationDeliveryId: payload.globalNotificationDeliveryId }, {
-      jobId,
-      removeOnComplete: 1000,
-      removeOnFail: 5000,
-      attempts: 3,
-      backoff: { type: 'exponential', delay: 60000 }
-    });
+    await queue.add(
+      'process-global-email-delivery',
+      { kind: 'global-email-delivery', globalNotificationDeliveryId: payload.globalNotificationDeliveryId },
+      {
+        jobId,
+        removeOnComplete: 1000,
+        removeOnFail: 5000,
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 60000 }
+      }
+    );
+  } finally {
+    await queue.close();
+  }
+}
+
+export async function enqueueLocalNotificationDeliveryJob(payload: { wardId: string; notificationDeliveryId: string }): Promise<void> {
+  const queue = await createBullMqQueue();
+  if (!queue) return;
+  try {
+    const jobId = `local-notification-delivery-${payload.notificationDeliveryId}`;
+    const existingJob = await queue.getJob(jobId);
+    if (existingJob) {
+      const state = await existingJob.getState();
+      if (state === 'failed' || state === 'completed') await existingJob.remove();
+      else return;
+    }
+    await queue.add(
+      'process-local-notification-delivery',
+      { kind: 'local-notification-delivery', ...payload },
+      {
+        jobId,
+        removeOnComplete: 1000,
+        removeOnFail: 5000,
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 5000 }
+      }
+    );
   } finally {
     await queue.close();
   }

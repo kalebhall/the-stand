@@ -2,6 +2,8 @@ import { parseDocumentLayout } from './schema';
 import { allBlocks } from './public-safety';
 import { getRegisteredBlockDefinition } from './registry';
 import type { DocumentBlock, DocumentLayout } from './types';
+import { getPublicProgramRenderLabels } from '@/src/i18n/public-program';
+import { resolveLocale } from '@/src/i18n/config';
 
 export type SimpleModeProperties = {
   blockTypes: readonly string[];
@@ -11,14 +13,18 @@ export type SimpleModeProperties = {
 };
 
 export class SimpleModeValidationError extends Error {
-  constructor(public readonly code: 'INVALID_LAYOUT' | 'STRUCTURE_LOCKED' | 'PROPERTY_LOCKED' | 'ADVANCED_BLOCK', message: string) {
+  constructor(
+    public readonly code: 'INVALID_LAYOUT' | 'STRUCTURE_LOCKED' | 'PROPERTY_LOCKED' | 'ADVANCED_BLOCK',
+    message: string
+  ) {
     super(message);
     this.name = 'SimpleModeValidationError';
   }
 }
 
 const json = (value: unknown) => JSON.stringify(value);
-const hasLock = (lock: DocumentBlock['lock'] | DocumentLayout['lock'], property: string) => Boolean(lock?.properties.includes(property as never));
+const hasLock = (lock: DocumentBlock['lock'] | DocumentLayout['lock'], property: string) =>
+  Boolean(lock?.properties.includes(property as never));
 
 function blockIndex(layout: DocumentLayout, id: string): [number, number, number] | null {
   for (const [pageIndex, page] of layout.pages.entries()) {
@@ -31,18 +37,31 @@ function blockIndex(layout: DocumentLayout, id: string): [number, number, number
 }
 
 function samePageAndRegionStructure(current: DocumentLayout, next: DocumentLayout): boolean {
-  return current.pages.length === next.pages.length && current.pages.every((page, pageIndex) => {
-    const otherPage = next.pages[pageIndex];
-    return page.id === otherPage.id && page.regions.length === otherPage.regions.length && page.regions.every((region, regionIndex) => {
-      const otherRegion = otherPage.regions[regionIndex];
-      return region.id === otherRegion.id && region.blocks.length === otherRegion.blocks.length;
-    });
-  });
+  return (
+    current.pages.length === next.pages.length &&
+    current.pages.every((page, pageIndex) => {
+      const otherPage = next.pages[pageIndex];
+      return (
+        page.id === otherPage.id &&
+        page.regions.length === otherPage.regions.length &&
+        page.regions.every((region, regionIndex) => {
+          const otherRegion = otherPage.regions[regionIndex];
+          return region.id === otherRegion.id && region.blocks.length === otherRegion.blocks.length;
+        })
+      );
+    })
+  );
 }
 
 export function getSimpleModeProperties(layout: DocumentLayout, advancedModeAvailable = false): SimpleModeProperties {
   return {
-    blockTypes: [...new Set(allBlocks(layout).filter((block) => getRegisteredBlockDefinition(layout.documentType, block.type).exposure === 'SIMPLE').map((block) => block.type))],
+    blockTypes: [
+      ...new Set(
+        allBlocks(layout)
+          .filter((block) => getRegisteredBlockDefinition(layout.documentType, block.type).exposure === 'SIMPLE')
+          .map((block) => block.type)
+      )
+    ],
     editableBlockProperties: ['VISIBILITY', 'CONTENT', 'POSITION'],
     editableThemeProperties: ['fontFamily', 'baseFontSize', 'accentColor'],
     advancedModeAvailable
@@ -64,34 +83,89 @@ export function validateSimpleModeDraft(input: unknown, currentInput: unknown): 
   if (layout.id !== current.id || layout.pages.some((page, pageIndex) => page.id !== current.pages[pageIndex].id)) {
     throw new SimpleModeValidationError('STRUCTURE_LOCKED', 'Document and page identities are locked');
   }
-  if (json(current.lock) !== json(layout.lock)) throw new SimpleModeValidationError('PROPERTY_LOCKED', 'Document lock metadata cannot be changed');
+  if (json(current.lock) !== json(layout.lock))
+    throw new SimpleModeValidationError('PROPERTY_LOCKED', 'Document lock metadata cannot be changed');
   for (const [pageIndex, previousPage] of current.pages.entries()) {
     const nextPage = layout.pages[pageIndex];
-    if (json(previousPage.lock) !== json(nextPage.lock)) throw new SimpleModeValidationError('PROPERTY_LOCKED', 'Page lock metadata cannot be changed');
+    if (json(previousPage.lock) !== json(nextPage.lock))
+      throw new SimpleModeValidationError('PROPERTY_LOCKED', 'Page lock metadata cannot be changed');
     for (const [regionIndex, previousRegion] of previousPage.regions.entries()) {
       const nextRegion = nextPage.regions[regionIndex];
-      if (json(previousRegion.lock) !== json(nextRegion.lock)) throw new SimpleModeValidationError('PROPERTY_LOCKED', 'Region lock metadata cannot be changed');
-      if (hasLock(previousRegion.lock, 'POSITION') && json(previousRegion.blocks.map((block) => block.id)) !== json(nextRegion.blocks.map((block) => block.id))) throw new SimpleModeValidationError('PROPERTY_LOCKED', 'Region block positions are locked');
-      if (hasLock(previousRegion.lock, 'SIZE') && json({ ratio: previousRegion.ratio, gutter: previousRegion.gutter }) !== json({ ratio: nextRegion.ratio, gutter: nextRegion.gutter })) throw new SimpleModeValidationError('PROPERTY_LOCKED', 'Region size is locked');
-      if (hasLock(previousRegion.lock, 'CONTENT') && json(previousRegion.blocks.map((block) => block.config)) !== json(nextRegion.blocks.map((block) => block.config))) throw new SimpleModeValidationError('PROPERTY_LOCKED', 'Region content is locked');
-      if (hasLock(previousRegion.lock, 'STYLE') && json(previousRegion.blocks.map((block) => ({ width: block.width, printBehavior: block.printBehavior, digitalBehavior: block.digitalBehavior }))) !== json(nextRegion.blocks.map((block) => ({ width: block.width, printBehavior: block.printBehavior, digitalBehavior: block.digitalBehavior })))) throw new SimpleModeValidationError('PROPERTY_LOCKED', 'Region style is locked');
-      if (hasLock(previousRegion.lock, 'VISIBILITY') && json(previousRegion.blocks.map((block) => block.visibility)) !== json(nextRegion.blocks.map((block) => block.visibility))) throw new SimpleModeValidationError('PROPERTY_LOCKED', 'Region visibility is locked');
+      if (json(previousRegion.lock) !== json(nextRegion.lock))
+        throw new SimpleModeValidationError('PROPERTY_LOCKED', 'Region lock metadata cannot be changed');
+      if (
+        hasLock(previousRegion.lock, 'POSITION') &&
+        json(previousRegion.blocks.map((block) => block.id)) !== json(nextRegion.blocks.map((block) => block.id))
+      )
+        throw new SimpleModeValidationError('PROPERTY_LOCKED', 'Region block positions are locked');
+      if (
+        hasLock(previousRegion.lock, 'SIZE') &&
+        json({ ratio: previousRegion.ratio, gutter: previousRegion.gutter }) !==
+          json({ ratio: nextRegion.ratio, gutter: nextRegion.gutter })
+      )
+        throw new SimpleModeValidationError('PROPERTY_LOCKED', 'Region size is locked');
+      if (
+        hasLock(previousRegion.lock, 'CONTENT') &&
+        json(previousRegion.blocks.map((block) => block.config)) !== json(nextRegion.blocks.map((block) => block.config))
+      )
+        throw new SimpleModeValidationError('PROPERTY_LOCKED', 'Region content is locked');
+      if (
+        hasLock(previousRegion.lock, 'STYLE') &&
+        json(
+          previousRegion.blocks.map((block) => ({
+            width: block.width,
+            printBehavior: block.printBehavior,
+            digitalBehavior: block.digitalBehavior
+          }))
+        ) !==
+          json(
+            nextRegion.blocks.map((block) => ({
+              width: block.width,
+              printBehavior: block.printBehavior,
+              digitalBehavior: block.digitalBehavior
+            }))
+          )
+      )
+        throw new SimpleModeValidationError('PROPERTY_LOCKED', 'Region style is locked');
+      if (
+        hasLock(previousRegion.lock, 'VISIBILITY') &&
+        json(previousRegion.blocks.map((block) => block.visibility)) !== json(nextRegion.blocks.map((block) => block.visibility))
+      )
+        throw new SimpleModeValidationError('PROPERTY_LOCKED', 'Region visibility is locked');
     }
   }
   const currentBlocksInOrder = allBlocks(current);
   const nextBlocksInOrder = allBlocks(layout);
-  if (hasLock(current.lock, 'POSITION') && json(currentBlocksInOrder.map((block) => block.id)) !== json(nextBlocksInOrder.map((block) => block.id))) throw new SimpleModeValidationError('PROPERTY_LOCKED', 'Document positions are locked');
-  if (hasLock(current.lock, 'CONTENT') && json(currentBlocksInOrder.map((block) => block.config)) !== json(nextBlocksInOrder.map((block) => block.config))) throw new SimpleModeValidationError('PROPERTY_LOCKED', 'Document content is locked');
-  if (hasLock(current.lock, 'VISIBILITY') && json(currentBlocksInOrder.map((block) => block.visibility)) !== json(nextBlocksInOrder.map((block) => block.visibility))) throw new SimpleModeValidationError('PROPERTY_LOCKED', 'Document visibility is locked');
-  if (hasLock(current.lock, 'SIZE') && json([current.paper, current.orientation, current.fold]) !== json([layout.paper, layout.orientation, layout.fold])) throw new SimpleModeValidationError('PROPERTY_LOCKED', 'Document size is locked');
+  if (
+    hasLock(current.lock, 'POSITION') &&
+    json(currentBlocksInOrder.map((block) => block.id)) !== json(nextBlocksInOrder.map((block) => block.id))
+  )
+    throw new SimpleModeValidationError('PROPERTY_LOCKED', 'Document positions are locked');
+  if (
+    hasLock(current.lock, 'CONTENT') &&
+    json(currentBlocksInOrder.map((block) => block.config)) !== json(nextBlocksInOrder.map((block) => block.config))
+  )
+    throw new SimpleModeValidationError('PROPERTY_LOCKED', 'Document content is locked');
+  if (
+    hasLock(current.lock, 'VISIBILITY') &&
+    json(currentBlocksInOrder.map((block) => block.visibility)) !== json(nextBlocksInOrder.map((block) => block.visibility))
+  )
+    throw new SimpleModeValidationError('PROPERTY_LOCKED', 'Document visibility is locked');
+  if (
+    hasLock(current.lock, 'SIZE') &&
+    json([current.paper, current.orientation, current.fold]) !== json([layout.paper, layout.orientation, layout.fold])
+  )
+    throw new SimpleModeValidationError('PROPERTY_LOCKED', 'Document size is locked');
   if (hasLock(current.lock, 'STYLE') && json(layout.theme) !== json(current.theme)) {
     throw new SimpleModeValidationError('PROPERTY_LOCKED', 'The document theme is locked');
   }
   const currentBlocks = new Map(allBlocks(current).map((block) => [block.id, block]));
   for (const nextBlock of allBlocks(layout)) {
     const previous = currentBlocks.get(nextBlock.id);
-    if (!previous || previous.type !== nextBlock.type) throw new SimpleModeValidationError('STRUCTURE_LOCKED', 'Block identities and types are locked');
-    if (json(previous.lock) !== json(nextBlock.lock)) throw new SimpleModeValidationError('PROPERTY_LOCKED', `${nextBlock.type} lock metadata cannot be changed`);
+    if (!previous || previous.type !== nextBlock.type)
+      throw new SimpleModeValidationError('STRUCTURE_LOCKED', 'Block identities and types are locked');
+    if (json(previous.lock) !== json(nextBlock.lock))
+      throw new SimpleModeValidationError('PROPERTY_LOCKED', `${nextBlock.type} lock metadata cannot be changed`);
     const definition = getRegisteredBlockDefinition(layout.documentType, nextBlock.type);
     if (definition.exposure === 'ADVANCED' && json(previous) !== json(nextBlock)) {
       throw new SimpleModeValidationError('ADVANCED_BLOCK', `${nextBlock.type} is managed by Advanced Mode`);
@@ -102,10 +176,17 @@ export function validateSimpleModeDraft(input: unknown, currentInput: unknown): 
     if (hasLock(previous.lock, 'VISIBILITY') && previous.visibility !== nextBlock.visibility) {
       throw new SimpleModeValidationError('PROPERTY_LOCKED', `${nextBlock.type} visibility is locked`);
     }
-    if (hasLock(previous.lock, 'STYLE') && json({ width: previous.width, printBehavior: previous.printBehavior, digitalBehavior: previous.digitalBehavior }) !== json({ width: nextBlock.width, printBehavior: nextBlock.printBehavior, digitalBehavior: nextBlock.digitalBehavior })) {
+    if (
+      hasLock(previous.lock, 'STYLE') &&
+      json({ width: previous.width, printBehavior: previous.printBehavior, digitalBehavior: previous.digitalBehavior }) !==
+        json({ width: nextBlock.width, printBehavior: nextBlock.printBehavior, digitalBehavior: nextBlock.digitalBehavior })
+    ) {
       throw new SimpleModeValidationError('PROPERTY_LOCKED', `${nextBlock.type} style is locked`);
     }
-    if (hasLock(previous.lock, 'POSITION') && JSON.stringify(blockIndex(current, previous.id)) !== JSON.stringify(blockIndex(layout, nextBlock.id))) {
+    if (
+      hasLock(previous.lock, 'POSITION') &&
+      JSON.stringify(blockIndex(current, previous.id)) !== JSON.stringify(blockIndex(layout, nextBlock.id))
+    ) {
       throw new SimpleModeValidationError('PROPERTY_LOCKED', `${nextBlock.type} position is locked`);
     }
   }
@@ -113,21 +194,59 @@ export function validateSimpleModeDraft(input: unknown, currentInput: unknown): 
 }
 
 export function buildPublicPreviewSource(
-  meeting: { meetingDate: string; meetingType: string; wardName?: string | null },
-  programItems: Array<{ itemType: string; title?: string | null; topic?: string | null; hymnTitle?: string | null; sequence: number; introductionRoles?: { presiding?: string | null; conducting?: string | null } | null }>
+  meeting: { meetingDate: string; meetingType: string; wardName?: string | null; locale?: string | null },
+  programItems: Array<{
+    itemType: string;
+    title?: string | null;
+    topic?: string | null;
+    programNotes?: string | null;
+    hymnNumber?: string | null;
+    hymnTitle?: string | null;
+    sequence: number;
+    introductionRoles?: {
+      presiding?: string | null;
+      conducting?: string | null;
+      organist?: string | null;
+      chorister?: string | null;
+    } | null;
+  }>,
+  announcements: Array<{ title: string }> = []
 ) {
-  const introduction = programItems.find((item) => item.itemType === 'INTRODUCTION')?.introductionRoles;
+  const introduction = programItems.find((item) => item.itemType.toUpperCase() === 'INTRODUCTION')?.introductionRoles;
   const presiding = introduction?.presiding?.trim() ?? '';
   const conducting = introduction?.conducting?.trim() ?? '';
+  const organist = introduction?.organist?.trim() ?? '';
+  const chorister = introduction?.chorister?.trim() ?? '';
+  const labels = getPublicProgramRenderLabels(resolveLocale(meeting.locale ?? 'en-US'), meeting.meetingType);
+  const musicLeaders = [organist ? `${labels.organistPianist}: ${organist}` : '', chorister ? `${labels.chorister}: ${chorister}` : '']
+    .filter(Boolean)
+    .join('\n');
+  const publicValues = {
+    ...(introduction
+      ? {
+          PRESIDING_CONDUCTING: JSON.stringify({ presiding, conducting }),
+          MUSIC_LEADERS: musicLeaders
+        }
+      : {}),
+    ...(announcements.length ? { ANNOUNCEMENTS: announcements.map((item) => item.title).join(' · ') } : {})
+  };
   return {
     meetingDate: meeting.meetingDate,
     meetingType: meeting.meetingType,
+    renderLabels: labels,
     wardName: meeting.wardName ?? null,
-    ...(introduction ? { publicValues: { PRESIDING_CONDUCTING: JSON.stringify({ presiding, conducting }) } } : {}),
-    programItems: programItems.map((item) => ({
-      order: item.sequence,
-      label: item.title || item.hymnTitle || item.itemType.replaceAll('_', ' '),
-      details: item.topic || null
-    }))
+    ...(Object.keys(publicValues).length ? { publicValues } : {}),
+    programItems: programItems
+      .filter((item) => item.itemType.toUpperCase() !== 'WARD_AND_STAKE_BUSINESS')
+      .map((item) => {
+        return {
+          order: item.sequence,
+          label:
+            item.hymnNumber || item.hymnTitle
+              ? [item.hymnNumber ? `#${item.hymnNumber}` : null, item.hymnTitle || null].filter(Boolean).join(' — ')
+              : item.title || labels.itemLabels[item.itemType.toUpperCase()] || item.itemType.replaceAll('_', ' '),
+          details: [item.topic?.trim(), item.programNotes?.trim()].filter(Boolean).join('\n') || null
+        };
+      })
   };
 }

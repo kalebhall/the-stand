@@ -38,21 +38,51 @@ export type VisitingStakeLeader = {
 
 export const INTRODUCTION_ITEM_TYPE = 'INTRODUCTION';
 
+// These are the source-row types understood by the meeting editor. Legacy rows
+// are retained so broad saves can preserve existing programs while new rows
+// remain constrained to the supported vocabulary.
+export const SUPPORTED_PROGRAM_ITEM_TYPES = [
+  INTRODUCTION_ITEM_TYPE,
+  'ANNOUNCEMENT',
+  'OPENING_HYMN',
+  'INVOCATION',
+  'OPENING_PRAYER',
+  'HYMN',
+  'WARD_AND_STAKE_BUSINESS',
+  'SACRAMENT_HYMN',
+  'SACRAMENT',
+  'SPEAKER',
+  'REST_HYMN',
+  'TESTIMONIES',
+  'CLOSING_HYMN',
+  'BENEDICTION',
+  'CLOSING_PRAYER',
+  'SPECIAL_HYMN',
+  'SPECIAL_MUSICAL_NUMBER',
+  'SUSTAINING',
+  'RELEASE',
+  'PRESIDING',
+  'CONDUCTING',
+  'ORGANIST_PIANIST',
+  'CHORISTER',
+  // Kept for existing programs created before the source-row vocabulary was
+  // centralized.
+  'WELCOME'
+] as const;
+
 export function isMeetingType(value: string): value is MeetingType {
   return MEETING_TYPES.includes(value as MeetingType);
 }
 
 export function validateProgramItemsForMeetingType(meetingType: string, items: Pick<ProgramItemInput, 'itemType'>[]): string | null {
   if (meetingType !== 'FAST_TESTIMONY') return null;
-  const forbidden = items.map((item) => item.itemType.toUpperCase()).filter((itemType) => itemType === 'SPEAKER' || itemType === 'SPECIAL_HYMN');
+  const forbidden = items
+    .map((item) => item.itemType.toUpperCase())
+    .filter((itemType) => itemType === 'SPEAKER' || itemType === 'SPECIAL_HYMN' || itemType === 'SPECIAL_MUSICAL_NUMBER');
   return forbidden.length ? 'Fast-and-testimony meetings cannot include assigned speakers or special musical selections.' : null;
 }
 
-export function validateSpeakerStatusTransition(
-  current: SpeakerStatus,
-  next: SpeakerStatus,
-  topic?: string | null
-): string | null {
+export function validateSpeakerStatusTransition(current: SpeakerStatus, next: SpeakerStatus, topic?: string | null): string | null {
   if (current === next) return null;
 
   const currentIndex = SPEAKER_STATUSES.indexOf(current);

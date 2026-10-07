@@ -66,7 +66,13 @@ export const documentBlockBaseSchema = z
     visibility: z.enum(VISIBILITY_MODES),
     printBehavior: z.enum(PRINT_BEHAVIORS),
     digitalBehavior: z.enum(DIGITAL_BEHAVIORS),
-    source: z.object({ key: z.enum(['MEETING_DATE', 'MEETING_TIME', 'MEETING_TYPE', 'WARD_NAME', 'MEETING_LOCATION']), fallbackText: z.string().max(500).optional() }).strict().optional(),
+    source: z
+      .object({
+        key: z.enum(['MEETING_DATE', 'MEETING_TIME', 'MEETING_TYPE', 'WARD_NAME', 'MEETING_LOCATION']),
+        fallbackText: z.string().max(500).optional()
+      })
+      .strict()
+      .optional(),
     reusableBlockId: idSchema.optional(),
     reusableBlockVersion: z.number().int().positive().optional(),
     lock: documentLockSchema.optional()
@@ -127,6 +133,14 @@ export function createDocumentLayoutSchema(blockSchema: z.ZodTypeAny, metadataSc
             : true;
       if (!supported) context.addIssue({ code: z.ZodIssueCode.custom, message: 'Unsupported paper, fold, and orientation combination' });
       for (const page of layout.pages) {
+        const physicalRegionCapacity = layout.fold === 'TRIFOLD' ? 6 : layout.fold === 'BIFOLD' || layout.fold === 'HALF_SHEET' ? 4 : 12;
+        if (page.regions.length > physicalRegionCapacity) {
+          context.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['pages'],
+            message: `${layout.fold} pages cannot contain more than ${physicalRegionCapacity} physical regions`
+          });
+        }
         const ratioTotal = page.regions.reduce((sum, region) => sum + region.ratio, 0);
         if (Math.abs(ratioTotal - 1) > 0.0001) {
           context.addIssue({ code: z.ZodIssueCode.custom, path: ['pages'], message: 'Region ratios must total one per page' });

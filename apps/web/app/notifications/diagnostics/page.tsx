@@ -17,7 +17,11 @@ function formatDate(value: string | null, notAttempted: string, locale: string):
 }
 
 function statusLabel(status: string, success: string, failure: string): string {
-  return status === 'success' ? success : status === 'failure' ? failure : status[0]?.toUpperCase() + status.slice(1);
+  return status === 'success'
+    ? success
+    : status === 'failure' || status === 'failed'
+      ? failure
+      : status[0]?.toUpperCase() + status.slice(1);
 }
 
 export default async function NotificationDiagnosticsPage() {
@@ -26,7 +30,11 @@ export default async function NotificationDiagnosticsPage() {
   const session = await requireAuthenticatedSession();
   enforcePasswordRotation(session);
 
-  if (!session.activeWardId || !(await isWardModuleEnabled(session.activeWardId, session.user.id, 'notifications')) || !canViewCallings({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId)) {
+  if (
+    !session.activeWardId ||
+    !(await isWardModuleEnabled(session.activeWardId, session.user.id, 'notifications')) ||
+    !canViewCallings({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId)
+  ) {
     redirect('/dashboard');
   }
 
@@ -50,14 +58,20 @@ export default async function NotificationDiagnosticsPage() {
     <main className="mx-auto w-full max-w-5xl space-y-6 p-4 sm:p-6" aria-labelledby="diagnostics-heading">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 id="diagnostics-heading" className="text-2xl font-semibold tracking-tight">{t('diagnosticsTitle')}</h1>
+          <h1 id="diagnostics-heading" className="text-2xl font-semibold tracking-tight">
+            {t('diagnosticsTitle')}
+          </h1>
           <p className="mt-1 text-sm text-muted-foreground">{t('diagnosticsDescription')}</p>
         </div>
-        <Link href="/notifications" className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}>{t('backToNotifications')}</Link>
+        <Link href="/notifications" className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}>
+          {t('backToNotifications')}
+        </Link>
       </header>
 
       {loadError ? (
-        <p role="alert" className="rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm">{t('diagnosticsLoadError')}</p>
+        <p role="alert" className="rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm">
+          {t('diagnosticsLoadError')}
+        </p>
       ) : deliveries.length === 0 ? (
         <p className="rounded-lg border bg-card p-4 text-sm text-muted-foreground">{t('noDeliveryRecords')}</p>
       ) : (
@@ -67,18 +81,35 @@ export default async function NotificationDiagnosticsPage() {
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <h2 className="font-semibold">{delivery.eventType.replaceAll('_', ' ')}</h2>
-                  <p className="mt-1 text-sm text-muted-foreground">{delivery.channel} · {delivery.aggregateType} · {delivery.aggregateId}</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {delivery.channel} · {delivery.aggregateType} · {delivery.aggregateId}
+                  </p>
                 </div>
-                <span className={`rounded-full border px-2 py-1 text-xs font-medium ${delivery.deliveryStatus === 'failure' ? 'border-destructive/40 text-destructive' : ''}`}>
+                <span
+                  className={`rounded-full border px-2 py-1 text-xs font-medium ${delivery.deliveryStatus === 'failed' || delivery.deliveryStatus === 'failure' ? 'border-destructive/40 text-destructive' : ''}`}
+                >
                   {statusLabel(delivery.deliveryStatus, t('success'), t('failure'))}
                 </span>
               </div>
               <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-3">
-                <div><dt className="text-muted-foreground">{t('attempted')}</dt><dd>{formatDate(delivery.attemptedAt, t('notAttempted'), locale)}</dd></div>
-                <div><dt className="text-muted-foreground">{t('created')}</dt><dd>{formatDate(delivery.createdAt, t('notAttempted'), locale)}</dd></div>
-                <div><dt className="text-muted-foreground">{t('outboxAttempts')}</dt><dd>{delivery.attempts}</dd></div>
+                <div>
+                  <dt className="text-muted-foreground">{t('attempted')}</dt>
+                  <dd>{formatDate(delivery.attemptedAt, t('notAttempted'), locale)}</dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">{t('created')}</dt>
+                  <dd>{formatDate(delivery.createdAt, t('notAttempted'), locale)}</dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">{t('outboxAttempts')}</dt>
+                  <dd>{delivery.attempts}</dd>
+                </div>
               </dl>
-              {delivery.errorMessage ? <p className="mt-3 rounded border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">{delivery.errorMessage}</p> : null}
+              {delivery.errorMessage ? (
+                <p className="mt-3 rounded border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+                  {delivery.errorMessage}
+                </p>
+              ) : null}
             </article>
           ))}
         </section>

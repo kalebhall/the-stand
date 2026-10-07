@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import {
@@ -32,6 +32,17 @@ function statusLabel(status: OfflineStatus, pending: number, t: OfflineTranslate
 
 export function OfflineStandButton({ userId, wardId, meetingId }: { userId: string; wardId: string; meetingId: string }) {
   const t = useTranslations('offline');
+  const locale = useLocale();
+  const offlineAgeLabels = {
+    unknownAge: t('unknownAge'),
+    lessThanMinuteAgo: t('lessThanMinuteAgo'),
+    minuteAgo: (count: number) => t('minuteAgo', { count }),
+    minutesAgo: (count: number) => t('minutesAgo', { count }),
+    hourAgo: (count: number) => t('hourAgo', { count }),
+    hoursAgo: (count: number) => t('hoursAgo', { count }),
+    dayAgo: (count: number) => t('dayAgo', { count }),
+    daysAgo: (count: number) => t('daysAgo', { count })
+  };
   const [status, setStatus] = useState<OfflineStatus>('checking');
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [pending, setPending] = useState(0);
@@ -172,10 +183,15 @@ export function OfflineStandButton({ userId, wardId, meetingId }: { userId: stri
       >
         {statusLabel(status, pending, t)}
       </span>
-      {savedAt ? <span className="text-xs text-muted-foreground">{t('savedAt', { date: new Date(savedAt).toLocaleString() })}</span> : null}
       {savedAt ? (
-        <span className="text-xs text-muted-foreground" aria-label={`${t('offlineCopyAge')}: ${formatOfflineAge(savedAt)}`}>
-          {getOfflineSnapshotAge(savedAt).isStale ? t('staleCopy') : formatOfflineAge(savedAt)}
+        <span className="text-xs text-muted-foreground">{t('savedAt', { date: new Date(savedAt).toLocaleString(locale) })}</span>
+      ) : null}
+      {savedAt ? (
+        <span
+          className="text-xs text-muted-foreground"
+          aria-label={`${t('offlineCopyAge')}: ${formatOfflineAge(savedAt, Date.now(), offlineAgeLabels)}`}
+        >
+          {getOfflineSnapshotAge(savedAt).isStale ? t('staleCopy') : formatOfflineAge(savedAt, Date.now(), offlineAgeLabels)}
         </span>
       ) : null}
       {status === 'error' ? (

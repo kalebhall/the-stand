@@ -41,15 +41,8 @@ describe('notification worker runner', () => {
     vi.unstubAllGlobals();
   });
 
-  it('creates pending delivery for queued outbox event and sends webhook', async () => {
+  it('persists a pending webhook delivery without calling the webhook in the outbox transaction', async () => {
     const fetchMock = vi.mocked(fetch);
-    fetchMock.mockResolvedValue(
-      new Response('', {
-        status: 200,
-        headers: { 'x-delivery-id': 'webhook-123' }
-      })
-    );
-
     const queryMock = vi
       .fn()
       .mockResolvedValueOnce({
@@ -68,22 +61,15 @@ describe('notification worker runner', () => {
         ]
       })
       .mockResolvedValueOnce({})
-      .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'delivery-1' }] })
-      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'delivery-1', delivery_status: 'pending' }] })
       .mockResolvedValueOnce({});
 
-    await processOutboxEvent({ query: queryMock }, { wardId: 'ward-1', eventOutboxId: 'event-1' });
+    const result = await processOutboxEvent({ query: queryMock }, { wardId: 'ward-1', eventOutboxId: 'event-1' });
 
-    expect(fetchMock).toHaveBeenCalledWith(
-      'http://127.0.0.1:5678/webhook/the-stand',
-      expect.objectContaining({
-        method: 'POST',
-        headers: expect.objectContaining({ 'idempotency-key': 'event-1' })
-      })
-    );
-
-    expect(queryMock).toHaveBeenNthCalledWith(1, expect.stringContaining('WHERE ward_id = $1'), ['ward-1', 'event-1']);
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(result.localDeliveryIds).toEqual(['delivery-1']);
     expect(queryMock).toHaveBeenNthCalledWith(3, expect.stringContaining('INSERT INTO notification_delivery'), ['ward-1', 'event-1']);
+    expect(queryMock).toHaveBeenLastCalledWith(expect.stringContaining("SET status = 'processed'"), ['event-1', 'ward-1']);
   });
 
   it('creates subscribed recipient notifications before webhook delivery', async () => {
@@ -121,6 +107,68 @@ describe('notification worker runner', () => {
     expect(createNotificationMock).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ recipientUserId: 'user-2' }));
   });
 
+  it('does not deliver private note events to webhook or email', async () => {
+    isKnownNotificationEventMock.mockReturnValue(true);
+    resolveRecipientsMock.mockResolvedValue([]);
+    const fetchMock = vi.mocked(fetch);
+    const queryMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        rowCount: 1,
+        rows: [
+          {
+            id: 'event-1',
+            aggregate_type: 'internal_note',
+            aggregate_id: 'note-1',
+            event_type: 'NOTE_CREATED',
+            payload: { visibility: 'PRIVATE', actorUserId: 'user-1' },
+            attempts: 0,
+            status: 'pending',
+            available_now: true
+          }
+        ]
+      })
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({});
+
+    await processOutboxEvent({ query: queryMock }, { wardId: 'ward-1', eventOutboxId: 'event-1' });
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(queryMock).not.toHaveBeenCalledWith(expect.stringContaining('INSERT INTO notification_delivery'), expect.anything());
+    expect(queryMock).toHaveBeenLastCalledWith(expect.stringContaining("SET status = 'processed'"), ['event-1', 'ward-1']);
+  });
+
+  it('does not deliver leadership note events to the external webhook', async () => {
+    isKnownNotificationEventMock.mockReturnValue(true);
+    resolveRecipientsMock.mockResolvedValue([]);
+    const fetchMock = vi.mocked(fetch);
+    const queryMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        rowCount: 1,
+        rows: [
+          {
+            id: 'event-1',
+            aggregate_type: 'internal_note',
+            aggregate_id: 'note-1',
+            event_type: 'NOTE_CREATED',
+            payload: { visibility: 'LEADERSHIP', actorUserId: 'user-1' },
+            attempts: 0,
+            status: 'pending',
+            available_now: true
+          }
+        ]
+      })
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({});
+
+    await processOutboxEvent({ query: queryMock }, { wardId: 'ward-1', eventOutboxId: 'event-1' });
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(queryMock).toHaveBeenLastCalledWith(expect.stringContaining("SET status = 'processed'"), ['event-1', 'ward-1']);
+  });
+
   it('returns when event is already processed', async () => {
     const queryMock = vi.fn().mockResolvedValueOnce({
       rowCount: 1,
@@ -156,10 +204,8 @@ describe('notification worker runner', () => {
     expect(queryMock).toHaveBeenNthCalledWith(2, expect.stringContaining("status = 'processed'"), ['delivery-1', 'ward-1']);
   });
 
-  it('keeps recipient notifications committed when webhook delivery fails', async () => {
+  it('leaves recipient notifications committed when delivery is deferred', async () => {
     const fetchMock = vi.mocked(fetch);
-    fetchMock.mockResolvedValue(new Response('failed', { status: 500 }));
-
     const queryMock = vi
       .fn()
       .mockResolvedValueOnce({
@@ -178,22 +224,46 @@ describe('notification worker runner', () => {
         ]
       })
       .mockResolvedValueOnce({})
-      .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'delivery-1' }] })
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'delivery-1', delivery_status: 'pending' }] })
+      .mockResolvedValueOnce({});
+
+    const result = await processOutboxEvent({ query: queryMock }, { wardId: 'ward-1', eventOutboxId: 'event-1' });
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(result.localDeliveryIds).toEqual(['delivery-1']);
+    expect(queryMock).toHaveBeenLastCalledWith(expect.stringContaining("SET status = 'processed'"), ['event-1', 'ward-1']);
+  });
+
+  it('does not resend a webhook with an existing successful delivery', async () => {
+    const fetchMock = vi.mocked(fetch);
+    const queryMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        rowCount: 1,
+        rows: [
+          {
+            id: 'event-1',
+            aggregate_type: 'meeting',
+            aggregate_id: 'meeting-1',
+            event_type: 'MEETING_COMPLETED',
+            payload: { meetingId: 'meeting-1' },
+            attempts: 1,
+            status: 'pending',
+            available_now: true
+          }
+        ]
+      })
       .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'delivery-1', delivery_status: 'success' }] })
       .mockResolvedValueOnce({});
 
     await processOutboxEvent({ query: queryMock }, { wardId: 'ward-1', eventOutboxId: 'event-1' });
 
-    expect(queryMock).toHaveBeenNthCalledWith(5, expect.stringContaining("SET status = 'pending'"), [
-      'event-1',
-      'ward-1',
-      expect.stringContaining('Webhook delivery failed'),
-      '10'
-    ]);
-    expect(queryMock).toHaveBeenNthCalledWith(6, expect.stringContaining("SET status = 'processed'"), ['event-1', 'ward-1']);
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(queryMock).toHaveBeenLastCalledWith(expect.stringContaining("SET status = 'processed'"), ['event-1', 'ward-1']);
   });
 
-  it('marks delivery failure and schedules outbox retry', async () => {
+  it('marks delivery failure and schedules delivery retry', async () => {
     const queryMock = vi.fn().mockResolvedValue({});
 
     await markNotificationDeliveryFailure(
@@ -207,13 +277,8 @@ describe('notification worker runner', () => {
       }
     );
 
-    expect(queryMock).toHaveBeenNthCalledWith(1, expect.stringContaining("delivery_status = 'failure'"), [
+    expect(queryMock).toHaveBeenNthCalledWith(1, expect.stringContaining("delivery_status = 'failed'"), [
       'delivery-1',
-      'ward-1',
-      'webhook timeout'
-    ]);
-    expect(queryMock).toHaveBeenNthCalledWith(2, expect.stringContaining('available_at = now()'), [
-      'event-1',
       'ward-1',
       'webhook timeout',
       '10'

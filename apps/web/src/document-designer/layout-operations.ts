@@ -1,15 +1,22 @@
 import { idSchema } from './primitives';
-import { parseAdvancedLayout, type AdvancedBlock, type AdvancedDocumentLayout, type ColumnCount, type ColumnRatio } from './advanced-schema';
+import {
+  parseAdvancedLayout,
+  type AdvancedBlock,
+  type AdvancedDocumentLayout,
+  type ColumnCount,
+  type ColumnRatio
+} from './advanced-schema';
 import type { BlockWidth, DocumentBlock } from './types';
-import { assertAdvancedMutationAllowed, assertAdvancedMutationAllowedAt } from './lock-enforcement';
+import { assertAdvancedMutationAllowedAt } from './lock-enforcement';
 
 const newId = () => idSchema.parse(globalThis.crypto.randomUUID());
 
 function locate(layout: AdvancedDocumentLayout, blockId: string) {
-  for (const [pageIndex, page] of layout.pages.entries()) for (const [regionIndex, region] of page.regions.entries()) {
-    const blockIndex = region.blocks.findIndex((block) => block.id === blockId);
-    if (blockIndex >= 0) return { pageIndex, regionIndex, blockIndex };
-  }
+  for (const [pageIndex, page] of layout.pages.entries())
+    for (const [regionIndex, region] of page.regions.entries()) {
+      const blockIndex = region.blocks.findIndex((block) => block.id === blockId);
+      if (blockIndex >= 0) return { pageIndex, regionIndex, blockIndex };
+    }
   return null;
 }
 
@@ -17,7 +24,13 @@ function clone(layout: AdvancedDocumentLayout): AdvancedDocumentLayout {
   return structuredClone(layout);
 }
 
-export function addBlock(layout: AdvancedDocumentLayout, pageIndex: number, regionIndex: number, block: DocumentBlock, column = 0): AdvancedDocumentLayout {
+export function addBlock(
+  layout: AdvancedDocumentLayout,
+  pageIndex: number,
+  regionIndex: number,
+  block: DocumentBlock,
+  column = 0
+): AdvancedDocumentLayout {
   assertAdvancedMutationAllowedAt(layout, 'ADD', undefined, pageIndex, regionIndex);
   const next = clone(layout);
   const region = next.pages[pageIndex]?.regions[regionIndex];
@@ -29,7 +42,8 @@ export function addBlock(layout: AdvancedDocumentLayout, pageIndex: number, regi
 }
 
 export function removeBlock(layout: AdvancedDocumentLayout, blockId: string): AdvancedDocumentLayout {
-  assertAdvancedMutationAllowed(layout, 'REMOVE', blockId);
+  const sourcePosition = locate(layout, blockId);
+  assertAdvancedMutationAllowedAt(layout, 'REMOVE', blockId, sourcePosition?.pageIndex, sourcePosition?.regionIndex);
   const next = clone(layout);
   const position = locate(next, blockId);
   if (!position) return next;
@@ -42,12 +56,21 @@ export function removeBlock(layout: AdvancedDocumentLayout, blockId: string): Ad
   return parseAdvancedLayout(next);
 }
 
-export function moveBlockToColumn(layout: AdvancedDocumentLayout, blockId: string, targetPage: number, targetRegion: number, targetColumn: number): AdvancedDocumentLayout {
-  assertAdvancedMutationAllowed(layout, 'MOVE', blockId);
+export function moveBlockToColumn(
+  layout: AdvancedDocumentLayout,
+  blockId: string,
+  targetPage: number,
+  targetRegion: number,
+  targetColumn: number
+): AdvancedDocumentLayout {
+  const sourcePosition = locate(layout, blockId);
+  assertAdvancedMutationAllowedAt(layout, 'MOVE', blockId, sourcePosition?.pageIndex, sourcePosition?.regionIndex);
+  assertAdvancedMutationAllowedAt(layout, 'MOVE', undefined, targetPage, targetRegion);
   const next = clone(layout);
   const position = locate(next, blockId);
   const destination = next.pages[targetPage]?.regions[targetRegion];
-  if (!position || !destination || targetColumn < 0 || targetColumn >= destination.columns.count) throw new Error('Invalid block move target');
+  if (!position || !destination || targetColumn < 0 || targetColumn >= destination.columns.count)
+    throw new Error('Invalid block move target');
   const source = next.pages[position.pageIndex].regions[position.regionIndex];
   const [block] = source.blocks.splice(position.blockIndex, 1);
   for (const ids of source.columns.blockIds) {
@@ -59,8 +82,13 @@ export function moveBlockToColumn(layout: AdvancedDocumentLayout, blockId: strin
   return parseAdvancedLayout(next);
 }
 
-export function setAdvancedBlockVisibility(layout: AdvancedDocumentLayout, blockId: string, visibility: DocumentBlock['visibility']): AdvancedDocumentLayout {
-  assertAdvancedMutationAllowed(layout, 'VISIBILITY', blockId);
+export function setAdvancedBlockVisibility(
+  layout: AdvancedDocumentLayout,
+  blockId: string,
+  visibility: DocumentBlock['visibility']
+): AdvancedDocumentLayout {
+  const sourcePosition = locate(layout, blockId);
+  assertAdvancedMutationAllowedAt(layout, 'VISIBILITY', blockId, sourcePosition?.pageIndex, sourcePosition?.regionIndex);
   const next = clone(layout);
   const position = locate(next, blockId);
   if (!position) return next;
@@ -69,25 +97,28 @@ export function setAdvancedBlockVisibility(layout: AdvancedDocumentLayout, block
 }
 
 export function reorderBlock(layout: AdvancedDocumentLayout, blockId: string, direction: -1 | 1): AdvancedDocumentLayout {
-  assertAdvancedMutationAllowed(layout, 'MOVE', blockId);
+  const sourcePosition = locate(layout, blockId);
+  assertAdvancedMutationAllowedAt(layout, 'MOVE', blockId, sourcePosition?.pageIndex, sourcePosition?.regionIndex);
   const next = clone(layout);
   const position = locate(next, blockId);
   if (!position) return next;
   const region = next.pages[position.pageIndex].regions[position.regionIndex];
-  const target = position.blockIndex + direction;
-  if (target < 0 || target >= region.blocks.length) return next;
-  [region.blocks[position.blockIndex], region.blocks[target]] = [region.blocks[target], region.blocks[position.blockIndex]];
   const column = region.columns.blockIds.find((ids) => ids.includes(blockId));
-  if (column) {
-    const index = column.indexOf(blockId);
-    const targetColumnIndex = index + direction;
-    if (targetColumnIndex >= 0 && targetColumnIndex < column.length) [column[index], column[targetColumnIndex]] = [column[targetColumnIndex], column[index]];
-  }
+  if (!column) return next;
+  const index = column.indexOf(blockId);
+  const targetColumnIndex = index + direction;
+  if (targetColumnIndex < 0 || targetColumnIndex >= column.length) return next;
+  [column[index], column[targetColumnIndex]] = [column[targetColumnIndex], column[index]];
+  const blockById = new Map<string, AdvancedBlock>(region.blocks.map((block) => [String(block.id), block]));
+  region.blocks = region.columns.blockIds.flatMap((ids) =>
+    ids.map((id) => blockById.get(String(id))).filter((block): block is AdvancedBlock => Boolean(block))
+  );
   return parseAdvancedLayout(next);
 }
 
 export function resizeBlock(layout: AdvancedDocumentLayout, blockId: string, width: BlockWidth): AdvancedDocumentLayout {
-  assertAdvancedMutationAllowed(layout, 'RESIZE', blockId);
+  const sourcePosition = locate(layout, blockId);
+  assertAdvancedMutationAllowedAt(layout, 'RESIZE', blockId, sourcePosition?.pageIndex, sourcePosition?.regionIndex);
   const next = clone(layout);
   const position = locate(next, blockId);
   if (!position) return next;
@@ -95,7 +126,14 @@ export function resizeBlock(layout: AdvancedDocumentLayout, blockId: string, wid
   return parseAdvancedLayout(next);
 }
 
-export function configureColumns(layout: AdvancedDocumentLayout, pageIndex: number, regionIndex: number, count: ColumnCount, ratio: ColumnRatio, gutter: number): AdvancedDocumentLayout {
+export function configureColumns(
+  layout: AdvancedDocumentLayout,
+  pageIndex: number,
+  regionIndex: number,
+  count: ColumnCount,
+  ratio: ColumnRatio,
+  gutter: number
+): AdvancedDocumentLayout {
   assertAdvancedMutationAllowedAt(layout, 'COLUMNS', undefined, pageIndex, regionIndex);
   const next = clone(layout);
   const region = next.pages[pageIndex]?.regions[regionIndex];
@@ -108,8 +146,13 @@ export function configureColumns(layout: AdvancedDocumentLayout, pageIndex: numb
   return parseAdvancedLayout(next);
 }
 
-export function setBlockStyle(layout: AdvancedDocumentLayout, blockId: string, styleOverrides: AdvancedBlock['styleOverrides']): AdvancedDocumentLayout {
-  assertAdvancedMutationAllowed(layout, 'STYLE', blockId);
+export function setBlockStyle(
+  layout: AdvancedDocumentLayout,
+  blockId: string,
+  styleOverrides: AdvancedBlock['styleOverrides']
+): AdvancedDocumentLayout {
+  const sourcePosition = locate(layout, blockId);
+  assertAdvancedMutationAllowedAt(layout, 'STYLE', blockId, sourcePosition?.pageIndex, sourcePosition?.regionIndex);
   const next = clone(layout);
   const position = locate(next, blockId);
   if (!position) return next;
@@ -130,6 +173,11 @@ export function createBlankAdvancedLayout(): AdvancedDocumentLayout {
     orientation: 'PORTRAIT',
     fold: 'NONE',
     theme: { fontFamily: 'SYSTEM_SANS', baseFontSize: 12, accentColor: '#1f2937' },
-    pages: [{ id: pageId, regions: [{ id: regionId, ratio: 1, gutter: 0, blocks: [], columns: { count: 1, ratio: '1/1', gutter: 0, blockIds: [[]] } }] }]
+    pages: [
+      {
+        id: pageId,
+        regions: [{ id: regionId, ratio: 1, gutter: 0, blocks: [], columns: { count: 1, ratio: '1/1', gutter: 0, blockIds: [[]] } }]
+      }
+    ]
   });
 }

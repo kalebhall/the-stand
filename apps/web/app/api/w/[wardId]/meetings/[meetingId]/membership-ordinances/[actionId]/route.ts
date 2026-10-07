@@ -8,25 +8,45 @@ import { setDbContext } from '@/src/db/context';
 import { enqueueOutboxNotificationJob } from '@/src/notifications/queue';
 import { enqueueNotificationOutboxEvent, insertNotificationOutboxEvent } from '@/src/notifications/outbox';
 import { validateMembershipOrdinanceTransition, type MembershipOrdinanceTransition } from '@/src/church-actions/membership-ordinance';
-import { isWardModuleEnabled } from '@/src/modules/service';
+import { isWardModuleEnabled, isWardModuleEnabledInTransaction } from '@/src/modules/service';
 import { persistMembershipOrdinanceLcrFollowUp } from '@/src/church-actions/membership-ordinance-follow-up-persistence';
 
 export async function PATCH(request: Request, context: { params: Promise<{ wardId: string; meetingId: string; actionId: string }> }) {
   const session = await auth();
   const { wardId, meetingId, actionId } = await context.params;
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, { status: 401 });
-  if (!(await isWardModuleEnabled(wardId, session.user.id, 'membership-ordinances')) || !canManageMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) {
+  if (
+    !(await isWardModuleEnabled(wardId, session.user.id, 'membership-ordinances')) ||
+    !canManageMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)
+  ) {
     return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
   }
-  const body = (await request.json().catch(() => null)) as { status?: unknown; officialRecordUpdatedBy?: unknown; handoffDate?: unknown; officialSystemReferenceUrl?: unknown } | null;
+  const body = (await request.json().catch(() => null)) as {
+    status?: unknown;
+    officialRecordUpdatedBy?: unknown;
+    handoffDate?: unknown;
+    officialSystemReferenceUrl?: unknown;
+  } | null;
   const status = body?.status;
-  if (status !== 'announced' && status !== 'completed' && status !== 'lcr_completed' && status !== 'interview_completed' && status !== 'official_record_started' && status !== 'official_record_completed' && status !== 'certificate_delivered')
+  if (
+    status !== 'announced' &&
+    status !== 'completed' &&
+    status !== 'lcr_completed' &&
+    status !== 'interview_completed' &&
+    status !== 'official_record_started' &&
+    status !== 'official_record_completed' &&
+    status !== 'certificate_delivered'
+  )
     return NextResponse.json({ error: 'Invalid status.', code: 'INVALID_INPUT' }, { status: 400 });
 
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
     await setDbContext(client, { userId: session.user.id, wardId });
+    if (!(await isWardModuleEnabledInTransaction(client, wardId, 'membership-ordinances'))) {
+      await client.query('ROLLBACK');
+      return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
+    }
     const current = await client.query(
       `SELECT a.status, a.interview_status, a.lcr_follow_up_status, a.record_form_needed, a.official_system_follow_up_status,
               a.member_name, a.action_type, a.priesthood_office, a.planned_date, a.details
@@ -72,7 +92,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ wardI
         ? await client.query(
             `UPDATE meeting_membership_ordinance SET status = 'action_needed', announced_at = COALESCE(announced_at, now()), updated_at = now()
            WHERE id = $1::uuid AND ward_id = $2::uuid AND status = 'pending'
-           RETURNING id, status`,
+           RETURNING id, status, member_name, action_type, lcr_follow_up_status`,
             [actionId, wardId]
           )
         : status === 'completed'
@@ -91,13 +111,13 @@ export async function PATCH(request: Request, context: { params: Promise<{ wardI
               )
             : status === 'interview_completed'
               ? await client.query(
-              `UPDATE meeting_membership_ordinance SET interview_status = 'completed', updated_at = now()
+                  `UPDATE meeting_membership_ordinance SET interview_status = 'completed', updated_at = now()
                WHERE id = $1::uuid AND ward_id = $2::uuid AND interview_status IN ('needed', 'scheduled')
                RETURNING id, status, member_name, action_type, lcr_follow_up_status`,
-              [actionId, wardId]
-              )
+                  [actionId, wardId]
+                )
               : await client.query(
-                `UPDATE meeting_membership_ordinance
+                  `UPDATE meeting_membership_ordinance
                     SET official_system_follow_up_status = $1::text,
                         official_record_updated_by = COALESCE($2::text, official_record_updated_by),
                         handoff_date = COALESCE($3::date, handoff_date),
@@ -106,8 +126,16 @@ export async function PATCH(request: Request, context: { params: Promise<{ wardI
                         updated_at = now()
                   WHERE id = $6::uuid AND ward_id = $7::uuid
                   RETURNING id, status, member_name, action_type, lcr_follow_up_status`,
-                [status === 'official_record_started' ? 'in_progress' : 'completed', body?.officialRecordUpdatedBy ?? null, body?.handoffDate ?? null, body?.officialSystemReferenceUrl ?? null, status === 'certificate_delivered', actionId, wardId]
-              );
+                  [
+                    status === 'official_record_started' ? 'in_progress' : 'completed',
+                    body?.officialRecordUpdatedBy ?? null,
+                    body?.handoffDate ?? null,
+                    body?.officialSystemReferenceUrl ?? null,
+                    status === 'certificate_delivered',
+                    actionId,
+                    wardId
+                  ]
+                );
     if (!result.rowCount) {
       await client.query('ROLLBACK');
       return NextResponse.json({ error: 'Action not found or not in the expected state.', code: 'CONFLICT' }, { status: 409 });
@@ -149,21 +177,40 @@ export async function PATCH(request: Request, context: { params: Promise<{ wardI
         }
       });
     }
-    const auditAction = status === 'announced'
-      ? 'MEMBERSHIP_ORDINANCE_ANNOUNCED'
-      : status === 'completed'
-        ? 'MEMBERSHIP_ORDINANCE_COMPLETED'
+    const auditAction =
+      status === 'announced'
+        ? 'MEMBERSHIP_ORDINANCE_ANNOUNCED'
+        : status === 'completed'
+          ? 'MEMBERSHIP_ORDINANCE_COMPLETED'
+          : status === 'lcr_completed'
+            ? 'MEMBERSHIP_ORDINANCE_LCR_UPDATED'
+            : status === 'interview_completed'
+              ? 'MEMBERSHIP_ORDINANCE_INTERVIEW_COMPLETED'
+              : status === 'official_record_completed'
+                ? 'MEMBERSHIP_ORDINANCE_OFFICIAL_RECORD_UPDATED'
+                : status === 'certificate_delivered'
+                  ? 'MEMBERSHIP_ORDINANCE_CERTIFICATE_DELIVERED'
+                  : 'MEMBERSHIP_ORDINANCE_OFFICIAL_RECORD_HANDOFF_STARTED';
+    const field =
+      status === 'announced' || status === 'completed'
+        ? 'status'
         : status === 'lcr_completed'
-          ? 'MEMBERSHIP_ORDINANCE_LCR_UPDATED'
+          ? 'lcr_follow_up_status'
           : status === 'interview_completed'
-            ? 'MEMBERSHIP_ORDINANCE_INTERVIEW_COMPLETED'
-            : status === 'official_record_completed'
-              ? 'MEMBERSHIP_ORDINANCE_OFFICIAL_RECORD_UPDATED'
-              : status === 'certificate_delivered'
-                ? 'MEMBERSHIP_ORDINANCE_CERTIFICATE_DELIVERED'
-                : 'MEMBERSHIP_ORDINANCE_OFFICIAL_RECORD_HANDOFF_STARTED';
-    const field = status === 'announced' || status === 'completed' ? 'status' : status === 'lcr_completed' ? 'lcr_follow_up_status' : status === 'interview_completed' ? 'interview_status' : 'official_system_follow_up_status';
-    const newValue = status === 'announced' ? 'action_needed' : status === 'completed' ? 'completed' : status === 'lcr_completed' ? 'completed' : status === 'interview_completed' ? 'completed' : status === 'official_record_started' ? 'in_progress' : 'completed';
+            ? 'interview_status'
+            : 'official_system_follow_up_status';
+    const newValue =
+      status === 'announced'
+        ? 'action_needed'
+        : status === 'completed'
+          ? 'completed'
+          : status === 'lcr_completed'
+            ? 'completed'
+            : status === 'interview_completed'
+              ? 'completed'
+              : status === 'official_record_started'
+                ? 'in_progress'
+                : 'completed';
     await recordAuditEvent(client, {
       wardId,
       userId: session.user.id,
@@ -199,6 +246,10 @@ export async function DELETE(_request: Request, context: { params: Promise<{ war
   try {
     await client.query('BEGIN');
     await setDbContext(client, { userId: session.user.id, wardId });
+    if (!(await isWardModuleEnabledInTransaction(client, wardId, 'membership-ordinances'))) {
+      await client.query('ROLLBACK');
+      return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
+    }
     const result = await client.query(
       `DELETE FROM meeting_membership_ordinance a
         USING meeting m

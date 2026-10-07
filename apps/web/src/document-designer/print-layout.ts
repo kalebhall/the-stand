@@ -10,6 +10,21 @@ export type PhysicalPage = {
 
 export type Panel = { index: number; xMm: number; yMm: number; widthMm: number; heightMm: number };
 
+/** Shared logical-region to physical-panel mapping for folded output. */
+export function getFoldRegionPlacement(fold: DocumentLayout['fold'], regionIndex: number): { sideIndex: number; slotIndex: number } {
+  if (fold === 'BIFOLD' || fold === 'HALF_SHEET') {
+    const map = [
+      { sideIndex: 0, slotIndex: 1 },
+      { sideIndex: 1, slotIndex: 0 },
+      { sideIndex: 1, slotIndex: 1 },
+      { sideIndex: 0, slotIndex: 0 }
+    ];
+    return map[regionIndex] ?? { sideIndex: Math.floor(regionIndex / 2) % 2, slotIndex: regionIndex % 2 };
+  }
+  const panelCount = fold === 'TRIFOLD' ? 3 : 1;
+  return { sideIndex: Math.floor(regionIndex / panelCount) % 2, slotIndex: regionIndex % panelCount };
+}
+
 const PAPER_MM: Record<PaperSize, [number, number]> = {
   LETTER: [215.9, 279.4],
   A4: [210, 297]
@@ -28,7 +43,13 @@ export function getFoldPanels(layout: Pick<DocumentLayout, 'paper' | 'orientatio
   const page = getPhysicalPage(layout.paper, layout.orientation);
   const count = layout.fold === 'TRIFOLD' ? 3 : layout.fold === 'BIFOLD' || layout.fold === 'HALF_SHEET' ? 2 : 1;
   const panelWidth = page.contentWidthMm / count;
-  return Array.from({ length: count }, (_, index) => ({ index, xMm: page.marginMm + index * panelWidth, yMm: page.marginMm, widthMm: panelWidth, heightMm: page.contentHeightMm }));
+  return Array.from({ length: count }, (_, index) => ({
+    index,
+    xMm: page.marginMm + index * panelWidth,
+    yMm: page.marginMm,
+    widthMm: panelWidth,
+    heightMm: page.contentHeightMm
+  }));
 }
 
 export function getExpectedPageCount(layout: Pick<DocumentLayout, 'fold'>, flowingPages = 1): number {

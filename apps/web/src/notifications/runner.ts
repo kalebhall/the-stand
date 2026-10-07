@@ -1,7 +1,7 @@
 import type { PoolClient } from 'pg';
 
 import { processNotificationDigest, queueNotificationDigest } from './digests';
-import { deliverNotificationEmail, formatNotificationEmail } from './email';
+import { formatNotificationEmail } from './email';
 import { getNotificationEmailPreferences } from './email-preferences';
 import { formatUserNotification } from './format';
 import { type NotificationDigestQueueJob } from './queue';
@@ -11,8 +11,8 @@ import { createUserNotification } from './user-notifications';
 
 type DbClient = Pick<PoolClient, 'query'>;
 
-const DEFAULT_NOTIFICATION_WEBHOOK_URL = 'http://127.0.0.1:5678/webhook/the-stand';
 const MAX_RETRY_BACKOFF_SECONDS = 300;
+const NOTE_EVENT_TYPES = new Set(['NOTE_CREATED', 'NOTE_UPDATED', 'NOTE_DELETED', 'NOTE_MENTIONED', 'COMMENT_CREATED', 'COMMENT_UPDATED']);
 
 type OutboxEvent = {
   id: string;
@@ -23,16 +23,32 @@ type OutboxEvent = {
   attempts: number;
 };
 
+export type NotificationOutboxProcessingResult = {
+  digestJobs: NotificationDigestQueueJob[];
+  localDeliveryIds: string[];
+};
+
 type SafeEventPayload = Record<string, unknown>;
 
 function asSafeEventPayload(payload: unknown): SafeEventPayload {
   return payload && typeof payload === 'object' && !Array.isArray(payload) ? (payload as SafeEventPayload) : {};
 }
 
-async function createRecipientNotifications(client: DbClient, event: OutboxEvent, wardId: string): Promise<NotificationDigestQueueJob[]> {
+function isNonPublicNoteEvent(event: Pick<OutboxEvent, 'aggregate_type' | 'event_type' | 'payload'>): boolean {
+  if (event.aggregate_type !== 'internal_note' || !NOTE_EVENT_TYPES.has(event.event_type)) return false;
+  const visibility = asSafeEventPayload(event.payload).visibility;
+  return visibility !== 'PUBLIC';
+}
+
+async function createRecipientNotifications(
+  client: DbClient,
+  event: OutboxEvent,
+  wardId: string
+): Promise<NotificationOutboxProcessingResult> {
   const digestJobs: NotificationDigestQueueJob[] = [];
+  const localDeliveryIds: string[] = [];
   if (!isKnownNotificationEvent(event.event_type)) {
-    return digestJobs;
+    return { digestJobs, localDeliveryIds };
   }
 
   const payload = asSafeEventPayload(event.payload);
@@ -43,7 +59,11 @@ async function createRecipientNotifications(client: DbClient, event: OutboxEvent
     wardId,
     eventType: event.event_type,
     actorUserId: typeof payload.actorUserId === 'string' ? payload.actorUserId : undefined,
-    explicitUserIds
+    explicitUserIds,
+    visibility:
+      payload.visibility === 'PUBLIC' || payload.visibility === 'LEADERSHIP' || payload.visibility === 'PRIVATE'
+        ? payload.visibility
+        : undefined
   });
 
   for (const recipientUserId of recipientIds) {
@@ -72,14 +92,16 @@ async function createRecipientNotifications(client: DbClient, event: OutboxEvent
     );
   }
 
-  const emailRecipientIds = await getSubscribedRecipientIds(client, {
-    wardId,
-    eventType: event.event_type,
-    channel: 'EMAIL',
-    userIds: recipientIds
-  });
+  const emailRecipientIds = isNonPublicNoteEvent(event)
+    ? []
+    : await getSubscribedRecipientIds(client, {
+        wardId,
+        eventType: event.event_type,
+        channel: 'EMAIL',
+        userIds: recipientIds
+      });
   if (emailRecipientIds.length === 0) {
-    return digestJobs;
+    return { digestJobs, localDeliveryIds };
   }
 
   const usersResult = await client.query(
@@ -104,9 +126,7 @@ async function createRecipientNotifications(client: DbClient, event: OutboxEvent
       recipientUserId: user.id
     });
     const preference = emailPreferences.get(user.id);
-    if (!preference) {
-      continue;
-    }
+    if (!preference) continue;
 
     if (preference.frequency === 'IMMEDIATE') {
       const message = formatNotificationEmail({
@@ -121,42 +141,15 @@ async function createRecipientNotifications(client: DbClient, event: OutboxEvent
 
       const deliveryResult = await client.query(
         `INSERT INTO notification_delivery (ward_id, event_outbox_id, recipient_user_id, channel, delivery_status, attempted_at)
-         VALUES ($1::uuid, $2::uuid, $3::uuid, 'EMAIL', 'pending', now())
+         VALUES ($1::uuid, $2::uuid, $3::uuid, 'EMAIL', 'pending', NULL)
          ON CONFLICT (event_outbox_id, channel, recipient_user_id) WHERE channel = 'EMAIL'
-         DO UPDATE SET attempted_at = now(), updated_at = now()
-         RETURNING id`,
+         DO UPDATE SET updated_at = now()
+         RETURNING id, delivery_status`,
         [wardId, event.id, user.id]
       );
       const deliveryId = deliveryResult.rows[0]?.id as string | undefined;
-      if (!deliveryId) {
-        throw new Error(`Failed to create immediate notification delivery for recipient ${user.id}`);
-      }
-
-      try {
-        const delivery = await deliverNotificationEmail(message);
-        await client.query(
-          `UPDATE notification_delivery
-              SET delivery_status = 'success',
-                  external_id = $3::text,
-                  error_message = NULL,
-                  attempted_at = now(),
-                  updated_at = now()
-            WHERE id = $1::uuid
-              AND ward_id = $2::uuid`,
-          [deliveryId, wardId, delivery.externalId ?? null]
-        );
-      } catch (error) {
-        await client.query(
-          `UPDATE notification_delivery
-              SET delivery_status = 'failure',
-                  error_message = $3::text,
-                  attempted_at = now(),
-                  updated_at = now()
-            WHERE id = $1::uuid
-              AND ward_id = $2::uuid`,
-          [deliveryId, wardId, error instanceof Error ? error.message : 'Unknown email delivery error']
-        );
-      }
+      if (!deliveryId) throw new Error(`Failed to create immediate notification delivery for recipient ${user.id}`);
+      if (deliveryResult.rows[0]?.delivery_status !== 'success') localDeliveryIds.push(deliveryId);
       continue;
     }
 
@@ -182,47 +175,13 @@ async function createRecipientNotifications(client: DbClient, event: OutboxEvent
     });
   }
 
-  return digestJobs;
-}
-
-function getNotificationWebhookUrl(): string {
-  return process.env.NOTIFICATION_WEBHOOK_URL ?? DEFAULT_NOTIFICATION_WEBHOOK_URL;
-}
-
-function calculateRetryBackoffSeconds(attempts: number): number {
-  return Math.min(MAX_RETRY_BACKOFF_SECONDS, Math.max(5, 2 ** Math.max(0, attempts - 1) * 5));
-}
-
-async function deliverWebhookEvent(event: OutboxEvent): Promise<{ externalId?: string }> {
-  const webhookUrl = getNotificationWebhookUrl();
-  const response = await fetch(webhookUrl, {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      'idempotency-key': event.id
-    },
-    body: JSON.stringify({
-      eventId: event.id,
-      eventType: event.event_type,
-      aggregateType: event.aggregate_type,
-      aggregateId: event.aggregate_id,
-      payload: event.payload
-    })
-  });
-
-  if (!response.ok) {
-    const responseBody = await response.text();
-    throw new Error(`Webhook delivery failed (${response.status}): ${responseBody.slice(0, 500)}`);
-  }
-
-  const externalIdHeader = response.headers.get('x-delivery-id');
-  return { externalId: externalIdHeader ?? undefined };
+  return { digestJobs, localDeliveryIds };
 }
 
 export async function processOutboxEvent(
   client: DbClient,
   params: { wardId: string; eventOutboxId: string }
-): Promise<NotificationDigestQueueJob[]> {
+): Promise<NotificationOutboxProcessingResult> {
   const outboxResult = await client.query(
     `SELECT id,
             aggregate_type,
@@ -245,10 +204,7 @@ export async function processOutboxEvent(
   }
 
   const event = outboxResult.rows[0] as OutboxEvent & { status: string; available_now: boolean };
-
-  if (event.status !== 'pending' || !event.available_now) {
-    return [];
-  }
+  if (event.status !== 'pending' || !event.available_now) return { digestJobs: [], localDeliveryIds: [] };
 
   await client.query(
     `UPDATE event_outbox
@@ -260,55 +216,37 @@ export async function processOutboxEvent(
     [event.id, params.wardId]
   );
 
-  const digestJobs = await createRecipientNotifications(client, event, params.wardId);
-
-  const deliveryResult = await client.query(
-    `INSERT INTO notification_delivery (ward_id, event_outbox_id, channel, delivery_status, attempted_at)
-     VALUES ($1::uuid, $2::uuid, 'webhook', 'pending', now())
-     ON CONFLICT (event_outbox_id, channel) WHERE channel = 'webhook'
-     DO UPDATE SET attempted_at = now(), updated_at = now()
-     RETURNING id`,
-    [params.wardId, event.id]
-  );
-
-  const deliveryId = deliveryResult.rows[0]?.id as string | undefined;
-  if (!deliveryId) {
-    throw new Error(`Failed to create webhook delivery for outbox event ${event.id}`);
-  }
-
-  try {
-    const delivery = await deliverWebhookEvent(event);
-    await markNotificationDeliverySuccess(client, {
-      wardId: params.wardId,
-      deliveryId,
-      externalId: delivery.externalId
-    });
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown webhook delivery error';
-
-    await markNotificationDeliveryFailure(client, {
-      wardId: params.wardId,
-      deliveryId,
-      eventOutboxId: event.id,
-      attempts: event.attempts + 1,
-      errorMessage
-    });
-
-    // Webhook delivery is auxiliary. Keep recipient notifications committed even
-    // when webhook delivery fails, then retain the failure for diagnostics.
-    await client.query(
-      `UPDATE event_outbox
-          SET status = 'processed',
-              updated_at = now()
-        WHERE id = $1::uuid
-          AND ward_id = $2::uuid`,
-      [event.id, params.wardId]
+  const result = await createRecipientNotifications(client, event, params.wardId);
+  if (!isNonPublicNoteEvent(event)) {
+    const deliveryResult = await client.query(
+      `INSERT INTO notification_delivery (ward_id, event_outbox_id, channel, delivery_status, attempted_at)
+       VALUES ($1::uuid, $2::uuid, 'webhook', 'pending', NULL)
+       ON CONFLICT (event_outbox_id, channel) WHERE channel = 'webhook'
+       DO UPDATE SET updated_at = now()
+       RETURNING id, delivery_status`,
+      [params.wardId, event.id]
     );
+    const deliveryId = deliveryResult.rows[0]?.id as string | undefined;
+    if (!deliveryId) throw new Error(`Failed to create webhook delivery for outbox event ${event.id}`);
+    if (deliveryResult.rows[0]?.delivery_status !== 'success') result.localDeliveryIds.push(deliveryId);
   }
 
-  return digestJobs;
+  await client.query(
+    `UPDATE event_outbox
+        SET status = 'processed',
+            updated_at = now()
+      WHERE id = $1::uuid
+        AND ward_id = $2::uuid`,
+    [event.id, params.wardId]
+  );
+  return result;
 }
 
+function calculateRetryBackoffSeconds(attempts: number): number {
+  return Math.min(MAX_RETRY_BACKOFF_SECONDS, Math.max(5, 2 ** Math.max(0, attempts - 1) * 5));
+}
+
+/** Compatibility helpers for callers that finalize a previously-created delivery. */
 export async function markNotificationDeliverySuccess(
   client: DbClient,
   params: { wardId: string; deliveryId: string; externalId?: string }
@@ -344,26 +282,14 @@ export async function markNotificationDeliveryFailure(
 ): Promise<void> {
   await client.query(
     `UPDATE notification_delivery
-        SET delivery_status = 'failure',
+        SET delivery_status = 'failed',
             error_message = $3::text,
             attempted_at = now(),
+            next_attempt_at = now() + ($4::text || ' seconds')::interval,
             updated_at = now()
       WHERE id = $1::uuid
         AND ward_id = $2::uuid`,
-    [params.deliveryId, params.wardId, params.errorMessage]
-  );
-
-  const backoffSeconds = calculateRetryBackoffSeconds(params.attempts);
-
-  await client.query(
-    `UPDATE event_outbox eo
-        SET status = 'pending',
-            available_at = now() + ($4::text || ' seconds')::interval,
-            last_error = $3::text,
-            updated_at = now()
-      WHERE eo.id = $1::uuid
-        AND eo.ward_id = $2::uuid`,
-    [params.eventOutboxId, params.wardId, params.errorMessage, String(backoffSeconds)]
+    [params.deliveryId, params.wardId, params.errorMessage, String(calculateRetryBackoffSeconds(params.attempts))]
   );
 }
 

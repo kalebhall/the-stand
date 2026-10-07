@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { buildMeetingRenderHtml } from '../meetings/render';
-import { getPublicProgramRenderLabels, resolvePublicLocale } from './public-program';
+import { getPublicProgramRenderLabels, getStandRenderLabels, resolvePublicLocale } from './public-program';
 
 const meetingTypes = ['SACRAMENT', 'FAST_TESTIMONY', 'WARD_CONFERENCE', 'STAKE_CONFERENCE', 'GENERAL_CONFERENCE'];
 
@@ -23,7 +23,26 @@ for (const locale of ['en-US', 'es'] as const) {
       expect(labels).toHaveLength(5);
       expect(labels.every((value) => value.meetingTypeLabel)).toBe(true);
       expect(unknown.meetingTypeLabel).toBe(locale === 'es' ? 'Reunión' : 'Meeting');
-      expect(Object.keys(labels[0].itemLabels)).toHaveLength(12);
+      expect(Object.keys(labels[0].itemLabels)).toHaveLength(24);
+      expect(labels[0].itemLabels.WELCOME).toBe(locale === 'es' ? 'Bienvenida' : 'Welcome');
+      expect(labels[0].itemLabels.PRESIDING).toBe(locale === 'es' ? 'Preside' : 'Presiding');
+      expect(labels[0].itemLabels.CONDUCTING).toBe(locale === 'es' ? 'Dirige' : 'Conducting');
+      expect(labels[0].itemLabels.OPENING_PRAYER).toBe(locale === 'es' ? 'Oración de apertura' : 'Opening prayer');
+      expect(labels[0].itemLabels.CLOSING_PRAYER).toBe(locale === 'es' ? 'Oración de clausura' : 'Closing prayer');
+      expect(labels[0].itemLabels.HYMN).toBe(locale === 'es' ? 'Himno' : 'Hymn');
+      expect(labels[0].itemLabels.SPECIAL_HYMN).toBe(locale === 'es' ? 'Himno especial' : 'Special hymn');
+      expect(labels[0].itemLabels.SPECIAL_MUSICAL_NUMBER).toBe(locale === 'es' ? 'Número musical especial' : 'Special musical number');
+      expect(labels[0].itemLabels.SUSTAINING).toBe(locale === 'es' ? 'Sostenimiento' : 'Sustaining');
+      expect(labels[0].itemLabels.RELEASE).toBe(locale === 'es' ? 'Relevo' : 'Release');
+    });
+
+    it('uses the Stand catalog for localized operational labels', () => {
+      const labels = getStandRenderLabels(locale);
+      expect(labels.introduction).toBe(locale === 'es' ? 'Introducción' : 'Introduction');
+      expect(labels.itemLabels?.SPECIAL_MUSICAL_NUMBER).toBe(locale === 'es' ? 'Número musical especial' : 'Special musical number');
+      expect(Object.keys(labels.itemLabels)).toHaveLength(24);
+      expect(labels.itemLabels.REST_HYMN).not.toBe('REST HYMN');
+      expect(labels.itemLabels.TESTIMONIES).not.toBe('TESTIMONIES');
     });
 
     it('provides complete renderer labels while preserving authored and official content', () => {
@@ -36,8 +55,9 @@ for (const locale of ['en-US', 'es'] as const) {
           {
             itemType: 'SPEAKER',
             title: 'Jane Doe',
-            notes: 'Please welcome our speaker.',
+            notes: null,
             topic: 'Finding peace through prayer',
+            programNotes: 'Please welcome our speaker.',
             hymnNumber: null,
             hymnTitle: null
           },
@@ -56,3 +76,13 @@ for (const locale of ['en-US', 'es'] as const) {
     });
   });
 }
+
+describe('Stand label completeness', () => {
+  it.each(['en-US', 'es', 'tl', 'to'] as const)('localizes every supported program item in %s', (locale) => {
+    const labels = getStandRenderLabels(locale);
+    expect(Object.keys(labels.itemLabels)).toHaveLength(24);
+    expect(Object.values(labels.itemLabels).every((label) => label.trim().length > 0)).toBe(true);
+    expect(labels.itemLabels.REST_HYMN).not.toBe('REST HYMN');
+    expect(labels.itemLabels.TESTIMONIES).not.toBe('TESTIMONIES');
+  });
+});
