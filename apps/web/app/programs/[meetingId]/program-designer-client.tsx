@@ -300,6 +300,7 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
       const requestedAdvancedLayoutSnapshot = latestAdvancedLayout.current ? JSON.stringify(latestAdvancedLayout.current) : null;
       const requestedSimpleLayoutSnapshot = JSON.stringify(saveMode === 'ADVANCED' ? downgradeToV1(nextLayout as AdvancedDocumentLayout) : nextLayout);
       let saveSucceeded = false;
+      let completedRevision: number | null = null;
       try {
         const response = await fetch(`/api/w/${wardId}/meetings/${meetingId}/program-design`, {
           method: 'PUT',
@@ -314,6 +315,7 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
           return false;
         }
         if (!response.ok) throw new Error(body.error ?? t('saveFailed'));
+        completedRevision = Number(body.revision);
         const responseDocument = body.document as
           | { layout?: unknown; sourceTemplateId?: string | null; sourceTemplateVersion?: number | null; schemaVersion?: unknown }
           | undefined;
@@ -374,7 +376,9 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
         saveInFlight.current = false;
         const nextSave = saveSucceeded ? pendingSave.current : null;
         pendingSave.current = null;
-        if (nextSave) void save(nextSave.nextLayout, nextSave.expectedRevision, nextSave.templateId, nextSave.saveMode);
+        if (nextSave) {
+          void save(nextSave.nextLayout, completedRevision ?? nextSave.expectedRevision, nextSave.templateId, nextSave.saveMode);
+        }
       }
     },
     [meetingId, wardId]
