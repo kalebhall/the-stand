@@ -72,6 +72,20 @@ describe('generic document renderer', () => {
     expect(output.html).not.toContain('RAW_WARD');
   });
 
+  it('uses semantic face identity when folded regions are reordered', () => {
+    const source = adaptLegacyLayoutToDocument({ preset: 'SINGLE_SHEET_BIFOLD', announcementMode: 'AFTER_PROGRAM', coverMode: 'NONE' });
+    const advanced = normalizeToAdvanced(source);
+    advanced.pages[0].regions = [...advanced.pages[0].regions].reverse();
+    const { data } = resolveDocumentData(
+      advanced,
+      { meetingDate: '2026-01-04', meetingType: 'SACRAMENT', wardName: 'Ward', programItems: [] },
+      { preserveAdvancedLayout: true }
+    );
+    const output = renderDocumentHtml({ layout: advanced, data, target: 'PRINT' });
+    const firstSide = output.html.split('data-side-index="0"')[1]?.split('data-side-index="1"')[0] ?? '';
+    expect(firstSide.indexOf('data-region-face="BACK_COVER"')).toBeLessThan(firstSide.indexOf('data-region-face="FRONT_COVER"'));
+  });
+
   it.each([
     ['BIFOLD', 2],
     ['TRIFOLD', 2],

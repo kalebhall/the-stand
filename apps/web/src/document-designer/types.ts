@@ -31,6 +31,14 @@ export type PrintBehavior = (typeof PRINT_BEHAVIORS)[number];
 export type DigitalBehavior = (typeof DIGITAL_BEHAVIORS)[number];
 export type ThemeFontFamily = (typeof THEME_FONT_FAMILIES)[number];
 export type BlockType = (typeof BLOCK_TYPES)[number];
+export type DocumentRegionFace =
+  | 'FRONT_COVER'
+  | 'INSIDE_LEFT'
+  | 'INSIDE_RIGHT'
+  | 'BACK_COVER'
+  | 'FOLD_IN_FLAP'
+  | 'INSIDE_CENTER'
+  | 'PAGE';
 export type DocumentId = string & { readonly __brand: 'DocumentId' };
 export type DocumentMetadata = object;
 
@@ -178,6 +186,8 @@ export interface DocumentTemplate<
 
 export interface DocumentRegion<TBlock extends DocumentBlockBase<string> = DocumentBlock> {
   id: DocumentId;
+  /** Stable semantic identity for a physical folded-program face. */
+  face?: DocumentRegionFace;
   ratio: number;
   gutter: number;
   blocks: TBlock[];

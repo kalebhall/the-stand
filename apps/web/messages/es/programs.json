@@ -194,6 +194,8 @@
     "insideLeft": "Interior izquierdo",
     "insideRight": "Interior derecho",
     "backCover": "Contraportada",
+    "foldInFlap": "Solapa interior",
+    "insideCenter": "Interior central",
     "baptismPrograms": "Programas de bautismo",
     "baptismProgramsDescription": "Crea y administra borradores de programas de bautismo del barrio.",
     "baptismDate": "Fecha",

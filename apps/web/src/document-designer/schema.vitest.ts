@@ -264,6 +264,24 @@ describe('document designer schema', () => {
     expect(documentLayoutSchema.safeParse({ ...validLayout, fold: 'TRIFOLD', paper: 'A4', orientation: 'PORTRAIT' }).success).toBe(false);
   });
 
+  it('rejects duplicate or incompatible folded face metadata at the base schema boundary', () => {
+    const bifold = adaptLegacyLayoutToDocument({ preset: 'SINGLE_SHEET_BIFOLD', announcementMode: 'AFTER_PROGRAM', coverMode: 'NONE' });
+    bifold.pages[0].regions[0].face = 'FRONT_COVER';
+    bifold.pages[0].regions[0].ratio = 0.5;
+    bifold.pages[0].regions.push({
+      ...bifold.pages[0].regions[0],
+      id: '33333333-3333-4333-8333-333333333333' as DocumentId,
+      face: 'FRONT_COVER',
+      ratio: 0.5,
+      blocks: []
+    });
+    expect(documentLayoutSchema.safeParse(bifold).success).toBe(false);
+
+    const incompatible = adaptLegacyLayoutToDocument({ preset: 'SINGLE_SHEET_BIFOLD', announcementMode: 'AFTER_PROGRAM', coverMode: 'NONE' });
+    incompatible.pages[0].regions[0].face = 'INSIDE_CENTER';
+    expect(documentLayoutSchema.safeParse(incompatible).success).toBe(false);
+  });
+
   it('keeps the exported document ID validator UUID-safe', () => {
     expect(documentLayoutSchema.safeParse({ ...validLayout, id: 'arbitrary-branded-string' }).success).toBe(false);
   });
