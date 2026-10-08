@@ -5,7 +5,6 @@ import { NextIntlClientProvider } from 'next-intl';
 import { MESSAGE_CATALOGS } from '@/src/i18n/messages';
 
 import { adaptLegacyLayoutToDocument } from '@/src/document-designer/legacy-layout-adapter';
-import { normalizeToAdvanced } from '@/src/document-designer/advanced-schema';
 import { ProgramDesignerClient } from './program-designer-client';
 
 const layout = adaptLegacyLayoutToDocument({ preset: 'FULL_PAGE', announcementMode: 'AFTER_PROGRAM', coverMode: 'NONE' });
@@ -14,10 +13,20 @@ const payload = {
   previewSource: { meetingDate: '2026-09-20', meetingType: 'SACRAMENT', wardName: 'Freedom Park Ward', programItems: [] }
 };
 const spatialLayout = adaptLegacyLayoutToDocument({ preset: 'SINGLE_SHEET_BIFOLD', announcementMode: 'AFTER_PROGRAM', coverMode: 'NONE' });
-const spatialAdvancedLayout = normalizeToAdvanced(spatialLayout);
+const legacySpatialAdvancedLayout = {
+  ...spatialLayout,
+  schemaVersion: 2 as const,
+  pages: spatialLayout.pages.map((page) => ({
+    ...page,
+    regions: page.regions.map((region) => ({
+      ...region,
+      columns: { count: 1 as const, ratio: '1/1' as const, gutter: region.gutter, blockIds: [region.blocks.map((block) => block.id)] }
+    }))
+  }))
+};
 const spatialPayload = {
   ...payload,
-  document: { ...payload.document, layout: spatialLayout, advancedLayout: spatialAdvancedLayout },
+  document: { ...payload.document, layout: spatialLayout, advancedLayout: legacySpatialAdvancedLayout },
   simpleMode: { advancedModeAvailable: true }
 };
 

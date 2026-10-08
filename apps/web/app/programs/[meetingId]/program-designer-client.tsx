@@ -148,13 +148,15 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
     const response = await fetch(`/api/w/${wardId}/meetings/${meetingId}/program-design`);
     const body = await response.json();
     if (!response.ok) throw new Error(body.error ?? t('failedLoadDesign'));
-    setDocument({ ...body.document, advancedLayout: body.document.advancedLayout });
+    const loadedAdvancedLayout = body.document.advancedLayout ? normalizeToAdvanced(body.document.advancedLayout) : null;
+    const loadedViewLayout = loadedAdvancedLayout ?? normalizeToAdvanced(body.document.layout);
+    setDocument({ ...body.document, advancedLayout: loadedAdvancedLayout });
     setAdvancedEnabled(body.simpleMode?.advancedModeAvailable === true);
-    if (body.document.advancedLayout) setHistoryState(createHistory(body.document.advancedLayout));
+    if (loadedAdvancedLayout) setHistoryState(createHistory(loadedAdvancedLayout));
     setSource(body.previewSource);
     initialLayout.current = body.document.layout;
-    initialAdvancedLayout.current = body.document.advancedLayout ?? null;
-    setSelectedBlockId(body.document.layout.pages[0]?.regions[0]?.blocks[0]?.id ?? null);
+    initialAdvancedLayout.current = loadedAdvancedLayout;
+    setSelectedBlockId(loadedViewLayout.pages[0]?.regions[0]?.blocks[0]?.id ?? null);
     try {
       const templatesResponse = await fetch(`/api/w/${wardId}/document-templates`);
       const templatesBody = await templatesResponse.json();
@@ -476,7 +478,7 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
   }
 
   function currentAdvanced(): AdvancedDocumentLayout | null {
-    return document?.advancedLayout ?? (document ? normalizeToAdvanced(document.layout) : null);
+    return document ? normalizeToAdvanced(document.advancedLayout ?? document.layout) : null;
   }
 
   function undoAdvanced() {
