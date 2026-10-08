@@ -61,7 +61,7 @@ flowchart LR
   A5 -->|32| A7
   A5 -->|25| A24
   A5 -->|24| A26
-  A6 -->|23| A17
+  A6 -->|22| A17
   A6 -->|21| A21
   A6 -->|16| A26
   A6 -->|15| A31
@@ -227,7 +227,7 @@ flowchart LR
 | `web:programs` | `web:programs` | 30 |
 | `web:api` | `web:lib` | 25 |
 | `web:api` | `web:meetings` | 24 |
-| `web:app` | `web:document-designer` | 23 |
+| `web:app` | `web:document-designer` | 22 |
 | `web:platform` | `web:platform` | 22 |
 | `web:app` | `web:i18n` | 21 |
 | `web:meetings` | `web:meetings` | 20 |
@@ -703,7 +703,7 @@ flowchart LR
 | `apps/web/app/programs/[meetingId]/designer-state.vitest.ts` | `web:app` | 2 | 1 |
 | `apps/web/app/programs/[meetingId]/page.tsx` | `web:app` | 4 | 1 |
 | `apps/web/app/programs/[meetingId]/program-designer-client.tsx` | `web:app` | 10 | 3 |
-| `apps/web/app/programs/[meetingId]/program-designer-client.vitest.tsx` | `web:app` | 4 | 3 |
+| `apps/web/app/programs/[meetingId]/program-designer-client.vitest.tsx` | `web:app` | 3 | 3 |
 | `apps/web/app/programs/baptism/baptism-programs-client.tsx` | `web:app` | 0 | 2 |
 | `apps/web/app/programs/baptism/page.tsx` | `web:app` | 4 | 1 |
 | `apps/web/app/programs/page.tsx` | `web:app` | 9 | 3 |
