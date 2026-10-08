@@ -1,4 +1,5 @@
 import { documentLayoutSchema } from './schema';
+import { downgradeToV1, normalizeToAdvanced } from './advanced-schema';
 import { adaptLegacyLayoutToDocument, type LegacyPublicLayout } from './legacy-layout-adapter';
 import type { DocumentLayout } from './types';
 
@@ -79,7 +80,8 @@ function makeLayout(definition: (typeof definitions)[number]): DocumentLayout {
   const titleBlock = layout.pages[0].regions[0].blocks.find((block) => block.type === 'DOCUMENT_TITLE');
   if (titleBlock) (titleBlock.config as { text: string }).text = definition.title ?? definition.name;
   layout.metadata.documentTitleSource = 'AUTHORED';
-  return documentLayoutSchema.parse(layout);
+  const parsed = documentLayoutSchema.parse(layout);
+  return parsed.fold === 'NONE' ? parsed : downgradeToV1(normalizeToAdvanced(parsed));
 }
 
 export const BUILT_IN_TEMPLATES: readonly BuiltInTemplate[] = definitions.map((definition) => ({

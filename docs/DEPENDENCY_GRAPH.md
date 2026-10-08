@@ -209,7 +209,7 @@ flowchart LR
 
 | Importing area | Imported area | Imports |
 | --- | --- | ---: |
-| `web:document-designer` | `web:document-designer` | 213 |
+| `web:document-designer` | `web:document-designer` | 217 |
 | `web:api` | `web:auth` | 183 |
 | `web:api` | `web:db` | 160 |
 | `web:app` | `web:ui` | 119 |
@@ -906,7 +906,7 @@ flowchart LR
 | `apps/web/src/document-designer/advanced-schema.vitest.ts` | `web:document-designer` | 2 | 1 |
 | `apps/web/src/document-designer/advanced-validation.ts` | `web:document-designer` | 2 | 0 |
 | `apps/web/src/document-designer/block-renderers.ts` | `web:document-designer` | 4 | 0 |
-| `apps/web/src/document-designer/built-in-templates.ts` | `web:document-designer` | 3 | 0 |
+| `apps/web/src/document-designer/built-in-templates.ts` | `web:document-designer` | 4 | 0 |
 | `apps/web/src/document-designer/compatibility-render.vitest.ts` | `web:document-designer` | 5 | 1 |
 | `apps/web/src/document-designer/constants.ts` | `web:document-designer` | 0 | 0 |
 | `apps/web/src/document-designer/data-resolver.ts` | `web:document-designer` | 8 | 0 |
@@ -965,12 +965,12 @@ flowchart LR
 | `apps/web/src/document-designer/schema.vitest.ts` | `web:document-designer` | 5 | 2 |
 | `apps/web/src/document-designer/template-administration-service.ts` | `web:document-designer` | 3 | 0 |
 | `apps/web/src/document-designer/template-administration-service.vitest.ts` | `web:document-designer` | 1 | 1 |
-| `apps/web/src/document-designer/template-catalog.vitest.ts` | `web:document-designer` | 2 | 1 |
+| `apps/web/src/document-designer/template-catalog.vitest.ts` | `web:document-designer` | 4 | 1 |
 | `apps/web/src/document-designer/template-locks.ts` | `web:document-designer` | 0 | 1 |
 | `apps/web/src/document-designer/template-locks.vitest.ts` | `web:document-designer` | 1 | 1 |
 | `apps/web/src/document-designer/template-scope.ts` | `web:document-designer` | 0 | 1 |
 | `apps/web/src/document-designer/template-scope.vitest.ts` | `web:document-designer` | 1 | 1 |
-| `apps/web/src/document-designer/template-service.ts` | `web:document-designer` | 2 | 0 |
+| `apps/web/src/document-designer/template-service.ts` | `web:document-designer` | 3 | 0 |
 | `apps/web/src/document-designer/types.ts` | `web:document-designer` | 1 | 0 |
 | `apps/web/src/features/advanced-designer.ts` | `web:features` | 0 | 0 |
 | `apps/web/src/features/advanced-designer.vitest.ts` | `web:features` | 2 | 1 |

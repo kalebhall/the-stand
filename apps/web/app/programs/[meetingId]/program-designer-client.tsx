@@ -296,9 +296,13 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
           return false;
         }
         if (!response.ok) throw new Error(body.error ?? t('saveFailed'));
-        const savedLayout =
-          body.document?.layout ?? (body.document?.schemaVersion === 2 ? downgradeToV1(body.document) : body.document) ?? nextLayout;
-        const savedAdvancedLayout = body.document?.schemaVersion === 2 ? (body.document as AdvancedDocumentLayout) : null;
+        const responseDocument = body.document as
+          | { layout?: unknown; sourceTemplateId?: string | null; sourceTemplateVersion?: number | null; schemaVersion?: unknown }
+          | undefined;
+        const savedResponseLayout = responseDocument?.layout ?? body.document ?? nextLayout;
+        const normalizedSavedLayout = normalizeToAdvanced(savedResponseLayout);
+        const savedLayout = downgradeToV1(normalizedSavedLayout);
+        const savedAdvancedLayout = responseDocument?.schemaVersion === 2 || templateId ? normalizedSavedLayout : null;
         initialLayout.current = savedLayout;
         if (savedAdvancedLayout) initialAdvancedLayout.current = savedAdvancedLayout;
         const hasNewerSimpleDraft =
@@ -314,6 +318,12 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
             ...current,
             layout: savedLayout,
             advancedLayout: savedAdvancedLayout ?? current.advancedLayout,
+            ...(Object.prototype.hasOwnProperty.call(responseDocument ?? {}, 'sourceTemplateId')
+              ? { sourceTemplateId: responseDocument?.sourceTemplateId ?? null }
+              : {}),
+            ...(Object.prototype.hasOwnProperty.call(responseDocument ?? {}, 'sourceTemplateVersion')
+              ? { sourceTemplateVersion: responseDocument?.sourceTemplateVersion ?? null }
+              : {}),
             theme: savedLayout.theme,
             revision: body.revision
           };

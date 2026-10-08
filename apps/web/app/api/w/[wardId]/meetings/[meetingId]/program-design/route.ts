@@ -401,7 +401,11 @@ export async function PUT(request: Request, context: { params: Promise<{ wardId:
       severity: 'notice'
     });
     await client.query('COMMIT');
-    return NextResponse.json({ success: true, revision: updated.revision, document: persistedLayout });
+    return NextResponse.json({
+      success: true,
+      revision: updated.revision,
+      document: { layout: persistedLayout, schemaVersion: persistedSchemaVersion, sourceTemplateId, sourceTemplateVersion }
+    });
   } catch {
     await client.query('ROLLBACK').catch(() => undefined);
     return errorResponse('Failed to save program design', 'INTERNAL_ERROR', 500);
