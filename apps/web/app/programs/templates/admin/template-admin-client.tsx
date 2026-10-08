@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 
+import { DEFAULT_DOCUMENT_LAYOUT } from '@/src/document-designer/schema';
+
 type Scope = 'SYSTEM' | 'STAKE';
 type Template = { id: string; name: string; description?: string | null; status: string; scopeType: Scope; distributionPolicy?: string | null; version?: { version?: number; lock?: unknown } | null };
 type Version = { id: string; version: number; schema_version?: number; created_at?: string; lock_json?: unknown };
@@ -11,8 +13,6 @@ function readLockMode(value: unknown): string {
   if (typeof value === 'object' && value !== null && 'mode' in value && typeof value.mode === 'string') return value.mode;
   return 'UNLOCKED';
 }
-
-const emptyLayout = { schemaVersion: 1, documentType: 'SACRAMENT_PROGRAM', paper: 'LETTER', orientation: 'PORTRAIT', fold: 'BIFOLD', theme: { fontFamily: 'SYSTEM_SANS', baseFontSize: 12, accentColor: '#1f2937' }, pages: [{ id: 'page-1', regions: [{ id: 'region-1', ratio: 1, gutter: 0, blocks: [{ id: 'block-1', type: 'DOCUMENT_TITLE', width: 'FULL', dataMode: 'AUTO', visibility: 'VISIBLE', printBehavior: 'PRINT_AND_DIGITAL', digitalBehavior: 'NORMAL', config: { text: 'Sacrament Meeting' } }] }] }] };
 
 export function TemplateAdminClient({ activeStakeId, canSystem, canStake }: { activeStakeId: string | null; canSystem: boolean; canStake: boolean }) {
   const t = useTranslations('programs');
@@ -46,7 +46,7 @@ export function TemplateAdminClient({ activeStakeId, canSystem, canStake }: { ac
 
   const canUseScope = useMemo(() => scope === 'SYSTEM' ? canSystem : canStake, [scope, canStake, canSystem]);
   async function createDraft() {
-    try { const body = await request('', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: t('newDraft'), description: '', distributionPolicy: 'DUPLICATE_AND_CUSTOMIZE', layout: emptyLayout }) }); setMessage(t('draftCreated')); await load(); setSelected(body.template); }
+    try { const body = await request('', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: t('newDraft'), description: '', distributionPolicy: 'DUPLICATE_AND_CUSTOMIZE', layout: DEFAULT_DOCUMENT_LAYOUT }) }); setMessage(t('draftCreated')); await load(); setSelected(body.template); }
     catch (error: unknown) { setMessage(error instanceof Error ? error.message : t('failedCreateDraft')); }
   }
   async function saveMetadata() {

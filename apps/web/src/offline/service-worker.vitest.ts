@@ -7,7 +7,8 @@ const serviceWorkerPath = path.resolve(process.cwd(), 'public/sw.js');
 describe('offline service-worker privacy policy', () => {
   it('uses a versioned cache and removes older offline cache versions', async () => {
     const source = await readFile(serviceWorkerPath, 'utf8');
-    expect(source).toContain("const CACHE_NAME = 'the-stand-offline-v2';");
+    expect(source).toContain("const CACHE_NAME = `the-stand-offline-${buildId}`;");
+    expect(source).toContain("new URL(self.location.href).searchParams.get('build')");
     expect(source).toContain("key.startsWith('the-stand-offline-') && key !== CACHE_NAME");
   });
 

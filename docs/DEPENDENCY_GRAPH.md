@@ -61,8 +61,8 @@ flowchart LR
   A5 -->|32| A7
   A5 -->|25| A24
   A5 -->|24| A26
+  A6 -->|22| A17
   A6 -->|21| A21
-  A6 -->|20| A17
   A6 -->|16| A26
   A6 -->|15| A31
   A5 -->|14| A11
@@ -227,9 +227,9 @@ flowchart LR
 | `web:programs` | `web:programs` | 30 |
 | `web:api` | `web:lib` | 25 |
 | `web:api` | `web:meetings` | 24 |
+| `web:app` | `web:document-designer` | 22 |
 | `web:platform` | `web:platform` | 22 |
 | `web:app` | `web:i18n` | 21 |
-| `web:app` | `web:document-designer` | 20 |
 | `web:meetings` | `web:meetings` | 20 |
 | `web:modules` | `web:modules` | 17 |
 | `web:app` | `web:meetings` | 16 |
@@ -380,11 +380,11 @@ flowchart LR
 | `web:auth` | `next-auth` | 6 |
 | `web:imports` | `vitest` | 6 |
 | `web:leadership` | `vitest` | 6 |
+| `web:app` | `@testing-library/user-event` | 5 |
 | `web:auth` | `vitest` | 5 |
 | `web:church-actions` | `vitest` | 5 |
 | `web:stand` | `vitest` | 5 |
 | `web:api` | `Node.js` | 4 |
-| `web:app` | `@testing-library/user-event` | 4 |
 | `web:config` | `Node.js` | 4 |
 | `web:modules` | `vitest` | 4 |
 | `web:notifications` | `Node.js` | 4 |
@@ -715,8 +715,8 @@ flowchart LR
 | `apps/web/app/programs/templates/[templateId]/template-detail-client.tsx` | `web:app` | 0 | 3 |
 | `apps/web/app/programs/templates/[templateId]/template-detail-client.vitest.tsx` | `web:app` | 2 | 3 |
 | `apps/web/app/programs/templates/admin/page.tsx` | `web:app` | 5 | 2 |
-| `apps/web/app/programs/templates/admin/template-admin-client.tsx` | `web:app` | 0 | 2 |
-| `apps/web/app/programs/templates/admin/template-admin-client.vitest.tsx` | `web:app` | 2 | 3 |
+| `apps/web/app/programs/templates/admin/template-admin-client.tsx` | `web:app` | 1 | 2 |
+| `apps/web/app/programs/templates/admin/template-admin-client.vitest.tsx` | `web:app` | 3 | 4 |
 | `apps/web/app/programs/templates/page.tsx` | `web:app` | 5 | 2 |
 | `apps/web/app/programs/templates/template-gallery-client.tsx` | `web:app` | 0 | 3 |
 | `apps/web/app/programs/templates/template-gallery-client.vitest.tsx` | `web:app` | 2 | 3 |
