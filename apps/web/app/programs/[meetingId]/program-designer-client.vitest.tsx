@@ -85,6 +85,69 @@ describe('ProgramDesignerClient', () => {
     expect(putCall).toBeDefined();
     expect(JSON.parse(String(putCall?.[1] && (putCall[1] as RequestInit).body)).expectedRevision).toBe(1);
   });
+  it('queues the latest advanced draft while a save is in flight', async () => {
+    let putCount = 0;
+    const putDocuments: unknown[] = [];
+    let resolveFirst: (() => void) | undefined;
+    const fetchMock = vi.fn().mockImplementation(async (url: string, options?: RequestInit) => {
+      if (url.endsWith('/program-design') && options?.method === 'PUT') {
+        putCount += 1;
+        const request = JSON.parse(String(options.body)) as { document: unknown };
+        putDocuments.push(request.document);
+        if (putCount === 1) {
+          await new Promise<void>((resolve) => {
+            resolveFirst = resolve;
+          });
+        }
+        return { ok: true, json: async () => ({ revision: putCount + 1, document: request.document }) };
+      }
+      if (url.endsWith('/program-design')) return { ok: true, json: async () => spatialPayload };
+      if (url.endsWith('/document-templates')) return { ok: true, json: async () => ({ templates: [] }) };
+      if (url.endsWith('/media')) return { ok: true, json: async () => ({ media: [] }) };
+      if (url.endsWith('/reusable-blocks')) return { ok: true, json: async () => ({ blocks: [] }) };
+      return { ok: true, json: async () => payload };
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
+    await screen.findByRole('region', { name: 'Front cover' });
+    fireEvent.click(screen.getByRole('button', { name: 'Advanced Mode' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Add to panel' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save advanced layout' }));
+    await waitFor(() => expect(putCount).toBe(1));
+    fireEvent.click(screen.getByRole('button', { name: 'Add to panel' }));
+    resolveFirst?.();
+    await waitFor(() => expect(putCount).toBe(2));
+    expect(putDocuments[1]).not.toEqual(putDocuments[0]);
+    await waitFor(() => expect(screen.getByText('Saved')).toBeInTheDocument());
+  });
+  it('retries a failed advanced save with the advanced payload', async () => {
+    let putCount = 0;
+    const putRequests: Array<{ mode: string; document: unknown }> = [];
+    const fetchMock = vi.fn().mockImplementation(async (url: string, options?: RequestInit) => {
+      if (url.endsWith('/program-design') && options?.method === 'PUT') {
+        putCount += 1;
+        const request = JSON.parse(String(options.body)) as { mode: string; document: unknown };
+        putRequests.push(request);
+        if (putCount === 1) return { ok: false, json: async () => ({ error: 'offline' }) };
+        return { ok: true, json: async () => ({ revision: 2, document: request.document }) };
+      }
+      if (url.endsWith('/program-design')) return { ok: true, json: async () => spatialPayload };
+      if (url.endsWith('/document-templates')) return { ok: true, json: async () => ({ templates: [] }) };
+      if (url.endsWith('/media')) return { ok: true, json: async () => ({ media: [] }) };
+      if (url.endsWith('/reusable-blocks')) return { ok: true, json: async () => ({ blocks: [] }) };
+      return { ok: true, json: async () => payload };
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
+    await screen.findByRole('region', { name: 'Front cover' });
+    fireEvent.click(screen.getByRole('button', { name: 'Advanced Mode' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Add to panel' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save advanced layout' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Retry save' }));
+    await waitFor(() => expect(putCount).toBe(2));
+    expect(putRequests[1].mode).toBe('ADVANCED');
+    expect((putRequests[1].document as { schemaVersion?: number }).schemaVersion).toBe(2);
+  });
   it('shows all named faces immediately after applying a legacy bifold template', async () => {
     const legacyBifold = adaptLegacyLayoutToDocument({ preset: 'SINGLE_SHEET_BIFOLD', announcementMode: 'AFTER_PROGRAM', coverMode: 'NONE' });
     const fetchMock = vi.fn().mockImplementation(async (url: string, options?: RequestInit) => {
@@ -130,6 +193,7 @@ describe('ProgramDesignerClient', () => {
     fireEvent.click(moveCustomTextUp!);
     expect(screen.getByRole('region', { name: 'Inside right' })).toHaveTextContent('Custom Text');
     fireEvent.click(screen.getByRole('button', { name: 'Phone preview' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Simple Mode' })).toBeInTheDocument());
     expect(screen.getByRole('button', { name: 'Phone preview' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('button', { name: 'Edit' })).toHaveAttribute('aria-pressed', 'false');
     expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument();

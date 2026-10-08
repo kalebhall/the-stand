@@ -100,6 +100,12 @@ type TemplateOption = {
   distributionPolicy?: string | null;
   version?: { version?: number; lock?: unknown } | null;
 };
+type PendingSave = {
+  nextLayout: DocumentLayout | AdvancedDocumentLayout;
+  expectedRevision: number;
+  templateId?: string;
+  saveMode: 'SIMPLE' | 'ADVANCED';
+};
 
 export function ProgramDesignerClient({ wardId, meetingId }: Props) {
   const t = useTranslations('programs');
@@ -137,6 +143,9 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
   const latestLayout = useRef<DocumentLayout | null>(null);
   const latestAdvancedLayout = useRef<AdvancedDocumentLayout | null>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const saveInFlight = useRef(false);
+  const pendingSave = useRef<PendingSave | null>(null);
+  const failedSave = useRef<PendingSave | null>(null);
   const previewRefreshGeneration = useRef(0);
 
   latestLayout.current = document?.layout ?? null;
@@ -280,9 +289,17 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
       templateId?: string,
       saveMode: 'SIMPLE' | 'ADVANCED' = 'SIMPLE'
     ) => {
+      if (saveInFlight.current) {
+        pendingSave.current = { nextLayout, expectedRevision, templateId, saveMode };
+        return false;
+      }
+      saveInFlight.current = true;
       setStatus('saving');
       setMessage(t('saving'));
       const requestedLayoutSnapshot = JSON.stringify(nextLayout);
+      const requestedAdvancedLayoutSnapshot = latestAdvancedLayout.current ? JSON.stringify(latestAdvancedLayout.current) : null;
+      const requestedSimpleLayoutSnapshot = JSON.stringify(saveMode === 'ADVANCED' ? downgradeToV1(nextLayout as AdvancedDocumentLayout) : nextLayout);
+      let saveSucceeded = false;
       try {
         const response = await fetch(`/api/w/${wardId}/meetings/${meetingId}/program-design`, {
           method: 'PUT',
@@ -291,6 +308,7 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
         });
         const body = await response.json();
         if (response.status === 409) {
+          failedSave.current = { nextLayout, expectedRevision, templateId, saveMode };
           setStatus('conflict');
           setMessage(t('changedElsewhere'));
           return false;
@@ -306,14 +324,20 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
         initialLayout.current = savedLayout;
         if (savedAdvancedLayout) initialAdvancedLayout.current = savedAdvancedLayout;
         const hasNewerSimpleDraft =
-          latestLayout.current !== null && saveMode === 'SIMPLE' && JSON.stringify(latestLayout.current) !== requestedLayoutSnapshot;
+          latestLayout.current !== null &&
+          JSON.stringify(latestLayout.current) !== requestedSimpleLayoutSnapshot;
         const hasNewerAdvancedDraft =
           latestAdvancedLayout.current !== null &&
           saveMode === 'ADVANCED' &&
           JSON.stringify(latestAdvancedLayout.current) !== requestedLayoutSnapshot;
+        const hasAdvancedDraftChangedDuringSimpleSave =
+          latestAdvancedLayout.current !== null &&
+          saveMode === 'SIMPLE' &&
+          requestedAdvancedLayoutSnapshot !== null &&
+          JSON.stringify(latestAdvancedLayout.current) !== requestedAdvancedLayoutSnapshot;
         setDocument((current) => {
           if (!current) return current;
-          if (hasNewerSimpleDraft || hasNewerAdvancedDraft) return { ...current, revision: body.revision };
+          if (hasNewerSimpleDraft || hasNewerAdvancedDraft || hasAdvancedDraftChangedDuringSimpleSave) return { ...current, revision: body.revision };
           return {
             ...current,
             layout: savedLayout,
@@ -328,17 +352,29 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
             revision: body.revision
           };
         });
-        if (hasNewerAdvancedDraft && latestAdvancedLayout.current) {
-          void save(latestAdvancedLayout.current, body.revision, undefined, 'ADVANCED');
+        saveSucceeded = true;
+        failedSave.current = null;
+        if ((hasNewerAdvancedDraft || hasAdvancedDraftChangedDuringSimpleSave) && latestAdvancedLayout.current) {
+          pendingSave.current = { nextLayout: latestAdvancedLayout.current, expectedRevision: body.revision, saveMode: 'ADVANCED' };
+          return false;
+        }
+        if (hasNewerSimpleDraft && latestLayout.current) {
+          pendingSave.current = { nextLayout: latestLayout.current, expectedRevision: body.revision, saveMode: 'SIMPLE' };
           return false;
         }
         setStatus('saved');
         setMessage(t('saved'));
         return true;
       } catch (error: unknown) {
+        failedSave.current = { nextLayout, expectedRevision, templateId, saveMode };
         setStatus('error');
         setMessage(error instanceof Error ? error.message : t('retryConnected'));
         return false;
+      } finally {
+        saveInFlight.current = false;
+        const nextSave = saveSucceeded ? pendingSave.current : null;
+        pendingSave.current = null;
+        if (nextSave) void save(nextSave.nextLayout, nextSave.expectedRevision, nextSave.templateId, nextSave.saveMode);
       }
     },
     [meetingId, wardId]
@@ -355,9 +391,12 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
     if (!current) return;
     const isDirty = JSON.stringify(initialAdvancedLayout.current) !== JSON.stringify(current);
     if (nextMode !== 'CONTENT') {
-      setAdvancedEditing(false);
       setMode(nextMode);
-      if (isDirty) void save(current, document.revision, undefined, 'ADVANCED');
+      if (isDirty) {
+        const saved = await save(current, document.revision, undefined, 'ADVANCED');
+        if (!saved) return;
+      }
+      setAdvancedEditing(false);
       return;
     }
     if (isDirty) {
@@ -1085,7 +1124,14 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
                 className="w-full rounded-md border px-2 py-2 text-sm"
                 disabled={!selectedTemplateId || status === 'saving'}
                 onClick={() => {
-                  if (document && selectedTemplateId) void save(document.layout, document.revision, selectedTemplateId);
+                  if (document && selectedTemplateId) {
+                    // A debounced draft save may still hold the old revision.
+                    // Cancel it before the explicit template mutation so two
+                    // PUTs cannot race with the same expectedRevision.
+                    if (saveTimer.current) clearTimeout(saveTimer.current);
+                    saveTimer.current = null;
+                    void save(document.layout, document.revision, selectedTemplateId);
+                  }
                 }}
               >
                 {t('applyTemplate')}
@@ -1493,7 +1539,13 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
               <button
                 type="button"
                 className="rounded-md border px-3 py-2 text-sm"
-                onClick={() => document && void save(document.layout, document.revision)}
+                onClick={() => {
+                  if (!document) return;
+                  const failed = failedSave.current;
+                  const saveMode = failed?.saveMode ?? 'SIMPLE';
+                  const nextLayout = saveMode === 'ADVANCED' ? currentAdvanced() ?? failed?.nextLayout ?? document.layout : document.layout;
+                  void save(nextLayout, document.revision, failed?.templateId, saveMode);
+                }}
               >
                 {t('retrySave')}
               </button>

@@ -90,12 +90,20 @@ export function AppShell({ session, children }: { session: Session | null; child
   const t = useTranslations('shell');
   const tn = useTranslations('navigation');
   const pathname = usePathname();
+  const [hydrated, setHydrated] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isSidebarPinned, setIsSidebarPinned] = useState(true);
   const [moduleSettings, setModuleSettings] = useState<EffectiveModuleSetting[]>([]);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
   const isDevelopmentSite = process.env.NEXT_PUBLIC_APP_ENV === 'development';
+  const navigationPathname = hydrated ? pathname : null;
+
+  // Avoid active-nav markup differing between server and first client render
+  // when Next is behind a rewrite.
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
 
   useEffect(() => {
     setIsMobileNavOpen(false);
@@ -273,7 +281,7 @@ export function AppShell({ session, children }: { session: Session | null; child
         <div className="flex flex-1 flex-col justify-between overflow-y-auto px-4 py-4">
           <NavigationGroups
             groups={navGroups}
-            pathname={pathname}
+            pathname={navigationPathname}
             expandedGroups={expandedGroups}
             onToggle={toggleNavigationGroup}
             onNavigate={() => {
@@ -410,7 +418,7 @@ export function AppShell({ session, children }: { session: Session | null; child
               <div className="flex flex-1 flex-col justify-between overflow-y-auto px-4 py-4">
                 <NavigationGroups
                   groups={navGroups}
-                  pathname={pathname}
+                  pathname={navigationPathname}
                   expandedGroups={expandedGroups}
                   onToggle={toggleNavigationGroup}
                   onNavigate={() => setIsMobileNavOpen(false)}
