@@ -9,6 +9,10 @@ export function DeploymentWatcher() {
   const [newVersionAvailable, setNewVersionAvailable] = useState(false);
 
   useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      void navigator.serviceWorker.register(`/sw.js?build=${encodeURIComponent(CLIENT_BUILD_ID)}`, { updateViaCache: 'none' }).catch(() => undefined);
+    }
+
     // Don't poll if we have no build ID to compare against
     if (CLIENT_BUILD_ID === 'unknown') return;
 

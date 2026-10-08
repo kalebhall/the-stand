@@ -121,10 +121,6 @@ export function OfflineStandButton({ userId, wardId, meetingId }: { userId: stri
     setPending(0);
     setStatus('checking');
     let cancelled = false;
-    if ('serviceWorker' in navigator) {
-      const buildId = process.env.NEXT_PUBLIC_BUILD_ID ?? 'unknown';
-      void navigator.serviceWorker.register(`/sw.js?build=${encodeURIComponent(buildId)}`, { updateViaCache: 'none' }).catch(() => undefined);
-    }
     void ensureOfflineContext(userId, wardId)
       .then(() => loadOfflineSnapshot(userId, wardId, meetingId))
       .then((snapshot) => {
