@@ -16,6 +16,7 @@ import {
   VISIBILITY_MODES
 } from './constants';
 import type { DocumentId } from './types';
+import { validateFoldRegionFaces } from './print-layout';
 
 export const documentIdSchema = z
   .string()
@@ -91,6 +92,9 @@ export function createDocumentRegionSchema(blockSchema: z.ZodTypeAny) {
   return z
     .object({
       id: idSchema,
+      face: z
+        .enum(['FRONT_COVER', 'INSIDE_LEFT', 'INSIDE_RIGHT', 'BACK_COVER', 'FOLD_IN_FLAP', 'INSIDE_CENTER', 'PAGE'])
+        .optional(),
       ratio: z.number().finite().positive().max(1),
       gutter: z.number().finite().min(0).max(72),
       blocks: z.array(blockSchema).max(100),
@@ -132,6 +136,11 @@ export function createDocumentLayoutSchema(blockSchema: z.ZodTypeAny, metadataSc
             ? layout.orientation === 'LANDSCAPE'
             : true;
       if (!supported) context.addIssue({ code: z.ZodIssueCode.custom, message: 'Unsupported paper, fold, and orientation combination' });
+      try {
+        validateFoldRegionFaces(layout);
+      } catch (error) {
+        context.addIssue({ code: z.ZodIssueCode.custom, path: ['pages'], message: error instanceof Error ? error.message : 'Invalid folded face metadata' });
+      }
       for (const page of layout.pages) {
         const physicalRegionCapacity = layout.fold === 'TRIFOLD' ? 6 : layout.fold === 'BIFOLD' || layout.fold === 'HALF_SHEET' ? 4 : 12;
         if (page.regions.length > physicalRegionCapacity) {

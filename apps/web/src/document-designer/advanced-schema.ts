@@ -4,6 +4,7 @@ import { parseDocumentLayout } from './schema';
 import { BLOCK_WIDTHS } from './constants';
 import type { DocumentBlock, DocumentLayout, DocumentRegion } from './types';
 import type { ResolvedDocumentData } from './render-types';
+import { getFoldRegionFace, validateFoldRegionFaces } from './print-layout';
 
 export const ADVANCED_SCHEMA_VERSION = 2 as const;
 export const COLUMN_COUNTS = [1, 2, 3] as const;
@@ -111,11 +112,26 @@ function splitFoldPanels(layout: DocumentLayout): DocumentLayout {
       const regions: DocumentRegion[] = panelBlocks.map((blocks, panelIndex) => ({
         ...source,
         id: (panelIndex === 0 ? source.id : bifoldPanelRegionId(source.id, panelIndex)) as DocumentRegion['id'],
+        face: getFoldRegionFace(layout.fold, panelIndex),
         ratio: 1 / (panelCount * 2),
         blocks
       }));
       return { ...page, regions };
     })
+  };
+}
+
+function ensureFoldRegionFaces(layout: DocumentLayout): DocumentLayout {
+  if (layout.fold === 'NONE') return layout;
+  return {
+    ...layout,
+    pages: layout.pages.map((page) => ({
+      ...page,
+      regions: page.regions.map((region, regionIndex) => ({
+        ...region,
+        face: region.face ?? getFoldRegionFace(layout.fold, regionIndex)
+      }))
+    }))
   };
 }
 
@@ -136,7 +152,8 @@ function validateColumns(region: AdvancedRegion): void {
 
 export function normalizeToAdvanced(input: unknown): AdvancedDocumentLayout {
   const source = input as { schemaVersion?: unknown } | null;
-  const base = splitFoldPanels(parseDocumentLayout(stripAdvancedFields(input)));
+  const base = ensureFoldRegionFaces(splitFoldPanels(parseDocumentLayout(stripAdvancedFields(input))));
+  validateFoldRegionFaces(base);
   const sourcePages =
     source && typeof source === 'object' && Array.isArray((source as { pages?: unknown }).pages)
       ? (source as { pages: unknown[] }).pages

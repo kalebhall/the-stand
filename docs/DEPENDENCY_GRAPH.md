@@ -61,7 +61,7 @@ flowchart LR
   A5 -->|32| A7
   A5 -->|25| A24
   A5 -->|24| A26
-  A6 -->|22| A17
+  A6 -->|23| A17
   A6 -->|21| A21
   A6 -->|16| A26
   A6 -->|15| A31
@@ -209,7 +209,7 @@ flowchart LR
 
 | Importing area | Imported area | Imports |
 | --- | --- | ---: |
-| `web:document-designer` | `web:document-designer` | 211 |
+| `web:document-designer` | `web:document-designer` | 213 |
 | `web:api` | `web:auth` | 183 |
 | `web:api` | `web:db` | 160 |
 | `web:app` | `web:ui` | 119 |
@@ -227,7 +227,7 @@ flowchart LR
 | `web:programs` | `web:programs` | 30 |
 | `web:api` | `web:lib` | 25 |
 | `web:api` | `web:meetings` | 24 |
-| `web:app` | `web:document-designer` | 22 |
+| `web:app` | `web:document-designer` | 23 |
 | `web:platform` | `web:platform` | 22 |
 | `web:app` | `web:i18n` | 21 |
 | `web:meetings` | `web:meetings` | 20 |
@@ -702,7 +702,7 @@ flowchart LR
 | `apps/web/app/programs/[meetingId]/designer-state.ts` | `web:app` | 1 | 0 |
 | `apps/web/app/programs/[meetingId]/designer-state.vitest.ts` | `web:app` | 2 | 1 |
 | `apps/web/app/programs/[meetingId]/page.tsx` | `web:app` | 4 | 1 |
-| `apps/web/app/programs/[meetingId]/program-designer-client.tsx` | `web:app` | 9 | 3 |
+| `apps/web/app/programs/[meetingId]/program-designer-client.tsx` | `web:app` | 10 | 3 |
 | `apps/web/app/programs/[meetingId]/program-designer-client.vitest.tsx` | `web:app` | 4 | 3 |
 | `apps/web/app/programs/baptism/baptism-programs-client.tsx` | `web:app` | 0 | 2 |
 | `apps/web/app/programs/baptism/page.tsx` | `web:app` | 4 | 1 |
@@ -902,7 +902,7 @@ flowchart LR
 | `apps/web/src/document-designer/admin-template-routes.ts` | `web:document-designer` | 6 | 2 |
 | `apps/web/src/document-designer/advanced-designer-flag-off.vitest.ts` | `web:document-designer` | 6 | 1 |
 | `apps/web/src/document-designer/advanced-designer.vitest.ts` | `web:document-designer` | 7 | 1 |
-| `apps/web/src/document-designer/advanced-schema.ts` | `web:document-designer` | 4 | 1 |
+| `apps/web/src/document-designer/advanced-schema.ts` | `web:document-designer` | 5 | 1 |
 | `apps/web/src/document-designer/advanced-schema.vitest.ts` | `web:document-designer` | 2 | 1 |
 | `apps/web/src/document-designer/advanced-validation.ts` | `web:document-designer` | 2 | 0 |
 | `apps/web/src/document-designer/block-renderers.ts` | `web:document-designer` | 4 | 0 |
@@ -935,7 +935,7 @@ flowchart LR
 | `apps/web/src/document-designer/persistence.vitest.ts` | `web:document-designer` | 2 | 1 |
 | `apps/web/src/document-designer/preview-contract.ts` | `web:document-designer` | 4 | 0 |
 | `apps/web/src/document-designer/preview-contract.vitest.ts` | `web:document-designer` | 2 | 1 |
-| `apps/web/src/document-designer/primitives.ts` | `web:document-designer` | 2 | 1 |
+| `apps/web/src/document-designer/primitives.ts` | `web:document-designer` | 3 | 1 |
 | `apps/web/src/document-designer/print-data.ts` | `web:document-designer` | 9 | 4 |
 | `apps/web/src/document-designer/print-data.vitest.ts` | `web:document-designer` | 2 | 1 |
 | `apps/web/src/document-designer/print-layout.ts` | `web:document-designer` | 1 | 0 |

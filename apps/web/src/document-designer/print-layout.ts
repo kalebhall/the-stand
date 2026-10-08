@@ -1,4 +1,4 @@
-import type { DocumentLayout, FoldType, Orientation, PaperSize } from './types';
+import type { DocumentLayout, DocumentRegionFace, FoldType, Orientation, PaperSize } from './types';
 
 export type PhysicalPage = {
   widthMm: number;
@@ -10,8 +10,57 @@ export type PhysicalPage = {
 
 export type Panel = { index: number; xMm: number; yMm: number; widthMm: number; heightMm: number };
 
+const BIFOLD_FACES = ['FRONT_COVER', 'INSIDE_LEFT', 'INSIDE_RIGHT', 'BACK_COVER'] as const satisfies readonly DocumentRegionFace[];
+const TRIFOLD_FACES = ['FRONT_COVER', 'FOLD_IN_FLAP', 'BACK_COVER', 'INSIDE_LEFT', 'INSIDE_CENTER', 'INSIDE_RIGHT'] as const satisfies readonly DocumentRegionFace[];
+const HALF_SHEET_FACES = ['FRONT_COVER', 'INSIDE_LEFT', 'INSIDE_RIGHT', 'BACK_COVER'] as const satisfies readonly DocumentRegionFace[];
+
+export function getFoldRegionFace(fold: DocumentLayout['fold'], regionIndex: number): DocumentRegionFace | undefined {
+  if (fold === 'BIFOLD') return BIFOLD_FACES[regionIndex];
+  if (fold === 'TRIFOLD') return TRIFOLD_FACES[regionIndex];
+  if (fold === 'HALF_SHEET') return HALF_SHEET_FACES[regionIndex];
+  return undefined;
+}
+
+export function getFoldFaceLabelKey(face: DocumentRegionFace | undefined):
+  | 'frontCover'
+  | 'insideLeft'
+  | 'insideRight'
+  | 'backCover'
+  | 'foldInFlap'
+  | 'insideCenter'
+  | undefined {
+  if (face === 'FRONT_COVER') return 'frontCover';
+  if (face === 'INSIDE_LEFT') return 'insideLeft';
+  if (face === 'INSIDE_RIGHT') return 'insideRight';
+  if (face === 'BACK_COVER') return 'backCover';
+  if (face === 'FOLD_IN_FLAP') return 'foldInFlap';
+  if (face === 'INSIDE_CENTER') return 'insideCenter';
+  return undefined;
+}
+
+export function validateFoldRegionFaces(layout: Pick<DocumentLayout, 'fold' | 'pages'>): void {
+  if (layout.fold === 'NONE') return;
+  const capacity = layout.fold === 'TRIFOLD' ? 6 : 4;
+  const expectedFaces = new Set(Array.from({ length: capacity }, (_, index) => getFoldRegionFace(layout.fold, index)));
+  for (const [pageIndex, page] of layout.pages.entries()) {
+    const seen = new Set<string>();
+    for (const region of page.regions) {
+      if (!region.face) continue;
+      if (!expectedFaces.has(region.face)) throw new Error(`Invalid ${layout.fold} face on page ${pageIndex + 1}`);
+      if (seen.has(region.face)) throw new Error(`Duplicate ${layout.fold} face ${region.face} on page ${pageIndex + 1}`);
+      seen.add(region.face);
+    }
+  }
+}
+
 /** Shared logical-region to physical-panel mapping for folded output. */
-export function getFoldRegionPlacement(fold: DocumentLayout['fold'], regionIndex: number): { sideIndex: number; slotIndex: number } {
+export function getFoldRegionPlacement(
+  fold: DocumentLayout['fold'],
+  regionIndex: number,
+  face?: DocumentRegionFace
+): { sideIndex: number; slotIndex: number } {
+  const semanticIndex = face ? getFoldFaceIndex(fold, face) : undefined;
+  const index = semanticIndex ?? regionIndex;
   if (fold === 'BIFOLD' || fold === 'HALF_SHEET') {
     const map = [
       { sideIndex: 0, slotIndex: 1 },
@@ -19,10 +68,16 @@ export function getFoldRegionPlacement(fold: DocumentLayout['fold'], regionIndex
       { sideIndex: 1, slotIndex: 1 },
       { sideIndex: 0, slotIndex: 0 }
     ];
-    return map[regionIndex] ?? { sideIndex: Math.floor(regionIndex / 2) % 2, slotIndex: regionIndex % 2 };
+    return map[index] ?? { sideIndex: Math.floor(index / 2) % 2, slotIndex: index % 2 };
   }
   const panelCount = fold === 'TRIFOLD' ? 3 : 1;
-  return { sideIndex: Math.floor(regionIndex / panelCount) % 2, slotIndex: regionIndex % panelCount };
+  return { sideIndex: Math.floor(index / panelCount) % 2, slotIndex: index % panelCount };
+}
+
+function getFoldFaceIndex(fold: DocumentLayout['fold'], face: DocumentRegionFace): number | undefined {
+  const faces = fold === 'BIFOLD' ? BIFOLD_FACES : fold === 'TRIFOLD' ? TRIFOLD_FACES : fold === 'HALF_SHEET' ? HALF_SHEET_FACES : [];
+  const index = faces.indexOf(face as never);
+  return index >= 0 ? index : undefined;
 }
 
 const PAPER_MM: Record<PaperSize, [number, number]> = {

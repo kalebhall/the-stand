@@ -170,7 +170,7 @@ export async function renderDocumentPdf(
     ? layout.pages
         .flatMap((documentPage, pageIndex) =>
           documentPage.regions.flatMap((region, regionIndex) => {
-            const { sideIndex, slotIndex } = getFoldRegionPlacement(layout.fold, regionIndex);
+            const { sideIndex, slotIndex } = getFoldRegionPlacement(layout.fold, regionIndex, region.face);
             return region.columns.blockIds.flatMap((ids, columnIndex) =>
               ids.flatMap((id) => {
                 const block = region.blocks.find((candidate) => candidate.id === id);

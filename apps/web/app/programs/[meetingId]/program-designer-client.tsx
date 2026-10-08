@@ -23,6 +23,7 @@ import {
 import { commitHistory, createHistory, redo, undo, type HistoryState } from '@/src/document-designer/history';
 import type { DocumentBlock, DocumentLayout } from '@/src/document-designer/types';
 import type { MediaAssetResponse } from '@/src/document-designer/media-types';
+import { getFoldFaceLabelKey } from '@/src/document-designer/print-layout';
 import type { PrintValidationResult } from '@/src/document-designer/print-types';
 import { ProgramEntriesEditor } from '@/components/program-entries-editor';
 
@@ -81,7 +82,6 @@ const blockDescriptionKey = (category: Exclude<BlockCategory, 'ALL'>) =>
     LINKS: 'linksAndQrDescription'
   })[category];
 const REUSABLE_BLOCK_TYPES = new Set(['CUSTOM_TEXT', 'IMAGE', 'DIVIDER', 'SPACER', 'QR_CODE', 'CUSTOM_LINK']);
-const PANEL_LABELS = ['frontCover', 'insideLeft', 'insideRight', 'backCover'] as const;
 const safeDigitalUrl = (value: string) => {
   try {
     const url = new URL(value);
@@ -248,9 +248,10 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
     ? reusableBlocks.find((item) => item.id === selectedBlock.reusableBlockId)
     : undefined;
   const isBifold = document?.layout.fold === 'BIFOLD';
-  const panelLabels = isBifold
-    ? PANEL_LABELS.map((key) => t(key))
-    : (currentAdvanced()?.pages[selectedPageIndex]?.regions.map((_, index) => t('regionNumber', { number: index + 1 })) ?? []);
+  const panelLabels = currentAdvanced()?.pages[selectedPageIndex]?.regions.map((region, index) => {
+    const key = getFoldFaceLabelKey(region.face);
+    return key ? t(key) : t('regionNumber', { number: index + 1 });
+  }) ?? [];
   const programRows = useMemo(() => {
     const leadership = source?.publicValues?.PRESIDING_CONDUCTING;
     let roles: { presiding?: string; conducting?: string } = {};

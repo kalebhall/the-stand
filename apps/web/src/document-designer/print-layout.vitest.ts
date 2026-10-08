@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { DEFAULT_DOCUMENT_LAYOUT } from './schema';
-import { getFoldGuidance, getPhysicalPage, getFoldPanels } from './print-layout';
+import { getFoldFaceLabelKey, getFoldGuidance, getFoldRegionFace, getFoldRegionPlacement, getPhysicalPage, getFoldPanels } from './print-layout';
 import { validatePrintLayout } from './overflow';
 import type { ResolvedDocumentData } from './render-types';
 
@@ -13,6 +13,19 @@ describe('print layout', () => {
     expect(page.widthMm).toBe(215.9);
     expect(page.heightMm).toBe(279.4);
     expect(getFoldPanels({ paper: 'LETTER', orientation: 'PORTRAIT', fold: 'BIFOLD' })).toHaveLength(2);
+  });
+
+  it('provides stable semantic faces and labels for folded panels', () => {
+    expect([0, 1, 2, 3].map((index) => getFoldRegionFace('BIFOLD', index))).toEqual([
+      'FRONT_COVER',
+      'INSIDE_LEFT',
+      'INSIDE_RIGHT',
+      'BACK_COVER'
+    ]);
+    expect(getFoldFaceLabelKey('FRONT_COVER')).toBe('frontCover');
+    expect(getFoldFaceLabelKey('INSIDE_CENTER')).toBe('insideCenter');
+    expect(getFoldRegionPlacement('BIFOLD', 0, 'FRONT_COVER')).toEqual({ sideIndex: 0, slotIndex: 1 });
+    expect(getFoldRegionPlacement('BIFOLD', 0, 'BACK_COVER')).toEqual({ sideIndex: 0, slotIndex: 0 });
   });
 
   it('provides fold guidance', () => {

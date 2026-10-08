@@ -42,6 +42,12 @@ describe('advanced document layout normalization', () => {
 
     expect(parsed).toEqual(normalizeToAdvanced(legacy));
     expect(parsed.pages[0].regions).toHaveLength(4);
+    expect(parsed.pages[0].regions.map((region) => region.face)).toEqual([
+      'FRONT_COVER',
+      'INSIDE_LEFT',
+      'INSIDE_RIGHT',
+      'BACK_COVER'
+    ]);
     expect(() => parseAdvancedLayout(parsed)).not.toThrow();
   });
 
@@ -102,6 +108,19 @@ describe('advanced document layout normalization', () => {
     expect(() => parseAdvancedLayout(malformed)).toThrow(/columns do not match|Column block assignments/);
   });
 
+  it('rejects duplicate or incompatible folded face identities', () => {
+    const advanced = normalizeToAdvanced(
+      adaptLegacyLayoutToDocument({ preset: 'SINGLE_SHEET_BIFOLD', announcementMode: 'AFTER_PROGRAM', coverMode: 'NONE' })
+    );
+    const duplicate = structuredClone(advanced);
+    duplicate.pages[0].regions[1].face = 'FRONT_COVER';
+    expect(() => parseAdvancedLayout(duplicate)).toThrow(/Duplicate BIFOLD face FRONT_COVER/);
+
+    const incompatible = structuredClone(advanced);
+    incompatible.pages[0].regions[0].face = 'INSIDE_CENTER';
+    expect(() => parseAdvancedLayout(incompatible)).toThrow(/Invalid BIFOLD face/);
+  });
+
   it.each([
     ['TRIFOLD', 6],
     ['HALF_SHEET', 4]
@@ -115,6 +134,11 @@ describe('advanced document layout normalization', () => {
           };
     const parsed = parseAdvancedLayout({ ...source, schemaVersion: 2 });
     expect(parsed.pages[0].regions).toHaveLength(expectedRegions);
+    expect(parsed.pages[0].regions.map((region) => region.face)).toEqual(
+      fold === 'TRIFOLD'
+        ? ['FRONT_COVER', 'FOLD_IN_FLAP', 'BACK_COVER', 'INSIDE_LEFT', 'INSIDE_CENTER', 'INSIDE_RIGHT']
+        : ['FRONT_COVER', 'INSIDE_LEFT', 'INSIDE_RIGHT', 'BACK_COVER']
+    );
     expect(parsed.pages[0].regions.flatMap((region) => region.blocks)).toHaveLength(source.pages[0].regions[0].blocks.length);
     expect(() => parseAdvancedLayout(parsed)).not.toThrow();
   });

@@ -50,8 +50,8 @@ function renderAdvanced(
       ? [regions]
       : Array.from({ length: 2 }, (_, sideIndex) =>
           Array.from({ length: panelsPerSide }, (_, slotIndex) =>
-            regions.find((_, regionIndex) => {
-              const placement = getFoldRegionPlacement(layout.fold, regionIndex);
+            regions.find((region, regionIndex) => {
+              const placement = getFoldRegionPlacement(layout.fold, regionIndex, region.face);
               return placement.sideIndex === sideIndex && placement.slotIndex === slotIndex;
             })
           ).filter((region): region is (typeof regions)[number] => Boolean(region))
@@ -91,7 +91,7 @@ function renderAdvanced(
                       ? '2fr 1fr'
                       : '1fr 1fr'
                   : undefined;
-              return `<section class="document-panel document-region" data-region-id="${region.id}" aria-label="${escapeDocumentHtml(data.renderLabels?.documentRegion?.replace('{number}', String(regionIndex + 1)) ?? `Program region ${regionIndex + 1}`)}" style="--document-region-ratio:${region.ratio}"><div class="document-columns document-columns--${region.columns.count}" aria-label="${escapeDocumentHtml(data.renderLabels?.documentColumn?.replace('{number}', String(region.columns.count)) ?? `${region.columns.count} columns`)}" style="--document-gutter:${region.columns.gutter}px;${gridTemplate ? `--document-column-ratio:${gridTemplate};` : ''}">${visibleIds
+              return `<section class="document-panel document-region" data-region-id="${region.id}" data-region-face="${region.face ?? ''}" aria-label="${escapeDocumentHtml(data.renderLabels?.documentRegion?.replace('{number}', String(regionIndex + 1)) ?? `Program region ${regionIndex + 1}`)}" style="--document-region-ratio:${region.ratio}"><div class="document-columns document-columns--${region.columns.count}" aria-label="${escapeDocumentHtml(data.renderLabels?.documentColumn?.replace('{number}', String(region.columns.count)) ?? `${region.columns.count} columns`)}" style="--document-gutter:${region.columns.gutter}px;${gridTemplate ? `--document-column-ratio:${gridTemplate};` : ''}">${visibleIds
                 .map(
                   (ids, columnIndex) =>
                     `<div aria-label="${escapeDocumentHtml(data.renderLabels?.documentColumn?.replace('{number}', String(columnIndex + 1)) ?? `Column ${columnIndex + 1}`)}">${ids
