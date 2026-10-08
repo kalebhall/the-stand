@@ -88,12 +88,14 @@ describe('ProgramDesignerClient', () => {
   it('queues the latest advanced draft while a save is in flight', async () => {
     let putCount = 0;
     const putDocuments: unknown[] = [];
+    const putExpectedRevisions: number[] = [];
     let resolveFirst: (() => void) | undefined;
     const fetchMock = vi.fn().mockImplementation(async (url: string, options?: RequestInit) => {
       if (url.endsWith('/program-design') && options?.method === 'PUT') {
         putCount += 1;
-        const request = JSON.parse(String(options.body)) as { document: unknown };
+        const request = JSON.parse(String(options.body)) as { document: unknown; expectedRevision: number };
         putDocuments.push(request.document);
+        putExpectedRevisions.push(request.expectedRevision);
         if (putCount === 1) {
           await new Promise<void>((resolve) => {
             resolveFirst = resolve;
@@ -118,6 +120,7 @@ describe('ProgramDesignerClient', () => {
     resolveFirst?.();
     await waitFor(() => expect(putCount).toBe(2));
     expect(putDocuments[1]).not.toEqual(putDocuments[0]);
+    expect(putExpectedRevisions).toEqual([1, 2]);
     await waitFor(() => expect(screen.getByText('Saved')).toBeInTheDocument());
   });
   it('retries a failed advanced save with the advanced payload', async () => {
