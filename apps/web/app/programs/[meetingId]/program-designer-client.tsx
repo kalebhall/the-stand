@@ -308,8 +308,12 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
           body: JSON.stringify({ expectedRevision, document: nextLayout, mode: saveMode, ...(templateId ? { templateId } : {}) })
         });
         const body = await response.json();
-        if (response.status === 409) {
+        if (response.status === 409 && body.code === 'REVISION_CONFLICT') {
           failedSave.current = { nextLayout, expectedRevision, templateId, saveMode };
+          const currentRevision = Number(body.currentRevision);
+          if (Number.isInteger(currentRevision) && currentRevision > 0) {
+            setDocument((current) => (current ? { ...current, revision: currentRevision } : current));
+          }
           setStatus('conflict');
           setMessage(t('changedElsewhere'));
           return false;
@@ -409,6 +413,14 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
     }
     setAdvancedEditing(false);
     setMode(nextMode);
+  }
+
+  function retryFailedSave() {
+    if (!document) return;
+    const failed = failedSave.current;
+    const saveMode = failed?.saveMode ?? 'SIMPLE';
+    const nextLayout = saveMode === 'ADVANCED' ? currentAdvanced() ?? failed?.nextLayout ?? document.layout : document.layout;
+    void save(nextLayout, document.revision, failed?.templateId, saveMode);
   }
 
   async function toggleAdvancedEditing() {
@@ -1531,6 +1543,13 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
                 <button
                   type="button"
                   className="rounded border px-2 py-1"
+                  onClick={retryFailedSave}
+                >
+                  {t('retrySave')}
+                </button>
+                <button
+                  type="button"
+                  className="rounded border px-2 py-1"
                   onClick={() =>
                     void load().catch((error: unknown) => setMessage(error instanceof Error ? error.message : 'Reload failed'))
                   }
@@ -1543,13 +1562,7 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
               <button
                 type="button"
                 className="rounded-md border px-3 py-2 text-sm"
-                onClick={() => {
-                  if (!document) return;
-                  const failed = failedSave.current;
-                  const saveMode = failed?.saveMode ?? 'SIMPLE';
-                  const nextLayout = saveMode === 'ADVANCED' ? currentAdvanced() ?? failed?.nextLayout ?? document.layout : document.layout;
-                  void save(nextLayout, document.revision, failed?.templateId, saveMode);
-                }}
+                onClick={retryFailedSave}
               >
                 {t('retrySave')}
               </button>

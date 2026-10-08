@@ -125,13 +125,13 @@ describe('ProgramDesignerClient', () => {
   });
   it('retries a failed advanced save with the advanced payload', async () => {
     let putCount = 0;
-    const putRequests: Array<{ mode: string; document: unknown }> = [];
+    const putRequests: Array<{ mode: string; document: unknown; expectedRevision: number }> = [];
     const fetchMock = vi.fn().mockImplementation(async (url: string, options?: RequestInit) => {
       if (url.endsWith('/program-design') && options?.method === 'PUT') {
         putCount += 1;
-        const request = JSON.parse(String(options.body)) as { mode: string; document: unknown };
+        const request = JSON.parse(String(options.body)) as { mode: string; document: unknown; expectedRevision: number };
         putRequests.push(request);
-        if (putCount === 1) return { ok: false, json: async () => ({ error: 'offline' }) };
+        if (putCount === 1) return { ok: false, status: 409, json: async () => ({ error: 'conflict', code: 'REVISION_CONFLICT', currentRevision: 2 }) };
         return { ok: true, json: async () => ({ revision: 2, document: request.document }) };
       }
       if (url.endsWith('/program-design')) return { ok: true, json: async () => spatialPayload };
@@ -149,6 +149,7 @@ describe('ProgramDesignerClient', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Retry save' }));
     await waitFor(() => expect(putCount).toBe(2));
     expect(putRequests[1].mode).toBe('ADVANCED');
+    expect(putRequests[1].expectedRevision).toBe(2);
     expect((putRequests[1].document as { schemaVersion?: number }).schemaVersion).toBe(2);
   });
   it('shows all named faces immediately after applying a legacy bifold template', async () => {
