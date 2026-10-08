@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
 import { BUILT_IN_TEMPLATES, getBuiltInTemplate } from './built-in-templates';
+import { adaptLegacyLayoutToDocument } from './legacy-layout-adapter';
 import { documentLayoutSchema } from './schema';
+import { parseTemplateLayout } from './template-service';
 
 describe('built-in document templates', () => {
   it('contains the required eight stable templates', () => {
@@ -21,6 +23,20 @@ describe('built-in document templates', () => {
   it('validates every catalog layout and resolves stable keys', () => {
     for (const template of BUILT_IN_TEMPLATES) expect(documentLayoutSchema.parse(template.layout)).toEqual(template.layout);
     expect(getBuiltInTemplate('classic-bifold')?.layout.fold).toBe('BIFOLD');
+    expect(getBuiltInTemplate('classic-bifold')?.layout.pages[0].regions.map((region) => region.face)).toEqual([
+      'FRONT_COVER',
+      'INSIDE_LEFT',
+      'INSIDE_RIGHT',
+      'BACK_COVER'
+    ]);
+    expect(getBuiltInTemplate('trifold-bulletin')?.layout.pages[0].regions.map((region) => region.face)).toEqual([
+      'FRONT_COVER',
+      'FOLD_IN_FLAP',
+      'BACK_COVER',
+      'INSIDE_LEFT',
+      'INSIDE_CENTER',
+      'INSIDE_RIGHT'
+    ]);
     expect(getBuiltInTemplate('missing')).toBeNull();
   });
 
@@ -30,5 +46,16 @@ describe('built-in document templates', () => {
       expect(types).not.toContain('WARD_LEADERSHIP');
       expect(types).not.toContain('MISSIONARIES_ASSIGNED');
     }
+  });
+
+  it('expands legacy one-region folded templates before persistence', () => {
+    const legacyBifold = adaptLegacyLayoutToDocument({ preset: 'SINGLE_SHEET_BIFOLD', announcementMode: 'AFTER_PROGRAM', coverMode: 'NONE' });
+    const parsed = parseTemplateLayout(legacyBifold);
+    expect(parsed.pages[0].regions.map((region) => region.face)).toEqual([
+      'FRONT_COVER',
+      'INSIDE_LEFT',
+      'INSIDE_RIGHT',
+      'BACK_COVER'
+    ]);
   });
 });

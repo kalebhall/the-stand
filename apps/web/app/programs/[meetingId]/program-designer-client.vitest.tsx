@@ -29,6 +29,23 @@ const spatialPayload = {
   document: { ...payload.document, layout: spatialLayout, advancedLayout: legacySpatialAdvancedLayout },
   simpleMode: { advancedModeAvailable: true }
 };
+const trifoldLayout = adaptLegacyLayoutToDocument({ preset: 'TRI_FOLD_BULLETIN', announcementMode: 'AFTER_PROGRAM', coverMode: 'NONE' });
+const legacyTrifoldAdvancedLayout = {
+  ...trifoldLayout,
+  schemaVersion: 2 as const,
+  pages: trifoldLayout.pages.map((page) => ({
+    ...page,
+    regions: page.regions.map((region) => ({
+      ...region,
+      columns: { count: 1 as const, ratio: '1/1' as const, gutter: region.gutter, blockIds: [region.blocks.map((block) => block.id)] }
+    }))
+  }))
+};
+const advancedTemplatePayload = {
+  ...payload,
+  document: { ...payload.document, layout: trifoldLayout, advancedLayout: legacyTrifoldAdvancedLayout },
+  simpleMode: { advancedModeAvailable: true }
+};
 
 afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 const renderWithMessages = (ui: React.ReactNode) => render(<NextIntlClientProvider locale="en-US" messages={MESSAGE_CATALOGS['en-US']}>{ui}</NextIntlClientProvider>);
@@ -67,6 +84,36 @@ describe('ProgramDesignerClient', () => {
     const putCall = fetchMock.mock.calls.find(([, options]) => (options as RequestInit | undefined)?.method === 'PUT');
     expect(putCall).toBeDefined();
     expect(JSON.parse(String(putCall?.[1] && (putCall[1] as RequestInit).body)).expectedRevision).toBe(1);
+  });
+  it('shows all named faces immediately after applying a legacy bifold template', async () => {
+    const legacyBifold = adaptLegacyLayoutToDocument({ preset: 'SINGLE_SHEET_BIFOLD', announcementMode: 'AFTER_PROGRAM', coverMode: 'NONE' });
+    const fetchMock = vi.fn().mockImplementation(async (url: string, options?: RequestInit) => {
+      if (url.endsWith('/program-design') && options?.method === 'PUT')
+        return {
+          ok: true,
+          json: async () => ({ revision: 2, document: { layout: legacyBifold, schemaVersion: 1, sourceTemplateId: null, sourceTemplateVersion: 1 } })
+        };
+      if (url.endsWith('/program-design')) return { ok: true, json: async () => advancedTemplatePayload };
+      if (url.endsWith('/document-templates'))
+        return { ok: true, json: async () => ({ templates: [{ id: 'classic-bifold', name: 'Classic Bifold', source: 'BUILT_IN' }] }) };
+      if (url.endsWith('/media')) return { ok: true, json: async () => ({ media: [] }) };
+      if (url.endsWith('/reusable-blocks')) return { ok: true, json: async () => ({ blocks: [] }) };
+      return { ok: true, json: async () => payload };
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
+    await screen.findByRole('region', { name: 'Document canvas' });
+    fireEvent.change(screen.getByLabelText('Approved template'), { target: { value: 'classic-bifold' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Apply template' }));
+    await waitFor(() => expect(fetchMock.mock.calls.some(([, options]) => (options as RequestInit | undefined)?.method === 'PUT')).toBe(true));
+    await waitFor(() => expect(screen.queryByRole('region', { name: 'Fold-in flap' })).not.toBeInTheDocument());
+    expect(screen.getByRole('region', { name: 'Front cover' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Inside left' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Inside right' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Back cover' })).toBeInTheDocument();
+
+    const putCall = fetchMock.mock.calls.find(([, options]) => (options as RequestInit | undefined)?.method === 'PUT');
+    expect(JSON.parse(String(putCall?.[1] && (putCall[1] as RequestInit).body)).templateId).toBe('classic-bifold');
   });
   it('renders bi-fold panels, adds to the selected panel, and switches views', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => spatialPayload }));

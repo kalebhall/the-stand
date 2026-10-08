@@ -1,4 +1,5 @@
 import { documentLayoutSchema } from './schema';
+import { downgradeToV1, normalizeToAdvanced } from './advanced-schema';
 import type { ProgramPermissionProfile } from '@/src/auth/roles';
 
 export type TemplateDbRow = {
@@ -22,7 +23,8 @@ export type TemplateClient = {
 };
 
 export function parseTemplateLayout(input: unknown) {
-  return documentLayoutSchema.parse(input);
+  const layout = documentLayoutSchema.parse(input);
+  return layout.fold === 'NONE' ? layout : downgradeToV1(normalizeToAdvanced(layout));
 }
 
 export async function loadProgramPermissionProfile(client: TemplateClient, wardId: string): Promise<ProgramPermissionProfile> {
