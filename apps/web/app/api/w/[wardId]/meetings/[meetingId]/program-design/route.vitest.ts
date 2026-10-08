@@ -137,6 +137,55 @@ describe('program design route', () => {
     expect(queryMock).not.toHaveBeenCalledWith(expect.stringContaining('meeting_program_render'), expect.anything());
   });
 
+  it('allows built-in folded templates in Simple Mode', async () => {
+    queryMock
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({ rows: [{ id: 'meeting-1' }] })
+      .mockResolvedValueOnce({ rows: [documentRow] })
+      .mockResolvedValueOnce({ rows: [{ allow_advanced_program_designer: false }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'document-1', revision: 4 }] })
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({});
+    const response = await PUT(
+      new Request('http://localhost', {
+        method: 'PUT',
+        body: JSON.stringify({ expectedRevision: 3, document: layout, templateId: 'classic-bifold' })
+      }),
+      params()
+    );
+    expect(response.status).toBe(200);
+    expect((await response.json()).revision).toBe(4);
+    const updateCall = queryMock.mock.calls.find(([sql]) => typeof sql === 'string' && sql.includes('UPDATE meeting_document'));
+    expect(updateCall).toBeDefined();
+    const updateValues = updateCall?.[1] as unknown[];
+    expect(updateValues[4]).toBe(1);
+    const persistedLayout = JSON.parse(String(updateValues[5])) as { fold?: string; pages?: Array<{ regions?: unknown[] }> };
+    expect(persistedLayout.fold).toBe('BIFOLD');
+    expect(persistedLayout.pages?.[0]?.regions).toHaveLength(4);
+  });
+
+  it('still blocks custom advanced templates in Simple Mode', async () => {
+    queryMock
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({ rows: [{ id: 'meeting-1' }] })
+      .mockResolvedValueOnce({ rows: [documentRow] })
+      .mockResolvedValueOnce({ rows: [{ allow_advanced_program_designer: false }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'template-1', version: 7, layout_json: layout }] })
+      .mockResolvedValueOnce({});
+    const response = await PUT(
+      new Request('http://localhost', {
+        method: 'PUT',
+        body: JSON.stringify({ expectedRevision: 3, document: layout, templateId: 'template-1' })
+      }),
+      params()
+    );
+    expect(response.status).toBe(422);
+    expect((await response.json()).code).toBe('ADVANCED_BLOCK');
+    expect(queryMock).not.toHaveBeenCalledWith(expect.stringContaining('UPDATE meeting_document'), expect.anything());
+  });
+
   it('returns a conflict and retains local state on a stale revision', async () => {
     queryMock
       .mockResolvedValueOnce({})
