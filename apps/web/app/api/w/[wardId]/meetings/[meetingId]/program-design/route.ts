@@ -46,8 +46,8 @@ const saveSchema = z
   .strict();
 const fullPageFallback = () => BUILT_IN_TEMPLATES.find((template) => template.key === 'full-page-standard')!.layout;
 
-function errorResponse(message: string, code: string, status: number) {
-  return NextResponse.json({ error: message, code }, { status });
+function errorResponse(message: string, code: string, status: number, details?: Record<string, unknown>) {
+  return NextResponse.json({ error: message, code, ...details }, { status });
 }
 
 async function readContext(client: Awaited<ReturnType<typeof pool.connect>>, wardId: string, meetingId: string) {
@@ -266,7 +266,7 @@ export async function PUT(request: Request, context: { params: Promise<{ wardId:
     const revision = Number(current.revision);
     if (body.data.expectedRevision !== revision) {
       await client.query('ROLLBACK');
-      return errorResponse('The program changed in another session', 'REVISION_CONFLICT', 409);
+      return errorResponse('The program changed in another session', 'REVISION_CONFLICT', 409, { currentRevision: revision });
     }
     let validated: { layout: DocumentLayout; warnings: string[] };
     let sourceTemplateId: string | null = (current.source_template_id as string | null | undefined) ?? null;
@@ -386,8 +386,13 @@ export async function PUT(request: Request, context: { params: Promise<{ wardId:
       expectedRevision: revision
     });
     if (!updated) {
+      const latest = await client.query(
+        'SELECT revision FROM meeting_document WHERE id = $1::uuid AND ward_id = $2::uuid LIMIT 1',
+        [current.id, wardId]
+      );
+      const currentRevision = Number((latest.rows[0] as { revision?: number } | undefined)?.revision ?? revision);
       await client.query('ROLLBACK');
-      return errorResponse('The program changed in another session', 'REVISION_CONFLICT', 409);
+      return errorResponse('The program changed in another session', 'REVISION_CONFLICT', 409, { currentRevision });
     }
     await recordAuditEvent(client, {
       wardId,

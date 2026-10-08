@@ -150,7 +150,9 @@ describe('program design route', () => {
       params()
     );
     expect(response.status).toBe(409);
-    expect((await response.json()).code).toBe('REVISION_CONFLICT');
+    const body = await response.json();
+    expect(body.code).toBe('REVISION_CONFLICT');
+    expect(body.currentRevision).toBe(3);
   });
 
   it('returns stable database errors for reads', async () => {
