@@ -1,4 +1,6 @@
-const CACHE_NAME = 'the-stand-offline-v2';
+const requestedBuild = new URL(self.location.href).searchParams.get('build') ?? 'unknown';
+const buildId = requestedBuild.replace(/[^a-zA-Z0-9._-]/g, '').slice(0, 100) || 'unknown';
+const CACHE_NAME = `the-stand-offline-${buildId}`;
 let cacheGeneration = 0;
 let cacheWrites = Promise.resolve();
 
@@ -38,7 +40,6 @@ self.addEventListener('fetch', (event) => {
     url.origin === self.location.origin &&
     !url.pathname.startsWith('/api/') &&
     (url.pathname.startsWith('/_next/static/') ||
-      url.pathname === '/sw.js' ||
       (url.pathname.startsWith('/stand/') && url.pathname.endsWith('/offline')));
   if (!cacheable) return;
   const requestGeneration = cacheGeneration;
