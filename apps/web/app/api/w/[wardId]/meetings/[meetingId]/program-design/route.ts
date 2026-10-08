@@ -279,14 +279,6 @@ export async function PUT(request: Request, context: { params: Promise<{ wardId:
         const builtIn = BUILT_IN_TEMPLATES.find((template) => template.key === body.data.templateId);
         if (builtIn) {
           validated = { layout: parseTemplateLayout(builtIn.layout), warnings: [] };
-          if (
-            !advancedModeAvailable &&
-            allBlocks(validated.layout).some(
-              (block) => getRegisteredBlockDefinition(validated.layout.documentType, block.type).exposure === 'ADVANCED'
-            )
-          ) {
-            throw new SimpleModeValidationError('ADVANCED_BLOCK', 'This template requires Advanced Mode');
-          }
           sourceTemplateId = null;
           sourceTemplateVersion = 1;
         } else {
