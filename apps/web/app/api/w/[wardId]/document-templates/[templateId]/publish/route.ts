@@ -15,8 +15,7 @@ const publishSchema = z.object({ version: z.number().int().positive().optional()
 const defaultLockPolicy = { mode: 'UNLOCKED' as const, lockedPageIds: [], lockedRegionIds: [], lockedBlockIds: [], lockedPropertyNames: [], protectedTheme: false, protectedVisibility: false, protectedOrder: false };
 
 function lockPolicyInput(value: unknown): unknown {
-  if (typeof value === 'object' && value !== null && 'mode' in value) return value;
-  return defaultLockPolicy;
+  return value == null ? defaultLockPolicy : value;
 }
 
 export async function POST(request: Request, context: { params: Promise<{ wardId: string; templateId: string }> }) {

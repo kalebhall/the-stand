@@ -15,8 +15,7 @@ const versionSchema = z.object({ layout: z.unknown() }).strict();
 const defaultLockPolicy = { mode: 'UNLOCKED' as const, lockedPageIds: [], lockedRegionIds: [], lockedBlockIds: [], lockedPropertyNames: [], protectedTheme: false, protectedVisibility: false, protectedOrder: false };
 
 function lockPolicyInput(value: unknown): unknown {
-  if (typeof value === 'object' && value !== null && 'mode' in value) return value;
-  return defaultLockPolicy;
+  return value == null ? defaultLockPolicy : value;
 }
 
 async function wardBelongsToStake(wardId: string, stakeId: string): Promise<boolean> {
@@ -35,7 +34,8 @@ async function loadTemplate(client: Awaited<ReturnType<typeof pool.connect>>, te
        FROM document_template
       WHERE id = $1::uuid AND document_type = 'SACRAMENT_PROGRAM'
         AND ((scope_type = 'STAKE' AND status IN ('PUBLISHED', 'DRAFT') AND scope_id = (SELECT stake_id FROM ward WHERE id = $2::uuid)) OR (scope_type = 'WARD' AND scope_id = $2::uuid) OR (scope_type = 'PERSONAL_DRAFT' AND scope_id = $2::uuid AND created_by_user_id = $3::uuid))
-      LIMIT 1`,
+      LIMIT 1
+      FOR UPDATE`,
     [templateId, wardId, userId]
   );
   return result.rows[0] as Record<string, unknown> | undefined;
@@ -45,7 +45,8 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
   const session = await auth();
   const { wardId, templateId } = await context.params;
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, { status: 401 });
-  if (!canViewProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId) && !(session.activeStakeId && await wardBelongsToStake(wardId, session.activeStakeId) && canManageStakeTemplates(session, session.activeStakeId))) return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
+  const activeWard = session.activeWardId === wardId;
+  if (!activeWard || (!canViewProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId) && !(session.activeStakeId && await wardBelongsToStake(wardId, session.activeStakeId) && canManageStakeTemplates(session, session.activeStakeId)))) return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
   if (!isAdvancedDesignerFeatureEnabled() || !(await isWardModuleEnabled(wardId, session.user.id, 'programs'))) return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
   const client = await pool.connect();
   try {
@@ -83,7 +84,8 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
   const session = await auth();
   const { wardId, templateId } = await context.params;
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, { status: 401 });
-  if (!canViewProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId) && !(session.activeStakeId && await wardBelongsToStake(wardId, session.activeStakeId) && canManageStakeTemplates(session, session.activeStakeId))) return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
+  const activeWard = session.activeWardId === wardId;
+  if (!activeWard || (!canViewProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId) && !(session.activeStakeId && await wardBelongsToStake(wardId, session.activeStakeId) && canManageStakeTemplates(session, session.activeStakeId)))) return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
   if (!isAdvancedDesignerFeatureEnabled() || !(await isWardModuleEnabled(wardId, session.user.id, 'programs'))) return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
   const body = versionSchema.safeParse(await request.json().catch(() => null));
   if (!body.success) return NextResponse.json({ error: 'Invalid template version payload', code: 'BAD_REQUEST' }, { status: 400 });

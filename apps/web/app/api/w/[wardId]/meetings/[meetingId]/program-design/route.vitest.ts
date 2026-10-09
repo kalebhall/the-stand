@@ -27,6 +27,7 @@ vi.mock('@/src/modules/service', () => ({
 }));
 
 import { adaptLegacyLayoutToDocument } from '@/src/document-designer/legacy-layout-adapter';
+import { DEFAULT_DOCUMENT_LAYOUT } from '@/src/document-designer/schema';
 import { GET, POST, PUT } from './route';
 
 const layout = adaptLegacyLayoutToDocument({ preset: 'FULL_PAGE', announcementMode: 'AFTER_PROGRAM', coverMode: 'NONE' });
@@ -163,6 +164,30 @@ describe('program design route', () => {
     const persistedLayout = JSON.parse(String(updateValues[5])) as { fold?: string; pages?: Array<{ regions?: unknown[] }> };
     expect(persistedLayout.fold).toBe('BIFOLD');
     expect(persistedLayout.pages?.[0]?.regions).toHaveLength(4);
+  });
+
+  it('applies a persisted published system template', async () => {
+    queryMock
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({ rows: [{ id: 'meeting-1' }] })
+      .mockResolvedValueOnce({ rows: [documentRow] })
+      .mockResolvedValueOnce({ rows: [{ allow_advanced_program_designer: false }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'system-template-1', version: 4, layout_json: DEFAULT_DOCUMENT_LAYOUT }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'document-1', revision: 4 }] })
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({});
+    const response = await PUT(
+      new Request('http://localhost', {
+        method: 'PUT',
+        body: JSON.stringify({ expectedRevision: 3, document: layout, templateId: 'system-template-1' })
+      }),
+      params()
+    );
+    expect(response.status).toBe(200);
+    const templateQuery = queryMock.mock.calls.find(([sql]) => typeof sql === 'string' && sql.includes('FROM document_template t'));
+    expect(templateQuery?.[0]).toContain("t.scope_type = 'SYSTEM'");
+    expect((await response.json()).revision).toBe(4);
   });
 
   it('still blocks custom advanced templates in Simple Mode', async () => {

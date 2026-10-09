@@ -127,7 +127,7 @@ describe('stake template authorization', () => {
     expect(canViewStakeTemplates(stakeAdmin, 'stake-a')).toBe(true);
     expect(canManageStakeTemplates(stakeAdmin, 'stake-a')).toBe(true);
     expect(canManageStakeTemplates({ ...stakeAdmin, stakeAssignments: [] }, 'stake-a')).toBe(false);
-    expect(canManageStakeTemplates({ roles: ['SUPPORT_ADMIN'], activeWardId: 'ward-a', activeStakeId: 'stake-a' }, 'stake-a')).toBe(false);
+    expect(canManageStakeTemplates({ roles: ['SYSTEM_ADMIN'], activeWardId: 'ward-a', activeStakeId: 'stake-a' }, 'stake-a')).toBe(false);
   });
   it('does not let ward roles manage system templates', () => {
     expect(canManageSystemTemplates({ roles: ['STAND_ADMIN'], activeWardId: 'ward-a' })).toBe(false);

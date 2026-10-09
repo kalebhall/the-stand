@@ -64,17 +64,21 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
               t.source_template_id, t.source_template_version,
               v.id AS version_id, v.version, v.schema_version, v.layout_json, v.theme_json, v.lock_json
          FROM document_template t
-         LEFT JOIN document_template_version v ON v.id = t.current_published_version_id
+         LEFT JOIN document_template_version v ON v.id = t.current_published_version_id AND v.template_id = t.id
         WHERE t.document_type = 'SACRAMENT_PROGRAM'
           AND t.status <> 'ARCHIVED'
-          AND ((t.scope_type = 'STAKE' AND t.status = 'PUBLISHED' AND t.scope_id = (SELECT stake_id FROM ward WHERE id = $1::uuid))
+          AND ((t.scope_type = 'SYSTEM' AND t.scope_id IS NULL AND t.status = 'PUBLISHED' AND t.current_published_version_id IS NOT NULL)
+            OR (t.scope_type = 'STAKE' AND t.status = 'PUBLISHED' AND t.scope_id = (SELECT stake_id FROM ward WHERE id = $1::uuid))
             OR (t.scope_type = 'WARD' AND t.scope_id = $1::uuid AND t.status = 'PUBLISHED' AND t.current_published_version_id IS NOT NULL)
             OR (t.scope_type = 'PERSONAL_DRAFT' AND t.scope_id = $1::uuid AND t.created_by_user_id = $2::uuid AND t.status = 'PUBLISHED' AND t.current_published_version_id IS NOT NULL))
         ORDER BY t.name ASC`,
       [wardId, session.user.id]
     );
     await client.query('COMMIT');
-    return NextResponse.json({ templates: [...builtInResponse(), ...(result.rows as unknown as Array<TemplateDbRow & Record<string, unknown>>).map((row) => templateResponse(row, row.version_id ? { id: row.version_id, version: row.version, schema_version: row.schema_version, layout_json: row.layout_json, theme_json: row.theme_json, lock_json: row.lock_json } : null))] });
+    const persistedTemplates = result.rows as unknown as Array<TemplateDbRow & Record<string, unknown>>;
+    const persistedKeys = new Set(persistedTemplates.map((row) => typeof row.template_key === 'string' ? row.template_key : null).filter((key): key is string => Boolean(key)));
+    const compatibilityBuiltIns = builtInResponse().filter((template) => !persistedKeys.has(template.key));
+    return NextResponse.json({ templates: [...compatibilityBuiltIns, ...persistedTemplates.map((row) => templateResponse(row, row.version_id ? { id: row.version_id, version: row.version, schema_version: row.schema_version, layout_json: row.layout_json, theme_json: row.theme_json, lock_json: row.lock_json } : null))] });
   } catch {
     await client.query('ROLLBACK').catch(() => undefined);
     return NextResponse.json({ error: 'Failed to list document templates', code: 'INTERNAL_ERROR' }, { status: 500 });

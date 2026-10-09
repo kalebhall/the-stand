@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { authMock, connectMock } = vi.hoisted(() => ({ authMock: vi.fn(), connectMock: vi.fn() }));
+const { authMock, connectMock, moduleEnabledMock } = vi.hoisted(() => ({ authMock: vi.fn(), connectMock: vi.fn(), moduleEnabledMock: vi.fn(async () => true) }));
 vi.mock('@/src/auth/auth', () => ({ auth: authMock }));
 vi.mock('@/src/db/client', () => ({ pool: { connect: connectMock } }));
+vi.mock('@/src/modules/service', () => ({ isWardModuleEnabledInTransaction: moduleEnabledMock }));
 
 import { GET } from './route';
 
@@ -31,6 +32,7 @@ describe('stake document-template route', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     authMock.mockResolvedValue(assignedSession);
+    moduleEnabledMock.mockResolvedValue(true);
   });
 
   it('denies a stake administrator assigned to a different stake before connecting', async () => {

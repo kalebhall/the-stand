@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { authMock, connectMock } = vi.hoisted(() => ({ authMock: vi.fn(), connectMock: vi.fn() }));
+const { authMock, connectMock, moduleEnabledMock } = vi.hoisted(() => ({ authMock: vi.fn(), connectMock: vi.fn(), moduleEnabledMock: vi.fn(async () => true) }));
 vi.mock('@/src/auth/auth', () => ({ auth: authMock }));
 vi.mock('@/src/db/client', () => ({ pool: { connect: connectMock } }));
+vi.mock('@/src/modules/service', () => ({ isWardModuleEnabledInTransaction: moduleEnabledMock }));
 
 import { GET } from './route';
 
@@ -25,6 +26,7 @@ describe('support document-template route', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     authMock.mockResolvedValue(supportSession);
+    moduleEnabledMock.mockResolvedValue(true);
   });
 
   it('denies unauthenticated system-template access before connecting', async () => {
@@ -42,6 +44,15 @@ describe('support document-template route', () => {
     expect(client.query).toHaveBeenCalledWith('BEGIN');
     expect(client.query).toHaveBeenCalledWith('COMMIT');
     expect(client.release).toHaveBeenCalled();
+  });
+
+  it('denies system-template access when the Programs module is disabled', async () => {
+    const client = setupClient();
+    authMock.mockResolvedValue({ ...supportSession, activeWardId: 'ward-a' });
+    moduleEnabledMock.mockResolvedValue(false);
+    const response = await GET();
+    expect(response.status).toBe(403);
+    expect(client.query).toHaveBeenCalledWith('ROLLBACK');
   });
 
   it('does not treat a ward role as system-template administration', async () => {

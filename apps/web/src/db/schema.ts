@@ -388,6 +388,7 @@ export const documentTemplateVersion = pgTable(
     layoutJson: jsonb('layout_json').notNull(),
     themeJson: jsonb('theme_json').notNull(),
     lockJson: jsonb('lock_json').notNull().default({}),
+    publishedAt: timestamp('published_at', { withTimezone: true }),
     createdByUserId: uuid('created_by_user_id').references(() => userAccount.id, { onDelete: 'set null' }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
   },

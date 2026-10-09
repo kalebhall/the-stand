@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 
 type TemplateOption = {
   id: string;
+  key?: string | null;
   name: string;
   source: string;
   scopeType: string;
@@ -15,7 +16,7 @@ type SettingsResponse = {
 };
 
 function optionValue(option: TemplateOption): string {
-  return option.source === 'BUILT_IN' ? `builtin:${option.id}` : option.id;
+  return option.source === 'BUILT_IN' && option.id === (option.key ?? option.id) ? `builtin:${option.key ?? option.id}` : option.id;
 }
 
 export function DefaultProgramTemplateSetting({ wardId }: { wardId: string }) {

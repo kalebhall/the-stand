@@ -21,7 +21,8 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
   const session = await auth();
   const { wardId, templateId } = await context.params;
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, { status: 401 });
-  if (!canViewProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId) && !(session.activeStakeId && await wardBelongsToStake(wardId, session.activeStakeId) && canManageStakeTemplates(session, session.activeStakeId))) return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
+  const activeWard = session.activeWardId === wardId;
+  if (!activeWard || (!canViewProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId) && !(session.activeStakeId && await wardBelongsToStake(wardId, session.activeStakeId) && canManageStakeTemplates(session, session.activeStakeId)))) return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
   if (!isAdvancedDesignerFeatureEnabled() || !(await isWardModuleEnabled(wardId, session.user.id, 'programs'))) return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
 
   const builtIn = getBuiltInTemplate(templateId);
@@ -65,7 +66,8 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
          ) v ON true
           WHERE t.id = $1::uuid
           AND t.document_type = 'SACRAMENT_PROGRAM'
-          AND ((t.scope_type = 'STAKE' AND t.status IN ('PUBLISHED', 'DRAFT') AND t.scope_id = (SELECT stake_id FROM ward WHERE id = $2::uuid))
+          AND ((t.scope_type = 'SYSTEM' AND t.scope_id IS NULL AND t.status = 'PUBLISHED' AND t.current_published_version_id IS NOT NULL)
+            OR (t.scope_type = 'STAKE' AND t.status IN ('PUBLISHED', 'DRAFT') AND t.scope_id = (SELECT stake_id FROM ward WHERE id = $2::uuid))
             OR (t.scope_type = 'WARD' AND t.scope_id = $2::uuid)
             OR (t.scope_type = 'PERSONAL_DRAFT' AND t.scope_id = $2::uuid AND t.created_by_user_id = $3::uuid))
         LIMIT 1`,

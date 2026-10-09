@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { recordAuditEvent } from '@/src/audit/service';
 import { canManageStakeTemplates, canManageSystemTemplates, type TemplateAuthorizationSession } from '@/src/auth/roles';
 import { isAdvancedDesignerFeatureEnabled } from '@/src/features/advanced-designer';
+import { isWardModuleEnabledInTransaction } from '@/src/modules/service';
 import { pool } from '@/src/db/client';
 import { parseTemplateLayout } from './template-service';
 import { checkTemplateLocks } from './template-locks';
@@ -66,6 +67,8 @@ async function withTransaction<T>(session: Session, fn: (client: Client) => Prom
   try {
     await client.query('BEGIN');
     await setAdminContext(client, session);
+    if (!isAdvancedDesignerFeatureEnabled()) throw new Error('ADVANCED_DESIGNER_DISABLED');
+    if (session.activeWardId && !(await isWardModuleEnabledInTransaction(client, session.activeWardId, 'programs'))) throw new Error('PROGRAMS_MODULE_DISABLED');
     const result = await fn(client);
     await client.query('COMMIT');
     return result;
@@ -84,7 +87,8 @@ async function loadOwnedTemplate(client: Client, scope: Scope, scopeId: string |
       WHERE id = $1::uuid AND document_type = 'SACRAMENT_PROGRAM'
         AND scope_type = $2::text
         AND (($2::text = 'SYSTEM' AND scope_id IS NULL) OR ($2::text = 'STAKE' AND scope_id = $3::uuid))
-      LIMIT 1`,
+      LIMIT 1
+      FOR UPDATE`,
     [templateId, scope, scopeId]
   );
   return result.rows[0] as Record<string, unknown> | undefined;
@@ -102,6 +106,7 @@ function templateJson(row: Record<string, unknown>, version?: Record<string, unk
 
 function errorResponse(error: unknown, fallback: string) {
   if (error instanceof Error && error.message === 'NOT_FOUND') return notFound();
+  if (error instanceof Error && (error.message === 'PROGRAMS_MODULE_DISABLED' || error.message === 'ADVANCED_DESIGNER_DISABLED')) return forbidden();
   return NextResponse.json({ error: fallback, code: 'INTERNAL_ERROR' }, { status: 500 });
 }
 
@@ -159,7 +164,9 @@ export async function detail(session: Session | null | undefined, scope: Scope, 
     const response = await withTransaction(session, async (client) => {
       const row = await loadOwnedTemplate(client, scope, scopeId, templateId);
       if (!row) throw new Error('NOT_FOUND');
-      const version = row.current_published_version_id ? await client.query('SELECT id, version, schema_version, layout_json, theme_json, lock_json FROM document_template_version WHERE id = $1::uuid', [row.current_published_version_id]) : { rows: [] };
+      const version = row.status !== 'DRAFT' && row.current_published_version_id
+        ? await client.query('SELECT id, version, schema_version, layout_json, theme_json, lock_json FROM document_template_version WHERE id = $1::uuid AND template_id = $2::uuid', [row.current_published_version_id, templateId])
+        : await client.query('SELECT id, version, schema_version, layout_json, theme_json, lock_json FROM document_template_version WHERE template_id = $1::uuid ORDER BY version DESC LIMIT 1', [templateId]);
       return { template: templateJson(row, (version.rows[0] as Record<string, unknown> | undefined) ?? null) };
     });
     return NextResponse.json(response);
@@ -207,7 +214,8 @@ export async function versions(session: Session | null | undefined, scope: Scope
       const base = latest.rows[0] as Record<string, unknown> | undefined;
       if (base) { const check = checkTemplateLocks(base.layout_json, layout, base.lock_json); if (!check.ok) { await recordAuditEvent(client, { wardId: null, userId: session.user.id, actorName: actorName(session), action: 'PROGRAM_TEMPLATE_LOCK_VIOLATION', entityType: 'document_template', entityId: templateId, details: { violations: check.violations }, source: 'api', severity: 'security' }); throw new Error('LOCK_VIOLATION'); } }
       const next = Number(base?.version ?? 0) + 1;
-      const result = await client.query(`INSERT INTO document_template_version (template_id, version, schema_version, layout_json, theme_json, lock_json, created_by_user_id) VALUES ($1::uuid, $2::int, $3::int, $4::jsonb, $5::jsonb, $6::jsonb, $7::uuid) RETURNING id, version, schema_version, layout_json, theme_json, lock_json, created_at`, [templateId, next, layout.schemaVersion, JSON.stringify(layout), JSON.stringify(layout.theme), JSON.stringify(layout.lock ?? {}), session.user.id]);
+      const authoritativeLock = base ? (base.lock_json ?? layout.lock ?? {}) : (layout.lock ?? {});
+      const result = await client.query(`INSERT INTO document_template_version (template_id, version, schema_version, layout_json, theme_json, lock_json, created_by_user_id) VALUES ($1::uuid, $2::int, $3::int, $4::jsonb, $5::jsonb, $6::jsonb, $7::uuid) RETURNING id, version, schema_version, layout_json, theme_json, lock_json, created_at`, [templateId, next, layout.schemaVersion, JSON.stringify(layout), JSON.stringify(layout.theme), JSON.stringify(authoritativeLock), session.user.id]);
       await recordAuditEvent(client, { wardId: null, userId: session.user.id, actorName: actorName(session), action: scope === 'STAKE' ? 'STAKE_TEMPLATE_VERSION_CREATED' : 'SYSTEM_TEMPLATE_VERSION_CREATED', entityType: 'document_template', entityId: templateId, details: { version: next }, source: 'api', severity: 'notice' });
       return { version: result.rows[0] };
     });
