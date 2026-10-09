@@ -3,9 +3,9 @@ import { z } from 'zod';
 
 import { recordAuditEvent } from '@/src/audit/service';
 import { auth } from '@/src/auth/auth';
-import { canManageWardProgramTemplates, canViewProgramDesigner } from '@/src/auth/roles';
+import { canManageMeetings, canManageWardProgramTemplates, canViewProgramDesigner } from '@/src/auth/roles';
 import { isAdvancedDesignerFeatureEnabled } from '@/src/features/advanced-designer';
-import { isWardModuleEnabled } from '@/src/modules/service';
+import { isWardModuleEnabled, isWardModuleEnabledInTransaction } from '@/src/modules/service';
 import { BUILT_IN_TEMPLATES } from '@/src/document-designer/built-in-templates';
 import { loadProgramPermissionProfile, parseTemplateLayout, templateResponse, type TemplateDbRow } from '@/src/document-designer/template-service';
 import { pool } from '@/src/db/client';
@@ -47,13 +47,17 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
   const session = await auth();
   const { wardId } = await context.params;
   if (!session?.user?.id) return unauthorized();
-  if (!canViewProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) return forbidden();
+  if (!canViewProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId) && !canManageMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) return forbidden();
   if (!isAdvancedDesignerFeatureEnabled() || !(await isWardModuleEnabled(wardId, session.user.id, 'programs'))) return forbidden();
 
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
     await setDbContext(client, { userId: session.user.id, wardId });
+    if (!(await isWardModuleEnabledInTransaction(client, wardId, 'programs'))) {
+      await client.query('ROLLBACK');
+      return forbidden();
+    }
     const result = await client.query(
       `SELECT t.id, t.template_key, t.scope_type, t.scope_id, t.document_type, t.name, t.description, t.status,
               t.current_published_version_id, t.created_by_user_id, t.distribution_policy,
@@ -98,6 +102,10 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
   try {
     await client.query('BEGIN');
     await setDbContext(client, { userId: session.user.id, wardId });
+    if (!(await isWardModuleEnabledInTransaction(client, wardId, 'programs'))) {
+      await client.query('ROLLBACK');
+      return forbidden();
+    }
     const profile = await loadProgramPermissionProfile(client, wardId);
     if (!canManageWardProgramTemplates({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId, profile)) {
       await client.query('ROLLBACK');

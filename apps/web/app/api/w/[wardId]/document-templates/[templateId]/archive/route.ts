@@ -5,7 +5,7 @@ import { auth } from '@/src/auth/auth';
 import { canManageWardProgramTemplates, canViewProgramDesigner } from '@/src/auth/roles';
 import { loadProgramPermissionProfile } from '@/src/document-designer/template-service';
 import { isAdvancedDesignerFeatureEnabled } from '@/src/features/advanced-designer';
-import { isWardModuleEnabled } from '@/src/modules/service';
+import { isWardModuleEnabled, isWardModuleEnabledInTransaction } from '@/src/modules/service';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 
@@ -24,6 +24,10 @@ export async function POST(_: Request, context: { params: Promise<Params> }) {
   try {
     await client.query('BEGIN');
     await setDbContext(client, { userId: session.user.id, wardId });
+    if (!(await isWardModuleEnabledInTransaction(client, wardId, 'programs'))) {
+      await client.query('ROLLBACK');
+      return errorResponse('Forbidden', 'FORBIDDEN', 403);
+    }
     const profile = await loadProgramPermissionProfile(client, wardId);
     if (!canManageWardProgramTemplates({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId, profile)) {
       await client.query('ROLLBACK');

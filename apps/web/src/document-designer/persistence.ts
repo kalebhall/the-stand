@@ -12,6 +12,7 @@ export type Queryable = {
 export type WardDocumentSettings = {
   ward_id: string;
   default_sacrament_template_id: string | null;
+  default_sacrament_template_key: string | null;
   allow_advanced_program_designer: boolean;
   allow_program_editor_publish: boolean;
   allow_program_editor_republish: boolean;
@@ -36,6 +37,7 @@ export type MeetingDocumentInput = {
 
 export const DEFAULT_WARD_DOCUMENT_SETTINGS: Omit<WardDocumentSettings, 'ward_id'> = {
   default_sacrament_template_id: null,
+  default_sacrament_template_key: null,
   allow_advanced_program_designer: false,
   allow_program_editor_publish: false,
   allow_program_editor_republish: false,
@@ -49,6 +51,7 @@ export async function loadWardDocumentSettings(client: Queryable, wardId: string
   const result = await client.query(
     `SELECT ward_id,
             default_sacrament_template_id,
+            default_sacrament_template_key,
             allow_advanced_program_designer,
             allow_program_editor_publish,
             allow_program_editor_republish,
@@ -67,7 +70,11 @@ export async function loadWardDocumentSettings(client: Queryable, wardId: string
 export function settingsResponse(row: WardDocumentSettings | null) {
   const value = row ?? ({ ward_id: '', ...DEFAULT_WARD_DOCUMENT_SETTINGS } satisfies WardDocumentSettings);
   return {
+    defaultSacramentTemplate: value.default_sacrament_template_key
+      ? `builtin:${value.default_sacrament_template_key}`
+      : value.default_sacrament_template_id,
     defaultSacramentTemplateId: value.default_sacrament_template_id,
+    defaultSacramentTemplateKey: value.default_sacrament_template_key,
     allowAdvancedProgramDesigner: value.allow_advanced_program_designer,
     allowProgramEditorPublish: value.allow_program_editor_publish,
     allowProgramEditorRepublish: value.allow_program_editor_republish,
@@ -83,6 +90,8 @@ export async function saveWardDocumentSettings(
   wardId: string,
   userId: string,
   settings: {
+    defaultSacramentTemplateId: string | null;
+    defaultSacramentTemplateKey: string | null;
     allowAdvancedProgramDesigner: boolean;
     allowProgramEditorPublish: boolean;
     allowProgramEditorRepublish: boolean;
@@ -95,6 +104,8 @@ export async function saveWardDocumentSettings(
   const result = await client.query(
     `INSERT INTO ward_document_settings (
        ward_id,
+       default_sacrament_template_id,
+       default_sacrament_template_key,
        allow_advanced_program_designer,
        allow_program_editor_publish,
        allow_program_editor_republish,
@@ -103,8 +114,10 @@ export async function saveWardDocumentSettings(
        allow_program_editor_delete_media,
        public_program_expiration_days,
        updated_by_user_id
-     ) VALUES ($1::uuid, $2::boolean, $3::boolean, $4::boolean, $5::boolean, $6::boolean, $7::boolean, $8::int, $9::uuid)
+     ) VALUES ($1::uuid, $2::uuid, $3::text, $4::boolean, $5::boolean, $6::boolean, $7::boolean, $8::boolean, $9::boolean, $10::int, $11::uuid)
      ON CONFLICT (ward_id) DO UPDATE SET
+       default_sacrament_template_id = EXCLUDED.default_sacrament_template_id,
+       default_sacrament_template_key = EXCLUDED.default_sacrament_template_key,
        allow_advanced_program_designer = EXCLUDED.allow_advanced_program_designer,
        allow_program_editor_publish = EXCLUDED.allow_program_editor_publish,
        allow_program_editor_republish = EXCLUDED.allow_program_editor_republish,
@@ -116,6 +129,7 @@ export async function saveWardDocumentSettings(
        updated_at = now()
      RETURNING ward_id,
        default_sacrament_template_id,
+       default_sacrament_template_key,
        allow_advanced_program_designer,
        allow_program_editor_publish,
        allow_program_editor_republish,
@@ -125,6 +139,8 @@ export async function saveWardDocumentSettings(
        public_program_expiration_days`,
     [
       wardId,
+      settings.defaultSacramentTemplateId,
+      settings.defaultSacramentTemplateKey,
       settings.allowAdvancedProgramDesigner,
       settings.allowProgramEditorPublish,
       settings.allowProgramEditorRepublish,
@@ -136,6 +152,41 @@ export async function saveWardDocumentSettings(
     ]
   );
   if (!result.rows[0]) throw new Error('Settings write returned no row');
+  return result.rows[0] as WardDocumentSettings;
+}
+
+export async function saveDefaultSacramentTemplate(
+  client: Queryable,
+  wardId: string,
+  userId: string,
+  defaultSacramentTemplateId: string | null,
+  defaultSacramentTemplateKey: string | null
+): Promise<WardDocumentSettings> {
+  const result = await client.query(
+    `INSERT INTO ward_document_settings (
+       ward_id,
+       default_sacrament_template_id,
+       default_sacrament_template_key,
+       updated_by_user_id
+     ) VALUES ($1::uuid, $2::uuid, $3::text, $4::uuid)
+     ON CONFLICT (ward_id) DO UPDATE SET
+       default_sacrament_template_id = EXCLUDED.default_sacrament_template_id,
+       default_sacrament_template_key = EXCLUDED.default_sacrament_template_key,
+       updated_by_user_id = EXCLUDED.updated_by_user_id,
+       updated_at = now()
+     RETURNING ward_id,
+       default_sacrament_template_id,
+       default_sacrament_template_key,
+       allow_advanced_program_designer,
+       allow_program_editor_publish,
+       allow_program_editor_republish,
+       allow_program_editor_rollback,
+       allow_program_editor_create_templates,
+       allow_program_editor_delete_media,
+       public_program_expiration_days`,
+    [wardId, defaultSacramentTemplateId, defaultSacramentTemplateKey, userId]
+  );
+  if (!result.rows[0]) throw new Error('Default template write returned no row');
   return result.rows[0] as WardDocumentSettings;
 }
 

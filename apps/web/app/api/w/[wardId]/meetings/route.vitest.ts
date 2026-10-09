@@ -89,6 +89,55 @@ describe('POST /api/w/[wardId]/meetings', () => {
     expect(releaseMock).toHaveBeenCalled();
   });
 
+  it('uses the ward built-in default template when creating a meeting', async () => {
+    queryMock.mockReset();
+    queryMock
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({ rows: [{ id: 'meeting-1' }] })
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({ rows: [{ default_sacrament_template_key: 'classic-bifold', default_sacrament_template_id: null }] })
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({ rows: [{ id: 'event-1' }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'core-event-1' }] })
+      .mockResolvedValueOnce({});
+    const response = await POST(
+      new Request('http://localhost', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          meetingDate: '2026-01-04',
+          meetingType: 'SACRAMENT',
+          programItems: [
+            {
+              itemType: 'INTRODUCTION',
+              title: '',
+              notes: '',
+              introductionRoles: { presiding: 'Bishop', conducting: 'Counselor', organist: 'Organist', chorister: 'Chorister' },
+              hymnNumber: '',
+              hymnTitle: ''
+            },
+            { itemType: 'ANNOUNCEMENT', title: '', notes: '', hymnNumber: '', hymnTitle: '' },
+            { itemType: 'OPENING_HYMN', title: '', notes: '', hymnNumber: '2', hymnTitle: 'The Spirit of God', hymnLocale: 'en-US' },
+            { itemType: 'SPEAKER', title: 'Jane Doe', notes: '', topic: 'Missionary report', hymnNumber: '', hymnTitle: '' }
+          ]
+        })
+      }),
+      { params: Promise.resolve({ wardId: 'ward-1' }) }
+    );
+    expect(response.status).toBe(201);
+    const insertCall = queryMock.mock.calls.find(([sql]) => typeof sql === 'string' && sql.includes('INSERT INTO meeting_document'));
+    expect(insertCall).toBeDefined();
+    const insertValues = insertCall?.[1] as unknown[];
+    const persistedLayout = JSON.parse(String(insertValues[5])) as { fold?: string; pages?: Array<{ regions?: unknown[] }> };
+    expect(persistedLayout.fold).toBe('BIFOLD');
+    expect(persistedLayout.pages?.[0]?.regions).toHaveLength(4);
+  });
+
   it('rejects unsupported source-row types before opening a transaction', async () => {
     const response = await POST(
       new Request('http://localhost', {

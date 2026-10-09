@@ -1,15 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { authMock, connectMock, queryMock, releaseMock, setDbContextMock, canViewMock, canManageMock, auditMock, moduleEnabledMock } = vi.hoisted(() => ({
-  authMock: vi.fn(), connectMock: vi.fn(), queryMock: vi.fn(), releaseMock: vi.fn(), setDbContextMock: vi.fn(), canViewMock: vi.fn(), canManageMock: vi.fn(), auditMock: vi.fn(), moduleEnabledMock: vi.fn()
+const { authMock, connectMock, queryMock, releaseMock, setDbContextMock, canViewMock, canManageMeetingsMock, canManageMock, auditMock, moduleEnabledMock, moduleEnabledInTransactionMock } = vi.hoisted(() => ({
+  authMock: vi.fn(), connectMock: vi.fn(), queryMock: vi.fn(), releaseMock: vi.fn(), setDbContextMock: vi.fn(), canViewMock: vi.fn(), canManageMeetingsMock: vi.fn(), canManageMock: vi.fn(), auditMock: vi.fn(), moduleEnabledMock: vi.fn(), moduleEnabledInTransactionMock: vi.fn()
 }));
 
 vi.mock('@/src/auth/auth', () => ({ auth: authMock }));
-vi.mock('@/src/auth/roles', () => ({ canViewProgramDesigner: canViewMock, canManageWardProgramTemplates: canManageMock }));
+vi.mock('@/src/auth/roles', () => ({ canViewProgramDesigner: canViewMock, canManageMeetings: canManageMeetingsMock, canManageWardProgramTemplates: canManageMock }));
 vi.mock('@/src/db/client', () => ({ pool: { connect: connectMock } }));
 vi.mock('@/src/db/context', () => ({ setDbContext: setDbContextMock }));
 vi.mock('@/src/audit/service', () => ({ recordAuditEvent: auditMock }));
-vi.mock('@/src/modules/service', () => ({ isWardModuleEnabled: moduleEnabledMock }));
+vi.mock('@/src/modules/service', () => ({ isWardModuleEnabled: moduleEnabledMock, isWardModuleEnabledInTransaction: moduleEnabledInTransactionMock }));
 
 import { GET, POST } from './route';
 import { adaptLegacyLayoutToDocument } from '@/src/document-designer/legacy-layout-adapter';
@@ -19,8 +19,10 @@ describe('document template collection routes', () => {
     vi.clearAllMocks();
     authMock.mockResolvedValue({ user: { id: 'user-1', roles: ['PROGRAM_EDITOR'] }, activeWardId: 'ward-1' });
     canViewMock.mockReturnValue(true);
+    canManageMeetingsMock.mockReturnValue(false);
     canManageMock.mockReturnValue(true);
     moduleEnabledMock.mockResolvedValue(true);
+    moduleEnabledInTransactionMock.mockResolvedValue(true);
     auditMock.mockResolvedValue(undefined);
     connectMock.mockResolvedValue({ query: queryMock, release: releaseMock });
   });
