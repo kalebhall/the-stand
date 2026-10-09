@@ -18,10 +18,11 @@ describe('TemplateAdminClient', () => {
     renderWithMessages(<TemplateAdminClient activeStakeId={null} canSystem canStake={false} />);
     expect(await screen.findByText('System source')).toBeInTheDocument();
     await screen.findByText('Version 1');
-    expect(screen.getByText('STRUCTURE_LOCKED')).toBeInTheDocument();
-    expect(screen.getByText('REQUIRED')).toBeInTheDocument();
+    expect(screen.getByText('Configured')).toBeInTheDocument();
+    expect(screen.getByText('Required', { selector: 'dd' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Publish' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Archive' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Edit layout in Template Studio' })).toHaveAttribute('href', '/programs/templates/t1/studio?adminScope=SYSTEM');
   });
 
   it('creates drafts with the canonical schema-valid default layout', async () => {

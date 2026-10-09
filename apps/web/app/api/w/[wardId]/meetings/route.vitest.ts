@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { authMock, canManageMeetingsMock, setDbContextMock, connectMock, releaseMock, queryMock, dispatchPersistedCoreEventMock } =
+const { authMock, canManageMeetingsMock, setDbContextMock, connectMock, releaseMock, queryMock, dispatchPersistedCoreEventMock, isWardModuleEnabledInTransactionMock } =
   vi.hoisted(() => ({
     authMock: vi.fn(),
     canManageMeetingsMock: vi.fn(),
@@ -8,13 +8,15 @@ const { authMock, canManageMeetingsMock, setDbContextMock, connectMock, releaseM
     connectMock: vi.fn(),
     releaseMock: vi.fn(),
     queryMock: vi.fn(),
-    dispatchPersistedCoreEventMock: vi.fn()
+    dispatchPersistedCoreEventMock: vi.fn(),
+    isWardModuleEnabledInTransactionMock: vi.fn()
   }));
 
 vi.mock('@/src/auth/auth', () => ({ auth: authMock }));
 vi.mock('@/src/auth/roles', () => ({ canManageMeetings: canManageMeetingsMock, canViewMeetings: vi.fn() }));
 vi.mock('@/src/db/context', () => ({ setDbContext: setDbContextMock }));
 vi.mock('@/src/db/client', () => ({ pool: { connect: connectMock } }));
+vi.mock('@/src/modules/service', () => ({ isWardModuleEnabledInTransaction: isWardModuleEnabledInTransactionMock }));
 vi.mock('@/src/platform/events/dispatch', () => ({ dispatchPersistedCoreEvent: dispatchPersistedCoreEventMock }));
 
 import { POST } from './route';
@@ -24,6 +26,7 @@ describe('POST /api/w/[wardId]/meetings', () => {
     vi.clearAllMocks();
     authMock.mockResolvedValue({ user: { id: 'user-1', roles: ['STAND_ADMIN'] }, activeWardId: 'ward-1' });
     canManageMeetingsMock.mockReturnValue(true);
+    isWardModuleEnabledInTransactionMock.mockResolvedValue(true);
     dispatchPersistedCoreEventMock.mockResolvedValue(undefined);
     connectMock.mockResolvedValue({ query: queryMock, release: releaseMock });
     queryMock
@@ -136,6 +139,47 @@ describe('POST /api/w/[wardId]/meetings', () => {
     const persistedLayout = JSON.parse(String(insertValues[5])) as { fold?: string; pages?: Array<{ regions?: unknown[] }> };
     expect(persistedLayout.fold).toBe('BIFOLD');
     expect(persistedLayout.pages?.[0]?.regions).toHaveLength(4);
+  });
+
+  it('does not apply persisted templates when Programs is disabled', async () => {
+    queryMock.mockReset();
+    queryMock.mockResolvedValue({ rows: [] });
+    isWardModuleEnabledInTransactionMock.mockResolvedValue(false);
+    queryMock
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({ rows: [{ id: 'meeting-disabled-programs' }] })
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({ rows: [{ id: 'event-disabled' }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'core-disabled' }] })
+      .mockResolvedValueOnce({});
+
+    const response = await POST(
+      new Request('http://localhost', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ meetingDate: '2026-01-04', meetingType: 'SACRAMENT', programItems: [
+   { itemType: 'INTRODUCTION', title: '', notes: '', introductionRoles: { presiding: 'Bishop', conducting: 'Counselor', organist: 'Organist', chorister: 'Chorister' }, hymnNumber: '', hymnTitle: '' },
+   { itemType: 'ANNOUNCEMENT', title: '', notes: '', hymnNumber: '', hymnTitle: '' },
+   { itemType: 'OPENING_HYMN', title: '', notes: '', hymnNumber: '2', hymnTitle: 'The Spirit of God' },
+   { itemType: 'SPEAKER', title: 'Jane Doe', notes: '', topic: 'Missionary report', hymnNumber: '', hymnTitle: '' }
+ ] })
+      }),
+      { params: Promise.resolve({ wardId: 'ward-1' }) }
+    );
+
+    expect(response.status).toBe(201);
+    expect(queryMock).not.toHaveBeenCalledWith(
+      expect.stringContaining('default_sacrament_template_id'),
+      expect.anything()
+    );
+    const documentInsert = queryMock.mock.calls.find(([sql]) => typeof sql === 'string' && sql.includes('INSERT INTO meeting_document'));
+    expect(documentInsert?.[1]).toEqual(expect.arrayContaining([null, null]));
   });
 
   it('rejects unsupported source-row types before opening a transaction', async () => {

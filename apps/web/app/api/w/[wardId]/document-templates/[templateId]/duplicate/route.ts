@@ -48,10 +48,11 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
       const source = await client.query(
         `SELECT t.id, t.name, t.description, t.status, t.distribution_policy, v.version, v.layout_json
            FROM document_template t
-           JOIN document_template_version v ON v.id = t.current_published_version_id
+           JOIN document_template_version v ON v.id = t.current_published_version_id AND v.template_id = t.id
           WHERE t.id = $1::uuid
             AND t.document_type = 'SACRAMENT_PROGRAM'
-            AND ((t.scope_type = 'STAKE' AND t.status = 'PUBLISHED' AND t.scope_id = (SELECT stake_id FROM ward WHERE id = $2::uuid))
+            AND ((t.scope_type = 'SYSTEM' AND t.scope_id IS NULL AND t.status = 'PUBLISHED' AND t.current_published_version_id IS NOT NULL)
+              OR (t.scope_type = 'STAKE' AND t.status = 'PUBLISHED' AND t.scope_id = (SELECT stake_id FROM ward WHERE id = $2::uuid))
               OR (t.scope_type = 'WARD' AND t.scope_id = $2::uuid)
               OR (t.scope_type = 'PERSONAL_DRAFT' AND t.scope_id = $2::uuid AND t.created_by_user_id = $3::uuid))
           LIMIT 1`,

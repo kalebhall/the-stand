@@ -181,11 +181,11 @@ function hasStakeRole(session: TemplateAuthorizationSession, stakeId: string): b
 }
 
 export function canViewStakeTemplates(session: TemplateAuthorizationSession, stakeId: string): boolean {
-  return Boolean(stakeId) && (hasStakeRole(session, stakeId) || hasRole(session.roles, 'SYSTEM_ADMIN'));
+  return Boolean(stakeId) && hasStakeRole(session, stakeId);
 }
 
 export function canManageStakeTemplates(session: TemplateAuthorizationSession, stakeId: string): boolean {
-  return hasStakeRole(session, stakeId) || hasRole(session.roles, 'SYSTEM_ADMIN');
+  return hasStakeRole(session, stakeId);
 }
 
 export const canPublishStakeTemplates = canManageStakeTemplates;

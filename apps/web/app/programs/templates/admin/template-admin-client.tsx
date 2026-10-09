@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 
@@ -14,9 +15,31 @@ function readLockMode(value: unknown): string {
   return 'UNLOCKED';
 }
 
-export function TemplateAdminClient({ activeStakeId, canSystem, canStake }: { activeStakeId: string | null; canSystem: boolean; canStake: boolean }) {
+function statusLabel(status: string, t: ReturnType<typeof useTranslations<'programs'>>): string {
+  if (status === 'DRAFT') return t('draftStatus');
+  if (status === 'PUBLISHED') return t('published');
+  if (status === 'ARCHIVED') return t('archived');
+  return t('unknownStatus');
+}
+
+function scopeLabel(scope: Scope, t: ReturnType<typeof useTranslations<'programs'>>): string {
+  return scope === 'SYSTEM' ? t('system') : t('stake');
+}
+
+function policyLabel(policy: string | null | undefined, t: ReturnType<typeof useTranslations<'programs'>>): string {
+  if (policy === 'USE_AS_IS') return t('useAsIs');
+  if (policy === 'DUPLICATE_AND_CUSTOMIZE') return t('duplicateCustomize');
+  if (policy === 'REQUIRED') return t('required');
+  return t('notSet');
+}
+
+function lockLabel(lockMode: string, t: ReturnType<typeof useTranslations<'programs'>>): string {
+  return lockMode === 'UNLOCKED' ? t('unlocked') : t('configured');
+}
+
+export function TemplateAdminClient({ activeStakeId, canSystem, canStake, initialScope }: { activeStakeId: string | null; canSystem: boolean; canStake: boolean; initialScope?: Scope }) {
   const t = useTranslations('programs');
-  const [scope, setScope] = useState<Scope>(canSystem ? 'SYSTEM' : 'STAKE');
+  const [scope, setScope] = useState<Scope>(initialScope ?? (canSystem ? 'SYSTEM' : 'STAKE'));
   const [templates, setTemplates] = useState<Template[]>([]);
   const [selected, setSelected] = useState<Template | null>(null);
   const [versions, setVersions] = useState<Version[]>([]);
@@ -26,11 +49,15 @@ export function TemplateAdminClient({ activeStakeId, canSystem, canStake }: { ac
   const [policy, setPolicy] = useState('DUPLICATE_AND_CUSTOMIZE');
   const [message, setMessage] = useState(t('loadingTemplates'));
   const base = scope === 'SYSTEM' ? '/api/support/document-templates' : `/api/stakes/${encodeURIComponent(activeStakeId ?? '')}/document-templates`;
+  function localizedError(body: { code?: string }, fallback: string): string {
+    const key = body.code === 'FORBIDDEN' ? 'forbiddenError' : body.code === 'NOT_FOUND' ? 'notFoundError' : body.code === 'IMMUTABLE_TEMPLATE' ? 'immutableTemplateError' : body.code === 'INTERNAL_ERROR' ? 'internalError' : null;
+    return key ? t(key) : fallback;
+  }
 
   async function request(path = '', init?: RequestInit) {
     const response = await fetch(`${base}${path}`, init);
     const body = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(body.error ?? t('requestFailed'));
+    if (!response.ok) throw new Error(localizedError(body, t('requestFailed')));
     return body;
   }
   async function load() {
@@ -68,8 +95,8 @@ export function TemplateAdminClient({ activeStakeId, canSystem, canStake }: { ac
     </div>
     <p role="status" aria-live="polite" className="min-h-5 text-sm text-muted-foreground">{message}</p>
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
-      <section aria-label={t('templateSources')} className="space-y-2 rounded-lg border p-4"><h2 className="font-semibold">{t('templates', { scope: scope === 'SYSTEM' ? t('system') : t('stake') })}</h2>{templates.length ? templates.map((template) => <button type="button" key={template.id} onClick={() => setSelected(template)} className={`block w-full rounded-md border p-3 text-left ${selected?.id === template.id ? 'border-primary' : ''}`}><span className="font-medium">{template.name} · {template.status}</span><span className="mt-1 block text-xs text-muted-foreground">{t('administrationSource')}</span></button>) : <p className="text-sm text-muted-foreground">{t('noTemplates')}</p>}</section>
-      {selected ? <section aria-label={t('templateEditor')} className="space-y-5 rounded-lg border p-4"><div><h2 className="text-xl font-semibold">{t('templateDetails')}</h2><p className="text-sm font-medium">{selected.name}</p><p className="text-sm text-muted-foreground">{scope} source · {selected.status}</p></div><dl className="grid gap-3 text-sm sm:grid-cols-3"><div><dt className="text-muted-foreground">{t('lockMode')}</dt><dd>{lockMode}</dd></div><div><dt className="text-muted-foreground">{t('policy')}</dt><dd>{selected.distributionPolicy ?? 'Not set'}</dd></div><div><dt className="text-muted-foreground">{t('sourceScope')}</dt><dd>{scope === 'SYSTEM' ? 'All wards' : `Stake ${activeStakeId}`}</dd></div></dl><fieldset disabled={selected.status !== 'DRAFT'} className="space-y-3"><label className="block text-sm font-medium">{t('draftName')}<input value={name} onChange={(event) => setName(event.target.value)} className="mt-1 block w-full rounded-md border p-2" /></label><label className="block text-sm font-medium">{t('descriptionLabel')}<textarea value={description} onChange={(event) => setDescription(event.target.value)} className="mt-1 block w-full rounded-md border p-2" rows={3} /></label><label className="block text-sm font-medium">{t('distributionPolicy')}<select value={policy} onChange={(event) => setPolicy(event.target.value)} className="mt-1 block w-full rounded-md border p-2"><option value="USE_AS_IS">{t('useAsIs')}</option><option value="DUPLICATE_AND_CUSTOMIZE">{t('duplicateCustomize')}</option><option value="REQUIRED">{t('required')}</option></select></label><button type="button" onClick={() => void saveMetadata()} className="rounded-md border px-3 py-2 text-sm">{t('saveDraftMetadata')}</button></fieldset><div className="flex flex-wrap gap-2"><button type="button" disabled={selected.status === 'ARCHIVED'} onClick={() => void action('publish')} className="rounded-md border px-3 py-2 text-sm">{t('publish')}</button><button type="button" disabled={selected.status === 'ARCHIVED'} onClick={() => void action('archive')} className="rounded-md border px-3 py-2 text-sm">{t('archive')}</button></div><div><h3 className="font-semibold">{t('versionHistory')}</h3>{versions.length ? <ol className="mt-2 space-y-1 text-sm">{versions.map((version) => <li key={version.id}>Version {version.version}{version.schema_version ? ` · schema ${version.schema_version}` : ''}</li>)}</ol> : <p className="mt-2 text-sm text-muted-foreground">{t('noVersions')}</p>}</div></section> : <section className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">{t('selectSource')}</section>}
+      <section aria-label={t('templateSources')} className="space-y-2 rounded-lg border p-4"><h2 className="font-semibold">{t('templates', { scope: scope === 'SYSTEM' ? t('system') : t('stake') })}</h2>{templates.length ? templates.map((template) => <button type="button" key={template.id} onClick={() => setSelected(template)} className={`block w-full rounded-md border p-3 text-left ${selected?.id === template.id ? 'border-primary' : ''}`}><span className="font-medium">{template.name} · {statusLabel(template.status, t)}</span><span className="mt-1 block text-xs text-muted-foreground">{t('administrationSource')}</span></button>) : <p className="text-sm text-muted-foreground">{t('noTemplates')}</p>}</section>
+      {selected ? <section aria-label={t('templateEditor')} className="space-y-5 rounded-lg border p-4"><div><h2 className="text-xl font-semibold">{t('templateDetails')}</h2><p className="text-sm font-medium">{selected.name}</p><p className="text-sm text-muted-foreground">{scopeLabel(scope, t)} {t('source')} · {statusLabel(selected.status, t)}</p></div><dl className="grid gap-3 text-sm sm:grid-cols-3"><div><dt className="text-muted-foreground">{t('lockMode')}</dt><dd>{lockLabel(lockMode, t)}</dd></div><div><dt className="text-muted-foreground">{t('policy')}</dt><dd>{policyLabel(selected.distributionPolicy, t)}</dd></div><div><dt className="text-muted-foreground">{t('sourceScope')}</dt><dd>{scope === 'SYSTEM' ? t('allWards') : `${t('stake')} ${activeStakeId}`}</dd></div></dl><fieldset disabled={selected.status !== 'DRAFT'} className="space-y-3"><label className="block text-sm font-medium">{t('draftName')}<input value={name} onChange={(event) => setName(event.target.value)} className="mt-1 block w-full rounded-md border p-2" /></label><label className="block text-sm font-medium">{t('descriptionLabel')}<textarea value={description} onChange={(event) => setDescription(event.target.value)} className="mt-1 block w-full rounded-md border p-2" rows={3} /></label><label className="block text-sm font-medium">{t('distributionPolicy')}<select value={policy} onChange={(event) => setPolicy(event.target.value)} className="mt-1 block w-full rounded-md border p-2"><option value="USE_AS_IS">{t('useAsIs')}</option><option value="DUPLICATE_AND_CUSTOMIZE">{t('duplicateCustomize')}</option><option value="REQUIRED">{t('required')}</option></select></label><button type="button" onClick={() => void saveMetadata()} className="rounded-md border px-3 py-2 text-sm">{t('saveDraftMetadata')}</button>{selected.status === 'DRAFT' ? <Link href={`/programs/templates/${encodeURIComponent(selected.id)}/studio?adminScope=${scope}${scope === 'STAKE' && activeStakeId ? `&stakeId=${encodeURIComponent(activeStakeId)}` : ''}`} className="ml-2 inline-flex rounded-md border px-3 py-2 text-sm">{t('openTemplateStudio')}</Link> : null}</fieldset><div className="flex flex-wrap gap-2"><button type="button" disabled={selected.status === 'ARCHIVED'} onClick={() => void action('publish')} className="rounded-md border px-3 py-2 text-sm">{t('publish')}</button><button type="button" disabled={selected.status === 'ARCHIVED'} onClick={() => void action('archive')} className="rounded-md border px-3 py-2 text-sm">{t('archive')}</button></div><div><h3 className="font-semibold">{t('versionHistory')}</h3>{versions.length ? <ol className="mt-2 space-y-1 text-sm">{versions.map((version) => <li key={version.id}>{t('version')} {version.version}{version.schema_version ? ` · ${t('schemaLabel')} ${version.schema_version}` : ''}</li>)}</ol> : <p className="mt-2 text-sm text-muted-foreground">{t('noVersions')}</p>}</div></section> : <section className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">{t('selectSource')}</section>}
     </div>
   </div>;
 }

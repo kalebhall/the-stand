@@ -25,16 +25,28 @@ type Template = {
 
 type TemplateAction = 'USE_AS_IS' | 'DUPLICATE_AND_CUSTOMIZE';
 
-const scopeLabels: Record<string, string> = {
-  SYSTEM: 'System',
-  STAKE: 'Stake',
-  WARD: 'Ward',
-  PERSONAL_DRAFT: 'Personal draft'
-};
+function scopeLabel(t: ReturnType<typeof useTranslations<'programs'>>, scopeType: string): string {
+  if (scopeType === 'SYSTEM') return t('systemSources');
+  if (scopeType === 'STAKE') return t('stakeSources');
+  if (scopeType === 'WARD') return t('wardTemplates');
+  if (scopeType === 'PERSONAL_DRAFT') return t('myDrafts');
+  return scopeType;
+}
 
-function policyFor(template: Template): string {
-  if (template.distributionPolicy) return template.distributionPolicy.replaceAll('_', ' ').toLowerCase();
-  return template.scopeType === 'WARD' || template.scopeType === 'PERSONAL_DRAFT' ? 'use as-is or duplicate and customize' : 'use as-is or duplicate and customize; source is locked';
+function policyFor(t: ReturnType<typeof useTranslations<'programs'>>, template: Template): string {
+  if (template.distributionPolicy === 'USE_AS_IS') return t('useAsIs');
+  if (template.distributionPolicy === 'DUPLICATE_AND_CUSTOMIZE') return t('duplicateCustomize');
+  if (template.distributionPolicy === 'REQUIRED') return t('required');
+  return template.scopeType === 'WARD' || template.scopeType === 'PERSONAL_DRAFT' ? t('wardPolicy') : t('lockedPolicy');
+}
+
+function localizedTemplateText(t: ReturnType<typeof useTranslations<'programs'>>, template: Template, field: 'name' | 'description'): string {
+  if (!template.key) return field === 'name' ? template.name : (template.description ?? t('sacramentTemplate'));
+  const key = template.key.replace(/^builtin:/, '');
+  const knownKeys = new Set(['classic-bifold', 'trifold-bulletin', 'full-page-standard', 'modern-minimal', 'compact-one-page', 'large-print', 'image-cover', 'announcement-focus']);
+  if (!knownKeys.has(key)) return field === 'name' ? template.name : (template.description ?? t('sacramentTemplate'));
+  const translate = t as unknown as (messageKey: string) => string;
+  return translate(`builtInTemplateNames.${key}.${field}`);
 }
 
 function isLocked(template: Template): boolean {
@@ -128,14 +140,14 @@ export function TemplateGalleryClient({ wardId, canCopy }: { wardId: string; can
             const thumbnail = isApprovedThumbnail(template.thumbnail) && !failedThumbnails.has(template.id) ? template.thumbnail : null;
             return (
               <article key={template.id} className="rounded-lg border bg-card p-4 shadow-sm">
-                <div className="mb-4 flex h-32 items-center justify-center overflow-hidden rounded-md border bg-muted text-xs text-muted-foreground">{thumbnail ? <img src={thumbnail} alt={`${template.name} ${t('preview')}`} className="h-full w-full object-contain" onError={() => setFailedThumbnails((current) => new Set(current).add(template.id))} /> : <div className="flex h-full w-3/4 items-center justify-center rounded-sm border bg-background px-3 text-center shadow-sm" aria-label={`${template.name} ${t('preview')}`}>{t('preview')}</div>}</div>
+                <div className="mb-4 flex h-32 items-center justify-center overflow-hidden rounded-md border bg-muted text-xs text-muted-foreground">{thumbnail ? <img src={thumbnail} alt={`${localizedTemplateText(t, template, 'name')} ${t('preview')}`} className="h-full w-full object-contain" onError={() => setFailedThumbnails((current) => new Set(current).add(template.id))} /> : <div className="flex h-full w-3/4 items-center justify-center rounded-sm border bg-background px-3 text-center shadow-sm" aria-label={`${template.name} ${t('preview')}`}>{t('preview')}</div>}</div>
                 <div className="flex items-start justify-between gap-2">
-                  <h3 className="font-semibold">{template.name}</h3>
+                  <h3 className="font-semibold">{localizedTemplateText(t, template, 'name')}</h3>
                   {locked ? <span className="rounded-full border px-2 py-0.5 text-xs" title={t('lockedSourceTitle')}>{t('lockedSource')}</span> : null}
                 </div>
-                <p className="mt-1 text-sm text-muted-foreground">{template.description ?? t('sacramentTemplate')}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{localizedTemplateText(t, template, 'description')}</p>
                 <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
-                  <div><dt className="font-medium text-muted-foreground">{t('scope')}</dt><dd aria-label={`${t('scope')}: ${scopeLabels[template.scopeType] ?? template.scopeType}`}>{scopeLabels[template.scopeType] ?? template.scopeType}</dd></div>
+                  <div><dt className="font-medium text-muted-foreground">{t('scope')}</dt><dd aria-label={`${t('scope')}: ${scopeLabel(t, template.scopeType)}`}>{scopeLabel(t, template.scopeType)}</dd></div>
                   <div><dt className="font-medium text-muted-foreground">{t('version')}</dt><dd aria-label={`${t('version')}: ${template.version?.version ?? t('notPublished')}`}>{template.version?.version ? `v${template.version.version}` : t('notPublished')}</dd></div>
                   <div><dt className="font-medium text-muted-foreground">{t('status')}</dt><dd>{template.status.toLowerCase()}</dd></div>
                   <div><dt className="font-medium text-muted-foreground">{t('lock')}</dt><dd aria-label={`${t('lock')}: ${locked ? t('sourceLocked') : t('editableCopy')}`}>{locked ? t('sourceLocked') : t('editableCopy')}</dd></div>
@@ -143,7 +155,7 @@ export function TemplateGalleryClient({ wardId, canCopy }: { wardId: string; can
                 <button type="button" className="mt-3 text-left text-sm font-medium underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-expanded={expanded === template.id} aria-controls={detailsId} onClick={() => setExpanded((current) => current === template.id ? null : template.id)}>
                   {expanded === template.id ? t('hidePolicy') : t('showPolicy')}
                 </button>
-                {expanded === template.id ? <div id={detailsId} className="mt-2 rounded-md bg-muted p-3 text-xs"><p><span className="font-medium">{t('policyLabel')}</span> {policyFor(template)}</p><p className="mt-1">{locked ? t('lockedPolicy') : t('wardPolicy')}</p></div> : null}
+                {expanded === template.id ? <div id={detailsId} className="mt-2 rounded-md bg-muted p-3 text-xs"><p><span className="font-medium">{t('policyLabel')}</span> {policyFor(t, template)}</p><p className="mt-1">{locked ? t('lockedPolicy') : t('wardPolicy')}</p></div> : null}
                 <div className="mt-4 flex flex-wrap gap-2">
                   <Link href={`/programs/templates/${encodeURIComponent(template.id)}`} className="rounded-md border px-3 py-2 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{actionLabel('USE_AS_IS')}</Link>
                   {canCopy && template.status.toUpperCase() === 'PUBLISHED' ? <button type="button" aria-label={t('duplicateCustomize')} onClick={() => void copyTemplate(template)} disabled={copying === template.id} className="rounded-md border px-3 py-2 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{copying === template.id ? t('duplicating') : <><span>{t('copyToWard')}</span><span className="sr-only">{t('duplicateCustomize')}</span></>}</button> : null}

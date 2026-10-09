@@ -3,6 +3,7 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const read = (name: string) => readFile(path.resolve(import.meta.dirname, `../../drizzle/archive/v1/${name}`), 'utf8').then((sql) => sql.toLowerCase());
+const readCurrent = (name: string) => readFile(path.resolve(import.meta.dirname, `../../drizzle/${name}`), 'utf8').then((sql) => sql.toLowerCase());
 describe('Milestone 9 migrations', () => {
   it('defines explicit stake tenancy and guarded RLS', async () => {
     const sql = await read('0079_stake_template_administration.sql');
@@ -51,6 +52,53 @@ describe('Milestone 9 migrations', () => {
     expect(sql.indexOf('add column if not exists stake_id')).toBeGreaterThanOrEqual(0);
     expect(sql.indexOf('add column if not exists stake_id')).toBeLessThan(sql.indexOf('create policy document_template_read'));
     expect(sql).toContain('cannot backfill ward.stake_id safely');
+  });
+
+  it('restricts global template-admin reads to system templates and preserves template-owned joins', async () => {
+    const sql = await readCurrent('0044_scope_document_template_admin_rls.sql');
+    expect(sql).toContain('drop policy if exists document_template_read');
+    expect(sql).toContain("scope_type = 'system'");
+    expect(sql).toContain('scope_id is null');
+    expect(sql).toContain('app.can_administer_system_templates');
+    expect(sql).toContain('drop policy if exists document_template_version_read');
+    expect(sql).toContain('t.id = document_template_version.template_id');
+    expect(sql).not.toMatch(/or\s+app\.can_administer_system_templates\(\)/);
+  });
+
+  it('keeps stake-admin authorization compatible with FORCE RLS in one atomic migration', async () => {
+    const sql = await readCurrent('0045_stake_admin_force_rls.sql');
+    expect(sql).toContain('alter function app.is_stake_admin(uuid) set row_security = on');
+    expect(sql).toContain('drop policy if exists stake_user_role_read');
+    expect(sql).toContain('drop policy if exists stake_user_role_write');
+    expect(sql).toContain('for insert');
+    expect(sql).toContain('for update');
+    expect(sql).toContain('for delete');
+    expect(sql).not.toContain('for all');
+  });
+
+  it('preserves same-stake role mutations through a non-recursive authorization projection', async () => {
+    const sql = await readCurrent('0046_stake_admin_access_projection.sql');
+    expect(sql).toContain('create table if not exists public.stake_admin_access');
+    expect(sql).toContain('alter table public.stake_user_role no force row level security');
+    expect(sql).toContain('alter table public.stake_user_role force row level security');
+    expect(sql).toContain('create or replace function app.is_stake_admin');
+    expect(sql).toContain('create or replace function app.sync_stake_admin_access');
+    expect(sql).toContain('create trigger stake_admin_access_validate');
+    expect(sql).toContain('alter table public.stake_admin_access force row level security');
+  });
+
+  it('hardens projection activity, template capability boundaries, authorship, and publication history', async () => {
+    const sql = await readCurrent('0047_template_boundary_hardening.sql');
+    expect(sql).toContain('u.is_active = true');
+    expect(sql).toContain('create or replace function app.can_manage_ward_program_templates');
+    expect(sql).toContain('app.has_active_ward_access');
+    expect(sql).toContain("created_by_user_id = app.current_user_id()");
+    expect(sql).toContain('alter table public.stake_admin_access force row level security');
+    expect(sql).toContain('create policy stake_admin_access_read');
+    expect(sql).toContain('add column if not exists published_at');
+    expect(sql).toContain('document_template_mark_published_version');
+    expect(sql).toContain('create or replace function app.bind_template_version_author');
+    expect(sql).toContain('drop policy if exists document_template_version_write');
   });
 
   it('defines a narrowly scoped RLS-safe auth assignment reader', async () => {

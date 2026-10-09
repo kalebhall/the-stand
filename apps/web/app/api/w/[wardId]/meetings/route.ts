@@ -5,6 +5,7 @@ import { auth } from '@/src/auth/auth';
 import { canManageMeetings, canViewMeetings } from '@/src/auth/roles';
 import { BUILT_IN_TEMPLATES } from '@/src/document-designer/built-in-templates';
 import { isAdvancedDesignerFeatureEnabled } from '@/src/features/advanced-designer';
+import { isWardModuleEnabledInTransaction } from '@/src/modules/service';
 import { inheritTemplate } from '@/src/document-designer/inheritance';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
@@ -204,6 +205,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     await client.query('BEGIN');
     await client.query('LOCK TABLE meeting_document IN ROW EXCLUSIVE MODE');
     await setDbContext(client, { userId: session.user.id, wardId });
+    const programsModuleEnabled = await isWardModuleEnabledInTransaction(client, wardId, 'programs');
 
     const inserted = await client.query(
       `INSERT INTO meeting (ward_id, meeting_date, meeting_type)
@@ -214,14 +216,16 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
 
     await insertProgramItems(client, wardId, inserted.rows[0].id, programItems);
 
-    const settingsResult = await client.query(
-      'SELECT default_sacrament_template_id, default_sacrament_template_key FROM ward_document_settings WHERE ward_id = $1::uuid LIMIT 1',
-      [wardId]
-    );
-    const defaultTemplateId = isAdvancedDesignerFeatureEnabled()
+    const settingsResult = programsModuleEnabled && isAdvancedDesignerFeatureEnabled()
+      ? await client.query(
+          'SELECT default_sacrament_template_id, default_sacrament_template_key FROM ward_document_settings WHERE ward_id = $1::uuid LIMIT 1',
+          [wardId]
+        )
+      : { rows: [] as unknown[] };
+    const defaultTemplateId = programsModuleEnabled && isAdvancedDesignerFeatureEnabled()
       ? (settingsResult.rows?.[0] as { default_sacrament_template_id?: string | null } | undefined)?.default_sacrament_template_id ?? null
       : null;
-    const defaultTemplateKey = isAdvancedDesignerFeatureEnabled()
+    const defaultTemplateKey = programsModuleEnabled && isAdvancedDesignerFeatureEnabled()
       ? (settingsResult.rows?.[0] as { default_sacrament_template_key?: string | null } | undefined)?.default_sacrament_template_key ?? null
       : null;
     let sourceTemplateId: string | null = null;
@@ -234,9 +238,14 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
       const templateResult = await client.query(
         `SELECT t.id, v.version, v.layout_json
            FROM document_template t
-           JOIN document_template_version v ON v.id = t.current_published_version_id
-          WHERE t.id = $1::uuid AND t.scope_type = 'WARD' AND t.scope_id = $2::uuid AND t.status = 'PUBLISHED'
-          LIMIT 1`,
+           JOIN document_template_version v ON v.id = t.current_published_version_id AND v.template_id = t.id
+          WHERE t.id = $1::uuid
+              AND t.document_type = 'SACRAMENT_PROGRAM'
+              AND t.status = 'PUBLISHED'
+              AND t.current_published_version_id IS NOT NULL
+              AND ((t.scope_type = 'WARD' AND t.scope_id = $2::uuid)
+                OR (t.scope_type = 'SYSTEM' AND t.scope_id IS NULL))
+            LIMIT 1`,
         [defaultTemplateId, wardId]
       );
       const template = templateResult.rows?.[0] as { id: string; version: number; layout_json: unknown } | undefined;

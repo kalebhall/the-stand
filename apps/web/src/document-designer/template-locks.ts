@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { documentLockSchema } from './primitives';
+
 export const templateLockModeSchema = z.enum(['UNLOCKED', 'STYLE_LOCKED', 'STRUCTURE_LOCKED', 'CONTENT_ONLY']);
 const idList = z.array(z.string().uuid()).max(100).refine((ids) => new Set(ids).size === ids.length, 'IDs must be unique');
 const propertyList = z.array(z.string().min(1).max(100)).max(100).refine((items) => new Set(items).size === items.length, 'properties must be unique');
@@ -51,8 +53,22 @@ function collectProperty(value: unknown, property: string, path = '', result: Lo
   return result;
 }
 
+const legacyPropertyAliases: Record<string, readonly string[]> = {
+  POSITION: ['position', 'pages', 'regions', 'blocks', 'blockIds', 'digitalOrder', 'order'],
+  SIZE: ['width', 'height', 'size', 'ratio', 'gutter', 'columns', 'count', 'columnCount'],
+  CONTENT: ['content', 'config', 'metadata', 'text', 'title', 'body', 'value', 'data', 'source', 'dataMode', 'print', 'printBehavior', 'digital', 'digitalBehavior', 'type'],
+  STYLE: ['theme', 'style', 'styles', 'styleOverrides'],
+  VISIBILITY: ['visibility', 'visibilityRule']
+};
+
 function propertyValues(value: unknown, property: string): Map<string, unknown> {
-  return new Map(collectProperty(value, property).map(({ path, value: found }) => [path, found]));
+  const names = legacyPropertyAliases[property] ?? [property];
+  return new Map(names.flatMap((name) => collectProperty(value, name)).map(({ path, value: found }) => [path, found]));
+}
+
+function legacyLock(input: unknown): z.infer<typeof documentLockSchema> | null {
+  if (!isRecord(input) || !('level' in input) || !('properties' in input)) return null;
+  return documentLockSchema.parse(input);
 }
 
 function orderValues(value: unknown, path = '', result: LocatedValue[] = []): LocatedValue[] {
@@ -92,18 +108,18 @@ function changedPaths(base: unknown, proposed: unknown, path = '', result: strin
 }
 
 function isStylePath(path: string): boolean {
-  const key = path.split('.').pop()?.replace(/\[\d+\]$/, '') ?? '';
+  const key = path.split('.').pop()?.replace(/(\[\d+\])+$/, '') ?? '';
   return key === 'theme' || key === 'style' || key === 'styles' || /(color|font|background|border|spacing|padding|margin|radius|opacity|width|size|alignment|align|format)/i.test(key);
 }
 
 function isContentPath(path: string): boolean {
-  const key = path.split('.').pop()?.replace(/\[\d+\]$/, '') ?? '';
-  return key === 'content' || key === 'config' || key === 'metadata' || key === 'text' || key === 'title' || key === 'body' || key === 'value';
+  const key = path.split('.').pop()?.replace(/(\[\d+\])+$/, '') ?? '';
+  return key === 'content' || key === 'config' || key === 'metadata' || key === 'text' || key === 'title' || key === 'body' || key === 'value' || key === 'source' || key === 'printBehavior' || key === 'digitalBehavior';
 }
 
 function isStructurePath(path: string): boolean {
-  const key = path.split('.').pop()?.replace(/\[\d+\]$/, '') ?? '';
-  return key === 'pages' || key === 'regions' || key === 'blocks' || key === 'id' || key === 'paper' || key === 'orientation' || key === 'fold' || key === 'ratio' || key === 'gutter' || key === 'order' || key === 'position' || key === 'width' || key === 'type' || key === 'dataMode';
+  const key = path.split('.').pop()?.replace(/(\[\d+\])+$/, '') ?? '';
+  return key === 'pages' || key === 'regions' || key === 'blocks' || key === 'columns' || key === 'blockIds' || key === 'count' || key === 'columnCount' || key === 'digitalOrder' || key === 'id' || key === 'paper' || key === 'orientation' || key === 'fold' || key === 'ratio' || key === 'gutter' || key === 'order' || key === 'position' || key === 'width' || key === 'type' || key === 'dataMode';
 }
 
 function modeAllowsChanges(mode: TemplateLockPolicy['mode'], path: string): boolean {
@@ -118,20 +134,115 @@ function modeAllowsChanges(mode: TemplateLockPolicy['mode'], path: string): bool
   return exhaustive;
 }
 
+function legacyProjection(value: unknown, property: string): unknown {
+  if (Array.isArray(value)) return value.map((item) => legacyProjection(item, property));
+  if (!isRecord(value)) return value;
+  const result: Record<string, unknown> = {};
+  if (typeof value.id === 'string') result.id = value.id;
+  const selected = new Set(legacyPropertyAliases[property] ?? [property]);
+  for (const [key, child] of Object.entries(value)) {
+    if (key === 'lock') continue;
+    if (selected.has(key)) {
+      if (property === 'POSITION' && (key === 'pages' || key === 'regions' || key === 'blocks')) {
+        result[key] = Array.isArray(child) ? child.map((item) => isRecord(item) ? legacyProjection(item, property) : item) : child;
+      } else if (property === 'SIZE' && key === 'columns' && isRecord(child)) {
+        result[key] = { count: child.count, ratio: child.ratio, gutter: child.gutter };
+      } else {
+        result[key] = child;
+      }
+      continue;
+    }
+    if (isRecord(child) || Array.isArray(child)) result[key] = legacyProjection(child, property);
+  }
+  return result;
+}
+
+function collectLegacyLockNodes(value: unknown, path = '', result = new Map<string, { value: RecordValue; path: string; lock: z.infer<typeof documentLockSchema> }>()): Map<string, { value: RecordValue; path: string; lock: z.infer<typeof documentLockSchema> }> {
+  if (Array.isArray(value)) {
+    value.forEach((item, index) => collectLegacyLockNodes(item, `${path}[${index}]`, result));
+  } else if (isRecord(value)) {
+    if (Object.prototype.hasOwnProperty.call(value, 'lock')) {
+      const rawLock = value.lock;
+      if (!isRecord(rawLock) || Object.keys(rawLock).length > 0) {
+        const lock = legacyLock(rawLock);
+        if (!lock) throw new Error('Invalid nested legacy lock');
+        if (typeof value.id !== 'string') throw new Error('Legacy lock requires a stable ID');
+        result.set(value.id, { value, path: path || 'root', lock });
+      }
+    }
+    for (const [key, child] of Object.entries(value)) {
+      if (key !== 'lock') collectLegacyLockNodes(child, path ? `${path}.${key}` : key, result);
+    }
+  }
+  return result;
+}
+
+function checkLegacyNestedLocks(base: RecordValue, proposed: RecordValue, violations: LockViolation[]): void {
+  let baseNodes: Map<string, { value: RecordValue; path: string; lock: z.infer<typeof documentLockSchema> }>;
+  let proposedNodes: Map<string, { value: RecordValue; path: string; lock: z.infer<typeof documentLockSchema> }>;
+  try {
+    baseNodes = collectLegacyLockNodes(base);
+    proposedNodes = collectLegacyLockNodes(proposed);
+  } catch {
+    violations.push(violation('INVALID_POLICY', 'lock', 'Invalid nested legacy lock policy'));
+    return;
+  }
+  for (const [id, entry] of baseNodes) {
+    const next = proposedNodes.get(id);
+    if (!next) {
+      violations.push(violation('LOCKED_STRUCTURE', entry.path, 'A locked node cannot be removed'));
+      continue;
+    }
+    if (stableJson(entry.lock) !== stableJson(next.lock)) {
+      violations.push(violation('LOCKED_STRUCTURE', `${entry.path}.lock`, 'Lock metadata cannot be changed'));
+      continue;
+    }
+    for (const property of entry.lock.properties) {
+      const before = { path: entry.path, value: legacyProjection(entry.value, property) };
+      const after = { path: next.path, value: legacyProjection(next.value, property) };
+      if (stableJson(before) !== stableJson(after)) {
+        violations.push(violation('LOCKED_PROPERTY', `${entry.path}.${property}`, `${property} is locked`));
+      }
+    }
+  }
+}
 function violation(code: LockViolation['code'], path: string, message: string): LockViolation {
   return { code, path, message };
 }
 
-export function parseTemplateLockPolicy(input: unknown): TemplateLockPolicy {
+function normalizeLockPolicy(input: unknown): TemplateLockPolicy {
+  if (isRecord(input) && Object.keys(input).length === 0) {
+    return templateLockPolicySchema.parse({ mode: 'UNLOCKED' });
+  }
+  const templatePolicy = templateLockPolicySchema.safeParse(input);
+  if (templatePolicy.success) return templatePolicy.data;
+  if (isRecord(input) && (input.level === 'NONE' || input.level === 'REGION' || input.level === 'BLOCK' || input.level === 'CONFIGURATION') && Array.isArray(input.properties)) {
+    const legacy = legacyLock(input);
+    if (!legacy) throw new Error('Invalid legacy lock policy');
+    return templateLockPolicySchema.parse({
+      mode: 'UNLOCKED',
+      lockedPropertyNames: legacy.properties,
+      protectedTheme: legacy.properties.includes('STYLE'),
+      protectedVisibility: legacy.properties.includes('VISIBILITY'),
+      protectedOrder: legacy.properties.includes('POSITION')
+    });
+  }
   return templateLockPolicySchema.parse(input);
 }
 
+export function parseTemplateLockPolicy(input: unknown): TemplateLockPolicy {
+  return normalizeLockPolicy(input);
+}
+
 export function checkTemplateLocks(base: unknown, proposed: unknown, inputPolicy: unknown): LockCheck {
-  const parsed = templateLockPolicySchema.safeParse(inputPolicy);
-  if (!parsed.success) return { ok: false, violations: [violation('INVALID_POLICY', 'lock', 'Invalid lock policy')] };
+  let policy: TemplateLockPolicy;
+  try {
+    policy = normalizeLockPolicy(inputPolicy);
+  } catch {
+    return { ok: false, violations: [violation('INVALID_POLICY', 'lock', 'Invalid lock policy')] };
+  }
   if (!isRecord(base) || !isRecord(proposed)) return { ok: false, violations: [violation('FORGED_ID', '', 'Layouts must be objects')] };
 
-  const policy = parsed.data;
   const violations: LockViolation[] = [];
   const baseIds = collectById(base);
   const proposedIds = collectById(proposed);
@@ -181,5 +292,6 @@ export function checkTemplateLocks(base: unknown, proposed: unknown, inputPolicy
     }
   }
 
+  checkLegacyNestedLocks(base, proposed, violations);
   return violations.length ? { ok: false, violations } : { ok: true, value: proposed };
 }

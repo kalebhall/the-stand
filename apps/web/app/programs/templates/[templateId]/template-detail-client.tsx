@@ -84,7 +84,7 @@ export function TemplateDetailClient({ wardId, templateId, canCopy, canEdit = fa
       </section>
       <div className="flex flex-wrap gap-3">
         <Link href="/programs" className="rounded-md border px-4 py-2 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{t('useInProgram')}</Link>
-        {canEdit && template.status === 'DRAFT' ? <Link href={`/programs/templates/${encodeURIComponent(templateId)}/studio`} className="rounded-md border px-4 py-2 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">Open Template Studio</Link> : null}
+        {canEdit && template.status === 'DRAFT' ? <Link href={`/programs/templates/${encodeURIComponent(templateId)}/studio`} className="rounded-md border px-4 py-2 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{t('openTemplateStudio')}</Link> : null}
         <button type="button" disabled={!canCopy || duplicating || template.status !== 'PUBLISHED'} onClick={() => void duplicateTemplate()} className="rounded-md border px-4 py-2 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{duplicating ? t('duplicating') : t('duplicateCustomize')}</button>
       </div>
       {message ? <p role="status" aria-live="polite" className="text-sm text-muted-foreground">{message}</p> : null}

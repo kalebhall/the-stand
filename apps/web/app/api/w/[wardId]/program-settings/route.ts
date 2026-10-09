@@ -142,9 +142,12 @@ export async function PATCH(request: Request, context: { params: Promise<{ wardI
       } else if (selected) {
         const templateResult = await client.query(
           `SELECT id FROM document_template
-             WHERE id = $1::uuid AND scope_type = 'WARD' AND scope_id = $2::uuid
-               AND document_type = 'SACRAMENT_PROGRAM' AND status = 'PUBLISHED'
+             WHERE id = $1::uuid
+               AND document_type = 'SACRAMENT_PROGRAM'
+               AND status = 'PUBLISHED'
                AND current_published_version_id IS NOT NULL
+               AND ((scope_type = 'WARD' AND scope_id = $2::uuid)
+                 OR (scope_type = 'SYSTEM' AND scope_id IS NULL))
              LIMIT 1`,
           [selected, wardId]
         );
