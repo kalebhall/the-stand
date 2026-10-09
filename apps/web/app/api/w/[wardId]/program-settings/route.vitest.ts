@@ -1,17 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { authMock, connectMock, recordAuditEventMock, buildFieldDiffMock, moduleEnabledMock } = vi.hoisted(() => ({
+const { authMock, connectMock, recordAuditEventMock, buildFieldDiffMock, moduleEnabledMock, moduleEnabledInTransactionMock } = vi.hoisted(() => ({
   authMock: vi.fn(),
   connectMock: vi.fn(),
   recordAuditEventMock: vi.fn(),
   buildFieldDiffMock: vi.fn(() => ({ allowAdvancedProgramDesigner: { old: false, new: true } })),
-  moduleEnabledMock: vi.fn()
-}));
+  moduleEnabledMock: vi.fn(),
+  moduleEnabledInTransactionMock: vi.fn()}));
 
 vi.mock('@/src/auth/auth', () => ({ auth: authMock }));
 vi.mock('@/src/db/client', () => ({ pool: { connect: connectMock } }));
 vi.mock('@/src/audit/service', () => ({ buildFieldDiff: buildFieldDiffMock, recordAuditEvent: recordAuditEventMock }));
-vi.mock('@/src/modules/service', () => ({ isWardModuleEnabled: moduleEnabledMock }));
+vi.mock('@/src/modules/service', () => ({ isWardModuleEnabled: moduleEnabledMock, isWardModuleEnabledInTransaction: moduleEnabledInTransactionMock }));
 
 import { GET, PATCH } from './route';
 
@@ -23,6 +23,7 @@ const session = {
 const row = {
   ward_id: 'ward-a',
   default_sacrament_template_id: null,
+  default_sacrament_template_key: null,
   allow_advanced_program_designer: false,
   allow_program_editor_publish: false,
   allow_program_editor_republish: false,
@@ -38,7 +39,7 @@ function setupClient(overrides: Record<string, unknown> = {}) {
     query: vi.fn(async (sql: string, values?: readonly unknown[]) => {
       if (sql === 'SELECT set_config($1, $2, true)') return { rows: [] };
       if (sql.startsWith('SELECT ward_id')) return { rows: [currentRow] };
-      if (sql.startsWith('INSERT INTO ward_document_settings')) return { rows: [{ ...currentRow, allow_advanced_program_designer: values?.[1], public_program_expiration_days: values && values.length > 7 ? values[7] : currentRow.public_program_expiration_days }] };
+      if (sql.startsWith('INSERT INTO ward_document_settings')) return { rows: [{ ...currentRow, default_sacrament_template_id: values?.[1] ?? currentRow.default_sacrament_template_id, default_sacrament_template_key: values?.[2] ?? currentRow.default_sacrament_template_key, allow_advanced_program_designer: values?.[3], public_program_expiration_days: values && values.length > 9 ? values[9] : currentRow.public_program_expiration_days }] };
       if (sql === 'BEGIN' || sql === 'COMMIT' || sql === 'ROLLBACK') return { rows: [] };
       return { rows: [], ...overrides };
     }),
@@ -55,6 +56,7 @@ describe('program settings route', () => {
     vi.clearAllMocks();
     authMock.mockResolvedValue(session);
     moduleEnabledMock.mockResolvedValue(true);
+    moduleEnabledInTransactionMock.mockResolvedValue(true);
   });
 
   it('returns unauthorized without a session', async () => {
@@ -69,12 +71,20 @@ describe('program settings route', () => {
     expect(response.status).toBe(403);
   });
 
+  it('denies settings reads when the programs module is disabled after the preflight', async () => {
+    moduleEnabledInTransactionMock.mockResolvedValue(false);
+    setupClient();
+    const response = await GET(new Request('http://localhost'), context);
+    expect(response.status).toBe(403);
+  });
   it('returns persisted false settings instead of assuming enabled defaults', async () => {
     setupClient();
     const response = await GET(new Request('http://localhost'), context);
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ settings: {
+      defaultSacramentTemplate: null,
       defaultSacramentTemplateId: null,
+      defaultSacramentTemplateKey: null,
       allowAdvancedProgramDesigner: false,
       allowProgramEditorPublish: false,
       allowProgramEditorRepublish: false,
@@ -102,6 +112,58 @@ describe('program settings route', () => {
     expect(await response.json()).toMatchObject({ settings: { allowAdvancedProgramDesigner: true } });
     expect(recordAuditEventMock).toHaveBeenCalledWith(client, expect.objectContaining({ action: 'PROGRAM_SETTINGS_UPDATED' }));
     expect(client.query).toHaveBeenCalledWith(expect.stringContaining('ON CONFLICT (ward_id)'), expect.arrayContaining(['ward-a', true]));
+  });
+
+  it('allows ward meeting managers to select a built-in default template', async () => {
+    const bishopricSession = { ...session, user: { ...session.user, roles: ['BISHOPRIC_EDITOR'] } };
+    authMock.mockResolvedValue(bishopricSession);
+    const client = setupClient();
+    const response = await PATCH(new Request('http://localhost', {
+      method: 'PATCH',
+      body: JSON.stringify({ defaultSacramentTemplate: 'builtin:classic-bifold' })
+    }), context);
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ settings: {
+      defaultSacramentTemplate: 'builtin:classic-bifold',
+      defaultSacramentTemplateKey: 'classic-bifold',
+      defaultSacramentTemplateId: null
+    }});
+    expect(client.query).toHaveBeenCalledWith(expect.stringContaining('ON CONFLICT (ward_id)'), expect.arrayContaining(['classic-bifold']));
+  });
+
+  it('blocks default-template writes when the template feature is disabled', async () => {
+    const previous = process.env.ADVANCED_DESIGNER_ENABLED;
+    process.env.ADVANCED_DESIGNER_ENABLED = 'false';
+    try {
+      authMock.mockResolvedValue({ ...session, user: { ...session.user, roles: ['BISHOPRIC_EDITOR'] } });
+      setupClient();
+      const response = await PATCH(new Request('http://localhost', {
+        method: 'PATCH',
+        body: JSON.stringify({ defaultSacramentTemplate: 'builtin:classic-bifold', allowAdvancedProgramDesigner: true })
+      }), context);
+      expect(response.status).toBe(403);
+      expect((await response.json()).code).toBe('FORBIDDEN');
+    } finally {
+      if (previous === undefined) delete process.env.ADVANCED_DESIGNER_ENABLED;
+      else process.env.ADVANCED_DESIGNER_ENABLED = previous;
+    }
+  });
+
+  it('rejects a non-ward template as the default', async () => {
+    const client = setupClient();
+    client.query.mockImplementation(async (sql: string) => {
+      if (sql === 'SELECT set_config($1, $2, true)') return { rows: [] };
+      if (sql.startsWith('SELECT ward_id')) return { rows: [row] };
+      if (sql.includes('FROM document_template')) return { rows: [] };
+      if (sql === 'BEGIN' || sql === 'ROLLBACK') return { rows: [] };
+      return { rows: [] };
+    });
+    const response = await PATCH(new Request('http://localhost', {
+      method: 'PATCH',
+      body: JSON.stringify({ defaultSacramentTemplate: '11111111-1111-4111-8111-111111111111' })
+    }), context);
+    expect(response.status).toBe(400);
+    expect((await response.json()).code).toBe('BAD_REQUEST');
   });
 
   it('persists disabling the advanced designer without changing the role boundary', async () => {
