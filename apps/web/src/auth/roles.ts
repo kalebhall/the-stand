@@ -195,6 +195,11 @@ export function canManageSystemTemplates(session: TemplateAuthorizationSession):
   return hasRole(session.roles, 'SYSTEM_ADMIN') || hasRole(session.roles, 'SUPPORT_ADMIN');
 }
 
+export function canUseSharedAdvancedProgramDesigner(session: TemplateAuthorizationSession, scope: 'SYSTEM' | 'STAKE', scopeId: string | null): boolean {
+  if (scope === 'SYSTEM') return canManageSystemTemplates(session);
+  return Boolean(scopeId && canManageStakeTemplates(session, scopeId));
+}
+
 export function canCopyAvailableTemplate(
   session: TemplateAuthorizationSession,
   template: { scopeType: TemplateScope; scopeId: string | null; ownerUserId?: string | null; status: string },

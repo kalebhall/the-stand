@@ -1,15 +1,16 @@
 import { documentLayoutSchema } from './schema';
+import { isAdvancedLayout, parseAdvancedLayout, type AdvancedDocumentLayout } from './advanced-schema';
 import type { DocumentLayout } from './types';
 
 export type InheritedDocument = {
   sourceTemplateId: string | null;
   sourceTemplateVersion: number | null;
-  layout: DocumentLayout;
+  layout: DocumentLayout | AdvancedDocumentLayout;
   theme: DocumentLayout['theme'];
 };
 
 export function inheritTemplate(layoutInput: unknown, sourceTemplateId: string | null, sourceTemplateVersion: number | null): InheritedDocument {
-  const layout = documentLayoutSchema.parse(structuredClone(layoutInput));
+  const layout = isAdvancedLayout(layoutInput) ? parseAdvancedLayout(structuredClone(layoutInput)) : documentLayoutSchema.parse(structuredClone(layoutInput));
   return {
     sourceTemplateId,
     sourceTemplateVersion,

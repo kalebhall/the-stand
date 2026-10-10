@@ -159,6 +159,8 @@
     "printPreview": "Tomuʻa vakaiʻi ʻo e paaki",
     "simpleMode": "Mode Faingofua",
     "advancedMode": "Mode Fakalakalaka",
+    "advancedBlockReadOnly": "Poloka fakalakalaka · lau pe ʻi he Founga Faingofua",
+    "advancedBlockReadOnlyError": "ʻE ʻikai lava ʻe he tokotaha fakatonutonu ko ʻení ʻo liliu ʻa e ngaahi poloka fakalakalaka.",
     "previewPublic": "Tomu'a vakai'i ko e 'a'ahi fakapule'anga",
     "sourceMetadata": "Ko e metadata ma'u'anga fakamatala 'o e sipinga",
     "unavailable": "'Oku 'ikai ke ma'u",

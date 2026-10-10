@@ -4,14 +4,16 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 
+import { getRegisteredBlockDefinition } from '@/src/document-designer/registry';
+
 type Block = { id: string; type: string; visibility?: string; config?: { text?: string } };
 type Layout = { theme: { fontFamily: string; baseFontSize: number; accentColor: string }; pages: { regions: { blocks: Block[] }[] }[] };
 type Template = { name: string; status: string; scopeType: string; version?: { version: number; layout: Layout } | null };
 
-export function TemplateStudioClient({ templateId, canEdit, apiBase, backHref = `/programs/templates/${encodeURIComponent(templateId)}` }: { templateId: string; canEdit: boolean; apiBase: string; backHref?: string }) {
+export function TemplateStudioClient({ templateId, canEdit, advancedEditing, apiBase, backHref = `/programs/templates/${encodeURIComponent(templateId)}` }: { templateId: string; canEdit: boolean; advancedEditing: boolean; apiBase: string; backHref?: string }) {
   const t = useTranslations('programs');
   const localizedError = (body: { code?: string }, fallback: string) => {
-    const key = body.code === 'FORBIDDEN' ? 'forbiddenError' : body.code === 'NOT_FOUND' ? 'notFoundError' : body.code === 'IMMUTABLE_TEMPLATE' ? 'immutableTemplateError' : body.code === 'INTERNAL_ERROR' ? 'internalError' : null;
+    const key = body.code === 'FORBIDDEN' ? 'forbiddenError' : body.code === 'NOT_FOUND' ? 'notFoundError' : body.code === 'IMMUTABLE_TEMPLATE' ? 'immutableTemplateError' : body.code === 'ADVANCED_BLOCK_READ_ONLY' ? 'advancedBlockReadOnlyError' : body.code === 'INTERNAL_ERROR' ? 'internalError' : null;
     return key ? t(key) : fallback;
   };
   const [template, setTemplate] = useState<Template | null>(null);
@@ -31,10 +33,22 @@ export function TemplateStudioClient({ templateId, canEdit, apiBase, backHref = 
   }, [templateId, apiBase, t]);
 
   const effectiveCanEdit = canEdit && template?.status === 'DRAFT';
+  const isAdvancedBlock = (block: Block): boolean => {
+    try {
+      return getRegisteredBlockDefinition('SACRAMENT_PROGRAM', block.type).exposure === 'ADVANCED';
+    } catch {
+      return true;
+    }
+  };
+  const isBlockReadOnly = (block: Block): boolean => isAdvancedBlock(block) && !advancedEditing;
 
   function updateTheme(patch: Partial<Layout['theme']>) { setLayout((current) => current ? { ...current, theme: { ...current.theme, ...patch } } : current); }
   function toggleBlock(blockId: string) {
-    setLayout((current) => current ? { ...current, pages: current.pages.map((page) => ({ ...page, regions: page.regions.map((region) => ({ ...region, blocks: region.blocks.map((block) => block.id === blockId ? { ...block, visibility: block.visibility === 'HIDDEN' ? 'VISIBLE' : 'HIDDEN' } : block) })) })) } : current);
+    setLayout((current) => {
+      const block = current?.pages.flatMap((page) => page.regions.flatMap((region) => region.blocks)).find((item) => item.id === blockId);
+      if (!current || !block || isBlockReadOnly(block)) return current;
+      return { ...current, pages: current.pages.map((page) => ({ ...page, regions: page.regions.map((region) => ({ ...region, blocks: region.blocks.map((item) => item.id === blockId ? { ...item, visibility: item.visibility === 'HIDDEN' ? 'VISIBLE' : 'HIDDEN' } : item) })) })) };
+    });
   }
   async function saveVersion() {
     if (!layout || !effectiveCanEdit || !template) return;
@@ -56,7 +70,7 @@ export function TemplateStudioClient({ templateId, canEdit, apiBase, backHref = 
     <p role="status" aria-live="polite" className="min-h-5 text-sm text-muted-foreground">{message}</p>
     {!effectiveCanEdit ? <p className="rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-950">{t('templateViewOnly')}</p> : null}
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
-      <section className="space-y-4 rounded-lg border p-4" aria-label={t('properties')}><h2 className="font-semibold">{t('templateThemeTypography')}</h2><label className="block text-sm">{t('font')}<select disabled={!effectiveCanEdit} value={layout.theme.fontFamily} onChange={(event) => updateTheme({ fontFamily: event.target.value })} className="mt-1 block w-full rounded border p-2"><option value="SYSTEM_SANS">{t('systemSans')}</option><option value="SERIF">{t('serif')}</option><option value="MONOSPACE">{t('monospace')}</option></select></label><label className="block text-sm">{t('baseFontSize')}<input disabled={!effectiveCanEdit} type="number" min={8} max={32} value={layout.theme.baseFontSize} onChange={(event) => updateTheme({ baseFontSize: Number(event.target.value) })} className="mt-1 block w-full rounded border p-2" /></label><label className="block text-sm">{t('accentColor')}<input disabled={!effectiveCanEdit} type="color" value={layout.theme.accentColor} onChange={(event) => updateTheme({ accentColor: event.target.value })} className="mt-1 block h-10 w-full rounded border p-1" /></label><h2 className="border-t pt-4 font-semibold">{t('approvedBlocks')}</h2><ul className="space-y-2">{blocks.map((block) => <li key={block.id} className="flex items-center justify-between gap-2 rounded border p-2 text-sm"><span>{blockTypeLabel(block.type)}</span><button type="button" disabled={!effectiveCanEdit} onClick={() => toggleBlock(block.id)} className="rounded border px-2 py-1">{block.visibility === 'HIDDEN' ? t('showBlock') : t('hideBlock')}</button></li>)}</ul></section>
+      <section className="space-y-4 rounded-lg border p-4" aria-label={t('properties')}><h2 className="font-semibold">{t('templateThemeTypography')}</h2><label className="block text-sm">{t('font')}<select disabled={!effectiveCanEdit} value={layout.theme.fontFamily} onChange={(event) => updateTheme({ fontFamily: event.target.value })} className="mt-1 block w-full rounded border p-2"><option value="SYSTEM_SANS">{t('systemSans')}</option><option value="SERIF">{t('serif')}</option><option value="MONOSPACE">{t('monospace')}</option></select></label><label className="block text-sm">{t('baseFontSize')}<input disabled={!effectiveCanEdit} type="number" min={8} max={32} value={layout.theme.baseFontSize} onChange={(event) => updateTheme({ baseFontSize: Number(event.target.value) })} className="mt-1 block w-full rounded border p-2" /></label><label className="block text-sm">{t('accentColor')}<input disabled={!effectiveCanEdit} type="color" value={layout.theme.accentColor} onChange={(event) => updateTheme({ accentColor: event.target.value })} className="mt-1 block h-10 w-full rounded border p-1" /></label><h2 className="border-t pt-4 font-semibold">{t('approvedBlocks')}</h2><ul className="space-y-2">{blocks.map((block) => <li key={block.id} className="flex items-center justify-between gap-2 rounded border p-2 text-sm"><span>{blockTypeLabel(block.type)}{isBlockReadOnly(block) ? <span className="ml-2 text-xs font-medium text-amber-700">{t('advancedBlockReadOnly')}</span> : null}</span><button type="button" disabled={!effectiveCanEdit || isBlockReadOnly(block)} onClick={() => toggleBlock(block.id)} className="rounded border px-2 py-1">{block.visibility === 'HIDDEN' ? t('showBlock') : t('hideBlock')}</button></li>)}</ul></section>
       <section aria-label={t('templateCanvas')} className="rounded-lg border bg-muted p-6"><div className="mx-auto min-h-[32rem] max-w-xl rounded-sm bg-background p-8 shadow" style={{ fontFamily: layout.theme.fontFamily === 'SERIF' ? 'serif' : layout.theme.fontFamily === 'MONOSPACE' ? 'monospace' : 'sans-serif', fontSize: `${layout.theme.baseFontSize}px`, borderTop: `8px solid ${layout.theme.accentColor}` }}>{blocks.map((block) => <div key={block.id} className={`mb-4 rounded border p-3 ${block.visibility === 'HIDDEN' ? 'opacity-40 line-through' : ''}`}><div className="text-xs uppercase text-muted-foreground">{blockTypeLabel(block.type)}</div><div>{block.config?.text ?? t('approvedDynamicContent')}</div></div>)}</div></section>
     </div>
   </main>;

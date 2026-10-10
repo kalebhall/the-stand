@@ -26,7 +26,7 @@ function renderWithMessages(scopeType: string) {
   );
   return render(
     <NextIntlClientProvider locale="en-US" messages={MESSAGE_CATALOGS['en-US']}>
-      <TemplateStudioClient templateId="template-1" canEdit apiBase="/api/templates" />
+      <TemplateStudioClient templateId="template-1" canEdit advancedEditing={false} apiBase="/api/templates" />
     </NextIntlClientProvider>
   );
 }

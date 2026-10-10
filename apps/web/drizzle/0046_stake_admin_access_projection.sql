@@ -1,27 +1,7 @@
--- Preserve same-stake stake-admin UPDATE/DELETE authorization under FORCE RLS.
--- A separate internal authorization projection lets SELECT policy evaluation
--- identify stake administrators without recursively querying stake_user_role.
-CREATE TABLE IF NOT EXISTS public.stake_admin_access (
-  stake_id UUID NOT NULL REFERENCES public.stake(id) ON DELETE CASCADE,
-  user_id UUID NOT NULL REFERENCES public.user_account(id) ON DELETE CASCADE,
-  assignment_id UUID NOT NULL UNIQUE REFERENCES public.stake_user_role(id) ON DELETE CASCADE,
-  granted_at TIMESTAMPTZ NOT NULL,
-  PRIMARY KEY (stake_id, user_id)
-);
-REVOKE ALL ON public.stake_admin_access FROM PUBLIC;
-
-ALTER TABLE public.stake_user_role NO FORCE ROW LEVEL SECURITY;
-INSERT INTO public.stake_admin_access (stake_id, user_id, assignment_id, granted_at)
-SELECT sur.stake_id, sur.user_id, sur.id, sur.granted_at
-  FROM public.stake_user_role sur
-  JOIN public.role target ON target.id = sur.role_id
- WHERE target.name = 'STAKE_ADMIN'
-   AND target.scope = 'STAKE'
-   AND sur.revoked_at IS NULL
-ON CONFLICT (stake_id, user_id) DO UPDATE
-  SET assignment_id = EXCLUDED.assignment_id,
-      granted_at = EXCLUDED.granted_at;
-ALTER TABLE public.stake_user_role FORCE ROW LEVEL SECURITY;
+-- 0045 establishes and backfills stake_admin_access before FORCE RLS is restored.
+-- Keep this follow-up focused on the policy/function hardening below; repeating
+-- the projection backfill here would fail on a clean chain because 0045 already
+-- FORCE-enables the source table after its own safe backfill.
 
 CREATE OR REPLACE FUNCTION app.is_stake_admin(target_stake_id UUID)
 RETURNS BOOLEAN

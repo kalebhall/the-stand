@@ -78,9 +78,9 @@ describe('Milestone 9 migrations', () => {
 
   it('preserves same-stake role mutations through a non-recursive authorization projection', async () => {
     const sql = await readCurrent('0046_stake_admin_access_projection.sql');
-    expect(sql).toContain('create table if not exists public.stake_admin_access');
-    expect(sql).toContain('alter table public.stake_user_role no force row level security');
-    expect(sql).toContain('alter table public.stake_user_role force row level security');
+    expect((await readCurrent('0045_stake_admin_force_rls.sql'))).toContain('insert into public.stake_admin_access');
+    expect((await readCurrent('0045_stake_admin_force_rls.sql'))).toContain('alter table public.stake_user_role force row level security');
+    expect(sql).not.toContain('insert into public.stake_admin_access (stake_id, user_id, assignment_id, granted_at)\nselect sur.stake_id');
     expect(sql).toContain('create or replace function app.is_stake_admin');
     expect(sql).toContain('create or replace function app.sync_stake_admin_access');
     expect(sql).toContain('create trigger stake_admin_access_validate');
@@ -96,11 +96,70 @@ describe('Milestone 9 migrations', () => {
     expect(sql).toContain('alter table public.stake_admin_access force row level security');
     expect(sql).toContain('create policy stake_admin_access_read');
     expect(sql).toContain('add column if not exists published_at');
+    expect(sql).toContain('alter table public.document_template_version no force row level security');
+    expect(sql).toContain('alter table public.document_template no force row level security');
+    expect(sql).toContain('alter table public.document_template_version force row level security');
+    expect(sql).toContain('alter table public.document_template force row level security');
     expect(sql).toContain('document_template_mark_published_version');
     expect(sql).toContain('create or replace function app.bind_template_version_author');
     expect(sql).toContain('drop policy if exists document_template_version_write');
   });
 
+  it('closes remaining template scope, history, and archive gaps', async () => {
+    const sql = await readCurrent('0048_template_boundary_followup.sql');
+    expect(sql).toContain('target_ward_id = app.current_ward_id()');
+    expect(sql).toContain('t.current_published_version_id = document_template_version.id');
+    expect(sql).toContain("t.status <> 'archived'");
+    expect(sql).toContain("t.status = 'archived'");
+    expect(sql).toContain('archived template versions are immutable');
+  });
+  it('makes archived template parents immutable at both trigger and RLS boundaries', async () => {
+    const sql = await readCurrent('0049_archived_template_immutability.sql');
+    expect(sql).toContain('prevent_archived_template_mutation');
+    expect(sql).toContain('before update or delete');
+    expect(sql).toContain("old.status = 'archived'");
+    expect(sql).toContain("status <> 'archived'");
+    expect(sql).toContain('document_template_update');
+    expect(sql).toContain('document_template_delete');
+  });
+  it('restricts version writes to draft parents except the current publication marker path', async () => {
+    const sql = await readCurrent('0050_template_version_published_parent_writes.sql');
+    expect(sql).toContain("t.status = 'draft'");
+    expect(sql).toContain("t.status = 'published'");
+    expect(sql).toContain('t.current_published_version_id = document_template_version.id');
+    expect(sql).toContain('document_template_version_insert');
+    expect(sql).toContain('document_template_version_update');
+    expect(sql).toContain('document_template_version_delete');
+  });
+  it('makes publication lifecycle one-way at the parent boundary', async () => {
+    const sql = await readCurrent('0051_template_publication_one_way.sql');
+    expect(sql).toContain('prevent_template_publication_regression');
+    expect(sql).toContain("old.status = 'published'");
+    expect(sql).toContain("new.status = 'draft'");
+    expect(sql).toContain('before update of status');
+  });
+
+  it('aligns matching-stake administration with ward template RLS', async () => {
+    const sql = await readCurrent('0052_stake_admin_ward_template_scope.sql');
+    expect(sql).toContain('can_manage_ward_templates_as_stake_admin');
+    expect(sql).toContain('target_ward_id = app.current_ward_id()');
+    expect(sql).toContain("scope_type = 'ward'");
+    expect(sql).toContain('document_template_version_insert');
+  });
+  it('keeps personal drafts owner-scoped when stake admins administer ward templates', async () => {
+    const sql = await readCurrent('0053_stake_admin_personal_draft_boundary.sql');
+    expect(sql).toContain("scope_type = 'personal_draft'");
+    expect(sql).toContain('created_by_user_id = app.current_user_id()');
+    expect(sql).not.toContain("personal_draft' AND created_by_user_id = app.current_user_id() AND app.can_manage_ward_templates_as_stake_admin");
+  });
+  it('makes template scope and owner identity immutable', async () => {
+    const sql = await readCurrent('0054_document_template_scope_immutability.sql');
+    expect(sql).toContain('prevent_document_template_scope_mutation');
+    expect(sql).toContain('new.scope_type is distinct from old.scope_type');
+    expect(sql).toContain('new.scope_id is distinct from old.scope_id');
+    expect(sql).toContain('new.created_by_user_id is distinct from old.created_by_user_id');
+    expect(sql).toContain('before update of scope_type, scope_id, created_by_user_id');
+  });
   it('defines a narrowly scoped RLS-safe auth assignment reader', async () => {
     const sql = await read('0083_auth_ward_assignments.sql');
     expect(sql).toContain('returns table');

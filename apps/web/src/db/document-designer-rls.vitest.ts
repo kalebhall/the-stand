@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process';
 
-import { describe, expect, it } from 'vitest';
+import { describe, it } from 'vitest';
 
 function hasPsql(): boolean {
   try {
@@ -79,14 +79,22 @@ DECLARE
   ward_template UUID;
   ward_version UUID;
   ward_a UUID;
+  ward_b UUID;
   stake_a UUID;
   user_a UUID;
   user_b UUID;
+  viewer_user UUID;
+  viewer_role UUID;
   assignment_b UUID;
   assignment_a UUID;
+  stake_version_three UUID;
+  stake_version_four UUID;
+  pure_stake_admin UUID;
+  pure_stake_assignment UUID;
+  pure_ward_version UUID;
   changed_count INTEGER;
 BEGIN
-  SELECT rls_fixture.ward_a, rls_fixture.user_a INTO ward_a, user_a FROM rls_fixture;
+  SELECT rls_fixture.ward_a, rls_fixture.ward_b, rls_fixture.user_a INTO ward_a, ward_b, user_a FROM rls_fixture;
   SELECT stake_id INTO stake_a FROM ward WHERE id = ward_a;
   INSERT INTO user_account (email) VALUES ('global-template-admin@example.test') RETURNING id INTO global_user;
   INSERT INTO role (name, scope) VALUES ('SYSTEM_ADMIN', 'GLOBAL')
@@ -143,6 +151,37 @@ BEGIN
   INSERT INTO document_template_version (template_id, version, schema_version, layout_json, theme_json, created_by_user_id)
     VALUES (ward_template, 1, 1, '{"schemaVersion": 1}'::jsonb, '{}'::jsonb, user_a)
     RETURNING id INTO ward_version;
+  INSERT INTO user_account (email) VALUES ('pure-stake-admin@example.test') RETURNING id INTO pure_stake_admin;
+  PERFORM set_config('app.user_id', global_user::text, true);
+  PERFORM set_config('app.ward_id', '', true);
+  INSERT INTO stake_user_role (stake_id, user_id, role_id, granted_by_user_id)
+    VALUES (stake_a, pure_stake_admin, stake_role, global_user)
+    RETURNING id INTO pure_stake_assignment;
+  PERFORM set_config('app.user_id', pure_stake_admin::text, true);
+  PERFORM set_config('app.ward_id', ward_a::text, true);
+  IF (SELECT count(*) FROM document_template WHERE id = ward_template) <> 1 THEN
+    RAISE EXCEPTION 'matching-stake admin must read the active ward template';
+  END IF;
+  INSERT INTO document_template_version (template_id, version, schema_version, layout_json, theme_json, created_by_user_id)
+    VALUES (ward_template, 2, 1, '{"schemaVersion": 1, "stake_admin": true}'::jsonb, '{}'::jsonb, pure_stake_admin)
+    RETURNING id INTO pure_ward_version;
+  IF pure_ward_version IS NULL THEN
+    RAISE EXCEPTION 'matching-stake admin must insert a ward template version';
+  END IF;
+  changed_count := 0;
+  BEGIN
+    UPDATE document_template
+       SET scope_type = 'STAKE', scope_id = stake_a
+     WHERE id = ward_template;
+    GET DIAGNOSTICS changed_count = ROW_COUNT;
+  EXCEPTION WHEN OTHERS THEN
+    changed_count := -1;
+  END;
+  IF changed_count = 1 THEN
+    RAISE EXCEPTION 'template scope identity must remain immutable';
+  END IF;
+  PERFORM set_config('app.user_id', user_a::text, true);
+  PERFORM set_config('app.ward_id', ward_a::text, true);
   INSERT INTO document_template (scope_type, scope_id, document_type, name, status, created_by_user_id)
     VALUES ('STAKE', stake_a, 'SACRAMENT_PROGRAM', 'Published stake template', 'DRAFT', user_a)
     RETURNING id INTO stake_template;
@@ -152,6 +191,9 @@ BEGIN
   INSERT INTO document_template_version (template_id, version, schema_version, layout_json, theme_json, created_by_user_id)
     VALUES (stake_template, 2, 1, '{"schemaVersion": 1, "second": true}'::jsonb, '{}'::jsonb, user_a)
     RETURNING id INTO stake_version_two;
+  INSERT INTO document_template_version (template_id, version, schema_version, layout_json, theme_json, created_by_user_id)
+    VALUES (stake_template, 3, 1, '{"schemaVersion": 1, "third": true}'::jsonb, '{}'::jsonb, user_a)
+    RETURNING id INTO stake_version_three;
   changed_count := 0;
   BEGIN
     UPDATE document_template_version SET published_at = now() WHERE id = stake_version_two;
@@ -168,6 +210,48 @@ BEGIN
   UPDATE document_template
      SET status = 'PUBLISHED', current_published_version_id = stake_version_two, published_at = now()
    WHERE id = stake_template;
+  changed_count := 0;
+  BEGIN
+    UPDATE document_template SET status = 'DRAFT' WHERE id = stake_template;
+    GET DIAGNOSTICS changed_count = ROW_COUNT;
+  EXCEPTION WHEN OTHERS THEN
+    changed_count := -1;
+  END;
+  IF changed_count = 1 THEN
+    RAISE EXCEPTION 'published template must not return to draft';
+  END IF;
+  changed_count := 0;
+  BEGIN
+    INSERT INTO document_template_version (template_id, version, schema_version, layout_json, theme_json, created_by_user_id)
+      VALUES (stake_template, 4, 1, '{"schemaVersion": 1, "published_parent_insert": true}'::jsonb, '{}'::jsonb, user_a)
+      RETURNING id INTO stake_version_four;
+    GET DIAGNOSTICS changed_count = ROW_COUNT;
+  EXCEPTION WHEN OTHERS THEN
+    changed_count := -1;
+  END;
+  IF changed_count = 1 THEN
+    RAISE EXCEPTION 'published template must not accept a new version';
+  END IF;
+  changed_count := 0;
+  BEGIN
+    UPDATE document_template_version SET layout_json = '{"schemaVersion": 1, "published_parent_update": true}'::jsonb WHERE id = stake_version_three;
+    GET DIAGNOSTICS changed_count = ROW_COUNT;
+  EXCEPTION WHEN OTHERS THEN
+    changed_count := -1;
+  END;
+  IF changed_count = 1 THEN
+    RAISE EXCEPTION 'unpublished historical version of published template must remain immutable';
+  END IF;
+  changed_count := 0;
+  BEGIN
+    DELETE FROM document_template_version WHERE id = stake_version_three;
+    GET DIAGNOSTICS changed_count = ROW_COUNT;
+  EXCEPTION WHEN OTHERS THEN
+    changed_count := -1;
+  END;
+  IF changed_count = 1 THEN
+    RAISE EXCEPTION 'unpublished historical version of published template must not be deletable';
+  END IF;
   UPDATE document_template
      SET status = 'ARCHIVED'
    WHERE id = stake_template;
@@ -178,7 +262,7 @@ BEGIN
   EXCEPTION WHEN OTHERS THEN
     changed_count := -1;
   END;
-  IF changed_count <> -1 THEN
+  IF changed_count = 1 THEN
     RAISE EXCEPTION 'historical published template version must remain immutable after archive';
   END IF;
   changed_count := 0;
@@ -188,15 +272,87 @@ BEGIN
   EXCEPTION WHEN OTHERS THEN
     changed_count := -1;
   END;
-  IF changed_count <> -1 THEN
+  IF changed_count = 1 THEN
     RAISE EXCEPTION 'historical published template version must not be deletable';
+  END IF;
+  changed_count := 0;
+  BEGIN
+    UPDATE document_template_version SET layout_json = '{"schemaVersion": 1, "archived_unpublished_tampered": true}'::jsonb WHERE id = stake_version_three;
+    GET DIAGNOSTICS changed_count = ROW_COUNT;
+  EXCEPTION WHEN OTHERS THEN
+    changed_count := -1;
+  END;
+  IF changed_count = 1 THEN
+    RAISE EXCEPTION 'unpublished version of archived template must remain immutable';
+  END IF;
+  changed_count := 0;
+  BEGIN
+    DELETE FROM document_template_version WHERE id = stake_version_three;
+    GET DIAGNOSTICS changed_count = ROW_COUNT;
+  EXCEPTION WHEN OTHERS THEN
+    changed_count := -1;
+  END;
+  IF changed_count = 1 THEN
+    RAISE EXCEPTION 'unpublished version of archived template must not be deletable';
+  END IF;
+  changed_count := 0;
+  BEGIN
+    UPDATE document_template SET name = 'tampered archived template' WHERE id = stake_template;
+    GET DIAGNOSTICS changed_count = ROW_COUNT;
+  EXCEPTION WHEN OTHERS THEN
+    changed_count := -1;
+  END;
+  IF changed_count = 1 THEN
+    RAISE EXCEPTION 'archived template parent must remain immutable';
+  END IF;
+  changed_count := 0;
+  BEGIN
+    DELETE FROM document_template WHERE id = stake_template;
+    GET DIAGNOSTICS changed_count = ROW_COUNT;
+  EXCEPTION WHEN OTHERS THEN
+    changed_count := -1;
+  END;
+  IF changed_count = 1 THEN
+    RAISE EXCEPTION 'archived template parent must not be deletable';
   END IF;
 
   IF (SELECT count(*) FROM document_template WHERE id IN (system_template, stake_template, ward_template)) <> 3 THEN
     RAISE EXCEPTION 'authorized ward user must see authorized templates, got %', (SELECT count(*) FROM document_template WHERE id IN (system_template, stake_template, ward_template));
   END IF;
-  IF (SELECT count(*) FROM document_template_version WHERE template_id IN (system_template, stake_template, ward_template)) <> 4 THEN
+  IF (SELECT count(*) FROM document_template_version WHERE template_id IN (system_template, stake_template, ward_template)) <> 6 THEN
     RAISE EXCEPTION 'authorized ward user must see system, stake, and ward template versions';
+  END IF;
+
+  UPDATE document_template
+     SET status = 'PUBLISHED', current_published_version_id = ward_version, published_at = now()
+   WHERE id = ward_template;
+  PERFORM set_config('app.user_id', global_user::text, true);
+  PERFORM set_config('app.ward_id', '', true);
+  INSERT INTO user_account (email) VALUES ('template-viewer@example.test') RETURNING id INTO viewer_user;
+  INSERT INTO role (name, scope) VALUES ('BISHOP', 'WARD')
+    ON CONFLICT (name) DO UPDATE SET scope = EXCLUDED.scope
+    RETURNING id INTO viewer_role;
+  PERFORM set_config('app.user_id', user_a::text, true);
+  PERFORM set_config('app.ward_id', ward_a::text, true);
+  INSERT INTO ward_user_role (ward_id, user_id, role_id) VALUES (ward_a, viewer_user, viewer_role);
+  PERFORM set_config('app.user_id', viewer_user::text, true);
+  PERFORM set_config('app.ward_id', ward_a::text, true);
+  IF (SELECT count(*) FROM document_template_version WHERE template_id = ward_template) <> 1 THEN
+    RAISE EXCEPTION 'ordinary ward viewers must see only the current published version';
+  END IF;
+
+  PERFORM set_config('app.user_id', user_a::text, true);
+  PERFORM set_config('app.ward_id', ward_b::text, true);
+  changed_count := 0;
+  BEGIN
+    INSERT INTO document_template (scope_type, scope_id, document_type, name, status, created_by_user_id)
+      VALUES ('WARD', ward_a, 'SACRAMENT_PROGRAM', 'Wrong active ward template', 'DRAFT', user_a);
+    GET DIAGNOSTICS changed_count = ROW_COUNT;
+  EXCEPTION WHEN OTHERS THEN
+    changed_count := -1;
+  END;
+  IF changed_count <> -1 THEN
+    RAISE EXCEPTION 'ward template writes must match the active ward context';
   END IF;
 
   PERFORM set_config('app.user_id', global_user::text, true);
@@ -254,12 +410,15 @@ ROLLBACK;
 `;
 
 
-    expect(() => {
+    try {
       execFileSync('psql', [dbUrl as string, '--set', 'ON_ERROR_STOP=1', '--quiet', '--no-psqlrc', '--file', '-'], {
         cwd: process.cwd(),
         input: sql,
         stdio: 'pipe'
       });
-    }).not.toThrow();
+    } catch (error) {
+      const stderr = error as { stderr?: Buffer };
+      throw new Error(stderr.stderr?.toString() ?? String(error), { cause: error });
+    }
   });
 });

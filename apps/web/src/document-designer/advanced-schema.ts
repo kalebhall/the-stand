@@ -248,6 +248,7 @@ export function mergeSimpleIntoAdvanced(previous: AdvancedDocumentLayout, simple
       const nextPage = simpleAdvanced.pages[pageIndex];
       return (
         !nextPage ||
+        page.id !== nextPage.id ||
         page.regions.length !== nextPage.regions.length ||
         page.regions.some((region, regionIndex) => region.id !== nextPage.regions[regionIndex]?.id)
       );
@@ -269,7 +270,10 @@ export function mergeSimpleIntoAdvanced(previous: AdvancedDocumentLayout, simple
                 styleOverrides: previousBlock.styleOverrides,
                 visibilityRule: previousBlock.visibilityRule,
                 digitalOrder: previousBlock.digitalOrder,
-                lock: previousBlock.lock
+                lock: previousBlock.lock,
+                ...(previousBlock.source !== undefined ? { source: previousBlock.source } : {}),
+                ...(previousBlock.reusableBlockId !== undefined ? { reusableBlockId: previousBlock.reusableBlockId } : {}),
+                ...(previousBlock.reusableBlockVersion !== undefined ? { reusableBlockVersion: previousBlock.reusableBlockVersion } : {})
               }
             : block;
         })
@@ -282,16 +286,21 @@ export function mergeSimpleIntoAdvanced(previous: AdvancedDocumentLayout, simple
   next.orientation = simple.orientation;
   next.fold = simple.fold;
   next.theme = simple.theme;
+  if (simple.metadata !== undefined) next.metadata = simpleAdvanced.metadata;
+  if (simple.lock !== undefined) next.lock = simple.lock;
   const simpleBlocks = new Map(allSimpleBlocks(simple).map((block) => [String(block.id), block]));
+  const simplePages = new Map(simpleAdvanced.pages.map((page) => [page.id, page]));
   const simpleRegions = new Map(simpleAdvanced.pages.flatMap((page) => page.regions).map((region) => [region.id, region]));
   next.pages = next.pages.map((page) => ({
     ...page,
+    ...(simplePages.get(page.id)?.lock !== undefined ? { lock: simplePages.get(page.id)!.lock } : {}),
     regions: page.regions.map((region) => ({
       ...region,
       ...(simpleRegions.has(region.id)
         ? {
             ratio: simpleRegions.get(region.id)!.ratio,
             gutter: simpleRegions.get(region.id)!.gutter,
+            ...(simpleRegions.get(region.id)!.lock !== undefined ? { lock: simpleRegions.get(region.id)!.lock } : {}),
             columns: { ...region.columns, gutter: simpleRegions.get(region.id)!.gutter }
           }
         : {}),
@@ -312,7 +321,10 @@ export function mergeSimpleIntoAdvanced(previous: AdvancedDocumentLayout, simple
                 printBehavior: replacement.printBehavior,
                 digitalBehavior: replacement.digitalBehavior,
                 config: replacement.config,
-                lock: block.lock
+                ...(replacement.source !== undefined ? { source: replacement.source } : { source: block.source }),
+                ...(replacement.reusableBlockId !== undefined ? { reusableBlockId: replacement.reusableBlockId } : { reusableBlockId: block.reusableBlockId }),
+                ...(replacement.reusableBlockVersion !== undefined ? { reusableBlockVersion: replacement.reusableBlockVersion } : { reusableBlockVersion: block.reusableBlockVersion }),
+                ...(replacement.lock !== undefined ? { lock: replacement.lock } : { lock: block.lock })
               }
             : block;
         });

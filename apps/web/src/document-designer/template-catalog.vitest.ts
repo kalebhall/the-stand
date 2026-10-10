@@ -4,6 +4,7 @@ import { BUILT_IN_TEMPLATES, getBuiltInTemplate } from './built-in-templates';
 import { adaptLegacyLayoutToDocument } from './legacy-layout-adapter';
 import { documentLayoutSchema } from './schema';
 import { parseTemplateLayout } from './template-service';
+import { normalizeToAdvanced } from './advanced-schema';
 
 describe('built-in document templates', () => {
   it('contains the required eight stable templates', () => {
@@ -46,6 +47,13 @@ describe('built-in document templates', () => {
       expect(types).not.toContain('WARD_LEADERSHIP');
       expect(types).not.toContain('MISSIONARIES_ASSIGNED');
     }
+  });
+
+  it('preserves valid schema-v2 advanced layouts for template mutation paths', () => {
+    const advanced = normalizeToAdvanced(adaptLegacyLayoutToDocument({ preset: 'FULL_PAGE', announcementMode: 'AFTER_PROGRAM', coverMode: 'NONE' }));
+    const parsed = parseTemplateLayout(advanced);
+    expect(parsed.schemaVersion).toBe(2);
+    expect((parsed.pages[0].regions[0] as { columns?: unknown }).columns).toEqual(advanced.pages[0].regions[0].columns);
   });
 
   it('expands legacy one-region folded templates before persistence', () => {

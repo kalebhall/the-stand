@@ -3,8 +3,8 @@ import { z } from 'zod';
 
 import { recordAuditEvent } from '@/src/audit/service';
 import { auth } from '@/src/auth/auth';
-import { canManageStakeTemplates, canManageWardProgramTemplates, canViewProgramDesigner } from '@/src/auth/roles';
-import { loadProgramPermissionProfile, canEditTemplate, parseTemplateLayout } from '@/src/document-designer/template-service';
+import { canManageStakeTemplates, canManageWardProgramTemplates, canUseAdvancedProgramDesigner, canViewProgramDesigner, hasRole } from '@/src/auth/roles';
+import { loadProgramPermissionProfile, canEditTemplate, parseTemplateLayout, prepareTemplateVersionLayout, advancedBlocksChanged, containsAdvancedBlocks, containsAdvancedLayoutStructure, assertTemplateReusableReferences } from '@/src/document-designer/template-service';
 import { checkTemplateLocks, parseTemplateLockPolicy } from '@/src/document-designer/template-locks';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
@@ -89,9 +89,11 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
   if (!isAdvancedDesignerFeatureEnabled() || !(await isWardModuleEnabled(wardId, session.user.id, 'programs'))) return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
   const body = versionSchema.safeParse(await request.json().catch(() => null));
   if (!body.success) return NextResponse.json({ error: 'Invalid template version payload', code: 'BAD_REQUEST' }, { status: 400 });
-  let layout;
+  let layout: ReturnType<typeof parseTemplateLayout>;
+  let incomingLayout: ReturnType<typeof parseTemplateLayout>;
   try {
-    layout = parseTemplateLayout(body.data.layout);
+    incomingLayout = parseTemplateLayout(body.data.layout);
+    layout = incomingLayout;
   } catch {
     return NextResponse.json({ error: 'Invalid document layout', code: 'BAD_REQUEST' }, { status: 400 });
   }
@@ -107,10 +109,12 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     const template = await loadTemplate(client, templateId, wardId, session.user.id);
     const profile = await loadProgramPermissionProfile(client, wardId);
     const wardStakeId = String((await client.query('SELECT stake_id FROM ward WHERE id = $1::uuid LIMIT 1', [wardId])).rows[0]?.stake_id ?? '');
+    const matchingStakeAdmin = Boolean(template?.scope_type === 'WARD' && session.activeStakeId === wardStakeId && canManageStakeTemplates(session, wardStakeId));
     const scopeCanEdit = template?.scope_type === 'STAKE'
       ? Boolean(session.activeStakeId === wardStakeId && canManageStakeTemplates(session, wardStakeId))
-      : Boolean(template && canEditTemplate({ scope_type: String(template.scope_type) as 'WARD' | 'PERSONAL_DRAFT' | 'STAKE' | 'SYSTEM', scope_id: template.scope_id as string | null, created_by_user_id: template.created_by_user_id as string | null }, wardId, session.user.id, profile));
-    const canProgramEdit = canManageWardProgramTemplates({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId, profile) || (template?.scope_type === 'STAKE' && scopeCanEdit);
+      : Boolean(template && (matchingStakeAdmin || hasRole(session.user.roles, 'STAND_ADMIN') || canEditTemplate({ scope_type: String(template.scope_type) as 'WARD' | 'PERSONAL_DRAFT' | 'STAKE' | 'SYSTEM', scope_id: template.scope_id as string | null, created_by_user_id: template.created_by_user_id as string | null }, wardId, session.user.id, profile)));
+    const canProgramEdit = canManageWardProgramTemplates({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId, profile) || matchingStakeAdmin || (template?.scope_type === 'STAKE' && scopeCanEdit);
+    const advancedEditing = matchingStakeAdmin || (template?.scope_type === 'STAKE' && scopeCanEdit) || canUseAdvancedProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId, profile);
     if (!template || template.status !== 'DRAFT' || !scopeCanEdit || !canProgramEdit) {
       await client.query('ROLLBACK');
       return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
@@ -127,10 +131,29 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
       [templateId]
     );
     const base = baseResult.rows[0] as { layout_json?: unknown; lock_json?: unknown } | undefined;
+    layout = prepareTemplateVersionLayout(base?.layout_json, body.data.layout);
+    try {
+      const referenceScope = template?.scope_type === 'STAKE' ? 'STAKE' : template?.scope_type === 'PERSONAL_DRAFT' ? 'PERSONAL' : 'WARD';
+      await assertTemplateReusableReferences(client, layout, referenceScope === 'STAKE' ? String(template.scope_id ?? '') : wardId, session.user.id, referenceScope);
+    } catch (error) {
+      await client.query('ROLLBACK');
+      if (error instanceof Error && (error.message === 'TEMPLATE_REUSABLE_REFERENCE_FORBIDDEN' || error.message === 'TEMPLATE_REUSABLE_REFERENCE_INVALID')) {
+        return NextResponse.json({ error: 'Reusable block reference is not permitted', code: 'REUSABLE_REFERENCE_FORBIDDEN' }, { status: 422 });
+      }
+      return NextResponse.json({ error: 'Invalid template layout', code: 'BAD_REQUEST' }, { status: 400 });
+    }
     let persistedLockPolicy = lockPolicy;
+    if (!advancedEditing && (base
+      ? advancedBlocksChanged(base.layout_json, layout)
+      : containsAdvancedLayoutStructure(body.data.layout) || containsAdvancedBlocks(layout))) {
+      await client.query('ROLLBACK');
+      return NextResponse.json({ error: 'Advanced blocks are read-only in this editor', code: 'ADVANCED_BLOCK_READ_ONLY' }, { status: 409 });
+    }
     if (base) {
       const authoritativeLock = lockPolicyInput(base.lock_json);
-      const lockCheck = checkTemplateLocks(base.layout_json, layout, authoritativeLock);
+      const baseIsSchemaV2 = base.layout_json && typeof base.layout_json === 'object' && (base.layout_json as { schemaVersion?: unknown }).schemaVersion === 2;
+      const lockComparisonLayout = !baseIsSchemaV2 && !containsAdvancedLayoutStructure(body.data.layout) ? incomingLayout : layout;
+      const lockCheck = checkTemplateLocks(base.layout_json, lockComparisonLayout, authoritativeLock);
       if (!lockCheck.ok) {
         await client.query('ROLLBACK');
         return NextResponse.json({ error: 'Template lock violation', code: 'LOCK_VIOLATION', violations: lockCheck.violations }, { status: 409 });
@@ -148,8 +171,9 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     await recordAuditEvent(client, { wardId, userId: session.user.id, actorName: session.user.name || session.user.email || null, action: 'PROGRAM_TEMPLATE_VERSION_CREATED', entityType: 'document_template', entityId: templateId, details: { version: nextVersion }, source: 'manual_ui', severity: 'notice' });
     await client.query('COMMIT');
     return NextResponse.json({ version: inserted.rows[0] }, { status: 201 });
-  } catch {
+  } catch (error) {
     await client.query('ROLLBACK').catch(() => undefined);
+    if (error instanceof Error && error.message === 'ADVANCED_BLOCK_READ_ONLY') return NextResponse.json({ error: 'Advanced blocks are read-only in this editor', code: 'ADVANCED_BLOCK_READ_ONLY' }, { status: 409 });
     return NextResponse.json({ error: 'Failed to create template version', code: 'INTERNAL_ERROR' }, { status: 500 });
   } finally {
     client.release();

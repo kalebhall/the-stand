@@ -22,6 +22,7 @@ import {
   canViewStakeTemplates,
   canManageStakeTemplates,
   canManageSystemTemplates,
+  canUseSharedAdvancedProgramDesigner,
   canCopyAvailableTemplate
 } from './roles';
 
@@ -133,6 +134,12 @@ describe('stake template authorization', () => {
     expect(canManageSystemTemplates({ roles: ['STAND_ADMIN'], activeWardId: 'ward-a' })).toBe(false);
     expect(canManageSystemTemplates({ roles: ['SYSTEM_ADMIN'], activeWardId: null })).toBe(true);
   });
+  it('grants shared Advanced editing to the authorized scope administrator without an active ward', () => {
+    expect(canUseSharedAdvancedProgramDesigner({ roles: ['SYSTEM_ADMIN'], activeWardId: null }, 'SYSTEM', null)).toBe(true);
+    expect(canUseSharedAdvancedProgramDesigner({ roles: [], activeWardId: null, stakeAssignments: [{ stakeId: 'stake-a', roleNames: ['STAKE_ADMIN'] }] }, 'STAKE', 'stake-a')).toBe(true);
+    expect(canUseSharedAdvancedProgramDesigner({ roles: ['SYSTEM_ADMIN'], activeWardId: null }, 'STAKE', 'stake-a')).toBe(false);
+  });
+
   it('copies only published templates visible to the target ward', () => {
     expect(canCopyAvailableTemplate(stakeAdmin, { scopeType: 'STAKE', scopeId: 'stake-a', status: 'PUBLISHED' }, 'ward-a', 'u')).toBe(true);
     expect(canCopyAvailableTemplate(stakeAdmin, { scopeType: 'STAKE', scopeId: 'stake-b', status: 'PUBLISHED' }, 'ward-a', 'u')).toBe(false);

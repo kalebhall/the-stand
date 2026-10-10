@@ -6,6 +6,7 @@
 -- before this migration commits.
 ALTER TABLE public.document_template_version ADD COLUMN IF NOT EXISTS published_at TIMESTAMPTZ;
 ALTER TABLE public.document_template_version NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE public.document_template NO FORCE ROW LEVEL SECURITY;
 ALTER TABLE public.document_template_version DISABLE TRIGGER document_template_version_published_immutable;
 UPDATE public.document_template_version v
    SET published_at = COALESCE(t.published_at, now())
@@ -19,6 +20,7 @@ UPDATE public.document_template_version v
    AND v.published_at IS NULL;
 ALTER TABLE public.document_template_version ENABLE TRIGGER document_template_version_published_immutable;
 ALTER TABLE public.document_template_version FORCE ROW LEVEL SECURITY;
+ALTER TABLE public.document_template FORCE ROW LEVEL SECURITY;
 
 CREATE OR REPLACE FUNCTION app.validate_document_template_scope()
 RETURNS trigger

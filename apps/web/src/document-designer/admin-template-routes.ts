@@ -2,11 +2,11 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import { recordAuditEvent } from '@/src/audit/service';
-import { canManageStakeTemplates, canManageSystemTemplates, type TemplateAuthorizationSession } from '@/src/auth/roles';
+import { canManageStakeTemplates, canManageSystemTemplates, canUseSharedAdvancedProgramDesigner, type TemplateAuthorizationSession } from '@/src/auth/roles';
 import { isAdvancedDesignerFeatureEnabled } from '@/src/features/advanced-designer';
 import { isWardModuleEnabledInTransaction } from '@/src/modules/service';
 import { pool } from '@/src/db/client';
-import { parseTemplateLayout } from './template-service';
+import { parseTemplateLayout, prepareTemplateVersionLayout, advancedBlocksChanged, containsAdvancedBlocks, containsAdvancedLayoutStructure, assertTemplateReusableReferences } from './template-service';
 import { checkTemplateLocks } from './template-locks';
 
 type Scope = 'STAKE' | 'SYSTEM';
@@ -107,6 +107,9 @@ function templateJson(row: Record<string, unknown>, version?: Record<string, unk
 function errorResponse(error: unknown, fallback: string) {
   if (error instanceof Error && error.message === 'NOT_FOUND') return notFound();
   if (error instanceof Error && (error.message === 'PROGRAMS_MODULE_DISABLED' || error.message === 'ADVANCED_DESIGNER_DISABLED')) return forbidden();
+  if (error instanceof Error && (error.message === 'TEMPLATE_REUSABLE_REFERENCE_FORBIDDEN' || error.message === 'TEMPLATE_REUSABLE_REFERENCE_INVALID')) {
+    return NextResponse.json({ error: 'Reusable block reference is not permitted', code: 'REUSABLE_REFERENCE_FORBIDDEN' }, { status: 422 });
+  }
   return NextResponse.json({ error: fallback, code: 'INTERNAL_ERROR' }, { status: 500 });
 }
 
@@ -136,6 +139,9 @@ export async function createTemplate(request: Request, session: Session | null |
   if (layout instanceof NextResponse) return layout;
   try {
     const response = await withTransaction(session, async (client) => {
+      const advancedEditing = canUseSharedAdvancedProgramDesigner(sessionView(session), scope, scopeId);
+      await assertTemplateReusableReferences(client, layout, scope === 'STAKE' ? String(scopeId ?? '') : '', session.user.id, scope);
+      if (!advancedEditing && (containsAdvancedBlocks(layout) || containsAdvancedLayoutStructure(body.data.layout))) throw new Error('ADVANCED_BLOCK_READ_ONLY');
       const inserted = await client.query(
         `INSERT INTO document_template (scope_type, scope_id, document_type, name, description, status, distribution_policy, created_by_user_id)
          VALUES ($1::text, $2::uuid, 'SACRAMENT_PROGRAM', $3::text, $4::text, 'DRAFT', $5::text, $6::uuid)
@@ -153,7 +159,10 @@ export async function createTemplate(request: Request, session: Session | null |
       return { template: templateJson(row, version.rows[0] as Record<string, unknown>) };
     });
     return NextResponse.json(response, { status: 201 });
-  } catch (error) { return errorResponse(error, 'Failed to create document template'); }
+  } catch (error) {
+    if (error instanceof Error && error.message === 'ADVANCED_BLOCK_READ_ONLY') return NextResponse.json({ error: 'Advanced blocks are read-only for this editor', code: 'ADVANCED_BLOCK_READ_ONLY' }, { status: 422 });
+    return errorResponse(error, 'Failed to create document template');
+  }
 }
 
 export async function detail(session: Session | null | undefined, scope: Scope, scopeId: string | null, templateId: string) {
@@ -206,13 +215,19 @@ export async function versions(session: Session | null | undefined, scope: Scope
   }
   const body = versionSchema.safeParse(await request.json().catch(() => null));
   if (!body.success) return NextResponse.json({ error: 'Invalid template version payload', code: 'BAD_REQUEST' }, { status: 400 });
-  const layout = parseLayout(body.data.layout); if (layout instanceof NextResponse) return layout;
+  const parsedLayout = parseLayout(body.data.layout); if (parsedLayout instanceof NextResponse) return parsedLayout;
   try {
     const response = await withTransaction(session, async (client) => {
       const row = await loadOwnedTemplate(client, scope, scopeId, templateId); if (!row) throw new Error('NOT_FOUND'); if (row.status !== 'DRAFT') throw new Error('IMMUTABLE_TEMPLATE');
       const latest = await client.query('SELECT version, layout_json, lock_json FROM document_template_version WHERE template_id = $1::uuid ORDER BY version DESC LIMIT 1', [templateId]);
       const base = latest.rows[0] as Record<string, unknown> | undefined;
-      if (base) { const check = checkTemplateLocks(base.layout_json, layout, base.lock_json); if (!check.ok) { await recordAuditEvent(client, { wardId: null, userId: session.user.id, actorName: actorName(session), action: 'PROGRAM_TEMPLATE_LOCK_VIOLATION', entityType: 'document_template', entityId: templateId, details: { violations: check.violations }, source: 'api', severity: 'security' }); throw new Error('LOCK_VIOLATION'); } }
+      const layout = prepareTemplateVersionLayout(base?.layout_json, body.data.layout);
+      await assertTemplateReusableReferences(client, layout, scope === 'STAKE' ? String(scopeId ?? '') : '', session.user.id, scope);
+      const advancedEditing = canUseSharedAdvancedProgramDesigner(sessionView(session), scope, scopeId);
+      if (!advancedEditing && (base
+        ? advancedBlocksChanged(base.layout_json, layout)
+        : containsAdvancedLayoutStructure(body.data.layout) || containsAdvancedBlocks(layout))) throw new Error('ADVANCED_BLOCK_READ_ONLY');
+      if (base) { const baseIsSchemaV2 = base.layout_json && typeof base.layout_json === 'object' && (base.layout_json as { schemaVersion?: unknown }).schemaVersion === 2; const lockComparisonLayout = !baseIsSchemaV2 && !containsAdvancedLayoutStructure(body.data.layout) ? parsedLayout : layout; const check = checkTemplateLocks(base.layout_json, lockComparisonLayout, base.lock_json); if (!check.ok) { await recordAuditEvent(client, { wardId: null, userId: session.user.id, actorName: actorName(session), action: 'PROGRAM_TEMPLATE_LOCK_VIOLATION', entityType: 'document_template', entityId: templateId, details: { violations: check.violations }, source: 'api', severity: 'security' }); throw new Error('LOCK_VIOLATION'); } }
       const next = Number(base?.version ?? 0) + 1;
       const authoritativeLock = base ? (base.lock_json ?? layout.lock ?? {}) : (layout.lock ?? {});
       const result = await client.query(`INSERT INTO document_template_version (template_id, version, schema_version, layout_json, theme_json, lock_json, created_by_user_id) VALUES ($1::uuid, $2::int, $3::int, $4::jsonb, $5::jsonb, $6::jsonb, $7::uuid) RETURNING id, version, schema_version, layout_json, theme_json, lock_json, created_at`, [templateId, next, layout.schemaVersion, JSON.stringify(layout), JSON.stringify(layout.theme), JSON.stringify(authoritativeLock), session.user.id]);
@@ -222,6 +237,7 @@ export async function versions(session: Session | null | undefined, scope: Scope
     return NextResponse.json(response, { status: 201 });
   } catch (error) {
     if (error instanceof Error && error.message === 'IMMUTABLE_TEMPLATE') return NextResponse.json({ error: 'Published and archived templates cannot be changed', code: 'IMMUTABLE_TEMPLATE' }, { status: 409 });
+    if (error instanceof Error && error.message === 'ADVANCED_BLOCK_READ_ONLY') return NextResponse.json({ error: 'Advanced blocks are read-only for this editor', code: 'ADVANCED_BLOCK_READ_ONLY' }, { status: 409 });
     if (error instanceof Error && error.message === 'LOCK_VIOLATION') return NextResponse.json({ error: 'Template lock policy violation', code: 'LOCK_VIOLATION' }, { status: 409 });
     return errorResponse(error, 'Failed to create template version');
   }
@@ -237,7 +253,7 @@ export async function publish(session: Session | null | undefined, scope: Scope,
 export async function archive(session: Session | null | undefined, scope: Scope, scopeId: string | null, templateId: string) {
   if (!session || !session.user.id) return unauthorized();
   if (!isAdvancedDesignerFeatureEnabled()) return forbidden(); if (!authorized(session, scope, scopeId ?? '')) return forbidden();
-  try { const response = await withTransaction(session, async (client) => { const row = await loadOwnedTemplate(client, scope, scopeId, templateId); if (!row) throw new Error('NOT_FOUND'); await client.query("UPDATE document_template SET status = 'ARCHIVED', updated_at = now() WHERE id = $1::uuid", [templateId]); await recordAuditEvent(client, { wardId: null, userId: session.user.id, actorName: actorName(session), action: scope === 'STAKE' ? 'STAKE_TEMPLATE_ARCHIVED' : 'SYSTEM_TEMPLATE_ARCHIVED', entityType: 'document_template', entityId: templateId, source: 'api', severity: 'notice' }); return { success: true, templateId, status: 'ARCHIVED' }; }); return NextResponse.json(response); } catch (error) { return errorResponse(error, 'Failed to archive document template'); }
+  try { const response = await withTransaction(session, async (client) => { const row = await loadOwnedTemplate(client, scope, scopeId, templateId); if (!row) throw new Error('NOT_FOUND'); if (row.status === 'ARCHIVED') throw new Error('IMMUTABLE_TEMPLATE'); await client.query("UPDATE document_template SET status = 'ARCHIVED', updated_at = now() WHERE id = $1::uuid", [templateId]); await recordAuditEvent(client, { wardId: null, userId: session.user.id, actorName: actorName(session), action: scope === 'STAKE' ? 'STAKE_TEMPLATE_ARCHIVED' : 'SYSTEM_TEMPLATE_ARCHIVED', entityType: 'document_template', entityId: templateId, source: 'api', severity: 'notice' }); return { success: true, templateId, status: 'ARCHIVED' }; }); return NextResponse.json(response); } catch (error) { if (error instanceof Error && error.message === 'IMMUTABLE_TEMPLATE') return NextResponse.json({ error: 'Published and archived templates cannot be changed', code: 'IMMUTABLE_TEMPLATE' }, { status: 409 }); return errorResponse(error, 'Failed to archive document template'); }
 }
 
 export type { Params, Scope, Session };

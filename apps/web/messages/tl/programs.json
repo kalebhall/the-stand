@@ -159,6 +159,8 @@
     "printPreview": "I-print ang preview",
     "simpleMode": "Simpleng Mode",
     "advancedMode": "Advanced na Mode",
+    "advancedBlockReadOnly": "Advanced na block · read-only sa Simpleng Mode",
+    "advancedBlockReadOnlyError": "Hindi maaaring baguhin ng editor na ito ang mga advanced na block.",
     "previewPublic": "I-preview bilang pampublikong bisita",
     "sourceMetadata": "Metadata ng pinagmulan ng template",
     "unavailable": "Hindi magagamit",
