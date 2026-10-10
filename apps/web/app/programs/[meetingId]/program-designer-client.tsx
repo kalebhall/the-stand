@@ -21,6 +21,7 @@ import {
   setAdvancedBlockVisibility
 } from '@/src/document-designer/layout-operations';
 import { commitHistory, createHistory, redo, undo, type HistoryState } from '@/src/document-designer/history';
+import { assertAdvancedMutationAllowedAt, assertNoLockedChanges } from '@/src/document-designer/lock-enforcement';
 import { getRegisteredBlockDefinition } from '@/src/document-designer/registry';
 import type { DocumentBlock, DocumentLayout } from '@/src/document-designer/types';
 import type { MediaAssetResponse } from '@/src/document-designer/media-types';
@@ -242,7 +243,10 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
     [document]
   );
   const advancedPages = document?.advancedLayout?.pages ?? [];
-  const panelBlocks = (panelIndex: number) => currentAdvanced()?.pages[selectedPageIndex]?.regions[panelIndex]?.blocks ?? [];
+  const panelBlocks = (panelIndex: number) =>
+    advancedEditing
+      ? (currentAdvanced()?.pages[selectedPageIndex]?.regions[panelIndex]?.blocks ?? [])
+      : (document?.layout.pages[selectedPageIndex]?.regions[panelIndex]?.blocks ?? []);
   const filteredPanelBlocks = (panelIndex: number) =>
     panelBlocks(panelIndex).filter((block) => blockCategoryFilter === 'ALL' || blockCategory(block) === blockCategoryFilter);
   const blockLocation = (blockId: string) => {
@@ -264,9 +268,47 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
     }
   };
   const isBlockReadOnly = (block: DocumentBlock): boolean => isAdvancedBlock(block) && !advancedEditing;
+  const isBlockPositionLocked = (blockId: string): boolean => {
+    const current = currentAdvanced();
+    const location = blockLocation(blockId);
+    if (!current || !location) return true;
+    try {
+      assertAdvancedMutationAllowedAt(current, 'MOVE', blockId, location.pageIndex, location.regionIndex);
+      return false;
+    } catch {
+      return true;
+    }
+  };
+  function blockMovePosition(blockId: string, panelIndex: number): { index: number; count: number } {
+    if (advancedEditing) {
+      const region = currentAdvanced()?.pages[selectedPageIndex]?.regions[panelIndex];
+      const columnIndex = region?.columns.blockIds.findIndex((column) => column.includes(blockId)) ?? -1;
+      if (region && columnIndex >= 0) {
+        const column = region.columns.blockIds[columnIndex];
+        return { index: column.indexOf(blockId), count: column.length };
+      }
+    }
+    const blocks = panelBlocks(panelIndex);
+    return { index: blocks.findIndex((candidate) => candidate.id === blockId), count: blocks.length };
+  }
+
+  const canMoveBlock = (block: DocumentBlock): boolean => !isBlockReadOnly(block) && !isBlockPositionLocked(block.id);
+  const canMoveToPanel = (pageIndex: number, regionIndex: number): boolean => {
+    const current = currentAdvanced();
+    if (!current) return false;
+    try {
+      assertAdvancedMutationAllowedAt(current, 'MOVE', undefined, pageIndex, regionIndex);
+      return true;
+    } catch {
+      return false;
+    }
+  };
   const isReusableBlockReadOnly = (item: ReusableLibraryItem): boolean => {
     try {
-      return getRegisteredBlockDefinition(document?.layout.documentType ?? 'SACRAMENT_PROGRAM', item.snapshot_json.blockType).exposure === 'ADVANCED' && !advancedEditing;
+      return (
+        getRegisteredBlockDefinition(document?.layout.documentType ?? 'SACRAMENT_PROGRAM', item.snapshot_json.blockType).exposure ===
+          'ADVANCED' && !advancedEditing
+      );
     } catch {
       return true;
     }
@@ -276,10 +318,11 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
     ? reusableBlocks.find((item) => item.id === selectedBlock.reusableBlockId)
     : undefined;
   const isBifold = document?.layout.fold === 'BIFOLD';
-  const panelLabels = currentAdvanced()?.pages[selectedPageIndex]?.regions.map((region, index) => {
-    const key = getFoldFaceLabelKey(region.face);
-    return key ? t(key) : t('regionNumber', { number: index + 1 });
-  }) ?? [];
+  const panelLabels =
+    currentAdvanced()?.pages[selectedPageIndex]?.regions.map((region, index) => {
+      const key = getFoldFaceLabelKey(region.face);
+      return key ? t(key) : t('regionNumber', { number: index + 1 });
+    }) ?? [];
   const programRows = useMemo(() => {
     const leadership = source?.publicValues?.PRESIDING_CONDUCTING;
     let roles: { presiding?: string; conducting?: string } = {};
@@ -315,7 +358,9 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
       setMessage(t('saving'));
       const requestedLayoutSnapshot = JSON.stringify(nextLayout);
       const requestedAdvancedLayoutSnapshot = latestAdvancedLayout.current ? JSON.stringify(latestAdvancedLayout.current) : null;
-      const requestedSimpleLayoutSnapshot = JSON.stringify(saveMode === 'ADVANCED' ? downgradeToV1(nextLayout as AdvancedDocumentLayout) : nextLayout);
+      const requestedSimpleLayoutSnapshot = JSON.stringify(
+        saveMode === 'ADVANCED' ? downgradeToV1(nextLayout as AdvancedDocumentLayout) : nextLayout
+      );
       let saveSucceeded = false;
       let completedRevision: number | null = null;
       try {
@@ -346,9 +391,7 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
         const savedAdvancedLayout = responseDocument?.schemaVersion === 2 || templateId ? normalizedSavedLayout : null;
         initialLayout.current = savedLayout;
         if (savedAdvancedLayout) initialAdvancedLayout.current = savedAdvancedLayout;
-        const hasNewerSimpleDraft =
-          latestLayout.current !== null &&
-          JSON.stringify(latestLayout.current) !== requestedSimpleLayoutSnapshot;
+        const hasNewerSimpleDraft = latestLayout.current !== null && JSON.stringify(latestLayout.current) !== requestedSimpleLayoutSnapshot;
         const hasNewerAdvancedDraft =
           latestAdvancedLayout.current !== null &&
           saveMode === 'ADVANCED' &&
@@ -360,7 +403,8 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
           JSON.stringify(latestAdvancedLayout.current) !== requestedAdvancedLayoutSnapshot;
         setDocument((current) => {
           if (!current) return current;
-          if (hasNewerSimpleDraft || hasNewerAdvancedDraft || hasAdvancedDraftChangedDuringSimpleSave) return { ...current, revision: body.revision };
+          if (hasNewerSimpleDraft || hasNewerAdvancedDraft || hasAdvancedDraftChangedDuringSimpleSave)
+            return { ...current, revision: body.revision };
           return {
             ...current,
             layout: savedLayout,
@@ -416,12 +460,12 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
     if (!current) return;
     const isDirty = JSON.stringify(initialAdvancedLayout.current) !== JSON.stringify(current);
     if (nextMode !== 'CONTENT') {
-      setMode(nextMode);
       if (isDirty) {
         const saved = await save(current, document.revision, undefined, 'ADVANCED');
         if (!saved) return;
       }
       setAdvancedEditing(false);
+      setMode(nextMode);
       return;
     }
     if (isDirty) {
@@ -436,7 +480,7 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
     if (!document) return;
     const failed = failedSave.current;
     const saveMode = failed?.saveMode ?? 'SIMPLE';
-    const nextLayout = saveMode === 'ADVANCED' ? currentAdvanced() ?? failed?.nextLayout ?? document.layout : document.layout;
+    const nextLayout = saveMode === 'ADVANCED' ? (currentAdvanced() ?? failed?.nextLayout ?? document.layout) : document.layout;
     void save(nextLayout, document.revision, failed?.templateId, saveMode);
   }
 
@@ -479,8 +523,19 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
   }, [advancedEditing, document, loaded, save, status]);
 
   function updateLayout(nextLayout: DocumentLayout) {
-    setDocument((current) => (current ? { ...current, layout: nextLayout, theme: nextLayout.theme } : current));
-    if (status === 'conflict') setStatus('idle');
+    if (!document) return;
+    try {
+      const previousAdvanced = currentAdvanced();
+      const nextAdvanced = previousAdvanced ? mergeSimpleIntoAdvanced(previousAdvanced, nextLayout) : normalizeToAdvanced(nextLayout);
+      if (previousAdvanced) assertNoLockedChanges(previousAdvanced, nextAdvanced);
+      setDocument((current) =>
+        current ? { ...current, layout: nextLayout, advancedLayout: nextAdvanced, theme: nextLayout.theme } : current
+      );
+      setOperationError(null);
+      if (status === 'conflict') setStatus('idle');
+    } catch (error: unknown) {
+      setOperationError(error instanceof Error ? error.message : t('layoutNotAllowed'));
+    }
   }
 
   function updateSelectedBlock(mutator: (block: DocumentBlock) => DocumentBlock) {
@@ -520,13 +575,132 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
 
   function moveSelectedBlock(delta: -1 | 1, blockId: string | null = selectedBlockId) {
     const block = blockId ? allBlocks.find((item) => item.id === blockId) : undefined;
-    if (block && isBlockReadOnly(block)) return;
+    if (block && !canMoveBlock(block)) return;
     if (advancedEditing) {
       const current = currentAdvanced();
-      if (current && blockId) runLayoutOperation(() => applyAdvanced(reorderBlock(current, blockId, delta)));
+      if (current && blockId)
+        runLayoutOperation(() => {
+          const next = reorderBlock(current, blockId, delta);
+          assertNoLockedChanges(current, next);
+          applyAdvanced(next);
+        });
       return;
     }
-    if (document && blockId) updateLayout(moveBlock(document.layout, blockId, delta));
+    const current = currentAdvanced();
+    if (document && current && blockId) {
+      const next = moveBlock(document.layout, blockId, delta);
+      runLayoutOperation(() => {
+        assertNoLockedChanges(current, mergeSimpleIntoAdvanced(current, next));
+        updateLayout(next);
+      });
+    }
+  }
+
+  function beginBlockDrag(event: React.DragEvent, block: DocumentBlock) {
+    if (mode !== 'EDIT' || !canMoveBlock(block)) {
+      event.preventDefault();
+      return;
+    }
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', block.id);
+  }
+
+  function allowBlockDrop(event: React.DragEvent, targetBlock: DocumentBlock) {
+    if (mode === 'EDIT' && canMoveBlock(targetBlock)) {
+      event.preventDefault();
+      event.dataTransfer.dropEffect = 'move';
+    }
+  }
+
+  function dropBlockRelative(event: React.DragEvent, targetBlockId: string) {
+    event.preventDefault();
+    event.stopPropagation();
+    if (mode !== 'EDIT') return;
+    const sourceBlockId = event.dataTransfer.getData('text/plain');
+    const sourceBlock = allBlocks.find((block) => block.id === sourceBlockId);
+    const targetBlock = allBlocks.find((block) => block.id === targetBlockId);
+    if (
+      !document ||
+      !sourceBlock ||
+      !targetBlock ||
+      sourceBlockId === targetBlockId ||
+      !canMoveBlock(sourceBlock) ||
+      !canMoveBlock(targetBlock)
+    )
+      return;
+
+    const rect = event.currentTarget.getBoundingClientRect();
+    const after = Number.isFinite(event.clientY) ? event.clientY >= rect.top + rect.height / 2 : true;
+
+    if (advancedEditing) {
+      const sourceLocation = blockLocation(sourceBlockId);
+      const targetLocation = blockLocation(targetBlockId);
+      if (!sourceLocation || !targetLocation) return;
+      runLayoutOperation(() => {
+        const current = currentAdvanced();
+        if (!current) return;
+        const targetRegion = current.pages[targetLocation.pageIndex]?.regions[targetLocation.regionIndex];
+        const targetColumnIndex = targetRegion?.columns.blockIds.findIndex((ids) => ids.includes(targetBlockId)) ?? -1;
+        if (targetColumnIndex < 0) return;
+        const sourceRegion = current.pages[sourceLocation.pageIndex]?.regions[sourceLocation.regionIndex];
+        const sourceColumnIndex = sourceRegion?.columns.blockIds.findIndex((ids) => ids.includes(sourceBlockId)) ?? -1;
+        if (sourceColumnIndex < 0) return;
+        const sameColumn =
+          sourceLocation.pageIndex === targetLocation.pageIndex &&
+          sourceLocation.regionIndex === targetLocation.regionIndex &&
+          sourceColumnIndex === targetColumnIndex;
+        let next = sameColumn
+          ? current
+          : moveBlockToColumn(current, sourceBlockId, targetLocation.pageIndex, targetLocation.regionIndex, targetColumnIndex);
+        const destinationColumn = () =>
+          next.pages[targetLocation.pageIndex].regions[targetLocation.regionIndex].columns.blockIds[targetColumnIndex];
+        const sourceIndex = destinationColumn().indexOf(sourceBlockId);
+        const targetIndex = destinationColumn().indexOf(targetBlockId);
+        if (sourceIndex < 0 || targetIndex < 0) return;
+        const destinationIndex = targetIndex + (after ? 1 : 0) - (sameColumn && sourceIndex < targetIndex ? 1 : 0);
+        while (destinationColumn().indexOf(sourceBlockId) < destinationIndex) next = reorderBlock(next, sourceBlockId, 1);
+        while (destinationColumn().indexOf(sourceBlockId) > destinationIndex) next = reorderBlock(next, sourceBlockId, -1);
+        assertNoLockedChanges(current, next);
+        if (next !== current) applyAdvanced(next);
+      });
+      return;
+    }
+
+    const sourcePageIndex = document.layout.pages.findIndex((page) =>
+      page.regions.some((region) => region.blocks.some((block) => block.id === sourceBlockId))
+    );
+    const targetPageIndex = document.layout.pages.findIndex((page) =>
+      page.regions.some((region) => region.blocks.some((block) => block.id === targetBlockId))
+    );
+    const sourceRegionIndex =
+      sourcePageIndex < 0
+        ? -1
+        : document.layout.pages[sourcePageIndex].regions.findIndex((region) => region.blocks.some((block) => block.id === sourceBlockId));
+    const targetRegionIndex =
+      targetPageIndex < 0
+        ? -1
+        : document.layout.pages[targetPageIndex].regions.findIndex((region) => region.blocks.some((block) => block.id === targetBlockId));
+    if (sourcePageIndex !== targetPageIndex || sourceRegionIndex < 0 || sourceRegionIndex !== targetRegionIndex) return;
+    const regionBlocks = document.layout.pages[sourcePageIndex].regions[sourceRegionIndex].blocks;
+    const sourceIndex = regionBlocks.findIndex((block) => block.id === sourceBlockId);
+    const targetIndex = regionBlocks.findIndex((block) => block.id === targetBlockId);
+    if (sourceIndex < 0 || targetIndex < 0) return;
+    const destinationIndex = targetIndex + (after ? 1 : 0) - (sourceIndex < targetIndex ? 1 : 0);
+    let next = document.layout;
+    while (
+      next.pages[sourcePageIndex].regions[sourceRegionIndex].blocks.findIndex((block) => block.id === sourceBlockId) < destinationIndex
+    )
+      next = moveBlock(next, sourceBlockId, 1);
+    while (
+      next.pages[sourcePageIndex].regions[sourceRegionIndex].blocks.findIndex((block) => block.id === sourceBlockId) > destinationIndex
+    )
+      next = moveBlock(next, sourceBlockId, -1);
+    const current = currentAdvanced();
+    if (!current) return;
+    runLayoutOperation(() => {
+      assertNoLockedChanges(current, mergeSimpleIntoAdvanced(current, next));
+      updateLayout(next);
+    });
   }
 
   function updateTheme(theme: Partial<DocumentLayout['theme']>) {
@@ -539,6 +713,8 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
   }
 
   function applyAdvanced(next: AdvancedDocumentLayout) {
+    const previous = currentAdvanced();
+    if (previous) assertNoLockedChanges(previous, next);
     setHistoryState((current) => (current ? commitHistory(current, next) : createHistory(next)));
     setDocument((current) => (current ? { ...current, advancedLayout: next, layout: downgradeToV1(next), theme: next.theme } : current));
     setOperationError(null);
@@ -555,10 +731,23 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
 
   function moveBlockToPanel(blockId: string, targetPage: number, targetPanel: number) {
     const location = blockLocation(blockId);
-    if (!document || !advancedEditing || (location?.pageIndex === targetPage && location.regionIndex === targetPanel)) return;
+    const block = allBlocks.find((item) => item.id === blockId);
+    if (
+      !document ||
+      !advancedEditing ||
+      !block ||
+      !canMoveBlock(block) ||
+      !canMoveToPanel(targetPage, targetPanel) ||
+      (location?.pageIndex === targetPage && location.regionIndex === targetPanel)
+    )
+      return;
     runLayoutOperation(() => {
       const current = currentAdvanced();
-      if (current) applyAdvanced(moveBlockToColumn(current, blockId, targetPage, targetPanel, 0));
+      if (current) {
+        const next = moveBlockToColumn(current, blockId, targetPage, targetPanel, 0);
+        assertNoLockedChanges(current, next);
+        applyAdvanced(next);
+      }
     });
   }
 
@@ -703,8 +892,10 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
         const index = region.blocks.findIndex((block) => block.id === selectedBlock.id);
         if (index >= 0) region.blocks[index] = replacement;
       }
-    runLayoutOperation(() => applyAdvanced(next));
-    if (document) void save(next, document.revision, undefined, 'ADVANCED');
+    runLayoutOperation(() => {
+      applyAdvanced(next);
+      if (document) void save(next, document.revision, undefined, 'ADVANCED');
+    });
   }
 
   async function saveSelectedAsReusableBlock() {
@@ -752,7 +943,12 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
 
   function removeSelectedAdvancedBlock() {
     const current = currentAdvanced();
-    if (current && selectedBlockId) runLayoutOperation(() => applyAdvanced(removeBlock(current, selectedBlockId)));
+    if (current && selectedBlockId)
+      runLayoutOperation(() => {
+        const next = removeBlock(current, selectedBlockId);
+        assertNoLockedChanges(current, next);
+        applyAdvanced(next);
+      });
   }
 
   async function uploadMedia(file: File, altText: string, isDecorative: boolean) {
@@ -1066,18 +1262,18 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
                     onChange={(event) => {
                       const current = currentAdvanced();
                       if (current)
-                        runLayoutOperation(() =>
-                          applyAdvanced(
-                            configureColumns(
-                              current,
-                              selectedPageIndex,
-                              selectedPanelIndex,
-                              Number(event.target.value) as 1 | 2 | 3,
-                              Number(event.target.value) === 1 ? '1/1' : Number(event.target.value) === 2 ? '1/3+2/3' : '1/1',
-                              8
-                            )
-                          )
-                        );
+                        runLayoutOperation(() => {
+                          const next = configureColumns(
+                            current,
+                            selectedPageIndex,
+                            selectedPanelIndex,
+                            Number(event.target.value) as 1 | 2 | 3,
+                            Number(event.target.value) === 1 ? '1/1' : Number(event.target.value) === 2 ? '1/3+2/3' : '1/1',
+                            8
+                          );
+                          assertNoLockedChanges(current, next);
+                          applyAdvanced(next);
+                        });
                     }}
                   >
                     <option value="1">{t('columnCount', { count: 1 })}</option>
@@ -1283,10 +1479,11 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
                     {filteredPanelBlocks(panelIndex).map((block) => (
                       <li
                         key={block.id}
-                        draggable={advancedEditing && !isBlockReadOnly(block)}
-                        onDragStart={(event) => {
-                          event.dataTransfer.setData('text/plain', block.id);
-                        }}
+                        draggable={mode === 'EDIT' && canMoveBlock(block)}
+                        className={mode === 'EDIT' && canMoveBlock(block) ? 'cursor-grab active:cursor-grabbing' : undefined}
+                        onDragStart={(event) => beginBlockDrag(event, block)}
+                        onDragOver={(event) => allowBlockDrop(event, block)}
+                        onDrop={(event) => dropBlockRelative(event, block.id)}
                       >
                         <button
                           type="button"
@@ -1303,7 +1500,9 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
                             {blockLabel(block)}
                             <span className="block text-xs text-muted-foreground">{t(blockDescriptionKey(blockCategory(block)))}</span>
                             <span className="block text-xs text-muted-foreground">{visibilityLabel(block.visibility)}</span>
-                            {isBlockReadOnly(block) ? <span className="block text-xs font-medium text-amber-700">{t('advancedBlockReadOnly')}</span> : null}
+                            {isBlockReadOnly(block) ? (
+                              <span className="block text-xs font-medium text-amber-700">{t('advancedBlockReadOnly')}</span>
+                            ) : null}
                           </span>
                         </button>
                         <div className="mt-1 flex gap-1">
@@ -1311,7 +1510,7 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
                             type="button"
                             className="rounded border px-2 text-xs"
                             aria-label={t('moveBlockUp', { block: blockLabel(block) })}
-                            disabled={isBlockReadOnly(block) || panelBlocks(panelIndex).findIndex((candidate) => candidate.id === block.id) === 0}
+                            disabled={!canMoveBlock(block) || blockMovePosition(block.id, panelIndex).index === 0}
                             onClick={() => moveSelectedBlock(-1, block.id)}
                           >
                             ↑
@@ -1321,9 +1520,8 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
                             className="rounded border px-2 text-xs"
                             aria-label={t('moveBlockDown', { block: blockLabel(block) })}
                             disabled={
-                              isBlockReadOnly(block) ||
-                              panelBlocks(panelIndex).findIndex((candidate) => candidate.id === block.id) ===
-                              panelBlocks(panelIndex).length - 1
+                              !canMoveBlock(block) ||
+                              blockMovePosition(block.id, panelIndex).index === blockMovePosition(block.id, panelIndex).count - 1
                             }
                             onClick={() => moveSelectedBlock(1, block.id)}
                           >
@@ -1356,12 +1554,13 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
                       aria-label={label}
                       onClick={() => setSelectedPanelIndex(panelIndex)}
                       onDragOver={(event) => {
-                        if (advancedEditing) event.preventDefault();
+                        if (advancedEditing && canMoveToPanel(selectedPageIndex, panelIndex)) event.preventDefault();
                       }}
                       onDrop={(event) => {
                         event.preventDefault();
                         const blockId = event.dataTransfer.getData('text/plain');
-                        if (blockId) moveBlockToPanel(blockId, selectedPageIndex, panelIndex);
+                        if (advancedEditing && canMoveToPanel(selectedPageIndex, panelIndex) && blockId)
+                          moveBlockToPanel(blockId, selectedPageIndex, panelIndex);
                       }}
                       className={`min-h-52 rounded-md border-2 border-dashed p-3 transition-colors ${selectedPanelIndex === panelIndex ? 'border-primary bg-primary/5' : 'border-muted-foreground/30 bg-muted/20'}`}
                     >
@@ -1379,9 +1578,11 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
                               setSelectedBlockId(block.id);
                               setSelectedPanelIndex(panelIndex);
                             }}
-                            className={`block w-full rounded border bg-background p-3 text-left text-sm shadow-sm transition-colors ${selectedBlock?.id === block.id ? 'border-primary bg-primary/10 ring-2 ring-primary/20' : 'hover:border-primary/50'}`}
-                            draggable={advancedEditing && !isBlockReadOnly(block)}
-                            onDragStart={(event) => event.dataTransfer.setData('text/plain', block.id)}
+                            className={`block w-full rounded border bg-background p-3 text-left text-sm shadow-sm transition-colors ${selectedBlock?.id === block.id ? 'border-primary bg-primary/10 ring-2 ring-primary/20' : 'hover:border-primary/50'} ${mode === 'EDIT' && canMoveBlock(block) ? 'cursor-grab active:cursor-grabbing' : ''}`}
+                            draggable={mode === 'EDIT' && canMoveBlock(block)}
+                            onDragStart={(event) => beginBlockDrag(event, block)}
+                            onDragOver={(event) => allowBlockDrop(event, block)}
+                            onDrop={(event) => dropBlockRelative(event, block.id)}
                           >
                             <strong>{blockLabel(block)}</strong>
                             <span className="ml-2 text-xs text-muted-foreground">{visibilityLabel(block.visibility)}</span>
@@ -1408,7 +1609,9 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
                 <div className="mt-3 space-y-3">
                   <p className="text-sm font-medium">
                     {blockLabel(selectedBlock)}
-                    {selectedBlockReadOnly ? <span className="ml-2 text-xs font-normal text-amber-700">{t('advancedBlockReadOnly')}</span> : null}
+                    {selectedBlockReadOnly ? (
+                      <span className="ml-2 text-xs font-normal text-amber-700">{t('advancedBlockReadOnly')}</span>
+                    ) : null}
                   </p>
                   <label className="block space-y-1 text-sm">
                     <span>{t('visibility')}</span>
@@ -1620,11 +1823,7 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
             {status === 'conflict' ? (
               <div className="space-y-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
                 <p>{message}</p>
-                <button
-                  type="button"
-                  className="rounded border px-2 py-1"
-                  onClick={retryFailedSave}
-                >
+                <button type="button" className="rounded border px-2 py-1" onClick={retryFailedSave}>
                   {t('retrySave')}
                 </button>
                 <button
@@ -1639,11 +1838,7 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
               </div>
             ) : null}
             {status === 'error' ? (
-              <button
-                type="button"
-                className="rounded-md border px-3 py-2 text-sm"
-                onClick={retryFailedSave}
-              >
+              <button type="button" className="rounded-md border px-3 py-2 text-sm" onClick={retryFailedSave}>
                 {t('retrySave')}
               </button>
             ) : null}

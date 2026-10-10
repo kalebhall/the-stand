@@ -6,6 +6,7 @@ import {
   clearLegacyTitleProvenance,
   ensureLegacyTitleProvenance,
   ensurePresidingConductingBlock,
+  ensureProgramDocument,
   InvalidProgramPersistenceInputError,
   loadProgramDocument,
   saveProgramDocument
@@ -33,6 +34,36 @@ describe('Programs persistence facade', () => {
     const programIndex = blocks.findIndex((block) => block.type === 'MEETING_PROGRAM');
     expect(leadershipIndex).toBeGreaterThanOrEqual(0);
     if (programIndex >= 0) expect(leadershipIndex).toBeLessThan(programIndex);
+  });
+
+  it('does not increment a document revision for JSONB key-order differences', async () => {
+    const stableLayout = ensurePresidingConductingBlock(DEFAULT_DOCUMENT_LAYOUT);
+    const persistedLayout = Object.fromEntries(Object.entries(stableLayout).reverse());
+    const client = {
+      query: vi.fn().mockResolvedValue({
+        rows: [
+          {
+            id: 'document-1',
+            source_template_id: null,
+            source_template_version: null,
+            schema_version: 1,
+            layout_json: persistedLayout,
+            theme_json: DEFAULT_DOCUMENT_LAYOUT.theme,
+            revision: 4
+          }
+        ]
+      })
+    };
+
+    const result = await ensureProgramDocument(client, {
+      wardId: 'ward-1',
+      meetingId: 'meeting-1',
+      userId: 'user-1',
+      defaultLayout: DEFAULT_DOCUMENT_LAYOUT
+    });
+
+    expect(result.revision).toBe(4);
+    expect(client.query).toHaveBeenCalledTimes(1);
   });
 
   it('backfills legacy title provenance and clears it for authored changes', () => {

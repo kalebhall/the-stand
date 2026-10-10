@@ -59,8 +59,8 @@ flowchart LR
   A5 -->|48| A29
   A6 -->|33| A27
   A5 -->|32| A7
+  A6 -->|27| A17
   A5 -->|25| A24
-  A6 -->|25| A17
   A5 -->|24| A26
   A6 -->|22| A21
   A6 -->|16| A26
@@ -210,7 +210,7 @@ flowchart LR
 
 | Importing area | Imported area | Imports |
 | --- | --- | ---: |
-| `web:document-designer` | `web:document-designer` | 237 |
+| `web:document-designer` | `web:document-designer` | 238 |
 | `web:api` | `web:auth` | 185 |
 | `web:api` | `web:db` | 160 |
 | `web:app` | `web:ui` | 120 |
@@ -226,8 +226,8 @@ flowchart LR
 | `web:app` | `web:modules` | 33 |
 | `web:api` | `web:audit` | 32 |
 | `web:programs` | `web:programs` | 30 |
+| `web:app` | `web:document-designer` | 27 |
 | `web:api` | `web:lib` | 25 |
-| `web:app` | `web:document-designer` | 25 |
 | `web:api` | `web:meetings` | 24 |
 | `web:app` | `web:i18n` | 22 |
 | `web:platform` | `web:platform` | 22 |
@@ -470,6 +470,7 @@ flowchart LR
 | `web:notifications` | `nodemailer` | 1 |
 | `web:platform` | `next-auth` | 1 |
 | `web:platform` | `pg` | 1 |
+| `web:programs` | `Node.js` | 1 |
 | `web:reports` | `pg` | 1 |
 | `web:reports` | `vitest` | 1 |
 | `web:test-matchers.d.ts` | `@testing-library/jest-dom` | 1 |
@@ -707,8 +708,8 @@ flowchart LR
 | `apps/web/app/programs/[meetingId]/designer-state.ts` | `web:app` | 1 | 0 |
 | `apps/web/app/programs/[meetingId]/designer-state.vitest.ts` | `web:app` | 2 | 1 |
 | `apps/web/app/programs/[meetingId]/page.tsx` | `web:app` | 4 | 1 |
-| `apps/web/app/programs/[meetingId]/program-designer-client.tsx` | `web:app` | 11 | 3 |
-| `apps/web/app/programs/[meetingId]/program-designer-client.vitest.tsx` | `web:app` | 3 | 3 |
+| `apps/web/app/programs/[meetingId]/program-designer-client.tsx` | `web:app` | 12 | 3 |
+| `apps/web/app/programs/[meetingId]/program-designer-client.vitest.tsx` | `web:app` | 4 | 3 |
 | `apps/web/app/programs/baptism/baptism-programs-client.tsx` | `web:app` | 0 | 2 |
 | `apps/web/app/programs/baptism/page.tsx` | `web:app` | 4 | 1 |
 | `apps/web/app/programs/page.tsx` | `web:app` | 9 | 3 |
@@ -925,7 +926,7 @@ flowchart LR
 | `apps/web/src/document-designer/legacy-layout-adapter.ts` | `web:document-designer` | 5 | 0 |
 | `apps/web/src/document-designer/legacy-layout-adapter.vitest.ts` | `web:document-designer` | 1 | 1 |
 | `apps/web/src/document-designer/lock-enforcement.ts` | `web:document-designer` | 2 | 0 |
-| `apps/web/src/document-designer/lock-enforcement.vitest.ts` | `web:document-designer` | 3 | 1 |
+| `apps/web/src/document-designer/lock-enforcement.vitest.ts` | `web:document-designer` | 4 | 1 |
 | `apps/web/src/document-designer/media-metadata-validation.ts` | `web:document-designer` | 0 | 0 |
 | `apps/web/src/document-designer/media-service.ts` | `web:document-designer` | 5 | 1 |
 | `apps/web/src/document-designer/media-storage.ts` | `web:document-designer` | 0 | 3 |
@@ -1139,7 +1140,7 @@ flowchart LR
 | `apps/web/src/programs/baptism-renderer.ts` | `web:programs` | 1 | 0 |
 | `apps/web/src/programs/baptism-renderer.vitest.ts` | `web:programs` | 2 | 1 |
 | `apps/web/src/programs/contracts.ts` | `web:programs` | 0 | 1 |
-| `apps/web/src/programs/persistence.ts` | `web:programs` | 6 | 0 |
+| `apps/web/src/programs/persistence.ts` | `web:programs` | 6 | 1 |
 | `apps/web/src/programs/persistence.vitest.ts` | `web:programs` | 2 | 1 |
 | `apps/web/src/programs/registry.ts` | `web:programs` | 3 | 0 |
 | `apps/web/src/programs/registry.vitest.ts` | `web:programs` | 1 | 1 |
