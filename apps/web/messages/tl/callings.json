@@ -90,6 +90,7 @@
     "failedToLoad": "Nabigong i-load ang mga tawag",
     "loading": "Naglo-load ng mga tawag…",
     "errorTitle": "Hindi ma-load ang mga tawag",
-    "retry": "Subukan muli"
+    "retry": "Subukan muli",
+    "openWorkspace": "Buksan ang mga tungkulin"
   }
 }

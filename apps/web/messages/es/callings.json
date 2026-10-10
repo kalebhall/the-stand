@@ -90,6 +90,7 @@
     "failedToLoad": "No se pudieron cargar los llamamientos",
     "loading": "Cargando llamamientos…",
     "errorTitle": "No se pudieron cargar los llamamientos",
-    "retry": "Intentar de nuevo"
+    "retry": "Intentar de nuevo",
+    "openWorkspace": "Abrir llamamientos"
   }
 }

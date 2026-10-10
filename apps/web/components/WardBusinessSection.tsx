@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
@@ -43,6 +44,7 @@ type WardBusinessSectionProps = {
   membershipSection?: ReactNode;
   sectionTitle?: string;
   canManage: boolean;
+  showCallingsWorkspaceLink?: boolean;
   /** When true, shows "Mark Announced" button for pending lines (stand-view mode). */
   showAnnounce?: boolean;
   /** When true, renders full scripted phrasing using the templates below. */
@@ -291,6 +293,7 @@ export function WardBusinessSection({
   membershipSection,
   sectionTitle,
   canManage,
+  showCallingsWorkspaceLink = false,
   showAnnounce = false,
   showScript = false,
   collapsible = false,
@@ -303,6 +306,8 @@ export function WardBusinessSection({
 }: WardBusinessSectionProps) {
   const router = useRouter();
   const t = useTranslations('business');
+  const membershipT = useTranslations('membership');
+  const callingsT = useTranslations('callings');
   const meetingsT = useTranslations('meetings');
 
   if (!lines.length && !membershipActions.length && !membershipSection && !includesStakeBusiness && !programNotes?.trim()) {
@@ -340,6 +345,22 @@ export function WardBusinessSection({
               segment.bold ? <strong key={index}>{segment.text}</strong> : <span key={index}>{segment.text}</span>
             )}
           </p>
+        </div>
+      ) : null}
+      {membershipSection ? (
+        <div className="mb-3 space-y-2 border-t pt-3 text-sm">
+          <p>
+            <Link href="/membership-ordinances" className="font-medium underline underline-offset-4">
+              {membershipT('openWorkspace')}
+            </Link>
+          </p>
+          {showCallingsWorkspaceLink ? (
+            <p>
+              <Link href="/callings" className="font-medium underline underline-offset-4">
+                {callingsT('openWorkspace')}
+              </Link>
+            </p>
+          ) : null}
         </div>
       ) : null}
       {membershipActions.length ? (

@@ -90,6 +90,7 @@ type MeetingFormProps = {
   canManageBusiness?: boolean;
   membershipActions?: MembershipOrdinanceAction[];
   canManageMembership?: boolean;
+  canViewCallingsWorkspace?: boolean;
   standAnnouncements?: Array<{ title: string; body: string | null }>;
 };
 
@@ -132,6 +133,7 @@ export function MeetingForm({
   canManageBusiness = false,
   membershipActions = [],
   canManageMembership = false,
+  canViewCallingsWorkspace = false,
   standAnnouncements = []
 }: MeetingFormProps) {
   const t = useTranslations('meetingForm');
@@ -784,6 +786,7 @@ export function MeetingForm({
                   showScript={false}
                   sectionTitle={mode === 'edit' ? businessT('wardBusinessOnlyTitle') : undefined}
                   membershipSection={index === membershipBusinessIndex ? membershipSection : undefined}
+                  showCallingsWorkspaceLink={canViewCallingsWorkspace && index === membershipBusinessIndex}
                 />
               </div>
             ) : null}
@@ -799,6 +802,7 @@ export function MeetingForm({
             showScript={false}
             sectionTitle={mode === 'edit' ? businessT('wardBusinessOnlyTitle') : undefined}
             membershipSection={membershipSection}
+            showCallingsWorkspaceLink={canViewCallingsWorkspace}
           />
         ) : null}
       </section>

@@ -365,7 +365,7 @@ flowchart LR
 | `web:ui` | `next-intl` | 25 |
 | `web:notifications` | `vitest` | 20 |
 | `web:app` | `@testing-library/react` | 18 |
-| `web:ui` | `next` | 17 |
+| `web:ui` | `next` | 18 |
 | `web:api` | `zod` | 16 |
 | `web:db` | `Node.js` | 16 |
 | `root:tooling` | `Node.js` | 14 |
@@ -798,7 +798,7 @@ flowchart LR
 | `apps/web/components/MembershipOrdinanceSection.tsx` | `web:ui` | 3 | 3 |
 | `apps/web/components/MembershipOrdinanceSection.vitest.tsx` | `web:ui` | 2 | 4 |
 | `apps/web/components/StandardCallingsManager.tsx` | `web:ui` | 1 | 3 |
-| `apps/web/components/WardBusinessSection.tsx` | `web:ui` | 2 | 3 |
+| `apps/web/components/WardBusinessSection.tsx` | `web:ui` | 2 | 4 |
 | `apps/web/components/WardBusinessSection.vitest.tsx` | `web:ui` | 2 | 4 |
 | `apps/web/components/app-navigation.tsx` | `web:ui` | 1 | 0 |
 | `apps/web/components/app-shell.tsx` | `web:ui` | 9 | 5 |

@@ -102,9 +102,16 @@ test('meeting create publish and print flow works', async ({ page }) => {
     await page.goto(`/meetings/${id}/edit`);
     const wardBusinessHeading = page.getByRole('heading', { name: 'Ward Business' });
     await expect(wardBusinessHeading).toBeVisible();
-    const membershipHeading = page.getByRole('heading', { name: 'Membership and Ordinances' });
-    await expect(membershipHeading).toBeVisible();
-    await expect(wardBusinessHeading.locator('xpath=ancestor::section[1]')).toContainText('Membership and Ordinances');
+    const membershipLink = page.getByRole('link', { name: 'Open Membership and Ordinances' });
+    await expect(membershipLink).toBeVisible();
+    await expect(membershipLink).toHaveAttribute('href', '/membership-ordinances');
+    // Callings is optional and disabled for the shared E2E ward; do not render a dead link.
+    await expect(page.getByRole('link', { name: 'Open Callings' })).toHaveCount(0);
+    await expect(page.getByText('Welcome, blessing, and priesthood actions for this meeting.')).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: 'Membership and Ordinances' })).toHaveCount(0);
+    await expect(
+      wardBusinessHeading.locator('xpath=ancestor::section[1]').getByRole('link', { name: 'Open Membership and Ordinances' })
+    ).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Ward and Stake Business' })).toHaveCount(0);
 
     const layoutResponse = await apiRequest(page, `/api/w/${WARD_A}/public-layout`, 'PATCH', {
