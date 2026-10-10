@@ -4,7 +4,7 @@ import { notFound, redirect } from 'next/navigation';
 
 import { buttonVariants } from '@/components/ui/button';
 import { InternalNotesPanel, type InternalNoteRow } from '@/components/InternalNotesPanel';
-import { MembershipOrdinanceSection, type MembershipOrdinanceAction } from '@/components/MembershipOrdinanceSection';
+import type { MembershipOrdinanceAction } from '@/components/MembershipOrdinanceSection';
 import type { BusinessLine } from '@/components/WardBusinessSection';
 import { cn } from '@/lib/utils';
 import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth/guards';
@@ -268,15 +268,9 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ me
           canUseInternalNotes={canUseNotes}
           businessLines={businessLines}
           canManageBusiness={true}
+          membershipActions={membershipActions}
+          canManageMembership={true}
           standAnnouncements={standAnnouncements}
-        />
-
-        <MembershipOrdinanceSection
-          wardId={session.activeWardId}
-          meetingId={meeting.id}
-          actions={membershipActions}
-          canManage
-          canCreate={false}
         />
 
         <InternalNotesPanel

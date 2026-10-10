@@ -48,6 +48,7 @@ type Props = {
   canManage: boolean;
   canCreate?: boolean;
   createOnly?: boolean;
+  embedded?: boolean;
   templates?: Partial<Record<MembershipOrdinanceAction['action_type'], string>>;
 };
 
@@ -76,6 +77,7 @@ export function MembershipOrdinanceSection({
   canManage,
   canCreate = true,
   createOnly = false,
+  embedded = false,
   templates = {}
 }: Props) {
   const t = useTranslations('membership');
@@ -151,11 +153,19 @@ export function MembershipOrdinanceSection({
     window.location.reload();
   }
 
+  const Heading = embedded ? 'h3' : 'h2';
+
   return (
-    <section className="space-y-4 rounded-lg border bg-card p-4">
-      <div className="flex flex-wrap items-start justify-between gap-3 rounded-md bg-muted/40 p-3">
+    <section className={embedded ? 'space-y-4 border-t pt-4' : 'space-y-4 rounded-lg border bg-card p-4'}>
+      <div
+        className={
+          embedded
+            ? 'flex flex-wrap items-start justify-between gap-3'
+            : 'flex flex-wrap items-start justify-between gap-3 rounded-md bg-muted/40 p-3'
+        }
+      >
         <div>
-          <h2 className="text-lg font-semibold">{t('title')}</h2>
+          <Heading className="text-lg font-semibold">{t('title')}</Heading>
           <p className="text-sm text-muted-foreground">{t('description')}</p>
         </div>
         {!createOnly ? (
@@ -464,22 +474,40 @@ export function MembershipOrdinanceSection({
                 <div className="flex items-center gap-2">
                   <span className="rounded-full border px-2 py-1 text-xs">{t(`status_${action.status}`)}</span>
                   {canManage && action.interview_status && ['needed', 'scheduled'].includes(action.interview_status) ? (
-                    <Button size="sm" variant="outline" disabled={busy} onClick={() => void updateAction(action.id, 'interview_completed')}>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={busy}
+                      onClick={() => void updateAction(action.id, 'interview_completed')}
+                    >
                       {t('markInterviewComplete')}
                     </Button>
                   ) : null}
                   {canManage && action.status === 'completed' && action.lcr_follow_up_status === 'needed' ? (
-                    <Button size="sm" variant="outline" disabled={busy} onClick={() => void updateAction(action.id, 'lcr_completed')}>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={busy}
+                      onClick={() => void updateAction(action.id, 'lcr_completed')}
+                    >
                       {t('markLcrUpdated')}
                     </Button>
                   ) : null}
                   {canManage && action.status === 'pending' ? (
-                    <Button size="sm" variant="outline" disabled={busy} onClick={() => void updateAction(action.id, 'announced')}>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={busy}
+                      onClick={() => void updateAction(action.id, 'announced')}
+                    >
                       {t('markAnnounced')}
                     </Button>
                   ) : null}
                   {canManage && action.status === 'action_needed' ? (
-                    <Button size="sm" disabled={busy} onClick={() => void updateAction(action.id, 'completed')}>
+                    <Button type="button" size="sm" disabled={busy} onClick={() => void updateAction(action.id, 'completed')}>
                       {t('markCompleted')}
                     </Button>
                   ) : null}
