@@ -1,3 +1,5 @@
+import { isDeepStrictEqual } from 'node:util';
+
 import type { DocumentLayout, DocumentBlock } from '@/src/document-designer/types';
 import { parseAdvancedLayout, type AdvancedDocumentLayout } from '@/src/document-designer/advanced-schema';
 import { saveMeetingDocument, type Queryable } from '@/src/document-designer/persistence';
@@ -187,7 +189,7 @@ export async function ensureProgramDocument(
   if (existing.rows[0]) {
     const row = existing.rows[0] as LegacyProgramDocumentRow;
     const layout = ensureLegacyTitleProvenance(ensurePresidingConductingBlock(row.layout_json));
-    if (JSON.stringify(layout) !== JSON.stringify(row.layout_json)) {
+    if (!isDeepStrictEqual(layout, row.layout_json)) {
       const updated = await client.query(
         `UPDATE meeting_document
             SET layout_json = $2::jsonb, schema_version = $3::int, revision = revision + 1, updated_by_user_id = $4::uuid, updated_at = now()

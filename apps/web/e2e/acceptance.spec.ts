@@ -27,7 +27,8 @@ async function apiRequest(page: Page, url: string, method: string, data?: unknow
       const response = await fetch(requestUrl, {
         method: requestMethod,
         headers: requestData === undefined ? undefined : { 'Content-Type': 'application/json' },
-        body: requestData === undefined ? undefined : JSON.stringify(requestData)
+        body: requestData === undefined ? undefined : JSON.stringify(requestData),
+        cache: 'no-store'
       });
       return { status: response.status, body: (await response.json().catch(() => null)) as Record<string, unknown> | null };
     },
@@ -212,8 +213,85 @@ test('uniform content editor works without Advanced Layout and persists source r
     await page.getByRole('button', { name: 'Content' }).click();
     await expect(page.getByRole('heading', { name: 'Program content' })).toBeVisible({ timeout: 120_000 });
     await expect(page.getByLabel('Presiding')).toHaveValue('Bishop Hall');
-    await page.getByRole('button', { name: 'Edit' }).click();
+    expect(browserErrors).toEqual([]);
+  } finally {
+    if (meetingId) {
+      await cleanupPublishedMeeting(meetingId);
+    }
+  }
+});
+
+test('program designer drag reorder persists after reload', async ({ page }) => {
+  const browserErrors: string[] = [];
+  page.on('pageerror', (error) => browserErrors.push(error.message));
+  page.on('console', (message) => {
+    if (message.type() === 'error') browserErrors.push(message.text());
+  });
+  await login(page, 'ward-admin@example.test', 'WardAdminPassword123456789012');
+  let meetingId: string | null = null;
+  try {
+    const createResponse = await apiRequest(page, `/api/w/${WARD_A}/meetings`, 'POST', {
+      meetingDate: '2026-12-27',
+      meetingType: 'SACRAMENT',
+      programItems: [
+        { itemType: 'INTRODUCTION', title: 'Introduction' },
+        { itemType: 'ANNOUNCEMENT', title: 'Drag reorder acceptance' },
+        { itemType: 'SPEAKER', title: 'Alex Example', topic: 'Service' }
+      ]
+    });
+    expect(createResponse.status, JSON.stringify(createResponse.body)).toBe(201);
+    meetingId = (createResponse.body as { id: string }).id;
+
+    const initialDesignResponsePromise = page.waitForResponse(
+      (response) =>
+        response.url().includes(`/api/w/${WARD_A}/meetings/${meetingId}/program-design`) && response.request().method() === 'GET'
+    );
+    await page.goto(`/programs/${meetingId}`);
+    const designResponse = await initialDesignResponsePromise;
+    expect(designResponse.status()).toBe(200);
+    const initialLayout = (
+      (await designResponse.json()) as { document: { layout: { pages: Array<{ regions: Array<{ blocks: Array<{ id: string }> }> }> } } }
+    ).document.layout;
+    const initialBlockIds = initialLayout.pages[0].regions[0].blocks.map((block) => block.id);
+    expect(initialBlockIds.length).toBeGreaterThan(1);
+
+    await expect(page.getByRole('region', { name: 'Document canvas' })).toBeVisible({ timeout: 120_000 });
+    await expect(page.getByRole('button', { name: 'Advanced Mode' })).toHaveCount(0);
+    await expect(page.getByRole('status').first()).toHaveText('Saved', { timeout: 120_000 });
+    const approvedBlocks = page.getByRole('complementary', { name: 'Approved blocks' });
+    const blockRows = approvedBlocks.locator('ul > li');
+    const firstLabel = (await blockRows.nth(0).locator('button').first().innerText()).split('\n')[0].trim();
+    const secondLabel = (await blockRows.nth(1).locator('button').first().innerText()).split('\n')[0].trim();
+    const targetBox = await blockRows.nth(1).boundingBox();
+    expect(targetBox).not.toBeNull();
+
+    const saveResponsePromise = page.waitForResponse(
+      (response) =>
+        response.url().includes(`/api/w/${WARD_A}/meetings/${meetingId}/program-design`) && response.request().method() === 'PUT'
+    );
+    await blockRows.nth(0).dragTo(blockRows.nth(1), {
+      targetPosition: { x: Math.floor(targetBox!.width / 2), y: Math.max(1, Math.floor(targetBox!.height - 1)) }
+    });
+    await expect(blockRows.nth(0).locator('button').first()).toContainText(secondLabel);
+    await expect(blockRows.nth(1).locator('button').first()).toContainText(firstLabel);
+    const saveResponse = await saveResponsePromise;
+    expect(saveResponse.ok(), `program layout PUT failed: ${saveResponse.status()} ${await saveResponse.text()}`).toBe(true);
+
+    const persistedDesign = await apiRequest(page, `/api/w/${WARD_A}/meetings/${meetingId}/program-design`, 'GET');
+    expect(persistedDesign.status).toBe(200);
+    const persistedLayout = (
+      persistedDesign.body as { document: { layout: { pages: Array<{ regions: Array<{ blocks: Array<{ id: string }> }> }> } } }
+    ).document.layout;
+    expect(persistedLayout.pages[0].regions[0].blocks.map((block) => block.id).slice(0, 2)).toEqual([
+      initialBlockIds[1],
+      initialBlockIds[0]
+    ]);
+
+    await page.reload();
     await expect(page.getByRole('region', { name: 'Document canvas' })).toBeVisible({ timeout: 30_000 });
+    const reloadedRows = page.getByRole('complementary', { name: 'Approved blocks' }).locator('ul > li');
+    await expect(reloadedRows.nth(0).locator('button').first()).toContainText(secondLabel);
+    await expect(reloadedRows.nth(1).locator('button').first()).toContainText(firstLabel);
     expect(browserErrors).toEqual([]);
   } finally {
     if (meetingId) {

@@ -66,11 +66,26 @@ export function assertLayoutOperationAllowed(
     throw new LockedLayoutError(property as LockProperty, 'This block property is locked');
 }
 
-function locationMap(layout: AdvancedDocumentLayout): Map<string, { page: number; region: number; block: number }> {
-  const result = new Map<string, { page: number; region: number; block: number }>();
+function locationMap(
+  layout: AdvancedDocumentLayout
+): Map<string, { page: number; region: number; block: number; face: string | undefined; column: number; columnBlock: number }> {
+  const result = new Map<
+    string,
+    { page: number; region: number; block: number; face: string | undefined; column: number; columnBlock: number }
+  >();
   layout.pages.forEach((page, pageIndex) =>
     page.regions.forEach((region, regionIndex) =>
-      region.blocks.forEach((block, blockIndex) => result.set(block.id, { page: pageIndex, region: regionIndex, block: blockIndex }))
+      region.blocks.forEach((block, blockIndex) => {
+        const column = region.columns.blockIds.findIndex((columnBlockIds) => columnBlockIds.includes(block.id));
+        result.set(block.id, {
+          page: pageIndex,
+          region: regionIndex,
+          block: blockIndex,
+          face: region.face,
+          column,
+          columnBlock: column < 0 ? -1 : region.columns.blockIds[column].indexOf(block.id)
+        });
+      })
     )
   );
   return result;
@@ -164,6 +179,10 @@ export function assertNoLockedChanges(previous: AdvancedDocumentLayout, next: Ad
       blocked(previous.lock, 'POSITION') &&
       (!equal([...previousLocations].sort(), [...nextLocations].sort()) ||
         !equal(
+          previous.pages.flatMap((page) => page.regions.map((region) => [region.id, region.face])),
+          next.pages.flatMap((page) => page.regions.map((region) => [region.id, region.face]))
+        ) ||
+        !equal(
           previous.pages.flatMap((page) => page.regions.map((region) => region.columns)),
           next.pages.flatMap((page) => page.regions.map((region) => region.columns))
         ) ||
@@ -189,6 +208,10 @@ export function assertNoLockedChanges(previous: AdvancedDocumentLayout, next: Ad
     if (
       blocked(oldPage.lock, 'POSITION') &&
       (!equal(ids(oldPageBlocks), ids(newPageBlocks)) ||
+        !equal(
+          oldPage.regions.map((region) => [region.id, region.face]),
+          newPage.regions.map((region) => [region.id, region.face])
+        ) ||
         !equal(
           oldPageBlocks.map((block) => [block.id, block.digitalOrder]),
           newPageBlocks.map((block) => [block.id, block.digitalOrder])
@@ -247,6 +270,7 @@ export function assertNoLockedChanges(previous: AdvancedDocumentLayout, next: Ad
         if (
           blocked(oldRegion.lock, 'POSITION') &&
           (!equal(ids(oldRegion.blocks), ids(newRegion.blocks)) ||
+            oldRegion.face !== newRegion.face ||
             !equal(oldRegion.columns.blockIds, newRegion.columns.blockIds) ||
             !equal(
               oldRegion.blocks.map((block) => [block.id, block.digitalOrder]),
