@@ -221,6 +221,10 @@
     "visitingLeaderName": "Nombre del líder visitante {number}",
     "visitingLeaderCalling": "Llamamiento del líder visitante {number}",
     "visitingLeaderType": "Tipo de reconocimiento del líder visitante {number}",
+    "visitingLeaderTypePresidingAuthority": "Autoridad presidente",
+    "visitingLeaderTypeHighCouncilor": "Miembro visitante del sumo consejo",
+    "visitingLeaderTypeGeneralOfficer": "Oficial General visitante",
+    "visitingLeaderTypeOther": "Otro líder visitante",
     "loadingMembers": "Cargando miembros…"
   },
   "business": {

@@ -221,6 +221,10 @@
     "visitingLeaderName": "Pangalan ng bumibisitang pinuno na {number}",
     "visitingLeaderCalling": "Tumatawag ang bumibisitang pinuno na si {number}",
     "visitingLeaderType": "Uri ng pagkilala sa bumibisitang pinuno na {number}",
+    "visitingLeaderTypePresidingAuthority": "Namumunong awtoridad",
+    "visitingLeaderTypeHighCouncilor": "Bumibisitang high councilor",
+    "visitingLeaderTypeGeneralOfficer": "Bumibisitang General Officer",
+    "visitingLeaderTypeOther": "Iba pang bumibisitang lider",
     "loadingMembers": "Naglo-load ng mga miyembro…"
   },
   "business": {

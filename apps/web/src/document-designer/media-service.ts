@@ -1,7 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import type { Queryable } from './persistence';
 import { createStorageKey, readMedia, writeMedia, deleteMedia } from './media-storage';
-import { validateAndNormalizeImage, validateMediaMetadata } from './media-validation';
+import { validateAndNormalizeImage } from './media-validation';
+import { validateMediaMetadata } from './media-metadata-validation';
 import type { MediaAsset, MediaAssetResponse, MediaMimeType } from './media-types';
 
 export type MediaServiceErrorCode = 'MEDIA_NOT_FOUND' | 'MEDIA_REFERENCED' | 'MEDIA_FORBIDDEN' | 'MEDIA_STORAGE_UNAVAILABLE';

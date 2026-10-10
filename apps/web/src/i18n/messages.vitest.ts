@@ -17,8 +17,23 @@ import enUSImports from '../../messages/en-US/imports.json';
 import enUSSupport from '../../messages/en-US/support.json';
 import { MESSAGE_CATALOGS } from './messages';
 
-const enUS = { ...enUSCore, ...enUSMeetings, ...enUSPrograms, ...enUSNotifications, ...enUSSupport, ...enUSMembers, ...enUSMembershipOrdinances, ...enUSCallings, ...enUSBishopric, ...enUSInterviews, ...enUSTechnology, ...enUSSpeakers, ...enUSReports, ...enUSAnnouncements, ...enUSImports };
-
+const enUS = {
+  ...enUSCore,
+  ...enUSMeetings,
+  ...enUSPrograms,
+  ...enUSNotifications,
+  ...enUSSupport,
+  ...enUSMembers,
+  ...enUSMembershipOrdinances,
+  ...enUSCallings,
+  ...enUSBishopric,
+  ...enUSInterviews,
+  ...enUSTechnology,
+  ...enUSSpeakers,
+  ...enUSReports,
+  ...enUSAnnouncements,
+  ...enUSImports
+};
 
 function leafPaths(value: unknown, prefix = ''): string[] {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return [prefix];
@@ -33,6 +48,19 @@ describe('message catalog structure', () => {
     }
   });
 
+  it('keeps the meeting-form visiting-leader options present in every locale', () => {
+    const keys = [
+      'visitingLeaderTypePresidingAuthority',
+      'visitingLeaderTypeHighCouncilor',
+      'visitingLeaderTypeGeneralOfficer',
+      'visitingLeaderTypeOther'
+    ];
+    for (const [locale, catalog] of Object.entries(MESSAGE_CATALOGS)) {
+      const meetingForm = catalog.meetingForm as Record<string, unknown>;
+      for (const key of keys) expect(meetingForm[key], `${locale}.meetingForm.${key}`).toBeTruthy();
+    }
+  });
+
   it('includes the settings labels required by the settings page in every locale', () => {
     for (const catalog of Object.values(MESSAGE_CATALOGS)) {
       const settings = catalog.settings as Record<string, unknown>;
@@ -44,7 +72,48 @@ describe('message catalog structure', () => {
   });
 
   it('merges the expected module-owned namespaces into each runtime catalog', () => {
-    const namespaces = ['language', 'settings', 'dashboard', 'meetingEditor', 'print', 'meetings', 'stand', 'meetingForm', 'business', 'notes', 'hymn', 'deleteMeeting', 'membership', 'offline', 'publicProgram', 'navigation', 'auth', 'shell', 'account', 'actionsToDo', 'programs', 'notifications', 'manual', 'supportHymns', 'supportQueue', 'supportAccessRequests', 'supportProvisioning', 'supportUsers', 'supportAuditLog', 'supportConsole', 'members', 'membershipOrdinances', 'callings', 'bishopric', 'interviews', 'technology', 'speakers', 'reports', 'announcements', 'imports'];
+    const namespaces = [
+      'language',
+      'settings',
+      'dashboard',
+      'meetingEditor',
+      'print',
+      'meetings',
+      'stand',
+      'meetingForm',
+      'business',
+      'notes',
+      'hymn',
+      'deleteMeeting',
+      'membership',
+      'offline',
+      'publicProgram',
+      'navigation',
+      'auth',
+      'shell',
+      'account',
+      'actionsToDo',
+      'programs',
+      'notifications',
+      'manual',
+      'supportHymns',
+      'supportQueue',
+      'supportAccessRequests',
+      'supportProvisioning',
+      'supportUsers',
+      'supportAuditLog',
+      'supportConsole',
+      'members',
+      'membershipOrdinances',
+      'callings',
+      'bishopric',
+      'interviews',
+      'technology',
+      'speakers',
+      'reports',
+      'announcements',
+      'imports'
+    ];
     for (const catalog of Object.values(MESSAGE_CATALOGS)) {
       expect(Object.keys(catalog).sort()).toEqual(namespaces.sort());
     }
