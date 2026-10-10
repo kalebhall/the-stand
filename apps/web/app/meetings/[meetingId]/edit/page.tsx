@@ -8,7 +8,7 @@ import type { MembershipOrdinanceAction } from '@/components/MembershipOrdinance
 import type { BusinessLine } from '@/components/WardBusinessSection';
 import { cn } from '@/lib/utils';
 import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth/guards';
-import { canManageMeetings, canUseInternalNotes, canViewProgramDesigner } from '@/src/auth/roles';
+import { canManageMeetings, canUseInternalNotes, canViewCallings, canViewProgramDesigner } from '@/src/auth/roles';
 import { isAnnouncementActiveForDate } from '@/src/announcements/types';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
@@ -66,6 +66,9 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ me
     redirect('/meetings');
   }
   const programsEnabled = await isWardModuleEnabled(session.activeWardId, session.user.id, 'programs');
+  const callingsWorkspaceEnabled =
+    canViewCallings({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId) &&
+    (await isWardModuleEnabled(session.activeWardId, session.user.id, 'callings'));
   const includeInternalNotes = canUseInternalNotes({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId);
 
   const { meetingId } = await params;
@@ -270,6 +273,7 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ me
           canManageBusiness={true}
           membershipActions={membershipActions}
           canManageMembership={true}
+          canViewCallingsWorkspace={callingsWorkspaceEnabled}
           standAnnouncements={standAnnouncements}
         />
 

@@ -90,6 +90,7 @@
     "failedToLoad": "［Failed to load callings］",
     "loading": "［Loading callings…］",
     "errorTitle": "［Unable to load callings］",
-    "retry": "［Try again］"
+    "retry": "［Try again］",
+    "openWorkspace": "[O][P][E][N] [C][A][L][L][I][N][G][S]"
   }
 }

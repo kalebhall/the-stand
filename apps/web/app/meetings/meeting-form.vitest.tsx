@@ -99,17 +99,25 @@ describe('MeetingForm localization', () => {
           initialProgramItems={initialProgramItems}
           membershipActions={[]}
           canManageMembership
+          canViewCallingsWorkspace
         />
       </NextIntlClientProvider>
     );
 
     const wardBusinessHeading = screen.getByRole('heading', { name: 'Ward Business' });
-    const membershipHeading = screen.getByRole('heading', { name: 'Membership and Ordinances' });
     const wardBusinessCard = wardBusinessHeading.closest('section');
-    const membershipSection = membershipHeading.closest('section');
+    const membershipSection = screen.getByText('No membership or ordinance actions added.').closest('section');
+    const membershipLink = screen.getByRole('link', { name: 'Open Membership and Ordinances' });
+    const callingsLink = screen.getByRole('link', { name: 'Open Callings' });
 
-    expect(wardBusinessCard).toContainElement(membershipHeading);
-    expect(membershipSection).toHaveClass('border-t', 'pt-4');
+    expect(wardBusinessCard).toContainElement(membershipLink);
+    expect(wardBusinessCard).toContainElement(callingsLink);
+    expect(wardBusinessCard).toContainElement(membershipSection);
+    expect(membershipLink).toHaveAttribute('href', '/membership-ordinances');
+    expect(callingsLink).toHaveAttribute('href', '/callings');
+    expect(membershipSection).toHaveClass('space-y-4');
     expect(membershipSection).not.toHaveClass('rounded-lg');
+    expect(screen.queryByRole('heading', { name: 'Membership and Ordinances' })).not.toBeInTheDocument();
+    expect(screen.queryByText('Welcome, blessing, and priesthood actions for this meeting.')).not.toBeInTheDocument();
   });
 });

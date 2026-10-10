@@ -153,27 +153,21 @@ export function MembershipOrdinanceSection({
     window.location.reload();
   }
 
-  const Heading = embedded ? 'h3' : 'h2';
-
   return (
-    <section className={embedded ? 'space-y-4 border-t pt-4' : 'space-y-4 rounded-lg border bg-card p-4'}>
-      <div
-        className={
-          embedded
-            ? 'flex flex-wrap items-start justify-between gap-3'
-            : 'flex flex-wrap items-start justify-between gap-3 rounded-md bg-muted/40 p-3'
-        }
-      >
-        <div>
-          <Heading className="text-lg font-semibold">{t('title')}</Heading>
-          <p className="text-sm text-muted-foreground">{t('description')}</p>
+    <section className={embedded ? 'space-y-4' : 'space-y-4 rounded-lg border bg-card p-4'}>
+      {!embedded ? (
+        <div className="flex flex-wrap items-start justify-between gap-3 rounded-md bg-muted/40 p-3">
+          <div>
+            <h2 className="text-lg font-semibold">{t('title')}</h2>
+            <p className="text-sm text-muted-foreground">{t('description')}</p>
+          </div>
+          {!createOnly ? (
+            <Link href="/membership-ordinances" className="text-sm font-medium underline underline-offset-4">
+              {t('openWorkspace')}
+            </Link>
+          ) : null}
         </div>
-        {!createOnly ? (
-          <Link href="/membership-ordinances" className="text-sm font-medium underline underline-offset-4">
-            {t('openWorkspace')}
-          </Link>
-        ) : null}
-      </div>
+      ) : null}
       {canManage && canCreate ? (
         <div className="grid gap-3 rounded-md border bg-background p-3 sm:grid-cols-2">
           <p className="sm:col-span-2 text-xs text-muted-foreground">{t('stakeBoundary')}</p>
