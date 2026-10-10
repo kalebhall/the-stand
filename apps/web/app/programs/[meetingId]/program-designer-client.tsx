@@ -834,10 +834,10 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
 
   return (
     <main className="mx-auto w-full max-w-[1500px] space-y-4 p-4 sm:p-6">
-      <header className="flex flex-wrap items-start justify-between gap-4 rounded-xl border bg-card p-4 shadow-sm sm:p-5">
-        <div className="min-w-0">
+      <header className="flex flex-wrap items-start justify-between gap-4 rounded-xl border bg-card p-4 shadow-sm sm:p-5 lg:flex-nowrap">
+        <div className="min-w-0 flex-1">
           <p className="text-sm font-medium uppercase tracking-wide text-primary">{t('designerSimple')}</p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">{t('meetingProgram')}</h1>
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight sm:whitespace-nowrap sm:text-3xl">{t('meetingProgram')}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {source?.meetingDate} · {source ? meetingTypeLabel(source.meetingType) : ''}
           </p>

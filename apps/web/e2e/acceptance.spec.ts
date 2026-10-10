@@ -174,6 +174,7 @@ test('uniform content editor works without Advanced Layout and persists source r
     await page.goto(`/programs/${meetingId}`);
     await expect(page.getByRole('button', { name: 'Content' })).toBeVisible({ timeout: 120_000 });
     await expect(page.getByRole('button', { name: 'Advanced Mode' })).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: 'Meeting program' })).toHaveCSS('white-space', 'nowrap');
     await page.getByRole('button', { name: 'Content' }).click();
     await expect(page.getByRole('heading', { name: 'Program content' })).toBeVisible({ timeout: 120_000 });
 
