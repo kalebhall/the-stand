@@ -2,7 +2,7 @@ import { allBlocks, resolvePublicData, validatePublicDocumentLayout } from './pu
 import { validatePrintLayout } from './overflow';
 import type { PrintIssue } from './print-types';
 import { safeUrlSchema } from './primitives';
-import { validateMediaMetadata } from './media-validation';
+import { validateMediaMetadata } from './media-metadata-validation';
 import { parseDocumentLayout } from './schema';
 import type { ResolvedDocumentData } from './render-types';
 import type { DocumentLayout } from './types';

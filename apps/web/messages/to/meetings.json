@@ -221,6 +221,10 @@
     "visitingLeaderName": "Taki 'a'ahi {number} hingoa .",
     "visitingLeaderCalling": "Taki 'a'ahi {number} 'oku ne ui .",
     "visitingLeaderType": "Faʻahinga fakalangilangi ʻo e taki ʻaʻahi {number}",
+    "visitingLeaderTypePresidingAuthority": "Ma'u mafai pule",
+    "visitingLeaderTypeHighCouncilor": "Tokoni fakataha māʻolunga ʻaʻahi",
+    "visitingLeaderTypeGeneralOfficer": "ʻOfisa Siasí ʻaʻahi",
+    "visitingLeaderTypeOther": "Taki ʻaʻahi kehe",
     "loadingMembers": "Uta 'a e kau memipa..."
   },
   "business": {

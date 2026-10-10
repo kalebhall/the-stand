@@ -26,7 +26,7 @@ flowchart LR
   A14["web:config<br/>18 files"]
   A15["web:dashboard<br/>4 files"]
   A16["web:db<br/>17 files"]
-  A17["web:document-designer<br/>74 files"]
+  A17["web:document-designer<br/>76 files"]
   A18["web:features<br/>2 files"]
   A19["web:hardening<br/>1 files"]
   A20["web:health.mjs<br/>1 files"]
@@ -182,7 +182,7 @@ flowchart LR
 | `web:config` | 18 |
 | `web:dashboard` | 4 |
 | `web:db` | 17 |
-| `web:document-designer` | 74 |
+| `web:document-designer` | 76 |
 | `web:features` | 2 |
 | `web:hardening` | 1 |
 | `web:health.mjs` | 1 |
@@ -210,7 +210,7 @@ flowchart LR
 
 | Importing area | Imported area | Imports |
 | --- | --- | ---: |
-| `web:document-designer` | `web:document-designer` | 231 |
+| `web:document-designer` | `web:document-designer` | 237 |
 | `web:api` | `web:auth` | 185 |
 | `web:api` | `web:db` | 160 |
 | `web:app` | `web:ui` | 119 |
@@ -360,7 +360,7 @@ flowchart LR
 | `web:app` | `react` | 49 |
 | `web:api` | `vitest` | 41 |
 | `web:ui` | `react` | 33 |
-| `web:document-designer` | `vitest` | 30 |
+| `web:document-designer` | `vitest` | 31 |
 | `web:app` | `vitest` | 25 |
 | `web:ui` | `next-intl` | 25 |
 | `web:notifications` | `vitest` | 20 |
@@ -926,11 +926,12 @@ flowchart LR
 | `apps/web/src/document-designer/legacy-layout-adapter.vitest.ts` | `web:document-designer` | 1 | 1 |
 | `apps/web/src/document-designer/lock-enforcement.ts` | `web:document-designer` | 2 | 0 |
 | `apps/web/src/document-designer/lock-enforcement.vitest.ts` | `web:document-designer` | 3 | 1 |
-| `apps/web/src/document-designer/media-service.ts` | `web:document-designer` | 4 | 1 |
+| `apps/web/src/document-designer/media-metadata-validation.ts` | `web:document-designer` | 0 | 0 |
+| `apps/web/src/document-designer/media-service.ts` | `web:document-designer` | 5 | 1 |
 | `apps/web/src/document-designer/media-storage.ts` | `web:document-designer` | 0 | 3 |
 | `apps/web/src/document-designer/media-storage.vitest.ts` | `web:document-designer` | 1 | 4 |
 | `apps/web/src/document-designer/media-types.ts` | `web:document-designer` | 0 | 0 |
-| `apps/web/src/document-designer/media-validation.ts` | `web:document-designer` | 1 | 1 |
+| `apps/web/src/document-designer/media-validation.ts` | `web:document-designer` | 3 | 1 |
 | `apps/web/src/document-designer/media-validation.vitest.ts` | `web:document-designer` | 1 | 2 |
 | `apps/web/src/document-designer/meeting-document-service.ts` | `web:document-designer` | 7 | 0 |
 | `apps/web/src/document-designer/meeting-document-service.vitest.ts` | `web:document-designer` | 3 | 1 |
@@ -955,6 +956,7 @@ flowchart LR
 | `apps/web/src/document-designer/publication-history.vitest.ts` | `web:document-designer` | 2 | 1 |
 | `apps/web/src/document-designer/publication-service.ts` | `web:document-designer` | 4 | 0 |
 | `apps/web/src/document-designer/publication-service.vitest.ts` | `web:document-designer` | 4 | 1 |
+| `apps/web/src/document-designer/publication-validation-runtime.vitest.ts` | `web:document-designer` | 3 | 1 |
 | `apps/web/src/document-designer/publication-validation.ts` | `web:document-designer` | 8 | 0 |
 | `apps/web/src/document-designer/publication-validation.vitest.ts` | `web:document-designer` | 4 | 1 |
 | `apps/web/src/document-designer/registry.ts` | `web:document-designer` | 4 | 1 |
