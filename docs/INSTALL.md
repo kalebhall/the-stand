@@ -199,11 +199,15 @@ Create environment file:
 sudo -u the-stand -H bash -lc "nano /opt/the-stand/app/.env"
 ```
 
-Example configuration:
+Example configuration (the complete variable inventory and explanations are in
+[`docs/ENVIRONMENT.md`](ENVIRONMENT.md); use the repository `.env.example` as
+the canonical template):
 
 ```
 NODE_ENV=production
 APP_BASE_URL=https://stand.yourdomain.com
+NEXTAUTH_URL=https://stand.yourdomain.com
+AUTH_URL=https://stand.yourdomain.com
 PORT=3000
 
 DATABASE_URL=postgresql://stand_user:REPLACE_WITH_STRONG_PASSWORD@localhost:5432/the_stand
@@ -558,7 +562,6 @@ sudo install -m 0644 /opt/the-stand/app/infra/systemd/the-stand-technology-remin
 
 Create `/etc/systemd/system/the-stand-interview-reminders.service`:
 
-
 ```
 [Unit]
 Description=The Stand scheduled interview reminders
@@ -656,7 +659,6 @@ The service environment must provide `DATABASE_URL` and `MAINTENANCE_USER_ID`; k
 ## SECTION 10.5 — Legacy Raw Import Retention Purge
 
 Existing `the-stand-raw-import-purge.*` units remain supported for raw-only deployments. New deployments should use combined operational retention purge above. Do not run both timers, or raw purge runs twice unnecessarily.
-
 
 ## SECTION 11 — NGINX REVERSE PROXY
 
