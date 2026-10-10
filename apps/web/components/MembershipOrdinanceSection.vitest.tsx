@@ -8,7 +8,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MESSAGE_CATALOGS } from '@/src/i18n/messages';
 const messages = MESSAGE_CATALOGS.es;
 
-import { MembershipOrdinanceSection } from './MembershipOrdinanceSection';
+import { MembershipOrdinanceSection, type MembershipOrdinanceAction } from './MembershipOrdinanceSection';
 
 describe('MembershipOrdinanceSection localization', () => {
   afterEach(() => cleanup());
@@ -46,6 +46,44 @@ describe('MembershipOrdinanceSection localization', () => {
     expect(screen.getByRole('option', { name: 'Diácono' })).toBeVisible();
     expect(screen.getByText('Aprobación confirmada')).toBeVisible();
     expect(screen.getByText('Líder que presenta')).toBeVisible();
+  });
+
+  it('keeps membership status actions from submitting the containing meeting form', () => {
+    const action = (
+      id: string,
+      status: MembershipOrdinanceAction['status'],
+      overrides: Partial<MembershipOrdinanceAction> = {}
+    ): MembershipOrdinanceAction => ({
+      id,
+      member_name: 'Member Name',
+      action_type: 'WELCOME_NEW_MEMBER',
+      reason: null,
+      details: null,
+      status,
+      ...overrides
+    });
+    const actions: MembershipOrdinanceAction[] = [
+      action('interview', 'pending', { interview_status: 'needed' }),
+      action('lcr', 'completed', { lcr_follow_up_status: 'needed' }),
+      action('announced', 'pending'),
+      action('complete', 'action_needed')
+    ];
+
+    render(
+      <NextIntlClientProvider locale="en-US" messages={MESSAGE_CATALOGS['en-US']}>
+        <form>
+          <MembershipOrdinanceSection wardId="ward-1" meetingId="meeting-1" actions={actions} canManage canCreate={false} embedded />
+        </form>
+      </NextIntlClientProvider>
+    );
+
+    const statusButtons = [
+      screen.getByRole('button', { name: 'Interview complete' }),
+      screen.getByRole('button', { name: 'Mark LCR updated' }),
+      ...screen.getAllByRole('button', { name: 'Mark announced' }),
+      screen.getByRole('button', { name: 'Mark completed' })
+    ];
+    statusButtons.forEach((button) => expect(button).toHaveProperty('type', 'button'));
   });
 
   it('does not render raw API errors when the error code is missing or unknown', async () => {

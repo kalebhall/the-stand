@@ -77,7 +77,10 @@ const liveSuites = [
 console.log('=== Live PostgreSQL/RLS suite (serialized) ===');
 for (const suite of liveSuites) {
   console.log(`--- ${suite} ---`);
-  const status = runVitest([suite, '--pool=forks', '--no-file-parallelism', '--maxWorkers=1'], testEnv);
+  const status = runVitest(
+    [suite, '--pool=forks', '--no-file-parallelism', '--maxWorkers=1', '--testTimeout=15000', '--hookTimeout=15000'],
+    testEnv
+  );
   if (status !== 0) process.exit(status);
 }
 

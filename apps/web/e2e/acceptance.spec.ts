@@ -99,6 +99,14 @@ test('meeting create publish and print flow works', async ({ page }) => {
     });
     expect(updateResponse.status).toBe(200);
 
+    await page.goto(`/meetings/${id}/edit`);
+    const wardBusinessHeading = page.getByRole('heading', { name: 'Ward Business' });
+    await expect(wardBusinessHeading).toBeVisible();
+    const membershipHeading = page.getByRole('heading', { name: 'Membership and Ordinances' });
+    await expect(membershipHeading).toBeVisible();
+    await expect(wardBusinessHeading.locator('xpath=ancestor::section[1]')).toContainText('Membership and Ordinances');
+    await expect(page.getByRole('heading', { name: 'Ward and Stake Business' })).toHaveCount(0);
+
     const layoutResponse = await apiRequest(page, `/api/w/${WARD_A}/public-layout`, 'PATCH', {
       preset: 'TRI_FOLD_BULLETIN',
       announcementMode: 'AFTER_PROGRAM',

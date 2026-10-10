@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { HymnAutocomplete } from '@/components/HymnAutocomplete';
 import { InternalNotesPanel, type InternalNoteRow } from '@/components/InternalNotesPanel';
 import { WardBusinessSection, type BusinessLine } from '@/components/WardBusinessSection';
+import { MembershipOrdinanceSection, type MembershipOrdinanceAction } from '@/components/MembershipOrdinanceSection';
 import { MemberAutocomplete } from '@/components/ui/member-autocomplete';
 import { toYyyyMmDd } from '@/src/meetings/date';
 import {
@@ -87,6 +88,8 @@ type MeetingFormProps = {
   canUseInternalNotes?: boolean;
   businessLines?: BusinessLine[];
   canManageBusiness?: boolean;
+  membershipActions?: MembershipOrdinanceAction[];
+  canManageMembership?: boolean;
   standAnnouncements?: Array<{ title: string; body: string | null }>;
 };
 
@@ -127,9 +130,12 @@ export function MeetingForm({
   canUseInternalNotes = false,
   businessLines = [],
   canManageBusiness = false,
+  membershipActions = [],
+  canManageMembership = false,
   standAnnouncements = []
 }: MeetingFormProps) {
   const t = useTranslations('meetingForm');
+  const businessT = useTranslations('business');
   const router = useRouter();
   const itemTitleLabel = (itemType: string) => (HYMN_ITEM_TYPES.has(itemType) || itemType === BUSINESS_ITEM_TYPE ? t('title') : t('name'));
   const [meetingDate, setMeetingDate] = useState(toYyyyMmDd(initialMeetingDate));
@@ -172,6 +178,18 @@ export function MeetingForm({
   latestDraftRef.current = { meetingDate, meetingType, programItems };
 
   const canSave = useMemo(() => Boolean(meetingDate && meetingType), [meetingDate, meetingType]);
+  const membershipBusinessIndex = programItems.findIndex((item) => item.itemType === BUSINESS_ITEM_TYPE);
+  const membershipSection =
+    mode === 'edit' && meetingId ? (
+      <MembershipOrdinanceSection
+        wardId={wardId}
+        meetingId={meetingId}
+        actions={membershipActions}
+        canManage={canManageMembership}
+        canCreate={false}
+        embedded
+      />
+    ) : null;
 
   useEffect(() => {
     if (mode !== 'edit' || !meetingId) return;
@@ -719,34 +737,6 @@ export function MeetingForm({
             ) : null}
             {item.itemType === BUSINESS_ITEM_TYPE ? (
               <div className="grid gap-3">
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <label className="space-y-1 text-sm">
-                    <span className="font-medium">{t('stakeBusinessParticipantName')}</span>
-                    <input
-                      className="w-full rounded-md border px-3 py-2"
-                      value={item.title}
-                      onChange={(event) => updateProgramItem(index, 'title', event.target.value)}
-                      placeholder={t('stakePresidencyFallback')}
-                    />
-                  </label>
-                  <label className="space-y-1 text-sm">
-                    <span className="font-medium">{t('stakeBusinessParticipantCalling')}</span>
-                    <input
-                      className="w-full rounded-md border px-3 py-2"
-                      value={item.topic ?? ''}
-                      onChange={(event) => updateProgramItem(index, 'topic', event.target.value)}
-                      placeholder={t('callingOrRole')}
-                    />
-                  </label>
-                </div>
-                <WardBusinessSection
-                  wardId={wardId}
-                  meetingId={meetingId ?? ''}
-                  lines={businessLines}
-                  canManage={canManageBusiness}
-                  showAnnounce={false}
-                  showScript={false}
-                />
                 <label className="flex items-center gap-2 text-sm">
                   <input
                     type="checkbox"
@@ -763,10 +753,54 @@ export function MeetingForm({
                   />
                   {t('includesStakeBusiness')}
                 </label>
+                {item.notes.includes('[STAKE_BUSINESS]') ? (
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <label className="space-y-1 text-sm">
+                      <span className="font-medium">{t('stakeBusinessParticipantName')}</span>
+                      <input
+                        className="w-full rounded-md border px-3 py-2"
+                        value={item.title}
+                        onChange={(event) => updateProgramItem(index, 'title', event.target.value)}
+                        placeholder={t('stakePresidencyFallback')}
+                      />
+                    </label>
+                    <label className="space-y-1 text-sm">
+                      <span className="font-medium">{t('stakeBusinessParticipantCalling')}</span>
+                      <input
+                        className="w-full rounded-md border px-3 py-2"
+                        value={item.topic ?? ''}
+                        onChange={(event) => updateProgramItem(index, 'topic', event.target.value)}
+                        placeholder={t('callingOrRole')}
+                      />
+                    </label>
+                  </div>
+                ) : null}
+                <WardBusinessSection
+                  wardId={wardId}
+                  meetingId={meetingId ?? ''}
+                  lines={businessLines}
+                  canManage={canManageBusiness}
+                  showAnnounce={false}
+                  showScript={false}
+                  sectionTitle={mode === 'edit' ? businessT('wardBusinessOnlyTitle') : undefined}
+                  membershipSection={index === membershipBusinessIndex ? membershipSection : undefined}
+                />
               </div>
             ) : null}
           </article>
         ))}
+        {membershipSection && membershipBusinessIndex === -1 ? (
+          <WardBusinessSection
+            wardId={wardId}
+            meetingId={meetingId ?? ''}
+            lines={businessLines}
+            canManage={canManageBusiness}
+            showAnnounce={false}
+            showScript={false}
+            sectionTitle={mode === 'edit' ? businessT('wardBusinessOnlyTitle') : undefined}
+            membershipSection={membershipSection}
+          />
+        ) : null}
       </section>
 
       {error ? <p className="text-sm text-red-600">{error}</p> : null}

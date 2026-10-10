@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 
@@ -40,6 +40,8 @@ type WardBusinessSectionProps = {
   meetingId: string;
   lines: BusinessLine[];
   membershipActions?: MembershipOrdinanceSummary[];
+  membershipSection?: ReactNode;
+  sectionTitle?: string;
   canManage: boolean;
   /** When true, shows "Mark Announced" button for pending lines (stand-view mode). */
   showAnnounce?: boolean;
@@ -286,6 +288,8 @@ export function WardBusinessSection({
   meetingId,
   lines,
   membershipActions = [],
+  membershipSection,
+  sectionTitle,
   canManage,
   showAnnounce = false,
   showScript = false,
@@ -301,10 +305,10 @@ export function WardBusinessSection({
   const t = useTranslations('business');
   const meetingsT = useTranslations('meetings');
 
-  if (!lines.length && !membershipActions.length && !includesStakeBusiness && !programNotes?.trim()) {
+  if (!lines.length && !membershipActions.length && !membershipSection && !includesStakeBusiness && !programNotes?.trim()) {
     return (
       <section className="rounded-lg border bg-card p-4">
-        <h2 className="text-lg font-semibold">{t('title')}</h2>
+        <h2 className="text-lg font-semibold">{sectionTitle ?? t('title')}</h2>
         <p className="mt-2 text-sm text-muted-foreground">{t('empty')}</p>
       </section>
     );
@@ -364,13 +368,14 @@ export function WardBusinessSection({
           />
         ))}
       </ul>
+      {membershipSection}
     </>
   );
 
   if (!collapsible) {
     return (
       <section className="rounded-lg border bg-card p-4">
-        <h2 className="mb-3 text-lg font-semibold">{t('title')}</h2>
+        <h2 className="mb-3 text-lg font-semibold">{sectionTitle ?? t('title')}</h2>
         {content}
       </section>
     );
@@ -380,7 +385,7 @@ export function WardBusinessSection({
     <details className="rounded-lg border bg-card p-4" open={pendingCount > 0}>
       <summary className="cursor-pointer list-none text-lg font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 [&::-webkit-details-marker]:hidden">
         <span className="flex flex-wrap items-center justify-between gap-2">
-          <span>{t('title')}</span>
+          <span>{sectionTitle ?? t('title')}</span>
           <span className="text-sm font-normal text-muted-foreground">
             {pendingCount > 0 ? t('pendingCount', { count: pendingCount }) : t('announcedCount', { count: announcedCount })}
           </span>
