@@ -46,6 +46,10 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
       await client.query('ROLLBACK');
       return NextResponse.json({ error: 'Template not found', code: 'NOT_FOUND' }, { status: 404 });
     }
+    if (template.status === 'ARCHIVED') {
+      await client.query('ROLLBACK');
+      return NextResponse.json({ error: 'Archived templates cannot be published', code: 'IMMUTABLE_TEMPLATE' }, { status: 409 });
+    }
     const canPublish = template.status === 'PUBLISHED'
       ? canRepublishProgram({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId, profile)
       : canPublishProgram({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId, profile);

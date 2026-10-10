@@ -1,15 +1,25 @@
 import { NextResponse } from 'next/server';
 
 import { auth } from '@/src/auth/auth';
-import { canViewProgramDesigner, hasRole } from '@/src/auth/roles';
+import { canViewProgramDesigner, canUseAdvancedProgramDesigner, hasRole } from '@/src/auth/roles';
 import { isAdvancedDesignerFeatureEnabled } from '@/src/features/advanced-designer';
-import { isWardModuleEnabled } from '@/src/modules/service';
+import { isWardModuleEnabled, isWardModuleEnabledInTransaction } from '@/src/modules/service';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/platform/db/context';
 import { updateReusableBlockSchema, uuid, validateReusableSnapshot } from '@/src/document-designer/reusable-block-library';
+import { getRegisteredBlockDefinition } from '@/src/document-designer/registry';
+import { loadProgramPermissionProfile } from '@/src/document-designer/template-service';
 
-function response(status: 400 | 401 | 403 | 404 | 409 | 500, error: string, code: string) {
+function response(status: 400 | 401 | 403 | 404 | 409 | 422 | 500, error: string, code: string) {
   return NextResponse.json({ error, code }, { status });
+}
+
+function isAdvancedReusableType(type: string): boolean {
+  try {
+    return getRegisteredBlockDefinition('SACRAMENT_PROGRAM', type).exposure === 'ADVANCED';
+  } catch {
+    return true;
+  }
 }
 
 async function getSession(wardId: string) {
@@ -38,6 +48,21 @@ export async function PATCH(request: Request, context: { params: Promise<{ wardI
   try {
     await client.query('BEGIN');
     await setDbContext(client, { wardId, userId: access.session.user.id });
+    if (!(await isWardModuleEnabledInTransaction(client, wardId, 'programs'))) {
+      await client.query('ROLLBACK');
+      return response(403, 'Program Studio is disabled', 'MODULE_DISABLED');
+    }
+    if (parsed.data.snapshot) {
+      const advancedEditing = canUseAdvancedProgramDesigner(
+        { roles: access.session.user.roles, activeWardId: access.session.activeWardId },
+        wardId,
+        await loadProgramPermissionProfile(client, wardId)
+      );
+      if (!advancedEditing && isAdvancedReusableType(parsed.data.snapshot.blockType)) {
+        await client.query('ROLLBACK');
+        return response(422, 'Advanced blocks are read-only for this editor', 'ADVANCED_BLOCK_READ_ONLY');
+      }
+    }
     const current = await client.query(`SELECT b.id, b.current_version, b.block_type, b.status
       FROM reusable_block b
      WHERE b.id = $1::uuid

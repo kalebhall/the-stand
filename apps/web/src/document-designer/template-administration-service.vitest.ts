@@ -7,6 +7,9 @@ import {
   listTemplateHistory,
   publishTemplate,
 } from './template-administration-service';
+import { adaptLegacyLayoutToDocument } from './legacy-layout-adapter';
+
+const validLayout = adaptLegacyLayoutToDocument({ preset: 'FULL_PAGE', announcementMode: 'AFTER_PROGRAM', coverMode: 'NONE' });
 
 const authorizer = { canCreateDraft: () => true, canPublish: () => true };
 const systemAdmin = { roles: ['SYSTEM_ADMIN'], activeWardId: 'ward-a', activeStakeId: 'stake-a', stakeAssignments: [] };
@@ -30,21 +33,21 @@ describe('template administration service', () => {
 
   it('rejects a non-system-admin from mutating a system template before SQL mutation', async () => {
     const client = { query: vi.fn() };
-    await expect(createImmutableVersion(client, wardEditor, 'user-a', 'template-a', 1, {}, {}, {})).rejects.toThrow('TEMPLATE_VERSION_FORBIDDEN');
+    await expect(createImmutableVersion(client, wardEditor, 'user-a', 'template-a', 1, validLayout, {}, {})).rejects.toThrow('TEMPLATE_VERSION_FORBIDDEN');
     expect(client.query).toHaveBeenCalledTimes(1);
   });
 
   it('rejects a stake mutation without an assignment', async () => {
     const client = scopedClient({ id: 'template-a', scope_type: 'STAKE', scope_id: 'stake-a', status: 'DRAFT', created_by_user_id: 'user-a' });
-    await expect(createImmutableVersion(client, wardEditor, 'user-a', 'template-a', 1, {}, {}, {})).rejects.toThrow('TEMPLATE_VERSION_FORBIDDEN');
+    await expect(createImmutableVersion(client, wardEditor, 'user-a', 'template-a', 1, validLayout, {}, {})).rejects.toThrow('TEMPLATE_VERSION_FORBIDDEN');
     expect(client.query).toHaveBeenCalledTimes(1);
   });
 
   it('allows an assigned stake administrator and keeps the scope predicate', async () => {
     const client = scopedClient({ id: 'template-a', scope_type: 'STAKE', scope_id: 'stake-a', status: 'DRAFT', created_by_user_id: 'user-a' });
-    await createImmutableVersion(client, stakeAdmin, 'user-a', 'template-a', 1, {}, {}, {});
-    expect(client.query.mock.calls[1][0]).toContain('t.scope_type = $7::text');
-    expect(client.query.mock.calls[1][0]).toContain('t.scope_id IS NOT DISTINCT FROM $8::uuid');
+    await createImmutableVersion(client, stakeAdmin, 'user-a', 'template-a', 1, validLayout, {}, {});
+    expect(client.query.mock.calls[1][0]).toContain('t.scope_type = $8::text');
+    expect(client.query.mock.calls[1][0]).toContain('t.scope_id IS NOT DISTINCT FROM $9::uuid');
   });
 
   it('rejects cross-ward publish and archive using persisted scope, not caller scope', async () => {

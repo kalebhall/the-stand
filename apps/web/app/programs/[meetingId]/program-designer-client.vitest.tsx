@@ -213,4 +213,34 @@ describe('ProgramDesignerClient', () => {
     await waitFor(() => expect(screen.getByRole('main')).toBeInTheDocument());
     expect(screen.queryByRole('button', { name: /publish/i })).not.toBeInTheDocument();
   });
+  it('keeps advanced blocks readable but read-only in Simple Mode', async () => {
+    const advancedOnlyLayout = {
+      ...payload.document.layout,
+      pages: payload.document.layout.pages.map((page, pageIndex) => pageIndex === 0 ? {
+        ...page,
+        regions: page.regions.map((region, regionIndex) => regionIndex === 0 ? {
+          ...region,
+          blocks: region.blocks.map((block, blockIndex) => blockIndex === 0 ? {
+            ...block,
+            type: 'PRESIDING_CONDUCTING',
+            dataMode: 'AUTO',
+            config: { text: 'Presiding and conducting' }
+          } : block)
+        } : region)
+      } : page)
+    };
+    const advancedOnlyPayload = {
+      ...payload,
+      document: { ...payload.document, layout: advancedOnlyLayout },
+      simpleMode: { advancedModeAvailable: false }
+    };
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => advancedOnlyPayload });
+    vi.stubGlobal('fetch', fetchMock);
+    renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
+    await screen.findByRole('region', { name: 'Document canvas' });
+    expect(screen.getAllByText('Advanced block · read-only in Simple Mode').length).toBeGreaterThan(0);
+    expect(screen.getByLabelText('Visibility')).toBeDisabled();
+    expect(screen.getByRole('textbox', { name: 'Text' })).toHaveAttribute('readonly');
+    expect(screen.getAllByRole('button', { name: /Move Presiding/i }).every((button) => button.hasAttribute('disabled'))).toBe(true);
+  });
 });

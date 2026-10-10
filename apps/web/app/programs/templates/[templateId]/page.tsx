@@ -13,7 +13,7 @@ export default async function TemplateDetailPage({ params }: { params: Promise<{
   const stakeMatchesWard = session.activeStakeId ? (await pool.query('SELECT 1 FROM ward WHERE id = $1::uuid AND stake_id = $2::uuid LIMIT 1', [session.activeWardId, session.activeStakeId])).rowCount === 1 : false;
   if (!session.activeWardId || !isAdvancedDesignerFeatureEnabled() || !(await isWardModuleEnabled(session.activeWardId, session.user.id, 'programs')) || (!canViewProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId) && !(stakeMatchesWard && session.activeStakeId && canManageStakeTemplates(session, session.activeStakeId)))) redirect('/dashboard');
   const { templateId } = await params;
-  const canCopy = canManageWardProgramTemplates({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId);
+  const canCopy = canManageWardProgramTemplates({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId) || (stakeMatchesWard && session.activeStakeId ? canManageStakeTemplates(session, session.activeStakeId) : false);
   const canEdit = canManageWardProgramTemplates({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId) || (stakeMatchesWard && session.activeStakeId ? canManageStakeTemplates(session, session.activeStakeId) : false);
   return <TemplateDetailClient wardId={session.activeWardId} templateId={templateId} canCopy={canCopy} canEdit={canEdit} />;
 }

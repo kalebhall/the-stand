@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { adaptLegacyLayoutToDocument } from './legacy-layout-adapter';
 import { buildPublicPreviewSource, SimpleModeValidationError, validateSimpleModeDraft } from './meeting-document-service';
+import type { DocumentBlock } from './types';
 
 const source = adaptLegacyLayoutToDocument({ preset: 'FULL_PAGE', announcementMode: 'AFTER_PROGRAM', coverMode: 'NONE' });
 
@@ -19,6 +20,37 @@ describe('meeting document service', () => {
     ]);
   });
 
+  it('rejects non-content Simple block and region geometry mutations', () => {
+    const blockMutations = [
+      (draft: typeof source) => { draft.pages[0].regions[0].blocks[0].width = 'HALF'; },
+      (draft: typeof source) => { draft.pages[0].regions[0].blocks[0].dataMode = 'AUTO'; },
+      (draft: typeof source) => { draft.pages[0].regions[0].blocks[0].digitalBehavior = 'LINK'; }
+    ];
+    for (const mutate of blockMutations) {
+      const draft = structuredClone(source);
+      mutate(draft);
+      expect(() => validateSimpleModeDraft(draft, source)).toThrow(/Simple Mode|properties/i);
+    }
+    const geometry = structuredClone(source);
+    geometry.pages[0].regions[0].gutter = 1;
+    expect(() => validateSimpleModeDraft(geometry, source)).toThrow();
+  });
+
+  it('allows adding a Simple reusable block without entering Advanced Mode', () => {
+    const draft = structuredClone(source);
+    const reusable = {
+      ...draft.pages[0].regions[0].blocks[0],
+      id: '00000000-0000-4000-8000-000000000099' as DocumentBlock['id'],
+      type: 'DIVIDER' as DocumentBlock['type'],
+      config: { style: 'SOLID' },
+      reusableBlockId: '00000000-0000-4000-8000-000000000098',
+      reusableBlockVersion: 2
+    } as DocumentBlock;
+    draft.pages[0].regions[0].blocks.push(reusable);
+    expect(validateSimpleModeDraft(draft, source).layout.pages[0].regions[0].blocks).toHaveLength(
+      source.pages[0].regions[0].blocks.length + 1
+    );
+  });
   it('rejects unknown or structurally changed layouts', () => {
     expect(() => validateSimpleModeDraft({ nope: true }, source)).toThrowError(SimpleModeValidationError);
     const draft = structuredClone(source);

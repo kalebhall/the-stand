@@ -159,6 +159,8 @@
     "printPreview": "Vista previa de impresión",
     "simpleMode": "Modo simple",
     "advancedMode": "Modo avanzado",
+    "advancedBlockReadOnly": "Bloque avanzado · solo lectura en modo simple",
+    "advancedBlockReadOnlyError": "Este editor no puede cambiar los bloques avanzados.",
     "previewPublic": "Vista previa como visitante público",
     "sourceMetadata": "Metadatos de la fuente de plantilla",
     "unavailable": "No disponible",

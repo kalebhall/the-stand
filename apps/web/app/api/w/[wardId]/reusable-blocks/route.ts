@@ -1,19 +1,29 @@
 import { NextResponse } from 'next/server';
 
 import { auth } from '@/src/auth/auth';
-import { canViewProgramDesigner, hasRole } from '@/src/auth/roles';
+import { canViewProgramDesigner, canUseAdvancedProgramDesigner, hasRole } from '@/src/auth/roles';
 import { isAdvancedDesignerFeatureEnabled } from '@/src/features/advanced-designer';
-import { isWardModuleEnabled } from '@/src/modules/service';
+import { isWardModuleEnabled, isWardModuleEnabledInTransaction } from '@/src/modules/service';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/platform/db/context';
 import { createReusableBlockSchema, scopeOwner, uuid, validateReusableSnapshot } from '@/src/document-designer/reusable-block-library';
+import { getRegisteredBlockDefinition } from '@/src/document-designer/registry';
+import { loadProgramPermissionProfile } from '@/src/document-designer/template-service';
 
-function errorResponse(status: 400 | 401 | 403 | 404 | 409 | 500, message: string, code: string) {
+function errorResponse(status: 400 | 401 | 403 | 404 | 409 | 422 | 500, message: string, code: string) {
   return NextResponse.json({ error: message, code }, { status });
 }
 
 function isActiveStakeAdmin(session: { activeStakeId?: string | null; stakeAssignments?: readonly { stakeId: string; roleNames: readonly string[] }[] }) {
   return Boolean(session.activeStakeId && session.stakeAssignments?.some((assignment) => assignment.stakeId === session.activeStakeId && assignment.roleNames.some((role) => role.toUpperCase() === 'STAKE_ADMIN')));
+}
+
+function isAdvancedReusableType(type: string): boolean {
+  try {
+    return getRegisteredBlockDefinition('SACRAMENT_PROGRAM', type).exposure === 'ADVANCED';
+  } catch {
+    return true;
+  }
 }
 
 async function access(wardId: string, manage = false) {
@@ -30,6 +40,7 @@ async function withContext<T>(wardId: string, userId: string, operation: (client
   try {
     await client.query('BEGIN');
     await setDbContext(client, { wardId, userId });
+    if (!(await isWardModuleEnabledInTransaction(client, wardId, 'programs'))) throw new Error('PROGRAMS_MODULE_DISABLED');
     const result = await operation(client);
     await client.query('COMMIT');
     return result;
@@ -61,7 +72,8 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
       return query.rows;
     });
     return NextResponse.json({ blocks });
-  } catch {
+  } catch (error) {
+    if (error instanceof Error && error.message === 'PROGRAMS_MODULE_DISABLED') return errorResponse(403, 'Program Studio is disabled', 'MODULE_DISABLED');
     return errorResponse(500, 'Failed to load reusable blocks', 'INTERNAL_ERROR');
   }
 }
@@ -84,6 +96,12 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
   }
   try {
     const block = await withContext(wardId, result.session.user.id, async (client) => {
+      const advancedEditing = canUseAdvancedProgramDesigner(
+        { roles: result.session.user.roles, activeWardId: result.session.activeWardId },
+        wardId,
+        await loadProgramPermissionProfile(client, wardId)
+      );
+      if (!advancedEditing && isAdvancedReusableType(snapshot.blockType)) throw new Error('ADVANCED_BLOCK_READ_ONLY');
       const ward = await client.query('SELECT stake_id FROM ward WHERE id = $1::uuid', [wardId]);
       const stakeId = ward.rows[0]?.stake_id;
       if (!stakeId) throw new Error('WARD_NOT_FOUND');
@@ -100,6 +118,8 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     });
     return NextResponse.json({ block }, { status: 201 });
   } catch (error) {
+    if (error instanceof Error && error.message === 'PROGRAMS_MODULE_DISABLED') return errorResponse(403, 'Program Studio is disabled', 'MODULE_DISABLED');
+    if (error instanceof Error && error.message === 'ADVANCED_BLOCK_READ_ONLY') return errorResponse(422, 'Advanced blocks are read-only for this editor', 'ADVANCED_BLOCK_READ_ONLY');
     if (error && typeof error === 'object' && 'code' in error && (error as { code?: string }).code === '42501') return errorResponse(403, 'Reusable block operation is not permitted', 'FORBIDDEN');
     if (error && typeof error === 'object' && 'code' in error && (error as { code?: string }).code === '23505') return errorResponse(409, 'Reusable block version conflict', 'VERSION_CONFLICT');
     if (error instanceof Error && error.message === 'WARD_NOT_FOUND') return errorResponse(404, 'Ward not found', 'NOT_FOUND');

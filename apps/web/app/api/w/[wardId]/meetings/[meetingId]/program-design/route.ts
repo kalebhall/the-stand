@@ -11,13 +11,13 @@ import {
   SimpleModeValidationError,
   validateSimpleModeDraft
 } from '@/src/document-designer/meeting-document-service';
-import { parseTemplateLayout } from '@/src/document-designer/template-service';
-import { allBlocks, validatePublicDocumentLayout } from '@/src/document-designer/public-safety';
-import { getRegisteredBlockDefinition } from '@/src/document-designer/registry';
+import { parseTemplateLayout, advancedBlocksChanged, assertTemplateReusableReferences, containsAdvancedBlocks } from '@/src/document-designer/template-service';
+import { validatePublicDocumentLayout } from '@/src/document-designer/public-safety';
 import {
   mergeSimpleIntoAdvanced,
   normalizeToAdvanced,
   downgradeToV1,
+  isAdvancedLayout,
   parseAdvancedLayout,
   projectAdvancedLayoutForPublic,
   type AdvancedDocumentLayout
@@ -46,8 +46,31 @@ const saveSchema = z
   .strict();
 const fullPageFallback = () => BUILT_IN_TEMPLATES.find((template) => template.key === 'full-page-standard')!.layout;
 
+function simpleModeErrorMessage(code: SimpleModeValidationError['code']): string {
+  switch (code) {
+    case 'INVALID_LAYOUT':
+      return 'Invalid program design layout';
+    case 'ADVANCED_BLOCK':
+      return 'Advanced blocks are managed by Advanced Mode';
+    case 'STRUCTURE_LOCKED':
+      return 'Program structure cannot be changed in Simple Mode';
+    case 'PROPERTY_LOCKED':
+      return 'A protected program property cannot be changed in Simple Mode';
+  }
+}
+
 function errorResponse(message: string, code: string, status: number, details?: Record<string, unknown>) {
   return NextResponse.json({ error: message, code, ...details }, { status });
+}
+
+async function assertChangedReusableReferences(
+  client: Awaited<ReturnType<typeof pool.connect>>,
+  _previousLayout: unknown,
+  nextLayout: unknown,
+  wardId: string,
+  userId: string
+): Promise<void> {
+  await assertTemplateReusableReferences(client, nextLayout, wardId, userId, 'WARD_CONTEXT');
 }
 
 async function readContext(client: Awaited<ReturnType<typeof pool.connect>>, wardId: string, meetingId: string) {
@@ -268,7 +291,7 @@ export async function PUT(request: Request, context: { params: Promise<{ wardId:
       await client.query('ROLLBACK');
       return errorResponse('The program changed in another session', 'REVISION_CONFLICT', 409, { currentRevision: revision });
     }
-    let validated: { layout: DocumentLayout; warnings: string[] };
+    let validated: { layout: DocumentLayout | AdvancedDocumentLayout; warnings: string[] };
     let sourceTemplateId: string | null = (current.source_template_id as string | null | undefined) ?? null;
     let sourceTemplateVersion: number | null = current.source_template_version == null ? null : Number(current.source_template_version);
     try {
@@ -287,9 +310,10 @@ export async function PUT(request: Request, context: { params: Promise<{ wardId:
                FROM document_template t
                JOIN document_template_version v ON v.id = t.current_published_version_id AND v.template_id = t.id
               WHERE t.id = $1::uuid AND t.document_type = 'SACRAMENT_PROGRAM'
-                AND t.status <> 'ARCHIVED'
-                AND ((t.scope_type = 'SYSTEM' AND t.scope_id IS NULL AND t.status = 'PUBLISHED' AND t.current_published_version_id IS NOT NULL)
-                  OR (t.scope_type = 'STAKE' AND t.status = 'PUBLISHED' AND t.scope_id = (SELECT stake_id FROM ward WHERE id = $2::uuid))
+                AND t.status = 'PUBLISHED'
+                AND t.current_published_version_id IS NOT NULL
+                AND ((t.scope_type = 'SYSTEM' AND t.scope_id IS NULL)
+                  OR (t.scope_type = 'STAKE' AND t.scope_id = (SELECT stake_id FROM ward WHERE id = $2::uuid))
                   OR (t.scope_type = 'WARD' AND t.scope_id = $2::uuid)
                   OR (t.scope_type = 'PERSONAL_DRAFT' AND t.scope_id = $2::uuid AND t.created_by_user_id = $3::uuid))
               LIMIT 1`,
@@ -301,14 +325,6 @@ export async function PUT(request: Request, context: { params: Promise<{ wardId:
           }
           const templateRow = templateResult.rows[0] as { id: string; version: number; layout_json: unknown };
           validated = { layout: parseTemplateLayout(templateRow.layout_json), warnings: [] };
-          if (
-            !advancedModeAvailable &&
-            allBlocks(validated.layout).some(
-              (block) => getRegisteredBlockDefinition(validated.layout.documentType, block.type).exposure === 'ADVANCED'
-            )
-          ) {
-            throw new SimpleModeValidationError('ADVANCED_BLOCK', 'This template requires Advanced Mode');
-          }
           sourceTemplateId = templateRow.id;
           sourceTemplateVersion = Number(templateRow.version);
         }
@@ -325,7 +341,7 @@ export async function PUT(request: Request, context: { params: Promise<{ wardId:
     } catch (error) {
       await client.query('ROLLBACK');
       if (error instanceof SimpleModeValidationError)
-        return errorResponse(error.message, error.code, error.code === 'INVALID_LAYOUT' ? 400 : 422);
+        return errorResponse(simpleModeErrorMessage(error.code), error.code, error.code === 'INVALID_LAYOUT' ? 400 : 422);
       return errorResponse('Invalid program design', 'BAD_REQUEST', 400);
     }
     if (body.data.mode === 'ADVANCED' && !advancedModeAvailable) {
@@ -339,21 +355,45 @@ export async function PUT(request: Request, context: { params: Promise<{ wardId:
         assertNoLockedChanges(normalizeToAdvanced(current.layout_json), advancedToSave);
       } catch (error) {
         await client.query('ROLLBACK');
-        if (error instanceof LockedLayoutError) return errorResponse(error.message, 'LOCKED_LAYOUT', 409);
-        return errorResponse(error instanceof Error ? error.message : 'Invalid advanced layout', 'BAD_REQUEST', 400);
+        if (error instanceof LockedLayoutError) return errorResponse('Locked program content cannot be changed', 'LOCKED_LAYOUT', 409);
+        return errorResponse('Invalid advanced layout', 'BAD_REQUEST', 400);
       }
     }
-    const persistedLayout = clearLegacyTitleProvenance(
+    const selectedTemplateLayout = body.data.templateId ? validated.layout : null;
+    const candidateLayout =
       advancedToSave ??
-        (current.layout_json &&
-        typeof current.layout_json === 'object' &&
-        (current.layout_json as { schemaVersion?: unknown }).schemaVersion === 2
-          ? mergeSimpleIntoAdvanced(parseAdvancedLayout(current.layout_json), validated.layout)
-          : validated.layout),
-      current.layout_json,
-      Boolean(body.data.templateId)
+        (selectedTemplateLayout
+          ? isAdvancedLayout(selectedTemplateLayout)
+            ? selectedTemplateLayout
+            : current.layout_json &&
+                typeof current.layout_json === 'object' &&
+                (current.layout_json as { schemaVersion?: unknown }).schemaVersion === 2
+              ? mergeSimpleIntoAdvanced(parseAdvancedLayout(current.layout_json), selectedTemplateLayout)
+              : selectedTemplateLayout
+          : current.layout_json &&
+              typeof current.layout_json === 'object' &&
+              (current.layout_json as { schemaVersion?: unknown }).schemaVersion === 2
+            ? mergeSimpleIntoAdvanced(parseAdvancedLayout(current.layout_json), validated.layout as DocumentLayout)
+            : validated.layout);
+    const persistedLayout = clearLegacyTitleProvenance(candidateLayout, current.layout_json, Boolean(body.data.templateId));
+    const builtInSimpleCoreApplication = Boolean(
+      body.data.templateId &&
+      BUILT_IN_TEMPLATES.some((template) => template.key === body.data.templateId) &&
+      !containsAdvancedBlocks(current.layout_json) &&
+      !containsAdvancedBlocks(candidateLayout)
     );
     try {
+      await assertChangedReusableReferences(client, current.layout_json, candidateLayout, wardId, session.user.id);
+      const simpleBoundaryOptions = body.data.templateId
+        ? undefined
+        : { allowSimpleReusableReferences: true, allowSimpleReusableAdditions: true };
+      if (
+        body.data.mode === 'SIMPLE' &&
+        advancedBlocksChanged(current.layout_json, candidateLayout, simpleBoundaryOptions) &&
+        !builtInSimpleCoreApplication
+      ) {
+        throw new SimpleModeValidationError('ADVANCED_BLOCK', 'Advanced blocks are managed by Advanced Mode');
+      }
       const previousAdvanced =
         current.layout_json &&
         typeof current.layout_json === 'object' &&
@@ -363,7 +403,9 @@ export async function PUT(request: Request, context: { params: Promise<{ wardId:
       assertNoLockedChanges(previousAdvanced, parseAdvancedLayout(persistedLayout));
     } catch (error) {
       await client.query('ROLLBACK');
-      if (error instanceof LockedLayoutError) return errorResponse(error.message, 'LOCKED_LAYOUT', 409);
+      if (error instanceof LockedLayoutError) return errorResponse('Locked program content cannot be changed', 'LOCKED_LAYOUT', 409);
+      if (error instanceof Error && (error.message === 'TEMPLATE_REUSABLE_REFERENCE_FORBIDDEN' || error.message === 'TEMPLATE_REUSABLE_REFERENCE_INVALID')) return errorResponse('Reusable block reference is not permitted', 'REUSABLE_REFERENCE_FORBIDDEN', 422);
+      if (error instanceof SimpleModeValidationError) return errorResponse(simpleModeErrorMessage(error.code), error.code, error.code === 'INVALID_LAYOUT' ? 400 : 422);
       return errorResponse('Invalid program design', 'BAD_REQUEST', 400);
     }
     const persistedSchemaVersion = persistedLayout.schemaVersion;
@@ -472,7 +514,9 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
       } else {
         const validated = validateSimpleModeDraft(body.data.document, currentSimpleLayout);
         warnings = validated.warnings;
-        validatePublicDocumentLayout(validated.layout, [
+        validatePublicDocumentLayout(
+          isAdvancedLayout(validated.layout) ? downgradeToV1(projectAdvancedLayoutForPublic(validated.layout)) : validated.layout,
+          [
           'MEETING_PROGRAM',
           'ANNOUNCEMENTS',
           'PRESIDING_CONDUCTING',
@@ -483,7 +527,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
       }
     } catch (error) {
       await client.query('ROLLBACK');
-      if (error instanceof SimpleModeValidationError) return errorResponse(error.message, error.code, 422);
+      if (error instanceof SimpleModeValidationError) return errorResponse(simpleModeErrorMessage(error.code), error.code, 422);
       return errorResponse('Program cannot be previewed publicly', 'UNSAFE_PUBLIC_DOCUMENT', 422);
     }
     await client.query('ROLLBACK');

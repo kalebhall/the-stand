@@ -159,6 +159,8 @@
     "printPreview": "Print preview",
     "simpleMode": "Simple Mode",
     "advancedMode": "Advanced Mode",
+    "advancedBlockReadOnly": "Advanced block · read-only in Simple Mode",
+    "advancedBlockReadOnlyError": "Advanced blocks cannot be changed by this editor.",
     "previewPublic": "Preview as public visitor",
     "sourceMetadata": "Template source metadata",
     "unavailable": "Unavailable",

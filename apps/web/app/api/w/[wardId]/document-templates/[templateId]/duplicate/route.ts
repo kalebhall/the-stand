@@ -3,21 +3,32 @@ import { z } from 'zod';
 
 import { recordAuditEvent } from '@/src/audit/service';
 import { auth } from '@/src/auth/auth';
-import { canManageWardProgramTemplates, canViewProgramDesigner } from '@/src/auth/roles';
+import { canManageStakeTemplates, canManageWardProgramTemplates, canUseAdvancedProgramDesigner, canViewProgramDesigner } from '@/src/auth/roles';
 import { getBuiltInTemplate } from '@/src/document-designer/built-in-templates';
-import { loadProgramPermissionProfile, parseTemplateLayout } from '@/src/document-designer/template-service';
+import { loadProgramPermissionProfile, parseTemplateLayout, assertTemplateReusableReferences, containsAdvancedBlocks, containsAdvancedLayoutStructure } from '@/src/document-designer/template-service';
 import { isAdvancedDesignerFeatureEnabled } from '@/src/features/advanced-designer';
 import { isWardModuleEnabled, isWardModuleEnabledInTransaction } from '@/src/modules/service';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 
+async function isMatchingStakeAdmin(session: Parameters<typeof canManageStakeTemplates>[0], wardId: string): Promise<boolean> {
+  if (session.activeWardId !== wardId || !session.activeStakeId || !canManageStakeTemplates(session, session.activeStakeId)) return false;
+  const client = await pool.connect();
+  try {
+    const result = await client.query('SELECT 1 FROM ward WHERE id = $1::uuid AND stake_id = $2::uuid LIMIT 1', [wardId, session.activeStakeId]);
+    return result.rowCount === 1;
+  } finally {
+    client.release();
+  }
+}
 const duplicateSchema = z.object({ name: z.string().trim().min(1).max(200).optional(), description: z.string().trim().max(2_000).nullable().optional() }).strict();
 
 export async function POST(request: Request, context: { params: Promise<{ wardId: string; templateId: string }> }) {
   const session = await auth();
   const { wardId, templateId } = await context.params;
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, { status: 401 });
-  if (!canViewProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
+  const matchingStakeAdmin = await isMatchingStakeAdmin(session, wardId);
+  if (!canViewProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId) && !matchingStakeAdmin) return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
   if (!isAdvancedDesignerFeatureEnabled() || !(await isWardModuleEnabled(wardId, session.user.id, 'programs'))) return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
   const body = duplicateSchema.safeParse(await request.json().catch(() => ({})));
   if (!body.success) return NextResponse.json({ error: 'Invalid duplicate payload', code: 'BAD_REQUEST' }, { status: 400 });
@@ -31,7 +42,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
       return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
     }
     const profile = await loadProgramPermissionProfile(client, wardId);
-    if (!canManageWardProgramTemplates({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId, profile)) {
+    if (!matchingStakeAdmin && !canManageWardProgramTemplates({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId, profile)) {
       await client.query('ROLLBACK');
       return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });
     }
@@ -79,6 +90,11 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
       }
     }
 
+    await assertTemplateReusableReferences(client, layout, wardId, session.user.id, 'WARD_CONTEXT');
+    if (!matchingStakeAdmin && !canUseAdvancedProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId, profile) && (containsAdvancedBlocks(layout) || containsAdvancedLayoutStructure(layout))) {
+      await client.query('ROLLBACK');
+      return NextResponse.json({ error: 'Advanced blocks are read-only for this editor', code: 'ADVANCED_BLOCK_READ_ONLY' }, { status: 422 });
+    }
     const name = body.data.name ?? `${sourceName} Copy`;
     const inserted = await client.query(
       `INSERT INTO document_template (scope_type, scope_id, document_type, name, description, source_template_id, source_template_version, status, created_by_user_id)
@@ -96,8 +112,9 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     await recordAuditEvent(client, { wardId, userId: session.user.id, actorName: session.user.name || session.user.email || null, action: 'PROGRAM_TEMPLATE_DUPLICATED', entityType: 'document_template', entityId: String(row.id), details: { sourceTemplateId: templateId }, source: 'manual_ui', severity: 'notice' });
     await client.query('COMMIT');
     return NextResponse.json({ template: { id: row.id, source: 'WARD', scopeType: 'WARD', name: row.name, description: row.description, distributionPolicy: row.distribution_policy, sourceTemplateId: row.source_template_id, sourceTemplateVersion: row.source_template_version, status: row.status, version: version.rows[0] } }, { status: 201 });
-  } catch {
+  } catch (error) {
     await client.query('ROLLBACK').catch(() => undefined);
+    if (error instanceof Error && (error.message === 'TEMPLATE_REUSABLE_REFERENCE_FORBIDDEN' || error.message === 'TEMPLATE_REUSABLE_REFERENCE_INVALID')) return NextResponse.json({ error: 'Reusable block reference is not permitted', code: 'REUSABLE_REFERENCE_FORBIDDEN' }, { status: 422 });
     return NextResponse.json({ error: 'Failed to duplicate document template', code: 'INTERNAL_ERROR' }, { status: 500 });
   } finally {
     client.release();

@@ -21,6 +21,7 @@ import {
   setAdvancedBlockVisibility
 } from '@/src/document-designer/layout-operations';
 import { commitHistory, createHistory, redo, undo, type HistoryState } from '@/src/document-designer/history';
+import { getRegisteredBlockDefinition } from '@/src/document-designer/registry';
 import type { DocumentBlock, DocumentLayout } from '@/src/document-designer/types';
 import type { MediaAssetResponse } from '@/src/document-designer/media-types';
 import { getFoldFaceLabelKey } from '@/src/document-designer/print-layout';
@@ -255,6 +256,22 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
   };
   const panelForBlock = (blockId: string) => blockLocation(blockId)?.regionIndex ?? -1;
   const selectedBlock = allBlocks.find((block) => block.id === selectedBlockId) ?? allBlocks[0];
+  const isAdvancedBlock = (block: DocumentBlock): boolean => {
+    try {
+      return getRegisteredBlockDefinition(document?.layout.documentType ?? 'SACRAMENT_PROGRAM', block.type).exposure === 'ADVANCED';
+    } catch {
+      return true;
+    }
+  };
+  const isBlockReadOnly = (block: DocumentBlock): boolean => isAdvancedBlock(block) && !advancedEditing;
+  const isReusableBlockReadOnly = (item: ReusableLibraryItem): boolean => {
+    try {
+      return getRegisteredBlockDefinition(document?.layout.documentType ?? 'SACRAMENT_PROGRAM', item.snapshot_json.blockType).exposure === 'ADVANCED' && !advancedEditing;
+    } catch {
+      return true;
+    }
+  };
+  const selectedBlockReadOnly = selectedBlock ? isBlockReadOnly(selectedBlock) : false;
   const selectedReusable = selectedBlock?.reusableBlockId
     ? reusableBlocks.find((item) => item.id === selectedBlock.reusableBlockId)
     : undefined;
@@ -467,7 +484,7 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
   }
 
   function updateSelectedBlock(mutator: (block: DocumentBlock) => DocumentBlock) {
-    if (!document || !selectedBlock) return;
+    if (!document || !selectedBlock || selectedBlockReadOnly) return;
     if (advancedEditing) {
       const current = currentAdvanced();
       if (!current) return;
@@ -496,11 +513,14 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
   }
 
   function updateAdvancedVisibility(value: DocumentBlock['visibility']) {
+    if (selectedBlockReadOnly) return;
     const current = currentAdvanced();
     if (current && selectedBlockId) runLayoutOperation(() => applyAdvanced(setAdvancedBlockVisibility(current, selectedBlockId, value)));
   }
 
   function moveSelectedBlock(delta: -1 | 1, blockId: string | null = selectedBlockId) {
+    const block = blockId ? allBlocks.find((item) => item.id === blockId) : undefined;
+    if (block && isBlockReadOnly(block)) return;
     if (advancedEditing) {
       const current = currentAdvanced();
       if (current && blockId) runLayoutOperation(() => applyAdvanced(reorderBlock(current, blockId, delta)));
@@ -587,6 +607,13 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
 
   function insertReusableBlock(item: ReusableLibraryItem) {
     const snapshot = item.snapshot_json;
+    let exposure: 'SIMPLE' | 'ADVANCED';
+    try {
+      exposure = getRegisteredBlockDefinition(document?.layout.documentType ?? 'SACRAMENT_PROGRAM', snapshot.blockType).exposure;
+      if (exposure === 'ADVANCED' && !advancedEditing) return;
+    } catch {
+      return;
+    }
     const block = {
       id: crypto.randomUUID() as DocumentBlock['id'],
       type: snapshot.blockType,
@@ -602,6 +629,15 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
     } as DocumentBlock;
     const current = currentAdvanced();
     if (!current) return;
+    if (!advancedEditing && exposure === 'SIMPLE') {
+      if (!document) return;
+      const next = structuredClone(document.layout);
+      const region = next.pages[selectedPageIndex]?.regions[selectedPanelIndex];
+      if (!region) return;
+      region.blocks.push(block);
+      updateLayout(next);
+      return;
+    }
     if (!advancedEditing) setAdvancedEditing(true);
     runLayoutOperation(() => applyAdvanced(addBlock(current, selectedPageIndex, selectedPanelIndex, block)));
   }
@@ -609,6 +645,38 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
   function updateSelectedFromReusableVersion(item: ReusableLibraryItem) {
     if (!selectedBlock) return;
     const snapshot = item.snapshot_json;
+    let exposure: 'SIMPLE' | 'ADVANCED';
+    try {
+      exposure = getRegisteredBlockDefinition(document?.layout.documentType ?? 'SACRAMENT_PROGRAM', snapshot.blockType).exposure;
+    } catch {
+      return;
+    }
+    if (exposure === 'ADVANCED' && !advancedEditing) return;
+    if (!advancedEditing) {
+      if (!document) return;
+      const next = structuredClone(document.layout);
+      for (const page of next.pages)
+        for (const region of page.regions) {
+          const index = region.blocks.findIndex((block) => block.id === selectedBlock.id);
+          if (index >= 0) {
+            region.blocks[index] = {
+              ...region.blocks[index],
+              type: snapshot.blockType,
+              width: snapshot.width,
+              dataMode: snapshot.visibility === 'HIDE_WHEN_EMPTY' ? 'AUTO' : 'MANUAL',
+              visibility: snapshot.visibility,
+              printBehavior: snapshot.printBehavior,
+              digitalBehavior: snapshot.digitalBehavior,
+              config: snapshot.config,
+              source: snapshot.source,
+              reusableBlockId: item.id,
+              reusableBlockVersion: item.current_version
+            } as DocumentBlock;
+          }
+        }
+      updateLayout(next);
+      return;
+    }
     const current = currentAdvanced();
     if (!current) return;
     const advancedBlock =
@@ -635,13 +703,12 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
         const index = region.blocks.findIndex((block) => block.id === selectedBlock.id);
         if (index >= 0) region.blocks[index] = replacement;
       }
-    if (!advancedEditing) setAdvancedEditing(true);
     runLayoutOperation(() => applyAdvanced(next));
     if (document) void save(next, document.revision, undefined, 'ADVANCED');
   }
 
   async function saveSelectedAsReusableBlock() {
-    if (!selectedBlock || !reusableName.trim()) return;
+    if (!selectedBlock || selectedBlockReadOnly || !reusableName.trim()) return;
     setStatus('saving');
     let persisted = false;
     try {
@@ -1072,6 +1139,7 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
                       type="button"
                       key={item.id}
                       className="block w-full rounded border px-2 py-2 text-left text-xs hover:border-primary"
+                      disabled={isReusableBlockReadOnly(item)}
                       onClick={() => insertReusableBlock(item)}
                     >
                       <span className="block font-medium">{item.name}</span>
@@ -1215,7 +1283,7 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
                     {filteredPanelBlocks(panelIndex).map((block) => (
                       <li
                         key={block.id}
-                        draggable={advancedEditing}
+                        draggable={advancedEditing && !isBlockReadOnly(block)}
                         onDragStart={(event) => {
                           event.dataTransfer.setData('text/plain', block.id);
                         }}
@@ -1235,6 +1303,7 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
                             {blockLabel(block)}
                             <span className="block text-xs text-muted-foreground">{t(blockDescriptionKey(blockCategory(block)))}</span>
                             <span className="block text-xs text-muted-foreground">{visibilityLabel(block.visibility)}</span>
+                            {isBlockReadOnly(block) ? <span className="block text-xs font-medium text-amber-700">{t('advancedBlockReadOnly')}</span> : null}
                           </span>
                         </button>
                         <div className="mt-1 flex gap-1">
@@ -1242,7 +1311,7 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
                             type="button"
                             className="rounded border px-2 text-xs"
                             aria-label={t('moveBlockUp', { block: blockLabel(block) })}
-                            disabled={panelBlocks(panelIndex).findIndex((candidate) => candidate.id === block.id) === 0}
+                            disabled={isBlockReadOnly(block) || panelBlocks(panelIndex).findIndex((candidate) => candidate.id === block.id) === 0}
                             onClick={() => moveSelectedBlock(-1, block.id)}
                           >
                             ↑
@@ -1252,6 +1321,7 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
                             className="rounded border px-2 text-xs"
                             aria-label={t('moveBlockDown', { block: blockLabel(block) })}
                             disabled={
+                              isBlockReadOnly(block) ||
                               panelBlocks(panelIndex).findIndex((candidate) => candidate.id === block.id) ===
                               panelBlocks(panelIndex).length - 1
                             }
@@ -1310,7 +1380,7 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
                               setSelectedPanelIndex(panelIndex);
                             }}
                             className={`block w-full rounded border bg-background p-3 text-left text-sm shadow-sm transition-colors ${selectedBlock?.id === block.id ? 'border-primary bg-primary/10 ring-2 ring-primary/20' : 'hover:border-primary/50'}`}
-                            draggable={advancedEditing}
+                            draggable={advancedEditing && !isBlockReadOnly(block)}
                             onDragStart={(event) => event.dataTransfer.setData('text/plain', block.id)}
                           >
                             <strong>{blockLabel(block)}</strong>
@@ -1336,11 +1406,15 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
               <h2 className="font-semibold">{t('properties')}</h2>
               {selectedBlock ? (
                 <div className="mt-3 space-y-3">
-                  <p className="text-sm font-medium">{blockLabel(selectedBlock)}</p>
+                  <p className="text-sm font-medium">
+                    {blockLabel(selectedBlock)}
+                    {selectedBlockReadOnly ? <span className="ml-2 text-xs font-normal text-amber-700">{t('advancedBlockReadOnly')}</span> : null}
+                  </p>
                   <label className="block space-y-1 text-sm">
                     <span>{t('visibility')}</span>
                     <select
                       className="w-full rounded-md border px-2 py-2"
+                      disabled={selectedBlockReadOnly}
                       value={selectedBlock.visibility}
                       onChange={(event) =>
                         advancedEditing
@@ -1364,6 +1438,7 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
                       <span>{t('width')}</span>
                       <select
                         className="w-full rounded-md border px-2 py-2"
+                        disabled={selectedBlockReadOnly}
                         value={selectedBlock.width}
                         onChange={(event) => {
                           const current = currentAdvanced();
@@ -1387,6 +1462,7 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
                       <span>{t('text')}</span>
                       <textarea
                         className="min-h-24 w-full rounded-md border p-2"
+                        readOnly={selectedBlockReadOnly}
                         value={String(selectedBlock.config.text)}
                         onChange={(event) =>
                           updateSelectedBlock(
@@ -1403,6 +1479,7 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
                         <span>{t('visibleLabel')}</span>
                         <input
                           className="w-full rounded border px-2 py-1"
+                          disabled={selectedBlockReadOnly}
                           value={String((selectedBlock.config as { label?: string }).label ?? '')}
                           onChange={(event) =>
                             updateSelectedBlock(
@@ -1415,6 +1492,7 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
                         <span>{t('httpsUrl')}</span>
                         <input
                           className="w-full rounded border px-2 py-1"
+                          disabled={selectedBlockReadOnly}
                           type="url"
                           value={String((selectedBlock.config as { href?: string }).href ?? '')}
                           onChange={(event) =>
@@ -1431,6 +1509,7 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
                         <span>{t('digitalBehavior')}</span>
                         <select
                           className="w-full rounded border px-2 py-1"
+                          disabled={selectedBlockReadOnly}
                           value={selectedBlock.digitalBehavior}
                           onChange={(event) =>
                             updateSelectedBlock((block) => ({
@@ -1459,6 +1538,7 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
                   <button
                     type="button"
                     className="rounded border px-2 py-1"
+                    disabled={selectedBlockReadOnly}
                     onClick={() => updateSelectedFromReusableVersion(selectedReusable)}
                   >
                     {t('updateBlock')}
@@ -1497,7 +1577,7 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
                   <button
                     type="button"
                     className="w-full rounded-md border px-3 py-2 text-sm"
-                    disabled={!reusableName.trim() || status === 'saving'}
+                    disabled={selectedBlockReadOnly || !reusableName.trim() || status === 'saving'}
                     onClick={() =>
                       void saveSelectedAsReusableBlock().catch((error: unknown) =>
                         setMessage(error instanceof Error ? error.message : t('unableSaveReusableBlock'))

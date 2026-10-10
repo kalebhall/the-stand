@@ -1,6 +1,7 @@
 import { parseDocumentLayout } from './schema';
 import { allBlocks } from './public-safety';
 import { getRegisteredBlockDefinition } from './registry';
+import { isReusableBlockType } from './reusable-blocks';
 import type { DocumentBlock, DocumentLayout } from './types';
 import { getPublicProgramRenderLabels } from '@/src/i18n/public-program';
 import { resolveLocale } from '@/src/i18n/config';
@@ -34,6 +35,42 @@ function blockIndex(layout: DocumentLayout, id: string): [number, number, number
     }
   }
   return null;
+}
+
+function samePageAndRegionIdentity(current: DocumentLayout, next: DocumentLayout): boolean {
+  return (
+    current.pages.length === next.pages.length &&
+    current.pages.every((page, pageIndex) => {
+      const otherPage = next.pages[pageIndex];
+      return (
+        page.id === otherPage.id &&
+        page.regions.length === otherPage.regions.length &&
+        page.regions.every((region, regionIndex) => region.id === otherPage.regions[regionIndex]?.id)
+      );
+    })
+  );
+}
+
+function isSimpleReusableAddition(current: DocumentLayout, next: DocumentLayout): boolean {
+  if (!samePageAndRegionIdentity(current, next)) return false;
+  const currentBlocks = new Map(allBlocks(current).map((block) => [String(block.id), block]));
+  const nextBlocks = allBlocks(next);
+  const additions = nextBlocks.filter((block) => !currentBlocks.has(String(block.id)));
+  if (additions.length === 0) return false;
+  for (const previous of currentBlocks.values()) {
+    const replacement = nextBlocks.find((block) => String(block.id) === String(previous.id));
+    if (!replacement || replacement.type !== previous.type) return false;
+    const previousPosition = blockIndex(current, previous.id);
+    const nextPosition = blockIndex(next, replacement.id);
+    if (!previousPosition || !nextPosition || previousPosition[0] !== nextPosition[0] || previousPosition[1] !== nextPosition[1] || previousPosition[2] !== nextPosition[2]) return false;
+  }
+  return additions.every((block) => {
+    try {
+      return isReusableBlockType(block.type) && getRegisteredBlockDefinition(next.documentType, block.type).exposure === 'SIMPLE' && block.reusableBlockId !== undefined && block.reusableBlockVersion !== undefined;
+    } catch {
+      return false;
+    }
+  });
 }
 
 function samePageAndRegionStructure(current: DocumentLayout, next: DocumentLayout): boolean {
@@ -77,7 +114,8 @@ export function validateSimpleModeDraft(input: unknown, currentInput: unknown): 
   } catch (error) {
     throw new SimpleModeValidationError('INVALID_LAYOUT', error instanceof Error ? error.message : 'Invalid document layout');
   }
-  if (layout.documentType !== current.documentType || !samePageAndRegionStructure(current, layout)) {
+  const reusableAddition = samePageAndRegionIdentity(current, layout) && isSimpleReusableAddition(current, layout);
+  if (layout.documentType !== current.documentType || (!samePageAndRegionStructure(current, layout) && !reusableAddition)) {
     throw new SimpleModeValidationError('STRUCTURE_LOCKED', 'Simple Mode cannot change document structure');
   }
   if (layout.id !== current.id || layout.pages.some((page, pageIndex) => page.id !== current.pages[pageIndex].id)) {
@@ -85,6 +123,10 @@ export function validateSimpleModeDraft(input: unknown, currentInput: unknown): 
   }
   if (json(current.lock) !== json(layout.lock))
     throw new SimpleModeValidationError('PROPERTY_LOCKED', 'Document lock metadata cannot be changed');
+  if (json(current.metadata) !== json(layout.metadata))
+    throw new SimpleModeValidationError('PROPERTY_LOCKED', 'Document metadata cannot be changed');
+  if (json([current.paper, current.orientation, current.fold]) !== json([layout.paper, layout.orientation, layout.fold]))
+    throw new SimpleModeValidationError('STRUCTURE_LOCKED', 'Simple Mode cannot change document geometry');
   for (const [pageIndex, previousPage] of current.pages.entries()) {
     const nextPage = layout.pages[pageIndex];
     if (json(previousPage.lock) !== json(nextPage.lock))
@@ -93,6 +135,8 @@ export function validateSimpleModeDraft(input: unknown, currentInput: unknown): 
       const nextRegion = nextPage.regions[regionIndex];
       if (json(previousRegion.lock) !== json(nextRegion.lock))
         throw new SimpleModeValidationError('PROPERTY_LOCKED', 'Region lock metadata cannot be changed');
+      if (json({ ratio: previousRegion.ratio, gutter: previousRegion.gutter, face: previousRegion.face }) !== json({ ratio: nextRegion.ratio, gutter: nextRegion.gutter, face: nextRegion.face }))
+        throw new SimpleModeValidationError('STRUCTURE_LOCKED', 'Simple Mode cannot change region geometry');
       if (
         hasLock(previousRegion.lock, 'POSITION') &&
         json(previousRegion.blocks.map((block) => block.id)) !== json(nextRegion.blocks.map((block) => block.id))
@@ -162,10 +206,23 @@ export function validateSimpleModeDraft(input: unknown, currentInput: unknown): 
   const currentBlocks = new Map(allBlocks(current).map((block) => [block.id, block]));
   for (const nextBlock of allBlocks(layout)) {
     const previous = currentBlocks.get(nextBlock.id);
-    if (!previous || previous.type !== nextBlock.type)
+    if (!previous) {
+      if (!reusableAddition) throw new SimpleModeValidationError('STRUCTURE_LOCKED', 'Block identities and types are locked');
+      continue;
+    }
+    if (previous.type !== nextBlock.type)
       throw new SimpleModeValidationError('STRUCTURE_LOCKED', 'Block identities and types are locked');
     if (json(previous.lock) !== json(nextBlock.lock))
       throw new SimpleModeValidationError('PROPERTY_LOCKED', `${nextBlock.type} lock metadata cannot be changed`);
+    const previousPosition = blockIndex(current, previous.id);
+    const nextPosition = blockIndex(layout, nextBlock.id);
+    if (!previousPosition || !nextPosition || previousPosition[0] !== nextPosition[0] || previousPosition[1] !== nextPosition[1])
+      throw new SimpleModeValidationError('STRUCTURE_LOCKED', `${nextBlock.type} can only be reordered within its region in Simple Mode`);
+    if (json({ width: previous.width, dataMode: previous.dataMode, printBehavior: previous.printBehavior, digitalBehavior: previous.digitalBehavior }) !== json({ width: nextBlock.width, dataMode: nextBlock.dataMode, printBehavior: nextBlock.printBehavior, digitalBehavior: nextBlock.digitalBehavior }))
+      throw new SimpleModeValidationError('PROPERTY_LOCKED', `${nextBlock.type} layout properties cannot be changed in Simple Mode`);
+    if (json({ source: previous.source, reusableBlockId: previous.reusableBlockId, reusableBlockVersion: previous.reusableBlockVersion }) !== json({ source: nextBlock.source, reusableBlockId: nextBlock.reusableBlockId, reusableBlockVersion: nextBlock.reusableBlockVersion })) {
+      throw new SimpleModeValidationError('PROPERTY_LOCKED', `${nextBlock.type} reusable provenance cannot be changed in Simple Mode`);
+    }
     const definition = getRegisteredBlockDefinition(layout.documentType, nextBlock.type);
     if (definition.exposure === 'ADVANCED' && json(previous) !== json(nextBlock)) {
       throw new SimpleModeValidationError('ADVANCED_BLOCK', `${nextBlock.type} is managed by Advanced Mode`);

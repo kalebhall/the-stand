@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { auth } from '@/src/auth/auth';
-import { canViewProgramDesigner } from '@/src/auth/roles';
+import { canManageStakeTemplates, canViewProgramDesigner } from '@/src/auth/roles';
 import { isAdvancedDesignerFeatureEnabled } from '@/src/features/advanced-designer';
 import { isWardModuleEnabled, isWardModuleEnabledInTransaction } from '@/src/modules/service';
 import { pool } from '@/src/db/client';
@@ -15,7 +15,8 @@ export async function GET(_: Request, context: { params: Promise<Params> }) {
   const session = await auth();
   const { wardId, templateId } = await context.params;
   if (!session?.user?.id) return errorResponse('Unauthorized', 'UNAUTHORIZED', 401);
-  if (!canViewProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) return errorResponse('Forbidden', 'FORBIDDEN', 403);
+  const stakeAdminContext = session.activeWardId === wardId && Boolean(session.activeStakeId && canManageStakeTemplates(session, session.activeStakeId));
+  if (!canViewProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId) && !stakeAdminContext) return errorResponse('Forbidden', 'FORBIDDEN', 403);
   if (!isAdvancedDesignerFeatureEnabled() || !(await isWardModuleEnabled(wardId, session.user.id, 'programs'))) return errorResponse('Forbidden', 'FORBIDDEN', 403);
 
   const client = await pool.connect();
@@ -23,6 +24,12 @@ export async function GET(_: Request, context: { params: Promise<Params> }) {
     await client.query('BEGIN');
     await setDbContext(client, { userId: session.user.id, wardId });
     if (!(await isWardModuleEnabledInTransaction(client, wardId, 'programs'))) {
+      await client.query('ROLLBACK');
+      return errorResponse('Forbidden', 'FORBIDDEN', 403);
+    }
+    const wardStakeResult = await client.query('SELECT stake_id FROM ward WHERE id = $1::uuid LIMIT 1', [wardId]);
+    const matchingStakeAdmin = Boolean(stakeAdminContext && session.activeStakeId === String(wardStakeResult.rows[0]?.stake_id ?? ''));
+    if (stakeAdminContext && !matchingStakeAdmin && !canViewProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) {
       await client.query('ROLLBACK');
       return errorResponse('Forbidden', 'FORBIDDEN', 403);
     }

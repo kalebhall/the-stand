@@ -1,6 +1,7 @@
 import type { TemplateAuthorizationSession, TemplateScope } from '@/src/auth/roles';
 import { canManageStakeTemplates, canCopyAvailableTemplate } from '@/src/auth/roles';
 import { resolveTemplateScope, type TemplateScopeRow } from './template-scope';
+import { assertTemplateReusableReferences, parseTemplateLayout } from './template-service';
 
 export type SqlClient = { query<T = unknown>(text: string, values?: readonly unknown[]): Promise<{ rows: T[]; rowCount?: number | null }> };
 export type TemplateAuthorizer = {
@@ -48,8 +49,8 @@ function scopeAllowed(session: TemplateAuthorizationSession, input: DraftInput, 
 export async function createTemplateDraft(client: SqlClient, session: TemplateAuthorizationSession, userId: string, input: DraftInput, authorizer: TemplateAuthorizer = denyAuthorizer): Promise<unknown> {
   if (!scopeAllowed(session, input, userId, authorizer)) throw new Error('TEMPLATE_CREATE_FORBIDDEN');
   const result = await client.query(
-    `INSERT INTO document_template (scope_type, scope_id, name, description, distribution_policy, created_by_user_id)
-     VALUES ($1::text, $2::uuid, $3::text, $4::text, $5::text, $6::uuid) RETURNING *`,
+    `INSERT INTO document_template (scope_type, scope_id, document_type, name, description, distribution_policy, created_by_user_id)
+     VALUES ($1::text, $2::uuid, 'SACRAMENT_PROGRAM', $3::text, $4::text, $5::text, $6::uuid) RETURNING *`,
     [input.scopeType, input.scopeId, input.name, input.description ?? null, input.distributionPolicy ?? 'DUPLICATE_AND_CUSTOMIZE', input.scopeType === 'SYSTEM' ? null : userId]
   );
   return result.rows[0];
@@ -67,17 +68,20 @@ export async function createImmutableVersion(
   authorizer: TemplateAuthorizer = denyAuthorizer
 ): Promise<unknown> {
   const template = await loadTemplate(client, templateId);
-  if (!template || !scopePermission(session, template, userId, authorizer, 'create')) throw new Error('TEMPLATE_VERSION_FORBIDDEN');
+  if (!template || template.status !== 'DRAFT' || !scopePermission(session, template, userId, authorizer, 'create')) throw new Error('TEMPLATE_VERSION_FORBIDDEN');
+  const canonicalLayout = parseTemplateLayout(layout);
+  const referenceScope = template.scope_type === 'SYSTEM' ? 'SYSTEM' : template.scope_type === 'STAKE' ? 'STAKE' : template.scope_type === 'PERSONAL_DRAFT' ? 'PERSONAL' : 'WARD';
+  await assertTemplateReusableReferences(client, canonicalLayout, String(template.scope_id ?? ''), userId, referenceScope);
   const result = await client.query(
     `INSERT INTO document_template_version (template_id, version, schema_version, layout_json, theme_json, lock_json, created_by_user_id)
-     SELECT $1::uuid, $2::integer, 1, $3::jsonb, $4::jsonb, $5::jsonb, $6::uuid
+     SELECT $1::uuid, $2::integer, $3::integer, $4::jsonb, $5::jsonb, $6::jsonb, $7::uuid
       WHERE EXISTS (
         SELECT 1 FROM document_template t
-         WHERE t.id = $1::uuid AND t.scope_type = $7::text
-           AND t.scope_id IS NOT DISTINCT FROM $8::uuid
+         WHERE t.id = $1::uuid AND t.scope_type = $8::text
+           AND t.scope_id IS NOT DISTINCT FROM $9::uuid
       )
      RETURNING *`,
-    [templateId, version, JSON.stringify(layout), JSON.stringify(theme), JSON.stringify(lock), userId, template.scope_type, template.scope_id]
+    [templateId, version, canonicalLayout.schemaVersion, JSON.stringify(canonicalLayout), JSON.stringify(theme), JSON.stringify(lock), userId, template.scope_type, template.scope_id]
   );
   if (!result.rowCount) throw new Error('TEMPLATE_VERSION_FORBIDDEN');
   return result.rows[0];
