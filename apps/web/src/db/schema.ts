@@ -618,47 +618,55 @@ export const meetingBusinessLine = pgTable('meeting_business_line', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 });
 
-export const meetingMembershipOrdinance = pgTable('meeting_membership_ordinance', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  wardId: uuid('ward_id')
-    .notNull()
-    .references(() => ward.id, { onDelete: 'cascade' }),
-  meetingId: uuid('meeting_id')
-    .notNull()
-    .references(() => meeting.id, { onDelete: 'cascade' }),
-  memberName: text('member_name').notNull(),
-  actionType: text('action_type').notNull(),
-  priesthoodOffice: text('priesthood_office'),
-  reason: text('reason'),
-  details: text('details'),
-  status: text('status').notNull().default('pending'),
-  plannedDate: date('planned_date'),
-  interviewStatus: text('interview_status').notNull().default('not_required'),
-  interviewDate: date('interview_date'),
-  interviewerName: text('interviewer_name'),
-  approvalConfirmed: boolean('approval_confirmed').notNull().default(false),
-  presentingLeader: text('presenting_leader'),
-  performingPriesthoodHolder: text('performing_priesthood_holder'),
-  ordinanceDate: date('ordinance_date'),
-  baptismDate: date('baptism_date'),
-  confirmationDate: date('confirmation_date'),
-  baptismStatus: text('baptism_status'),
-  confirmationStatus: text('confirmation_status'),
-  responsibleLeader: text('responsible_leader'),
-  lcrFollowUpStatus: text('lcr_follow_up_status').notNull().default('not_applicable'),
-  lcrUpdatedAt: timestamp('lcr_updated_at', { withTimezone: true }),
-  recordFormNeeded: boolean('record_form_needed').notNull().default(false),
-  handoffDate: date('handoff_date'),
-  officialRecordUpdatedBy: text('official_record_updated_by'),
-  certificateOrFormDelivered: boolean('certificate_or_form_delivered').notNull().default(false),
-  officialSystemFollowUpStatus: text('official_system_follow_up_status').notNull().default('not_started'),
-  officialSystemReferenceUrl: text('official_system_reference_url'),
-  announcedAt: timestamp('announced_at', { withTimezone: true }),
-  completedAt: timestamp('completed_at', { withTimezone: true }),
-  completedByUserId: uuid('completed_by_user_id').references(() => userAccount.id, { onDelete: 'set null' }),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
-});
+export const meetingMembershipOrdinance = pgTable(
+  'meeting_membership_ordinance',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    wardId: uuid('ward_id')
+      .notNull()
+      .references(() => ward.id, { onDelete: 'cascade' }),
+    meetingId: uuid('meeting_id').notNull(),
+    memberName: text('member_name').notNull(),
+    actionType: text('action_type').notNull(),
+    priesthoodOffice: text('priesthood_office'),
+    reason: text('reason'),
+    details: text('details'),
+    status: text('status').notNull().default('pending'),
+    plannedDate: date('planned_date'),
+    interviewStatus: text('interview_status').notNull().default('not_required'),
+    interviewDate: date('interview_date'),
+    interviewerName: text('interviewer_name'),
+    approvalConfirmed: boolean('approval_confirmed').notNull().default(false),
+    presentingLeader: text('presenting_leader'),
+    performingPriesthoodHolder: text('performing_priesthood_holder'),
+    ordinanceDate: date('ordinance_date'),
+    baptismDate: date('baptism_date'),
+    confirmationDate: date('confirmation_date'),
+    baptismStatus: text('baptism_status'),
+    confirmationStatus: text('confirmation_status'),
+    responsibleLeader: text('responsible_leader'),
+    lcrFollowUpStatus: text('lcr_follow_up_status').notNull().default('not_applicable'),
+    lcrUpdatedAt: timestamp('lcr_updated_at', { withTimezone: true }),
+    recordFormNeeded: boolean('record_form_needed').notNull().default(false),
+    handoffDate: date('handoff_date'),
+    officialRecordUpdatedBy: text('official_record_updated_by'),
+    certificateOrFormDelivered: boolean('certificate_or_form_delivered').notNull().default(false),
+    officialSystemFollowUpStatus: text('official_system_follow_up_status').notNull().default('not_started'),
+    officialSystemReferenceUrl: text('official_system_reference_url'),
+    announcedAt: timestamp('announced_at', { withTimezone: true }),
+    completedAt: timestamp('completed_at', { withTimezone: true }),
+    completedByUserId: uuid('completed_by_user_id').references(() => userAccount.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
+  },
+  (table) => ({
+    meetingSameWardFk: foreignKey({
+      name: 'meeting_membership_ordinance_meeting_same_ward_fk',
+      columns: [table.wardId, table.meetingId],
+      foreignColumns: [meeting.wardId, meeting.id]
+    }).onDelete('cascade')
+  })
+);
 
 export const churchActionFollowUp = pgTable(
   'church_action_follow_up',

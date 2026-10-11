@@ -147,9 +147,20 @@ test('stand view renders formatted sustain/release text', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'At the Stand' })).toBeVisible();
   await expect(page.locator('strong', { hasText: 'Jane Doe' })).toBeVisible();
   await expect(page.getByText('Primary President')).toBeVisible();
+  const businessSection = page.locator('details').filter({ hasText: 'Ward and Stake Business' });
+  await expect(businessSection).toHaveAttribute('open');
+  await expect(businessSection).toContainText('2 pending');
+  const welcomeAction = page.locator('li').filter({ hasText: 'E2E Welcome Member' });
+  const priesthoodAction = page.locator('li').filter({ hasText: 'E2E Priesthood Member' });
+  await expect(welcomeAction).toContainText('Welcome script: E2E Welcome Member.');
+  await expect(priesthoodAction).toContainText('Priesthood script: E2E Priesthood Member — Priest.');
+  await expect(page.getByText('PRIVATE WELCOME ACTION NOTES', { exact: true })).toHaveCount(0);
+  await expect(page.getByText('PRIVATE PRIESTHOOD ACTION NOTES', { exact: true })).toHaveCount(0);
 
   await page.goto(`/stand/${PUBLISHED_MEETING}?mode=compact`);
   await expect(page.getByText('Compact Labels')).toBeVisible();
+  await expect(page.locator('li').filter({ hasText: 'E2E Welcome Member' })).not.toContainText('Welcome script:');
+  await expect(page.locator('li').filter({ hasText: 'E2E Priesthood Member' })).not.toContainText('Priesthood script:');
 });
 
 test('public portal exposes published snapshot', async ({ page }) => {

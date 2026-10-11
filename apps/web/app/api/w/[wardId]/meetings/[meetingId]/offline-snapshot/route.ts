@@ -58,7 +58,7 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
       [meetingId, wardId, includeInternalNotes]
     );
     const template = await client.query(
-      'SELECT welcome_text, sustain_template, release_template FROM ward_stand_template WHERE ward_id = $1::uuid LIMIT 1',
+      'SELECT welcome_text, sustain_template, release_template, welcome_new_member_template, recognize_baptized_child_template, baby_blessing_template, priesthood_ordination_template, priesthood_advancement_template FROM ward_stand_template WHERE ward_id = $1::uuid LIMIT 1',
       [wardId]
     );
     const announcements = await client.query(
@@ -79,7 +79,7 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
          ) latest_calling ON TRUE
         WHERE b.ward_id = $2::uuid
           AND source_meeting.meeting_type NOT IN ('STAKE_CONFERENCE', 'GENERAL_CONFERENCE')
-          AND EXISTS (SELECT 1 FROM meeting route_meeting WHERE route_meeting.id = $1::uuid AND route_meeting.meeting_type NOT IN ('STAKE_CONFERENCE', 'GENERAL_CONFERENCE'))
+          AND EXISTS (SELECT 1 FROM meeting route_meeting WHERE route_meeting.id = $1::uuid AND route_meeting.ward_id = $2::uuid AND route_meeting.meeting_type NOT IN ('STAKE_CONFERENCE', 'GENERAL_CONFERENCE'))
           AND (b.meeting_id = $1::uuid OR (b.action_type = 'SUSTAIN' AND b.calling_assignment_id IS NOT NULL AND source_meeting.meeting_date <= $3::date AND latest_calling.action_status = 'EXTENDED'))
         ORDER BY b.created_at ASC`,
       [meetingId, wardId, meeting.rows[0].meeting_date]
@@ -94,7 +94,7 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
          JOIN meeting source_meeting ON source_meeting.id = a.meeting_id AND source_meeting.ward_id = a.ward_id
         WHERE a.ward_id = $2::uuid
           AND source_meeting.meeting_type NOT IN ('STAKE_CONFERENCE', 'GENERAL_CONFERENCE')
-          AND EXISTS (SELECT 1 FROM meeting route_meeting WHERE route_meeting.id = $1::uuid AND route_meeting.meeting_type NOT IN ('STAKE_CONFERENCE', 'GENERAL_CONFERENCE'))
+          AND EXISTS (SELECT 1 FROM meeting route_meeting WHERE route_meeting.id = $1::uuid AND route_meeting.ward_id = $2::uuid AND route_meeting.meeting_type NOT IN ('STAKE_CONFERENCE', 'GENERAL_CONFERENCE'))
           AND (a.meeting_id = $1::uuid OR (source_meeting.meeting_date <= $3::date AND a.status <> 'completed'))
         ORDER BY a.created_at ASC`,
           [meetingId, wardId, meeting.rows[0].meeting_date]
@@ -173,6 +173,15 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
       locale: renderLocale,
       meeting: { id: meetingId, meetingDate, meetingType: meeting.rows[0].meeting_type },
       standRows,
+      membershipTemplates: template.rows[0]
+        ? {
+            WELCOME_NEW_MEMBER: template.rows[0].welcome_new_member_template,
+            RECOGNIZE_BAPTIZED_CHILD: template.rows[0].recognize_baptized_child_template,
+            BABY_BLESSING: template.rows[0].baby_blessing_template,
+            PRIESTHOOD_ORDINATION: template.rows[0].priesthood_ordination_template,
+            PRIESTHOOD_ADVANCEMENT: template.rows[0].priesthood_advancement_template
+          }
+        : undefined,
       businessLines: business.rows.map((line) => ({
         id: line.id,
         memberName: line.member_name,

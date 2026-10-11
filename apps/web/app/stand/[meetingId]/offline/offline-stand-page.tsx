@@ -6,6 +6,11 @@ import { useLocale, useTranslations } from 'next-intl';
 import { useSession } from 'next-auth/react';
 import type { StandRow } from '@/src/stand/render';
 import {
+  parseMembershipTemplateSegments,
+  renderMembershipOrdinanceScript,
+  type StandMembershipTemplates
+} from '@/src/stand/membership-templates';
+import {
   clearOfflineData,
   formatOfflineAge,
   getOfflineWriteEpoch,
@@ -71,6 +76,81 @@ function membershipDetailStatusLabel(status: string | null | undefined, translat
       needed: translate('detail_needed'),
       scheduled: translate('detail_scheduled')
     }[status ?? ''] ?? translate('unknown')
+  );
+}
+
+type OfflineMembershipAction = NonNullable<OfflineStandSnapshot['membershipActions']>[number];
+
+function OfflineMembershipActionRow({
+  action,
+  templates,
+  showScript
+}: {
+  action: OfflineMembershipAction;
+  templates?: StandMembershipTemplates;
+  showScript: boolean;
+}) {
+  const t = useTranslations('offline');
+  const membershipT = useTranslations('membership');
+  const script = showScript
+    ? renderMembershipOrdinanceScript(
+        {
+          action_type: action.actionType,
+          member_name: action.memberName,
+          priesthood_office: action.priesthoodOffice
+        },
+        templates,
+        {
+          assignedOffice: membershipT('assignedOffice'),
+          priesthoodOffice: action.priesthoodOffice ? membershipT(`office_${action.priesthoodOffice}`) : null
+        }
+      )
+    : null;
+
+  return (
+    <li className="rounded border p-3">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <p className="text-xs uppercase tracking-wide text-muted-foreground">
+            {membershipActionLabel(action.actionType, t)}
+            {action.carriedForward ? ` · ${t('carriedForward')}` : ''}
+          </p>
+          <p className="font-medium">{action.memberName}</p>
+          {priesthoodOfficeLabel(action.priesthoodOffice, t) ? (
+            <p className="text-muted-foreground">
+              {t('office')}: {priesthoodOfficeLabel(action.priesthoodOffice, t)}
+            </p>
+          ) : null}
+          {action.actionType === 'BAPTISM_CONFIRMATION_FOLLOW_UP' ? (
+            <p className="text-muted-foreground">
+              {t('baptism')}: {membershipDetailStatusLabel(action.baptismStatus ?? 'planned', t)}
+              {action.baptismDate ? ` (${action.baptismDate})` : ''} · {t('confirmation')}:{' '}
+              {membershipDetailStatusLabel(action.confirmationStatus ?? 'planned', t)}
+              {action.confirmationDate ? ` (${action.confirmationDate})` : ''}
+            </p>
+          ) : null}
+          {action.responsibleLeader ? (
+            <p className="text-muted-foreground">
+              {t('responsible')}: {action.responsibleLeader}
+            </p>
+          ) : null}
+          {action.interviewStatus && action.interviewStatus !== 'not_required' ? (
+            <p className="text-muted-foreground">
+              {t('interview')}: {membershipDetailStatusLabel(action.interviewStatus, t)}
+            </p>
+          ) : null}
+        </div>
+        <span className="rounded-full border px-2 py-1 text-xs">{membershipStatusLabel(action.status, t)}</span>
+      </div>
+      {script ? (
+        <p className="mt-2 whitespace-pre-wrap text-lg leading-relaxed">
+          {parseMembershipTemplateSegments(script).map((segment, index) =>
+            segment.bold ? <strong key={index}>{segment.text}</strong> : <span key={index}>{segment.text}</span>
+          )}
+        </p>
+      ) : null}
+      {action.lcrFollowUpStatus === 'needed' ? <p className="mt-2 text-xs font-medium text-amber-700">{t('lcrUpdateNeeded')}</p> : null}
+    </li>
   );
 }
 
@@ -876,44 +956,12 @@ export default function OfflineStandPage({ meetingId }: { meetingId: string }) {
         {snapshot.membershipActions?.length ? (
           <ul className="mt-3 space-y-2 text-sm">
             {snapshot.membershipActions.map((action) => (
-              <li key={action.id} className="rounded border p-3">
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div>
-                    <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                      {membershipActionLabel(action.actionType, t)}
-                      {action.carriedForward ? ` · ${t('carriedForward')}` : ''}
-                    </p>
-                    <p className="font-medium">{action.memberName}</p>
-                    {priesthoodOfficeLabel(action.priesthoodOffice, t) ? (
-                      <p className="text-muted-foreground">
-                        {t('office')}: {priesthoodOfficeLabel(action.priesthoodOffice, t)}
-                      </p>
-                    ) : null}
-                    {action.actionType === 'BAPTISM_CONFIRMATION_FOLLOW_UP' ? (
-                      <p className="text-muted-foreground">
-                        {t('baptism')}: {membershipDetailStatusLabel(action.baptismStatus ?? 'planned', t)}
-                        {action.baptismDate ? ` (${action.baptismDate})` : ''} · {t('confirmation')}:{' '}
-                        {membershipDetailStatusLabel(action.confirmationStatus ?? 'planned', t)}
-                        {action.confirmationDate ? ` (${action.confirmationDate})` : ''}
-                      </p>
-                    ) : null}
-                    {action.responsibleLeader ? (
-                      <p className="text-muted-foreground">
-                        {t('responsible')}: {action.responsibleLeader}
-                      </p>
-                    ) : null}
-                    {action.interviewStatus && action.interviewStatus !== 'not_required' ? (
-                      <p className="text-muted-foreground">
-                        {t('interview')}: {membershipDetailStatusLabel(action.interviewStatus, t)}
-                      </p>
-                    ) : null}
-                  </div>
-                  <span className="rounded-full border px-2 py-1 text-xs">{membershipStatusLabel(action.status, t)}</span>
-                </div>
-                {action.lcrFollowUpStatus === 'needed' ? (
-                  <p className="mt-2 text-xs font-medium text-amber-700">{t('lcrUpdateNeeded')}</p>
-                ) : null}
-              </li>
+              <OfflineMembershipActionRow
+                key={action.id}
+                action={action}
+                templates={snapshot.membershipTemplates}
+                showScript={mode === 'formal'}
+              />
             ))}
           </ul>
         ) : null}

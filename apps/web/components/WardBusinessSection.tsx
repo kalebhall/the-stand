@@ -8,6 +8,11 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 
 import { DEFAULT_STAND_RELEASE_TEMPLATE, DEFAULT_STAND_SUSTAIN_TEMPLATE } from '@/src/stand/default-template';
+import {
+  parseMembershipTemplateSegments,
+  renderMembershipOrdinanceScript,
+  type StandMembershipTemplates
+} from '@/src/stand/membership-templates';
 
 export type BusinessLine = {
   id: string;
@@ -24,7 +29,6 @@ export type MembershipOrdinanceSummary = {
   action_type: string;
   priesthood_office?: string | null;
   reason?: string | null;
-  details?: string | null;
   status: string;
   baptism_status?: string | null;
   baptism_date?: string | null;
@@ -49,18 +53,34 @@ type WardBusinessSectionProps = {
   showAnnounce?: boolean;
   /** When true, renders full scripted phrasing using the templates below. */
   showScript?: boolean;
-  /** When true, collapses the section after all business lines are announced. */
+  /** When true, collapses after outstanding work is resolved; formal scripts stay expanded. */
   collapsible?: boolean;
   sustainTemplate?: string;
   releaseTemplate?: string;
+  membershipTemplates?: StandMembershipTemplates;
   programNotes?: string | null;
   includesStakeBusiness?: boolean;
   stakeBusinessParticipantName?: string | null;
   stakeBusinessParticipantCalling?: string | null;
 };
 
-function MembershipOrdinanceRow({ action }: { action: MembershipOrdinanceSummary }) {
+function MembershipOrdinanceRow({
+  action,
+  showScript,
+  templates
+}: {
+  action: MembershipOrdinanceSummary;
+  showScript: boolean;
+  templates?: StandMembershipTemplates;
+}) {
   const t = useTranslations('business');
+  const membershipT = useTranslations('membership');
+  const script = showScript
+    ? renderMembershipOrdinanceScript(action, templates, {
+        assignedOffice: membershipT('assignedOffice'),
+        priesthoodOffice: action.priesthood_office ? membershipT(`office_${action.priesthood_office}`) : null
+      })
+    : null;
   return (
     <li className="rounded-md border p-3">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -78,7 +98,13 @@ function MembershipOrdinanceRow({ action }: { action: MembershipOrdinanceSummary
               {action.reason === 'RECORDS_RECEIVED' ? t('recordsReceived') : t('recentConvert')}
             </p>
           ) : null}
-          {action.details ? <p className="text-sm text-muted-foreground">{action.details}</p> : null}
+          {script ? (
+            <p className="mt-2 whitespace-pre-wrap text-lg leading-relaxed">
+              {parseMembershipTemplateSegments(script).map((segment, index) =>
+                segment.bold ? <strong key={index}>{segment.text}</strong> : <span key={index}>{segment.text}</span>
+              )}
+            </p>
+          ) : null}
           {action.baptism_status || action.confirmation_status ? (
             <p className="text-sm text-muted-foreground">
               {t('baptism', {
@@ -299,6 +325,7 @@ export function WardBusinessSection({
   collapsible = false,
   sustainTemplate = DEFAULT_STAND_SUSTAIN_TEMPLATE,
   releaseTemplate = DEFAULT_STAND_RELEASE_TEMPLATE,
+  membershipTemplates,
   programNotes = null,
   includesStakeBusiness = false,
   stakeBusinessParticipantName = null,
@@ -308,7 +335,8 @@ export function WardBusinessSection({
   const t = useTranslations('business');
   const membershipT = useTranslations('membership');
   const callingsT = useTranslations('callings');
-  const meetingsT = useTranslations('meetings');
+  const meetingFormT = useTranslations('meetingForm');
+  const offlineT = useTranslations('offline');
 
   if (!lines.length && !membershipActions.length && !membershipSection && !includesStakeBusiness && !programNotes?.trim()) {
     return (
@@ -319,28 +347,26 @@ export function WardBusinessSection({
     );
   }
 
-  const pendingCount = lines.filter((line) => line.status === 'pending').length;
-  const announcedCount = lines.length - pendingCount;
+  const pendingLineCount = lines.filter((line) => line.status === 'pending').length;
+  const pendingMembershipActionCount = membershipActions.filter((action) => action.status !== 'completed').length;
+  const pendingCount = pendingLineCount + pendingMembershipActionCount;
+  const announcedCount = lines.length - pendingLineCount;
+  const hasFormalMembershipScripts = showScript && membershipActions.length > 0;
 
   const content = (
     <>
       {programNotes?.trim() ? <p className="mb-3 whitespace-pre-wrap text-sm text-muted-foreground">{programNotes}</p> : null}
       {includesStakeBusiness ? (
         <div className="mb-3 rounded-md border bg-muted/40 p-3">
-          <p className="text-sm font-medium">{meetingsT('stakeBusinessIncluded')}</p>
+          <p className="text-sm font-medium">{meetingFormT('stakeBusinessIncluded')}</p>
           <p className="mt-2 text-lg leading-relaxed">
             {parseBoldSegments(
               stakeBusinessParticipantName
-                ? meetingsT(
-                    stakeBusinessParticipantCalling
-                      ? 'offline.stakeBusinessTurnoverNamedWithCalling'
-                      : 'offline.stakeBusinessTurnoverNamed',
-                    {
-                      name: stakeBusinessParticipantName,
-                      ...(stakeBusinessParticipantCalling ? { calling: stakeBusinessParticipantCalling } : {})
-                    }
-                  )
-                : meetingsT('offline.stakeBusinessTurnoverPresidency')
+                ? offlineT(stakeBusinessParticipantCalling ? 'stakeBusinessTurnoverNamedWithCalling' : 'stakeBusinessTurnoverNamed', {
+                    name: stakeBusinessParticipantName,
+                    ...(stakeBusinessParticipantCalling ? { calling: stakeBusinessParticipantCalling } : {})
+                  })
+                : offlineT('stakeBusinessTurnoverPresidency')
             ).map((segment, index) =>
               segment.bold ? <strong key={index}>{segment.text}</strong> : <span key={index}>{segment.text}</span>
             )}
@@ -368,7 +394,7 @@ export function WardBusinessSection({
           <p className="text-sm font-medium">{t('membershipFollowUp')}</p>
           <ul className="space-y-2">
             {membershipActions.map((action) => (
-              <MembershipOrdinanceRow key={action.id} action={action} />
+              <MembershipOrdinanceRow key={action.id} action={action} showScript={showScript} templates={membershipTemplates} />
             ))}
           </ul>
         </div>
@@ -403,12 +429,16 @@ export function WardBusinessSection({
   }
 
   return (
-    <details className="rounded-lg border bg-card p-4" open={pendingCount > 0}>
+    <details className="rounded-lg border bg-card p-4" open={pendingCount > 0 || hasFormalMembershipScripts}>
       <summary className="cursor-pointer list-none text-lg font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 [&::-webkit-details-marker]:hidden">
         <span className="flex flex-wrap items-center justify-between gap-2">
           <span>{sectionTitle ?? t('title')}</span>
           <span className="text-sm font-normal text-muted-foreground">
-            {pendingCount > 0 ? t('pendingCount', { count: pendingCount }) : t('announcedCount', { count: announcedCount })}
+            {pendingCount > 0
+              ? t('pendingCount', { count: pendingCount })
+              : hasFormalMembershipScripts
+                ? t('membershipFollowUp')
+                : t('announcedCount', { count: announcedCount })}
           </span>
         </span>
       </summary>
