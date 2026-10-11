@@ -98,13 +98,72 @@ describe('OfflineStandPage', () => {
       savedAt: '2026-09-20T10:00:00.000Z'
     } as never);
 
-    renderPage();
+    const { container } = renderPage();
 
-    await waitFor(() => expect(screen.getByText('Brother John Smith')).toBeVisible());
-    expect(screen.getByText('Membership and ordinance items are read-only here. Use connected meeting management to change them.')).toBeVisible();
+    await waitFor(() => expect(container).toHaveTextContent('Brother John Smith'));
+    expect(
+      screen.getByText('Membership and ordinance items are read-only here. Use connected meeting management to change them.')
+    ).toBeVisible();
     expect(screen.getByText('Baby blessing').closest('li')).not.toHaveTextContent('Mark announced');
     expect(screen.getByText(/Sister Jane Smith/)).toBeVisible();
     expect(screen.getByRole('button', { name: 'Mark announced' })).toBeVisible();
+  });
+
+  it('renders cached welcome and priesthood script templates', async () => {
+    offline.loadOfflineSnapshot.mockResolvedValue({
+      userId: 'user-1',
+      wardId: 'ward-1',
+      locale: 'en-US',
+      meeting: { id: 'meeting-1', meetingDate: '2026-09-20', meetingType: 'SACRAMENT' },
+      standRows: [],
+      businessLines: [],
+      membershipTemplates: {
+        WELCOME_NEW_MEMBER: 'Welcome **{memberName}**.',
+        RECOGNIZE_BAPTIZED_CHILD: 'Recognize {memberName}.',
+        BABY_BLESSING: 'Bless {memberName}.',
+        PRIESTHOOD_ORDINATION: 'Propose **{memberName}** for **{callingName}**.',
+        PRIESTHOOD_ADVANCEMENT: 'Advance {memberName} to {callingName}.'
+      },
+      membershipActions: [
+        { id: 'welcome', memberName: 'Jordan Lee', actionType: 'WELCOME_NEW_MEMBER', status: 'pending' },
+        { id: 'baptized-child', memberName: 'Toni Young', actionType: 'RECOGNIZE_BAPTIZED_CHILD', status: 'pending' },
+        { id: 'baby-blessing', memberName: 'Riley Hall', actionType: 'BABY_BLESSING', status: 'pending' },
+        {
+          id: 'ordination',
+          memberName: 'Casey Rivera',
+          actionType: 'PRIESTHOOD_ORDINATION',
+          priesthoodOffice: 'PRIEST',
+          status: 'pending'
+        },
+        {
+          id: 'advancement',
+          memberName: 'Morgan Reed',
+          actionType: 'PRIESTHOOD_ADVANCEMENT',
+          priesthoodOffice: 'ELDER',
+          status: 'pending'
+        }
+      ],
+      notes: [],
+      progress: {},
+      savedAt: '2026-09-20T10:00:00.000Z'
+    } as never);
+
+    const { container } = renderPage();
+
+    await waitFor(() => expect(container).toHaveTextContent('Welcome Jordan Lee.'));
+    expect(container).toHaveTextContent('Recognize Toni Young.');
+    expect(container).toHaveTextContent('Bless Riley Hall.');
+    expect(container).toHaveTextContent('Propose Casey Rivera for Priest.');
+    expect(container).toHaveTextContent('Advance Morgan Reed to Elder.');
+    expect(Array.from(container.querySelectorAll('strong')).map((item) => item.textContent)).toContain('Jordan Lee');
+    expect(Array.from(container.querySelectorAll('strong')).map((item) => item.textContent)).toContain('Casey Rivera');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Compact Labels' }));
+    expect(container).not.toHaveTextContent('Welcome Jordan Lee.');
+    expect(container).not.toHaveTextContent('Recognize Toni Young.');
+    expect(container).not.toHaveTextContent('Bless Riley Hall.');
+    expect(container).not.toHaveTextContent('Propose Casey Rivera for Priest.');
+    expect(container).not.toHaveTextContent('Advance Morgan Reed to Elder.');
   });
 
   it('rolls back a rejected business announcement and shows the localized sync error', async () => {
@@ -318,9 +377,8 @@ describe('OfflineStandPage', () => {
       wardId: 'ward-2',
       meeting: { ...firstSnapshot.meeting, id: 'meeting-2' }
     };
-    offline.loadOfflineSnapshot.mockImplementation(
-      (async (requestedUserId: string) => (requestedUserId === 'user-1' ? firstSnapshot : secondSnapshot)) as never
-    );
+    offline.loadOfflineSnapshot.mockImplementation((async (requestedUserId: string) =>
+      requestedUserId === 'user-1' ? firstSnapshot : secondSnapshot) as never);
 
     const view = renderPage();
     await waitFor(() => expect(screen.getByRole('button', { name: 'Add note' })).toBeVisible());
@@ -339,5 +397,4 @@ describe('OfflineStandPage', () => {
     expect(screen.queryByDisplayValue('Do not carry this draft forward')).not.toBeInTheDocument();
     expect(screen.queryByPlaceholderText('Write a private note…')).not.toBeInTheDocument();
   });
-
 });

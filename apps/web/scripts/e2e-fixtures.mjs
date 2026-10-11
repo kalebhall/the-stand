@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import { Pool } from 'pg';
 import argon2 from 'argon2';
 import Redis from 'ioredis';
+import { parseRedisConnectionUrl } from '../src/lib/redis-url.ts';
 
 const testDatabaseUrl = process.env.TEST_DATABASE_URL;
 if (process.env.E2E_FIXTURES_ALLOWED !== '1' || !testDatabaseUrl || process.env.DATABASE_URL !== testDatabaseUrl) {
@@ -9,7 +10,8 @@ if (process.env.E2E_FIXTURES_ALLOWED !== '1' || !testDatabaseUrl || process.env.
 }
 
 const pool = new Pool({ connectionString: testDatabaseUrl, max: 1 });
-const redis = new Redis(process.env.REDIS_URL ?? 'redis://127.0.0.1:6379', { maxRetriesPerRequest: 1 });
+const redisUrl = process.env.REDIS_URL?.trim() || 'redis://127.0.0.1:6379';
+const redis = new Redis({ ...parseRedisConnectionUrl(redisUrl), maxRetriesPerRequest: 1 });
 const client = await pool.connect();
 const ids = {
   stake: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
@@ -24,6 +26,8 @@ const ids = {
   calling: '99999999-9999-4999-8999-999999999999',
   callingAction: 'aaaaaaa1-1111-4111-8111-aaaaaaaaaaaa',
   ordinance: '44444444-4444-4444-8444-444444444444',
+  welcomeOrdinance: '44444444-4444-4444-8444-444444444445',
+  priesthoodOrdinance: '44444444-4444-4444-8444-444444444446',
   followUp: '55555555-5555-4555-8555-555555555555'
 };
 try {
@@ -50,6 +54,11 @@ try {
   await client.query(`DELETE FROM calling_action WHERE id = $1::uuid AND ward_id = $2::uuid`, [ids.callingAction, ids.ward]);
   await client.query(`DELETE FROM calling_assignment WHERE id = $1::uuid AND ward_id = $2::uuid`, [ids.calling, ids.ward]);
   await client.query(`DELETE FROM church_action_follow_up WHERE id = $1::uuid AND ward_id = $2::uuid`, [ids.followUp, ids.ward]);
+  await client.query(`DELETE FROM meeting_membership_ordinance WHERE id IN ($1::uuid, $2::uuid) AND ward_id = $3::uuid`, [
+    ids.welcomeOrdinance,
+    ids.priesthoodOrdinance,
+    ids.ward
+  ]);
   await client.query(`DELETE FROM meeting_membership_ordinance WHERE id = $1::uuid AND ward_id = $2::uuid`, [ids.ordinance, ids.ward]);
   await client.query(`DELETE FROM ward_module_enablement WHERE ward_id IN ($1::uuid, $2::uuid)`, [ids.ward, ids.wardB]);
   await client.query(`DELETE FROM user_global_role WHERE user_id = $1::uuid`, [ids.user]);
@@ -84,12 +93,23 @@ try {
     [ids.ward, ids.user, roleId]
   );
   await client.query(
-    `INSERT INTO ward_module_enablement (ward_id, module_id, enabled, updated_by_user_id) VALUES ($1::uuid, 'actions-to-do', true, $2::uuid), ($1::uuid, 'programs', true, $2::uuid)`,
+    `INSERT INTO ward_module_enablement (ward_id, module_id, enabled, updated_by_user_id) VALUES ($1::uuid, 'actions-to-do', true, $2::uuid), ($1::uuid, 'programs', true, $2::uuid), ($1::uuid, 'membership-ordinances', true, $2::uuid)`,
     [ids.ward, ids.user]
   );
   await client.query(
     `INSERT INTO meeting (id, ward_id, meeting_date, meeting_type, status) VALUES ($1::uuid, $2::uuid, CURRENT_DATE, 'SACRAMENT', 'PUBLISHED') ON CONFLICT (id) DO UPDATE SET status = 'PUBLISHED', meeting_date = CURRENT_DATE`,
     [ids.meeting, ids.ward]
+  );
+  await client.query(
+    `INSERT INTO ward_stand_template (ward_id, welcome_new_member_template, recognize_baptized_child_template, baby_blessing_template, priesthood_ordination_template, priesthood_advancement_template)
+     VALUES ($1::uuid, 'Welcome script: **{memberName}**.', 'Recognize script: **{memberName}**.', 'Baby blessing script: **{memberName}**.', 'Priesthood script: **{memberName}** — **{callingName}**.', 'Advancement script: **{memberName}** — **{callingName}**.')
+     ON CONFLICT (ward_id) DO UPDATE SET
+       welcome_new_member_template = EXCLUDED.welcome_new_member_template,
+       recognize_baptized_child_template = EXCLUDED.recognize_baptized_child_template,
+       baby_blessing_template = EXCLUDED.baby_blessing_template,
+       priesthood_ordination_template = EXCLUDED.priesthood_ordination_template,
+       priesthood_advancement_template = EXCLUDED.priesthood_advancement_template`,
+    [ids.ward]
   );
   await client.query(
     `INSERT INTO meeting_program_item (id, ward_id, meeting_id, sequence, item_type, title, notes, hymn_locale) VALUES ($1::uuid, $2::uuid, $3::uuid, 30, 'WARD_AND_STAKE_BUSINESS', '', '', 'en-US')`,
@@ -104,7 +124,7 @@ try {
     [ids.callingAction, ids.ward, ids.calling]
   );
   await client.query(
-    `INSERT INTO meeting_business_line (ward_id, meeting_id, calling_assignment_id, member_name, calling_name, action_type, status) VALUES ($1::uuid, $2::uuid, $3::uuid, 'Jane Doe', 'Primary President', 'SUSTAIN', 'pending')`,
+    `INSERT INTO meeting_business_line (ward_id, meeting_id, calling_assignment_id, member_name, calling_name, action_type, status) VALUES ($1::uuid, $2::uuid, $3::uuid, 'Jane Doe', 'Primary President', 'SUSTAIN', 'announced')`,
     [ids.ward, ids.meeting, ids.calling]
   );
   await client.query(
@@ -125,6 +145,12 @@ try {
     ids.portal,
     ids.ward
   ]);
+  await client.query(
+    `INSERT INTO meeting_membership_ordinance (id, ward_id, meeting_id, member_name, action_type, priesthood_office, planned_date, interview_status, lcr_follow_up_status, details)
+     VALUES ($1::uuid, $3::uuid, $4::uuid, 'E2E Welcome Member', 'WELCOME_NEW_MEMBER', NULL, CURRENT_DATE, 'not_required', 'not_applicable', 'PRIVATE WELCOME ACTION NOTES'),
+            ($2::uuid, $3::uuid, $4::uuid, 'E2E Priesthood Member', 'PRIESTHOOD_ORDINATION', 'PRIEST', CURRENT_DATE, 'needed', 'needed', 'PRIVATE PRIESTHOOD ACTION NOTES')`,
+    [ids.welcomeOrdinance, ids.priesthoodOrdinance, ids.ward, ids.meeting]
+  );
   const fixtureState = await client.query(
     `
     SELECT
@@ -132,9 +158,13 @@ try {
       (SELECT ward_id = $1::uuid AND meeting_id = $2::uuid AND item_type = 'WARD_AND_STAKE_BUSINESS' FROM meeting_program_item WHERE id = $3::uuid) AS program_item_ok,
       (SELECT ward_id = $1::uuid AND calling_assignment_id = $4::uuid AND action_status = 'EXTENDED' FROM calling_action WHERE id = $5::uuid) AS calling_action_ok,
       (SELECT ward_id = $1::uuid AND meeting_id = $2::uuid AND render_html LIKE '%E2E Ward A%' AND render_html LIKE '%Jane Doe%' FROM meeting_program_render WHERE id = $6::uuid) AS render_ok,
+      (SELECT status = 'announced' FROM meeting_business_line WHERE ward_id = $1::uuid AND meeting_id = $2::uuid AND calling_assignment_id = $4::uuid) AS business_line_announced_ok,
       (SELECT ward_id = $1::uuid AND meeting_id = $2::uuid AND active_render_id = $6::uuid FROM public_program_share WHERE token = 'meeting-token-e2e') AS share_ok,
-      (SELECT ward_id = $1::uuid FROM public_program_portal WHERE token = 'portal-token-e2e') AS portal_ok`,
-    [ids.ward, ids.meeting, ids.programItem, ids.calling, ids.callingAction, ids.render]
+      (SELECT ward_id = $1::uuid FROM public_program_portal WHERE token = 'portal-token-e2e') AS portal_ok,
+      (SELECT count(*) = 2 AND count(*) FILTER (WHERE details IN ('PRIVATE WELCOME ACTION NOTES', 'PRIVATE PRIESTHOOD ACTION NOTES')) = 2 FROM meeting_membership_ordinance WHERE ward_id = $1::uuid AND meeting_id = $2::uuid AND id = ANY($7::uuid[]) AND planned_date = CURRENT_DATE AND status = 'pending') AS membership_actions_ok,
+      (SELECT enabled FROM ward_module_enablement WHERE ward_id = $1::uuid AND module_id = 'membership-ordinances') AS membership_module_ok,
+      (SELECT welcome_new_member_template = 'Welcome script: **{memberName}**.' AND priesthood_ordination_template = 'Priesthood script: **{memberName}** — **{callingName}**.' FROM ward_stand_template WHERE ward_id = $1::uuid) AS membership_templates_ok`,
+    [ids.ward, ids.meeting, ids.programItem, ids.calling, ids.callingAction, ids.render, [ids.welcomeOrdinance, ids.priesthoodOrdinance]]
   );
   const state = fixtureState.rows[0];
   if (
@@ -142,10 +172,14 @@ try {
     !state?.program_item_ok ||
     !state?.calling_action_ok ||
     !state?.render_ok ||
+    !state?.business_line_announced_ok ||
     !state?.share_ok ||
-    !state?.portal_ok
+    !state?.portal_ok ||
+    !state?.membership_actions_ok ||
+    !state?.membership_module_ok ||
+    !state?.membership_templates_ok
   ) {
-    throw new Error('E2E public fixture readback validation failed');
+    throw new Error(`E2E fixture readback validation failed: ${JSON.stringify(state)}`);
   }
   await client.query(
     `INSERT INTO meeting_membership_ordinance (id, ward_id, meeting_id, member_name, action_type, status, lcr_follow_up_status, priesthood_office, planned_date) VALUES ($1::uuid, $2::uuid, $3::uuid, 'John Doe', 'PRIESTHOOD_ORDINATION', 'completed', 'needed', 'ELDER', CURRENT_DATE)`,

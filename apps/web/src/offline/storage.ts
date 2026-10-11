@@ -1,3 +1,5 @@
+import type { StandMembershipTemplates } from '@/src/stand/membership-templates';
+
 export type OfflineNote = {
   id: string;
   visibility: 'PRIVATE';
@@ -15,6 +17,7 @@ export type OfflineStandSnapshot = {
   locale: string;
   meeting: { id: string; meetingDate: string; meetingType: string };
   standRows: Array<Record<string, unknown>>;
+  membershipTemplates?: StandMembershipTemplates;
   businessLines: Array<{
     id: string;
     memberName: string;

@@ -206,7 +206,7 @@ export default async function StandViewPage({
 
     const membershipActionsResult = membershipOrdinancesEnabled
       ? await client.query(
-          `SELECT a.id, a.member_name, a.action_type, a.priesthood_office, a.reason, a.details,
+          `SELECT a.id, a.member_name, a.action_type, a.priesthood_office, a.reason,
               CASE WHEN a.meeting_id <> $1::uuid AND a.status = 'pending' THEN 'action_needed' ELSE a.status END AS status,
               a.approval_confirmed, a.presenting_leader, a.performing_priesthood_holder, a.ordinance_date, a.baptism_date, a.confirmation_date, a.baptism_status, a.confirmation_status,
               m.meeting_date AS source_meeting_date,
@@ -215,7 +215,7 @@ export default async function StandViewPage({
          JOIN meeting m ON m.id = a.meeting_id AND m.ward_id = a.ward_id
         WHERE a.ward_id = $2::uuid
           AND m.meeting_type NOT IN ('STAKE_CONFERENCE', 'GENERAL_CONFERENCE')
-          AND EXISTS (SELECT 1 FROM meeting route_meeting WHERE route_meeting.id = $1::uuid AND route_meeting.meeting_type NOT IN ('STAKE_CONFERENCE', 'GENERAL_CONFERENCE'))
+          AND EXISTS (SELECT 1 FROM meeting route_meeting WHERE route_meeting.id = $1::uuid AND route_meeting.ward_id = $2::uuid AND route_meeting.meeting_type NOT IN ('STAKE_CONFERENCE', 'GENERAL_CONFERENCE'))
           AND (a.meeting_id = $1::uuid OR (m.meeting_date <= $3::date AND a.status <> 'completed'))
         ORDER BY a.created_at ASC`,
           [meetingId, session.activeWardId, meetingDate]
@@ -267,6 +267,15 @@ export default async function StandViewPage({
       }));
 
     const template = templateResult.rows[0] as TemplateRow | undefined;
+    const membershipTemplates = template
+      ? {
+          WELCOME_NEW_MEMBER: template.welcome_new_member_template,
+          RECOGNIZE_BAPTIZED_CHILD: template.recognize_baptized_child_template,
+          BABY_BLESSING: template.baby_blessing_template,
+          PRIESTHOOD_ORDINATION: template.priesthood_ordination_template,
+          PRIESTHOOD_ADVANCEMENT: template.priesthood_advancement_template
+        }
+      : undefined;
     const businessLines = (
       businessLinesResult.rows as Array<
         BusinessLine & {
@@ -416,6 +425,7 @@ export default async function StandViewPage({
                       stakeBusinessParticipantCalling={row.stakeBusinessParticipantCalling}
                       sustainTemplate={template?.sustain_template ?? undefined}
                       releaseTemplate={template?.release_template ?? undefined}
+                      membershipTemplates={membershipTemplates}
                     />
                   );
                 }
@@ -510,6 +520,7 @@ export default async function StandViewPage({
                       stakeBusinessParticipantCalling={row.stakeBusinessParticipantCalling}
                       sustainTemplate={template?.sustain_template ?? undefined}
                       releaseTemplate={template?.release_template ?? undefined}
+                      membershipTemplates={membershipTemplates}
                     />
                   );
                 }
