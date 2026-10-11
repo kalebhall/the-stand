@@ -1,9 +1,10 @@
 -- Membership ordinance rows must reference a meeting in their own ward.
--- Temporarily exempt the table owner while validating existing rows. With
--- FORCE RLS active, PostgreSQL applies ward policies to the FK validation scan.
--- The migration runner executes each file in one transaction, so concurrent
--- sessions cannot observe the temporary owner exemption.
+-- Temporarily exempt both FK relations' owners while validating existing rows.
+-- With FORCE RLS active, PostgreSQL applies ward policies to the child scan and
+-- referenced meeting lookup. The migration runner executes each file in one
+-- transaction, so concurrent sessions cannot observe the owner exemption.
 ALTER TABLE public.meeting_membership_ordinance NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE public.meeting NO FORCE ROW LEVEL SECURITY;
 
 ALTER TABLE public.meeting_membership_ordinance
   ADD CONSTRAINT meeting_membership_ordinance_meeting_same_ward_fk
@@ -19,3 +20,4 @@ ALTER TABLE public.meeting_membership_ordinance
   DROP CONSTRAINT meeting_membership_ordinance_meeting_id_fkey;
 
 ALTER TABLE public.meeting_membership_ordinance FORCE ROW LEVEL SECURITY;
+ALTER TABLE public.meeting FORCE ROW LEVEL SECURITY;
