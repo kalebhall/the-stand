@@ -1,7 +1,7 @@
 export type VisiblePoll = () => void | Promise<unknown>;
 
-/** Run a poll while visible, and coalesce a resume or reconnect poll behind in-flight work. */
-export function startVisiblePolling(poll: VisiblePoll, intervalMs: number): () => void {
+/** Run while visible; a null interval makes this event-driven on mount, resume, and reconnect. */
+export function startVisiblePolling(poll: VisiblePoll, intervalMs: number | null): () => void {
   let interval: number | null = null;
   let inFlight = false;
   let rerunRequested = false;
@@ -44,7 +44,7 @@ export function startVisiblePolling(poll: VisiblePoll, intervalMs: number): () =
   };
 
   const startPollingInterval = () => {
-    if (stopped || !wasVisible || interval !== null) return;
+    if (stopped || !wasVisible || interval !== null || intervalMs === null) return;
     interval = window.setInterval(run, intervalMs);
   };
 

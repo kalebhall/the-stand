@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { startVisiblePolling } from '@/src/lib/visible-polling';
 
-const POLL_INTERVAL_MS = 5 * 60 * 1000;
 const CLIENT_BUILD_ID = process.env.NEXT_PUBLIC_BUILD_ID ?? 'unknown';
 
 export function DeploymentWatcher() {
@@ -29,11 +28,11 @@ export function DeploymentWatcher() {
           setNewVersionAvailable(true);
         }
       } catch {
-        // Network error — ignore, try again next tick
+        // Network error — retry on the next visibility or reconnect event.
       }
     };
 
-    return startVisiblePolling(check, POLL_INTERVAL_MS);
+    return startVisiblePolling(check, null);
   }, []);
 
   if (!newVersionAvailable) return null;
