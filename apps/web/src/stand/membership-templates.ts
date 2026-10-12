@@ -24,9 +24,10 @@ export function renderMembershipOrdinanceScript(
   templates: StandMembershipTemplates | null | undefined,
   labels: { assignedOffice: string; priesthoodOffice?: string | null }
 ): string | null {
-  if (!Object.hasOwn(DEFAULT_STAND_BUSINESS_TEMPLATES, action.action_type)) return null;
+  const templateActionType = action.action_type === 'BAPTISM_CONFIRMATION_FOLLOW_UP' ? 'WELCOME_NEW_MEMBER' : action.action_type;
+  if (!Object.hasOwn(DEFAULT_STAND_BUSINESS_TEMPLATES, templateActionType)) return null;
 
-  const key = action.action_type as StandMembershipTemplateKey;
+  const key = templateActionType as StandMembershipTemplateKey;
   const configuredTemplate = templates?.[key];
   const template =
     typeof configuredTemplate === 'string' && configuredTemplate.trim() ? configuredTemplate.trim() : DEFAULT_STAND_BUSINESS_TEMPLATES[key];

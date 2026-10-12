@@ -126,6 +126,7 @@ describe('OfflineStandPage', () => {
       },
       membershipActions: [
         { id: 'welcome', memberName: 'Jordan Lee', actionType: 'WELCOME_NEW_MEMBER', status: 'pending' },
+        { id: 'baptism-follow-up', memberName: 'Avery Johnson', actionType: 'BAPTISM_CONFIRMATION_FOLLOW_UP', status: 'pending' },
         { id: 'baptized-child', memberName: 'Toni Young', actionType: 'RECOGNIZE_BAPTIZED_CHILD', status: 'pending' },
         { id: 'baby-blessing', memberName: 'Riley Hall', actionType: 'BABY_BLESSING', status: 'pending' },
         {
@@ -151,6 +152,7 @@ describe('OfflineStandPage', () => {
     const { container } = renderPage();
 
     await waitFor(() => expect(container).toHaveTextContent('Welcome Jordan Lee.'));
+    expect(container).toHaveTextContent('Welcome Avery Johnson.');
     expect(container).toHaveTextContent('Recognize Toni Young.');
     expect(container).toHaveTextContent('Bless Riley Hall.');
     expect(container).toHaveTextContent('Propose Casey Rivera for Priest.');

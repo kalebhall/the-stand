@@ -80,9 +80,23 @@ describe('membership ordinance Stand scripts', () => {
     ).toBe(DEFAULT_STAND_BUSINESS_TEMPLATES.WELCOME_NEW_MEMBER.replaceAll('{memberName}', 'Jordan Lee'));
   });
 
-  it('does not create scripts for follow-up-only action types and preserves emphasis segments', () => {
+  it('uses the configured new-member welcome prompt for baptism and confirmation follow-up', () => {
+    expect(
+      renderMembershipOrdinanceScript(
+        { action_type: 'BAPTISM_CONFIRMATION_FOLLOW_UP', member_name: 'Jordan Lee' },
+        {
+          WELCOME_NEW_MEMBER: 'Welcome **{memberName}** into the ward.'
+        },
+        { assignedOffice: 'the assigned office' }
+      )
+    ).toBe('Welcome **Jordan Lee** into the ward.');
     expect(
       renderMembershipOrdinanceScript({ action_type: 'BAPTISM_CONFIRMATION_FOLLOW_UP', member_name: 'Jordan Lee' }, undefined, {
+        assignedOffice: 'the assigned office'
+      })
+    ).toBe(DEFAULT_STAND_BUSINESS_TEMPLATES.WELCOME_NEW_MEMBER.replaceAll('{memberName}', 'Jordan Lee'));
+    expect(
+      renderMembershipOrdinanceScript({ action_type: 'ATTENDANCE_LCR_HANDOFF', member_name: 'Jordan Lee' }, undefined, {
         assignedOffice: 'the assigned office'
       })
     ).toBeNull();

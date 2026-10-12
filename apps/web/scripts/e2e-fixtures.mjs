@@ -28,6 +28,7 @@ const ids = {
   ordinance: '44444444-4444-4444-8444-444444444444',
   welcomeOrdinance: '44444444-4444-4444-8444-444444444445',
   priesthoodOrdinance: '44444444-4444-4444-8444-444444444446',
+  baptismFollowUpOrdinance: '44444444-4444-4444-8444-444444444447',
   followUp: '55555555-5555-4555-8555-555555555555'
 };
 try {
@@ -54,9 +55,10 @@ try {
   await client.query(`DELETE FROM calling_action WHERE id = $1::uuid AND ward_id = $2::uuid`, [ids.callingAction, ids.ward]);
   await client.query(`DELETE FROM calling_assignment WHERE id = $1::uuid AND ward_id = $2::uuid`, [ids.calling, ids.ward]);
   await client.query(`DELETE FROM church_action_follow_up WHERE id = $1::uuid AND ward_id = $2::uuid`, [ids.followUp, ids.ward]);
-  await client.query(`DELETE FROM meeting_membership_ordinance WHERE id IN ($1::uuid, $2::uuid) AND ward_id = $3::uuid`, [
+  await client.query(`DELETE FROM meeting_membership_ordinance WHERE id IN ($1::uuid, $2::uuid, $3::uuid) AND ward_id = $4::uuid`, [
     ids.welcomeOrdinance,
     ids.priesthoodOrdinance,
+    ids.baptismFollowUpOrdinance,
     ids.ward
   ]);
   await client.query(`DELETE FROM meeting_membership_ordinance WHERE id = $1::uuid AND ward_id = $2::uuid`, [ids.ordinance, ids.ward]);
@@ -146,10 +148,11 @@ try {
     ids.ward
   ]);
   await client.query(
-    `INSERT INTO meeting_membership_ordinance (id, ward_id, meeting_id, member_name, action_type, priesthood_office, planned_date, interview_status, lcr_follow_up_status, details)
-     VALUES ($1::uuid, $3::uuid, $4::uuid, 'E2E Welcome Member', 'WELCOME_NEW_MEMBER', NULL, CURRENT_DATE, 'not_required', 'not_applicable', 'PRIVATE WELCOME ACTION NOTES'),
-            ($2::uuid, $3::uuid, $4::uuid, 'E2E Priesthood Member', 'PRIESTHOOD_ORDINATION', 'PRIEST', CURRENT_DATE, 'needed', 'needed', 'PRIVATE PRIESTHOOD ACTION NOTES')`,
-    [ids.welcomeOrdinance, ids.priesthoodOrdinance, ids.ward, ids.meeting]
+    `INSERT INTO meeting_membership_ordinance (id, ward_id, meeting_id, member_name, action_type, priesthood_office, planned_date, interview_status, lcr_follow_up_status, details, baptism_status, confirmation_status)
+     VALUES ($1::uuid, $3::uuid, $4::uuid, 'E2E Welcome Member', 'WELCOME_NEW_MEMBER', NULL, CURRENT_DATE, 'not_required', 'not_applicable', 'PRIVATE WELCOME ACTION NOTES', NULL, NULL),
+            ($2::uuid, $3::uuid, $4::uuid, 'E2E Priesthood Member', 'PRIESTHOOD_ORDINATION', 'PRIEST', CURRENT_DATE, 'needed', 'needed', 'PRIVATE PRIESTHOOD ACTION NOTES', NULL, NULL),
+            ($5::uuid, $3::uuid, $4::uuid, 'E2E Baptism Follow-up', 'BAPTISM_CONFIRMATION_FOLLOW_UP', NULL, CURRENT_DATE, 'not_required', 'not_applicable', 'PRIVATE BAPTISM FOLLOW-UP NOTES', 'completed', 'completed')`,
+    [ids.welcomeOrdinance, ids.priesthoodOrdinance, ids.ward, ids.meeting, ids.baptismFollowUpOrdinance]
   );
   const fixtureState = await client.query(
     `
@@ -161,10 +164,20 @@ try {
       (SELECT status = 'announced' FROM meeting_business_line WHERE ward_id = $1::uuid AND meeting_id = $2::uuid AND calling_assignment_id = $4::uuid) AS business_line_announced_ok,
       (SELECT ward_id = $1::uuid AND meeting_id = $2::uuid AND active_render_id = $6::uuid FROM public_program_share WHERE token = 'meeting-token-e2e') AS share_ok,
       (SELECT ward_id = $1::uuid FROM public_program_portal WHERE token = 'portal-token-e2e') AS portal_ok,
-      (SELECT count(*) = 2 AND count(*) FILTER (WHERE details IN ('PRIVATE WELCOME ACTION NOTES', 'PRIVATE PRIESTHOOD ACTION NOTES')) = 2 FROM meeting_membership_ordinance WHERE ward_id = $1::uuid AND meeting_id = $2::uuid AND id = ANY($7::uuid[]) AND planned_date = CURRENT_DATE AND status = 'pending') AS membership_actions_ok,
+      (SELECT count(*) = 3 AND count(*) FILTER (WHERE details IN ('PRIVATE WELCOME ACTION NOTES', 'PRIVATE PRIESTHOOD ACTION NOTES', 'PRIVATE BAPTISM FOLLOW-UP NOTES')) = 3 FROM meeting_membership_ordinance WHERE ward_id = $1::uuid AND meeting_id = $2::uuid AND id = ANY($7::uuid[]) AND planned_date = CURRENT_DATE AND status = 'pending') AS membership_actions_ok,
+      (SELECT action_type = 'BAPTISM_CONFIRMATION_FOLLOW_UP' AND baptism_status = 'completed' AND confirmation_status = 'completed' FROM meeting_membership_ordinance WHERE id = $8::uuid AND ward_id = $1::uuid AND meeting_id = $2::uuid) AS baptism_followup_ok,
       (SELECT enabled FROM ward_module_enablement WHERE ward_id = $1::uuid AND module_id = 'membership-ordinances') AS membership_module_ok,
       (SELECT welcome_new_member_template = 'Welcome script: **{memberName}**.' AND priesthood_ordination_template = 'Priesthood script: **{memberName}** — **{callingName}**.' FROM ward_stand_template WHERE ward_id = $1::uuid) AS membership_templates_ok`,
-    [ids.ward, ids.meeting, ids.programItem, ids.calling, ids.callingAction, ids.render, [ids.welcomeOrdinance, ids.priesthoodOrdinance]]
+    [
+      ids.ward,
+      ids.meeting,
+      ids.programItem,
+      ids.calling,
+      ids.callingAction,
+      ids.render,
+      [ids.welcomeOrdinance, ids.priesthoodOrdinance, ids.baptismFollowUpOrdinance],
+      ids.baptismFollowUpOrdinance
+    ]
   );
   const state = fixtureState.rows[0];
   if (
@@ -176,6 +189,7 @@ try {
     !state?.share_ok ||
     !state?.portal_ok ||
     !state?.membership_actions_ok ||
+    !state?.baptism_followup_ok ||
     !state?.membership_module_ok ||
     !state?.membership_templates_ok
   ) {
