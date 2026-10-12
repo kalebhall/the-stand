@@ -58,6 +58,7 @@ function installCurrentQueryModel(): void {
             meeting_type: 'SACRAMENT',
             status: mocks.state.meetingStatus,
             ward_name: 'Ward',
+            default_locale: 'es',
             location: null
           }
         ]
@@ -79,6 +80,36 @@ function installCurrentQueryModel(): void {
             program_notes: null,
             hymn_number: '1',
             hymn_title: 'The Morning Breaks',
+            introduction_roles: null
+          },
+          {
+            item_type: 'INTRODUCTION',
+            title: null,
+            notes: null,
+            topic: null,
+            program_notes: null,
+            hymn_number: null,
+            hymn_title: null,
+            introduction_roles: { presiding: 'Bishop Hall', conducting: 'Sister Hall' }
+          },
+          {
+            item_type: 'WARD_AND_STAKE_BUSINESS',
+            title: 'PRIVATE BUSINESS SNAPSHOT SENTINEL',
+            notes: null,
+            topic: null,
+            program_notes: 'PRIVATE BUSINESS NOTES SENTINEL',
+            hymn_number: null,
+            hymn_title: null,
+            introduction_roles: null
+          },
+          {
+            item_type: 'SPEAKER',
+            title: 'Alex Hall',
+            notes: null,
+            topic: 'Faith',
+            program_notes: null,
+            hymn_number: null,
+            hymn_title: null,
             introduction_roles: null
           }
         ]
@@ -181,7 +212,17 @@ describe('POST /api/w/[wardId]/meetings/[meetingId]/publish', () => {
     expect(mocks.query).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO meeting_program_render'), expect.any(Array));
     expect(mocks.query).toHaveBeenCalledWith(expect.stringContaining('RETURNING id, version'), expect.any(Array));
     const renderCall = mocks.query.mock.calls.find(([sql]) => sql.includes('INSERT INTO meeting_program_render'));
-    expect(renderCall?.[1]?.[5]).toContain('"#1 — The Morning Breaks"');
+    const snapshotData = JSON.parse(String(renderCall?.[1]?.[5]));
+    expect(snapshotData.meetingItems).toEqual([
+      { order: 0, label: 'Himno de apertura', details: '#1 — The Morning Breaks' },
+      { order: 3, label: 'Orador', details: ['Alex Hall', 'Faith'].join(String.fromCharCode(10)) }
+    ]);
+    expect(JSON.stringify(snapshotData)).not.toContain('PRIVATE BUSINESS');
+    expect(renderCall?.[1]?.[3]).toContain('<dt>Himno de apertura</dt><dd>#1 — The Morning Breaks</dd>');
+    expect(renderCall?.[1]?.[3]).toContain('<dt>Orador</dt><dd>Alex Hall');
+    expect(String(renderCall?.[1]?.[3]).split('<dt>Preside</dt>')).toHaveLength(2);
+    expect(String(renderCall?.[1]?.[3]).split('<dt>Dirige</dt>')).toHaveLength(2);
+    expect(renderCall?.[1]?.[3]).not.toContain('PRIVATE BUSINESS');
     expect(renderCall?.[1]?.[3]).toContain('Ward');
     expect(mocks.query).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO public_program_share'), [
       'ward-1',

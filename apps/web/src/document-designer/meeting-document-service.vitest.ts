@@ -22,9 +22,15 @@ describe('meeting document service', () => {
 
   it('rejects non-content Simple block and region geometry mutations', () => {
     const blockMutations = [
-      (draft: typeof source) => { draft.pages[0].regions[0].blocks[0].width = 'HALF'; },
-      (draft: typeof source) => { draft.pages[0].regions[0].blocks[0].dataMode = 'AUTO'; },
-      (draft: typeof source) => { draft.pages[0].regions[0].blocks[0].digitalBehavior = 'LINK'; }
+      (draft: typeof source) => {
+        draft.pages[0].regions[0].blocks[0].width = 'HALF';
+      },
+      (draft: typeof source) => {
+        draft.pages[0].regions[0].blocks[0].dataMode = 'AUTO';
+      },
+      (draft: typeof source) => {
+        draft.pages[0].regions[0].blocks[0].digitalBehavior = 'LINK';
+      }
     ];
     for (const mutate of blockMutations) {
       const draft = structuredClone(source);
@@ -81,6 +87,14 @@ describe('meeting document service', () => {
         hymnTitle: 'I Need Thee Every Hour'
       },
       {
+        itemType: 'OPENING_PRAYER',
+        title: 'Sister Jones',
+        topic: null,
+        programNotes: null,
+        sequence: 5,
+        hymnTitle: null
+      },
+      {
         itemType: 'WARD_AND_STAKE_BUSINESS',
         title: 'Private participant',
         topic: 'Private calling detail',
@@ -101,9 +115,22 @@ describe('meeting document service', () => {
         }
       }
     ]);
-    expect(preview.programItems[0]).toEqual({ order: 2, label: 'Alex Hall', details: 'Faith\nPlease welcome the family.' });
-    expect(preview.programItems[1]).toEqual({ order: 4, label: '#123 — I Need Thee Every Hour', details: null });
-    expect(preview.programItems[2]).toEqual({ order: 1, label: 'Introduction', details: null });
+    expect(preview.programItems).toHaveLength(3);
+    expect(preview.programItems[0]).toEqual({
+      order: 2,
+      label: preview.renderLabels.itemLabels.SPEAKER,
+      details: ['Alex Hall', 'Faith', 'Please welcome the family.'].join(String.fromCharCode(10))
+    });
+    expect(preview.programItems[1]).toEqual({
+      order: 4,
+      label: preview.renderLabels.itemLabels.OPENING_HYMN,
+      details: '#123 — I Need Thee Every Hour'
+    });
+    expect(preview.programItems[2]).toEqual({
+      order: 5,
+      label: preview.renderLabels.itemLabels.OPENING_PRAYER,
+      details: 'Sister Jones'
+    });
     expect(preview.publicValues).toEqual({
       PRESIDING_CONDUCTING: JSON.stringify({ presiding: 'Bishop Hall', conducting: 'Sister Hall' }),
       MUSIC_LEADERS: 'Organist / Pianist: Brother Organist\nChorister: Sister Chorister'

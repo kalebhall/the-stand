@@ -86,7 +86,11 @@ describe('program design route', () => {
     const body = await response.json();
     expect(body.document.revision).toBe(3);
     expect(body.document.sourceTemplateVersion).toBe(2);
-    expect(body.previewSource.programItems[0]).toEqual({ order: 2, label: 'Alex Hall', details: 'Faith' });
+    expect(body.previewSource.programItems[0]).toEqual({
+      order: 2,
+      label: body.previewSource.renderLabels.itemLabels.SPEAKER,
+      details: ['Alex Hall', 'Faith'].join(String.fromCharCode(10))
+    });
   });
 
   it('hides Advanced Layout when the global feature flag is disabled', async () => {

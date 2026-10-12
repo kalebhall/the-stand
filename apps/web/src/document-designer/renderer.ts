@@ -15,17 +15,25 @@ export function renderDocumentHtml({
   if (publicOutput) validatePublicDocumentLayout(isAdvancedLayout(layout) ? downgradeToV1(layout) : layout, explicitPublicBlockTypes);
   const effectiveTarget = target ?? 'DIGITAL';
   const blocks = layout.pages.flatMap((page) => page.regions.flatMap((region) => region.blocks.map((block) => ({ region, block }))));
+  const hasSeparateLeadershipBlock = blocks.some(
+    ({ block }) =>
+      block.type === 'PRESIDING_CONDUCTING' &&
+      block.visibility !== 'HIDDEN' &&
+      !(effectiveTarget === 'PRINT' && block.printBehavior === 'DIGITAL_ONLY') &&
+      !(effectiveTarget === 'DIGITAL' && block.printBehavior === 'PRINT_ONLY')
+  );
+  const includeLeadershipInProgram = !hasSeparateLeadershipBlock;
   const content = isAdvancedLayout(layout)
-    ? renderAdvanced(layout, data, effectiveTarget)
+    ? renderAdvanced(layout, data, effectiveTarget, includeLeadershipInProgram)
     : blocks
         .map(
           ({ region, block }) =>
-            `<div class="document-region" data-region-id="${region.id}">${renderDocumentBlock(block, data, effectiveTarget)}</div>`
+            `<div class="document-region" data-region-id="${region.id}">${renderDocumentBlock(block, data, effectiveTarget, includeLeadershipInProgram)}</div>`
         )
         .join('');
   const foldClass = `document-fold--${layout.fold.toLowerCase()}`;
   const panelCount = layout.fold === 'TRIFOLD' ? 3 : layout.fold === 'NONE' ? 1 : 2;
-  const printStyle = `<style>@media print { .document-root { color:#000; } .document-root.${foldClass} { break-inside: avoid; } .document-page + .document-page { break-before: page; page-break-before: always; } .document-page { break-inside: avoid; } .document-block { break-inside: avoid; } } .document-root { font-family:${layout.theme.fontFamily === 'SERIF' ? 'Georgia,serif' : layout.theme.fontFamily === 'MONOSPACE' ? 'ui-monospace,monospace' : 'system-ui,sans-serif'}; font-size:${layout.theme.baseFontSize}px; --document-accent:${layout.theme.accentColor}; } .document-page { height:100vh; box-sizing:border-box; } .document-page h1 { font-size:calc(${layout.theme.baseFontSize}px + 6px); line-height:1.2; margin:.5rem 0; } .document-page h2 { font-size:calc(${layout.theme.baseFontSize}px + 3px); line-height:1.2; margin:.4rem 0; } .document-key-value { display:grid; grid-template-columns:minmax(8rem, 1fr) minmax(0, 2fr); gap:.75rem; padding:.2rem 0; border-bottom:1px solid color-mix(in srgb, var(--document-accent) 18%, transparent); } .document-key-value dt { font-weight:600; } .document-key-value dd { margin:0; } .document-panels { display:grid; height:100%; grid-template-columns:repeat(${panelCount},minmax(0,1fr)); gap:1rem; } .document-panel { min-width:0; min-height:calc(var(--document-region-ratio, 1) * 100%); } .document-columns { display:grid; gap:var(--document-gutter); } .document-columns--2 { grid-template-columns:var(--document-column-ratio,1fr 1fr); } .document-columns--3 { grid-template-columns:repeat(3,1fr); } @media(max-width:640px){.document-panels{grid-template-columns:1fr;}}</style>`;
+  const printStyle = `<style>@media print { .document-root { color:#000; } .document-root.${foldClass} { break-inside: avoid; } .document-page + .document-page { break-before: page; page-break-before: always; } .document-page { break-inside: avoid; } .document-block { break-inside: avoid; } } .document-root { font-family:${layout.theme.fontFamily === 'SERIF' ? 'Georgia,serif' : layout.theme.fontFamily === 'MONOSPACE' ? 'ui-monospace,monospace' : 'system-ui,sans-serif'}; font-size:${layout.theme.baseFontSize}px; --document-accent:${layout.theme.accentColor}; } .document-page { height:100vh; box-sizing:border-box; } .document-page h1 { font-size:calc(${layout.theme.baseFontSize}px + 6px); line-height:1.2; margin:.5rem 0; } .document-page h2 { font-size:calc(${layout.theme.baseFontSize}px + 3px); line-height:1.2; margin:.4rem 0; } .document-key-value { display:grid; grid-template-columns:minmax(8rem, 1fr) minmax(0, 2fr); gap:.75rem; padding:.2rem 0; border-bottom:1px solid color-mix(in srgb, var(--document-accent) 18%, transparent); } .document-key-value dt { font-weight:600; } .document-key-value dd { margin:0; white-space:pre-line; } .document-panels { display:grid; height:100%; grid-template-columns:repeat(${panelCount},minmax(0,1fr)); gap:1rem; } .document-panel { min-width:0; min-height:calc(var(--document-region-ratio, 1) * 100%); } .document-columns { display:grid; gap:var(--document-gutter); } .document-columns--2 { grid-template-columns:var(--document-column-ratio,1fr 1fr); } .document-columns--3 { grid-template-columns:repeat(3,1fr); } @media(max-width:640px){.document-panels{grid-template-columns:1fr;}}</style>`;
   const html = `${printStyle}<main class="document-root ${foldClass}" data-document-type="${layout.documentType}" data-target="${effectiveTarget}" aria-label="${escapeDocumentHtml(data.renderLabels?.programTitle ?? 'Sacrament meeting program')}">${content}</main>`;
   return {
     html,
@@ -42,7 +50,8 @@ export function renderDocumentHtml({
 function renderAdvanced(
   layout: AdvancedDocumentLayout,
   data: DocumentRenderInput['data'],
-  target: NonNullable<DocumentRenderInput['target']>
+  target: NonNullable<DocumentRenderInput['target']>,
+  includeLeadershipInProgram: boolean
 ): string {
   const panelsPerSide = layout.fold === 'TRIFOLD' ? 3 : layout.fold === 'NONE' ? 1 : 2;
   const physicalSides = (regions: AdvancedDocumentLayout['pages'][number]['regions']) =>
@@ -98,7 +107,7 @@ function renderAdvanced(
                       .map((id) => {
                         const block = byId.get(id);
                         return block
-                          ? `<div class="document-block" data-block-id="${block.id}" style="${blockPresentationStyle(block)}">${renderDocumentBlock(block, data, target)}</div>`
+                          ? `<div class="document-block" data-block-id="${block.id}" style="${blockPresentationStyle(block)}">${renderDocumentBlock(block, data, target, includeLeadershipInProgram)}</div>`
                           : '';
                       })
                       .join('')}</div>`

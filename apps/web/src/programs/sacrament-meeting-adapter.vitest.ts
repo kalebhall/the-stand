@@ -21,8 +21,8 @@ const source = {
         chorister: 'Sister Chorister'
       }
     },
-    { itemType: 'OPENING_HYMN', title: null, hymnTitle: 'Come, Come, Ye Saints', sequence: 1 },
-    { itemType: 'SPEAKER', title: 'Speaker', topic: 'Faith', sequence: 2 }
+    { itemType: 'OPENING_HYMN', title: null, hymnNumber: '21', hymnTitle: 'Come, Come, Ye Saints', sequence: 1 },
+    { itemType: 'SPEAKER', title: 'Alex Hall', topic: 'Faith', sequence: 2 }
   ]
 };
 
@@ -44,9 +44,8 @@ describe('sacrament meeting program adapter', () => {
         meetingType: 'SACRAMENT',
         wardName: 'Freedom Park Ward',
         programItems: [
-          { order: 0, label: 'Introduction', details: null },
-          { order: 1, label: 'Come, Come, Ye Saints', details: null },
-          { order: 2, label: 'Speaker', details: 'Faith' }
+          { order: 1, label: 'Opening hymn', details: '#21 — Come, Come, Ye Saints' },
+          { order: 2, label: 'Speaker', details: 'Alex Hall\nFaith' }
         ],
         publicValues: {
           PRESIDING_CONDUCTING: JSON.stringify({ presiding: 'Bishop Hall', conducting: 'Sister Hall' }),

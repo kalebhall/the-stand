@@ -62,11 +62,23 @@ function isSimpleReusableAddition(current: DocumentLayout, next: DocumentLayout)
     if (!replacement || replacement.type !== previous.type) return false;
     const previousPosition = blockIndex(current, previous.id);
     const nextPosition = blockIndex(next, replacement.id);
-    if (!previousPosition || !nextPosition || previousPosition[0] !== nextPosition[0] || previousPosition[1] !== nextPosition[1] || previousPosition[2] !== nextPosition[2]) return false;
+    if (
+      !previousPosition ||
+      !nextPosition ||
+      previousPosition[0] !== nextPosition[0] ||
+      previousPosition[1] !== nextPosition[1] ||
+      previousPosition[2] !== nextPosition[2]
+    )
+      return false;
   }
   return additions.every((block) => {
     try {
-      return isReusableBlockType(block.type) && getRegisteredBlockDefinition(next.documentType, block.type).exposure === 'SIMPLE' && block.reusableBlockId !== undefined && block.reusableBlockVersion !== undefined;
+      return (
+        isReusableBlockType(block.type) &&
+        getRegisteredBlockDefinition(next.documentType, block.type).exposure === 'SIMPLE' &&
+        block.reusableBlockId !== undefined &&
+        block.reusableBlockVersion !== undefined
+      );
     } catch {
       return false;
     }
@@ -135,7 +147,10 @@ export function validateSimpleModeDraft(input: unknown, currentInput: unknown): 
       const nextRegion = nextPage.regions[regionIndex];
       if (json(previousRegion.lock) !== json(nextRegion.lock))
         throw new SimpleModeValidationError('PROPERTY_LOCKED', 'Region lock metadata cannot be changed');
-      if (json({ ratio: previousRegion.ratio, gutter: previousRegion.gutter, face: previousRegion.face }) !== json({ ratio: nextRegion.ratio, gutter: nextRegion.gutter, face: nextRegion.face }))
+      if (
+        json({ ratio: previousRegion.ratio, gutter: previousRegion.gutter, face: previousRegion.face }) !==
+        json({ ratio: nextRegion.ratio, gutter: nextRegion.gutter, face: nextRegion.face })
+      )
         throw new SimpleModeValidationError('STRUCTURE_LOCKED', 'Simple Mode cannot change region geometry');
       if (
         hasLock(previousRegion.lock, 'POSITION') &&
@@ -210,17 +225,32 @@ export function validateSimpleModeDraft(input: unknown, currentInput: unknown): 
       if (!reusableAddition) throw new SimpleModeValidationError('STRUCTURE_LOCKED', 'Block identities and types are locked');
       continue;
     }
-    if (previous.type !== nextBlock.type)
-      throw new SimpleModeValidationError('STRUCTURE_LOCKED', 'Block identities and types are locked');
+    if (previous.type !== nextBlock.type) throw new SimpleModeValidationError('STRUCTURE_LOCKED', 'Block identities and types are locked');
     if (json(previous.lock) !== json(nextBlock.lock))
       throw new SimpleModeValidationError('PROPERTY_LOCKED', `${nextBlock.type} lock metadata cannot be changed`);
     const previousPosition = blockIndex(current, previous.id);
     const nextPosition = blockIndex(layout, nextBlock.id);
     if (!previousPosition || !nextPosition || previousPosition[0] !== nextPosition[0] || previousPosition[1] !== nextPosition[1])
       throw new SimpleModeValidationError('STRUCTURE_LOCKED', `${nextBlock.type} can only be reordered within its region in Simple Mode`);
-    if (json({ width: previous.width, dataMode: previous.dataMode, printBehavior: previous.printBehavior, digitalBehavior: previous.digitalBehavior }) !== json({ width: nextBlock.width, dataMode: nextBlock.dataMode, printBehavior: nextBlock.printBehavior, digitalBehavior: nextBlock.digitalBehavior }))
+    if (
+      json({
+        width: previous.width,
+        dataMode: previous.dataMode,
+        printBehavior: previous.printBehavior,
+        digitalBehavior: previous.digitalBehavior
+      }) !==
+      json({
+        width: nextBlock.width,
+        dataMode: nextBlock.dataMode,
+        printBehavior: nextBlock.printBehavior,
+        digitalBehavior: nextBlock.digitalBehavior
+      })
+    )
       throw new SimpleModeValidationError('PROPERTY_LOCKED', `${nextBlock.type} layout properties cannot be changed in Simple Mode`);
-    if (json({ source: previous.source, reusableBlockId: previous.reusableBlockId, reusableBlockVersion: previous.reusableBlockVersion }) !== json({ source: nextBlock.source, reusableBlockId: nextBlock.reusableBlockId, reusableBlockVersion: nextBlock.reusableBlockVersion })) {
+    if (
+      json({ source: previous.source, reusableBlockId: previous.reusableBlockId, reusableBlockVersion: previous.reusableBlockVersion }) !==
+      json({ source: nextBlock.source, reusableBlockId: nextBlock.reusableBlockId, reusableBlockVersion: nextBlock.reusableBlockVersion })
+    ) {
       throw new SimpleModeValidationError('PROPERTY_LOCKED', `${nextBlock.type} reusable provenance cannot be changed in Simple Mode`);
     }
     const definition = getRegisteredBlockDefinition(layout.documentType, nextBlock.type);
@@ -294,15 +324,17 @@ export function buildPublicPreviewSource(
     wardName: meeting.wardName ?? null,
     ...(Object.keys(publicValues).length ? { publicValues } : {}),
     programItems: programItems
-      .filter((item) => item.itemType.toUpperCase() !== 'WARD_AND_STAKE_BUSINESS')
+      .filter((item) => !['WARD_AND_STAKE_BUSINESS', 'INTRODUCTION'].includes(item.itemType.toUpperCase()))
       .map((item) => {
+        const itemType = item.itemType.toUpperCase();
+        const hymnValue =
+          item.hymnNumber || item.hymnTitle
+            ? [item.hymnNumber ? `#${item.hymnNumber}` : null, item.hymnTitle || null].filter(Boolean).join(' — ')
+            : '';
         return {
           order: item.sequence,
-          label:
-            item.hymnNumber || item.hymnTitle
-              ? [item.hymnNumber ? `#${item.hymnNumber}` : null, item.hymnTitle || null].filter(Boolean).join(' — ')
-              : item.title || labels.itemLabels[item.itemType.toUpperCase()] || item.itemType.replaceAll('_', ' '),
-          details: [item.topic?.trim(), item.programNotes?.trim()].filter(Boolean).join('\n') || null
+          label: labels.itemLabels[itemType] || item.itemType.replaceAll('_', ' '),
+          details: [hymnValue || item.title?.trim(), item.topic?.trim(), item.programNotes?.trim()].filter(Boolean).join('\n') || null
         };
       })
   };

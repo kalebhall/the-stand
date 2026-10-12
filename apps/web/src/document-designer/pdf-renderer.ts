@@ -22,7 +22,7 @@ function safePrintHref(value: unknown): value is string {
 
 export type PdfRenderOptions = { metadata: PrintRenderMetadata; title?: string };
 
-function blockText(block: DocumentBlock, data: ResolvedDocumentData): string {
+function blockText(block: DocumentBlock, data: ResolvedDocumentData, includeLeadershipInProgram = true): string {
   const resolvedBlockText = data.blockValues?.[String(block.id)];
   if (typeof resolvedBlockText === 'string') return resolvedBlockText;
   if (block.type === 'PRESIDING_CONDUCTING') {
@@ -47,16 +47,21 @@ function blockText(block: DocumentBlock, data: ResolvedDocumentData): string {
     } catch {
       leadership = {};
     }
+    const leadershipRows = includeLeadershipInProgram
+      ? [
+          [data.renderLabels?.presiding ?? 'Presiding', leadership.presiding ?? ''],
+          [data.renderLabels?.conducting ?? 'Conducting', leadership.conducting ?? '']
+        ]
+      : [];
     const rows = [
-      [data.renderLabels?.presiding ?? 'Presiding', leadership.presiding ?? ''],
-      [data.renderLabels?.conducting ?? 'Conducting', leadership.conducting ?? ''],
+      ...leadershipRows,
       ...data.meetingItems
         .slice()
         .sort((a, b) => a.order - b.order)
         .map((item) => [item.label, item.details?.trim() || '—'] as const)
     ]
       .filter(([, value]) => value.trim())
-      .map(([label, value]) => `${label}: ${value}`);
+      .map(([label, value]) => `${label}: ${value.replaceAll('—', '-')}`);
     return rows.length ? [data.renderLabels?.programTitle ?? 'Program', ...rows].join('\n') : '';
   }
   if (block.type === 'DIVIDER') return '────────────────────────';
@@ -192,6 +197,9 @@ export async function renderDocumentPdf(
         slotIndex: 0,
         columnIndex: 0
       }));
+  const includeLeadershipInProgram = !renderBlocks.some(
+    ({ block }) => block.type === 'PRESIDING_CONDUCTING' && block.visibility !== 'HIDDEN' && block.printBehavior !== 'DIGITAL_ONLY'
+  );
   let currentPhysicalPage = 0;
   let lastRegionKey: string | null = null;
   let lastColumnIndex = 0;
@@ -291,7 +299,7 @@ export async function renderDocumentPdf(
       y += height;
       continue;
     }
-    const text = blockText(block, data);
+    const text = blockText(block, data, includeLeadershipInProgram);
     if (block.visibility === 'HIDE_WHEN_EMPTY' && !text.trim()) continue;
     if (block.type === 'MEETING_PROGRAM') {
       const [title, ...rows] = text.split('\n');

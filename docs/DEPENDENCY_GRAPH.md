@@ -212,7 +212,7 @@ flowchart LR
 
 | Importing area | Imported area | Imports |
 | --- | --- | ---: |
-| `web:document-designer` | `web:document-designer` | 238 |
+| `web:document-designer` | `web:document-designer` | 240 |
 | `web:api` | `web:auth` | 185 |
 | `web:api` | `web:db` | 160 |
 | `web:app` | `web:ui` | 120 |
@@ -920,7 +920,7 @@ flowchart LR
 | `apps/web/src/document-designer/advanced-validation.ts` | `web:document-designer` | 2 | 0 |
 | `apps/web/src/document-designer/block-renderers.ts` | `web:document-designer` | 4 | 0 |
 | `apps/web/src/document-designer/built-in-templates.ts` | `web:document-designer` | 4 | 0 |
-| `apps/web/src/document-designer/compatibility-render.vitest.ts` | `web:document-designer` | 5 | 1 |
+| `apps/web/src/document-designer/compatibility-render.vitest.ts` | `web:document-designer` | 7 | 1 |
 | `apps/web/src/document-designer/constants.ts` | `web:document-designer` | 0 | 0 |
 | `apps/web/src/document-designer/data-resolver.ts` | `web:document-designer` | 8 | 0 |
 | `apps/web/src/document-designer/data-resolver.vitest.ts` | `web:document-designer` | 2 | 1 |
