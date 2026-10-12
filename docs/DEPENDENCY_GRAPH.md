@@ -33,7 +33,7 @@ flowchart LR
   A21["web:i18n<br/>7 files"]
   A22["web:imports<br/>18 files"]
   A23["web:leadership<br/>14 files"]
-  A24["web:lib<br/>12 files"]
+  A24["web:lib<br/>14 files"]
   A25["web:maintenance<br/>5 files"]
   A26["web:meetings<br/>20 files"]
   A27["web:modules<br/>12 files"]
@@ -88,6 +88,7 @@ flowchart LR
   A27 -->|4| A13
   A27 -->|4| A31
   A31 -->|4| A8
+  A38 -->|4| A24
   A38 -->|4| A26
   A5 -->|3| A12
   A6 -->|3| A23
@@ -159,7 +160,6 @@ flowchart LR
   A38 -->|1| A12
   A38 -->|1| A15
   A38 -->|1| A22
-  A38 -->|1| A24
   A38 -->|1| A28
   A38 -->|1| A30
 ```
@@ -191,7 +191,7 @@ flowchart LR
 | `web:i18n` | 7 |
 | `web:imports` | 18 |
 | `web:leadership` | 14 |
-| `web:lib` | 12 |
+| `web:lib` | 14 |
 | `web:maintenance` | 5 |
 | `web:meetings` | 20 |
 | `web:modules` | 12 |
@@ -252,11 +252,11 @@ flowchart LR
 | `web:api` | `web:leadership` | 7 |
 | `web:api` | `web:platform` | 7 |
 | `web:church-actions` | `web:church-actions` | 7 |
+| `web:lib` | `web:lib` | 7 |
 | `web:programs` | `web:document-designer` | 7 |
 | `web:api` | `web:conducting` | 6 |
 | `web:app` | `web:features` | 6 |
 | `web:app` | `web:stand` | 6 |
-| `web:lib` | `web:lib` | 6 |
 | `web:notifications` | `web:db` | 6 |
 | `web:auth` | `web:modules` | 5 |
 | `web:document-designer` | `web:i18n` | 5 |
@@ -269,6 +269,7 @@ flowchart LR
 | `web:modules` | `web:conducting` | 4 |
 | `web:modules` | `web:platform` | 4 |
 | `web:platform` | `web:auth` | 4 |
+| `web:ui` | `web:lib` | 4 |
 | `web:ui` | `web:meetings` | 4 |
 | `web:api` | `web:church-actions` | 3 |
 | `web:app` | `web:leadership` | 3 |
@@ -350,7 +351,6 @@ flowchart LR
 | `web:ui` | `web:church-actions` | 1 |
 | `web:ui` | `web:dashboard` | 1 |
 | `web:ui` | `web:imports` | 1 |
-| `web:ui` | `web:lib` | 1 |
 | `web:ui` | `web:notes` | 1 |
 | `web:ui` | `web:offline` | 1 |
 
@@ -390,9 +390,9 @@ flowchart LR
 | `web:app` | `@testing-library/user-event` | 5 |
 | `web:auth` | `vitest` | 5 |
 | `web:church-actions` | `vitest` | 5 |
+| `web:lib` | `vitest` | 5 |
 | `web:api` | `Node.js` | 4 |
 | `web:config` | `Node.js` | 4 |
-| `web:lib` | `vitest` | 4 |
 | `web:modules` | `vitest` | 4 |
 | `web:notifications` | `Node.js` | 4 |
 | `web:platform` | `vitest` | 4 |
@@ -809,14 +809,14 @@ flowchart LR
 | `apps/web/components/app-navigation.tsx` | `web:ui` | 1 | 0 |
 | `apps/web/components/app-shell.tsx` | `web:ui` | 9 | 5 |
 | `apps/web/components/auth-session-provider.tsx` | `web:ui` | 0 | 3 |
-| `apps/web/components/auth-session-refresh.tsx` | `web:ui` | 0 | 3 |
+| `apps/web/components/auth-session-refresh.tsx` | `web:ui` | 1 | 3 |
 | `apps/web/components/dashboard/dashboard-grid.tsx` | `web:ui` | 3 | 3 |
 | `apps/web/components/dashboard/dashboard-grid.vitest.tsx` | `web:ui` | 2 | 3 |
-| `apps/web/components/deployment-watcher.tsx` | `web:ui` | 0 | 1 |
+| `apps/web/components/deployment-watcher.tsx` | `web:ui` | 1 | 1 |
 | `apps/web/components/lcr-extractor-instructions.tsx` | `web:ui` | 2 | 2 |
 | `apps/web/components/notification-bell.tsx` | `web:ui` | 0 | 2 |
 | `apps/web/components/notification-bell.vitest.tsx` | `web:ui` | 1 | 3 |
-| `apps/web/components/offline-stand-button.tsx` | `web:ui` | 2 | 3 |
+| `apps/web/components/offline-stand-button.tsx` | `web:ui` | 3 | 3 |
 | `apps/web/components/program-entries-editor.tsx` | `web:ui` | 4 | 4 |
 | `apps/web/components/program-entries-editor.vitest.tsx` | `web:ui` | 3 | 3 |
 | `apps/web/components/public-portal/PublicLinkQrCard.tsx` | `web:ui` | 2 | 2 |
@@ -1043,6 +1043,8 @@ flowchart LR
 | `apps/web/src/lib/sentry.ts` | `web:lib` | 0 | 1 |
 | `apps/web/src/lib/version.ts` | `web:lib` | 0 | 0 |
 | `apps/web/src/lib/version.vitest.ts` | `web:lib` | 1 | 1 |
+| `apps/web/src/lib/visible-polling.ts` | `web:lib` | 0 | 0 |
+| `apps/web/src/lib/visible-polling.vitest.ts` | `web:lib` | 1 | 1 |
 | `apps/web/src/maintenance/retention-contract.d.ts` | `web:maintenance` | 0 | 0 |
 | `apps/web/src/maintenance/retention-contract.js` | `web:maintenance` | 0 | 0 |
 | `apps/web/src/maintenance/retention-contract.vitest.ts` | `web:maintenance` | 1 | 1 |

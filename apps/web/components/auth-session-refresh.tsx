@@ -3,6 +3,9 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
+import { startVisiblePolling } from '@/src/lib/visible-polling';
+
+const SESSION_REFRESH_INTERVAL_MS = 5 * 60 * 1000;
 
 function sessionAccessKey(session: { user?: { roles?: string[] }; activeWardId?: string | null } | null) {
   return JSON.stringify({ roles: session?.user?.roles ?? [], activeWardId: session?.activeWardId ?? null });
@@ -31,16 +34,7 @@ export function AuthSessionRefresh() {
   }, []);
 
   useEffect(() => {
-    void refreshSession();
-    const interval = window.setInterval(() => void refreshSession(), 30_000);
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') void refreshSession();
-    };
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => {
-      window.clearInterval(interval);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
+    return startVisiblePolling(refreshSession, SESSION_REFRESH_INTERVAL_MS);
   }, [refreshSession]);
 
   return null;
