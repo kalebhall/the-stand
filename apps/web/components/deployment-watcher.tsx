@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { startVisiblePolling } from '@/src/lib/visible-polling';
 
-const POLL_INTERVAL_MS = 60_000;
+const POLL_INTERVAL_MS = 5 * 60 * 1000;
 const CLIENT_BUILD_ID = process.env.NEXT_PUBLIC_BUILD_ID ?? 'unknown';
 
 export function DeploymentWatcher() {
@@ -10,13 +11,16 @@ export function DeploymentWatcher() {
 
   useEffect(() => {
     if ('serviceWorker' in navigator) {
-      void navigator.serviceWorker.register(`/sw.js?build=${encodeURIComponent(CLIENT_BUILD_ID)}`, { updateViaCache: 'none' }).catch(() => undefined);
+      void navigator.serviceWorker
+        .register(`/sw.js?build=${encodeURIComponent(CLIENT_BUILD_ID)}`, { updateViaCache: 'none' })
+        .catch(() => undefined);
     }
 
     // Don't poll if we have no build ID to compare against
     if (CLIENT_BUILD_ID === 'unknown') return;
 
     const check = async () => {
+      if (!navigator.onLine) return;
       try {
         const res = await fetch('/api/health', { cache: 'no-store' });
         if (!res.ok) return;
@@ -29,8 +33,7 @@ export function DeploymentWatcher() {
       }
     };
 
-    const interval = setInterval(check, POLL_INTERVAL_MS);
-    return () => clearInterval(interval);
+    return startVisiblePolling(check, POLL_INTERVAL_MS);
   }, []);
 
   if (!newVersionAvailable) return null;

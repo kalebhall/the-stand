@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { startVisiblePolling } from '@/src/lib/visible-polling';
 import {
   cacheOfflinePage,
   clearOfflineData,
@@ -130,7 +131,6 @@ export function OfflineStandButton({ userId, wardId, meetingId }: { userId: stri
       })
       .catch(() => undefined);
     void refreshPending(generation).catch(() => undefined);
-    void saveForOffline();
     return () => {
       cancelled = true;
     };
@@ -155,23 +155,14 @@ export function OfflineStandButton({ userId, wardId, meetingId }: { userId: stri
   }
 
   useEffect(() => {
-    const refresh = () => void saveForOffline();
     const updateOfflineState = () => {
       if (!navigator.onLine) setStatus('offline');
-      else void saveForOffline();
     };
-    const onVisibility = () => {
-      if (document.visibilityState === 'visible') refresh();
-    };
-    window.addEventListener('online', updateOfflineState);
     window.addEventListener('offline', updateOfflineState);
-    document.addEventListener('visibilitychange', onVisibility);
-    const interval = window.setInterval(refresh, 5 * 60 * 1000);
+    const stopPolling = startVisiblePolling(saveForOffline, 5 * 60 * 1000);
     return () => {
-      window.removeEventListener('online', updateOfflineState);
       window.removeEventListener('offline', updateOfflineState);
-      document.removeEventListener('visibilitychange', onVisibility);
-      window.clearInterval(interval);
+      stopPolling();
     };
   }, [saveForOffline]);
 
