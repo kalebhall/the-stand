@@ -109,6 +109,7 @@ describe('WardBusinessSection', () => {
         membershipActions={[
           { id: 'welcome', member_name: 'Jordan Lee', action_type: 'WELCOME_NEW_MEMBER', status: 'pending' },
           { id: 'baptized-child', member_name: 'Toni Young', action_type: 'RECOGNIZE_BAPTIZED_CHILD', status: 'pending' },
+          { id: 'baptism-follow-up', member_name: 'Avery Johnson', action_type: 'BAPTISM_CONFIRMATION_FOLLOW_UP', status: 'pending' },
           { id: 'baby-blessing', member_name: 'Riley Hall', action_type: 'BABY_BLESSING', status: 'pending' },
           {
             id: 'ordination',
@@ -140,11 +141,12 @@ describe('WardBusinessSection', () => {
 
     expect(container).toHaveTextContent('We welcome Jordan Lee to our ward.');
     expect(container).toHaveTextContent('We recognize Toni Young.');
+    expect(container).toHaveTextContent('We welcome Avery Johnson to our ward.');
     expect(container).toHaveTextContent('We bless Riley Hall.');
     expect(container).toHaveTextContent('It is proposed that Casey Rivera be ordained to Priest.');
     expect(container).toHaveTextContent('It is proposed that Morgan Reed advance to Elder.');
     expect(screen.getByText('Ward and Stake Business').closest('details')).toHaveAttribute('open');
-    expect(screen.getByText('5 pending')).toBeVisible();
+    expect(screen.getByText('6 pending')).toBeVisible();
     const boldScriptValues = Array.from(container.querySelectorAll('strong')).map((item) => item.textContent);
     expect(boldScriptValues).toContain('Jordan Lee');
     expect(boldScriptValues).toContain('Casey Rivera');
