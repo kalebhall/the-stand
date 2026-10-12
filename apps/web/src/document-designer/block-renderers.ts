@@ -43,7 +43,12 @@ function safeHref(value: unknown): value is string {
     return false;
   }
 }
-export function renderDocumentBlock(block: DocumentBlock, data: ResolvedDocumentData, target: RenderTarget): string {
+export function renderDocumentBlock(
+  block: DocumentBlock,
+  data: ResolvedDocumentData,
+  target: RenderTarget,
+  includeLeadershipInProgram = true
+): string {
   if (block.visibility === 'HIDDEN') return '';
   if (block.printBehavior === 'DIGITAL_ONLY' && target === 'PRINT') return '';
   if (block.printBehavior === 'PRINT_ONLY' && target === 'DIGITAL') return '';
@@ -79,11 +84,16 @@ export function renderDocumentBlock(block: DocumentBlock, data: ResolvedDocument
     } catch {
       leadership = {};
     }
-    const hasLeadership = Boolean(leadership.presiding?.trim() || leadership.conducting?.trim());
+    const hasLeadership = includeLeadershipInProgram && Boolean(leadership.presiding?.trim() || leadership.conducting?.trim());
     if (!data.meetingItems.length && !hasLeadership && block.visibility === 'HIDE_WHEN_EMPTY') return '';
+    const leadershipRows = includeLeadershipInProgram
+      ? [
+          [labels?.presiding ?? 'Presiding', leadership.presiding ?? ''],
+          [labels?.conducting ?? 'Conducting', leadership.conducting ?? '']
+        ]
+      : [];
     const rows = [
-      [labels?.presiding ?? 'Presiding', leadership.presiding ?? ''],
-      [labels?.conducting ?? 'Conducting', leadership.conducting ?? ''],
+      ...leadershipRows,
       ...data.meetingItems
         .slice()
         .sort((a, b) => a.order - b.order)
