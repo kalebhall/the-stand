@@ -6,6 +6,7 @@ import { MESSAGE_CATALOGS } from '@/src/i18n/messages';
 
 import { adaptLegacyLayoutToDocument } from '@/src/document-designer/legacy-layout-adapter';
 import { downgradeToV1, normalizeToAdvanced } from '@/src/document-designer/advanced-schema';
+import { BUILT_IN_TEMPLATES } from '@/src/document-designer/built-in-templates';
 import { ProgramDesignerClient } from './program-designer-client';
 
 const layout = adaptLegacyLayoutToDocument({ preset: 'FULL_PAGE', announcementMode: 'AFTER_PROGRAM', coverMode: 'NONE' });
@@ -947,7 +948,8 @@ describe('ProgramDesignerClient', () => {
             document: { layout: legacyBifold, schemaVersion: 1, sourceTemplateId: null, sourceTemplateVersion: 1 }
           })
         };
-      if (url.endsWith('/program-design')) return { ok: true, json: async () => advancedTemplatePayload };
+      if (url.endsWith('/program-design'))
+        return { ok: true, json: async () => ({ ...advancedTemplatePayload, simpleMode: { advancedModeAvailable: false } }) };
       if (url.endsWith('/document-templates'))
         return { ok: true, json: async () => ({ templates: [{ id: 'classic-bifold', name: 'Classic Bifold', source: 'BUILT_IN' }] }) };
       if (url.endsWith('/media')) return { ok: true, json: async () => ({ media: [] }) };
@@ -970,6 +972,34 @@ describe('ProgramDesignerClient', () => {
 
     const putCall = fetchMock.mock.calls.find(([, options]) => (options as RequestInit | undefined)?.method === 'PUT');
     expect(JSON.parse(String(putCall?.[1] && (putCall[1] as RequestInit).body)).templateId).toBe('classic-bifold');
+  });
+  it('applies a selected template through the Advanced Mode save path when available', async () => {
+    const putBodies: Record<string, unknown>[] = [];
+    const selectedTemplate = BUILT_IN_TEMPLATES.find((template) => template.key === 'classic-bifold')!;
+    const fetchMock = vi.fn().mockImplementation(async (url: string, options?: RequestInit) => {
+      if (url.endsWith('/program-design') && options?.method === 'PUT') {
+        putBodies.push(JSON.parse(String(options.body)) as Record<string, unknown>);
+        return {
+          ok: true,
+          json: async () => ({ revision: 2, document: { layout: normalizeToAdvanced(selectedTemplate.layout), schemaVersion: 2 } })
+        };
+      }
+      if (url.endsWith('/document-templates'))
+        return { ok: true, json: async () => ({ templates: [{ id: 'classic-bifold', name: 'Classic Bifold', source: 'BUILT_IN' }] }) };
+      if (url.endsWith('/media')) return { ok: true, json: async () => ({ media: [] }) };
+      if (url.endsWith('/reusable-blocks')) return { ok: true, json: async () => ({ blocks: [] }) };
+      return { ok: true, json: async () => advancedTemplatePayload };
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
+    await screen.findByRole('region', { name: 'Document canvas' });
+    fireEvent.change(screen.getByLabelText('Approved template'), { target: { value: 'classic-bifold' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Apply template' }));
+
+    await waitFor(() => expect(putBodies.length).toBeGreaterThan(0));
+    expect(putBodies.filter(({ templateId }) => templateId).map(({ mode, templateId }) => ({ mode, templateId }))).toEqual([
+      { mode: 'ADVANCED', templateId: 'classic-bifold' }
+    ]);
   });
   it('renders bi-fold panels, adds to the selected panel, and switches views', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => spatialPayload }));

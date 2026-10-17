@@ -53,13 +53,13 @@ flowchart LR
   A5 -->|160| A16
   A6 -->|120| A38
   A6 -->|97| A8
-  A5 -->|71| A17
+  A5 -->|73| A17
   A6 -->|65| A16
   A5 -->|61| A27
   A5 -->|48| A29
   A6 -->|33| A27
   A5 -->|32| A7
-  A6 -->|27| A17
+  A6 -->|28| A17
   A5 -->|25| A24
   A5 -->|24| A26
   A6 -->|22| A21
@@ -218,7 +218,7 @@ flowchart LR
 | `web:app` | `web:ui` | 120 |
 | `web:app` | `web:auth` | 97 |
 | `web:app` | `web:app` | 78 |
-| `web:api` | `web:document-designer` | 71 |
+| `web:api` | `web:document-designer` | 73 |
 | `web:app` | `web:db` | 65 |
 | `web:notifications` | `web:notifications` | 63 |
 | `web:api` | `web:modules` | 61 |
@@ -228,7 +228,7 @@ flowchart LR
 | `web:app` | `web:modules` | 33 |
 | `web:api` | `web:audit` | 32 |
 | `web:programs` | `web:programs` | 30 |
-| `web:app` | `web:document-designer` | 27 |
+| `web:app` | `web:document-designer` | 28 |
 | `web:api` | `web:lib` | 25 |
 | `web:api` | `web:meetings` | 24 |
 | `web:app` | `web:i18n` | 22 |
@@ -598,7 +598,7 @@ flowchart LR
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/program-design/pdf/route.ts` | `web:api` | 10 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/program-design/print-validate/route.ts` | `web:api` | 8 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/program-design/route.ts` | `web:api` | 16 | 2 |
-| `apps/web/app/api/w/[wardId]/meetings/[meetingId]/program-design/route.vitest.ts` | `web:api` | 3 | 1 |
+| `apps/web/app/api/w/[wardId]/meetings/[meetingId]/program-design/route.vitest.ts` | `web:api` | 5 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/program-design/validate/route.ts` | `web:api` | 1 | 0 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/program-items/[itemId]/route.ts` | `web:api` | 12 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/program-items/route.ts` | `web:api` | 7 | 1 |
@@ -714,7 +714,7 @@ flowchart LR
 | `apps/web/app/programs/[meetingId]/designer-state.vitest.ts` | `web:app` | 2 | 1 |
 | `apps/web/app/programs/[meetingId]/page.tsx` | `web:app` | 4 | 1 |
 | `apps/web/app/programs/[meetingId]/program-designer-client.tsx` | `web:app` | 12 | 3 |
-| `apps/web/app/programs/[meetingId]/program-designer-client.vitest.tsx` | `web:app` | 4 | 3 |
+| `apps/web/app/programs/[meetingId]/program-designer-client.vitest.tsx` | `web:app` | 5 | 3 |
 | `apps/web/app/programs/baptism/baptism-programs-client.tsx` | `web:app` | 0 | 2 |
 | `apps/web/app/programs/baptism/page.tsx` | `web:app` | 4 | 1 |
 | `apps/web/app/programs/page.tsx` | `web:app` | 9 | 3 |

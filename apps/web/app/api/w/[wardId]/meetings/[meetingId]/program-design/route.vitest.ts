@@ -1,22 +1,32 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { authMock, connectMock, queryMock, releaseMock, setDbContextMock, auditMock, moduleEnabledMock, moduleEnabledInTransactionMock } =
-  vi.hoisted(() => ({
-    authMock: vi.fn(),
-    connectMock: vi.fn(),
-    queryMock: vi.fn(),
-    releaseMock: vi.fn(),
-    setDbContextMock: vi.fn(),
-    auditMock: vi.fn(),
-    moduleEnabledMock: vi.fn(),
-    moduleEnabledInTransactionMock: vi.fn()
-  }));
+const {
+  authMock,
+  connectMock,
+  queryMock,
+  releaseMock,
+  setDbContextMock,
+  auditMock,
+  moduleEnabledMock,
+  moduleEnabledInTransactionMock,
+  advancedCapabilityMock
+} = vi.hoisted(() => ({
+  authMock: vi.fn(),
+  connectMock: vi.fn(),
+  queryMock: vi.fn(),
+  releaseMock: vi.fn(),
+  setDbContextMock: vi.fn(),
+  auditMock: vi.fn(),
+  moduleEnabledMock: vi.fn(),
+  moduleEnabledInTransactionMock: vi.fn(),
+  advancedCapabilityMock: vi.fn(() => false)
+}));
 
 vi.mock('@/src/auth/auth', () => ({ auth: authMock }));
 vi.mock('@/src/auth/roles', () => ({
   canViewProgramDesigner: vi.fn(() => true),
   canEditProgramDesign: vi.fn(() => true),
-  canUseAdvancedProgramDesigner: vi.fn(() => false)
+  canUseAdvancedProgramDesigner: advancedCapabilityMock
 }));
 vi.mock('@/src/db/client', () => ({ pool: { connect: connectMock } }));
 vi.mock('@/src/db/context', () => ({ setDbContext: setDbContextMock }));
@@ -28,6 +38,8 @@ vi.mock('@/src/modules/service', () => ({
 
 import { adaptLegacyLayoutToDocument } from '@/src/document-designer/legacy-layout-adapter';
 import { DEFAULT_DOCUMENT_LAYOUT } from '@/src/document-designer/schema';
+import { BUILT_IN_TEMPLATES } from '@/src/document-designer/built-in-templates';
+import { normalizeToAdvanced } from '@/src/document-designer/advanced-schema';
 import { GET, POST, PUT } from './route';
 
 const layout = adaptLegacyLayoutToDocument({ preset: 'FULL_PAGE', announcementMode: 'AFTER_PROGRAM', coverMode: 'NONE' });
@@ -55,6 +67,7 @@ describe('program design route', () => {
     auditMock.mockResolvedValue(undefined);
     moduleEnabledMock.mockResolvedValue(true);
     moduleEnabledInTransactionMock.mockResolvedValue(true);
+    advancedCapabilityMock.mockReturnValue(false);
     connectMock.mockResolvedValue({ query: queryMock, release: releaseMock });
   });
 
@@ -183,6 +196,38 @@ describe('program design route', () => {
     );
     expect(response.status).toBe(422);
     expect((await response.json()).code).toBe('ADVANCED_BLOCK');
+  });
+
+  it('applies a selected template in Advanced Mode when the actor has Advanced capability', async () => {
+    const selected = BUILT_IN_TEMPLATES.find((template) => template.key === 'classic-bifold')!;
+    advancedCapabilityMock.mockReturnValue(true);
+    queryMock
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({ rows: [{ id: 'meeting-1' }] })
+      .mockResolvedValueOnce({ rows: [documentRow] })
+      .mockResolvedValueOnce({ rows: [{ allow_advanced_program_designer: true }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'document-1', revision: 4 }] })
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({});
+
+    const response = await PUT(
+      new Request('http://localhost', {
+        method: 'PUT',
+        body: JSON.stringify({
+          expectedRevision: 3,
+          document: normalizeToAdvanced(layout),
+          templateId: selected.key,
+          mode: 'ADVANCED'
+        })
+      }),
+      params()
+    );
+
+    expect(response.status).toBe(200);
+    expect((await response.json()).document.layout).toEqual(normalizeToAdvanced(selected.layout));
+    const updateCall = queryMock.mock.calls.find(([sql]) => typeof sql === 'string' && sql.includes('UPDATE meeting_document'));
+    expect(JSON.parse(String(updateCall?.[1]?.[5]))).toEqual(normalizeToAdvanced(selected.layout));
   });
 
   it('allows applying a published custom template with advanced blocks in Simple Mode', async () => {
