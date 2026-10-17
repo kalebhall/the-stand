@@ -391,12 +391,14 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
         const savedAdvancedLayout = responseDocument?.schemaVersion === 2 || templateId ? normalizedSavedLayout : null;
         initialLayout.current = savedLayout;
         if (savedAdvancedLayout) initialAdvancedLayout.current = savedAdvancedLayout;
-        const hasNewerSimpleDraft = latestLayout.current !== null && JSON.stringify(latestLayout.current) !== requestedSimpleLayoutSnapshot;
+        const hasNewerSimpleDraft =
+          !templateId && latestLayout.current !== null && JSON.stringify(latestLayout.current) !== requestedSimpleLayoutSnapshot;
         const hasNewerAdvancedDraft =
           latestAdvancedLayout.current !== null &&
           saveMode === 'ADVANCED' &&
           JSON.stringify(latestAdvancedLayout.current) !== requestedLayoutSnapshot;
         const hasAdvancedDraftChangedDuringSimpleSave =
+          !templateId &&
           latestAdvancedLayout.current !== null &&
           saveMode === 'SIMPLE' &&
           requestedAdvancedLayoutSnapshot !== null &&
@@ -1410,7 +1412,9 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
                     // PUTs cannot race with the same expectedRevision.
                     if (saveTimer.current) clearTimeout(saveTimer.current);
                     saveTimer.current = null;
-                    void save(document.layout, document.revision, selectedTemplateId);
+                    const templateSaveMode = advancedEnabled ? 'ADVANCED' : 'SIMPLE';
+                    const templateSource = templateSaveMode === 'ADVANCED' ? (currentAdvanced() ?? document.layout) : document.layout;
+                    void save(templateSource, document.revision, selectedTemplateId, templateSaveMode);
                   }
                 }}
               >
