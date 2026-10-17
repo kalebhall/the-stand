@@ -11,12 +11,7 @@ import {
   SimpleModeValidationError,
   validateSimpleModeDraft
 } from '@/src/document-designer/meeting-document-service';
-import {
-  parseTemplateLayout,
-  advancedBlocksChanged,
-  assertTemplateReusableReferences,
-  containsAdvancedBlocks
-} from '@/src/document-designer/template-service';
+import { parseTemplateLayout, advancedBlocksChanged, assertTemplateReusableReferences } from '@/src/document-designer/template-service';
 import { validatePublicDocumentLayout } from '@/src/document-designer/public-safety';
 import {
   mergeSimpleIntoAdvanced,
@@ -382,12 +377,6 @@ export async function PUT(request: Request, context: { params: Promise<{ wardId:
           ? mergeSimpleIntoAdvanced(parseAdvancedLayout(current.layout_json), validated.layout as DocumentLayout)
           : validated.layout));
     const persistedLayout = clearLegacyTitleProvenance(candidateLayout, current.layout_json, Boolean(body.data.templateId));
-    const builtInSimpleCoreApplication = Boolean(
-      body.data.templateId &&
-      BUILT_IN_TEMPLATES.some((template) => template.key === body.data.templateId) &&
-      !containsAdvancedBlocks(current.layout_json) &&
-      !containsAdvancedBlocks(candidateLayout)
-    );
     try {
       await assertChangedReusableReferences(client, current.layout_json, candidateLayout, wardId, session.user.id);
       const simpleBoundaryOptions = body.data.templateId
@@ -395,8 +384,8 @@ export async function PUT(request: Request, context: { params: Promise<{ wardId:
         : { allowSimpleReusableReferences: true, allowSimpleReusableAdditions: true };
       if (
         body.data.mode === 'SIMPLE' &&
-        advancedBlocksChanged(current.layout_json, candidateLayout, simpleBoundaryOptions) &&
-        !builtInSimpleCoreApplication
+        !body.data.templateId &&
+        advancedBlocksChanged(current.layout_json, candidateLayout, simpleBoundaryOptions)
       ) {
         throw new SimpleModeValidationError('ADVANCED_BLOCK', 'Advanced blocks are managed by Advanced Mode');
       }
