@@ -39,7 +39,7 @@ vi.mock('@/src/modules/service', () => ({
 import { adaptLegacyLayoutToDocument } from '@/src/document-designer/legacy-layout-adapter';
 import { DEFAULT_DOCUMENT_LAYOUT } from '@/src/document-designer/schema';
 import { BUILT_IN_TEMPLATES } from '@/src/document-designer/built-in-templates';
-import { normalizeToAdvanced } from '@/src/document-designer/advanced-schema';
+import { downgradeToV1, normalizeToAdvanced } from '@/src/document-designer/advanced-schema';
 import { GET, POST, PUT } from './route';
 
 const layout = adaptLegacyLayoutToDocument({ preset: 'FULL_PAGE', announcementMode: 'AFTER_PROGRAM', coverMode: 'NONE' });
@@ -155,7 +155,54 @@ describe('program design route', () => {
     expect(queryMock).not.toHaveBeenCalledWith(expect.stringContaining('meeting_program_render'), expect.anything());
   });
 
-  it('rejects a built-in template that would mutate Advanced blocks in Simple Mode', async () => {
+  it('still rejects a protected Advanced mutation in an ordinary Simple Mode save', async () => {
+    const currentAdvanced = normalizeToAdvanced({
+      ...layout,
+      pages: layout.pages.map((page, pageIndex) =>
+        pageIndex === 0
+          ? {
+              ...page,
+              regions: page.regions.map((region, regionIndex) =>
+                regionIndex === 0
+                  ? {
+                      ...region,
+                      blocks: region.blocks.map((block, blockIndex) =>
+                        blockIndex === 0
+                          ? { ...block, type: 'PRESIDING_CONDUCTING', dataMode: 'AUTO', config: { text: 'Presiding and conducting' } }
+                          : block
+                      )
+                    }
+                  : region
+              )
+            }
+          : page
+      )
+    });
+    const attemptedSimple = downgradeToV1(currentAdvanced);
+    const advancedBlock = attemptedSimple.pages[0].regions[0].blocks.find((block) => block.type === 'PRESIDING_CONDUCTING');
+    if (!advancedBlock) throw new Error('Expected advanced test block');
+    advancedBlock.config = { text: 'Changed without Advanced Mode' };
+
+    queryMock
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({ rows: [{ id: 'meeting-1' }] })
+      .mockResolvedValueOnce({ rows: [{ ...documentRow, layout_json: currentAdvanced, schema_version: 2 }] })
+      .mockResolvedValueOnce({ rows: [{ allow_advanced_program_designer: false }] });
+    const response = await PUT(
+      new Request('http://localhost', {
+        method: 'PUT',
+        body: JSON.stringify({ expectedRevision: 3, document: attemptedSimple })
+      }),
+      params()
+    );
+
+    expect(response.status).toBe(422);
+    expect((await response.json()).code).toBe('ADVANCED_BLOCK');
+    expect(queryMock).not.toHaveBeenCalledWith(expect.stringContaining('UPDATE meeting_document'), expect.anything());
+  });
+
+  it('allows Simple Mode to apply an approved built-in template without Advanced capability', async () => {
     queryMock
       .mockResolvedValueOnce({})
       .mockResolvedValueOnce({})
@@ -172,11 +219,16 @@ describe('program design route', () => {
       }),
       params()
     );
-    expect(response.status).toBe(422);
-    expect((await response.json()).code).toBe('ADVANCED_BLOCK');
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.document.layout).toEqual(BUILT_IN_TEMPLATES.find((template) => template.key === 'classic-bifold')?.layout);
+    const updateCall = queryMock.mock.calls.find(([sql]) => typeof sql === 'string' && sql.includes('UPDATE meeting_document'));
+    expect(JSON.parse(String(updateCall?.[1]?.[5]))).toEqual(
+      BUILT_IN_TEMPLATES.find((template) => template.key === 'classic-bifold')?.layout
+    );
   });
 
-  it('applies a persisted published system template', async () => {
+  it('applies a persisted published system template in Simple Mode', async () => {
     queryMock
       .mockResolvedValueOnce({})
       .mockResolvedValueOnce({})
@@ -194,8 +246,10 @@ describe('program design route', () => {
       }),
       params()
     );
-    expect(response.status).toBe(422);
-    expect((await response.json()).code).toBe('ADVANCED_BLOCK');
+    expect(response.status).toBe(200);
+    const templateQuery = queryMock.mock.calls.find(([sql]) => typeof sql === 'string' && sql.includes('FROM document_template t'));
+    expect(templateQuery?.[0]).toContain("t.status = 'PUBLISHED'");
+    expect((await response.json()).revision).toBe(4);
   });
 
   it('applies a selected template in Advanced Mode when the actor has Advanced capability', async () => {
