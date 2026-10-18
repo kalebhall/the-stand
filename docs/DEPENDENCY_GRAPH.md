@@ -17,7 +17,7 @@ flowchart LR
   A5["web:api<br/>146 files"]
   A6["web:app<br/>156 files"]
   A7["web:audit<br/>2 files"]
-  A8["web:auth<br/>12 files"]
+  A8["web:auth<br/>14 files"]
   A9["web:bootstrap.mjs<br/>1 files"]
   A10["web:calendar<br/>4 files"]
   A11["web:callings<br/>7 files"]
@@ -33,7 +33,7 @@ flowchart LR
   A21["web:i18n<br/>7 files"]
   A22["web:imports<br/>18 files"]
   A23["web:leadership<br/>14 files"]
-  A24["web:lib<br/>14 files"]
+  A24["web:lib<br/>15 files"]
   A25["web:maintenance<br/>5 files"]
   A26["web:meetings<br/>20 files"]
   A27["web:modules<br/>12 files"]
@@ -69,12 +69,12 @@ flowchart LR
   A5 -->|14| A18
   A5 -->|13| A32
   A5 -->|10| A22
+  A32 -->|9| A17
   A6 -->|8| A29
   A31 -->|8| A27
   A38 -->|8| A21
   A5 -->|7| A23
   A5 -->|7| A31
-  A32 -->|7| A17
   A5 -->|6| A13
   A6 -->|6| A18
   A6 -->|6| A34
@@ -100,6 +100,7 @@ flowchart LR
   A6 -->|2| A32
   A6 -->|2| A33
   A8 -->|2| A16
+  A8 -->|2| A24
   A10 -->|2| A16
   A12 -->|2| A11
   A12 -->|2| A29
@@ -124,12 +125,12 @@ flowchart LR
   A6 -->|1| A13
   A6 -->|1| A15
   A8 -->|1| A18
-  A8 -->|1| A24
   A10 -->|1| A29
   A11 -->|1| A12
   A14 -->|1| A9
   A14 -->|1| A20
   A14 -->|1| A26
+  A16 -->|1| A24
   A17 -->|1| A7
   A17 -->|1| A16
   A17 -->|1| A18
@@ -175,7 +176,7 @@ flowchart LR
 | `web:api` | 146 |
 | `web:app` | 156 |
 | `web:audit` | 2 |
-| `web:auth` | 12 |
+| `web:auth` | 14 |
 | `web:bootstrap.mjs` | 1 |
 | `web:calendar` | 4 |
 | `web:callings` | 7 |
@@ -191,7 +192,7 @@ flowchart LR
 | `web:i18n` | 7 |
 | `web:imports` | 18 |
 | `web:leadership` | 14 |
-| `web:lib` | 14 |
+| `web:lib` | 15 |
 | `web:maintenance` | 5 |
 | `web:meetings` | 20 |
 | `web:modules` | 12 |
@@ -243,8 +244,9 @@ flowchart LR
 | `web:imports` | `web:imports` | 13 |
 | `web:stand` | `web:stand` | 11 |
 | `web:api` | `web:imports` | 10 |
+| `web:auth` | `web:auth` | 10 |
+| `web:programs` | `web:document-designer` | 9 |
 | `web:app` | `web:notifications` | 8 |
-| `web:auth` | `web:auth` | 8 |
 | `web:i18n` | `web:i18n` | 8 |
 | `web:leadership` | `web:leadership` | 8 |
 | `web:platform` | `web:modules` | 8 |
@@ -253,7 +255,6 @@ flowchart LR
 | `web:api` | `web:platform` | 7 |
 | `web:church-actions` | `web:church-actions` | 7 |
 | `web:lib` | `web:lib` | 7 |
-| `web:programs` | `web:document-designer` | 7 |
 | `web:api` | `web:conducting` | 6 |
 | `web:app` | `web:features` | 6 |
 | `web:app` | `web:stand` | 6 |
@@ -284,6 +285,7 @@ flowchart LR
 | `web:app` | `web:programs` | 2 |
 | `web:app` | `web:reports` | 2 |
 | `web:auth` | `web:db` | 2 |
+| `web:auth` | `web:lib` | 2 |
 | `web:calendar` | `web:db` | 2 |
 | `web:church-actions` | `web:callings` | 2 |
 | `web:church-actions` | `web:notifications` | 2 |
@@ -312,12 +314,12 @@ flowchart LR
 | `web:app` | `web:dashboard` | 1 |
 | `web:audit` | `web:audit` | 1 |
 | `web:auth` | `web:features` | 1 |
-| `web:auth` | `web:lib` | 1 |
 | `web:calendar` | `web:notifications` | 1 |
 | `web:callings` | `web:church-actions` | 1 |
 | `web:config` | `web:bootstrap.mjs` | 1 |
 | `web:config` | `web:health.mjs` | 1 |
 | `web:config` | `web:meetings` | 1 |
+| `web:db` | `web:lib` | 1 |
 | `web:document-designer` | `web:audit` | 1 |
 | `web:document-designer` | `web:db` | 1 |
 | `web:document-designer` | `web:features` | 1 |
@@ -384,11 +386,11 @@ flowchart LR
 | `web:config` | `@playwright/test` | 7 |
 | `web:programs` | `vitest` | 7 |
 | `web:auth` | `next-auth` | 6 |
+| `web:auth` | `vitest` | 6 |
 | `web:imports` | `vitest` | 6 |
 | `web:leadership` | `vitest` | 6 |
 | `web:stand` | `vitest` | 6 |
 | `web:app` | `@testing-library/user-event` | 5 |
-| `web:auth` | `vitest` | 5 |
 | `web:church-actions` | `vitest` | 5 |
 | `web:lib` | `vitest` | 5 |
 | `web:api` | `Node.js` | 4 |
@@ -854,7 +856,9 @@ flowchart LR
 | `apps/web/src/audit/service.ts` | `web:audit` | 0 | 0 |
 | `apps/web/src/audit/service.vitest.ts` | `web:audit` | 1 | 1 |
 | `apps/web/src/auth/auth-source.vitest.ts` | `web:auth` | 0 | 3 |
-| `apps/web/src/auth/auth.ts` | `web:auth` | 5 | 3 |
+| `apps/web/src/auth/auth.ts` | `web:auth` | 6 | 3 |
+| `apps/web/src/auth/credential-rate-limit.ts` | `web:auth` | 1 | 0 |
+| `apps/web/src/auth/credential-rate-limit.vitest.ts` | `web:auth` | 1 | 1 |
 | `apps/web/src/auth/guards.ts` | `web:auth` | 1 | 2 |
 | `apps/web/src/auth/navigation.ts` | `web:auth` | 5 | 0 |
 | `apps/web/src/auth/navigation.vitest.ts` | `web:auth` | 3 | 1 |
@@ -895,7 +899,7 @@ flowchart LR
 | `apps/web/src/dashboard/catalog.vitest.ts` | `web:dashboard` | 1 | 1 |
 | `apps/web/src/dashboard/visibility.ts` | `web:dashboard` | 1 | 0 |
 | `apps/web/src/dashboard/visibility.vitest.ts` | `web:dashboard` | 2 | 1 |
-| `apps/web/src/db/bootstrap-support-admin.ts` | `web:db` | 3 | 1 |
+| `apps/web/src/db/bootstrap-support-admin.ts` | `web:db` | 4 | 1 |
 | `apps/web/src/db/bootstrap-support-admin.vitest.ts` | `web:db` | 1 | 1 |
 | `apps/web/src/db/church-action-follow-up-rls.vitest.ts` | `web:db` | 0 | 2 |
 | `apps/web/src/db/client.ts` | `web:db` | 1 | 5 |
@@ -1034,6 +1038,7 @@ flowchart LR
 | `apps/web/src/leadership/technology-reminder-runner.mjs` | `web:leadership` | 2 | 1 |
 | `apps/web/src/leadership/technology-reminders.ts` | `web:leadership` | 1 | 0 |
 | `apps/web/src/leadership/technology-reminders.vitest.ts` | `web:leadership` | 1 | 1 |
+| `apps/web/src/lib/e2e-mode.ts` | `web:lib` | 0 | 0 |
 | `apps/web/src/lib/logger.ts` | `web:lib` | 0 | 0 |
 | `apps/web/src/lib/qr-pdf.ts` | `web:lib` | 0 | 2 |
 | `apps/web/src/lib/qr-pdf.vitest.ts` | `web:lib` | 1 | 1 |
@@ -1153,7 +1158,7 @@ flowchart LR
 | `apps/web/src/programs/baptism-renderer.vitest.ts` | `web:programs` | 2 | 1 |
 | `apps/web/src/programs/contracts.ts` | `web:programs` | 0 | 1 |
 | `apps/web/src/programs/persistence.ts` | `web:programs` | 6 | 1 |
-| `apps/web/src/programs/persistence.vitest.ts` | `web:programs` | 2 | 1 |
+| `apps/web/src/programs/persistence.vitest.ts` | `web:programs` | 4 | 1 |
 | `apps/web/src/programs/registry.ts` | `web:programs` | 3 | 0 |
 | `apps/web/src/programs/registry.vitest.ts` | `web:programs` | 1 | 1 |
 | `apps/web/src/programs/sacrament-meeting-adapter.ts` | `web:programs` | 3 | 0 |

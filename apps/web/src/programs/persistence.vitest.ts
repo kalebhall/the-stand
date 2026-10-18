@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
+import { BUILT_IN_TEMPLATES } from '@/src/document-designer/built-in-templates';
+import { parseAdvancedLayout } from '@/src/document-designer/advanced-schema';
 import { DEFAULT_DOCUMENT_LAYOUT } from '@/src/document-designer/schema';
 
 import {
@@ -34,6 +36,63 @@ describe('Programs persistence facade', () => {
     const programIndex = blocks.findIndex((block) => block.type === 'MEETING_PROGRAM');
     expect(leadershipIndex).toBeGreaterThanOrEqual(0);
     if (programIndex >= 0) expect(leadershipIndex).toBeLessThan(programIndex);
+  });
+
+  it('chooses deterministic case-insensitive unique IDs for missing leadership blocks', () => {
+    const legacy = structuredClone(BUILT_IN_TEMPLATES.find((template) => template.key === 'full-page-standard')!.layout);
+    const collisionIds = [
+      '00000000-0000-4000-8000-000000000014',
+      '00000000-0000-4000-8000-000000000015',
+      '00000000-0000-4000-8000-000000000016',
+      '00000000-0000-4000-8000-000000000017',
+      '00000000-0000-4000-8000-000000000018',
+      '00000000-0000-4000-8000-000000000019',
+      '00000000-0000-4000-8000-00000000001A'
+    ];
+    legacy.id = collisionIds[0].toUpperCase() as typeof legacy.id;
+    legacy.pages[0].id = collisionIds[1] as (typeof legacy.pages)[0]['id'];
+    legacy.pages[0].regions[0].id = collisionIds[2] as (typeof legacy.pages)[0]['regions'][0]['id'];
+    const blocks = legacy.pages[0].regions[0].blocks.filter((block) => block.type !== 'PRESIDING_CONDUCTING');
+    expect(blocks).toHaveLength(7);
+    legacy.pages[0].regions[0].blocks = blocks.map((block, index) => ({
+      ...block,
+      ...(index < 4 ? { id: collisionIds[index + 3] as typeof block.id } : {})
+    }));
+
+    for (const input of [legacy, parseAdvancedLayout(legacy)]) {
+      const normalized = ensurePresidingConductingBlock(input);
+      const ids = [
+        normalized.id,
+        ...normalized.pages.flatMap((page) => [
+          page.id,
+          ...page.regions.flatMap((region) => [region.id, ...region.blocks.map((block) => block.id)])
+        ])
+      ];
+      const canonicalIds = ids.map((id) => id.toLowerCase());
+      const leadership = normalized.pages[0].regions[0].blocks.find((block) => block.type === 'PRESIDING_CONDUCTING');
+
+      expect(leadership?.id).toBe('00000000-0000-4000-8000-00000000001b');
+      expect(new Set(canonicalIds).size).toBe(canonicalIds.length);
+      expect(
+        ensurePresidingConductingBlock(input).pages[0].regions[0].blocks.find((block) => block.type === 'PRESIDING_CONDUCTING')?.id
+      ).toBe(leadership?.id);
+      if ('schemaVersion' in normalized && normalized.schemaVersion === 2) {
+        const region = normalized.pages[0].regions[0];
+        const columnIds = region.columns.blockIds;
+        const assignedIds = columnIds.flat();
+        const blockIds = region.blocks.map((block) => block.id);
+        expect(assignedIds).toHaveLength(blockIds.length);
+        expect(new Set(assignedIds)).toEqual(new Set(blockIds));
+        expect(assignedIds.filter((id) => id === leadership?.id)).toHaveLength(1);
+        const meetingProgram = region.blocks.find((block) => block.type === 'MEETING_PROGRAM');
+        if (leadership && meetingProgram) {
+          const leadershipColumn = columnIds.find((column) => column.includes(leadership.id));
+          const programColumn = columnIds.find((column) => column.includes(meetingProgram.id));
+          expect(leadershipColumn).toBe(programColumn);
+          expect(leadershipColumn!.indexOf(leadership.id)).toBeLessThan(leadershipColumn!.indexOf(meetingProgram.id));
+        }
+      }
+    }
   });
 
   it('does not increment a document revision for JSONB key-order differences', async () => {

@@ -3,6 +3,7 @@ import Credentials from 'next-auth/providers/credentials';
 import Google from 'next-auth/providers/google';
 
 import { chooseActiveWardId, type WardAccessAssignment } from '@/src/auth/support-access';
+import { getCredentialRateLimitMaxAttempts } from '@/src/auth/credential-rate-limit';
 import { verifyPassword } from '@/src/auth/password';
 import { ensureSupportAdminBootstrap } from '@/src/db/bootstrap-support-admin';
 import { pool } from '@/src/db/client';
@@ -170,7 +171,7 @@ export const { auth, handlers, unstable_update } = NextAuth({
         }
 
         const ip = request?.headers?.get('x-forwarded-for') ?? 'unknown-ip';
-        if (!(await enforceRateLimit(`auth:credentials:${email}:${ip}`, 10))) {
+        if (!(await enforceRateLimit(`auth:credentials:${email}:${ip}`, getCredentialRateLimitMaxAttempts()))) {
           return null;
         }
 

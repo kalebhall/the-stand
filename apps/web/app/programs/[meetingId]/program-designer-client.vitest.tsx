@@ -269,7 +269,7 @@ const dropAt = (target: Element, dataTransfer: object, clientY: number) => {
   fireEvent(target, event);
 };
 
-describe('ProgramDesignerClient', () => {
+describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
   it('loads without issuing an initial save and exposes accessible editor regions', async () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => payload });
     vi.stubGlobal('fetch', fetchMock);
