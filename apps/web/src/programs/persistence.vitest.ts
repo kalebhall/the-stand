@@ -49,11 +49,14 @@ describe('Programs persistence facade', () => {
       '00000000-0000-4000-8000-000000000019',
       '00000000-0000-4000-8000-00000000001A'
     ];
+    legacy.id = collisionIds[0].toUpperCase() as typeof legacy.id;
+    legacy.pages[0].id = collisionIds[1] as (typeof legacy.pages)[0]['id'];
+    legacy.pages[0].regions[0].id = collisionIds[2] as (typeof legacy.pages)[0]['regions'][0]['id'];
     const blocks = legacy.pages[0].regions[0].blocks.filter((block) => block.type !== 'PRESIDING_CONDUCTING');
-    expect(blocks).toHaveLength(collisionIds.length);
+    expect(blocks).toHaveLength(7);
     legacy.pages[0].regions[0].blocks = blocks.map((block, index) => ({
       ...block,
-      id: collisionIds[index] as typeof block.id
+      ...(index < 4 ? { id: collisionIds[index + 3] as typeof block.id } : {})
     }));
 
     for (const input of [legacy, parseAdvancedLayout(legacy)]) {
@@ -74,7 +77,20 @@ describe('Programs persistence facade', () => {
         ensurePresidingConductingBlock(input).pages[0].regions[0].blocks.find((block) => block.type === 'PRESIDING_CONDUCTING')?.id
       ).toBe(leadership?.id);
       if ('schemaVersion' in normalized && normalized.schemaVersion === 2) {
-        expect(normalized.pages[0].regions[0].columns.blockIds.flat()).toContain(leadership?.id);
+        const region = normalized.pages[0].regions[0];
+        const columnIds = region.columns.blockIds;
+        const assignedIds = columnIds.flat();
+        const blockIds = region.blocks.map((block) => block.id);
+        expect(assignedIds).toHaveLength(blockIds.length);
+        expect(new Set(assignedIds)).toEqual(new Set(blockIds));
+        expect(assignedIds.filter((id) => id === leadership?.id)).toHaveLength(1);
+        const meetingProgram = region.blocks.find((block) => block.type === 'MEETING_PROGRAM');
+        if (leadership && meetingProgram) {
+          const leadershipColumn = columnIds.find((column) => column.includes(leadership.id));
+          const programColumn = columnIds.find((column) => column.includes(meetingProgram.id));
+          expect(leadershipColumn).toBe(programColumn);
+          expect(leadershipColumn!.indexOf(leadership.id)).toBeLessThan(leadershipColumn!.indexOf(meetingProgram.id));
+        }
       }
     }
   });
