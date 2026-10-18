@@ -69,12 +69,12 @@ flowchart LR
   A5 -->|14| A18
   A5 -->|13| A32
   A5 -->|10| A22
+  A32 -->|9| A17
   A6 -->|8| A29
   A31 -->|8| A27
   A38 -->|8| A21
   A5 -->|7| A23
   A5 -->|7| A31
-  A32 -->|7| A17
   A5 -->|6| A13
   A6 -->|6| A18
   A6 -->|6| A34
@@ -243,6 +243,7 @@ flowchart LR
 | `web:imports` | `web:imports` | 13 |
 | `web:stand` | `web:stand` | 11 |
 | `web:api` | `web:imports` | 10 |
+| `web:programs` | `web:document-designer` | 9 |
 | `web:app` | `web:notifications` | 8 |
 | `web:auth` | `web:auth` | 8 |
 | `web:i18n` | `web:i18n` | 8 |
@@ -253,7 +254,6 @@ flowchart LR
 | `web:api` | `web:platform` | 7 |
 | `web:church-actions` | `web:church-actions` | 7 |
 | `web:lib` | `web:lib` | 7 |
-| `web:programs` | `web:document-designer` | 7 |
 | `web:api` | `web:conducting` | 6 |
 | `web:app` | `web:features` | 6 |
 | `web:app` | `web:stand` | 6 |
@@ -1153,7 +1153,7 @@ flowchart LR
 | `apps/web/src/programs/baptism-renderer.vitest.ts` | `web:programs` | 2 | 1 |
 | `apps/web/src/programs/contracts.ts` | `web:programs` | 0 | 1 |
 | `apps/web/src/programs/persistence.ts` | `web:programs` | 6 | 1 |
-| `apps/web/src/programs/persistence.vitest.ts` | `web:programs` | 2 | 1 |
+| `apps/web/src/programs/persistence.vitest.ts` | `web:programs` | 4 | 1 |
 | `apps/web/src/programs/registry.ts` | `web:programs` | 3 | 0 |
 | `apps/web/src/programs/registry.vitest.ts` | `web:programs` | 1 | 1 |
 | `apps/web/src/programs/sacrament-meeting-adapter.ts` | `web:programs` | 3 | 0 |

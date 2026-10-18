@@ -31,10 +31,26 @@ export class InvalidProgramPersistenceInputError extends Error {
 export type LegacyProgramDocumentRow = Record<string, unknown>;
 
 const PRESIDING_CONDUCTING_BLOCK_ID = '00000000-0000-4000-8000-000000000014';
+const PRESIDING_CONDUCTING_BLOCK_ID_PREFIX = '00000000-0000-4000-8000-';
 
-function presidingConductingBlock(): DocumentBlock {
+function presidingConductingBlock(layout: DocumentLayout | AdvancedDocumentLayout): DocumentBlock {
+  const usedIds = new Set<string>(
+    [
+      layout.id,
+      ...layout.pages.flatMap((page) => [
+        page.id,
+        ...page.regions.flatMap((region) => [region.id, ...region.blocks.map((block) => block.id)])
+      ])
+    ].map((id) => id.toLowerCase())
+  );
+  let suffix = BigInt(`0x${PRESIDING_CONDUCTING_BLOCK_ID.slice(PRESIDING_CONDUCTING_BLOCK_ID_PREFIX.length)}`);
+  let id = PRESIDING_CONDUCTING_BLOCK_ID;
+  while (usedIds.has(id.toLowerCase())) {
+    suffix += 1n;
+    id = `${PRESIDING_CONDUCTING_BLOCK_ID_PREFIX}${suffix.toString(16).padStart(12, '0')}`;
+  }
   return {
-    id: PRESIDING_CONDUCTING_BLOCK_ID,
+    id: id as DocumentBlock['id'],
     type: 'PRESIDING_CONDUCTING',
     width: 'FULL',
     dataMode: 'AUTO',
@@ -125,7 +141,7 @@ export function ensurePresidingConductingBlock(input: unknown): DocumentLayout |
     const next = structuredClone(layout);
     const region = next.pages[0]?.regions[0];
     if (region) {
-      const block = presidingConductingBlock();
+      const block = presidingConductingBlock(next);
       const meetingProgramIndex = Math.max(
         region.blocks.findIndex((candidate) => candidate.type === 'MEETING_PROGRAM'),
         0
@@ -154,7 +170,7 @@ export function ensurePresidingConductingBlock(input: unknown): DocumentLayout |
         0
       ),
       0,
-      presidingConductingBlock()
+      presidingConductingBlock(next)
     );
   return parseDocumentLayout(next);
 }
