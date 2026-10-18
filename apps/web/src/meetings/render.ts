@@ -46,6 +46,10 @@ export type MeetingRenderLabels = {
   documentRegion?: string;
   documentColumn?: string;
   meetingTypeLabel?: string;
+  announcementDate?: string;
+  announcementTime?: string;
+  announcementLocation?: string;
+  announcementContact?: string;
 };
 
 const DEFAULT_RENDER_LABELS: MeetingRenderLabels = {

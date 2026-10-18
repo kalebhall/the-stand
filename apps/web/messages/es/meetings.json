@@ -35,6 +35,10 @@
   "print": {
     "programTitle": "Programa de la reunión sacramental",
     "announcements": "Anuncios",
+    "announcementDate": "Fecha",
+    "announcementTime": "Hora",
+    "announcementLocation": "Lugar",
+    "announcementContact": "Contacto",
     "introduction": "Introducción",
     "presiding": "Preside",
     "conducting": "Dirige",

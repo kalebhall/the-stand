@@ -179,6 +179,10 @@ Gate: URL safety, public snapshot, rate-limit/abuse, accessibility, and print va
 - Existing templates and meeting documents remain compatible throughout the migration.
 - Existing sacrament program behavior remains the protected fallback when optional Studio features are unavailable.
 
+## Example-driven block expansion
+
+The user-approved mapping from supplied printed programs into the existing document model is recorded in [`2026-10-17-program-blocks-and-display-options.md`](./2026-10-17-program-blocks-and-display-options.md). The confirmed output contract is one canonical block model for print/PDF and web, with mobile rendered in one column. Prioritize semantic display variants for the meeting program and structured announcements/events before adding more generic text aliases. Preserve existing public-safety, publication, and ward boundaries.
+
 ## First implementation slice
 
 Start with Milestone 1 and the safe portion of Milestone 2:

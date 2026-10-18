@@ -505,6 +505,9 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
         warnings = [];
         validatePublicDocumentLayout(downgradeToV1(projectAdvancedLayoutForPublic(advanced)), [
           'MEETING_PROGRAM',
+          'ANNOUNCEMENT_LIST',
+          'SECTION_HEADING',
+          'SIMPLE_LIST',
           'ANNOUNCEMENTS',
           'PRESIDING_CONDUCTING',
           'MUSIC_LEADERS',
@@ -516,7 +519,17 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
         warnings = validated.warnings;
         validatePublicDocumentLayout(
           isAdvancedLayout(validated.layout) ? downgradeToV1(projectAdvancedLayoutForPublic(validated.layout)) : validated.layout,
-          ['MEETING_PROGRAM', 'ANNOUNCEMENTS', 'PRESIDING_CONDUCTING', 'MUSIC_LEADERS', 'QR_CODE', 'CUSTOM_LINK']
+          [
+            'MEETING_PROGRAM',
+            'ANNOUNCEMENT_LIST',
+            'SECTION_HEADING',
+            'SIMPLE_LIST',
+            'ANNOUNCEMENTS',
+            'PRESIDING_CONDUCTING',
+            'MUSIC_LEADERS',
+            'QR_CODE',
+            'CUSTOM_LINK'
+          ]
         );
       }
     } catch (error) {

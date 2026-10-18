@@ -19,6 +19,216 @@ const data: ResolvedDocumentData = {
 };
 
 describe('PDF renderer', () => {
+  it.each([
+    ['LABEL_VALUE', ['Opening hymn: Hymn 2']],
+    ['DOTTED_LEADERS', ['Opening hymn  . . .  Hymn 2']],
+    ['CENTERED_STACKED', ['(Opening hymn) Tj', '(Hymn 2) Tj']]
+  ] as const)('renders meeting program presentation %s in PDF text output', async (presentation, expectedTexts) => {
+    const layout = adaptLegacyLayoutToDocument({ preset: 'FULL_PAGE', announcementMode: 'NONE', coverMode: 'NONE' });
+    for (const region of layout.pages.flatMap((page) => page.regions))
+      region.blocks = region.blocks
+        .filter((block) => block.type === 'MEETING_PROGRAM')
+        .map((block) => ({ ...block, config: { ...block.config, presentation } }));
+    const pdf = await renderDocumentPdf(
+      layout,
+      { ...data, meetingItems: [{ order: 1, label: 'Opening hymn', details: 'Hymn 2' }] },
+      {
+        metadata: {
+          schemaVersion: 1,
+          layoutHash: `meeting-program-${presentation}`,
+          documentType: 'SACRAMENT_PROGRAM',
+          paper: 'LETTER',
+          orientation: 'PORTRAIT',
+          fold: 'NONE',
+          pageCount: 1,
+          rendererVersion: 'm8.1',
+          mediaAssetIds: []
+        }
+      }
+    );
+    const pdfText = new TextDecoder().decode(pdf.output('arraybuffer'));
+    for (const expectedText of expectedTexts) expect(pdfText).toContain(expectedText);
+    if (presentation === 'CENTERED_STACKED') expect(pdfText.indexOf(expectedTexts[0])).toBeLessThan(pdfText.indexOf(expectedTexts[1]));
+  });
+
+  it.each(['COMPACT_ROWS', 'DETAIL_CARDS'] as const)('renders the complete announcement list as %s in PDF', async (presentation) => {
+    const layout = adaptLegacyLayoutToDocument({ preset: 'FULL_PAGE', announcementMode: 'NONE', coverMode: 'NONE' });
+    const original = layout.pages[0].regions[0].blocks[0];
+    const announcementBlock = {
+      ...original,
+      type: 'ANNOUNCEMENT_LIST',
+      dataMode: 'MANUAL',
+      config: {
+        presentation,
+        items: [
+          {
+            id: '22222222-2222-4222-8222-222222222222',
+            order: 0,
+            date: 'Sunday, November 2',
+            time: '6:00 PM',
+            title: 'Ward dinner',
+            description: 'Bring a side dish.',
+            location: 'Cultural hall',
+            contact: 'Relief Society'
+          }
+        ]
+      }
+    } as never;
+    const announcementLayout = {
+      ...layout,
+      pages: layout.pages.map((page, pageIndex) =>
+        pageIndex === 0
+          ? {
+              ...page,
+              regions: page.regions.map((region, regionIndex) => (regionIndex === 0 ? { ...region, blocks: [announcementBlock] } : region))
+            }
+          : page
+      )
+    };
+    const pdf = await renderDocumentPdf(
+      announcementLayout,
+      { ...data, renderLabels: { ...getPublicProgramRenderLabels('en-US', 'SACRAMENT'), announcements: 'Announcements' } },
+      {
+        metadata: {
+          schemaVersion: 1,
+          layoutHash: `announcements-${presentation}`,
+          documentType: 'SACRAMENT_PROGRAM',
+          paper: 'LETTER',
+          orientation: 'PORTRAIT',
+          fold: 'NONE',
+          pageCount: 1,
+          rendererVersion: 'm8.1',
+          mediaAssetIds: []
+        }
+      }
+    );
+    const pdfText = new TextDecoder().decode(pdf.output('arraybuffer'));
+    for (const expectedText of [
+      'Announcements',
+      'Ward dinner',
+      'Date: Sunday, November 2',
+      'Time: 6:00 PM',
+      'Location: Cultural hall',
+      'Contact: Relief Society',
+      'Bring a side dish.'
+    ])
+      expect(pdfText).toContain(expectedText);
+    if (presentation === 'DETAIL_CARDS') expect(pdfText).toMatch(/re\s+S/);
+  });
+
+  it('renders section headings and each simple-list presentation to PDF', async () => {
+    for (const presentation of ['BULLETS', 'NUMBERED', 'COMPACT_ROWS'] as const) {
+      const layout = adaptLegacyLayoutToDocument({ preset: 'FULL_PAGE', announcementMode: 'NONE', coverMode: 'NONE' });
+      const original = layout.pages[0].regions[0].blocks[0];
+      const heading = {
+        ...original,
+        type: 'SECTION_HEADING',
+        dataMode: 'MANUAL',
+        config: { title: 'Community', subtitle: 'This week', presentation: 'RULE' }
+      };
+      const list = {
+        ...original,
+        id: '33333333-3333-4333-8333-333333333333',
+        type: 'SIMPLE_LIST',
+        dataMode: 'MANUAL',
+        config: {
+          presentation,
+          items: [
+            { id: '44444444-4444-4444-8444-444444444444', order: 0, text: 'Food drive' },
+            { id: '55555555-5555-4555-8555-555555555555', order: 1, text: 'Youth activity' }
+          ]
+        }
+      };
+      const document = {
+        ...layout,
+        pages: layout.pages.map((page, index) =>
+          index === 0 ? { ...page, regions: [{ ...page.regions[0], blocks: [heading, list] }] } : page
+        )
+      } as never;
+      const pdf = await renderDocumentPdf(document, data, {
+        metadata: {
+          schemaVersion: 1,
+          layoutHash: `section-list-${presentation}`,
+          documentType: 'SACRAMENT_PROGRAM',
+          paper: 'LETTER',
+          orientation: 'PORTRAIT',
+          fold: 'NONE',
+          pageCount: 1,
+          rendererVersion: 'm8.1',
+          mediaAssetIds: []
+        }
+      });
+      const pdfText = new TextDecoder().decode(pdf.output('arraybuffer'));
+      expect(pdfText).toContain('(Community) Tj');
+      expect(pdfText).toContain('(This week) Tj');
+      if (presentation === 'NUMBERED') {
+        expect(pdfText).toContain('(1. Food drive) Tj');
+        expect(pdfText).toContain('(2. Youth activity) Tj');
+      } else if (presentation === 'BULLETS') {
+        expect(pdfText).toContain('(- Food drive) Tj');
+        expect(pdfText).toContain('(- Youth activity) Tj');
+      } else {
+        expect(pdfText).toContain('(Food drive) Tj');
+        expect(pdfText).toContain('(Youth activity) Tj');
+      }
+    }
+  });
+
+  it('preserves multiline structural text as PDF line breaks', async () => {
+    const layout = adaptLegacyLayoutToDocument({ preset: 'FULL_PAGE', announcementMode: 'NONE', coverMode: 'NONE' });
+    const original = layout.pages[0].regions[0].blocks[0];
+    const heading = {
+      ...original,
+      type: 'SECTION_HEADING',
+      dataMode: 'MANUAL',
+      config: { title: 'This week\nActivities', presentation: 'RULE' }
+    };
+    const list = {
+      ...original,
+      id: '33333333-3333-4333-8333-333333333333',
+      type: 'SIMPLE_LIST',
+      dataMode: 'MANUAL',
+      config: {
+        presentation: 'BULLETS',
+        items: [{ id: '44444444-4444-4444-8444-444444444444', order: 0, text: 'Food drive\nBring canned goods' }]
+      }
+    };
+    const announcement = {
+      ...original,
+      id: '55555555-5555-4555-8555-555555555555',
+      type: 'ANNOUNCEMENT_LIST',
+      dataMode: 'MANUAL',
+      config: {
+        presentation: 'COMPACT_ROWS',
+        items: [{ id: '66666666-6666-4666-8666-666666666666', order: 0, title: 'Community dinner\nSaturday evening' }]
+      }
+    };
+    const document = {
+      ...layout,
+      pages: layout.pages.map((page, index) =>
+        index === 0 ? { ...page, regions: [{ ...page.regions[0], blocks: [heading, list, announcement] }] } : page
+      )
+    } as never;
+    const pdf = await renderDocumentPdf(document, data, {
+      metadata: {
+        schemaVersion: 1,
+        layoutHash: 'multiline-structural-text',
+        documentType: 'SACRAMENT_PROGRAM',
+        paper: 'LETTER',
+        orientation: 'PORTRAIT',
+        fold: 'NONE',
+        pageCount: 1,
+        rendererVersion: 'm8.1',
+        mediaAssetIds: []
+      }
+    });
+    const pdfText = new TextDecoder().decode(pdf.output('arraybuffer'));
+
+    expect(pdfText).toContain('(This week) Tj\nT* (Activities) Tj');
+    expect(pdfText).toContain('(- Food drive) Tj\nT* (Bring canned goods) Tj');
+    expect(pdfText).toContain('(Community dinner) Tj\nT* (Saturday evening) Tj');
+  });
+
   it('renders deterministic same-input output metadata and one page', async () => {
     const options = {
       metadata: {

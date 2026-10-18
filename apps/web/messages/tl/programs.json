@@ -19,6 +19,39 @@
     "chorister": "Tagapanguna ng awit",
     "addProgramBlock": "Magdagdag ng program block",
     "addProgramBlockDescription": "Pumili ng structured row o limitadong custom block. Nasi-save ang mga pagbabago sa Advanced Mode.",
+    "addAnnouncementList": "Magdagdag ng listahan ng anunsyo",
+    "announcementListBlockDescription": "Mga pampublikong anunsyong inaprubahan para sa programang ito.",
+    "addSectionHeading": "Magdagdag ng pamagat ng seksyon",
+    "sectionHeadingBlockDescription": "Magdagdag ng pamagat para ayusin ang inaprubahang nilalaman ng programa.",
+    "addSimpleList": "Magdagdag ng simpleng listahan",
+    "simpleListBlockDescription": "Magdagdag ng maikling listahan ng mga inaprubahang pampublikong detalye.",
+    "newSectionHeading": "Bagong seksyon",
+    "newSimpleListItem": "Bagong item sa listahan",
+    "sectionHeadingProperties": "Mga katangian ng pamagat ng seksyon",
+    "sectionHeadingTitle": "Pamagat ng seksyon",
+    "sectionHeadingSubtitle": "Karagdagang pamagat ng seksyon",
+    "sectionHeadingDisplay": "Pagpapakita ng pamagat ng seksyon",
+    "simpleListProperties": "Mga katangian ng simpleng listahan",
+    "simpleListDisplay": "Pagpapakita ng simpleng listahan",
+    "simpleListItemsDescription": "Idagdag lamang ang mga pampublikong detalyeng inaprubahan para sa programa. Huwag maglagay ng pribadong impormasyon tungkol sa mga miyembro o lider.",
+    "simpleListItemLabel": "Item {number}",
+    "moveSimpleListItemUp": "Itaas ang item {number}",
+    "moveSimpleListItemDown": "Ibaba ang item {number}",
+    "removeSimpleListItem": "Alisin ang item {number}",
+    "addSimpleListItem": "Magdagdag ng item",
+    "announcementItems": "Mga anunsyo",
+    "announcementItemsDescription": "Idagdag lamang ang mga pampublikong detalyeng inaprubahan para sa naka-print at digital na programa.",
+    "addAnnouncementItem": "Magdagdag ng anunsyo",
+    "newAnnouncementTitle": "Bagong anunsyo",
+    "announcementItemTitle": "Pamagat ng anunsyo {number}",
+    "announcementItemDate": "Petsa ng anunsyo {number}",
+    "announcementItemTime": "Oras ng anunsyo {number}",
+    "announcementItemDescription": "Paglalarawan ng anunsyo {number}",
+    "announcementItemLocation": "Lugar ng anunsyo {number}",
+    "announcementItemContact": "Contact ng anunsyo {number}",
+    "moveAnnouncementItemUp": "Itaas ang anunsyo {number}",
+    "moveAnnouncementItemDown": "Ibaba ang anunsyo {number}",
+    "removeAnnouncementItem": "Alisin ang anunsyo {number}",
     "addPresidingConducting": "Magdagdag ng namumuno at konduktor",
     "addCustomBlock": "Magdagdag ng custom block",
     "moveSelectedBlock": "Ilipat ang napiling block sa",
@@ -107,13 +140,25 @@
     "wardTemplates": "Mga Template ng Ward",
     "myDrafts": "Aking mga Draft",
     "builtInTemplateNames": {
-      "classic-bifold": { "name": "Klasikong Bifold", "description": "Tradisyonal na nakatiklop na programa na may balanseng ayos ng pagbasa." },
+      "classic-bifold": {
+        "name": "Klasikong Bifold",
+        "description": "Tradisyonal na nakatiklop na programa na may balanseng ayos ng pagbasa."
+      },
       "trifold-bulletin": { "name": "Trifold na Bulletin", "description": "Kompaktong bulletin na may tatlong panel." },
-      "full-page-standard": { "name": "Pamantayang Buong Pahina", "description": "Madaling basahing isang-pahinang programa para sa digital at print." },
+      "full-page-standard": {
+        "name": "Pamantayang Buong Pahina",
+        "description": "Madaling basahing isang-pahinang programa para sa digital at print."
+      },
       "modern-minimal": { "name": "Modernong Minimal", "description": "Malinis na tekstong layout na may mahinahong biswal na hierarchy." },
-      "compact-one-page": { "name": "Kompaktong Isang Pahina", "description": "Siksik na isang-pahinang format para sa maiikling programa." },
+      "compact-one-page": {
+        "name": "Kompaktong Isang Pahina",
+        "description": "Siksik na isang-pahinang format para sa maiikling programa."
+      },
       "large-print": { "name": "Malaking Letra", "description": "Pinasimpleng layout para sa komportableng pagbasa." },
-      "image-cover": { "name": "Pabalat na May Larawan", "description": "Text-first na programa na may awtorisadong puwang para sa metadata ng larawan." },
+      "image-cover": {
+        "name": "Pabalat na May Larawan",
+        "description": "Text-first na programa na may awtorisadong puwang para sa metadata ng larawan."
+      },
       "announcement-focus": { "name": "Pokus sa mga Anunsyo", "description": "Layout na nagbibigay-diin sa mga aprubadong anunsyo." }
     },
     "preview": "Preview ng template",
@@ -281,6 +326,9 @@
       "WARD_NAME": "Pangalan ng ward",
       "MEETING_INFO": "Impormasyon ng pulong",
       "MEETING_PROGRAM": "Programa ng pulong",
+      "ANNOUNCEMENT_LIST": "Listahan ng mga anunsyo",
+      "SECTION_HEADING": "Pamagat ng seksyon",
+      "SIMPLE_LIST": "Simpleng listahan",
       "PRESIDING_CONDUCTING": "Namumuno at nagko-conduct",
       "MUSIC_LEADERS": "Mga music leader",
       "SPEAKERS": "Mga tagapagsalita",
@@ -312,6 +360,27 @@
       "VISIBLE": "Nakikita",
       "HIDDEN": "Nakatago",
       "HIDE_WHEN_EMPTY": "Itago kapag walang laman"
+    },
+    "agendaDisplay": "Ayos ng programa",
+    "meetingProgramPresentationOption": {
+      "LABEL_VALUE": "Label at detalye",
+      "DOTTED_LEADERS": "Mga tuldok na panugtong",
+      "CENTERED_STACKED": "Nakasentro at magkakapatong"
+    },
+    "announcementDisplay": "Pagpapakita ng anunsyo",
+    "announcementListPresentationOption": {
+      "COMPACT_ROWS": "Maiikling hanay",
+      "DETAIL_CARDS": "Mga card na may detalye"
+    },
+    "sectionHeadingPresentationOption": {
+      "PLAIN": "Payak",
+      "RULE": "May guhit",
+      "ACCENT": "May diin"
+    },
+    "simpleListPresentationOption": {
+      "BULLETS": "May bullet",
+      "NUMBERED": "May numero",
+      "COMPACT_ROWS": "Maiikling hanay"
     },
     "widthOption": {
       "FULL": "Buo",

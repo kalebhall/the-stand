@@ -54,6 +54,30 @@ function metadata(layout: DocumentLayout, data: ResolvedDocumentData, pageCount:
 function textLength(block: { id?: string; type: string; config: unknown }, data: ResolvedDocumentData): number {
   if (block.type === 'MEETING_PROGRAM')
     return data.meetingItems.reduce((total, item) => total + item.label.length + (item.details?.length ?? 0), 0);
+  if (block.type === 'ANNOUNCEMENT_LIST') {
+    const items = (
+      block.config as {
+        items: Array<{ title: string; date?: string; time?: string; description?: string; location?: string; contact?: string }>;
+      }
+    ).items;
+    return items.reduce(
+      (total, item) =>
+        total +
+        [item.title, item.date, item.time, item.description, item.location, item.contact].reduce(
+          (sum, value) => sum + (value?.length ?? 0),
+          0
+        ),
+      0
+    );
+  }
+  if (block.type === 'SECTION_HEADING') {
+    const config = block.config as { title: string; subtitle?: string };
+    return config.title.length + (config.subtitle?.length ?? 0);
+  }
+  if (block.type === 'SIMPLE_LIST') {
+    const config = block.config as { items: Array<{ text: string }> };
+    return config.items.reduce((total, item) => total + item.text.length, 0);
+  }
   const resolvedBlock = block.id ? data.blockValues?.[String(block.id)] : undefined;
   if (typeof resolvedBlock === 'string') return resolvedBlock.length;
   const resolved = data.values[block.type as keyof typeof data.values];
@@ -208,6 +232,13 @@ export function validatePrintLayout(inputLayout: unknown, data: ResolvedDocument
     }
     if (block.type === 'MEETING_PROGRAM' && !data.meetingItems.length && block.visibility !== 'HIDE_WHEN_EMPTY')
       warnings.push({ code: 'EMPTY_PROGRAM', blockId: block.id, message: 'The program block has no resolved items.', severity: 'WARNING' });
+    if (block.type === 'ANNOUNCEMENT_LIST' && !block.config.items.length && block.visibility !== 'HIDE_WHEN_EMPTY')
+      warnings.push({
+        code: 'EMPTY_ANNOUNCEMENT_LIST',
+        blockId: block.id,
+        message: 'The announcement list has no items.',
+        severity: 'WARNING'
+      });
   }
   return {
     valid: errors.length === 0,

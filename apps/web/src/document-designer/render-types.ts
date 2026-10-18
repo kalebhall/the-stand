@@ -22,6 +22,7 @@ export type DocumentRenderInput = {
   layout: DocumentLayout | AdvancedDocumentLayout;
   data: ResolvedDocumentData;
   target?: RenderTarget;
+  mobile?: boolean;
   public?: boolean;
   explicitPublicBlockTypes?: readonly string[];
 };

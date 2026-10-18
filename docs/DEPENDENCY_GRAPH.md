@@ -26,7 +26,7 @@ flowchart LR
   A14["web:config<br/>18 files"]
   A15["web:dashboard<br/>4 files"]
   A16["web:db<br/>17 files"]
-  A17["web:document-designer<br/>76 files"]
+  A17["web:document-designer<br/>79 files"]
   A18["web:features<br/>2 files"]
   A19["web:hardening<br/>1 files"]
   A20["web:health.mjs<br/>1 files"]
@@ -53,7 +53,7 @@ flowchart LR
   A5 -->|160| A16
   A6 -->|120| A38
   A6 -->|97| A8
-  A5 -->|73| A17
+  A5 -->|75| A17
   A6 -->|65| A16
   A5 -->|61| A27
   A5 -->|48| A29
@@ -184,7 +184,7 @@ flowchart LR
 | `web:config` | 18 |
 | `web:dashboard` | 4 |
 | `web:db` | 17 |
-| `web:document-designer` | 76 |
+| `web:document-designer` | 79 |
 | `web:features` | 2 |
 | `web:hardening` | 1 |
 | `web:health.mjs` | 1 |
@@ -212,13 +212,13 @@ flowchart LR
 
 | Importing area | Imported area | Imports |
 | --- | --- | ---: |
-| `web:document-designer` | `web:document-designer` | 240 |
+| `web:document-designer` | `web:document-designer` | 252 |
 | `web:api` | `web:auth` | 185 |
 | `web:api` | `web:db` | 160 |
 | `web:app` | `web:ui` | 120 |
 | `web:app` | `web:auth` | 97 |
 | `web:app` | `web:app` | 78 |
-| `web:api` | `web:document-designer` | 73 |
+| `web:api` | `web:document-designer` | 75 |
 | `web:app` | `web:db` | 65 |
 | `web:notifications` | `web:notifications` | 63 |
 | `web:api` | `web:modules` | 61 |
@@ -598,7 +598,7 @@ flowchart LR
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/program-design/pdf/route.ts` | `web:api` | 10 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/program-design/print-validate/route.ts` | `web:api` | 8 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/program-design/route.ts` | `web:api` | 16 | 2 |
-| `apps/web/app/api/w/[wardId]/meetings/[meetingId]/program-design/route.vitest.ts` | `web:api` | 5 | 1 |
+| `apps/web/app/api/w/[wardId]/meetings/[meetingId]/program-design/route.vitest.ts` | `web:api` | 6 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/program-design/validate/route.ts` | `web:api` | 1 | 0 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/program-items/[itemId]/route.ts` | `web:api` | 12 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/program-items/route.ts` | `web:api` | 7 | 1 |
@@ -608,7 +608,7 @@ flowchart LR
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/publication-history/route.ts` | `web:api` | 6 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/publication-history/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/publish/route.ts` | `web:api` | 17 | 2 |
-| `apps/web/app/api/w/[wardId]/meetings/[meetingId]/publish/route.vitest.ts` | `web:api` | 2 | 1 |
+| `apps/web/app/api/w/[wardId]/meetings/[meetingId]/publish/route.vitest.ts` | `web:api` | 3 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/render/route.ts` | `web:api` | 9 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/render/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/meetings/[meetingId]/reopen/route.ts` | `web:api` | 7 | 1 |
@@ -918,7 +918,8 @@ flowchart LR
 | `apps/web/src/document-designer/advanced-schema.ts` | `web:document-designer` | 5 | 1 |
 | `apps/web/src/document-designer/advanced-schema.vitest.ts` | `web:document-designer` | 2 | 1 |
 | `apps/web/src/document-designer/advanced-validation.ts` | `web:document-designer` | 2 | 0 |
-| `apps/web/src/document-designer/block-renderers.ts` | `web:document-designer` | 4 | 0 |
+| `apps/web/src/document-designer/announcement-list-presentation.ts` | `web:document-designer` | 2 | 0 |
+| `apps/web/src/document-designer/block-renderers.ts` | `web:document-designer` | 7 | 0 |
 | `apps/web/src/document-designer/built-in-templates.ts` | `web:document-designer` | 4 | 0 |
 | `apps/web/src/document-designer/compatibility-render.vitest.ts` | `web:document-designer` | 7 | 1 |
 | `apps/web/src/document-designer/constants.ts` | `web:document-designer` | 0 | 0 |
@@ -941,9 +942,10 @@ flowchart LR
 | `apps/web/src/document-designer/media-validation.vitest.ts` | `web:document-designer` | 1 | 2 |
 | `apps/web/src/document-designer/meeting-document-service.ts` | `web:document-designer` | 7 | 0 |
 | `apps/web/src/document-designer/meeting-document-service.vitest.ts` | `web:document-designer` | 3 | 1 |
+| `apps/web/src/document-designer/meeting-program-presentation.ts` | `web:document-designer` | 2 | 0 |
 | `apps/web/src/document-designer/overflow.ts` | `web:document-designer` | 8 | 0 |
 | `apps/web/src/document-designer/pdf-download.ts` | `web:document-designer` | 0 | 1 |
-| `apps/web/src/document-designer/pdf-renderer.ts` | `web:document-designer` | 8 | 1 |
+| `apps/web/src/document-designer/pdf-renderer.ts` | `web:document-designer` | 11 | 1 |
 | `apps/web/src/document-designer/pdf-renderer.vitest.ts` | `web:document-designer` | 7 | 1 |
 | `apps/web/src/document-designer/persistence.ts` | `web:document-designer` | 2 | 0 |
 | `apps/web/src/document-designer/persistence.vitest.ts` | `web:document-designer` | 2 | 1 |
@@ -978,6 +980,7 @@ flowchart LR
 | `apps/web/src/document-designer/sacrament-program.ts` | `web:document-designer` | 6 | 1 |
 | `apps/web/src/document-designer/schema.ts` | `web:document-designer` | 7 | 1 |
 | `apps/web/src/document-designer/schema.vitest.ts` | `web:document-designer` | 5 | 2 |
+| `apps/web/src/document-designer/structural-block-presentation.ts` | `web:document-designer` | 2 | 0 |
 | `apps/web/src/document-designer/template-administration-service.ts` | `web:document-designer` | 4 | 0 |
 | `apps/web/src/document-designer/template-administration-service.vitest.ts` | `web:document-designer` | 2 | 1 |
 | `apps/web/src/document-designer/template-catalog.vitest.ts` | `web:document-designer` | 5 | 1 |

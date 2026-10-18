@@ -39,7 +39,13 @@ vi.mock('@/src/modules/service', () => ({
 import { adaptLegacyLayoutToDocument } from '@/src/document-designer/legacy-layout-adapter';
 import { DEFAULT_DOCUMENT_LAYOUT } from '@/src/document-designer/schema';
 import { BUILT_IN_TEMPLATES } from '@/src/document-designer/built-in-templates';
-import { downgradeToV1, normalizeToAdvanced } from '@/src/document-designer/advanced-schema';
+import {
+  downgradeToV1,
+  normalizeToAdvanced,
+  parseAdvancedLayout,
+  projectAdvancedLayoutForPublic
+} from '@/src/document-designer/advanced-schema';
+import { validatePublicDocumentLayout } from '@/src/document-designer/public-safety';
 import { GET, POST, PUT } from './route';
 
 const layout = adaptLegacyLayoutToDocument({ preset: 'FULL_PAGE', announcementMode: 'AFTER_PROGRAM', coverMode: 'NONE' });
@@ -153,6 +159,93 @@ describe('program design route', () => {
     expect((await response.json()).revision).toBe(4);
     expect(queryMock).toHaveBeenCalledWith(expect.stringContaining('UPDATE meeting_document'), expect.arrayContaining([3]));
     expect(queryMock).not.toHaveBeenCalledWith(expect.stringContaining('meeting_program_render'), expect.anything());
+  });
+
+  it('saves and reloads section headings and simple lists in the Advanced document', async () => {
+    advancedCapabilityMock.mockReturnValue(true);
+    const source = normalizeToAdvanced(layout);
+    const sourceRegion = source.pages[0].regions[0];
+    const heading = {
+      ...sourceRegion.blocks[0],
+      type: 'SECTION_HEADING',
+      dataMode: 'MANUAL',
+      config: { title: 'Community', subtitle: 'This week', presentation: 'ACCENT' }
+    };
+    const simpleList = {
+      ...sourceRegion.blocks[1],
+      type: 'SIMPLE_LIST',
+      dataMode: 'MANUAL',
+      config: {
+        presentation: 'NUMBERED',
+        items: [
+          { id: '22222222-2222-4222-8222-222222222222', order: 0, text: 'Food drive' },
+          { id: '33333333-3333-4333-8333-333333333333', order: 1, text: 'Youth activity' }
+        ]
+      }
+    };
+    const savedLayout = {
+      ...source,
+      pages: source.pages.map((page, pageIndex) =>
+        pageIndex === 0
+          ? {
+              ...page,
+              regions: page.regions.map((region, regionIndex) =>
+                regionIndex === 0 ? { ...region, blocks: [heading, simpleList, ...region.blocks.slice(2)] } : region
+              )
+            }
+          : page
+      )
+    } as typeof source;
+
+    queryMock
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({ rows: [{ id: 'meeting-1' }] })
+      .mockResolvedValueOnce({ rows: [documentRow] })
+      .mockResolvedValueOnce({ rows: [{ allow_advanced_program_designer: true }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'document-1', revision: 4 }] })
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({});
+    const saveResponse = await PUT(
+      new Request('http://localhost', {
+        method: 'PUT',
+        body: JSON.stringify({ expectedRevision: 3, document: savedLayout, mode: 'ADVANCED' })
+      }),
+      params()
+    );
+    expect(saveResponse.status).toBe(200);
+    const savedRow = { ...documentRow, schema_version: 2, layout_json: savedLayout };
+    const updateCall = queryMock.mock.calls.find(([sql]) => typeof sql === 'string' && sql.includes('UPDATE meeting_document'));
+    const persistedLayout = JSON.parse(String(updateCall?.[1]?.[5]));
+    expect(persistedLayout).toMatchObject({ schemaVersion: 2 });
+    expect(persistedLayout.pages[0].regions[0].blocks.slice(0, 2)).toMatchObject([
+      { type: 'SECTION_HEADING', config: { title: 'Community', subtitle: 'This week', presentation: 'ACCENT' } },
+      { type: 'SIMPLE_LIST', config: { presentation: 'NUMBERED', items: [{ text: 'Food drive' }, { text: 'Youth activity' }] } }
+    ]);
+
+    queryMock.mockReset();
+    queryMock
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({
+        rows: [{ id: 'meeting-1', meeting_date: '2026-09-20', meeting_type: 'SACRAMENT', ward_name: 'Freedom Park Ward' }]
+      })
+      .mockResolvedValueOnce({ rows: [{ item_type: 'SPEAKER', title: 'Alex Hall', topic: 'Faith', hymn_title: null, sequence: 2 }] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{ allow_advanced_program_designer: true }] })
+      .mockResolvedValueOnce({ rows: [savedRow] })
+      .mockResolvedValueOnce({ rows: [savedRow] })
+      .mockResolvedValueOnce({});
+    const reloadResponse = await GET(new Request('http://localhost'), params());
+    expect(reloadResponse.status).toBe(200);
+    const reloaded = await reloadResponse.json();
+    expect(reloaded.document.schemaVersion).toBe(2);
+    expect(reloaded.document.advancedLayout.pages[0].regions[0].blocks.slice(0, 2)).toMatchObject([
+      { type: 'SECTION_HEADING', config: { title: 'Community', subtitle: 'This week', presentation: 'ACCENT' } },
+      { type: 'SIMPLE_LIST', config: { presentation: 'NUMBERED', items: [{ text: 'Food drive' }, { text: 'Youth activity' }] } }
+    ]);
   });
 
   it('still rejects a protected Advanced mutation in an ordinary Simple Mode save', async () => {
@@ -350,5 +443,93 @@ describe('program design route', () => {
     expect(response.status).toBe(200);
     expect((await response.json()).publicSafe).toBe(true);
     expect(queryMock).toHaveBeenCalledWith('ROLLBACK');
+  });
+
+  it('accepts section headings, simple lists, and announcement lists in Advanced Mode public preview', async () => {
+    advancedCapabilityMock.mockReturnValue(true);
+    queryMock
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({
+        rows: [{ id: 'meeting-1', meeting_date: '2026-09-20', meeting_type: 'SACRAMENT', ward_name: 'Freedom Park Ward' }]
+      })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{ allow_advanced_program_designer: true }] })
+      .mockResolvedValueOnce({ rows: [documentRow] })
+      .mockResolvedValueOnce({ rows: [{ allow_advanced_program_designer: true }] })
+      .mockResolvedValueOnce({});
+    const advanced = normalizeToAdvanced(layout);
+    const previewLayout = {
+      ...advanced,
+      pages: advanced.pages.map((page) => ({
+        ...page,
+        regions: page.regions.map((region) => ({
+          ...region,
+          blocks: region.blocks.map((block, index) =>
+            index === 0
+              ? {
+                  ...block,
+                  type: 'SECTION_HEADING',
+                  dataMode: 'MANUAL',
+                  config: { title: 'Community', subtitle: 'This week', presentation: 'ACCENT' }
+                }
+              : index === 1
+                ? {
+                    ...block,
+                    type: 'SIMPLE_LIST',
+                    dataMode: 'MANUAL',
+                    config: {
+                      presentation: 'NUMBERED',
+                      items: [
+                        { id: '33333333-3333-4333-8333-333333333333', order: 0, text: 'Food drive' },
+                        { id: '44444444-4444-4444-8444-444444444444', order: 1, text: 'Youth activity' }
+                      ]
+                    }
+                  }
+                : index === 2
+                  ? {
+                      ...block,
+                      type: 'ANNOUNCEMENT_LIST',
+                      dataMode: 'MANUAL',
+                      config: {
+                        presentation: 'COMPACT_ROWS',
+                        items: [{ id: '22222222-2222-4222-8222-222222222222', order: 0, title: 'Ward dinner' }]
+                      }
+                    }
+                  : block
+          )
+        }))
+      }))
+    } as typeof advanced;
+    expect(() => parseAdvancedLayout(JSON.parse(JSON.stringify(previewLayout)))).not.toThrow();
+    const publicLayout = downgradeToV1(projectAdvancedLayoutForPublic(previewLayout));
+    expect(() =>
+      validatePublicDocumentLayout(publicLayout, [
+        'MEETING_PROGRAM',
+        'ANNOUNCEMENT_LIST',
+        'SECTION_HEADING',
+        'SIMPLE_LIST',
+        'ANNOUNCEMENTS',
+        'PRESIDING_CONDUCTING',
+        'MUSIC_LEADERS',
+        'QR_CODE',
+        'CUSTOM_LINK'
+      ])
+    ).not.toThrow();
+
+    const response = await POST(
+      new Request('http://localhost', {
+        method: 'POST',
+        body: JSON.stringify({ mode: 'ADVANCED', document: previewLayout })
+      }),
+      params()
+    );
+
+    const result = await response.json();
+    expect(response.status, JSON.stringify(result)).toBe(200);
+    expect(result.publicSafe).toBe(true);
   });
 });

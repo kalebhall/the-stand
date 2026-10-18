@@ -202,10 +202,10 @@ test('uniform content editor works without Advanced Layout and persists source r
     const itemsResponse = await apiRequest(page, `/api/w/${WARD_A}/meetings/${meetingId}/program-items`, 'GET');
     if (itemsResponse.status !== 200) throw new Error(`program items load failed: ${JSON.stringify(itemsResponse)}`);
     await page.goto(`/programs/${meetingId}`);
-    await expect(page.getByRole('button', { name: 'Content' })).toBeVisible({ timeout: 120_000 });
-    await expect(page.getByRole('button', { name: 'Advanced Mode' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Content', exact: true })).toBeVisible({ timeout: 120_000 });
+    await expect(page.getByRole('button', { name: 'Advanced Mode' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Meeting program' })).toHaveCSS('white-space', 'nowrap');
-    await page.getByRole('button', { name: 'Content' }).click();
+    await page.getByRole('button', { name: 'Content', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'Program content' })).toBeVisible({ timeout: 120_000 });
 
     const introduction = page.getByRole('article', { name: '1. Introduction' });
@@ -224,7 +224,7 @@ test('uniform content editor works without Advanced Layout and persists source r
     expect(persistedIntroduction?.introductionRoles?.presiding).toBe('Bishop Hall');
 
     await page.reload();
-    await page.getByRole('button', { name: 'Content' }).click();
+    await page.getByRole('button', { name: 'Content', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'Program content' })).toBeVisible({ timeout: 120_000 });
     await expect(page.getByLabel('Presiding')).toHaveValue('Bishop Hall');
     expect(browserErrors).toEqual([]);
@@ -232,6 +232,201 @@ test('uniform content editor works without Advanced Layout and persists source r
     if (meetingId) {
       await cleanupPublishedMeeting(meetingId);
     }
+  }
+});
+
+test('Program Designer creates, saves, reloads, and previews structural blocks', async ({ page }) => {
+  const browserErrors: string[] = [];
+  const programWriteRequests: string[] = [];
+  page.on('pageerror', (error) => browserErrors.push(error.message));
+  page.on('console', (message) => {
+    if (message.type() === 'error') browserErrors.push(message.text());
+  });
+  page.on('request', (request) => {
+    if (request.url().includes('/program-design') && request.method() === 'PUT') programWriteRequests.push(request.postData() ?? '');
+  });
+  page.on('requestfailed', (request) => {
+    if (request.url().includes('/program-design')) programWriteRequests.push(`FAILED ${request.failure()?.errorText ?? 'unknown'}`);
+  });
+  await login(page, 'ward-admin@example.test', 'WardAdminPassword123456789012');
+  let meetingId: string | null = null;
+  try {
+    const createResponse = await apiRequest(page, `/api/w/${WARD_A}/meetings`, 'POST', {
+      meetingDate: '2026-12-13',
+      meetingType: 'SACRAMENT',
+      programItems: [
+        { itemType: 'INTRODUCTION', title: 'Welcome' },
+        { itemType: 'ANNOUNCEMENT', title: 'Structural block acceptance' }
+      ]
+    });
+    expect(createResponse.status, JSON.stringify(createResponse.body)).toBe(201);
+    meetingId = (createResponse.body as { id: string }).id;
+    await page.goto(`/programs/${meetingId}`);
+    await expect(page.getByRole('region', { name: 'Document canvas' })).toBeVisible({ timeout: 120_000 });
+    await expect(page.getByRole('button', { name: 'Advanced Mode' })).toBeVisible({ timeout: 120_000 });
+    await expect(page.getByRole('status').first()).toHaveText('Saved', { timeout: 120_000 });
+
+    await page.getByRole('button', { name: 'Advanced Mode' }).click();
+    await page.getByLabel('Columns in selected panel').selectOption('2');
+    await page.getByRole('button', { name: 'Add section heading' }).click();
+    await page.getByLabel('Section heading title').fill('Community');
+    await page.getByLabel('Section heading subtitle').fill('This week');
+    await page.getByLabel('Section heading display').selectOption('ACCENT');
+
+    await page.getByRole('button', { name: 'Add simple list' }).click();
+    await page.getByRole('button', { name: 'Add list item' }).click();
+    const properties = page.getByRole('complementary', { name: 'Properties' });
+    await properties.getByRole('textbox').nth(0).fill('Food drive');
+    await page.getByRole('button', { name: 'Add list item' }).click();
+    await properties.getByRole('textbox').nth(1).fill('Youth activity');
+    await page.getByRole('button', { name: 'Move list item 2 up' }).click();
+    await page.getByLabel('Simple list display').selectOption('NUMBERED');
+    await page.getByRole('button', { name: /^Add announcement list/ }).click();
+    await page.getByRole('button', { name: 'Add announcement item' }).click();
+    await properties.getByLabel('Title for announcement 1').fill('Community dinner');
+    await properties.getByLabel('Date for announcement 1').fill('Saturday evening');
+    await properties.getByLabel('Description for announcement 1').fill('Bring a side dish.');
+    await properties.getByLabel('Location for announcement 1').fill('Cultural hall');
+    await properties.getByLabel('Contact for announcement 1').fill('Relief Society');
+    const advancedSavePromise = page.waitForResponse(
+      (response) =>
+        response.url().includes(`/api/w/${WARD_A}/meetings/${meetingId}/program-design`) && response.request().method() === 'PUT',
+      { timeout: 15_000 }
+    );
+    await page.getByRole('button', { name: 'Save advanced layout' }).click();
+    await expect.poll(() => programWriteRequests.length, { timeout: 15_000 }).toBeGreaterThan(0);
+    const advancedSavePayload = JSON.parse(programWriteRequests.at(-1)!) as {
+      document: { pages: Array<{ regions: Array<{ blocks: Array<{ type: string }> }> }> };
+    };
+    const requestBlocks = advancedSavePayload.document.pages.flatMap((programPage) =>
+      programPage.regions.flatMap((region) => region.blocks)
+    );
+    expect(requestBlocks.map((block) => block.type)).toContain('SECTION_HEADING');
+    expect(requestBlocks.map((block) => block.type)).toContain('SIMPLE_LIST');
+    const advancedSave = await advancedSavePromise;
+    expect(advancedSave.ok(), `Advanced save failed: ${advancedSave.status()} ${await advancedSave.text()}`).toBe(true);
+    const advancedSaveBody = (await advancedSave.json()) as {
+      document?: { layout?: { pages: Array<{ regions: Array<{ blocks: Array<{ type: string }> }> }> } };
+    };
+    const responseBlocks =
+      advancedSaveBody.document?.layout?.pages.flatMap((programPage) => programPage.regions.flatMap((region) => region.blocks)) ?? [];
+    expect(responseBlocks.map((block) => block.type)).toContain('SECTION_HEADING');
+    expect(responseBlocks.map((block) => block.type)).toContain('SIMPLE_LIST');
+    await expect(page.getByRole('status').first()).toHaveText('Saved', { timeout: 120_000 });
+
+    const savedResponse = await apiRequest(page, `/api/w/${WARD_A}/meetings/${meetingId}/program-design`, 'GET');
+    expect(savedResponse.status).toBe(200);
+    const advancedLayout = (
+      savedResponse.body as {
+        document?: {
+          advancedLayout?: { pages: Array<{ regions: Array<{ blocks: Array<{ type: string; config: Record<string, unknown> }> }> }> };
+        };
+      }
+    ).document?.advancedLayout;
+    expect(advancedLayout, JSON.stringify(savedResponse.body)).toBeDefined();
+    const blocks = advancedLayout!.pages.flatMap((programPage) => programPage.regions.flatMap((region) => region.blocks));
+    expect(blocks.map((block) => block.type)).toContain('SECTION_HEADING');
+    expect(blocks.find((block) => block.type === 'SECTION_HEADING')!.config).toMatchObject({
+      title: 'Community',
+      subtitle: 'This week',
+      presentation: 'ACCENT'
+    });
+    expect(blocks.find((block) => block.type === 'SIMPLE_LIST')?.config).toMatchObject({
+      presentation: 'NUMBERED',
+      items: [{ text: 'Youth activity' }, { text: 'Food drive' }]
+    });
+    expect(blocks.find((block) => block.type === 'ANNOUNCEMENT_LIST')?.config).toMatchObject({
+      items: [
+        {
+          title: 'Community dinner',
+          date: 'Saturday evening',
+          description: 'Bring a side dish.',
+          location: 'Cultural hall',
+          contact: 'Relief Society'
+        }
+      ]
+    });
+
+    const publicValidation = await apiRequest(page, `/api/w/${WARD_A}/meetings/${meetingId}/program-design`, 'POST', {
+      mode: 'ADVANCED',
+      document: advancedLayout
+    });
+    expect(publicValidation.status, JSON.stringify(publicValidation.body)).toBe(200);
+    expect(publicValidation.body).toMatchObject({ publicSafe: true });
+
+    const privatePreviewLayout = structuredClone(advancedLayout!) as {
+      pages: Array<{
+        regions: Array<{
+          blocks: Array<Record<string, unknown>>;
+          columns: { blockIds: string[][] };
+        }>;
+      }>;
+    };
+    const privateRegion = privatePreviewLayout.pages[0].regions[0];
+    const privateBlockId = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+    privateRegion.blocks.push({
+      ...privateRegion.blocks[0],
+      id: privateBlockId,
+      type: 'WARD_LEADERSHIP',
+      dataMode: 'AUTO',
+      config: { text: 'PRIVATE_SENTINEL' }
+    });
+    privateRegion.columns.blockIds[0].push(privateBlockId);
+    const privateValidationResponse = await page.request.post(
+      new URL(`/api/w/${WARD_A}/meetings/${meetingId}/program-design`, page.url()).toString(),
+      { data: { mode: 'ADVANCED', document: privatePreviewLayout } }
+    );
+    const privateValidationBody = (await privateValidationResponse.json()) as Record<string, unknown>;
+    expect(privateValidationResponse.status()).toBe(422);
+    expect(privateValidationBody).toMatchObject({ code: 'UNSAFE_PUBLIC_DOCUMENT' });
+    expect(JSON.stringify(privateValidationBody)).not.toContain('PRIVATE_SENTINEL');
+
+    await page.reload();
+    await expect(page.getByRole('region', { name: 'Document canvas' })).toBeVisible({ timeout: 120_000 });
+    await page.getByRole('button', { name: 'Advanced Mode' }).click();
+    const approvedBlocks = page.getByRole('complementary', { name: 'Approved blocks' });
+    await approvedBlocks.getByRole('button', { name: /^Section heading / }).click();
+    await expect(page.getByLabel('Section heading title')).toHaveValue('Community', { timeout: 10_000 });
+    await approvedBlocks.getByRole('button', { name: /^Simple list / }).click();
+    await expect(properties.getByRole('textbox').nth(0)).toHaveValue('Youth activity', { timeout: 10_000 });
+    await expect(properties.getByRole('textbox').nth(1)).toHaveValue('Food drive', { timeout: 10_000 });
+
+    await page.getByRole('button', { name: 'Desktop preview' }).click();
+    const digital = page.locator('.document-root[data-target="DIGITAL"]');
+    await expect(digital).toContainText('Community');
+    await expect(digital.locator('ol.document-simple-list')).toContainText('Youth activity');
+    await expect(digital.locator('.document-announcement-list')).toContainText('Community dinner');
+    await expect(digital).toHaveAttribute('data-document-type', 'SACRAMENT_PROGRAM');
+    await expect(digital).toHaveAttribute('aria-label', /.+/);
+    expect(await digital.evaluate((element) => element.tagName)).toBe('SECTION');
+    await expect(digital.locator('main')).toHaveCount(0);
+    await page.getByRole('checkbox', { name: 'Preview as public visitor' }).check();
+    await expect(page.locator('.document-root[data-target="DIGITAL"]')).toContainText('Food drive');
+    await expect(page.locator('.document-root[data-target="DIGITAL"] .document-announcement-list')).toContainText('Community dinner');
+
+    await page.getByRole('button', { name: 'Print preview' }).click();
+    const print = page.locator('.document-root[data-target="PRINT"]');
+    await expect(print).toContainText('Community');
+    await expect(print.locator('ol.document-simple-list')).toContainText('Food drive');
+    await expect(print.locator('.document-announcement-list')).toContainText('Bring a side dish.');
+    expect(await print.evaluate((element) => element.tagName)).toBe('SECTION');
+    await expect(print.locator('main')).toHaveCount(0);
+    await page.getByRole('button', { name: 'Phone preview' }).click();
+    const mobile = page.locator('.document-root--mobile[data-target="DIGITAL"]');
+    await expect(mobile).toBeVisible();
+    await expect(mobile).toHaveAttribute('data-document-type', 'SACRAMENT_PROGRAM');
+    await expect(mobile).toHaveAttribute('aria-label', /.+/);
+    expect(await mobile.evaluate((element) => element.tagName)).toBe('SECTION');
+    await expect(mobile.locator('main')).toHaveCount(0);
+    const documentColumns = mobile.locator('.document-columns').first();
+    await expect(documentColumns).toBeVisible();
+    const columns = await documentColumns.evaluate(
+      (element) => getComputedStyle(element).gridTemplateColumns.trim().split(/\s+/).filter(Boolean).length
+    );
+    expect(columns).toBe(1);
+    expect(browserErrors).toEqual([]);
+  } finally {
+    if (meetingId) await cleanupPublishedMeeting(meetingId);
   }
 });
 
@@ -270,7 +465,7 @@ test('program designer drag reorder persists after reload', async ({ page }) => 
     expect(initialBlockIds.length).toBeGreaterThan(1);
 
     await expect(page.getByRole('region', { name: 'Document canvas' })).toBeVisible({ timeout: 120_000 });
-    await expect(page.getByRole('button', { name: 'Advanced Mode' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Advanced Mode' })).toBeVisible();
     await expect(page.getByRole('status').first()).toHaveText('Saved', { timeout: 120_000 });
     const approvedBlocks = page.getByRole('complementary', { name: 'Approved blocks' });
     const blockRows = approvedBlocks.locator('ul > li');
@@ -306,6 +501,13 @@ test('program designer drag reorder persists after reload', async ({ page }) => 
     const reloadedRows = page.getByRole('complementary', { name: 'Approved blocks' }).locator('ul > li');
     await expect(reloadedRows.nth(0).locator('button').first()).toContainText(secondLabel);
     await expect(reloadedRows.nth(1).locator('button').first()).toContainText(firstLabel);
+    await page.getByRole('button', { name: 'Phone preview' }).click();
+    const mobileAgendaRow = page.locator('.document-root--mobile .document-key-value').first();
+    await expect(mobileAgendaRow).toBeVisible();
+    const mobileGridTrackCount = await mobileAgendaRow.evaluate(
+      (element) => getComputedStyle(element).gridTemplateColumns.trim().split(/\s+/).filter(Boolean).length
+    );
+    expect(mobileGridTrackCount).toBe(1);
     expect(browserErrors).toEqual([]);
   } finally {
     if (meetingId) {

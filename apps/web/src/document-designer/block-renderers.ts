@@ -2,6 +2,19 @@ import type { DocumentBlock } from './types';
 import type { AdvancedBlock } from './advanced-schema';
 import type { ResolvedDocumentData, RenderTarget } from './render-types';
 import { safeUrlSchema } from './primitives';
+import { meetingProgramPresentation, meetingProgramPresentationClass } from './meeting-program-presentation';
+import {
+  announcementListPresentation,
+  announcementListPresentationClass,
+  orderedAnnouncementItems
+} from './announcement-list-presentation';
+import {
+  orderedSimpleListItems,
+  sectionHeadingPresentation,
+  sectionHeadingPresentationClass,
+  simpleListPresentation,
+  simpleListPresentationClass
+} from './structural-block-presentation';
 
 export function escapeDocumentHtml(value: string): string {
   return value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;');
@@ -77,6 +90,7 @@ export function renderDocumentBlock(
     return `<dl class="document-block document-block--key-values">${rows.map(([label, value]) => `<div class="document-key-value"><dt>${escapeDocumentHtml(label)}</dt><dd>${escapeDocumentHtml(value)}</dd></div>`).join('')}</dl>`;
   }
   if (block.type === 'MEETING_PROGRAM') {
+    const presentation = meetingProgramPresentation((block.config as { presentation?: unknown }).presentation);
     const labels = data.renderLabels;
     let leadership: { presiding?: string; conducting?: string } = {};
     try {
@@ -99,7 +113,49 @@ export function renderDocumentBlock(
         .sort((a, b) => a.order - b.order)
         .map((item) => [item.label, item.details?.trim() || '—'] as const)
     ].filter(([, value]) => value.trim());
-    return `<section class="document-block document-block--meeting-program"><h2>${escapeDocumentHtml(labels?.programTitle ?? 'Program')}</h2><dl class="document-key-values">${rows.map(([label, value]) => `<div class="document-key-value"><dt>${escapeDocumentHtml(label)}</dt><dd>${escapeDocumentHtml(value)}</dd></div>`).join('')}</dl></section>`;
+    return `<section class="document-block document-block--meeting-program ${meetingProgramPresentationClass(presentation)}"><h2>${escapeDocumentHtml(labels?.programTitle ?? 'Program')}</h2><dl class="document-key-values">${rows.map(([label, value]) => `<div class="document-key-value"><dt>${escapeDocumentHtml(label)}</dt><dd>${escapeDocumentHtml(value)}</dd></div>`).join('')}</dl></section>`;
+  }
+  if (block.type === 'ANNOUNCEMENT_LIST') {
+    const config = block.config;
+    const items = orderedAnnouncementItems(config.items);
+    if (!items.length && block.visibility === 'HIDE_WHEN_EMPTY') return '';
+    const labels = data.renderLabels;
+    const title = labels?.announcements ?? 'Announcements';
+    const presentation = announcementListPresentation(config.presentation);
+    const itemHtml = items
+      .map((item) => {
+        const fields: Array<[string, string | undefined]> = [
+          [labels?.announcementDate ?? 'Date', item.date],
+          [labels?.announcementTime ?? 'Time', item.time],
+          [labels?.announcementLocation ?? 'Location', item.location],
+          [labels?.announcementContact ?? 'Contact', item.contact]
+        ].filter(([, value]) => Boolean(value?.trim())) as Array<[string, string | undefined]>;
+        const details = fields.length
+          ? `<dl class="document-announcement-list__details">${fields.map(([label, value]) => `<div><dt>${escapeDocumentHtml(label)}</dt><dd>${escapeDocumentHtml(value!.trim())}</dd></div>`).join('')}</dl>`
+          : '';
+        const description = item.description?.trim()
+          ? `<p class="document-announcement-list__description">${escapeDocumentHtml(item.description.trim())}</p>`
+          : '';
+        return `<li class="document-announcement-list__item"><h3>${escapeDocumentHtml(item.title)}</h3>${details}${description}</li>`;
+      })
+      .join('');
+    return `<section class="document-block document-announcement-list ${announcementListPresentationClass(presentation)}"><h2>${escapeDocumentHtml(title)}</h2><ul class="document-announcement-list__items">${itemHtml}</ul></section>`;
+  }
+  if (block.type === 'SECTION_HEADING') {
+    const config = block.config;
+    const presentation = sectionHeadingPresentation(config.presentation);
+    const subtitle = config.subtitle?.trim()
+      ? `<p class="document-section-heading__subtitle">${escapeDocumentHtml(config.subtitle.trim())}</p>`
+      : '';
+    return `<section class="document-block document-section-heading ${sectionHeadingPresentationClass(presentation)}"><h2>${escapeDocumentHtml(config.title.trim())}</h2>${subtitle}</section>`;
+  }
+  if (block.type === 'SIMPLE_LIST') {
+    const presentation = simpleListPresentation(block.config.presentation);
+    const ordered = orderedSimpleListItems(block.config.items);
+    if (!ordered.length && block.visibility === 'HIDE_WHEN_EMPTY') return '';
+    const tag = presentation === 'NUMBERED' ? 'ol' : 'ul';
+    const items = ordered.map((item) => `<li>${escapeDocumentHtml(item.text.trim())}</li>`).join('');
+    return `<${tag} class="document-block document-simple-list ${simpleListPresentationClass(presentation)}">${items}</${tag}>`;
   }
   if (block.type === 'QR_CODE') {
     const config = block.config as { href?: unknown; label?: unknown };

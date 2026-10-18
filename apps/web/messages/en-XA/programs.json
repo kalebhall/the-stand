@@ -19,6 +19,39 @@
     "chorister": "[Chorister]",
     "addProgramBlock": "Add program block",
     "addProgramBlockDescription": "Choose a structured row or a constrained custom block. Changes are saved with Advanced Mode.",
+    "addAnnouncementList": "[Ádd áññóúñcéméñt łíst]",
+    "announcementListBlockDescription": "[Áppróvéd púbłíc áññóúñcéméñts fór thís prógrám.]",
+    "addSectionHeading": "[Ádd séctíóñ héádíñg]",
+    "sectionHeadingBlockDescription": "[Ádd á héádíñg tó órgáñízé áppróvéd prógrám cóñtéñt.]",
+    "addSimpleList": "[Ádd símplé łíst]",
+    "simpleListBlockDescription": "[Ádd á sh órt, m áñúáłłý wríttéñ łíst óf áppróvéd púbłíc détáíłs.]",
+    "newSectionHeading": "[Ñéw séctíóñ]",
+    "newSimpleListItem": "[Ñéw łíst ítém]",
+    "sectionHeadingProperties": "[Séctíóñ héádíñg própértíés]",
+    "sectionHeadingTitle": "[Séctíóñ héádíñg títłé]",
+    "sectionHeadingSubtitle": "[Séctíóñ héádíñg súbtítłé]",
+    "sectionHeadingDisplay": "[Séctíóñ héádíñg díspłáý]",
+    "simpleListProperties": "[Símplé łíst própértíés]",
+    "simpleListDisplay": "[Símplé łíst díspłáý]",
+    "simpleListItemsDescription": "[Ádd óñłý púbłíc détáíłs áppróvéd fór thé prógrám. Dó ñót íñcłúdé prí váré mém bér ór łéadérshíp íñ fórmátíóñ.]",
+    "simpleListItemLabel": "[Łíst ítém {number}]",
+    "moveSimpleListItemUp": "[Móvé łíst ítém {number} úp]",
+    "moveSimpleListItemDown": "[Móvé łíst ítém {number} dówñ]",
+    "removeSimpleListItem": "[Rémóvé łíst ítém {number}]",
+    "addSimpleListItem": "[Ádd łíst ítém]",
+    "announcementItems": "[Áññóúñcéméñt ítéms]",
+    "announcementItemsDescription": "[Ádd óñłý púbłíc détáíłs áppróvéd fór thé príñtéd áñd dígítáł prógrám.]",
+    "addAnnouncementItem": "[Ádd áññóúñcéméñt ítém]",
+    "newAnnouncementTitle": "[Ñéw áññóúñcéméñt]",
+    "announcementItemTitle": "[Títłé fór áññóúñcéméñt {number}]",
+    "announcementItemDate": "[Dáté fór áññóúñcéméñt {number}]",
+    "announcementItemTime": "[Tímé fór áññóúñcéméñt {number}]",
+    "announcementItemDescription": "[Déscríptíóñ fór áññóúñcéméñt {number}]",
+    "announcementItemLocation": "[Lócátíóñ fór áññóúñcéméñt {number}]",
+    "announcementItemContact": "[Cóñtáct fór áññóúñcéméñt {number}]",
+    "moveAnnouncementItemUp": "[Móvé áññóúñcéméñt {number} úp]",
+    "moveAnnouncementItemDown": "[Móvé áññóúñcéméñt {number} dówñ]",
+    "removeAnnouncementItem": "[Rémóvé áññóúñcéméñt {number}]",
     "addPresidingConducting": "Add presiding and conducting",
     "addCustomBlock": "Add custom block",
     "moveSelectedBlock": "Move selected block to",
@@ -109,12 +142,18 @@
     "builtInTemplateNames": {
       "classic-bifold": { "name": "［Classic Bifold］", "description": "［Traditional folded program with a balanced reading order.］" },
       "trifold-bulletin": { "name": "［Trifold Bulletin］", "description": "［Compact three-panel bulletin layout.］" },
-      "full-page-standard": { "name": "［Full Page Standard］", "description": "［Readable single-page program for digital and print use.］" },
+      "full-page-standard": {
+        "name": "［Full Page Standard］",
+        "description": "［Readable single-page program for digital and print use.］"
+      },
       "modern-minimal": { "name": "［Modern Minimal］", "description": "［Clean text-first layout with restrained visual hierarchy.］" },
       "compact-one-page": { "name": "［Compact One Page］", "description": "［Dense one-page format for shorter programs.］" },
       "large-print": { "name": "［Large Print］", "description": "［Simplified layout intended for comfortable reading.］" },
       "image-cover": { "name": "［Image Cover］", "description": "［Text-first program with an authorized image-cover metadata slot.］" },
-      "announcement-focus": { "name": "［Announcement Focus］", "description": "［Program layout that gives approved announcements clear emphasis.］" }
+      "announcement-focus": {
+        "name": "［Announcement Focus］",
+        "description": "［Program layout that gives approved announcements clear emphasis.］"
+      }
     },
     "preview": "Template preview",
     "lockedSource": "Locked source",
@@ -281,6 +320,9 @@
       "WARD_NAME": "Ward name",
       "MEETING_INFO": "Meeting information",
       "MEETING_PROGRAM": "Meeting program",
+      "ANNOUNCEMENT_LIST": "[Áññóúñcéméñt łíst]",
+      "SECTION_HEADING": "[Séctíóñ héádíñg]",
+      "SIMPLE_LIST": "[Símplé łíst]",
       "PRESIDING_CONDUCTING": "Presiding and conducting",
       "MUSIC_LEADERS": "Music leaders",
       "SPEAKERS": "Speakers",
@@ -312,6 +354,27 @@
       "VISIBLE": "Visible",
       "HIDDEN": "Hidden",
       "HIDE_WHEN_EMPTY": "Hide when empty"
+    },
+    "agendaDisplay": "[Ágéndá díspłáý]",
+    "meetingProgramPresentationOption": {
+      "LABEL_VALUE": "[Łábéł áñd váłúé]",
+      "DOTTED_LEADERS": "[Dóttéd łéadérs]",
+      "CENTERED_STACKED": "[Céñtéréd, stáckéd]"
+    },
+    "announcementDisplay": "[Áññóúñcéméñt díspłáý]",
+    "announcementListPresentationOption": {
+      "COMPACT_ROWS": "[Cómpáct róws]",
+      "DETAIL_CARDS": "[Détáíł cárds]"
+    },
+    "sectionHeadingPresentationOption": {
+      "PLAIN": "[Płáíñ]",
+      "RULE": "[Rúłé]",
+      "ACCENT": "[Áccéñt]"
+    },
+    "simpleListPresentationOption": {
+      "BULLETS": "[Búłłéts]",
+      "NUMBERED": "[Ñúmbéréd]",
+      "COMPACT_ROWS": "[Cómpáct róws]"
     },
     "widthOption": {
       "FULL": "Full",

@@ -6,10 +6,20 @@ import type { DocumentRenderOutput, RenderTarget } from './render-types';
 export function renderProgramPreview(
   layoutInput: unknown,
   source: SafeMeetingSource,
-  options: { target?: RenderTarget; publicVisitor?: boolean; advancedProjection?: boolean } = {}
+  options: { target?: RenderTarget; publicVisitor?: boolean; advancedProjection?: boolean; mobile?: boolean } = {}
 ): DocumentRenderOutput {
   const publicVisitor = options.publicVisitor ?? false;
-  const explicitPublicBlockTypes = ['MEETING_PROGRAM', 'ANNOUNCEMENTS', 'PRESIDING_CONDUCTING', 'MUSIC_LEADERS', 'QR_CODE', 'CUSTOM_LINK'];
+  const explicitPublicBlockTypes = [
+    'MEETING_PROGRAM',
+    'ANNOUNCEMENT_LIST',
+    'SECTION_HEADING',
+    'SIMPLE_LIST',
+    'ANNOUNCEMENTS',
+    'PRESIDING_CONDUCTING',
+    'MUSIC_LEADERS',
+    'QR_CODE',
+    'CUSTOM_LINK'
+  ];
   const { layout, data } = resolveDocumentData(layoutInput, source, {
     public: publicVisitor,
     target: options.target ?? 'DIGITAL',
@@ -26,6 +36,7 @@ export function renderProgramPreview(
     layout: outputLayout,
     data,
     target: options.target ?? 'DIGITAL',
+    mobile: options.mobile,
     public: publicVisitor,
     explicitPublicBlockTypes
   });

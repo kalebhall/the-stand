@@ -35,6 +35,10 @@
   "print": {
     "programTitle": "Programa ng Pulong ng Sakramento",
     "announcements": "Mga Anunsyo",
+    "announcementDate": "Petsa",
+    "announcementTime": "Oras",
+    "announcementLocation": "Lugar",
+    "announcementContact": "Contact",
     "introduction": "Panimula",
     "presiding": "Namumuno",
     "conducting": "Pagsasagawa",

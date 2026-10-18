@@ -19,6 +19,39 @@
     "chorister": "Director del coro",
     "addProgramBlock": "Añadir bloque del programa",
     "addProgramBlockDescription": "Elige una fila estructurada o un bloque personalizado limitado. Los cambios se guardan con el modo avanzado.",
+    "addAnnouncementList": "Añadir lista de anuncios",
+    "announcementListBlockDescription": "Anuncios públicos aprobados para este programa.",
+    "addSectionHeading": "Añadir encabezado de sección",
+    "sectionHeadingBlockDescription": "Añade un encabezado para organizar el contenido aprobado del programa.",
+    "addSimpleList": "Añadir lista sencilla",
+    "simpleListBlockDescription": "Añade una lista breve, escrita manualmente, de detalles públicos aprobados.",
+    "newSectionHeading": "Sección nueva",
+    "newSimpleListItem": "Elemento nuevo",
+    "sectionHeadingProperties": "Propiedades del encabezado de sección",
+    "sectionHeadingTitle": "Título del encabezado de sección",
+    "sectionHeadingSubtitle": "Subtítulo del encabezado de sección",
+    "sectionHeadingDisplay": "Presentación del encabezado de sección",
+    "simpleListProperties": "Propiedades de la lista sencilla",
+    "simpleListDisplay": "Presentación de la lista sencilla",
+    "simpleListItemsDescription": "Añade solo detalles públicos aprobados para el programa. No incluyas información privada de miembros o líderes.",
+    "simpleListItemLabel": "Elemento {number}",
+    "moveSimpleListItemUp": "Subir elemento {number}",
+    "moveSimpleListItemDown": "Bajar elemento {number}",
+    "removeSimpleListItem": "Quitar elemento {number}",
+    "addSimpleListItem": "Añadir elemento",
+    "announcementItems": "Anuncios",
+    "announcementItemsDescription": "Añade solo detalles públicos aprobados para el programa impreso y digital.",
+    "addAnnouncementItem": "Añadir anuncio",
+    "newAnnouncementTitle": "Anuncio nuevo",
+    "announcementItemTitle": "Título del anuncio {number}",
+    "announcementItemDate": "Fecha del anuncio {number}",
+    "announcementItemTime": "Hora del anuncio {number}",
+    "announcementItemDescription": "Descripción del anuncio {number}",
+    "announcementItemLocation": "Lugar del anuncio {number}",
+    "announcementItemContact": "Contacto del anuncio {number}",
+    "moveAnnouncementItemUp": "Subir el anuncio {number}",
+    "moveAnnouncementItemDown": "Bajar el anuncio {number}",
+    "removeAnnouncementItem": "Quitar el anuncio {number}",
     "addPresidingConducting": "Añadir presidente y director",
     "addCustomBlock": "Añadir bloque personalizado",
     "moveSelectedBlock": "Mover el bloque seleccionado a",
@@ -109,11 +142,20 @@
     "builtInTemplateNames": {
       "classic-bifold": { "name": "Díptico clásico", "description": "Programa plegado tradicional con un orden de lectura equilibrado." },
       "trifold-bulletin": { "name": "Boletín tríptico", "description": "Diseño compacto de boletín de tres paneles." },
-      "full-page-standard": { "name": "Página completa estándar", "description": "Programa legible de una página para uso digital e impreso." },
-      "modern-minimal": { "name": "Minimalista moderno", "description": "Diseño limpio centrado en texto con una jerarquía visual sobria." },
+      "full-page-standard": {
+        "name": "Página completa estándar",
+        "description": "Programa legible de una página para uso digital e impreso."
+      },
+      "modern-minimal": {
+        "name": "Minimalista moderno",
+        "description": "Diseño limpio centrado en texto con una jerarquía visual sobria."
+      },
       "compact-one-page": { "name": "Una página compacta", "description": "Formato denso de una página para programas breves." },
       "large-print": { "name": "Letra grande", "description": "Diseño simplificado para facilitar la lectura." },
-      "image-cover": { "name": "Portada con imagen", "description": "Programa centrado en texto con un espacio autorizado para metadatos de imagen." },
+      "image-cover": {
+        "name": "Portada con imagen",
+        "description": "Programa centrado en texto con un espacio autorizado para metadatos de imagen."
+      },
       "announcement-focus": { "name": "Enfoque en anuncios", "description": "Diseño que da un énfasis claro a los anuncios aprobados." }
     },
     "preview": "Vista previa de plantilla",
@@ -281,6 +323,9 @@
       "WARD_NAME": "Nombre del barrio",
       "MEETING_INFO": "Información de la reunión",
       "MEETING_PROGRAM": "Programa de la reunión",
+      "ANNOUNCEMENT_LIST": "Lista de anuncios",
+      "SECTION_HEADING": "Encabezado de sección",
+      "SIMPLE_LIST": "Lista sencilla",
       "PRESIDING_CONDUCTING": "Preside y dirige",
       "MUSIC_LEADERS": "Líderes de música",
       "SPEAKERS": "Oradores",
@@ -312,6 +357,27 @@
       "VISIBLE": "Visible",
       "HIDDEN": "Oculto",
       "HIDE_WHEN_EMPTY": "Ocultar si está vacío"
+    },
+    "agendaDisplay": "Presentación del programa",
+    "meetingProgramPresentationOption": {
+      "LABEL_VALUE": "Etiqueta y valor",
+      "DOTTED_LEADERS": "Líneas de puntos",
+      "CENTERED_STACKED": "Centrado y apilado"
+    },
+    "announcementDisplay": "Presentación de anuncios",
+    "announcementListPresentationOption": {
+      "COMPACT_ROWS": "Filas compactas",
+      "DETAIL_CARDS": "Tarjetas detalladas"
+    },
+    "sectionHeadingPresentationOption": {
+      "PLAIN": "Sencillo",
+      "RULE": "Línea",
+      "ACCENT": "Acento"
+    },
+    "simpleListPresentationOption": {
+      "BULLETS": "Viñetas",
+      "NUMBERED": "Numerada",
+      "COMPACT_ROWS": "Filas compactas"
     },
     "widthOption": {
       "FULL": "Completo",

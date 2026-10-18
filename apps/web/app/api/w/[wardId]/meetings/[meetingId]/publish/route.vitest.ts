@@ -36,6 +36,7 @@ vi.mock('@/src/db/client', () => ({ pool: { connect: mocks.connect } }));
 vi.mock('@/src/document-designer/publication-validation', () => ({ validatePublication: mocks.validatePublication }));
 
 import { adaptLegacyLayoutToDocument } from '@/src/document-designer/legacy-layout-adapter';
+import { normalizeToAdvanced } from '@/src/document-designer/advanced-schema';
 import { POST } from './route';
 
 type Params = { wardId: string; meetingId: string };
@@ -235,6 +236,57 @@ describe('POST /api/w/[wardId]/meetings/[meetingId]/publish', () => {
       expect.stringContaining('INSERT INTO audit_log'),
       expect.arrayContaining(['PROGRAM_PUBLISHED'])
     );
+  });
+
+  it('publishes saved section headings and simple lists in the public render snapshot', async () => {
+    const advanced = normalizeToAdvanced(publicationLayout());
+    const publishedLayout = {
+      ...advanced,
+      pages: advanced.pages.map((page, pageIndex) =>
+        pageIndex === 0
+          ? {
+              ...page,
+              regions: page.regions.map((item, regionIndex) =>
+                regionIndex === 0
+                  ? {
+                      ...item,
+                      blocks: item.blocks.map((block, index) =>
+                        index === 0
+                          ? {
+                              ...block,
+                              type: 'SECTION_HEADING',
+                              dataMode: 'MANUAL',
+                              config: { title: 'Community', subtitle: 'This week', presentation: 'ACCENT' }
+                            }
+                          : index === 1
+                            ? {
+                                ...block,
+                                type: 'SIMPLE_LIST',
+                                dataMode: 'MANUAL',
+                                config: {
+                                  presentation: 'NUMBERED',
+                                  items: [{ id: '22222222-2222-4222-8222-222222222222', order: 0, text: 'Food drive' }]
+                                }
+                              }
+                            : block
+                      )
+                    }
+                  : item
+              )
+            }
+          : page
+      )
+    } as typeof advanced;
+    mocks.state.document = { layout_json: publishedLayout, source_template_id: null, source_template_version: null };
+
+    const response = await POST(request(), { params: Promise.resolve(params) });
+    expect(response.status).toBe(200);
+    const renderCall = mocks.query.mock.calls.find(([sql]) => sql.includes('INSERT INTO meeting_program_render'));
+    const publicHtml = String(renderCall?.[1]?.[3]);
+    expect(publicHtml).toContain('<h2>Community</h2>');
+    expect(publicHtml).toContain('<ol class="document-block document-simple-list');
+    expect(publicHtml).toContain('<li>Food drive</li>');
+    expect(publicHtml).not.toContain('PRIVATE BUSINESS');
   });
 
   it('publishes core programs when the optional Programs module is disabled', async () => {
