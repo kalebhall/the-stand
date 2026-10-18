@@ -22,6 +22,10 @@ type PublicProgramMessages = {
     qrCode: string;
     documentRegion: string;
     documentColumn: string;
+    announcementDate: string;
+    announcementTime: string;
+    announcementLocation: string;
+    announcementContact: string;
     item_INTRODUCTION: string;
     item_PRESIDING: string;
     item_CONDUCTING: string;
@@ -106,6 +110,10 @@ export function getPublicProgramRenderLabels(locale: Locale, meetingType: string
     qrCode: print.qrCode,
     documentRegion: print.documentRegion,
     documentColumn: print.documentColumn,
+    announcementDate: print.announcementDate,
+    announcementTime: print.announcementTime,
+    announcementLocation: print.announcementLocation,
+    announcementContact: print.announcementContact,
     meetingTypeLabel: catalog.meetings[meetingTypeKey],
     itemLabels: Object.fromEntries(PRINT_ITEM_KEYS.map((itemType) => [itemType, print[`item_${itemType}` as keyof typeof print]]))
   };

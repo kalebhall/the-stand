@@ -8,6 +8,9 @@ import type { PrintRenderMetadata } from './print-types';
 import type { DocumentBlock, DocumentLayout } from './types';
 import type { ResolvedDocumentData } from './render-types';
 import { safeUrlSchema } from './primitives';
+import { formatMeetingProgramPdfRows, meetingProgramPresentation } from './meeting-program-presentation';
+import { announcementListPresentation, orderedAnnouncementItems } from './announcement-list-presentation';
+import { orderedSimpleListItems, sectionHeadingPresentation, simpleListPresentation } from './structural-block-presentation';
 
 function safePrintHref(value: unknown): value is string {
   if (typeof value !== 'string' || value.length > 2048) return false;
@@ -41,6 +44,7 @@ function blockText(block: DocumentBlock, data: ResolvedDocumentData, includeLead
       .join('\n');
   }
   if (block.type === 'MEETING_PROGRAM') {
+    const presentation = meetingProgramPresentation((block.config as { presentation?: unknown }).presentation);
     let leadership: { presiding?: string; conducting?: string } = {};
     try {
       leadership = JSON.parse(data.values.PRESIDING_CONDUCTING ?? '{}') as typeof leadership;
@@ -61,8 +65,9 @@ function blockText(block: DocumentBlock, data: ResolvedDocumentData, includeLead
         .map((item) => [item.label, item.details?.trim() || '—'] as const)
     ]
       .filter(([, value]) => value.trim())
-      .map(([label, value]) => `${label}: ${value.replaceAll('—', '-')}`);
-    return rows.length ? [data.renderLabels?.programTitle ?? 'Program', ...rows].join('\n') : '';
+      .map(([label, value]) => ({ label, value }));
+    const formattedRows = formatMeetingProgramPdfRows(rows, presentation);
+    return formattedRows.length ? [data.renderLabels?.programTitle ?? 'Program', ...formattedRows].join('\n') : '';
   }
   if (block.type === 'DIVIDER') return '────────────────────────';
   if (block.type === 'SPACER' || block.type === 'IMAGE' || block.type === 'QR_CODE') return '';
@@ -293,6 +298,84 @@ export async function renderDocumentPdf(
       writeText(`${label}: ${href}`, layout.theme.baseFontSize, false);
       continue;
     }
+    if (block.type === 'ANNOUNCEMENT_LIST') {
+      const items = orderedAnnouncementItems(block.config.items);
+      if (!items.length && block.visibility === 'HIDE_WHEN_EMPTY') continue;
+      const labels = data.renderLabels;
+      const presentation = announcementListPresentation(block.config.presentation);
+      writeText(labels?.announcements ?? 'Announcements', layout.theme.baseFontSize + 3, true, blockStyle);
+      for (const item of items) {
+        const dateTimeFields: Array<[string, string | undefined]> = [
+          [labels?.announcementDate ?? 'Date', item.date],
+          [labels?.announcementTime ?? 'Time', item.time]
+        ].filter(([, value]) => Boolean(value?.trim())) as Array<[string, string | undefined]>;
+        const placeContactFields: Array<[string, string | undefined]> = [
+          [labels?.announcementLocation ?? 'Location', item.location],
+          [labels?.announcementContact ?? 'Contact', item.contact]
+        ].filter(([, value]) => Boolean(value?.trim())) as Array<[string, string | undefined]>;
+        const formatField = ([label, value]: [string, string | undefined]) => `${label}: ${value!.trim()}`;
+        const labeledFields = [...dateTimeFields, ...placeContactFields].map(formatField);
+        if (presentation === 'COMPACT_ROWS') {
+          writeText(item.title, layout.theme.baseFontSize, true, blockStyle);
+          const dateTime = dateTimeFields.map(formatField).join(' · ');
+          const placeContact = placeContactFields.map(formatField).join(' · ');
+          for (const line of [dateTime, placeContact, item.description?.trim()].filter((value): value is string => Boolean(value)))
+            writeText(line, layout.theme.baseFontSize - 1, false, blockStyle);
+          continue;
+        }
+
+        const description = item.description?.trim();
+        const cardText = [item.title, ...labeledFields, ...(description ? [description] : [])];
+        const cardLineHeight = Math.max(4, (blockStyle?.fontSize ?? layout.theme.baseFontSize + 1) * 0.42);
+        const cardLineCount = cardText.reduce((total, text) => total + (doc.splitTextToSize(text, currentWidth()) as string[]).length, 0);
+        ensureSpace(cardLineCount * cardLineHeight + cardText.length * 3 + 5);
+        const cardPage = currentPhysicalPage;
+        const cardPanel = panelIndex;
+        const cardColumn = columnIndex;
+        const cardX = currentX();
+        const cardY = y;
+        const cardWidth = currentWidth();
+        writeText(item.title, layout.theme.baseFontSize + 1, true, blockStyle);
+        for (const line of labeledFields) writeText(line, layout.theme.baseFontSize - 1, false, blockStyle);
+        if (description) writeText(description, layout.theme.baseFontSize, false, blockStyle);
+        if (cardPage === currentPhysicalPage && cardPanel === panelIndex && cardColumn === columnIndex) {
+          doc.setPage(cardPage + 1);
+          doc.setLineWidth(0.3);
+          doc.rect(cardX, cardY - cardLineHeight + 1, cardWidth, y - cardY + cardLineHeight);
+          doc.setPage(currentPhysicalPage + 1);
+        }
+      }
+      continue;
+    }
+    if (block.type === 'SECTION_HEADING') {
+      const presentation = sectionHeadingPresentation(block.config.presentation);
+      const headingX = currentX();
+      const headingY = y;
+      writeText(block.config.title.trim(), layout.theme.baseFontSize + 3, true, blockStyle);
+      if (block.config.subtitle?.trim()) writeText(block.config.subtitle.trim(), layout.theme.baseFontSize, false, blockStyle);
+      if (presentation === 'RULE') {
+        doc.setLineWidth(0.3);
+        doc.line(headingX, y - 1, headingX + currentWidth(), y - 1);
+      } else if (presentation === 'ACCENT') {
+        doc.setLineWidth(1.2);
+        doc.line(headingX, headingY - 1, headingX, Math.max(headingY, y - 3));
+      }
+      continue;
+    }
+    if (block.type === 'SIMPLE_LIST') {
+      const presentation = simpleListPresentation(block.config.presentation);
+      const items = orderedSimpleListItems(block.config.items);
+      if (!items.length && block.visibility === 'HIDE_WHEN_EMPTY') continue;
+      for (const [index, item] of items.entries()) {
+        const prefix = presentation === 'NUMBERED' ? `${index + 1}. ` : presentation === 'BULLETS' ? '- ' : '';
+        writeText(`${prefix}${item.text.trim()}`, layout.theme.baseFontSize, false, blockStyle);
+        if (presentation === 'COMPACT_ROWS') {
+          doc.setLineWidth(0.2);
+          doc.line(currentX(), y - 1, currentX() + currentWidth(), y - 1);
+        }
+      }
+      continue;
+    }
     if (block.type === 'SPACER') {
       const height = Math.min(20, Number((block.config as { height: number }).height) / 3);
       ensureSpace(height);
@@ -304,7 +387,14 @@ export async function renderDocumentPdf(
     if (block.type === 'MEETING_PROGRAM') {
       const [title, ...rows] = text.split('\n');
       writeText(title || 'Program', layout.theme.baseFontSize + 3, true, blockStyle);
-      if (rows.length) writeText(rows.join('\n'), layout.theme.baseFontSize, false, blockStyle);
+      const presentation = meetingProgramPresentation((block.config as { presentation?: unknown }).presentation);
+      if (rows.length)
+        writeText(
+          rows.join('\n'),
+          layout.theme.baseFontSize,
+          false,
+          presentation === 'CENTERED_STACKED' ? { ...blockStyle, align: 'CENTER' } : blockStyle
+        );
       continue;
     }
     const heading = block.type === 'DOCUMENT_TITLE' || block.type === 'WARD_NAME' || block.type === 'MEETING_INFO';

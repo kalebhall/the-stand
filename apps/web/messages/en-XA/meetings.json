@@ -35,6 +35,10 @@
   "print": {
     "programTitle": "[Sacrament Meeting Program]",
     "announcements": "[Announcements]",
+    "announcementDate": "[Dáté]",
+    "announcementTime": "[Tímé]",
+    "announcementLocation": "[Lócátíóñ]",
+    "announcementContact": "[Cóñtáct]",
     "introduction": "[Introduction]",
     "presiding": "[Presiding]",
     "conducting": "[Conducting]",

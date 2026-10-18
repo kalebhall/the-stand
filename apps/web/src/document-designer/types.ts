@@ -1,5 +1,8 @@
 import type {
   BLOCK_TYPES,
+  ANNOUNCEMENT_LIST_PRESENTATIONS,
+  SECTION_HEADING_PRESENTATIONS,
+  SIMPLE_LIST_PRESENTATIONS,
   BLOCK_WIDTHS,
   DATA_MODES,
   DIGITAL_BEHAVIORS,
@@ -7,6 +10,7 @@ import type {
   FOLD_TYPES,
   LOCK_LEVELS,
   LOCK_PROPERTIES,
+  MEETING_PROGRAM_PRESENTATIONS,
   ORIENTATIONS,
   PAPER_SIZES,
   PRINT_BEHAVIORS,
@@ -31,14 +35,11 @@ export type PrintBehavior = (typeof PRINT_BEHAVIORS)[number];
 export type DigitalBehavior = (typeof DIGITAL_BEHAVIORS)[number];
 export type ThemeFontFamily = (typeof THEME_FONT_FAMILIES)[number];
 export type BlockType = (typeof BLOCK_TYPES)[number];
-export type DocumentRegionFace =
-  | 'FRONT_COVER'
-  | 'INSIDE_LEFT'
-  | 'INSIDE_RIGHT'
-  | 'BACK_COVER'
-  | 'FOLD_IN_FLAP'
-  | 'INSIDE_CENTER'
-  | 'PAGE';
+export type MeetingProgramPresentation = (typeof MEETING_PROGRAM_PRESENTATIONS)[number];
+export type AnnouncementListPresentation = (typeof ANNOUNCEMENT_LIST_PRESENTATIONS)[number];
+export type SectionHeadingPresentation = (typeof SECTION_HEADING_PRESENTATIONS)[number];
+export type SimpleListPresentation = (typeof SIMPLE_LIST_PRESENTATIONS)[number];
+export type DocumentRegionFace = 'FRONT_COVER' | 'INSIDE_LEFT' | 'INSIDE_RIGHT' | 'BACK_COVER' | 'FOLD_IN_FLAP' | 'INSIDE_CENTER' | 'PAGE';
 export type DocumentId = string & { readonly __brand: 'DocumentId' };
 export type DocumentMetadata = object;
 
@@ -83,7 +84,31 @@ export interface MeetingProgramItem {
   details?: string;
 }
 export interface MeetingProgramBlock extends DocumentBlockBase<'MEETING_PROGRAM'> {
-  config: { items: MeetingProgramItem[] };
+  config: { items: MeetingProgramItem[]; presentation?: MeetingProgramPresentation };
+}
+export interface AnnouncementListItem {
+  id: string;
+  order: number;
+  date?: string;
+  time?: string;
+  title: string;
+  description?: string;
+  location?: string;
+  contact?: string;
+}
+export interface AnnouncementListBlock extends DocumentBlockBase<'ANNOUNCEMENT_LIST'> {
+  config: { items: AnnouncementListItem[]; presentation: AnnouncementListPresentation };
+}
+export interface SectionHeadingBlock extends DocumentBlockBase<'SECTION_HEADING'> {
+  config: { title: string; subtitle?: string; presentation: SectionHeadingPresentation };
+}
+export interface SimpleListItem {
+  id: string;
+  order: number;
+  text: string;
+}
+export interface SimpleListBlock extends DocumentBlockBase<'SIMPLE_LIST'> {
+  config: { items: SimpleListItem[]; presentation: SimpleListPresentation };
 }
 export interface TextBlock<TType extends BlockType> extends DocumentBlockBase<TType> {
   config: { text: string };
@@ -130,6 +155,9 @@ export interface SacramentProgramBlockMap {
   WARD_NAME: WardNameBlock;
   MEETING_INFO: MeetingInfoBlock;
   MEETING_PROGRAM: MeetingProgramBlock;
+  ANNOUNCEMENT_LIST: AnnouncementListBlock;
+  SECTION_HEADING: SectionHeadingBlock;
+  SIMPLE_LIST: SimpleListBlock;
   PRESIDING_CONDUCTING: PresidingConductingBlock;
   MUSIC_LEADERS: MusicLeadersBlock;
   SPEAKERS: SpeakersBlock;

@@ -1017,11 +1017,307 @@ describe('ProgramDesignerClient', () => {
     expect(screen.getByRole('region', { name: 'Inside right' })).toHaveTextContent('Custom Text');
     fireEvent.click(screen.getByRole('button', { name: 'Phone preview' }));
     await waitFor(() => expect(screen.getByRole('button', { name: 'Simple Mode' })).toBeInTheDocument());
+    expect(screen.getByRole('region', { name: 'Document canvas' }).querySelector('.document-root--mobile')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Phone preview' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('button', { name: 'Edit' })).toHaveAttribute('aria-pressed', 'false');
     expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
     expect(screen.getByRole('region', { name: 'Inside right' })).toBeInTheDocument();
+  });
+  it('saves the selected meeting-program presentation from Advanced Mode', async () => {
+    const savedDocuments: Record<string, unknown>[] = [];
+    const fetchMock = vi.fn().mockImplementation(async (url: string, options?: RequestInit) => {
+      if (url.endsWith('/program-design') && options?.method === 'PUT') {
+        const savedDocument = JSON.parse(String(options.body)).document as Record<string, unknown>;
+        savedDocuments.push(savedDocument);
+        return { ok: true, json: async () => ({ revision: 2, document: { layout: savedDocument, schemaVersion: 2 } }) };
+      }
+      if (url.endsWith('/media')) return { ok: true, json: async () => ({ media: [] }) };
+      if (url.endsWith('/reusable-blocks')) return { ok: true, json: async () => ({ blocks: [] }) };
+      return {
+        ok: true,
+        json: async () => ({ ...payload, document: { ...payload.document, advancedLayout }, simpleMode: { advancedModeAvailable: true } })
+      };
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
+    await screen.findByRole('region', { name: 'Document canvas' });
+    fireEvent.click(screen.getByRole('button', { name: 'Advanced Mode' }));
+    fireEvent.click(screen.getByRole('button', { name: /^Meeting programMeeting data/ }));
+    fireEvent.change(screen.getByLabelText('Agenda display'), { target: { value: 'DOTTED_LEADERS' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save advanced layout' }));
+    await waitFor(() => expect(savedDocuments).not.toHaveLength(0));
+    const parsed = savedDocuments[0] as {
+      pages: Array<{ regions: Array<{ blocks: Array<{ type: string; config: { presentation?: string } }> }> }>;
+    };
+    const program = parsed.pages
+      .flatMap((page) => page.regions)
+      .flatMap((region) => region.blocks)
+      .find((block) => block.type === 'MEETING_PROGRAM');
+    expect(program?.config.presentation).toBe('DOTTED_LEADERS');
+  });
+  it('adds, edits, reorders, removes, and saves structured announcement items', async () => {
+    const savedDocuments: Record<string, unknown>[] = [];
+    const fetchMock = vi.fn().mockImplementation(async (url: string, options?: RequestInit) => {
+      if (url.endsWith('/program-design') && options?.method === 'PUT') {
+        const savedDocument = JSON.parse(String(options.body)).document as Record<string, unknown>;
+        savedDocuments.push(savedDocument);
+        return { ok: true, json: async () => ({ revision: 2, document: { layout: savedDocument, schemaVersion: 2 } }) };
+      }
+      if (url.endsWith('/media')) return { ok: true, json: async () => ({ media: [] }) };
+      if (url.endsWith('/reusable-blocks')) return { ok: true, json: async () => ({ blocks: [] }) };
+      return {
+        ok: true,
+        json: async () => ({ ...payload, document: { ...payload.document, advancedLayout }, simpleMode: { advancedModeAvailable: true } })
+      };
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
+    await screen.findByRole('region', { name: 'Document canvas' });
+    fireEvent.click(screen.getByRole('button', { name: 'Advanced Mode' }));
+    fireEvent.click(screen.getByRole('button', { name: /^Add announcement list/ }));
+    expect(screen.getByLabelText('Announcement display')).toHaveValue('COMPACT_ROWS');
+    fireEvent.change(screen.getByLabelText('Announcement display'), { target: { value: 'DETAIL_CARDS' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Add announcement item' }));
+    fireEvent.change(screen.getByLabelText('Title for announcement 1'), { target: { value: 'Ward dinner' } });
+    fireEvent.change(screen.getByLabelText('Date for announcement 1'), { target: { value: 'Sunday, November 2' } });
+    fireEvent.change(screen.getByLabelText('Time for announcement 1'), { target: { value: '6:00 PM' } });
+    fireEvent.change(screen.getByLabelText('Description for announcement 1'), { target: { value: 'Bring a side dish.' } });
+    fireEvent.change(screen.getByLabelText('Location for announcement 1'), { target: { value: 'Cultural hall' } });
+    fireEvent.change(screen.getByLabelText('Contact for announcement 1'), { target: { value: 'Relief Society' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Add announcement item' }));
+    fireEvent.change(screen.getByLabelText('Title for announcement 2'), { target: { value: 'Youth service project' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Move announcement 2 up' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Add announcement item' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Remove announcement 3' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save advanced layout' }));
+    await waitFor(() => expect(savedDocuments).not.toHaveLength(0));
+    const parsed = savedDocuments[0] as {
+      pages: Array<{
+        regions: Array<{
+          blocks: Array<{ type: string; config: { presentation?: string; items?: Array<{ title: string; order: number }> } }>;
+        }>;
+      }>;
+    };
+    const announcementList = parsed.pages
+      .flatMap((page) => page.regions)
+      .flatMap((region) => region.blocks)
+      .find((block) => block.type === 'ANNOUNCEMENT_LIST');
+    expect(announcementList?.config).toMatchObject({
+      presentation: 'DETAIL_CARDS',
+      items: [
+        { title: 'Youth service project', order: 0 },
+        { title: 'Ward dinner', order: 1, date: 'Sunday, November 2', time: '6:00 PM' }
+      ]
+    });
+  });
+  it('inserts, edits, orders, and saves section headings and simple lists', async () => {
+    const savedDocuments: Record<string, unknown>[] = [];
+    const fetchMock = vi.fn().mockImplementation(async (url: string, options?: RequestInit) => {
+      if (url.endsWith('/program-design') && options?.method === 'PUT') {
+        const savedDocument = JSON.parse(String(options.body)).document as Record<string, unknown>;
+        savedDocuments.push(savedDocument);
+        return { ok: true, json: async () => ({ revision: 2, document: { layout: savedDocument, schemaVersion: 2 } }) };
+      }
+      if (url.endsWith('/media')) return { ok: true, json: async () => ({ media: [] }) };
+      if (url.endsWith('/reusable-blocks')) return { ok: true, json: async () => ({ blocks: [] }) };
+      return {
+        ok: true,
+        json: async () => ({ ...payload, document: { ...payload.document, advancedLayout }, simpleMode: { advancedModeAvailable: true } })
+      };
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
+    await screen.findByRole('region', { name: 'Document canvas' });
+    fireEvent.click(screen.getByRole('button', { name: 'Advanced Mode' }));
+    fireEvent.click(screen.getByRole('button', { name: /^Add section heading/ }));
+    fireEvent.change(screen.getByLabelText('Section heading title'), { target: { value: 'This week' } });
+    fireEvent.change(screen.getByLabelText('Section heading subtitle'), { target: { value: 'Upcoming activities' } });
+    fireEvent.change(screen.getByLabelText('Section heading display'), { target: { value: 'ACCENT' } });
+    fireEvent.click(screen.getByRole('button', { name: /^Add simple list/ }));
+    expect(screen.getByLabelText('Simple list display')).toHaveValue('BULLETS');
+    fireEvent.change(screen.getByLabelText('Simple list display'), { target: { value: 'NUMBERED' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Add list item' }));
+    fireEvent.change(screen.getByLabelText('List item 1'), { target: { value: 'Food drive' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Add list item' }));
+    fireEvent.change(screen.getByLabelText('List item 2'), { target: { value: 'Youth activity' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Move list item 2 up' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save advanced layout' }));
+    await waitFor(() => expect(savedDocuments).not.toHaveLength(0));
+    const blocks = (
+      savedDocuments[0] as { pages: Array<{ regions: Array<{ blocks: Array<{ type: string; config: Record<string, unknown> }> }> }> }
+    ).pages
+      .flatMap((page) => page.regions)
+      .flatMap((region) => region.blocks);
+    expect(blocks.find((block) => block.type === 'SECTION_HEADING')?.config).toMatchObject({
+      title: 'This week',
+      subtitle: 'Upcoming activities',
+      presentation: 'ACCENT'
+    });
+    expect(blocks.find((block) => block.type === 'SIMPLE_LIST')?.config).toMatchObject({
+      presentation: 'NUMBERED',
+      items: [
+        { text: 'Youth activity', order: 0 },
+        { text: 'Food drive', order: 1 }
+      ]
+    });
+  });
+
+  it('disables announcement editing controls when the block content is locked', async () => {
+    const lockedAnnouncementLayout = {
+      ...advancedLayout,
+      pages: advancedLayout.pages.map((page) => ({
+        ...page,
+        regions: page.regions.map((region) => ({
+          ...region,
+          blocks: region.blocks.map((block) =>
+            block.type === 'ANNOUNCEMENTS'
+              ? {
+                  ...block,
+                  type: 'ANNOUNCEMENT_LIST',
+                  dataMode: 'MANUAL',
+                  config: {
+                    presentation: 'COMPACT_ROWS',
+                    items: [
+                      {
+                        id: '22222222-2222-4222-8222-222222222222',
+                        order: 0,
+                        title: 'Ward dinner'
+                      },
+                      {
+                        id: '33333333-3333-4333-8333-333333333333',
+                        order: 1,
+                        title: 'Family history night'
+                      }
+                    ]
+                  },
+                  lock: { level: 'BLOCK', properties: ['CONTENT'] }
+                }
+              : block
+          )
+        }))
+      }))
+    } as typeof advancedLayout;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          ...payload,
+          document: { ...payload.document, layout: downgradeToV1(lockedAnnouncementLayout), advancedLayout: lockedAnnouncementLayout },
+          simpleMode: { advancedModeAvailable: true }
+        })
+      })
+    );
+    renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
+    await screen.findByRole('region', { name: 'Document canvas' });
+    fireEvent.click(screen.getByRole('button', { name: 'Advanced Mode' }));
+    fireEvent.click(within(screen.getByRole('region', { name: 'Document canvas' })).getByRole('button', { name: /Announcement list/ }));
+    expect(screen.getByLabelText('Announcement display')).toBeDisabled();
+    expect(screen.getByLabelText('Title for announcement 1')).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Move announcement 1 down' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Remove announcement 1' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Add announcement item' })).toBeDisabled();
+  });
+  it('disables every content-editing control for locked section headings and simple lists', async () => {
+    const lockedLayout = {
+      ...advancedLayout,
+      pages: advancedLayout.pages.map((page, pageIndex) =>
+        pageIndex === 0
+          ? {
+              ...page,
+              regions: page.regions.map((region, regionIndex) =>
+                regionIndex === 0
+                  ? {
+                      ...region,
+                      blocks: region.blocks.map((block, blockIndex) =>
+                        blockIndex === 0
+                          ? {
+                              ...block,
+                              type: 'SECTION_HEADING',
+                              dataMode: 'MANUAL',
+                              config: { title: 'Community', subtitle: 'This week', presentation: 'RULE' },
+                              lock: { level: 'BLOCK', properties: ['CONTENT'] }
+                            }
+                          : blockIndex === 1
+                            ? {
+                                ...block,
+                                type: 'SIMPLE_LIST',
+                                dataMode: 'MANUAL',
+                                config: {
+                                  presentation: 'BULLETS',
+                                  items: [
+                                    { id: '22222222-2222-4222-8222-222222222222', order: 0, text: 'Food drive' },
+                                    { id: '33333333-3333-4333-8333-333333333333', order: 1, text: 'Youth activity' }
+                                  ]
+                                },
+                                lock: { level: 'BLOCK', properties: ['CONTENT'] }
+                              }
+                            : block
+                      )
+                    }
+                  : region
+              )
+            }
+          : page
+      )
+    } as typeof advancedLayout;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          ...payload,
+          document: { ...payload.document, layout: downgradeToV1(lockedLayout), advancedLayout: lockedLayout },
+          simpleMode: { advancedModeAvailable: true }
+        })
+      })
+    );
+    renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
+    await screen.findByRole('region', { name: 'Document canvas' });
+    fireEvent.click(screen.getByRole('button', { name: 'Advanced Mode' }));
+    const canvas = screen.getByRole('region', { name: 'Document canvas' });
+    fireEvent.click(within(canvas).getByRole('button', { name: /Section heading/ }));
+    expect(screen.getByLabelText('Section heading title')).toBeDisabled();
+    expect(screen.getByLabelText('Section heading subtitle')).toBeDisabled();
+    expect(screen.getByLabelText('Section heading display')).toBeDisabled();
+    fireEvent.click(within(canvas).getByRole('button', { name: /Simple list/ }));
+    expect(screen.getByLabelText('Simple list display')).toBeDisabled();
+    expect(screen.getByLabelText('List item 1')).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Move list item 1 down' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Remove list item 1' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Add list item' })).toBeDisabled();
+  });
+
+  it('disables meeting-program presentation controls when the block content is locked', async () => {
+    const lockedProgramLayout = {
+      ...advancedLayout,
+      pages: advancedLayout.pages.map((page) => ({
+        ...page,
+        regions: page.regions.map((region) => ({
+          ...region,
+          blocks: region.blocks.map((block) =>
+            block.type === 'MEETING_PROGRAM' ? { ...block, lock: { level: 'BLOCK', properties: ['CONTENT'] } } : block
+          )
+        }))
+      }))
+    } as typeof advancedLayout;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          ...payload,
+          document: { ...payload.document, layout: downgradeToV1(lockedProgramLayout), advancedLayout: lockedProgramLayout },
+          simpleMode: { advancedModeAvailable: true }
+        })
+      })
+    );
+    renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
+    await screen.findByRole('region', { name: 'Document canvas' });
+    fireEvent.click(screen.getByRole('button', { name: 'Advanced Mode' }));
+    fireEvent.click(within(screen.getByRole('region', { name: 'Document canvas' })).getByRole('button', { name: /Meeting program/ }));
+    expect(screen.getByLabelText('Agenda display')).toBeDisabled();
   });
   it('shows public preview errors without exposing editor controls as publish actions', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => payload }));

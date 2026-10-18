@@ -24,7 +24,7 @@ const validBase = {
 describe('document designer registry', () => {
   it('contains the complete initial sacrament-program catalog', () => {
     expect(Object.keys(sacramentProgramRegistry)).toEqual([...SACRAMENT_PROGRAM_BLOCK_TYPES]);
-    expect(SACRAMENT_PROGRAM_BLOCK_TYPES).toHaveLength(30);
+    expect(SACRAMENT_PROGRAM_BLOCK_TYPES).toHaveLength(33);
     for (const type of SACRAMENT_PROGRAM_BLOCK_TYPES) {
       expect(sacramentProgramRegistry[type].type).toBe(type);
       expect(sacramentProgramRegistry[type].configSchema).toBeDefined();
@@ -81,6 +81,113 @@ describe('document designer registry', () => {
     ).toBe(false);
   });
 
+  it('validates bounded public announcement items and rejects unsafe or unordered content', () => {
+    const schema = createDocumentBlockSchema(sacramentProgramRegistry);
+    const config = {
+      presentation: 'DETAIL_CARDS',
+      items: [
+        {
+          id: '22222222-2222-4222-8222-222222222222',
+          order: 0,
+          date: 'Sunday, November 2',
+          time: '6:00 PM',
+          title: 'Ward dinner',
+          description: 'Bring a side dish.',
+          location: 'Cultural hall',
+          contact: 'Relief Society'
+        }
+      ]
+    };
+    expect(schema.safeParse({ ...validBase, type: 'ANNOUNCEMENT_LIST', config }).success).toBe(true);
+    const legacyConfig = schema.parse({ ...validBase, type: 'ANNOUNCEMENT_LIST', config: { items: config.items } });
+    expect(legacyConfig.config).toEqual({ items: config.items, presentation: 'COMPACT_ROWS' });
+    expect(schema.safeParse({ ...validBase, type: 'ANNOUNCEMENT_LIST', config: { ...config, presentation: 'UNSUPPORTED' } }).success).toBe(
+      false
+    );
+    expect(
+      schema.safeParse({
+        ...validBase,
+        type: 'ANNOUNCEMENT_LIST',
+        config: { ...config, items: [{ ...config.items[0], description: '<script>bad</script>' }] }
+      }).success
+    ).toBe(false);
+    expect(
+      schema.safeParse({
+        ...validBase,
+        type: 'ANNOUNCEMENT_LIST',
+        config: { ...config, items: [{ ...config.items[0], title: ' ' }] }
+      }).success
+    ).toBe(false);
+    expect(
+      schema.safeParse({
+        ...validBase,
+        type: 'ANNOUNCEMENT_LIST',
+        config: { ...config, items: [config.items[0], { ...config.items[0], id: '33333333-3333-4333-8333-333333333333' }] }
+      }).success
+    ).toBe(false);
+    for (const field of ['date', 'time', 'title', 'description', 'location', 'contact']) {
+      const unsafeItem = { ...config.items[0], [field]: '<script>alert(1)</script>' };
+      expect(schema.safeParse({ ...validBase, type: 'ANNOUNCEMENT_LIST', config: { ...config, items: [unsafeItem] } }).success).toBe(false);
+    }
+    expect(schema.safeParse({ ...validBase, type: 'ANNOUNCEMENT_LIST', config: { ...config, extra: true } }).success).toBe(false);
+    expect(
+      createPublicDocumentBlockSchema(sacramentProgramRegistry, ['ANNOUNCEMENT_LIST']).safeParse({
+        ...validBase,
+        type: 'ANNOUNCEMENT_LIST',
+        config
+      }).success
+    ).toBe(true);
+  });
+
+  it('validates bounded section headings and manual list content with legacy defaults', () => {
+    const schema = createDocumentBlockSchema(sacramentProgramRegistry);
+    const heading = schema.parse({ ...validBase, type: 'SECTION_HEADING', config: { title: 'Community', subtitle: 'This week' } });
+    expect(heading.config).toEqual({ title: 'Community', subtitle: 'This week', presentation: 'RULE' });
+    expect(
+      schema.safeParse({ ...validBase, type: 'SECTION_HEADING', config: { title: 'Safe title', subtitle: '<h2>unsafe</h2>' } }).success
+    ).toBe(false);
+    expect(schema.safeParse({ ...validBase, type: 'SECTION_HEADING', config: { title: '<script>alert(1)</script>' } }).success).toBe(false);
+
+    const list = schema.parse({
+      ...validBase,
+      type: 'SIMPLE_LIST',
+      config: {
+        items: [
+          { id: '22222222-2222-4222-8222-222222222222', order: 0, text: 'Food drive' },
+          { id: '33333333-3333-4333-8333-333333333333', order: 1, text: 'Youth activity' }
+        ]
+      }
+    });
+    expect(list.config).toMatchObject({ presentation: 'BULLETS', items: [{ order: 0 }, { order: 1 }] });
+    expect(
+      schema.safeParse({
+        ...validBase,
+        type: 'SIMPLE_LIST',
+        config: {
+          presentation: 'NUMBERED',
+          items: [
+            { id: '22222222-2222-4222-8222-222222222222', order: 0, text: 'Food drive' },
+            { id: '33333333-3333-4333-8333-333333333333', order: 0, text: '<b>unsafe</b>' }
+          ]
+        }
+      }).success
+    ).toBe(false);
+    expect(
+      schema.safeParse({
+        ...validBase,
+        type: 'SIMPLE_LIST',
+        config: { items: [{ id: '22222222-2222-4222-8222-222222222222', order: 0, text: '   ' }] }
+      }).success
+    ).toBe(false);
+    expect(
+      createPublicDocumentBlockSchema(sacramentProgramRegistry, ['SECTION_HEADING', 'SIMPLE_LIST']).safeParse({
+        ...validBase,
+        type: 'SIMPLE_LIST',
+        config: { presentation: 'NUMBERED', items: [{ id: '22222222-2222-4222-8222-222222222222', order: 0, text: 'Food drive' }] }
+      }).success
+    ).toBe(true);
+  });
+
   it('validates every registry default against its config schema', () => {
     for (const definition of Object.values(sacramentProgramRegistry)) {
       expect(definition.configSchema.safeParse(definition.defaultConfig).success).toBe(true);
@@ -135,7 +242,11 @@ describe('document designer registry', () => {
 
   it('models MEETING_PROGRAM as one ordered aggregate block', () => {
     const definition = sacramentProgramRegistry.MEETING_PROGRAM;
-    expect(definition.configSchema.safeParse({ items: [{ kind: 'HYMN', label: 'Opening hymn', order: 1 }] }).success).toBe(true);
+    const legacyConfig = definition.configSchema.safeParse({ items: [{ kind: 'HYMN', label: 'Opening hymn', order: 1 }] });
+    expect(legacyConfig.success).toBe(true);
+    if (legacyConfig.success) expect(legacyConfig.data.presentation).toBe('LABEL_VALUE');
+    expect(definition.configSchema.safeParse({ items: [], presentation: 'DOTTED_LEADERS' }).success).toBe(true);
+    expect(definition.configSchema.safeParse({ items: [], presentation: 'FREEFORM' }).success).toBe(false);
     expect(definition.configSchema.safeParse({ kind: 'HYMN', label: 'Opening hymn' }).success).toBe(false);
     expect(
       definition.configSchema.safeParse({

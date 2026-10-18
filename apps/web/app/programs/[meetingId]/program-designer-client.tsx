@@ -23,7 +23,15 @@ import {
 import { commitHistory, createHistory, redo, undo, type HistoryState } from '@/src/document-designer/history';
 import { assertAdvancedMutationAllowedAt, assertNoLockedChanges } from '@/src/document-designer/lock-enforcement';
 import { getRegisteredBlockDefinition } from '@/src/document-designer/registry';
-import type { DocumentBlock, DocumentLayout } from '@/src/document-designer/types';
+import type {
+  AnnouncementListBlock,
+  AnnouncementListItem,
+  DocumentBlock,
+  DocumentLayout,
+  SectionHeadingBlock,
+  SimpleListBlock,
+  SimpleListItem
+} from '@/src/document-designer/types';
 import type { MediaAssetResponse } from '@/src/document-designer/media-types';
 import { getFoldFaceLabelKey } from '@/src/document-designer/print-layout';
 import type { PrintValidationResult } from '@/src/document-designer/print-types';
@@ -268,6 +276,17 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
     }
   };
   const isBlockReadOnly = (block: DocumentBlock): boolean => isAdvancedBlock(block) && !advancedEditing;
+  const isBlockContentLocked = (blockId: string): boolean => {
+    const current = currentAdvanced();
+    const location = blockLocation(blockId);
+    if (!current || !location) return true;
+    try {
+      assertAdvancedMutationAllowedAt(current, 'CONTENT', blockId, location.pageIndex, location.regionIndex);
+      return false;
+    } catch {
+      return true;
+    }
+  };
   const isBlockPositionLocked = (blockId: string): boolean => {
     const current = currentAdvanced();
     const location = blockLocation(blockId);
@@ -314,6 +333,7 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
     }
   };
   const selectedBlockReadOnly = selectedBlock ? isBlockReadOnly(selectedBlock) : false;
+  const selectedBlockContentLocked = selectedBlock ? isBlockContentLocked(selectedBlock.id) : true;
   const selectedReusable = selectedBlock?.reusableBlockId
     ? reusableBlocks.find((item) => item.id === selectedBlock.reusableBlockId)
     : undefined;
@@ -775,13 +795,51 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
     );
   }
 
+  function updateAnnouncementItems(mutator: (items: AnnouncementListItem[]) => AnnouncementListItem[]) {
+    if (selectedBlock?.type !== 'ANNOUNCEMENT_LIST' || selectedBlockReadOnly || selectedBlockContentLocked) return;
+    const currentItems = (selectedBlock as AnnouncementListBlock).config.items.slice().sort((left, right) => left.order - right.order);
+    const nextItems = mutator(currentItems).map((item, order) => ({ ...item, order }));
+    updateSelectedBlock((block) => {
+      const announcementBlock = block as AnnouncementListBlock;
+      return { ...announcementBlock, config: { ...announcementBlock.config, items: nextItems } };
+    });
+  }
+
+  function addAnnouncementItem() {
+    if (selectedBlock?.type !== 'ANNOUNCEMENT_LIST' || selectedBlockReadOnly || selectedBlockContentLocked) return;
+    updateAnnouncementItems((items) => [...items, { id: crypto.randomUUID(), order: items.length, title: t('newAnnouncementTitle') }]);
+  }
+
+  function updateSimpleListItems(mutator: (items: SimpleListItem[]) => SimpleListItem[]) {
+    if (selectedBlock?.type !== 'SIMPLE_LIST' || selectedBlockReadOnly || selectedBlockContentLocked) return;
+    const currentItems = (selectedBlock as SimpleListBlock).config.items.slice().sort((left, right) => left.order - right.order);
+    const nextItems = mutator(currentItems).map((item, order) => ({ ...item, order }));
+    updateSelectedBlock((block) => {
+      const listBlock = block as SimpleListBlock;
+      return { ...listBlock, config: { ...listBlock.config, items: nextItems } };
+    });
+  }
+
+  function addSimpleListItem() {
+    if (selectedBlock?.type !== 'SIMPLE_LIST' || selectedBlockReadOnly || selectedBlockContentLocked) return;
+    updateSimpleListItems((items) => [...items, { id: crypto.randomUUID(), order: items.length, text: t('newSimpleListItem') }]);
+  }
+
   function addAdvancedTextBlock() {
     addAdvancedBlock('CUSTOM_TEXT');
   }
 
-  function addAdvancedBlock(type: 'CUSTOM_TEXT' | 'PRESIDING_CONDUCTING') {
+  function addAdvancedBlock(type: 'CUSTOM_TEXT' | 'PRESIDING_CONDUCTING' | 'ANNOUNCEMENT_LIST' | 'SECTION_HEADING' | 'SIMPLE_LIST') {
     const current = currentAdvanced();
     if (!current) return;
+    const config =
+      type === 'ANNOUNCEMENT_LIST'
+        ? { items: [], presentation: 'COMPACT_ROWS' as const }
+        : type === 'SECTION_HEADING'
+          ? { title: t('newSectionHeading'), presentation: 'RULE' as const }
+          : type === 'SIMPLE_LIST'
+            ? { items: [], presentation: 'BULLETS' as const }
+            : { text: type === 'PRESIDING_CONDUCTING' ? '' : t('newTextBlock') };
     const block: DocumentBlock = {
       id: crypto.randomUUID() as DocumentBlock['id'],
       type,
@@ -790,10 +848,11 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
       visibility: 'VISIBLE',
       printBehavior: 'PRINT_AND_DIGITAL',
       digitalBehavior: 'NORMAL',
-      config: { text: type === 'PRESIDING_CONDUCTING' ? '' : t('newTextBlock') }
+      config
     } as DocumentBlock;
     setAdvancedEditing(true);
     runLayoutOperation(() => applyAdvanced(addBlock(current, selectedPageIndex, selectedPanelIndex, block)));
+    setSelectedBlockId(block.id);
   }
 
   function insertReusableBlock(item: ReusableLibraryItem) {
@@ -1014,10 +1073,11 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
     try {
       previewHtml = renderProgramPreview(document.advancedLayout ?? document.layout, source, {
         target: mode === 'PRINT' ? 'PRINT' : 'DIGITAL',
-        publicVisitor
+        publicVisitor,
+        mobile: mode === 'PHONE'
       })
-        .html.replace(/<main[^>]*>/, '')
-        .replace(/<\/main>/, '');
+        .html.replace(/<main(?=\s|>)/, '<section')
+        .replace(/<\/main>/, '</section>');
     } catch (error: unknown) {
       previewError = error instanceof Error ? error.message : t('previewUnavailable');
     }
@@ -1324,6 +1384,30 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
                   >
                     {t('addCustomBlock')}
                   </button>
+                  <button
+                    type="button"
+                    className="rounded border bg-background px-2 py-2 text-left text-sm"
+                    onClick={() => addAdvancedBlock('ANNOUNCEMENT_LIST')}
+                  >
+                    <span className="block font-medium">{t('addAnnouncementList')}</span>
+                    <span className="block text-xs text-muted-foreground">{t('announcementListBlockDescription')}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded border bg-background px-2 py-2 text-left text-sm"
+                    onClick={() => addAdvancedBlock('SECTION_HEADING')}
+                  >
+                    <span className="block font-medium">{t('addSectionHeading')}</span>
+                    <span className="block text-xs text-muted-foreground">{t('sectionHeadingBlockDescription')}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded border bg-background px-2 py-2 text-left text-sm"
+                    onClick={() => addAdvancedBlock('SIMPLE_LIST')}
+                  >
+                    <span className="block font-medium">{t('addSimpleList')}</span>
+                    <span className="block text-xs text-muted-foreground">{t('simpleListBlockDescription')}</span>
+                  </button>
                 </div>
               </section>
             ) : null}
@@ -1603,7 +1687,10 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
                 {previewError}
               </p>
             ) : (
-              <div className="mx-auto bg-background shadow-md" dangerouslySetInnerHTML={{ __html: previewHtml }} />
+              <div
+                className={`mx-auto bg-background shadow-md ${mode === 'PHONE' ? 'document-root--mobile' : ''}`}
+                dangerouslySetInnerHTML={{ __html: previewHtml }}
+              />
             )}
           </section>
           <aside className="space-y-4 rounded-xl border bg-card p-3 shadow-sm lg:sticky lg:top-16" aria-label={t('properties')}>
@@ -1663,6 +1750,394 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
                         <option value="ONE_THIRD">{widthLabel('ONE_THIRD')}</option>
                       </select>
                     </label>
+                  ) : null}
+                  {selectedBlock.type === 'MEETING_PROGRAM' && advancedEditing ? (
+                    <label className="block space-y-1 text-sm">
+                      <span>{t('agendaDisplay')}</span>
+                      <select
+                        className="w-full rounded-md border px-2 py-2"
+                        aria-label={t('agendaDisplay')}
+                        disabled={selectedBlockReadOnly || selectedBlockContentLocked}
+                        value={selectedBlock.config.presentation ?? 'LABEL_VALUE'}
+                        onChange={(event) =>
+                          updateSelectedBlock(
+                            (block) =>
+                              ({
+                                ...block,
+                                config: {
+                                  ...block.config,
+                                  presentation: event.target.value as 'LABEL_VALUE' | 'DOTTED_LEADERS' | 'CENTERED_STACKED'
+                                }
+                              }) as DocumentBlock
+                          )
+                        }
+                      >
+                        <option value="LABEL_VALUE">{t('meetingProgramPresentationOption.LABEL_VALUE')}</option>
+                        <option value="DOTTED_LEADERS">{t('meetingProgramPresentationOption.DOTTED_LEADERS')}</option>
+                        <option value="CENTERED_STACKED">{t('meetingProgramPresentationOption.CENTERED_STACKED')}</option>
+                      </select>
+                    </label>
+                  ) : null}
+                  {selectedBlock.type === 'ANNOUNCEMENT_LIST' && advancedEditing ? (
+                    <section className="space-y-3 rounded-md border p-3" aria-label={t('announcementItems')}>
+                      <div>
+                        <label className="block space-y-1 text-sm">
+                          <span>{t('announcementDisplay')}</span>
+                          <select
+                            className="w-full rounded-md border px-2 py-2"
+                            aria-label={t('announcementDisplay')}
+                            disabled={selectedBlockReadOnly || selectedBlockContentLocked}
+                            value={selectedBlock.config.presentation}
+                            onChange={(event) =>
+                              updateSelectedBlock((block) => {
+                                const announcementBlock = block as AnnouncementListBlock;
+                                return {
+                                  ...announcementBlock,
+                                  config: {
+                                    ...announcementBlock.config,
+                                    presentation: event.target.value as AnnouncementListBlock['config']['presentation']
+                                  }
+                                };
+                              })
+                            }
+                          >
+                            <option value="COMPACT_ROWS">{t('announcementListPresentationOption.COMPACT_ROWS')}</option>
+                            <option value="DETAIL_CARDS">{t('announcementListPresentationOption.DETAIL_CARDS')}</option>
+                          </select>
+                        </label>
+                        <p className="mt-1 text-xs text-muted-foreground">{t('announcementItemsDescription')}</p>
+                      </div>
+                      {(selectedBlock as AnnouncementListBlock).config.items
+                        .slice()
+                        .sort((left, right) => left.order - right.order)
+                        .map((item, index, items) => (
+                          <fieldset
+                            key={item.id}
+                            className="space-y-2 rounded border p-2"
+                            disabled={selectedBlockReadOnly || selectedBlockContentLocked}
+                          >
+                            <legend className="px-1 text-sm font-medium">{t('announcementItemTitle', { number: index + 1 })}</legend>
+                            <label className="block space-y-1 text-sm">
+                              <span>{t('announcementItemTitle', { number: index + 1 })}</span>
+                              <input
+                                className="w-full rounded-md border px-2 py-2"
+                                maxLength={500}
+                                value={item.title}
+                                onChange={(event) =>
+                                  updateAnnouncementItems((current) =>
+                                    current.map((candidate) =>
+                                      candidate.id === item.id ? { ...candidate, title: event.target.value } : candidate
+                                    )
+                                  )
+                                }
+                              />
+                            </label>
+                            <label className="block space-y-1 text-sm">
+                              <span>{t('announcementItemDate', { number: index + 1 })}</span>
+                              <input
+                                className="w-full rounded-md border px-2 py-2"
+                                maxLength={160}
+                                value={item.date ?? ''}
+                                onChange={(event) =>
+                                  updateAnnouncementItems((current) =>
+                                    current.map((candidate) =>
+                                      candidate.id === item.id ? { ...candidate, date: event.target.value } : candidate
+                                    )
+                                  )
+                                }
+                              />
+                            </label>
+                            <label className="block space-y-1 text-sm">
+                              <span>{t('announcementItemTime', { number: index + 1 })}</span>
+                              <input
+                                className="w-full rounded-md border px-2 py-2"
+                                maxLength={80}
+                                value={item.time ?? ''}
+                                onChange={(event) =>
+                                  updateAnnouncementItems((current) =>
+                                    current.map((candidate) =>
+                                      candidate.id === item.id ? { ...candidate, time: event.target.value } : candidate
+                                    )
+                                  )
+                                }
+                              />
+                            </label>
+                            <label className="block space-y-1 text-sm">
+                              <span>{t('announcementItemDescription', { number: index + 1 })}</span>
+                              <textarea
+                                className="min-h-16 w-full rounded-md border p-2"
+                                maxLength={2000}
+                                value={item.description ?? ''}
+                                onChange={(event) =>
+                                  updateAnnouncementItems((current) =>
+                                    current.map((candidate) =>
+                                      candidate.id === item.id ? { ...candidate, description: event.target.value } : candidate
+                                    )
+                                  )
+                                }
+                              />
+                            </label>
+                            <label className="block space-y-1 text-sm">
+                              <span>{t('announcementItemLocation', { number: index + 1 })}</span>
+                              <input
+                                className="w-full rounded-md border px-2 py-2"
+                                maxLength={300}
+                                value={item.location ?? ''}
+                                onChange={(event) =>
+                                  updateAnnouncementItems((current) =>
+                                    current.map((candidate) =>
+                                      candidate.id === item.id ? { ...candidate, location: event.target.value } : candidate
+                                    )
+                                  )
+                                }
+                              />
+                            </label>
+                            <label className="block space-y-1 text-sm">
+                              <span>{t('announcementItemContact', { number: index + 1 })}</span>
+                              <input
+                                className="w-full rounded-md border px-2 py-2"
+                                maxLength={300}
+                                value={item.contact ?? ''}
+                                onChange={(event) =>
+                                  updateAnnouncementItems((current) =>
+                                    current.map((candidate) =>
+                                      candidate.id === item.id ? { ...candidate, contact: event.target.value } : candidate
+                                    )
+                                  )
+                                }
+                              />
+                            </label>
+                            <div className="flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                className="rounded border px-2 py-1 text-xs"
+                                aria-label={t('moveAnnouncementItemUp', { number: index + 1 })}
+                                disabled={selectedBlockReadOnly || selectedBlockContentLocked || index === 0}
+                                onClick={() =>
+                                  updateAnnouncementItems((current) => {
+                                    const next = current.slice();
+                                    const [moved] = next.splice(index, 1);
+                                    next.splice(index - 1, 0, moved);
+                                    return next;
+                                  })
+                                }
+                              >
+                                {t('moveAnnouncementItemUp', { number: index + 1 })}
+                              </button>
+                              <button
+                                type="button"
+                                className="rounded border px-2 py-1 text-xs"
+                                aria-label={t('moveAnnouncementItemDown', { number: index + 1 })}
+                                disabled={selectedBlockReadOnly || selectedBlockContentLocked || index === items.length - 1}
+                                onClick={() =>
+                                  updateAnnouncementItems((current) => {
+                                    const next = current.slice();
+                                    const [moved] = next.splice(index, 1);
+                                    next.splice(index + 1, 0, moved);
+                                    return next;
+                                  })
+                                }
+                              >
+                                {t('moveAnnouncementItemDown', { number: index + 1 })}
+                              </button>
+                              <button
+                                type="button"
+                                className="rounded border px-2 py-1 text-xs"
+                                aria-label={t('removeAnnouncementItem', { number: index + 1 })}
+                                disabled={selectedBlockReadOnly || selectedBlockContentLocked}
+                                onClick={() =>
+                                  updateAnnouncementItems((current) => current.filter((candidate) => candidate.id !== item.id))
+                                }
+                              >
+                                {t('removeAnnouncementItem', { number: index + 1 })}
+                              </button>
+                            </div>
+                          </fieldset>
+                        ))}
+                      <button
+                        type="button"
+                        className="w-full rounded border px-2 py-2 text-sm"
+                        disabled={
+                          selectedBlockReadOnly ||
+                          selectedBlockContentLocked ||
+                          (selectedBlock as AnnouncementListBlock).config.items.length >= 100
+                        }
+                        onClick={addAnnouncementItem}
+                      >
+                        {t('addAnnouncementItem')}
+                      </button>
+                    </section>
+                  ) : null}
+                  {selectedBlock.type === 'SECTION_HEADING' && advancedEditing ? (
+                    <section className="space-y-3 rounded-md border p-3" aria-label={t('sectionHeadingProperties')}>
+                      <label className="block space-y-1 text-sm">
+                        <span>{t('sectionHeadingTitle')}</span>
+                        <input
+                          className="w-full rounded-md border px-2 py-2"
+                          maxLength={500}
+                          value={(selectedBlock as SectionHeadingBlock).config.title}
+                          disabled={selectedBlockReadOnly || selectedBlockContentLocked}
+                          onChange={(event) =>
+                            updateSelectedBlock((block) => {
+                              const heading = block as SectionHeadingBlock;
+                              return { ...heading, config: { ...heading.config, title: event.target.value } };
+                            })
+                          }
+                        />
+                      </label>
+                      <label className="block space-y-1 text-sm">
+                        <span>{t('sectionHeadingSubtitle')}</span>
+                        <textarea
+                          className="min-h-16 w-full rounded-md border p-2"
+                          maxLength={500}
+                          value={(selectedBlock as SectionHeadingBlock).config.subtitle ?? ''}
+                          disabled={selectedBlockReadOnly || selectedBlockContentLocked}
+                          onChange={(event) =>
+                            updateSelectedBlock((block) => {
+                              const heading = block as SectionHeadingBlock;
+                              return { ...heading, config: { ...heading.config, subtitle: event.target.value } };
+                            })
+                          }
+                        />
+                      </label>
+                      <label className="block space-y-1 text-sm">
+                        <span>{t('sectionHeadingDisplay')}</span>
+                        <select
+                          className="w-full rounded-md border px-2 py-2"
+                          aria-label={t('sectionHeadingDisplay')}
+                          value={(selectedBlock as SectionHeadingBlock).config.presentation}
+                          disabled={selectedBlockReadOnly || selectedBlockContentLocked}
+                          onChange={(event) =>
+                            updateSelectedBlock((block) => {
+                              const heading = block as SectionHeadingBlock;
+                              return {
+                                ...heading,
+                                config: {
+                                  ...heading.config,
+                                  presentation: event.target.value as SectionHeadingBlock['config']['presentation']
+                                }
+                              };
+                            })
+                          }
+                        >
+                          <option value="PLAIN">{t('sectionHeadingPresentationOption.PLAIN')}</option>
+                          <option value="RULE">{t('sectionHeadingPresentationOption.RULE')}</option>
+                          <option value="ACCENT">{t('sectionHeadingPresentationOption.ACCENT')}</option>
+                        </select>
+                      </label>
+                    </section>
+                  ) : null}
+                  {selectedBlock.type === 'SIMPLE_LIST' && advancedEditing ? (
+                    <section className="space-y-3 rounded-md border p-3" aria-label={t('simpleListProperties')}>
+                      <label className="block space-y-1 text-sm">
+                        <span>{t('simpleListDisplay')}</span>
+                        <select
+                          className="w-full rounded-md border px-2 py-2"
+                          aria-label={t('simpleListDisplay')}
+                          value={(selectedBlock as SimpleListBlock).config.presentation}
+                          disabled={selectedBlockReadOnly || selectedBlockContentLocked}
+                          onChange={(event) =>
+                            updateSelectedBlock((block) => {
+                              const listBlock = block as SimpleListBlock;
+                              return {
+                                ...listBlock,
+                                config: {
+                                  ...listBlock.config,
+                                  presentation: event.target.value as SimpleListBlock['config']['presentation']
+                                }
+                              };
+                            })
+                          }
+                        >
+                          <option value="BULLETS">{t('simpleListPresentationOption.BULLETS')}</option>
+                          <option value="NUMBERED">{t('simpleListPresentationOption.NUMBERED')}</option>
+                          <option value="COMPACT_ROWS">{t('simpleListPresentationOption.COMPACT_ROWS')}</option>
+                        </select>
+                      </label>
+                      <p className="text-xs text-muted-foreground">{t('simpleListItemsDescription')}</p>
+                      {(selectedBlock as SimpleListBlock).config.items
+                        .slice()
+                        .sort((left, right) => left.order - right.order)
+                        .map((item, index, items) => (
+                          <fieldset
+                            key={item.id}
+                            className="space-y-2 rounded border p-2"
+                            disabled={selectedBlockReadOnly || selectedBlockContentLocked}
+                          >
+                            <legend className="px-1 text-sm font-medium">{t('simpleListItemLabel', { number: index + 1 })}</legend>
+                            <label className="block space-y-1 text-sm">
+                              <span>{t('simpleListItemLabel', { number: index + 1 })}</span>
+                              <input
+                                className="w-full rounded-md border px-2 py-2"
+                                maxLength={300}
+                                value={item.text}
+                                onChange={(event) =>
+                                  updateSimpleListItems((current) =>
+                                    current.map((candidate) =>
+                                      candidate.id === item.id ? { ...candidate, text: event.target.value } : candidate
+                                    )
+                                  )
+                                }
+                              />
+                            </label>
+                            <div className="flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                className="rounded border px-2 py-1 text-xs"
+                                aria-label={t('moveSimpleListItemUp', { number: index + 1 })}
+                                disabled={selectedBlockReadOnly || selectedBlockContentLocked || index === 0}
+                                onClick={() =>
+                                  updateSimpleListItems((current) => {
+                                    const next = current.slice();
+                                    const [moved] = next.splice(index, 1);
+                                    next.splice(index - 1, 0, moved);
+                                    return next;
+                                  })
+                                }
+                              >
+                                {t('moveSimpleListItemUp', { number: index + 1 })}
+                              </button>
+                              <button
+                                type="button"
+                                className="rounded border px-2 py-1 text-xs"
+                                aria-label={t('moveSimpleListItemDown', { number: index + 1 })}
+                                disabled={selectedBlockReadOnly || selectedBlockContentLocked || index === items.length - 1}
+                                onClick={() =>
+                                  updateSimpleListItems((current) => {
+                                    const next = current.slice();
+                                    const [moved] = next.splice(index, 1);
+                                    next.splice(index + 1, 0, moved);
+                                    return next;
+                                  })
+                                }
+                              >
+                                {t('moveSimpleListItemDown', { number: index + 1 })}
+                              </button>
+                              <button
+                                type="button"
+                                className="rounded border px-2 py-1 text-xs"
+                                aria-label={t('removeSimpleListItem', { number: index + 1 })}
+                                disabled={selectedBlockReadOnly || selectedBlockContentLocked}
+                                onClick={() => updateSimpleListItems((current) => current.filter((candidate) => candidate.id !== item.id))}
+                              >
+                                {t('removeSimpleListItem', { number: index + 1 })}
+                              </button>
+                            </div>
+                          </fieldset>
+                        ))}
+                      <button
+                        type="button"
+                        className="w-full rounded border px-2 py-2 text-sm"
+                        disabled={
+                          selectedBlockReadOnly ||
+                          selectedBlockContentLocked ||
+                          (selectedBlock as SimpleListBlock).config.items.length >= 100
+                        }
+                        onClick={addSimpleListItem}
+                      >
+                        {t('addSimpleListItem')}
+                      </button>
+                    </section>
                   ) : null}
                   {'text' in selectedBlock.config ? (
                     <label className="block space-y-1 text-sm">

@@ -19,6 +19,39 @@
     "chorister": "Chorister",
     "addProgramBlock": "Add program block",
     "addProgramBlockDescription": "Choose a structured row or a constrained custom block. Changes are saved with Advanced Mode.",
+    "addAnnouncementList": "Add announcement list",
+    "announcementListBlockDescription": "Approved public announcements for this program.",
+    "addSectionHeading": "Add section heading",
+    "sectionHeadingBlockDescription": "Add a heading to organize approved program content.",
+    "addSimpleList": "Add simple list",
+    "simpleListBlockDescription": "Add a short, manually written list of approved public details.",
+    "newSectionHeading": "New section",
+    "newSimpleListItem": "New list item",
+    "sectionHeadingProperties": "Section heading properties",
+    "sectionHeadingTitle": "Section heading title",
+    "sectionHeadingSubtitle": "Section heading subtitle",
+    "sectionHeadingDisplay": "Section heading display",
+    "simpleListProperties": "Simple list properties",
+    "simpleListDisplay": "Simple list display",
+    "simpleListItemsDescription": "Add only public details approved for the program. Do not include private member or leadership information.",
+    "simpleListItemLabel": "List item {number}",
+    "moveSimpleListItemUp": "Move list item {number} up",
+    "moveSimpleListItemDown": "Move list item {number} down",
+    "removeSimpleListItem": "Remove list item {number}",
+    "addSimpleListItem": "Add list item",
+    "announcementItems": "Announcement items",
+    "announcementItemsDescription": "Add only public details approved for the printed and digital program.",
+    "addAnnouncementItem": "Add announcement item",
+    "newAnnouncementTitle": "New announcement",
+    "announcementItemTitle": "Title for announcement {number}",
+    "announcementItemDate": "Date for announcement {number}",
+    "announcementItemTime": "Time for announcement {number}",
+    "announcementItemDescription": "Description for announcement {number}",
+    "announcementItemLocation": "Location for announcement {number}",
+    "announcementItemContact": "Contact for announcement {number}",
+    "moveAnnouncementItemUp": "Move announcement {number} up",
+    "moveAnnouncementItemDown": "Move announcement {number} down",
+    "removeAnnouncementItem": "Remove announcement {number}",
     "addPresidingConducting": "Add presiding and conducting",
     "addCustomBlock": "Add custom block",
     "moveSelectedBlock": "Move selected block to",
@@ -114,7 +147,10 @@
       "compact-one-page": { "name": "Compact One Page", "description": "Dense one-page format for shorter programs." },
       "large-print": { "name": "Large Print", "description": "Simplified layout intended for comfortable reading." },
       "image-cover": { "name": "Image Cover", "description": "Text-first program with an authorized image-cover metadata slot." },
-      "announcement-focus": { "name": "Announcement Focus", "description": "Program layout that gives approved announcements clear emphasis." }
+      "announcement-focus": {
+        "name": "Announcement Focus",
+        "description": "Program layout that gives approved announcements clear emphasis."
+      }
     },
     "preview": "Template preview",
     "lockedSource": "Locked source",
@@ -281,6 +317,9 @@
       "WARD_NAME": "Ward name",
       "MEETING_INFO": "Meeting information",
       "MEETING_PROGRAM": "Meeting program",
+      "ANNOUNCEMENT_LIST": "Announcement list",
+      "SECTION_HEADING": "Section heading",
+      "SIMPLE_LIST": "Simple list",
       "PRESIDING_CONDUCTING": "Presiding and conducting",
       "MUSIC_LEADERS": "Music leaders",
       "SPEAKERS": "Speakers",
@@ -312,6 +351,27 @@
       "VISIBLE": "Visible",
       "HIDDEN": "Hidden",
       "HIDE_WHEN_EMPTY": "Hide when empty"
+    },
+    "agendaDisplay": "Agenda display",
+    "meetingProgramPresentationOption": {
+      "LABEL_VALUE": "Label and value",
+      "DOTTED_LEADERS": "Dotted leaders",
+      "CENTERED_STACKED": "Centered, stacked"
+    },
+    "announcementDisplay": "Announcement display",
+    "announcementListPresentationOption": {
+      "COMPACT_ROWS": "Compact rows",
+      "DETAIL_CARDS": "Detail cards"
+    },
+    "sectionHeadingPresentationOption": {
+      "PLAIN": "Plain",
+      "RULE": "Rule",
+      "ACCENT": "Accent"
+    },
+    "simpleListPresentationOption": {
+      "BULLETS": "Bullets",
+      "NUMBERED": "Numbered",
+      "COMPACT_ROWS": "Compact rows"
     },
     "widthOption": {
       "FULL": "Full",

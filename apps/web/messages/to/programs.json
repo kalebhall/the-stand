@@ -19,6 +19,39 @@
     "chorister": "Tokotaha hiva",
     "addProgramBlock": "Tanaki ha polokalama block",
     "addProgramBlockDescription": "Fili ha structured row pe custom block fakangatangata. ʻOku tauhi ʻa e ngaahi liliú ʻi he Advanced Mode.",
+    "addAnnouncementList": "Tānaki ha lisi ʻo e ngaahi fanongonongó",
+    "announcementListBlockDescription": "Ngaahi fanongonongo fakapuleʻanga kuo fakangofua ki he polokalama ko ʻení.",
+    "addSectionHeading": "Tānaki ha hingoa ʻo e konga",
+    "sectionHeadingBlockDescription": "Tānaki ha hingoa ke fokotuʻutuʻu ʻa e fakamatala kuo fakangofua ki he polokalamá.",
+    "addSimpleList": "Tānaki ha lisi faingofua",
+    "simpleListBlockDescription": "Tānaki ha lisi nounou, hiki fakahangatonu, ʻo e ngaahi fakamatala fakapuleʻanga kuo fakangofuá.",
+    "newSectionHeading": "Konga foʻou",
+    "newSimpleListItem": "Meʻa foʻou ʻi he lisí",
+    "sectionHeadingProperties": "Ngaahi meʻa ʻo e hingoa ʻo e kongá",
+    "sectionHeadingTitle": "Hingoa ʻo e konga",
+    "sectionHeadingSubtitle": "Hingoa fakalahi ʻo e konga",
+    "sectionHeadingDisplay": "Founga hono fakaʻaliʻali ʻo e hingoa ʻo e kongá",
+    "simpleListProperties": "Ngaahi meʻa ʻo e lisi faingofuá",
+    "simpleListDisplay": "Founga hono fakaʻaliʻali ʻo e lisi faingofuá",
+    "simpleListItemsDescription": "Tānaki pē ʻa e ngaahi fakamatala fakapuleʻanga kuo fakangofua ki he polokalamá. ʻOua naʻá ke fakakau ai ha fakamatala fakapulipuli ki he kāingalotu pe kau takí.",
+    "simpleListItemLabel": "Meʻa {number}",
+    "moveSimpleListItemUp": "ʻAve ki ʻolunga ʻa e meʻa {number}",
+    "moveSimpleListItemDown": "ʻAve ki lalo ʻa e meʻa {number}",
+    "removeSimpleListItem": "Toʻo ʻa e meʻa {number}",
+    "addSimpleListItem": "Tānaki ha meʻa",
+    "announcementItems": "Ngaahi fanongonongo",
+    "announcementItemsDescription": "Tānaki pē ʻa e ngaahi fakamatala fakapuleʻanga kuo fakangofua ki he polokalama kuo paaki mo fakakomipiutá.",
+    "addAnnouncementItem": "Tānaki ha fanongonongo",
+    "newAnnouncementTitle": "Fanongonongo foʻou",
+    "announcementItemTitle": "Hingoa ʻo e fanongonongo {number}",
+    "announcementItemDate": "ʻAho ʻo e fanongonongo {number}",
+    "announcementItemTime": "Taimi ʻo e fanongonongo {number}",
+    "announcementItemDescription": "Fakamatala ʻo e fanongonongo {number}",
+    "announcementItemLocation": "Feituʻu ʻo e fanongonongo {number}",
+    "announcementItemContact": "Fetuʻutaki ʻo e fanongonongo {number}",
+    "moveAnnouncementItemUp": "ʻAve ki ʻolunga ʻa e fanongonongo {number}",
+    "moveAnnouncementItemDown": "ʻAve ki lalo ʻa e fanongonongo {number}",
+    "removeAnnouncementItem": "Toʻo ʻa e fanongonongo {number}",
     "addPresidingConducting": "Tanaki ʻa e presiding mo e conducting",
     "addCustomBlock": "Tanaki ha custom block",
     "moveSelectedBlock": "Puke ʻa e block kuo filí ki",
@@ -107,14 +140,23 @@
     "wardTemplates": "Ngaahi Sīpinga ʻo e Uōtí",
     "myDrafts": "Ko 'eku ngaahi fakakaukau",
     "builtInTemplateNames": {
-      "classic-bifold": { "name": "Sīpinga Faka-Kalasiki Bifold", "description": "Polokalama pelu faka-kuo mo ha fokotu'utu'u lau palanisi." },
+      "classic-bifold": {
+        "name": "Sīpinga Faka-Kalasiki Bifold",
+        "description": "Polokalama pelu faka-kuo mo ha fokotu'utu'u lau palanisi."
+      },
       "trifold-bulletin": { "name": "Pepa Tala Trifold", "description": "Fokotu'utu'u pepa tala si'isi'i mo ha ngaahi panel 'e tolu." },
-      "full-page-standard": { "name": "Peesi Kakato Angamaheni", "description": "Polokalama peesi 'e taha faingofua ke lau ki he faka-digital mo e print." },
+      "full-page-standard": {
+        "name": "Peesi Kakato Angamaheni",
+        "description": "Polokalama peesi 'e taha faingofua ke lau ki he faka-digital mo e print."
+      },
       "modern-minimal": { "name": "Minimal Fakaonopooni", "description": "Fokotu'utu'u text ma'a mo ha hierarchical fakatātā malu." },
       "compact-one-page": { "name": "Peesi 'e Taha Si'isi'i", "description": "Founga peesi 'e taha ki he ngaahi polokalama nounou." },
       "large-print": { "name": "Tohi Lahi", "description": "Fokotu'utu'u faingofua ki he lau fiemālie." },
       "image-cover": { "name": "Pehūfaki Fakatātā", "description": "Polokalama text-first mo ha feitu'u fakatātā kuo fakangofua." },
-      "announcement-focus": { "name": "Fakangatangata ki he Ngaahi Fanongonongo", "description": "Fokotu'utu'u 'oku ne fakamamafa'i e ngaahi fanongonongo kuo fakangofua." }
+      "announcement-focus": {
+        "name": "Fakangatangata ki he Ngaahi Fanongonongo",
+        "description": "Fokotu'utu'u 'oku ne fakamamafa'i e ngaahi fanongonongo kuo fakangofua."
+      }
     },
     "preview": "Tomu'a vakai ki he sipinga",
     "lockedSource": "Ma'u'anga fakamatala kuo loka'i",
@@ -281,6 +323,9 @@
       "WARD_NAME": "Hingoa ʻo e uōtí",
       "MEETING_INFO": "Fakamatala ʻo e fakatahá",
       "MEETING_PROGRAM": "Polokalama ʻo e fakatahá",
+      "ANNOUNCEMENT_LIST": "Lisi ʻo e ngaahi fanongonongó",
+      "SECTION_HEADING": "Hingoa ʻo e konga",
+      "SIMPLE_LIST": "Lisi faingofua",
       "PRESIDING_CONDUCTING": "Tokotaha pule mo e tokotaha tataki",
       "MUSIC_LEADERS": "Kau taki ʻo e hivá",
       "SPEAKERS": "Kau lea",
@@ -312,6 +357,27 @@
       "VISIBLE": "Hā",
       "HIDDEN": "Fufū",
       "HIDE_WHEN_EMPTY": "Fufū ʻi he taimi ʻoku ʻikai ʻi ai ha meʻa"
+    },
+    "agendaDisplay": "Founga hono fakaʻaliʻali ʻo e polokalamá",
+    "meetingProgramPresentationOption": {
+      "LABEL_VALUE": "Leipa mo e fakamatala",
+      "DOTTED_LEADERS": "Ngaahi laine mataʻi-tokí",
+      "CENTERED_STACKED": "Fakatefito mo fakahokohoko fakamāʻolunga"
+    },
+    "announcementDisplay": "Founga hono fakaʻaliʻali ʻo e ngaahi fanongonongó",
+    "announcementListPresentationOption": {
+      "COMPACT_ROWS": "Ngaahi laine nounou",
+      "DETAIL_CARDS": "Ngaahi kaati fakaikiiki"
+    },
+    "sectionHeadingPresentationOption": {
+      "PLAIN": "Faingofua",
+      "RULE": "Laine",
+      "ACCENT": "Fakamamafaʻi"
+    },
+    "simpleListPresentationOption": {
+      "BULLETS": "Ngaahi mataʻi-poini",
+      "NUMBERED": "Fika",
+      "COMPACT_ROWS": "Ngaahi laine nounou"
     },
     "widthOption": {
       "FULL": "Kakato",

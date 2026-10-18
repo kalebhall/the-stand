@@ -15,13 +15,21 @@ import {
 import type { DeepReadonly } from './registry';
 import { createDocumentLayoutSchema } from './primitives';
 
-import { BLOCK_TYPES } from './constants';
+import {
+  ANNOUNCEMENT_LIST_PRESENTATIONS,
+  BLOCK_TYPES,
+  MEETING_PROGRAM_PRESENTATIONS,
+  SECTION_HEADING_PRESENTATIONS,
+  SIMPLE_LIST_PRESENTATIONS
+} from './constants';
 
 export const SACRAMENT_PROGRAM_BLOCK_TYPES = BLOCK_TYPES;
 
 export type SacramentProgramBlockType = (typeof SACRAMENT_PROGRAM_BLOCK_TYPES)[number];
 const textConfig = z.object({ text: structuredText(10_000) }).strict();
 const titleConfig = z.object({ text: structuredText(500) }).strict();
+const publicText = (max: number) => z.string().trim().max(max).pipe(structuredText(max));
+const publicLabel = (max = 500) => z.string().trim().min(1).max(max).pipe(structuredText(max));
 const meetingInfoConfig = z.object({ includeDate: z.boolean(), includeTime: z.boolean(), includeLocation: z.boolean() }).strict();
 const meetingItem = z
   .object({
@@ -32,7 +40,7 @@ const meetingItem = z
   })
   .strict();
 const meetingProgramConfig = z
-  .object({ items: z.array(meetingItem).max(100) })
+  .object({ items: z.array(meetingItem).max(100), presentation: z.enum(MEETING_PROGRAM_PRESENTATIONS).default('LABEL_VALUE') })
   .strict()
   .superRefine(({ items }, context) => {
     for (let index = 1; index < items.length; index += 1) {
@@ -45,6 +53,67 @@ const meetingProgramConfig = z
       }
     }
   });
+const announcementItem = z
+  .object({
+    id: z.string().uuid(),
+    order: z.number().int().min(0).max(99),
+    date: publicText(160).optional(),
+    time: publicText(80).optional(),
+    title: publicLabel(),
+    description: structuredText(2_000).optional(),
+    location: publicText(300).optional(),
+    contact: publicText(300).optional()
+  })
+  .strict();
+const announcementListConfig = z
+  .object({ items: z.array(announcementItem).max(100), presentation: z.enum(ANNOUNCEMENT_LIST_PRESENTATIONS).default('COMPACT_ROWS') })
+  .strict()
+  .superRefine(({ items }, context) => {
+    const seenIds = new Set<string>();
+    for (let index = 0; index < items.length; index += 1) {
+      if (seenIds.has(items[index].id))
+        context.addIssue({ code: z.ZodIssueCode.custom, path: ['items', index, 'id'], message: 'Announcement item IDs must be unique' });
+      seenIds.add(items[index].id);
+      if (index > 0 && items[index].order <= items[index - 1].order)
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['items', index, 'order'],
+          message: 'Announcement orders must be unique and ascending'
+        });
+    }
+  });
+const sectionHeadingConfig = z
+  .object({
+    title: publicLabel(),
+    subtitle: structuredText(500).optional(),
+    presentation: z.enum(SECTION_HEADING_PRESENTATIONS).default('RULE')
+  })
+  .strict();
+const simpleListItem = z
+  .object({
+    id: z.string().uuid(),
+    order: z.number().int().min(0).max(99),
+    text: structuredText(300).refine((value) => value.trim().length > 0, 'List items must not be empty')
+  })
+  .strict();
+const simpleListConfig = z
+  .object({ items: z.array(simpleListItem).max(100), presentation: z.enum(SIMPLE_LIST_PRESENTATIONS).default('BULLETS') })
+  .strict()
+  .superRefine(({ items }, context) => {
+    const seenIds = new Set<string>();
+    for (let index = 0; index < items.length; index += 1) {
+      if (seenIds.has(items[index].id))
+        context.addIssue({ code: z.ZodIssueCode.custom, path: ['items', index, 'id'], message: 'List item IDs must be unique' });
+      seenIds.add(items[index].id);
+      if (index > 0 && items[index].order <= items[index - 1].order)
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['items', index, 'order'],
+          message: 'List orders must be unique and ascending'
+        });
+    }
+  });
+
 const imageConfig = z
   .object({
     assetId: z.string().uuid().nullable(),
@@ -71,12 +140,13 @@ function definition<
   type: TType,
   configSchema: TSchema,
   defaultConfig: z.output<TSchema>,
-  options: TOptions
+  options: TOptions,
+  schemaVersion = 1
 ): BlockDefinition<TType, z.output<TSchema>> & TOptions {
   return {
     type,
-    schemaIdentity: `sacrament-program/${type}/v1`,
-    schemaContract: `sacrament-program/${type}/config-v1`,
+    schemaIdentity: `sacrament-program/${type}/v${schemaVersion}`,
+    schemaContract: `sacrament-program/${type}/config-v${schemaVersion}`,
     configSchema,
     defaultConfig,
     supportedTargets: ['PRINT_AND_DIGITAL'],
@@ -110,7 +180,31 @@ const sacramentProgramRegistryDefinition = {
     { includeDate: true, includeTime: true, includeLocation: true },
     { ...publicSafe, allowedDataModes: automaticModes }
   ),
-  MEETING_PROGRAM: definition('MEETING_PROGRAM', meetingProgramConfig, { items: [] }, { ...publicFields, allowedDataModes: allModes }),
+  MEETING_PROGRAM: definition(
+    'MEETING_PROGRAM',
+    meetingProgramConfig,
+    { items: [], presentation: 'LABEL_VALUE' },
+    { ...publicFields, allowedDataModes: allModes },
+    2
+  ),
+  ANNOUNCEMENT_LIST: definition(
+    'ANNOUNCEMENT_LIST',
+    announcementListConfig,
+    { items: [], presentation: 'COMPACT_ROWS' },
+    { ...publicFields, allowedDataModes: ['MANUAL'] }
+  ),
+  SECTION_HEADING: definition(
+    'SECTION_HEADING',
+    sectionHeadingConfig,
+    { title: 'Section', presentation: 'RULE' },
+    { ...publicFields, allowedDataModes: ['MANUAL'] }
+  ),
+  SIMPLE_LIST: definition(
+    'SIMPLE_LIST',
+    simpleListConfig,
+    { items: [], presentation: 'BULLETS' },
+    { ...publicFields, allowedDataModes: ['MANUAL'] }
+  ),
   PRESIDING_CONDUCTING: definition('PRESIDING_CONDUCTING', textConfig, { text: '' }, { ...publicFields, allowedDataModes: automaticModes }),
   MUSIC_LEADERS: definition('MUSIC_LEADERS', textConfig, { text: '' }, { ...publicFields, allowedDataModes: automaticModes }),
   SPEAKERS: definition('SPEAKERS', textConfig, { text: '' }, { ...publicFields, allowedDataModes: automaticModes }),

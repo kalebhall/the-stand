@@ -104,7 +104,10 @@ function splitFoldPanels(layout: DocumentLayout): DocumentLayout {
         const panel =
           block.type === 'QR_CODE' || block.type === 'IMAGE'
             ? panelCount - 1
-            : block.type === 'MEETING_PROGRAM' || block.type === 'ANNOUNCEMENTS' || block.type === 'SPEAKERS'
+            : block.type === 'MEETING_PROGRAM' ||
+                block.type === 'ANNOUNCEMENT_LIST' ||
+                block.type === 'ANNOUNCEMENTS' ||
+                block.type === 'SPEAKERS'
               ? Math.min(1, panelCount - 1)
               : 0;
         panelBlocks[panel].push(block);
@@ -322,8 +325,12 @@ export function mergeSimpleIntoAdvanced(previous: AdvancedDocumentLayout, simple
                 digitalBehavior: replacement.digitalBehavior,
                 config: replacement.config,
                 ...(replacement.source !== undefined ? { source: replacement.source } : { source: block.source }),
-                ...(replacement.reusableBlockId !== undefined ? { reusableBlockId: replacement.reusableBlockId } : { reusableBlockId: block.reusableBlockId }),
-                ...(replacement.reusableBlockVersion !== undefined ? { reusableBlockVersion: replacement.reusableBlockVersion } : { reusableBlockVersion: block.reusableBlockVersion }),
+                ...(replacement.reusableBlockId !== undefined
+                  ? { reusableBlockId: replacement.reusableBlockId }
+                  : { reusableBlockId: block.reusableBlockId }),
+                ...(replacement.reusableBlockVersion !== undefined
+                  ? { reusableBlockVersion: replacement.reusableBlockVersion }
+                  : { reusableBlockVersion: block.reusableBlockVersion }),
                 ...(replacement.lock !== undefined ? { lock: replacement.lock } : { lock: block.lock })
               }
             : block;
@@ -413,6 +420,8 @@ export function projectAdvancedLayoutForOutput(
             }
             return data.meetingItems.length > 0 || hasLeadership;
           }
+          if (block.type === 'ANNOUNCEMENT_LIST' || block.type === 'SIMPLE_LIST') return block.config.items.length > 0;
+          if (block.type === 'SECTION_HEADING') return Boolean(block.config.title.trim());
           const value = data.values[block.type];
           return Array.isArray(value) ? value.length > 0 : value !== null && value !== undefined && value !== '';
         })
