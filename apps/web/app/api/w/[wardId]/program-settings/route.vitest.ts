@@ -4,7 +4,7 @@ const { authMock, connectMock, recordAuditEventMock, buildFieldDiffMock, moduleE
   authMock: vi.fn(),
   connectMock: vi.fn(),
   recordAuditEventMock: vi.fn(),
-  buildFieldDiffMock: vi.fn(() => ({ allowAdvancedProgramDesigner: { old: false, new: true } })),
+  buildFieldDiffMock: vi.fn(() => ({ allowProgramEditorPublish: { old: false, new: true } })),
   moduleEnabledMock: vi.fn(),
   moduleEnabledInTransactionMock: vi.fn()}));
 
@@ -24,7 +24,7 @@ const row = {
   ward_id: 'ward-a',
   default_sacrament_template_id: null,
   default_sacrament_template_key: null,
-  allow_advanced_program_designer: false,
+
   allow_program_editor_publish: false,
   allow_program_editor_republish: false,
   allow_program_editor_rollback: false,
@@ -39,7 +39,7 @@ function setupClient(overrides: Record<string, unknown> = {}) {
     query: vi.fn(async (sql: string, values?: readonly unknown[]) => {
       if (sql === 'SELECT set_config($1, $2, true)') return { rows: [] };
       if (sql.startsWith('SELECT ward_id')) return { rows: [currentRow] };
-      if (sql.startsWith('INSERT INTO ward_document_settings')) return { rows: [{ ...currentRow, default_sacrament_template_id: values?.[1] ?? currentRow.default_sacrament_template_id, default_sacrament_template_key: values?.[2] ?? currentRow.default_sacrament_template_key, allow_advanced_program_designer: values?.[3], public_program_expiration_days: values && values.length > 9 ? values[9] : currentRow.public_program_expiration_days }] };
+      if (sql.startsWith('INSERT INTO ward_document_settings')) return { rows: [{ ...currentRow, default_sacrament_template_id: values?.[1] ?? currentRow.default_sacrament_template_id, default_sacrament_template_key: values?.[2] ?? currentRow.default_sacrament_template_key, allow_program_editor_publish: values?.[3] ?? currentRow.allow_program_editor_publish, public_program_expiration_days: values && values.length > 8 ? values[8] : currentRow.public_program_expiration_days }] };
       if (sql === 'BEGIN' || sql === 'COMMIT' || sql === 'ROLLBACK') return { rows: [] };
       return { rows: [], ...overrides };
     }),
@@ -85,7 +85,6 @@ describe('program settings route', () => {
       defaultSacramentTemplate: null,
       defaultSacramentTemplateId: null,
       defaultSacramentTemplateKey: null,
-      allowAdvancedProgramDesigner: false,
       allowProgramEditorPublish: false,
       allowProgramEditorRepublish: false,
       allowProgramEditorRollback: false,
@@ -106,12 +105,12 @@ describe('program settings route', () => {
     const client = setupClient();
     const response = await PATCH(new Request('http://localhost', {
       method: 'PATCH',
-      body: JSON.stringify({ allowAdvancedProgramDesigner: true })
+      body: JSON.stringify({ allowProgramEditorPublish: true })
     }), context);
     expect(response.status).toBe(200);
-    expect(await response.json()).toMatchObject({ settings: { allowAdvancedProgramDesigner: true } });
+    expect(await response.json()).toMatchObject({ settings: { allowProgramEditorPublish: true } });
     expect(recordAuditEventMock).toHaveBeenCalledWith(client, expect.objectContaining({ action: 'PROGRAM_SETTINGS_UPDATED' }));
-    expect(client.query).toHaveBeenCalledWith(expect.stringContaining('ON CONFLICT (ward_id)'), expect.arrayContaining(['ward-a', true]));
+    expect(client.query).toHaveBeenCalledWith(expect.stringContaining('ON CONFLICT (ward_id)'), expect.arrayContaining(['ward-a', null, null, true]));
   });
 
   it('allows ward meeting managers to select a built-in default template', async () => {
@@ -139,7 +138,7 @@ describe('program settings route', () => {
       setupClient();
       const response = await PATCH(new Request('http://localhost', {
         method: 'PATCH',
-        body: JSON.stringify({ defaultSacramentTemplate: 'builtin:classic-bifold', allowAdvancedProgramDesigner: true })
+        body: JSON.stringify({ defaultSacramentTemplate: 'builtin:classic-bifold' })
       }), context);
       expect(response.status).toBe(403);
       expect((await response.json()).code).toBe('FORBIDDEN');
@@ -166,15 +165,16 @@ describe('program settings route', () => {
     expect((await response.json()).code).toBe('BAD_REQUEST');
   });
 
-  it('persists disabling the advanced designer without changing the role boundary', async () => {
-    const client = setupClient({ allow_advanced_program_designer: true });
+  it('rejects the retired advanced designer setting without writing or auditing', async () => {
+    const client = setupClient();
     const response = await PATCH(new Request('http://localhost', {
       method: 'PATCH',
       body: JSON.stringify({ allowAdvancedProgramDesigner: false })
     }), context);
-    expect(response.status).toBe(200);
-    expect(await response.json()).toMatchObject({ settings: { allowAdvancedProgramDesigner: false } });
-    expect(client.query).toHaveBeenCalledWith(expect.stringContaining('ON CONFLICT (ward_id)'), expect.arrayContaining(['ward-a', false]));
+    expect(response.status).toBe(400);
+    expect((await response.json()).code).toBe('BAD_REQUEST');
+    expect(recordAuditEventMock).not.toHaveBeenCalled();
+    expect(client.query.mock.calls.some(([sql]) => String(sql).startsWith('INSERT INTO ward_document_settings'))).toBe(false);
   });
 
   it('validates and audits expiration policy changes, including clearing the policy', async () => {
@@ -198,7 +198,7 @@ describe('program settings route', () => {
 
   it('denies PROGRAM_EDITOR settings writes', async () => {
     authMock.mockResolvedValue({ ...session, user: { ...session.user, roles: ['PROGRAM_EDITOR'] } });
-    const response = await PATCH(new Request('http://localhost', { method: 'PATCH', body: JSON.stringify({ allowAdvancedProgramDesigner: true }) }), context);
+    const response = await PATCH(new Request('http://localhost', { method: 'PATCH', body: JSON.stringify({ allowProgramEditorPublish: true }) }), context);
     expect(response.status).toBe(403);
   });
 

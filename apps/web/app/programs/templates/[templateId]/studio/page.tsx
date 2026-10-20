@@ -5,25 +5,7 @@ import { canManageStakeTemplates, canManageSystemTemplates, canManageWardProgram
 import { isAdvancedDesignerFeatureEnabled } from '@/src/features/advanced-designer';
 import { isWardModuleEnabled } from '@/src/modules/service';
 import { pool } from '@/src/db/client';
-import { setDbContext } from '@/src/db/context';
-import { loadProgramPermissionProfile } from '@/src/document-designer/template-service';
 import { TemplateStudioClient } from './template-studio-client';
-
-async function loadWardProgramPermissionProfile(wardId: string, userId: string) {
-  const client = await pool.connect();
-  try {
-    await client.query('BEGIN');
-    await setDbContext(client, { wardId, userId });
-    const profile = await loadProgramPermissionProfile(client, wardId);
-    await client.query('COMMIT');
-    return profile;
-  } catch (error) {
-    await client.query('ROLLBACK').catch(() => undefined);
-    throw error;
-  } finally {
-    client.release();
-  }
-}
 
 export default async function TemplateStudioPage({ params, searchParams }: { params: Promise<{ templateId: string }>; searchParams?: Promise<{ adminScope?: string; stakeId?: string }> }) {
   const session = await requireAuthenticatedSession();
@@ -46,8 +28,7 @@ export default async function TemplateStudioPage({ params, searchParams }: { par
   const advancedEditing = sharedAdvancedEditing ?? (stakeAdminAdvancedEditing || (session.activeWardId
     ? canUseAdvancedProgramDesigner(
         { roles: session.user.roles, activeWardId: session.activeWardId },
-        session.activeWardId,
-        await loadWardProgramPermissionProfile(session.activeWardId, session.user.id)
+        session.activeWardId
       )
     : Boolean(session.user.roles?.includes('STAND_ADMIN') || session.user.roles?.includes('BISHOPRIC_EDITOR'))));
   if (!isAdvancedDesignerFeatureEnabled() || (session.activeWardId && !(await isWardModuleEnabled(session.activeWardId, session.user.id, 'programs')))) redirect('/dashboard');

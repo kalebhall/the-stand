@@ -114,7 +114,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
       ? Boolean(session.activeStakeId === wardStakeId && canManageStakeTemplates(session, wardStakeId))
       : Boolean(template && (matchingStakeAdmin || hasRole(session.user.roles, 'STAND_ADMIN') || canEditTemplate({ scope_type: String(template.scope_type) as 'WARD' | 'PERSONAL_DRAFT' | 'STAKE' | 'SYSTEM', scope_id: template.scope_id as string | null, created_by_user_id: template.created_by_user_id as string | null }, wardId, session.user.id, profile)));
     const canProgramEdit = canManageWardProgramTemplates({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId, profile) || matchingStakeAdmin || (template?.scope_type === 'STAKE' && scopeCanEdit);
-    const advancedEditing = matchingStakeAdmin || (template?.scope_type === 'STAKE' && scopeCanEdit) || canUseAdvancedProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId, profile);
+    const advancedEditing = matchingStakeAdmin || (template?.scope_type === 'STAKE' && scopeCanEdit) || canUseAdvancedProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId);
     if (!template || template.status !== 'DRAFT' || !scopeCanEdit || !canProgramEdit) {
       await client.query('ROLLBACK');
       return NextResponse.json({ error: 'Forbidden', code: 'FORBIDDEN' }, { status: 403 });

@@ -9,7 +9,6 @@ describe('document designer persistence', () => {
       defaultSacramentTemplate: null,
       defaultSacramentTemplateId: null,
       defaultSacramentTemplateKey: null,
-      allowAdvancedProgramDesigner: false,
       allowProgramEditorPublish: false,
       allowProgramEditorRepublish: false,
       allowProgramEditorRollback: false,
@@ -17,7 +16,7 @@ describe('document designer persistence', () => {
       allowProgramEditorDeleteMedia: false,
       publicProgramExpirationDays: null
     });
-    expect(DEFAULT_WARD_DOCUMENT_SETTINGS.allow_advanced_program_designer).toBe(false);
+
   });
 
   it('loads and writes every program permission setting', async () => {
@@ -25,7 +24,7 @@ describe('document designer persistence', () => {
     const row = {
       ward_id: 'ward-a',
       ...DEFAULT_WARD_DOCUMENT_SETTINGS,
-      allow_advanced_program_designer: true,
+
       allow_program_editor_publish: true
     };
     client.query.mockResolvedValueOnce({ rows: [row] }).mockResolvedValueOnce({ rows: [row] });
@@ -34,7 +33,7 @@ describe('document designer persistence', () => {
     await expect(saveWardDocumentSettings(client, 'ward-a', 'user-a', {
       defaultSacramentTemplateId: null,
       defaultSacramentTemplateKey: null,
-      allowAdvancedProgramDesigner: true,
+
       allowProgramEditorPublish: true,
       allowProgramEditorRepublish: false,
       allowProgramEditorRollback: false,
@@ -43,7 +42,7 @@ describe('document designer persistence', () => {
       publicProgramExpirationDays: 30
     })).resolves.toEqual(row);
     expect(client.query).toHaveBeenCalledWith(expect.stringContaining('WHERE ward_id = $1::uuid'), ['ward-a']);
-    expect(client.query).toHaveBeenLastCalledWith(expect.stringContaining('$4::boolean'), expect.arrayContaining(['ward-a', null, null, true, true, 'user-a']));
+    expect(client.query).toHaveBeenLastCalledWith(expect.stringContaining('$4::boolean'), expect.arrayContaining(['ward-a', null, null, true, 'user-a']));
   });
 
   it('uses a revision predicate when saving a meeting document', async () => {

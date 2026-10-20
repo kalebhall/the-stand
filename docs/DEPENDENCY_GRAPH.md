@@ -15,7 +15,7 @@ flowchart LR
   A3["root:tooling<br/>7 files"]
   A4["web:announcements<br/>2 files"]
   A5["web:api<br/>146 files"]
-  A6["web:app<br/>156 files"]
+  A6["web:app<br/>154 files"]
   A7["web:audit<br/>2 files"]
   A8["web:auth<br/>14 files"]
   A9["web:bootstrap.mjs<br/>1 files"]
@@ -53,16 +53,16 @@ flowchart LR
   A5 -->|160| A16
   A6 -->|120| A38
   A6 -->|98| A8
-  A5 -->|75| A17
-  A6 -->|65| A16
+  A5 -->|69| A17
+  A6 -->|64| A16
   A5 -->|61| A27
   A5 -->|48| A29
   A6 -->|33| A27
   A5 -->|32| A7
-  A6 -->|29| A17
+  A6 -->|28| A17
   A5 -->|25| A24
   A5 -->|24| A26
-  A6 -->|22| A21
+  A6 -->|21| A21
   A6 -->|16| A26
   A5 -->|14| A11
   A5 -->|14| A18
@@ -174,7 +174,7 @@ flowchart LR
 | `root:tooling` | 7 |
 | `web:announcements` | 2 |
 | `web:api` | 146 |
-| `web:app` | 156 |
+| `web:app` | 154 |
 | `web:audit` | 2 |
 | `web:auth` | 14 |
 | `web:bootstrap.mjs` | 1 |
@@ -218,9 +218,9 @@ flowchart LR
 | `web:api` | `web:db` | 160 |
 | `web:app` | `web:ui` | 120 |
 | `web:app` | `web:auth` | 98 |
-| `web:app` | `web:app` | 78 |
-| `web:api` | `web:document-designer` | 75 |
-| `web:app` | `web:db` | 65 |
+| `web:app` | `web:app` | 76 |
+| `web:api` | `web:document-designer` | 69 |
+| `web:app` | `web:db` | 64 |
 | `web:notifications` | `web:notifications` | 63 |
 | `web:api` | `web:modules` | 61 |
 | `web:api` | `web:notifications` | 48 |
@@ -229,11 +229,11 @@ flowchart LR
 | `web:app` | `web:modules` | 33 |
 | `web:api` | `web:audit` | 32 |
 | `web:programs` | `web:programs` | 30 |
-| `web:app` | `web:document-designer` | 29 |
+| `web:app` | `web:document-designer` | 28 |
 | `web:api` | `web:lib` | 25 |
 | `web:api` | `web:meetings` | 24 |
-| `web:app` | `web:i18n` | 22 |
 | `web:platform` | `web:platform` | 22 |
+| `web:app` | `web:i18n` | 21 |
 | `web:meetings` | `web:meetings` | 20 |
 | `web:modules` | `web:modules` | 17 |
 | `web:app` | `web:meetings` | 16 |
@@ -361,17 +361,17 @@ flowchart LR
 | Importing area | Package/runtime | Imports |
 | --- | --- | ---: |
 | `web:app` | `next` | 110 |
-| `web:app` | `next-intl` | 96 |
+| `web:app` | `next-intl` | 94 |
 | `web:api` | `next` | 92 |
-| `web:app` | `react` | 49 |
+| `web:app` | `react` | 48 |
 | `web:api` | `vitest` | 42 |
 | `web:ui` | `react` | 33 |
 | `web:document-designer` | `vitest` | 31 |
-| `web:app` | `vitest` | 25 |
 | `web:ui` | `next-intl` | 25 |
+| `web:app` | `vitest` | 24 |
 | `web:notifications` | `vitest` | 20 |
-| `web:app` | `@testing-library/react` | 18 |
 | `web:ui` | `next` | 18 |
+| `web:app` | `@testing-library/react` | 17 |
 | `web:db` | `Node.js` | 17 |
 | `web:api` | `zod` | 16 |
 | `root:tooling` | `Node.js` | 14 |
@@ -642,10 +642,10 @@ flowchart LR
 | `apps/web/app/api/w/[wardId]/program-settings/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/public-layout/route.ts` | `web:api` | 7 | 1 |
 | `apps/web/app/api/w/[wardId]/public-layout/route.vitest.ts` | `web:api` | 2 | 1 |
-| `apps/web/app/api/w/[wardId]/reusable-blocks/[blockId]/route.ts` | `web:api` | 9 | 1 |
-| `apps/web/app/api/w/[wardId]/reusable-blocks/[blockId]/route.vitest.ts` | `web:api` | 3 | 1 |
-| `apps/web/app/api/w/[wardId]/reusable-blocks/route.ts` | `web:api` | 9 | 1 |
-| `apps/web/app/api/w/[wardId]/reusable-blocks/route.vitest.ts` | `web:api` | 3 | 1 |
+| `apps/web/app/api/w/[wardId]/reusable-blocks/[blockId]/route.ts` | `web:api` | 7 | 1 |
+| `apps/web/app/api/w/[wardId]/reusable-blocks/[blockId]/route.vitest.ts` | `web:api` | 2 | 1 |
+| `apps/web/app/api/w/[wardId]/reusable-blocks/route.ts` | `web:api` | 7 | 1 |
+| `apps/web/app/api/w/[wardId]/reusable-blocks/route.vitest.ts` | `web:api` | 2 | 1 |
 | `apps/web/app/api/w/[wardId]/speakers/[programItemId]/route.ts` | `web:api` | 6 | 1 |
 | `apps/web/app/api/w/[wardId]/users/[userId]/roles/[roleId]/route.ts` | `web:api` | 7 | 1 |
 | `apps/web/app/api/w/[wardId]/users/[userId]/roles/route.ts` | `web:api` | 7 | 1 |
@@ -724,7 +724,7 @@ flowchart LR
 | `apps/web/app/programs/programs-client.tsx` | `web:app` | 0 | 2 |
 | `apps/web/app/programs/programs-client.vitest.tsx` | `web:app` | 3 | 3 |
 | `apps/web/app/programs/templates/[templateId]/page.tsx` | `web:app` | 6 | 1 |
-| `apps/web/app/programs/templates/[templateId]/studio/page.tsx` | `web:app` | 8 | 1 |
+| `apps/web/app/programs/templates/[templateId]/studio/page.tsx` | `web:app` | 6 | 1 |
 | `apps/web/app/programs/templates/[templateId]/studio/template-studio-client.tsx` | `web:app` | 1 | 3 |
 | `apps/web/app/programs/templates/[templateId]/studio/template-studio-client.vitest.tsx` | `web:app` | 2 | 3 |
 | `apps/web/app/programs/templates/[templateId]/template-detail-client.tsx` | `web:app` | 0 | 3 |
@@ -741,8 +741,6 @@ flowchart LR
 | `apps/web/app/request-access/page.tsx` | `web:app` | 1 | 0 |
 | `apps/web/app/request-access/request-access-form.tsx` | `web:app` | 2 | 1 |
 | `apps/web/app/sentry-example-page/page.tsx` | `web:app` | 0 | 0 |
-| `apps/web/app/settings/advanced-designer-setting.tsx` | `web:app` | 0 | 2 |
-| `apps/web/app/settings/advanced-designer-setting.vitest.tsx` | `web:app` | 2 | 3 |
 | `apps/web/app/settings/audit-log/WardAuditLogClient.tsx` | `web:app` | 1 | 1 |
 | `apps/web/app/settings/audit-log/page.tsx` | `web:app` | 8 | 2 |
 | `apps/web/app/settings/default-program-template-setting.tsx` | `web:app` | 0 | 2 |
@@ -755,7 +753,7 @@ flowchart LR
 | `apps/web/app/settings/notifications/notification-subscription-settings.tsx` | `web:app` | 1 | 2 |
 | `apps/web/app/settings/notifications/notification-subscription-settings.vitest.tsx` | `web:app` | 2 | 5 |
 | `apps/web/app/settings/notifications/page.tsx` | `web:app` | 4 | 2 |
-| `apps/web/app/settings/page.tsx` | `web:app` | 14 | 4 |
+| `apps/web/app/settings/page.tsx` | `web:app` | 13 | 4 |
 | `apps/web/app/settings/public-layout/page.tsx` | `web:app` | 7 | 1 |
 | `apps/web/app/settings/public-layout/public-layout-client.tsx` | `web:app` | 3 | 1 |
 | `apps/web/app/settings/public-layout/public-layout-client.vitest.tsx` | `web:app` | 1 | 2 |

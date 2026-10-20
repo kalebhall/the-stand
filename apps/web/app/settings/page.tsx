@@ -11,7 +11,6 @@ import { requireAuthenticatedSession } from '@/src/auth/guards';
 import { canManageMeetings, canRunImports, canViewMeetings, hasRole } from '@/src/auth/roles';
 import { getWardModuleSettings, isWardModuleEnabled } from '@/src/modules/service';
 import { ModuleSettings } from '@/app/settings/module-settings';
-import { AdvancedDesignerSetting } from '@/app/settings/advanced-designer-setting';
 import { DefaultProgramTemplateSetting } from '@/app/settings/default-program-template-setting';
 import { isAdvancedDesignerFeatureEnabled } from '@/src/features/advanced-designer';
 import { pool } from '@/src/db/client';
@@ -100,7 +99,6 @@ export default async function SettingsPage() {
             {isStandAdmin && <SettingsLink href="/settings/stand-script" label={t('standScriptTemplates')} />}
             {canManageProgramLayout && <SettingsLink href="/settings/public-layout" label={t('printedProgramLayout')} />}
             {canManageProgramLayout && programsEnabled && isAdvancedDesignerFeatureEnabled() && wardId && <DefaultProgramTemplateSetting wardId={wardId} />}
-            {isStandAdmin && programsEnabled && <AdvancedDesignerSetting key={wardId} wardId={wardId} />}
             {isStandAdmin && <SettingsLink href="/settings/public-portal" label={t('publicPortal')} />}
             {canManageNotifications && <SettingsLink href="/settings/notifications" label={t('notificationSettings')} />}
             {canViewActivityLog && <SettingsLink href="/settings/audit-log" label={t('activityLog')} />}

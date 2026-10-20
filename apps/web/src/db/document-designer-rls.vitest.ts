@@ -43,8 +43,8 @@ BEGIN
   INSERT INTO meeting (ward_id, meeting_date, meeting_type) VALUES (ward_a, '2026-09-20', 'SACRAMENT') RETURNING id INTO meeting_a;
   INSERT INTO meeting_document (ward_id, meeting_id, document_type, schema_version, layout_json, theme_json, updated_by_user_id)
   VALUES (ward_a, meeting_a, 'SACRAMENT_PROGRAM', 1, '{"schemaVersion": 1}'::jsonb, '{}'::jsonb, user_a);
-  INSERT INTO ward_document_settings (ward_id, allow_advanced_program_designer, updated_by_user_id)
-  VALUES (ward_a, false, user_a);
+  INSERT INTO ward_document_settings (ward_id, updated_by_user_id)
+  VALUES (ward_a, user_a);
   INSERT INTO rls_fixture (ward_a, ward_b, user_a, meeting_a) VALUES (ward_a, ward_b, user_a, meeting_a);
 END;
 $$;

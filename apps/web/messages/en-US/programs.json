@@ -224,7 +224,7 @@
     "linksAndQrDescription": "Public-safe links and QR codes.",
     "simpleBlocksDescription": "Select a block to edit its content.",
     "advancedControls": "Customize layout",
-    "advancedBlocksDisabled": "Custom blocks and layout controls are off for this ward. A Stand Admin can enable Advanced Designer in Settings.",
+    "advancedBlocksDisabled": "Advanced design controls are temporarily unavailable. Contact a Stand Admin.",
     "spatialLayout": "Spatial layout",
     "spatialDescription": "Select a panel, then add or move blocks into it.",
     "targetPanel": "Target panel",

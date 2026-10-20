@@ -21,7 +21,6 @@ import { isAdvancedDesignerFeatureEnabled } from '@/src/features/advanced-design
 
 const settingsSchema = z.object({
   defaultSacramentTemplate: z.string().regex(/^(builtin:[a-z0-9-]+|[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/i).nullable().optional(),
-  allowAdvancedProgramDesigner: z.boolean().optional(),
   allowProgramEditorPublish: z.boolean().optional(),
   allowProgramEditorRepublish: z.boolean().optional(),
   allowProgramEditorRollback: z.boolean().optional(),
@@ -33,7 +32,6 @@ const settingsSchema = z.object({
 type ProgramSettings = {
   defaultSacramentTemplateId: string | null;
   defaultSacramentTemplateKey: string | null;
-  allowAdvancedProgramDesigner: boolean;
   allowProgramEditorPublish: boolean;
   allowProgramEditorRepublish: boolean;
   allowProgramEditorRollback: boolean;
@@ -47,7 +45,6 @@ function rowToProgramSettings(row: WardDocumentSettings | null): ProgramSettings
   return {
     defaultSacramentTemplateId: value.default_sacrament_template_id,
     defaultSacramentTemplateKey: value.default_sacrament_template_key,
-    allowAdvancedProgramDesigner: value.allow_advanced_program_designer,
     allowProgramEditorPublish: value.allow_program_editor_publish,
     allowProgramEditorRepublish: value.allow_program_editor_republish,
     allowProgramEditorRollback: value.allow_program_editor_rollback,

@@ -1378,7 +1378,7 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
     await waitFor(() => expect(screen.getByRole('main')).toBeInTheDocument());
     expect(screen.queryByRole('button', { name: /publish/i })).not.toBeInTheDocument();
   });
-  it('keeps advanced blocks read-only when ward customization is disabled', async () => {
+  it('keeps advanced blocks read-only when advanced design is globally disabled', async () => {
     const advancedOnlyLayout = {
       ...payload.document.layout,
       pages: payload.document.layout.pages.map((page, pageIndex) =>
@@ -1415,7 +1415,7 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
     vi.stubGlobal('fetch', fetchMock);
     renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
     await screen.findByRole('region', { name: 'Document canvas' });
-    expect(screen.getByRole('note')).toHaveTextContent('off for this ward');
+    expect(screen.getByRole('note')).toHaveTextContent('Advanced design controls are temporarily unavailable. Contact a Stand Admin.');
     expect(screen.queryByRole('region', { name: 'Add content' })).not.toBeInTheDocument();
     expect(screen.queryByText('Customize layout', { selector: 'summary' })).not.toBeInTheDocument();
     expect(screen.getAllByText('Read-only · expand Customize layout to edit').length).toBeGreaterThan(0);

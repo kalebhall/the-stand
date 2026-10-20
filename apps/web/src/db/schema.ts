@@ -1321,7 +1321,6 @@ export const wardDocumentSettings = pgTable('ward_document_settings', {
     .references(() => ward.id, { onDelete: 'cascade' }),
   defaultSacramentTemplateId: uuid('default_sacrament_template_id').references(() => documentTemplate.id, { onDelete: 'set null' }),
   defaultSacramentTemplateKey: text('default_sacrament_template_key'),
-  allowAdvancedProgramDesigner: boolean('allow_advanced_program_designer').notNull().default(false),
   allowProgramEditorPublish: boolean('allow_program_editor_publish').notNull().default(false),
   allowProgramEditorRepublish: boolean('allow_program_editor_republish').notNull().default(false),
   allowProgramEditorRollback: boolean('allow_program_editor_rollback').notNull().default(false),

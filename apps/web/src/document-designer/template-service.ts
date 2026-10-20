@@ -256,8 +256,7 @@ export async function loadProgramPermissionProfile(client: TemplateClient, wardI
     `SELECT allow_program_editor_create_templates,
             allow_program_editor_publish,
             allow_program_editor_republish,
-            allow_program_editor_rollback,
-            allow_advanced_program_designer
+            allow_program_editor_rollback
        FROM ward_document_settings
       WHERE ward_id = $1::uuid
       LIMIT 1`,
@@ -268,8 +267,7 @@ export async function loadProgramPermissionProfile(client: TemplateClient, wardI
     allowProgramEditorCreateTemplates: row?.allow_program_editor_create_templates === true,
     allowProgramEditorPublish: row?.allow_program_editor_publish === true,
     allowProgramEditorRepublish: row?.allow_program_editor_republish === true,
-    allowProgramEditorRollback: row?.allow_program_editor_rollback === true,
-    allowAdvancedProgramDesigner: row?.allow_advanced_program_designer === true
+    allowProgramEditorRollback: row?.allow_program_editor_rollback === true
   };
 }
 

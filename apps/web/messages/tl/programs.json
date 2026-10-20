@@ -233,7 +233,7 @@
     "linksAndQrDescription": "Mga ligtas na pampublikong link at QR code.",
     "simpleBlocksDescription": "Pumili ng block para i-edit ang nilalaman nito.",
     "advancedControls": "I-customize ang layout",
-    "advancedBlocksDisabled": "Naka-off para sa ward na ito ang mga custom block at layout control. Maaaring paganahin ito ng Stand Admin sa Settings.",
+    "advancedBlocksDisabled": "Pansamantalang hindi available ang mga advanced na layout control. Makipag-ugnayan sa Stand Admin.",
     "spatialLayout": "Layout ng espasyo",
     "spatialDescription": "Pumili ng panel, pagkatapos ay magdagdag o maglipat ng mga bloke dito.",
     "targetPanel": "Panel ng target",

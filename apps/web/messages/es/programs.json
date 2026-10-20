@@ -230,7 +230,7 @@
     "linksAndQrDescription": "Enlaces públicos seguros y códigos QR.",
     "simpleBlocksDescription": "Selecciona un bloque para editar su contenido.",
     "advancedControls": "Personalizar diseño",
-    "advancedBlocksDisabled": "Los bloques personalizados y los controles de diseño están desactivados para este barrio. Un administrador de The Stand puede activarlos en Configuración.",
+    "advancedBlocksDisabled": "Los controles de diseño avanzado no están disponibles temporalmente. Comunícate con un administrador de The Stand.",
     "spatialLayout": "Diseño espacial",
     "spatialDescription": "Selecciona un panel y agrega o mueve bloques dentro de él.",
     "targetPanel": "Panel de destino",
