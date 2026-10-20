@@ -213,7 +213,7 @@ flowchart LR
 
 | Importing area | Imported area | Imports |
 | --- | --- | ---: |
-| `web:document-designer` | `web:document-designer` | 252 |
+| `web:document-designer` | `web:document-designer` | 253 |
 | `web:api` | `web:auth` | 185 |
 | `web:api` | `web:db` | 160 |
 | `web:app` | `web:ui` | 120 |
@@ -452,6 +452,7 @@ flowchart LR
 | `web:db` | `module` | 1 |
 | `web:document-designer` | `jspdf` | 1 |
 | `web:document-designer` | `pg` | 1 |
+| `web:document-designer` | `qrcode` | 1 |
 | `web:features` | `vitest` | 1 |
 | `web:hardening` | `vitest` | 1 |
 | `web:health.mjs` | `pg` | 1 |
@@ -923,7 +924,7 @@ flowchart LR
 | `apps/web/src/document-designer/advanced-schema.vitest.ts` | `web:document-designer` | 2 | 1 |
 | `apps/web/src/document-designer/advanced-validation.ts` | `web:document-designer` | 2 | 0 |
 | `apps/web/src/document-designer/announcement-list-presentation.ts` | `web:document-designer` | 2 | 0 |
-| `apps/web/src/document-designer/block-renderers.ts` | `web:document-designer` | 7 | 0 |
+| `apps/web/src/document-designer/block-renderers.ts` | `web:document-designer` | 7 | 1 |
 | `apps/web/src/document-designer/built-in-templates.ts` | `web:document-designer` | 4 | 0 |
 | `apps/web/src/document-designer/compatibility-render.vitest.ts` | `web:document-designer` | 7 | 1 |
 | `apps/web/src/document-designer/constants.ts` | `web:document-designer` | 0 | 0 |
@@ -975,7 +976,7 @@ flowchart LR
 | `apps/web/src/document-designer/registry.vitest.ts` | `web:document-designer` | 2 | 2 |
 | `apps/web/src/document-designer/render-types.ts` | `web:document-designer` | 3 | 0 |
 | `apps/web/src/document-designer/renderer.ts` | `web:document-designer` | 6 | 0 |
-| `apps/web/src/document-designer/renderer.vitest.ts` | `web:document-designer` | 4 | 1 |
+| `apps/web/src/document-designer/renderer.vitest.ts` | `web:document-designer` | 5 | 1 |
 | `apps/web/src/document-designer/reusable-block-library.ts` | `web:document-designer` | 2 | 1 |
 | `apps/web/src/document-designer/reusable-block-sources.ts` | `web:document-designer` | 1 | 0 |
 | `apps/web/src/document-designer/reusable-block-sources.vitest.ts` | `web:document-designer` | 1 | 1 |

@@ -203,7 +203,9 @@ test('uniform content editor works without Advanced Layout and persists source r
     if (itemsResponse.status !== 200) throw new Error(`program items load failed: ${JSON.stringify(itemsResponse)}`);
     await page.goto(`/programs/${meetingId}`);
     await expect(page.getByRole('button', { name: 'Content', exact: true })).toBeVisible({ timeout: 120_000 });
-    await expect(page.getByRole('button', { name: 'Advanced Mode' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Advanced Mode' })).toHaveCount(0);
+    await expect(page.getByRole('region', { name: 'Add content' })).toBeVisible();
+    await expect(page.getByText('Customize layout', { exact: true })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Meeting program' })).toHaveCSS('white-space', 'nowrap');
     await page.getByRole('button', { name: 'Content', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'Program content' })).toBeVisible({ timeout: 120_000 });
@@ -263,11 +265,12 @@ test('Program Designer creates, saves, reloads, and previews structural blocks',
     meetingId = (createResponse.body as { id: string }).id;
     await page.goto(`/programs/${meetingId}`);
     await expect(page.getByRole('region', { name: 'Document canvas' })).toBeVisible({ timeout: 120_000 });
-    await expect(page.getByRole('button', { name: 'Advanced Mode' })).toBeVisible({ timeout: 120_000 });
+    await expect(page.getByRole('button', { name: 'Advanced Mode' })).toHaveCount(0);
+    await expect(page.getByRole('region', { name: 'Add content' })).toBeVisible({ timeout: 120_000 });
+    await expect(page.getByText('Customize layout', { exact: true })).toBeVisible();
     await expect(page.getByRole('status').first()).toHaveText('Saved', { timeout: 120_000 });
 
-    await page.getByRole('button', { name: 'Advanced Mode' }).click();
-    await page.getByLabel('Columns in selected panel').selectOption('2');
+    await page.getByText('Customize layout', { exact: true }).click();
     await page.getByRole('button', { name: 'Add section heading' }).click();
     await page.getByLabel('Section heading title').fill('Community');
     await page.getByLabel('Section heading subtitle').fill('This week');
@@ -293,7 +296,7 @@ test('Program Designer creates, saves, reloads, and previews structural blocks',
         response.url().includes(`/api/w/${WARD_A}/meetings/${meetingId}/program-design`) && response.request().method() === 'PUT',
       { timeout: 15_000 }
     );
-    await page.getByRole('button', { name: 'Save advanced layout' }).click();
+    await page.getByRole('button', { name: 'Save layout' }).click();
     await expect.poll(() => programWriteRequests.length, { timeout: 15_000 }).toBeGreaterThan(0);
     const advancedSavePayload = JSON.parse(programWriteRequests.at(-1)!) as {
       document: { pages: Array<{ regions: Array<{ blocks: Array<{ type: string }> }> }> };
@@ -304,7 +307,7 @@ test('Program Designer creates, saves, reloads, and previews structural blocks',
     expect(requestBlocks.map((block) => block.type)).toContain('SECTION_HEADING');
     expect(requestBlocks.map((block) => block.type)).toContain('SIMPLE_LIST');
     const advancedSave = await advancedSavePromise;
-    expect(advancedSave.ok(), `Advanced save failed: ${advancedSave.status()} ${await advancedSave.text()}`).toBe(true);
+    expect(advancedSave.ok(), `Layout save failed: ${advancedSave.status()} ${await advancedSave.text()}`).toBe(true);
     const advancedSaveBody = (await advancedSave.json()) as {
       document?: { layout?: { pages: Array<{ regions: Array<{ blocks: Array<{ type: string }> }> }> } };
     };
@@ -383,9 +386,10 @@ test('Program Designer creates, saves, reloads, and previews structural blocks',
 
     await page.reload();
     await expect(page.getByRole('region', { name: 'Document canvas' })).toBeVisible({ timeout: 120_000 });
-    await page.getByRole('button', { name: 'Advanced Mode' }).click();
+    await page.getByText('Customize layout', { exact: true }).click();
     const approvedBlocks = page.getByRole('complementary', { name: 'Approved blocks' });
     await approvedBlocks.getByRole('button', { name: /^Section heading / }).click();
+
     await expect(page.getByLabel('Section heading title')).toHaveValue('Community', { timeout: 10_000 });
     await approvedBlocks.getByRole('button', { name: /^Simple list / }).click();
     await expect(properties.getByRole('textbox').nth(0)).toHaveValue('Youth activity', { timeout: 10_000 });
@@ -465,7 +469,9 @@ test('program designer drag reorder persists after reload', async ({ page }) => 
     expect(initialBlockIds.length).toBeGreaterThan(1);
 
     await expect(page.getByRole('region', { name: 'Document canvas' })).toBeVisible({ timeout: 120_000 });
-    await expect(page.getByRole('button', { name: 'Advanced Mode' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Advanced Mode' })).toHaveCount(0);
+    await expect(page.getByRole('region', { name: 'Add content' })).toBeVisible();
+    await expect(page.getByText('Customize layout', { exact: true })).toBeVisible();
     await expect(page.getByRole('status').first()).toHaveText('Saved', { timeout: 120_000 });
     const approvedBlocks = page.getByRole('complementary', { name: 'Approved blocks' });
     const blockRows = approvedBlocks.locator('ul > li');

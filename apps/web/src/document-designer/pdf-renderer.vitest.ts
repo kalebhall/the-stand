@@ -294,6 +294,48 @@ describe('PDF renderer', () => {
     const pdfBytes = pdf.output('arraybuffer');
     expect(new TextDecoder().decode(pdfBytes)).toContain('/Subtype /Image');
   });
+  it.each(['http://localhost/private', 'http://127.0.0.1/private', 'http://[::1]/private'])(
+    'does not render an HTTP loopback QR destination in PDF (%s)',
+    async (href) => {
+      const layout: DocumentLayout = {
+        ...DEFAULT_DOCUMENT_LAYOUT,
+        fold: 'NONE',
+        pages: [
+          {
+            ...DEFAULT_DOCUMENT_LAYOUT.pages[0],
+            regions: [
+              {
+                ...DEFAULT_DOCUMENT_LAYOUT.pages[0].regions[0],
+                blocks: [
+                  {
+                    ...DEFAULT_DOCUMENT_LAYOUT.pages[0].regions[0].blocks[0],
+                    type: 'QR_CODE',
+                    config: { href, label: 'Digital Program' }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      };
+      const pdf = await renderDocumentPdf(layout, data, {
+        metadata: {
+          schemaVersion: 1,
+          layoutHash: 'fnv1a-qr-http-rejected',
+          documentType: 'SACRAMENT_PROGRAM',
+          paper: 'LETTER',
+          orientation: 'PORTRAIT',
+          fold: 'NONE',
+          pageCount: 1,
+          rendererVersion: 'm8.1',
+          mediaAssetIds: []
+        }
+      });
+
+      expect(new TextDecoder().decode(pdf.output('arraybuffer'))).not.toContain('/Subtype /Image');
+    }
+  );
+
   it('renders advanced bifold regions across two duplex pages', async () => {
     const layout = parseAdvancedLayout({ ...DEFAULT_DOCUMENT_LAYOUT, fold: 'BIFOLD' });
     const pdf = await renderDocumentPdf(layout, data, {

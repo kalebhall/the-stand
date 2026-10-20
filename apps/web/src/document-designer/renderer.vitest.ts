@@ -2,10 +2,32 @@ import { describe, expect, it } from 'vitest';
 
 import { adaptLegacyLayoutToDocument } from './legacy-layout-adapter';
 import { resolveDocumentData } from './data-resolver';
+import { renderDocumentBlock } from './block-renderers';
 import { renderDocumentHtml } from './renderer';
 import { normalizeToAdvanced } from './advanced-schema';
 
 describe('generic document renderer', () => {
+  it.each(['http://localhost/private', 'http://127.0.0.1/private', 'http://[::1]/private'])(
+    'does not render an HTTP loopback URL as a QR destination (%s)',
+    (href) => {
+      const layout = adaptLegacyLayoutToDocument({ preset: 'FULL_PAGE', announcementMode: 'AFTER_PROGRAM', coverMode: 'NONE' });
+      const original = layout.pages[0].regions[0].blocks[0];
+      const qrBlock = {
+        ...original,
+        type: 'QR_CODE',
+        dataMode: 'MANUAL',
+        config: { href, label: 'Scan this program' }
+      } as typeof original;
+      const { data } = resolveDocumentData(layout, {
+        meetingDate: '2026-01-04',
+        meetingType: 'SACRAMENT',
+        programItems: []
+      });
+
+      expect(renderDocumentBlock(qrBlock, data, 'DIGITAL')).toBe('');
+    }
+  );
+
   it.each([
     ['LABEL_VALUE', 'document-meeting-program--label-value'],
     ['DOTTED_LEADERS', 'document-meeting-program--dotted-leaders'],
@@ -320,6 +342,58 @@ describe('generic document renderer', () => {
     const output = renderDocumentHtml({ layout: advanced, data, target: 'PRINT' });
     const firstSide = output.html.split('data-side-index="0"')[1]?.split('data-side-index="1"')[0] ?? '';
     expect(firstSide.indexOf('data-region-face="BACK_COVER"')).toBeLessThan(firstSide.indexOf('data-region-face="FRONT_COVER"'));
+  });
+
+  it('renders a QR block as a scannable SVG with its configured safe destination', () => {
+    const layout = adaptLegacyLayoutToDocument({ preset: 'FULL_PAGE', announcementMode: 'AFTER_PROGRAM', coverMode: 'NONE' });
+    const region = layout.pages[0].regions[0];
+    const original = region.blocks[0];
+    region.blocks = [
+      {
+        ...original,
+        type: 'QR_CODE',
+        dataMode: 'MANUAL',
+        config: { href: 'https://example.org/public-program', label: 'Scan this program' }
+      } as typeof original
+    ];
+    const { data } = resolveDocumentData(layout, {
+      meetingDate: '2026-01-04',
+      meetingType: 'SACRAMENT',
+      programItems: []
+    });
+
+    const output = renderDocumentHtml({ layout, data, public: true, explicitPublicBlockTypes: ['QR_CODE'] });
+
+    expect(output.html).toContain('<svg');
+    expect(output.html).toContain('<rect');
+    expect(output.html).toContain('role="img" aria-label="QR code: Scan this program"');
+    expect(output.html).toContain('href="https://example.org/public-program" aria-label="Scan this program"');
+    expect(output.html).toContain('Scan this program');
+  });
+
+  it('uses the public program URL when a QR block has no configured destination', () => {
+    const layout = adaptLegacyLayoutToDocument({ preset: 'FULL_PAGE', announcementMode: 'AFTER_PROGRAM', coverMode: 'NONE' });
+    const region = layout.pages[0].regions[0];
+    const original = region.blocks[0];
+    region.blocks = [
+      {
+        ...original,
+        type: 'QR_CODE',
+        dataMode: 'MANUAL',
+        config: { href: null, label: 'Open digital program' }
+      } as typeof original
+    ];
+    const { data } = resolveDocumentData(layout, {
+      meetingDate: '2026-01-04',
+      meetingType: 'SACRAMENT',
+      publicUrl: 'https://example.org/ward-program',
+      programItems: []
+    });
+
+    const output = renderDocumentHtml({ layout, data, public: true, explicitPublicBlockTypes: ['QR_CODE'] });
+
+    expect(output.html).toContain('href="https://example.org/ward-program" aria-label="Open digital program"');
+    expect(output.html).toContain('role="img" aria-label="QR code: Open digital program"');
   });
 
   it.each([

@@ -4,11 +4,15 @@
 
 B1 and B2 are implemented and independently reviewed. B3 is implemented; focused and full local verification passes, with a fresh exact-tree review required before merge. Tagalog and Tongan additions have locale-key parity, but native-speaker review remains pending. This document is a specification and does not itself change runtime behavior.
 
+The progressive-disclosure and QR insertion follow-up is implemented locally. Full unit/component and live PostgreSQL/RLS tests, workspace typecheck/lint, localization validation, dependency-graph check, production build, and Program Designer browser acceptance (8/8) pass. Fresh exact-tree review and any shipping/deployment actions remain pending.
+
 ## User decisions
 
 - Extend The Stand's existing Program Studio and document model.
 - Use the same canonical program content for print/PDF and web.
 - Mobile web must render in one column.
+- Use one progressive-disclosure designer: keep the standard meeting content approachable, expose allowed additions under Add content, and keep layout/display controls under collapsed Customize layout. The ward-level Advanced Designer setting remains the customization gate.
+- Provide QR_CODE insertion in Add content; seed it from the current public URL when available, and let editors supply a safe HTTPS destination when not.
 
 ## What the examples demonstrate
 

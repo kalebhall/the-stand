@@ -143,6 +143,7 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
   const [operationError, setOperationError] = useState<string | null>(null);
   const [advancedEnabled, setAdvancedEnabled] = useState(false);
   const [advancedEditing, setAdvancedEditing] = useState(false);
+  const [layoutCustomizationOpen, setLayoutCustomizationOpen] = useState(false);
   const [printValidation, setPrintValidation] = useState<PrintValidationResult | null>(null);
   const [historyState, setHistoryState] = useState<HistoryState | null>(null);
   const [status, setStatus] = useState<SaveState>('loading');
@@ -474,6 +475,7 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
   async function changeMode(nextMode: DesignerMode) {
     if (nextMode === mode) return;
     if (!advancedEditing) {
+      setLayoutCustomizationOpen(false);
       setMode(nextMode);
       return;
     }
@@ -487,6 +489,7 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
         if (!saved) return;
       }
       setAdvancedEditing(false);
+      setLayoutCustomizationOpen(false);
       setMode(nextMode);
       return;
     }
@@ -495,6 +498,7 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
       if (!saved) return;
     }
     setAdvancedEditing(false);
+    setLayoutCustomizationOpen(false);
     setMode(nextMode);
   }
 
@@ -829,7 +833,7 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
     addAdvancedBlock('CUSTOM_TEXT');
   }
 
-  function addAdvancedBlock(type: 'CUSTOM_TEXT' | 'PRESIDING_CONDUCTING' | 'ANNOUNCEMENT_LIST' | 'SECTION_HEADING' | 'SIMPLE_LIST') {
+  function addAdvancedBlock(type: 'CUSTOM_TEXT' | 'ANNOUNCEMENT_LIST' | 'SECTION_HEADING' | 'SIMPLE_LIST' | 'QR_CODE') {
     const current = currentAdvanced();
     if (!current) return;
     const config =
@@ -839,12 +843,14 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
           ? { title: t('newSectionHeading'), presentation: 'RULE' as const }
           : type === 'SIMPLE_LIST'
             ? { items: [], presentation: 'BULLETS' as const }
-            : { text: type === 'PRESIDING_CONDUCTING' ? '' : t('newTextBlock') };
+            : type === 'QR_CODE'
+              ? { href: source?.publicUrl ?? null, label: t('qrDefaultLabel') }
+              : { text: t('newTextBlock') };
     const block: DocumentBlock = {
       id: crypto.randomUUID() as DocumentBlock['id'],
       type,
       width: 'FULL',
-      dataMode: type === 'PRESIDING_CONDUCTING' ? 'AUTO' : 'MANUAL',
+      dataMode: 'MANUAL',
       visibility: 'VISIBLE',
       printBehavior: 'PRINT_AND_DIGITAL',
       digitalBehavior: 'NORMAL',
@@ -1094,7 +1100,6 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
     <main className="mx-auto w-full max-w-[1500px] space-y-4 p-4 sm:p-6">
       <header className="flex flex-wrap items-start justify-between gap-4 rounded-xl border bg-card p-4 shadow-sm sm:p-5 lg:flex-nowrap">
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium uppercase tracking-wide text-primary">{t('designerSimple')}</p>
           <h1 className="mt-1 text-2xl font-semibold tracking-tight sm:whitespace-nowrap sm:text-3xl">{t('meetingProgram')}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {source?.meetingDate} · {source ? meetingTypeLabel(source.meetingType) : ''}
@@ -1135,17 +1140,6 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
                     : t('printPreview')}
           </button>
         ))}
-        {advancedEnabled ? (
-          <button
-            type="button"
-            aria-pressed={advancedEditing}
-            className={`rounded-md px-3 py-2 text-sm ${advancedEditing ? 'bg-primary text-primary-foreground' : 'border'}`}
-            onClick={() => void toggleAdvancedEditing()}
-            disabled={status === 'saving'}
-          >
-            {advancedEditing ? t('simpleMode') : t('advancedMode')}
-          </button>
-        ) : null}
         {mode !== 'EDIT' && mode !== 'CONTENT' ? (
           <label className="ml-auto flex items-center gap-2 text-sm">
             <input type="checkbox" checked={publicVisitor} onChange={(event) => setPublicVisitor(event.target.checked)} />{' '}
@@ -1224,126 +1218,143 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
             <div>
               <h2 className="font-semibold">{t('blocks')}</h2>
               <p className="text-xs text-muted-foreground">{t('simpleBlocksDescription')}</p>
+              {!advancedEnabled ? (
+                <p role="note" className="text-xs text-muted-foreground">
+                  {t('advancedBlocksDisabled')}
+                </p>
+              ) : null}
             </div>
-            {advancedEditing ? (
-              <section className="space-y-2 border-b pb-3" aria-label={t('advancedControls')}>
-                <h3 className="font-medium">{t('spatialLayout')}</h3>
-                <p className="text-xs text-muted-foreground">{t('spatialDescription')}</p>
-                <label className="block space-y-1 text-xs">
-                  <span>{t('page')}</span>
-                  <select
-                    className="w-full rounded border px-2 py-2"
-                    value={selectedPageIndex}
-                    onChange={(event) => {
-                      setSelectedPageIndex(Number(event.target.value));
-                      setSelectedPanelIndex(0);
-                    }}
-                  >
-                    {advancedPages.map((_, pageIndex) => (
-                      <option key={pageIndex} value={pageIndex}>
-                        {t('pageNumber', { number: pageIndex + 1 })}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="block space-y-1 text-xs">
-                  <span>{t('targetPanel')}</span>
-                  <select
-                    className="w-full rounded border px-2 py-2"
-                    value={selectedPanelIndex}
-                    onChange={(event) => setSelectedPanelIndex(Number(event.target.value))}
-                  >
-                    {panelLabels.map((label, index) => (
-                      <option key={label} value={index}>
-                        {label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="block space-y-1 text-xs">
-                  <span>{t('moveSelectedBlock')}</span>
-                  <select
-                    className="w-full rounded border px-2 py-2"
-                    value={
-                      selectedBlockId && blockLocation(selectedBlockId)?.pageIndex === selectedPageIndex
-                        ? Math.max(panelForBlock(selectedBlockId), 0)
-                        : selectedPanelIndex
-                    }
-                    disabled={!selectedBlockId}
-                    onChange={(event) => moveBlockToPanel(selectedBlockId ?? '', selectedPageIndex, Number(event.target.value))}
-                  >
-                    {panelLabels.map((label, index) => (
-                      <option key={label} value={index}>
-                        {label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <div className="grid grid-cols-2 gap-1">
-                  <button type="button" className="rounded border px-2 py-2 text-xs" onClick={addAdvancedTextBlock}>
-                    {t('addToPanel')}
-                  </button>
-                  <button
-                    type="button"
-                    className="rounded border px-2 py-2 text-xs"
-                    disabled={!selectedBlockId}
-                    onClick={removeSelectedAdvancedBlock}
-                  >
-                    {t('removeSelected')}
-                  </button>
-                  <button
-                    type="button"
-                    className="rounded border px-2 py-2 text-xs"
-                    disabled={!historyState?.past.length}
-                    onClick={undoAdvanced}
-                  >
-                    {t('undo')}
-                  </button>
-                  <button
-                    type="button"
-                    className="rounded border px-2 py-2 text-xs"
-                    disabled={!historyState?.future.length}
-                    onClick={redoAdvanced}
-                  >
-                    {t('redo')}
-                  </button>
-                  <button
-                    type="button"
-                    className="col-span-2 rounded border px-2 py-2 text-xs"
-                    onClick={saveAdvanced}
-                    disabled={status === 'saving'}
-                  >
-                    {t('saveAdvancedLayout')}
-                  </button>
-                </div>
-                <label className="block space-y-1 text-xs">
-                  <span>{t('columnsInPanel')}</span>
-                  <select
-                    className="w-full rounded border px-2 py-2"
-                    value={currentAdvanced()?.pages[selectedPageIndex]?.regions[selectedPanelIndex]?.columns.count ?? 1}
-                    onChange={(event) => {
-                      const current = currentAdvanced();
-                      if (current)
-                        runLayoutOperation(() => {
-                          const next = configureColumns(
-                            current,
-                            selectedPageIndex,
-                            selectedPanelIndex,
-                            Number(event.target.value) as 1 | 2 | 3,
-                            Number(event.target.value) === 1 ? '1/1' : Number(event.target.value) === 2 ? '1/3+2/3' : '1/1',
-                            8
-                          );
-                          assertNoLockedChanges(current, next);
-                          applyAdvanced(next);
-                        });
-                    }}
-                  >
-                    <option value="1">{t('columnCount', { count: 1 })}</option>
-                    <option value="2">{t('columnCount', { count: 2 })}</option>
-                    <option value="3">{t('columnCount', { count: 3 })}</option>
-                  </select>
-                </label>
-              </section>
+            {advancedEnabled ? (
+              <details className="space-y-2 border-b pb-3" open={layoutCustomizationOpen}>
+                <summary
+                  className="cursor-pointer rounded-md px-2 py-2 text-sm font-medium hover:bg-muted"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    if (!layoutCustomizationOpen && !advancedEditing) void toggleAdvancedEditing();
+                    setLayoutCustomizationOpen((open) => !open);
+                  }}
+                >
+                  {t('advancedControls')}
+                </summary>
+                <section className="space-y-2" aria-label={t('advancedControls')}>
+                  <h3 className="font-medium">{t('spatialLayout')}</h3>
+                  <p className="text-xs text-muted-foreground">{t('spatialDescription')}</p>
+                  <label className="block space-y-1 text-xs">
+                    <span>{t('page')}</span>
+                    <select
+                      className="w-full rounded border px-2 py-2"
+                      value={selectedPageIndex}
+                      onChange={(event) => {
+                        setSelectedPageIndex(Number(event.target.value));
+                        setSelectedPanelIndex(0);
+                      }}
+                    >
+                      {advancedPages.map((_, pageIndex) => (
+                        <option key={pageIndex} value={pageIndex}>
+                          {t('pageNumber', { number: pageIndex + 1 })}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="block space-y-1 text-xs">
+                    <span>{t('targetPanel')}</span>
+                    <select
+                      className="w-full rounded border px-2 py-2"
+                      value={selectedPanelIndex}
+                      onChange={(event) => setSelectedPanelIndex(Number(event.target.value))}
+                    >
+                      {panelLabels.map((label, index) => (
+                        <option key={label} value={index}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="block space-y-1 text-xs">
+                    <span>{t('moveSelectedBlock')}</span>
+                    <select
+                      className="w-full rounded border px-2 py-2"
+                      value={
+                        selectedBlockId && blockLocation(selectedBlockId)?.pageIndex === selectedPageIndex
+                          ? Math.max(panelForBlock(selectedBlockId), 0)
+                          : selectedPanelIndex
+                      }
+                      disabled={!selectedBlockId}
+                      onChange={(event) => moveBlockToPanel(selectedBlockId ?? '', selectedPageIndex, Number(event.target.value))}
+                    >
+                      {panelLabels.map((label, index) => (
+                        <option key={label} value={index}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <div className="grid grid-cols-2 gap-1">
+                    <button type="button" className="rounded border px-2 py-2 text-xs" onClick={addAdvancedTextBlock}>
+                      {t('addToPanel')}
+                    </button>
+                    <button
+                      type="button"
+                      className="rounded border px-2 py-2 text-xs"
+                      disabled={!selectedBlockId}
+                      onClick={removeSelectedAdvancedBlock}
+                    >
+                      {t('removeSelected')}
+                    </button>
+                    <button
+                      type="button"
+                      className="rounded border px-2 py-2 text-xs"
+                      disabled={!historyState?.past.length}
+                      onClick={undoAdvanced}
+                    >
+                      {t('undo')}
+                    </button>
+                    <button
+                      type="button"
+                      className="rounded border px-2 py-2 text-xs"
+                      disabled={!historyState?.future.length}
+                      onClick={redoAdvanced}
+                    >
+                      {t('redo')}
+                    </button>
+                    <button
+                      type="button"
+                      className="col-span-2 rounded border px-2 py-2 text-xs"
+                      onClick={saveAdvanced}
+                      disabled={status === 'saving'}
+                    >
+                      {t('saveAdvancedLayout')}
+                    </button>
+                  </div>
+                  <label className="block space-y-1 text-xs">
+                    <span>{t('columnsInPanel')}</span>
+                    <select
+                      className="w-full rounded border px-2 py-2"
+                      value={currentAdvanced()?.pages[selectedPageIndex]?.regions[selectedPanelIndex]?.columns.count ?? 1}
+                      onChange={(event) => {
+                        const current = currentAdvanced();
+                        if (current)
+                          runLayoutOperation(() => {
+                            const next = configureColumns(
+                              current,
+                              selectedPageIndex,
+                              selectedPanelIndex,
+                              Number(event.target.value) as 1 | 2 | 3,
+                              Number(event.target.value) === 1 ? '1/1' : Number(event.target.value) === 2 ? '1/3+2/3' : '1/1',
+                              8
+                            );
+                            assertNoLockedChanges(current, next);
+                            applyAdvanced(next);
+                          });
+                      }}
+                    >
+                      <option value="1">{t('columnCount', { count: 1 })}</option>
+                      <option value="2">{t('columnCount', { count: 2 })}</option>
+                      <option value="3">{t('columnCount', { count: 3 })}</option>
+                    </select>
+                  </label>
+                </section>
+              </details>
             ) : null}
             {operationError ? (
               <p role="alert" className="rounded border border-red-300 bg-red-50 p-2 text-xs text-red-900">
@@ -1373,16 +1384,16 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
                   <button
                     type="button"
                     className="rounded border bg-background px-2 py-2 text-left text-sm"
-                    onClick={() => addAdvancedBlock('PRESIDING_CONDUCTING')}
+                    onClick={() => addAdvancedBlock('CUSTOM_TEXT')}
                   >
-                    {t('addPresidingConducting')}
+                    {t('addCustomBlock')}
                   </button>
                   <button
                     type="button"
                     className="rounded border bg-background px-2 py-2 text-left text-sm"
-                    onClick={() => addAdvancedBlock('CUSTOM_TEXT')}
+                    onClick={() => addAdvancedBlock('QR_CODE')}
                   >
-                    {t('addCustomBlock')}
+                    {t('addQrCode')}
                   </button>
                   <button
                     type="button"

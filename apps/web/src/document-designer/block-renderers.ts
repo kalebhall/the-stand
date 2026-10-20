@@ -1,6 +1,7 @@
 import type { DocumentBlock } from './types';
 import type { AdvancedBlock } from './advanced-schema';
 import type { ResolvedDocumentData, RenderTarget } from './render-types';
+import QRCode from 'qrcode';
 import { safeUrlSchema } from './primitives';
 import { meetingProgramPresentation, meetingProgramPresentationClass } from './meeting-program-presentation';
 import {
@@ -44,6 +45,10 @@ export function blockPresentationStyle(block: DocumentBlock): string {
   if (style?.spacing !== undefined) declarations.push(`margin-bottom:${style.spacing}px`);
   if (style?.border && style.border !== 'NONE') declarations.push(`border:1px ${style.border.toLowerCase()} currentColor`);
   return declarations.join(';');
+}
+
+function safeQrHref(value: unknown): value is string {
+  return safeUrlSchema.safeParse(value).success;
 }
 
 function safeHref(value: unknown): value is string {
@@ -159,13 +164,18 @@ export function renderDocumentBlock(
   }
   if (block.type === 'QR_CODE') {
     const config = block.config as { href?: unknown; label?: unknown };
-    const href = safeHref(config.href) ? config.href : safeHref(data.publicUrl) ? data.publicUrl : null;
+    const href = safeQrHref(config.href) ? config.href : safeQrHref(data.publicUrl) ? data.publicUrl : null;
     const label =
       typeof config.label === 'string' && config.label.trim()
         ? config.label.trim()
         : (data.renderLabels?.qrDigitalProgram ?? 'Open digital program');
     if (!href) return '';
-    return `<a class="document-block document-block--qr${block.digitalBehavior === 'LINK' ? ' document-block--digital-link' : ''}" href="${escapeDocumentHtml(href)}" aria-label="${escapeDocumentHtml(label)}">${escapeDocumentHtml(label)}</a>`;
+    const qr = QRCode.create(href, { errorCorrectionLevel: 'M' });
+    const size = qr.modules.size;
+    const cells = Array.from(qr.modules.data)
+      .map((dark, index) => (dark ? `<rect x="${index % size}" y="${Math.floor(index / size)}" width="1" height="1" />` : ''))
+      .join('');
+    return `<a class="document-block document-block--qr${block.digitalBehavior === 'LINK' ? ' document-block--digital-link' : ''}" href="${escapeDocumentHtml(href)}" aria-label="${escapeDocumentHtml(label)}"><svg viewBox="0 0 ${size} ${size}" width="128" height="128" role="img" aria-label="${escapeDocumentHtml(`QR code: ${label}`)}" shape-rendering="crispEdges" style="background:#fff;fill:#000">${cells}</svg><span>${escapeDocumentHtml(label)}</span></a>`;
   }
   if (block.type === 'IMAGE') {
     const config = block.config as { assetId: string | null; alt: string; isDecorative: boolean };
