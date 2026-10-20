@@ -91,7 +91,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     }
 
     await assertTemplateReusableReferences(client, layout, wardId, session.user.id, 'WARD_CONTEXT');
-    if (!matchingStakeAdmin && !canUseAdvancedProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId, profile) && (containsAdvancedBlocks(layout) || containsAdvancedLayoutStructure(layout))) {
+    if (!matchingStakeAdmin && !canUseAdvancedProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId) && (containsAdvancedBlocks(layout) || containsAdvancedLayoutStructure(layout))) {
       await client.query('ROLLBACK');
       return NextResponse.json({ error: 'Advanced blocks are read-only for this editor', code: 'ADVANCED_BLOCK_READ_ONLY' }, { status: 422 });
     }

@@ -13,7 +13,6 @@ export type WardDocumentSettings = {
   ward_id: string;
   default_sacrament_template_id: string | null;
   default_sacrament_template_key: string | null;
-  allow_advanced_program_designer: boolean;
   allow_program_editor_publish: boolean;
   allow_program_editor_republish: boolean;
   allow_program_editor_rollback: boolean;
@@ -38,7 +37,6 @@ export type MeetingDocumentInput = {
 export const DEFAULT_WARD_DOCUMENT_SETTINGS: Omit<WardDocumentSettings, 'ward_id'> = {
   default_sacrament_template_id: null,
   default_sacrament_template_key: null,
-  allow_advanced_program_designer: false,
   allow_program_editor_publish: false,
   allow_program_editor_republish: false,
   allow_program_editor_rollback: false,
@@ -52,7 +50,6 @@ export async function loadWardDocumentSettings(client: Queryable, wardId: string
     `SELECT ward_id,
             default_sacrament_template_id,
             default_sacrament_template_key,
-            allow_advanced_program_designer,
             allow_program_editor_publish,
             allow_program_editor_republish,
             allow_program_editor_rollback,
@@ -75,7 +72,6 @@ export function settingsResponse(row: WardDocumentSettings | null) {
       : value.default_sacrament_template_id,
     defaultSacramentTemplateId: value.default_sacrament_template_id,
     defaultSacramentTemplateKey: value.default_sacrament_template_key,
-    allowAdvancedProgramDesigner: value.allow_advanced_program_designer,
     allowProgramEditorPublish: value.allow_program_editor_publish,
     allowProgramEditorRepublish: value.allow_program_editor_republish,
     allowProgramEditorRollback: value.allow_program_editor_rollback,
@@ -92,7 +88,6 @@ export async function saveWardDocumentSettings(
   settings: {
     defaultSacramentTemplateId: string | null;
     defaultSacramentTemplateKey: string | null;
-    allowAdvancedProgramDesigner: boolean;
     allowProgramEditorPublish: boolean;
     allowProgramEditorRepublish: boolean;
     allowProgramEditorRollback: boolean;
@@ -106,7 +101,6 @@ export async function saveWardDocumentSettings(
        ward_id,
        default_sacrament_template_id,
        default_sacrament_template_key,
-       allow_advanced_program_designer,
        allow_program_editor_publish,
        allow_program_editor_republish,
        allow_program_editor_rollback,
@@ -114,11 +108,10 @@ export async function saveWardDocumentSettings(
        allow_program_editor_delete_media,
        public_program_expiration_days,
        updated_by_user_id
-     ) VALUES ($1::uuid, $2::uuid, $3::text, $4::boolean, $5::boolean, $6::boolean, $7::boolean, $8::boolean, $9::boolean, $10::int, $11::uuid)
+     ) VALUES ($1::uuid, $2::uuid, $3::text, $4::boolean, $5::boolean, $6::boolean, $7::boolean, $8::boolean, $9::int, $10::uuid)
      ON CONFLICT (ward_id) DO UPDATE SET
        default_sacrament_template_id = EXCLUDED.default_sacrament_template_id,
        default_sacrament_template_key = EXCLUDED.default_sacrament_template_key,
-       allow_advanced_program_designer = EXCLUDED.allow_advanced_program_designer,
        allow_program_editor_publish = EXCLUDED.allow_program_editor_publish,
        allow_program_editor_republish = EXCLUDED.allow_program_editor_republish,
        allow_program_editor_rollback = EXCLUDED.allow_program_editor_rollback,
@@ -130,7 +123,6 @@ export async function saveWardDocumentSettings(
      RETURNING ward_id,
        default_sacrament_template_id,
        default_sacrament_template_key,
-       allow_advanced_program_designer,
        allow_program_editor_publish,
        allow_program_editor_republish,
        allow_program_editor_rollback,
@@ -141,7 +133,6 @@ export async function saveWardDocumentSettings(
       wardId,
       settings.defaultSacramentTemplateId,
       settings.defaultSacramentTemplateKey,
-      settings.allowAdvancedProgramDesigner,
       settings.allowProgramEditorPublish,
       settings.allowProgramEditorRepublish,
       settings.allowProgramEditorRollback,
@@ -177,7 +168,6 @@ export async function saveDefaultSacramentTemplate(
      RETURNING ward_id,
        default_sacrament_template_id,
        default_sacrament_template_key,
-       allow_advanced_program_designer,
        allow_program_editor_publish,
        allow_program_editor_republish,
        allow_program_editor_rollback,

@@ -74,7 +74,7 @@ describe('published SYSTEM template duplication', () => {
     canUseAdvancedMock.mockReturnValue(true);
     moduleEnabledMock.mockResolvedValue(true);
     moduleEnabledInTransactionMock.mockResolvedValue(true);
-    profileMock.mockResolvedValue({ allowAdvancedProgramDesigner: true });
+    profileMock.mockResolvedValue({});
     auditMock.mockResolvedValue(undefined);
     connectMock.mockResolvedValue({ query: queryMock, release: releaseMock });
   });

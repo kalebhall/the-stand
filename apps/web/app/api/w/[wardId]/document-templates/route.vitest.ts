@@ -24,7 +24,7 @@ describe('document template collection routes', () => {
     canManageMeetingsMock.mockReturnValue(false);
     canManageMock.mockReturnValue(true);
     canManageStakeTemplatesMock.mockReturnValue(false);
-    canUseAdvancedMock.mockReturnValue(false);
+    canUseAdvancedMock.mockReturnValue(true);
     moduleEnabledMock.mockResolvedValue(true);
     moduleEnabledInTransactionMock.mockResolvedValue(true);
     auditMock.mockResolvedValue(undefined);
@@ -94,14 +94,18 @@ describe('document template collection routes', () => {
     expect(auditMock).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ action: 'PROGRAM_TEMPLATE_CREATED' }));
   });
 
-  it('rejects a SIMPLE-only schema-v2 structural template for a non-Advanced editor', async () => {
+  it('allows an authorized Program Editor to create a schema-v2 structural template without a ward opt-in', async () => {
     queryMock
       .mockResolvedValueOnce({})
-      .mockResolvedValueOnce({ rows: [{ allow_program_editor_create_templates: true, allow_program_editor_publish: false, allow_program_editor_republish: false, allow_program_editor_rollback: false, allow_advanced_program_designer: false }] });
+      .mockResolvedValueOnce({ rows: [{ allow_program_editor_create_templates: true, allow_program_editor_publish: false, allow_program_editor_republish: false, allow_program_editor_rollback: false }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'template-structural', template_key: null, scope_type: 'WARD', scope_id: 'ward-1', document_type: 'SACRAMENT_PROGRAM', name: 'Structural', description: null, status: 'DRAFT', current_published_version_id: null, created_by_user_id: 'user-1' }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'version-structural', version: 1, schema_version: 2, layout_json: {}, theme_json: {}, lock_json: {} }] })
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({});
     const layout = normalizeToAdvanced(adaptLegacyLayoutToDocument({ preset: 'FULL_PAGE', announcementMode: 'AFTER_PROGRAM', coverMode: 'NONE' }));
     const response = await POST(new Request('http://localhost', { method: 'POST', body: JSON.stringify({ name: 'Structural', scopeType: 'WARD', layout }) }), { params: Promise.resolve({ wardId: 'ward-1' }) });
-    expect(response.status).toBe(422);
-    expect((await response.json()).code).toBe('ADVANCED_BLOCK_READ_ONLY');
+    expect(response.status).toBe(201);
+    expect((await response.json()).template.version.schemaVersion).toBe(2);
   });
 
   it('returns a stable error when creating a template fails', async () => {

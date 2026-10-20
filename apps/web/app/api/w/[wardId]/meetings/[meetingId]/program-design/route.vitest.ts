@@ -96,7 +96,6 @@ describe('program design route', () => {
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] })
-      .mockResolvedValueOnce({ rows: [{ allow_advanced_program_designer: false }] })
       .mockResolvedValueOnce({ rows: [documentRow] })
       .mockResolvedValueOnce({ rows: [documentRow] })
       .mockResolvedValueOnce({});
@@ -126,7 +125,6 @@ describe('program design route', () => {
         .mockResolvedValueOnce({ rows: [] })
         .mockResolvedValueOnce({ rows: [] })
         .mockResolvedValueOnce({ rows: [] })
-        .mockResolvedValueOnce({ rows: [{ allow_advanced_program_designer: true }] })
         .mockResolvedValueOnce({ rows: [documentRow] })
         .mockResolvedValueOnce({ rows: [documentRow] })
         .mockResolvedValueOnce({});
@@ -147,7 +145,6 @@ describe('program design route', () => {
       .mockResolvedValueOnce({})
       .mockResolvedValueOnce({ rows: [{ id: 'meeting-1' }] })
       .mockResolvedValueOnce({ rows: [documentRow] })
-      .mockResolvedValueOnce({ rows: [{ allow_advanced_program_designer: false }] })
       .mockResolvedValueOnce({ rows: [{ id: 'document-1', revision: 4 }] })
       .mockResolvedValueOnce({})
       .mockResolvedValueOnce({});
@@ -202,7 +199,6 @@ describe('program design route', () => {
       .mockResolvedValueOnce({})
       .mockResolvedValueOnce({ rows: [{ id: 'meeting-1' }] })
       .mockResolvedValueOnce({ rows: [documentRow] })
-      .mockResolvedValueOnce({ rows: [{ allow_advanced_program_designer: true }] })
       .mockResolvedValueOnce({ rows: [{ id: 'document-1', revision: 4 }] })
       .mockResolvedValueOnce({})
       .mockResolvedValueOnce({});
@@ -234,7 +230,6 @@ describe('program design route', () => {
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] })
-      .mockResolvedValueOnce({ rows: [{ allow_advanced_program_designer: true }] })
       .mockResolvedValueOnce({ rows: [savedRow] })
       .mockResolvedValueOnce({ rows: [savedRow] })
       .mockResolvedValueOnce({});
@@ -280,8 +275,7 @@ describe('program design route', () => {
       .mockResolvedValueOnce({})
       .mockResolvedValueOnce({})
       .mockResolvedValueOnce({ rows: [{ id: 'meeting-1' }] })
-      .mockResolvedValueOnce({ rows: [{ ...documentRow, layout_json: currentAdvanced, schema_version: 2 }] })
-      .mockResolvedValueOnce({ rows: [{ allow_advanced_program_designer: false }] });
+      .mockResolvedValueOnce({ rows: [{ ...documentRow, layout_json: currentAdvanced, schema_version: 2 }] });
     const response = await PUT(
       new Request('http://localhost', {
         method: 'PUT',
@@ -301,7 +295,6 @@ describe('program design route', () => {
       .mockResolvedValueOnce({})
       .mockResolvedValueOnce({ rows: [{ id: 'meeting-1' }] })
       .mockResolvedValueOnce({ rows: [documentRow] })
-      .mockResolvedValueOnce({ rows: [{ allow_advanced_program_designer: false }] })
       .mockResolvedValueOnce({ rows: [{ id: 'document-1', revision: 4 }] })
       .mockResolvedValueOnce({})
       .mockResolvedValueOnce({});
@@ -327,7 +320,6 @@ describe('program design route', () => {
       .mockResolvedValueOnce({})
       .mockResolvedValueOnce({ rows: [{ id: 'meeting-1' }] })
       .mockResolvedValueOnce({ rows: [documentRow] })
-      .mockResolvedValueOnce({ rows: [{ allow_advanced_program_designer: false }] })
       .mockResolvedValueOnce({ rows: [{ id: 'system-template-1', version: 4, layout_json: DEFAULT_DOCUMENT_LAYOUT }] })
       .mockResolvedValueOnce({ rows: [{ id: 'document-1', revision: 4 }] })
       .mockResolvedValueOnce({})
@@ -353,7 +345,6 @@ describe('program design route', () => {
       .mockResolvedValueOnce({})
       .mockResolvedValueOnce({ rows: [{ id: 'meeting-1' }] })
       .mockResolvedValueOnce({ rows: [documentRow] })
-      .mockResolvedValueOnce({ rows: [{ allow_advanced_program_designer: true }] })
       .mockResolvedValueOnce({ rows: [{ id: 'document-1', revision: 4 }] })
       .mockResolvedValueOnce({})
       .mockResolvedValueOnce({});
@@ -383,7 +374,6 @@ describe('program design route', () => {
       .mockResolvedValueOnce({})
       .mockResolvedValueOnce({ rows: [{ id: 'meeting-1' }] })
       .mockResolvedValueOnce({ rows: [documentRow] })
-      .mockResolvedValueOnce({ rows: [{ allow_advanced_program_designer: false }] })
       .mockResolvedValueOnce({ rows: [{ id: 'template-1', version: 7, layout_json: layout }] })
       .mockResolvedValueOnce({ rows: [{ id: 'document-1', revision: 4 }] })
       .mockResolvedValueOnce({});
@@ -406,7 +396,6 @@ describe('program design route', () => {
       .mockResolvedValueOnce({})
       .mockResolvedValueOnce({ rows: [{ id: 'meeting-1' }] })
       .mockResolvedValueOnce({ rows: [documentRow] })
-      .mockResolvedValueOnce({ rows: [{ allow_advanced_program_designer: false }] })
       .mockResolvedValueOnce({});
     const response = await PUT(
       new Request('http://localhost', { method: 'PUT', body: JSON.stringify({ expectedRevision: 2, document: layout }) }),
@@ -437,11 +426,12 @@ describe('program design route', () => {
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] })
-      .mockResolvedValueOnce({ rows: [documentRow] })
+      .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({});
-    const response = await POST(new Request('http://localhost', { method: 'POST', body: JSON.stringify({ document: layout }) }), params());
+    const validationLayout = BUILT_IN_TEMPLATES.find((template) => template.key === 'full-page-standard')!.layout;
+    const response = await POST(new Request('http://localhost', { method: 'POST', body: JSON.stringify({ document: validationLayout }) }), params());
     expect(response.status).toBe(200);
-    expect((await response.json()).publicSafe).toBe(true);
+    expect((await response.json()).valid).toBe(true);
     expect(queryMock).toHaveBeenCalledWith('ROLLBACK');
   });
 
@@ -457,9 +447,7 @@ describe('program design route', () => {
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] })
-      .mockResolvedValueOnce({ rows: [{ allow_advanced_program_designer: true }] })
       .mockResolvedValueOnce({ rows: [documentRow] })
-      .mockResolvedValueOnce({ rows: [{ allow_advanced_program_designer: true }] })
       .mockResolvedValueOnce({});
     const advanced = normalizeToAdvanced(layout);
     const previewLayout = {

@@ -26,7 +26,6 @@ export type TemplateAuthorizationSession = {
 };
 
 export type ProgramPermissionProfile = {
-  allowAdvancedProgramDesigner?: boolean;
   allowProgramEditorPublish?: boolean;
   allowProgramEditorRepublish?: boolean;
   allowProgramEditorRollback?: boolean;
@@ -187,17 +186,8 @@ export function canRollbackProgram(
   );
 }
 
-export function canUseAdvancedProgramDesigner(
-  session: { roles?: string[]; activeWardId?: string | null },
-  wardId: string,
-  profile: ProgramPermissionProfile = {}
-): boolean {
-  return (
-    inActiveWard(session, wardId) &&
-    (hasRole(session.roles, 'STAND_ADMIN') ||
-      hasRole(session.roles, 'BISHOPRIC_EDITOR') ||
-      (hasRole(session.roles, 'PROGRAM_EDITOR') && profile.allowAdvancedProgramDesigner === true))
-  );
+export function canUseAdvancedProgramDesigner(session: { roles?: string[]; activeWardId?: string | null }, wardId: string): boolean {
+  return canEditProgramDesign(session, wardId);
 }
 
 export function canViewCallings(session: { roles?: string[]; activeWardId?: string | null }, wardId: string): boolean {

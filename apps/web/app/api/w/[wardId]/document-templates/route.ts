@@ -142,7 +142,7 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
       return forbidden();
     }
     await assertTemplateReusableReferences(client, layout, wardId, session.user.id, parsed.data.scopeType === 'PERSONAL_DRAFT' ? 'PERSONAL' : 'WARD');
-    if (!matchingStakeAdmin && !canUseAdvancedProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId, profile) && (containsAdvancedBlocks(layout) || containsAdvancedLayoutStructure(parsed.data.layout))) {
+    if (!matchingStakeAdmin && !canUseAdvancedProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId) && (containsAdvancedBlocks(layout) || containsAdvancedLayoutStructure(parsed.data.layout))) {
       await client.query('ROLLBACK');
       return NextResponse.json({ error: 'Advanced blocks are read-only for this editor', code: 'ADVANCED_BLOCK_READ_ONLY' }, { status: 422 });
     }

@@ -115,9 +115,9 @@ try {
     [ids.ward, ids.user]
   );
   await client.query(
-    `INSERT INTO ward_document_settings (ward_id, allow_advanced_program_designer, updated_by_user_id)
-     VALUES ($1::uuid, TRUE, $2::uuid)
-     ON CONFLICT (ward_id) DO UPDATE SET allow_advanced_program_designer = TRUE, updated_by_user_id = EXCLUDED.updated_by_user_id`,
+    `INSERT INTO ward_document_settings (ward_id, updated_by_user_id)
+     VALUES ($1::uuid, $2::uuid)
+     ON CONFLICT (ward_id) DO UPDATE SET updated_by_user_id = EXCLUDED.updated_by_user_id`,
     [ids.ward, ids.user]
   );
   await client.query(

@@ -25,7 +25,7 @@ import {
 import { assertNoLockedChanges, LockedLayoutError } from '@/src/document-designer/lock-enforcement';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
-import { isAdvancedDesignerEnabled, isAdvancedDesignerFeatureEnabled } from '@/src/features/advanced-designer';
+import { isAdvancedDesignerFeatureEnabled } from '@/src/features/advanced-designer';
 import type { DocumentLayout } from '@/src/document-designer/types';
 import { isWardModuleEnabled, isWardModuleEnabledInTransaction } from '@/src/modules/service';
 import {
@@ -107,10 +107,6 @@ async function readContext(client: Awaited<ReturnType<typeof pool.connect>>, war
     [wardId, meetingId]
   );
   const readableMedia = await listReadableMedia(client, wardId);
-  const settingsResult = await client.query(
-    'SELECT allow_advanced_program_designer FROM ward_document_settings WHERE ward_id = $1::uuid LIMIT 1',
-    [wardId]
-  );
   const meeting = meetingResult.rows[0] as {
     id: string;
     meeting_date: string;
@@ -122,10 +118,6 @@ async function readContext(client: Awaited<ReturnType<typeof pool.connect>>, war
   const row = await loadProgramDocumentRecord(client, { wardId, meetingId });
   const layout = row?.layout_json ?? fullPageFallback();
   const revision = Number(row?.revision ?? 1);
-  const profile = {
-    allowAdvancedProgramDesigner:
-      (settingsResult.rows[0] as { allow_advanced_program_designer?: boolean } | undefined)?.allow_advanced_program_designer === true
-  };
   const items = itemsResult.rows as Array<{
     item_type: string;
     title: string | null;
@@ -155,7 +147,6 @@ async function readContext(client: Awaited<ReturnType<typeof pool.connect>>, war
     row,
     layout,
     revision,
-    profile,
     items,
     previewSource: {
       ...previewSource,
@@ -209,15 +200,7 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
     const document = await ensureDocument(client, wardId, meetingId, session.user.id);
     const advancedModeAvailable =
       isAdvancedDesignerFeatureEnabled() &&
-      isAdvancedDesignerEnabled({
-        repositoryEnabled: true,
-        wardEnabled: contextData.profile.allowAdvancedProgramDesigner,
-        capabilityEnabled: canUseAdvancedProgramDesigner(
-          { roles: session.user.roles, activeWardId: session.activeWardId },
-          wardId,
-          contextData.profile
-        )
-      });
+      canUseAdvancedProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId);
     const advancedLayout = parseAdvancedLayout(document.layout_json);
     const layout = downgradeToV1(advancedLayout);
     await client.query('COMMIT');
@@ -271,21 +254,9 @@ export async function PUT(request: Request, context: { params: Promise<{ wardId:
       return errorResponse('Meeting not found', 'NOT_FOUND', 404);
     }
     const current = await ensureDocument(client, wardId, meetingId, session.user.id);
-    const settingsResult = await client.query(
-      'SELECT allow_advanced_program_designer FROM ward_document_settings WHERE ward_id = $1::uuid LIMIT 1',
-      [wardId]
-    );
     const advancedModeAvailable =
       isAdvancedDesignerFeatureEnabled() &&
-      isAdvancedDesignerEnabled({
-        repositoryEnabled: true,
-        wardEnabled:
-          (settingsResult.rows[0] as { allow_advanced_program_designer?: boolean } | undefined)?.allow_advanced_program_designer === true,
-        capabilityEnabled: canUseAdvancedProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId, {
-          allowAdvancedProgramDesigner:
-            (settingsResult.rows[0] as { allow_advanced_program_designer?: boolean } | undefined)?.allow_advanced_program_designer === true
-        })
-      });
+      canUseAdvancedProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId);
     const revision = Number(current.revision);
     if (body.data.expectedRevision !== revision) {
       await client.query('ROLLBACK');
@@ -293,7 +264,7 @@ export async function PUT(request: Request, context: { params: Promise<{ wardId:
     }
     if (body.data.mode === 'ADVANCED' && !advancedModeAvailable) {
       await client.query('ROLLBACK');
-      return errorResponse('Advanced Mode is not enabled for this ward', 'FORBIDDEN', 403);
+      return errorResponse('Advanced Mode is not enabled', 'FORBIDDEN', 403);
     }
     let validated: { layout: DocumentLayout | AdvancedDocumentLayout; warnings: string[] };
     let sourceTemplateId: string | null = (current.source_template_id as string | null | undefined) ?? null;
@@ -488,18 +459,9 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
     let warnings: string[] = [];
     try {
       if (body.data.mode === 'ADVANCED') {
-        const settings = await client.query(
-          'SELECT allow_advanced_program_designer FROM ward_document_settings WHERE ward_id = $1::uuid LIMIT 1',
-          [wardId]
-        );
-        const enabled =
-          isAdvancedDesignerFeatureEnabled() &&
-          canUseAdvancedProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId, {
-            allowAdvancedProgramDesigner: settings.rows[0]?.allow_advanced_program_designer === true
-          });
-        if (!enabled) {
+        if (!isAdvancedDesignerFeatureEnabled() || !canUseAdvancedProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId)) {
           await client.query('ROLLBACK');
-          return errorResponse('Advanced Mode is not enabled for this ward', 'FORBIDDEN', 403);
+          return errorResponse('Advanced Mode is not enabled', 'FORBIDDEN', 403);
         }
         const advanced = parseAdvancedLayout(body.data.document);
         warnings = [];

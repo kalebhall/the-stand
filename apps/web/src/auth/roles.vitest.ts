@@ -109,11 +109,12 @@ describe('program permissions', () => {
     expect(canRunImports(active, 'ward-a')).toBe(false);
   });
 
-  it('keeps publishing, advanced design, and template creation independently controlled', () => {
+  it('allows all authorized program designers to use advanced design without changing publish rights', () => {
     expect(canPublishProgram(active, 'ward-a')).toBe(false);
-    expect(canUseAdvancedProgramDesigner(active, 'ward-a')).toBe(false);
+    expect(canUseAdvancedProgramDesigner(active, 'ward-a')).toBe(true);
+
+    expect(canUseAdvancedProgramDesigner(active, 'ward-b')).toBe(false);
     expect(canPublishProgram(active, 'ward-a', { allowProgramEditorPublish: true })).toBe(true);
-    expect(canUseAdvancedProgramDesigner(active, 'ward-a', { allowAdvancedProgramDesigner: true })).toBe(true);
     expect(canManageWardProgramTemplates(active, 'ward-a', { allowProgramEditorCreateTemplates: true })).toBe(true);
   });
 });
