@@ -272,7 +272,9 @@ export async function renderDocumentPdf(
     }
     if (block.type === 'QR_CODE') {
       const config = block.config as { href?: unknown; label?: unknown };
-      const href = safePrintHref(config.href) ? config.href : safePrintHref(data.publicUrl) ? data.publicUrl : null;
+      const configuredHref = safeUrlSchema.safeParse(config.href);
+      const publicHref = safeUrlSchema.safeParse(data.publicUrl);
+      const href = configuredHref.success ? configuredHref.data : publicHref.success ? publicHref.data : null;
       if (!href) continue;
       const label =
         typeof config.label === 'string' && config.label.trim()

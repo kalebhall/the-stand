@@ -270,6 +270,54 @@ const dropAt = (target: Element, dataTransfer: object, clientY: number) => {
 };
 
 describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
+  it('keeps one editing mode, reveals allowed content, and saves a generated QR block', async () => {
+    const enabledPayload = { ...payload, simpleMode: { advancedModeAvailable: true } };
+    const savedDocuments: Record<string, unknown>[] = [];
+    const fetchMock = vi.fn().mockImplementation(async (_url: string, options?: RequestInit) => {
+      if (options?.method === 'PUT') {
+        const savedDocument = JSON.parse(String(options.body)).document as Record<string, unknown>;
+        savedDocuments.push(savedDocument);
+        return { ok: true, json: async () => ({ revision: 2, document: { layout: savedDocument, schemaVersion: 2 } }) };
+      }
+      return { ok: true, json: async () => enabledPayload };
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
+
+    await screen.findByRole('region', { name: 'Document canvas' });
+    expect(screen.queryByRole('button', { name: 'Advanced Mode' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Simple Mode' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Add announcement list/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Add section heading/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Add simple list/ })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Add presiding and conducting' })).not.toBeInTheDocument();
+    const summary = screen.getByText('Customize layout', { selector: 'summary' });
+    expect(summary.closest('details')).not.toHaveAttribute('open');
+    fireEvent.click(screen.getByRole('button', { name: /^Add QR code/ }));
+    expect(summary.closest('details')).not.toHaveAttribute('open');
+    await waitFor(() => expect(within(screen.getByRole('complementary', { name: 'Properties' })).getByText('QR code')).toBeInTheDocument());
+    const urlInput = screen.getByRole('textbox', { name: /^HTTPS URL/ });
+    expect(urlInput).toHaveValue('');
+    expect(urlInput).toBeEnabled();
+    fireEvent.change(urlInput, { target: { value: 'https://example.org/program' } });
+    expect(urlInput).toHaveValue('https://example.org/program');
+    expect(summary.closest('details')).not.toHaveAttribute('open');
+    fireEvent.click(summary);
+    expect(await screen.findByRole('button', { name: 'Save layout' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Save layout' }));
+    await waitFor(() => expect(savedDocuments).not.toHaveLength(0));
+    const parsed = savedDocuments[0] as {
+      pages: Array<{ regions: Array<{ blocks: Array<{ type: string; config: Record<string, unknown> }> }> }>;
+    };
+    expect(
+      parsed.pages
+        .flatMap((page) => page.regions)
+        .flatMap((region) => region.blocks)
+        .some((block) => block.type === 'QR_CODE' && block.config.href === 'https://example.org/program')
+    ).toBe(true);
+    expect(screen.queryByRole('button', { name: 'Advanced Mode' })).not.toBeInTheDocument();
+  });
+
   it('loads without issuing an initial save and exposes accessible editor regions', async () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => payload });
     vi.stubGlobal('fetch', fetchMock);
@@ -343,7 +391,7 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
     expect(fetchMock.mock.calls.some(([, options]) => (options as RequestInit | undefined)?.method === 'PUT')).toBe(false);
   });
 
-  it('rejects Advanced Mode arrow reordering when it would move a position-locked neighbor', async () => {
+  it('rejects reordering when it would move a position-locked neighbor', async () => {
     const fetchMock = vi.fn().mockImplementation(async (url: string) => {
       if (url.endsWith('/program-design')) return { ok: true, json: async () => blockLockedPayload };
       if (url.endsWith('/document-templates')) return { ok: true, json: async () => ({ templates: [] }) };
@@ -354,7 +402,7 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
     vi.stubGlobal('fetch', fetchMock);
     renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
     await screen.findByRole('region', { name: 'Document canvas' });
-    fireEvent.click(screen.getByRole('button', { name: 'Advanced Mode' }));
+    fireEvent.click(screen.getByText('Customize layout', { selector: 'summary' }));
 
     const approvedBlocks = screen.getByRole('complementary', { name: 'Approved blocks' });
     const beforeOrder = Array.from(approvedBlocks.querySelectorAll('ul > li')).map((row) => row.textContent);
@@ -402,7 +450,7 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
     vi.stubGlobal('fetch', fetchMock);
     renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
     await screen.findByRole('region', { name: 'Region 1' });
-    fireEvent.click(screen.getByRole('button', { name: 'Advanced Mode' }));
+    fireEvent.click(screen.getByText('Customize layout', { selector: 'summary' }));
 
     const sourceRegion = screen.getByRole('region', { name: 'Region 1' });
     const targetRegion = screen.getByRole('region', { name: 'Region 2' });
@@ -427,7 +475,7 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
     expect(fetchMock.mock.calls.some(([, options]) => (options as RequestInit | undefined)?.method === 'PUT')).toBe(false);
   });
 
-  it('rejects Advanced Mode column reconfiguration that moves a position-locked block', async () => {
+  it('rejects column reconfiguration that moves a position-locked block', async () => {
     const fetchMock = vi.fn().mockImplementation(async (url: string) => {
       if (url.endsWith('/program-design')) return { ok: true, json: async () => columnLockedPayload };
       if (url.endsWith('/document-templates')) return { ok: true, json: async () => ({ templates: [] }) };
@@ -438,7 +486,7 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
     vi.stubGlobal('fetch', fetchMock);
     renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
     await screen.findByRole('region', { name: 'Document canvas' });
-    fireEvent.click(screen.getByRole('button', { name: 'Advanced Mode' }));
+    fireEvent.click(screen.getByText('Customize layout', { selector: 'summary' }));
 
     const columns = screen.getByRole('combobox', { name: 'Columns in selected panel' });
     fireEvent.change(columns, { target: { value: '2' } });
@@ -461,7 +509,7 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
     await screen.findByRole('region', { name: 'Document canvas' });
     const approvedBlocks = screen.getByRole('complementary', { name: 'Approved blocks' });
     fireEvent.click(within(approvedBlocks).getByText('Document title', { exact: true }));
-    fireEvent.click(screen.getByRole('button', { name: 'Advanced Mode' }));
+    fireEvent.click(screen.getByText('Customize layout', { selector: 'summary' }));
     fireEvent.click(screen.getByRole('button', { name: 'Remove selected' }));
 
     expect(screen.getByRole('alert')).toHaveTextContent(/locked/i);
@@ -469,7 +517,7 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
     expect(fetchMock.mock.calls.some(([, options]) => (options as RequestInit | undefined)?.method === 'PUT')).toBe(false);
   });
 
-  it('disables Advanced Mode arrow moves at each column boundary', async () => {
+  it('disables block moves at each column boundary', async () => {
     const fetchMock = vi.fn().mockImplementation(async (url: string) => {
       if (url.endsWith('/program-design')) return { ok: true, json: async () => twoColumnSpatialPayload };
       if (url.endsWith('/document-templates')) return { ok: true, json: async () => ({ templates: [] }) };
@@ -480,12 +528,12 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
     vi.stubGlobal('fetch', fetchMock);
     renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
     await screen.findByRole('region', { name: 'Document canvas' });
-    fireEvent.click(screen.getByRole('button', { name: 'Advanced Mode' }));
+    fireEvent.click(screen.getByText('Customize layout', { selector: 'summary' }));
 
     expect(screen.getByRole('button', { name: 'Move Document title down' })).toBeDisabled();
   });
 
-  it('rejects Advanced Mode content changes on a CONTENT-locked block before mutating local state', async () => {
+  it('rejects content changes on a CONTENT-locked block before mutating local state', async () => {
     const fetchMock = vi.fn().mockImplementation(async (url: string) => {
       if (url.endsWith('/program-design')) return { ok: true, json: async () => contentLockedPayload };
       if (url.endsWith('/document-templates')) return { ok: true, json: async () => ({ templates: [] }) };
@@ -496,7 +544,7 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
     vi.stubGlobal('fetch', fetchMock);
     renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
     await screen.findByRole('region', { name: 'Document canvas' });
-    fireEvent.click(screen.getByRole('button', { name: 'Advanced Mode' }));
+    fireEvent.click(screen.getByText('Customize layout', { selector: 'summary' }));
     fireEvent.change(screen.getByRole('textbox', { name: 'Text' }), { target: { value: 'Forbidden content edit' } });
 
     expect(screen.getByRole('alert')).toHaveTextContent(/locked/i);
@@ -515,7 +563,7 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
     vi.stubGlobal('fetch', fetchMock);
     renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
     await screen.findByRole('region', { name: 'Document canvas' });
-    fireEvent.click(screen.getByRole('button', { name: 'Advanced Mode' }));
+    fireEvent.click(screen.getByText('Customize layout', { selector: 'summary' }));
     const font = screen.getByRole('combobox', { name: 'Font' });
     fireEvent.change(font, { target: { value: 'SERIF' } });
 
@@ -549,7 +597,7 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
     vi.stubGlobal('fetch', fetchMock);
     renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
     await screen.findByRole('region', { name: 'Document canvas' });
-    fireEvent.click(screen.getByRole('button', { name: 'Advanced Mode' }));
+    fireEvent.click(screen.getByText('Customize layout', { selector: 'summary' }));
     fireEvent.click(screen.getByRole('button', { name: 'Update block' }));
 
     expect(screen.getByRole('alert')).toHaveTextContent(/locked/i);
@@ -617,14 +665,14 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
     vi.stubGlobal('fetch', fetchMock);
     renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
     await screen.findByRole('region', { name: 'Document canvas' });
-    fireEvent.click(screen.getByRole('button', { name: 'Advanced Mode' }));
+    fireEvent.click(screen.getByText('Customize layout', { selector: 'summary' }));
     fireEvent.click(within(screen.getByRole('complementary', { name: 'Approved blocks' })).getByText('Document title', { exact: true }));
     fireEvent.change(screen.getByRole('textbox', { name: 'Text' }), { target: { value: 'Advanced unsaved draft' } });
     fireEvent.click(screen.getByRole('button', { name: 'Desktop preview' }));
     await waitFor(() => expect(putCount).toBe(1));
 
     expect(screen.getByRole('button', { name: 'Edit' })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByRole('button', { name: 'Simple Mode' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText('Customize layout', { selector: 'summary' }).closest('details')).toHaveAttribute('open');
     expect(screen.getByRole('button', { name: 'Desktop preview' })).toHaveAttribute('aria-pressed', 'false');
   });
 
@@ -747,7 +795,7 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
     ]);
   });
 
-  it('drags blocks between positions in Advanced Mode and saves the advanced layout', async () => {
+  it('drags blocks between positions and saves the layout', async () => {
     let savedDocument: unknown = null;
     const fetchMock = vi.fn().mockImplementation(async (url: string, options?: RequestInit) => {
       if (url.endsWith('/program-design') && options?.method === 'PUT') {
@@ -764,7 +812,7 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
     vi.stubGlobal('fetch', fetchMock);
     renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
     await screen.findByRole('region', { name: 'Document canvas' });
-    fireEvent.click(screen.getByRole('button', { name: 'Advanced Mode' }));
+    fireEvent.click(screen.getByText('Customize layout', { selector: 'summary' }));
 
     const approvedBlocks = screen.getByRole('complementary', { name: 'Approved blocks' });
     const titleRow = within(approvedBlocks).getByText('Document title', { exact: true }).closest('li');
@@ -793,7 +841,7 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
     expect(currentRows[0]?.textContent).toContain('Ward name');
     expect(currentRows[1]?.textContent).toContain('Document title');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Save advanced layout' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save layout' }));
     await waitFor(() => expect(savedDocument).not.toBeNull());
     const savedLayout = savedDocument as {
       schemaVersion: number;
@@ -807,7 +855,7 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
     expect(savedRegion.columns.blockIds[1]).toContain(titleBlockId);
   });
 
-  it('moves a block across Advanced Mode regions and saves the updated column assignments', async () => {
+  it('moves a block across regions and saves the updated column assignments', async () => {
     let savedDocument: unknown = null;
     const fetchMock = vi.fn().mockImplementation(async (url: string, options?: RequestInit) => {
       if (url.endsWith('/program-design') && options?.method === 'PUT') {
@@ -824,7 +872,7 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
     vi.stubGlobal('fetch', fetchMock);
     renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
     await screen.findByRole('region', { name: 'Region 1' });
-    fireEvent.click(screen.getByRole('button', { name: 'Advanced Mode' }));
+    fireEvent.click(screen.getByText('Customize layout', { selector: 'summary' }));
 
     const frontCover = screen.getByRole('region', { name: 'Region 1' });
     const insideLeft = screen.getByRole('region', { name: 'Region 2' });
@@ -852,7 +900,7 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
     fireEvent.dragOver(targetButton, { dataTransfer });
     dropAt(targetButton, dataTransfer, 1000);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Save advanced layout' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save layout' }));
     await waitFor(() => expect(savedDocument).not.toBeNull());
     const savedLayout = savedDocument as typeof multiRegionPayload.document.advancedLayout;
     const sourceRegion = savedLayout.pages[0].regions[0];
@@ -892,9 +940,9 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
     vi.stubGlobal('fetch', fetchMock);
     renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
     await screen.findByRole('region', { name: 'Front cover' });
-    fireEvent.click(screen.getByRole('button', { name: 'Advanced Mode' }));
+    fireEvent.click(screen.getByText('Customize layout', { selector: 'summary' }));
     fireEvent.click(screen.getByRole('button', { name: 'Add to panel' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Save advanced layout' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save layout' }));
     await waitFor(() => expect(putCount).toBe(1));
     fireEvent.click(screen.getByRole('button', { name: 'Add to panel' }));
     resolveFirst?.();
@@ -924,9 +972,9 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
     vi.stubGlobal('fetch', fetchMock);
     renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
     await screen.findByRole('region', { name: 'Front cover' });
-    fireEvent.click(screen.getByRole('button', { name: 'Advanced Mode' }));
+    fireEvent.click(screen.getByText('Customize layout', { selector: 'summary' }));
     fireEvent.click(screen.getByRole('button', { name: 'Add to panel' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Save advanced layout' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save layout' }));
     fireEvent.click(await screen.findByRole('button', { name: 'Retry save' }));
     await waitFor(() => expect(putCount).toBe(2));
     expect(putRequests[1].mode).toBe('ADVANCED');
@@ -973,7 +1021,7 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
     const putCall = fetchMock.mock.calls.find(([, options]) => (options as RequestInit | undefined)?.method === 'PUT');
     expect(JSON.parse(String(putCall?.[1] && (putCall[1] as RequestInit).body)).templateId).toBe('classic-bifold');
   });
-  it('applies a selected template through the Advanced Mode save path when available', async () => {
+  it('applies a selected template through the layout save path when available', async () => {
     const putBodies: Record<string, unknown>[] = [];
     const selectedTemplate = BUILT_IN_TEMPLATES.find((template) => template.key === 'classic-bifold')!;
     const fetchMock = vi.fn().mockImplementation(async (url: string, options?: RequestInit) => {
@@ -1005,7 +1053,7 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => spatialPayload }));
     renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
     expect(await screen.findByRole('region', { name: 'Front cover' })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Advanced Mode' }));
+    fireEvent.click(screen.getByText('Customize layout', { selector: 'summary' }));
     fireEvent.change(screen.getByLabelText('Target panel'), { target: { value: '2' } });
     fireEvent.click(screen.getByRole('button', { name: 'Add to panel' }));
     fireEvent.click(screen.getByRole('button', { name: 'Add to panel' }));
@@ -1016,7 +1064,9 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
     fireEvent.click(moveCustomTextUp!);
     expect(screen.getByRole('region', { name: 'Inside right' })).toHaveTextContent('Custom Text');
     fireEvent.click(screen.getByRole('button', { name: 'Phone preview' }));
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Simple Mode' })).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByText('Customize layout', { selector: 'summary' }).closest('details')).not.toHaveAttribute('open')
+    );
     expect(screen.getByRole('region', { name: 'Document canvas' }).querySelector('.document-root--mobile')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Phone preview' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('button', { name: 'Edit' })).toHaveAttribute('aria-pressed', 'false');
@@ -1024,7 +1074,7 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
     fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
     expect(screen.getByRole('region', { name: 'Inside right' })).toBeInTheDocument();
   });
-  it('saves the selected meeting-program presentation from Advanced Mode', async () => {
+  it('saves the selected meeting-program presentation', async () => {
     const savedDocuments: Record<string, unknown>[] = [];
     const fetchMock = vi.fn().mockImplementation(async (url: string, options?: RequestInit) => {
       if (url.endsWith('/program-design') && options?.method === 'PUT') {
@@ -1042,10 +1092,10 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
     vi.stubGlobal('fetch', fetchMock);
     renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
     await screen.findByRole('region', { name: 'Document canvas' });
-    fireEvent.click(screen.getByRole('button', { name: 'Advanced Mode' }));
+    fireEvent.click(screen.getByText('Customize layout', { selector: 'summary' }));
     fireEvent.click(screen.getByRole('button', { name: /^Meeting programMeeting data/ }));
     fireEvent.change(screen.getByLabelText('Agenda display'), { target: { value: 'DOTTED_LEADERS' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Save advanced layout' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save layout' }));
     await waitFor(() => expect(savedDocuments).not.toHaveLength(0));
     const parsed = savedDocuments[0] as {
       pages: Array<{ regions: Array<{ blocks: Array<{ type: string; config: { presentation?: string } }> }> }>;
@@ -1074,7 +1124,7 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
     vi.stubGlobal('fetch', fetchMock);
     renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
     await screen.findByRole('region', { name: 'Document canvas' });
-    fireEvent.click(screen.getByRole('button', { name: 'Advanced Mode' }));
+    fireEvent.click(screen.getByText('Customize layout', { selector: 'summary' }));
     fireEvent.click(screen.getByRole('button', { name: /^Add announcement list/ }));
     expect(screen.getByLabelText('Announcement display')).toHaveValue('COMPACT_ROWS');
     fireEvent.change(screen.getByLabelText('Announcement display'), { target: { value: 'DETAIL_CARDS' } });
@@ -1090,7 +1140,7 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
     fireEvent.click(screen.getByRole('button', { name: 'Move announcement 2 up' }));
     fireEvent.click(screen.getByRole('button', { name: 'Add announcement item' }));
     fireEvent.click(screen.getByRole('button', { name: 'Remove announcement 3' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Save advanced layout' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save layout' }));
     await waitFor(() => expect(savedDocuments).not.toHaveLength(0));
     const parsed = savedDocuments[0] as {
       pages: Array<{
@@ -1129,7 +1179,7 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
     vi.stubGlobal('fetch', fetchMock);
     renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
     await screen.findByRole('region', { name: 'Document canvas' });
-    fireEvent.click(screen.getByRole('button', { name: 'Advanced Mode' }));
+    fireEvent.click(screen.getByText('Customize layout', { selector: 'summary' }));
     fireEvent.click(screen.getByRole('button', { name: /^Add section heading/ }));
     fireEvent.change(screen.getByLabelText('Section heading title'), { target: { value: 'This week' } });
     fireEvent.change(screen.getByLabelText('Section heading subtitle'), { target: { value: 'Upcoming activities' } });
@@ -1142,7 +1192,7 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
     fireEvent.click(screen.getByRole('button', { name: 'Add list item' }));
     fireEvent.change(screen.getByLabelText('List item 2'), { target: { value: 'Youth activity' } });
     fireEvent.click(screen.getByRole('button', { name: 'Move list item 2 up' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Save advanced layout' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save layout' }));
     await waitFor(() => expect(savedDocuments).not.toHaveLength(0));
     const blocks = (
       savedDocuments[0] as { pages: Array<{ regions: Array<{ blocks: Array<{ type: string; config: Record<string, unknown> }> }> }> }
@@ -1211,7 +1261,7 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
     );
     renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
     await screen.findByRole('region', { name: 'Document canvas' });
-    fireEvent.click(screen.getByRole('button', { name: 'Advanced Mode' }));
+    fireEvent.click(screen.getByText('Customize layout', { selector: 'summary' }));
     fireEvent.click(within(screen.getByRole('region', { name: 'Document canvas' })).getByRole('button', { name: /Announcement list/ }));
     expect(screen.getByLabelText('Announcement display')).toBeDisabled();
     expect(screen.getByLabelText('Title for announcement 1')).toBeDisabled();
@@ -1275,7 +1325,7 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
     );
     renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
     await screen.findByRole('region', { name: 'Document canvas' });
-    fireEvent.click(screen.getByRole('button', { name: 'Advanced Mode' }));
+    fireEvent.click(screen.getByText('Customize layout', { selector: 'summary' }));
     const canvas = screen.getByRole('region', { name: 'Document canvas' });
     fireEvent.click(within(canvas).getByRole('button', { name: /Section heading/ }));
     expect(screen.getByLabelText('Section heading title')).toBeDisabled();
@@ -1315,7 +1365,7 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
     );
     renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
     await screen.findByRole('region', { name: 'Document canvas' });
-    fireEvent.click(screen.getByRole('button', { name: 'Advanced Mode' }));
+    fireEvent.click(screen.getByText('Customize layout', { selector: 'summary' }));
     fireEvent.click(within(screen.getByRole('region', { name: 'Document canvas' })).getByRole('button', { name: /Meeting program/ }));
     expect(screen.getByLabelText('Agenda display')).toBeDisabled();
   });
@@ -1328,7 +1378,7 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
     await waitFor(() => expect(screen.getByRole('main')).toBeInTheDocument());
     expect(screen.queryByRole('button', { name: /publish/i })).not.toBeInTheDocument();
   });
-  it('keeps advanced blocks readable but read-only in Simple Mode', async () => {
+  it('keeps advanced blocks read-only when ward customization is disabled', async () => {
     const advancedOnlyLayout = {
       ...payload.document.layout,
       pages: payload.document.layout.pages.map((page, pageIndex) =>
@@ -1365,7 +1415,10 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
     vi.stubGlobal('fetch', fetchMock);
     renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
     await screen.findByRole('region', { name: 'Document canvas' });
-    expect(screen.getAllByText('Advanced block · read-only in Simple Mode').length).toBeGreaterThan(0);
+    expect(screen.getByRole('note')).toHaveTextContent('off for this ward');
+    expect(screen.queryByRole('region', { name: 'Add content' })).not.toBeInTheDocument();
+    expect(screen.queryByText('Customize layout', { selector: 'summary' })).not.toBeInTheDocument();
+    expect(screen.getAllByText('Read-only · expand Customize layout to edit').length).toBeGreaterThan(0);
     expect(screen.getByLabelText('Visibility')).toBeDisabled();
     expect(screen.getByRole('textbox', { name: 'Text' })).toHaveAttribute('readonly');
     expect(screen.getAllByRole('button', { name: /Move Presiding/i }).every((button) => button.hasAttribute('disabled'))).toBe(true);
