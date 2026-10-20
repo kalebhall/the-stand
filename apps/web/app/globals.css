@@ -113,10 +113,10 @@ body {
   line-height: 1.5;
 }
 
-/* Shared page type scale. Utility classes can still override for intentional exceptions. */
+/* Shared responsive page-title scale. This rule intentionally owns main heading sizing. */
 main h1 {
   color: var(--foreground);
-  font-size: 1.75rem;
+  font-size: clamp(1.25rem, 5vw, 1.75rem);
   font-weight: 650;
   letter-spacing: -0.025em;
   line-height: 1.2;

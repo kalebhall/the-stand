@@ -17,6 +17,7 @@ import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 import { toYyyyMmDd } from '@/src/meetings/date';
 import { buildPublicPreviewSource } from '@/src/document-designer/meeting-document-service';
+import { requiresSafePublishedSnapshot } from '@/src/document-designer/print-data';
 
 import type { IntroductionRoles } from '@/src/meetings/types';
 import type { ResolvedDocumentData } from '@/src/document-designer/render-types';
@@ -106,6 +107,8 @@ export default async function PrintMeetingPage({
       notFound();
     }
 
+    const meeting = meetingResult.rows[0] as MeetingRow;
+
     if (hasExplicitVersion && requestedVersion === null && draft !== '1') {
       await client.query('ROLLBACK');
       notFound();
@@ -126,6 +129,7 @@ export default async function PrintMeetingPage({
                   AND r.published_at IS NOT NULL
                   AND r.layout_json IS NOT NULL
                   AND r.render_data_json IS NOT NULL
+                  AND r.publication_metadata_json @> '{"publicSafetyVersion":1}'::jsonb
                   AND (s.active_render_id IS NULL OR s.expires_at IS NULL OR s.expires_at > now())
                 LIMIT 1`,
               [meetingId, session.activeWardId, requestedVersion]
@@ -142,6 +146,7 @@ export default async function PrintMeetingPage({
                   AND r.published_at IS NOT NULL
                   AND r.layout_json IS NOT NULL
                   AND r.render_data_json IS NOT NULL
+                  AND r.publication_metadata_json @> '{"publicSafetyVersion":1}'::jsonb
                 LIMIT 1`,
               [meetingId, session.activeWardId]
             );
@@ -169,12 +174,16 @@ export default async function PrintMeetingPage({
       );
     }
 
+    if (requiresSafePublishedSnapshot(meeting.status, draft) && !renderResult.rowCount) {
+      await client.query('ROLLBACK');
+      notFound();
+    }
+
     if (hasExplicitVersion && draft !== '1') {
       await client.query('ROLLBACK');
       notFound();
     }
 
-    const meeting = meetingResult.rows[0] as MeetingRow;
     // pg returns `date` columns as JS Date objects — normalise to YYYY-MM-DD string
     const meetingDate = toYyyyMmDd(meeting.meeting_date);
 

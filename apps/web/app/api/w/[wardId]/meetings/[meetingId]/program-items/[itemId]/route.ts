@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 
 import { recordAuditEvent } from '@/src/audit/service';
 import { auth } from '@/src/auth/auth';
-import { canEditProgramDesign, canUseInternalNotes } from '@/src/auth/roles';
+import { canEditProgramDesign, canEditProgramItemPatch, canUseInternalNotes } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 import { isWardModuleEnabledInTransaction } from '@/src/modules/service';
@@ -29,12 +29,14 @@ export async function PATCH(request: Request, context: { params: Promise<{ wardI
   const session = await auth();
   const { wardId, meetingId, itemId } = await context.params;
   if (!session?.user?.id) return errorResponse('Unauthorized', 'UNAUTHORIZED', 401);
-  if (!canEditProgramDesign({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId))
-    return errorResponse('Forbidden', 'FORBIDDEN', 403);
-  const includeInternalNotes = canUseInternalNotes({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId);
+  const sessionAccess = { roles: session.user.roles, activeWardId: session.activeWardId };
+  if (!canEditProgramDesign(sessionAccess, wardId)) return errorResponse('Forbidden', 'FORBIDDEN', 403);
+  const includeInternalNotes = canUseInternalNotes(sessionAccess, wardId);
 
   const parsed = patchProgramItemRequestSchema.safeParse(await requestBody);
   if (!parsed.success) return errorResponse('Invalid program item patch', 'BAD_REQUEST', 400);
+  if (!canEditProgramItemPatch(sessionAccess, wardId, parsed.data.patch))
+    return errorResponse('This role can only edit program notes', 'FORBIDDEN', 403);
   if (parsed.data.patch.kind === 'TEXT' && parsed.data.patch.field === 'notes' && !includeInternalNotes)
     return errorResponse('Internal notes are not available to this role', 'FORBIDDEN', 403);
 

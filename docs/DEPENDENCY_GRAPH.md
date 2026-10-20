@@ -23,7 +23,7 @@ flowchart LR
   A11["web:callings<br/>7 files"]
   A12["web:church-actions<br/>11 files"]
   A13["web:conducting<br/>3 files"]
-  A14["web:config<br/>18 files"]
+  A14["web:config<br/>19 files"]
   A15["web:dashboard<br/>4 files"]
   A16["web:db<br/>17 files"]
   A17["web:document-designer<br/>79 files"]
@@ -49,24 +49,24 @@ flowchart LR
   A37["web:types<br/>2 files"]
   A38["web:ui<br/>37 files"]
   A39["web:version.mjs<br/>1 files"]
-  A5 -->|185| A8
+  A5 -->|186| A8
   A5 -->|160| A16
   A6 -->|120| A38
-  A6 -->|97| A8
+  A6 -->|98| A8
   A5 -->|75| A17
   A6 -->|65| A16
   A5 -->|61| A27
   A5 -->|48| A29
   A6 -->|33| A27
   A5 -->|32| A7
-  A6 -->|28| A17
+  A6 -->|29| A17
   A5 -->|25| A24
   A5 -->|24| A26
   A6 -->|22| A21
   A6 -->|16| A26
-  A6 -->|15| A31
   A5 -->|14| A11
   A5 -->|14| A18
+  A6 -->|14| A31
   A5 -->|13| A32
   A5 -->|10| A22
   A32 -->|9| A17
@@ -74,8 +74,8 @@ flowchart LR
   A31 -->|8| A27
   A38 -->|8| A21
   A5 -->|7| A23
-  A5 -->|7| A31
   A5 -->|6| A13
+  A5 -->|6| A31
   A6 -->|6| A18
   A6 -->|6| A34
   A29 -->|6| A16
@@ -182,7 +182,7 @@ flowchart LR
 | `web:callings` | 7 |
 | `web:church-actions` | 11 |
 | `web:conducting` | 3 |
-| `web:config` | 18 |
+| `web:config` | 19 |
 | `web:dashboard` | 4 |
 | `web:db` | 17 |
 | `web:document-designer` | 79 |
@@ -213,23 +213,23 @@ flowchart LR
 
 | Importing area | Imported area | Imports |
 | --- | --- | ---: |
-| `web:document-designer` | `web:document-designer` | 253 |
-| `web:api` | `web:auth` | 185 |
+| `web:document-designer` | `web:document-designer` | 254 |
+| `web:api` | `web:auth` | 186 |
 | `web:api` | `web:db` | 160 |
 | `web:app` | `web:ui` | 120 |
-| `web:app` | `web:auth` | 97 |
+| `web:app` | `web:auth` | 98 |
 | `web:app` | `web:app` | 78 |
 | `web:api` | `web:document-designer` | 75 |
 | `web:app` | `web:db` | 65 |
 | `web:notifications` | `web:notifications` | 63 |
 | `web:api` | `web:modules` | 61 |
 | `web:api` | `web:notifications` | 48 |
-| `web:api` | `web:api` | 46 |
+| `web:api` | `web:api` | 47 |
 | `web:ui` | `web:ui` | 34 |
 | `web:app` | `web:modules` | 33 |
 | `web:api` | `web:audit` | 32 |
 | `web:programs` | `web:programs` | 30 |
-| `web:app` | `web:document-designer` | 28 |
+| `web:app` | `web:document-designer` | 29 |
 | `web:api` | `web:lib` | 25 |
 | `web:api` | `web:meetings` | 24 |
 | `web:app` | `web:i18n` | 22 |
@@ -237,9 +237,9 @@ flowchart LR
 | `web:meetings` | `web:meetings` | 20 |
 | `web:modules` | `web:modules` | 17 |
 | `web:app` | `web:meetings` | 16 |
-| `web:app` | `web:platform` | 15 |
 | `web:api` | `web:callings` | 14 |
 | `web:api` | `web:features` | 14 |
+| `web:app` | `web:platform` | 14 |
 | `web:api` | `web:programs` | 13 |
 | `web:imports` | `web:imports` | 13 |
 | `web:stand` | `web:stand` | 11 |
@@ -252,10 +252,10 @@ flowchart LR
 | `web:platform` | `web:modules` | 8 |
 | `web:ui` | `web:i18n` | 8 |
 | `web:api` | `web:leadership` | 7 |
-| `web:api` | `web:platform` | 7 |
 | `web:church-actions` | `web:church-actions` | 7 |
 | `web:lib` | `web:lib` | 7 |
 | `web:api` | `web:conducting` | 6 |
+| `web:api` | `web:platform` | 6 |
 | `web:app` | `web:features` | 6 |
 | `web:app` | `web:stand` | 6 |
 | `web:notifications` | `web:db` | 6 |
@@ -372,8 +372,8 @@ flowchart LR
 | `web:notifications` | `vitest` | 20 |
 | `web:app` | `@testing-library/react` | 18 |
 | `web:ui` | `next` | 18 |
+| `web:db` | `Node.js` | 17 |
 | `web:api` | `zod` | 16 |
-| `web:db` | `Node.js` | 16 |
 | `root:tooling` | `Node.js` | 14 |
 | `web:notifications` | `pg` | 14 |
 | `web:db` | `vitest` | 13 |
@@ -381,9 +381,9 @@ flowchart LR
 | `web:document-designer` | `Node.js` | 10 |
 | `web:tooling` | `Node.js` | 10 |
 | `web:meetings` | `vitest` | 9 |
+| `web:config` | `@playwright/test` | 8 |
 | `web:ui` | `@testing-library/react` | 8 |
 | `web:ui` | `vitest` | 8 |
-| `web:config` | `@playwright/test` | 7 |
 | `web:programs` | `vitest` | 7 |
 | `web:auth` | `next-auth` | 6 |
 | `web:auth` | `vitest` | 6 |
@@ -541,7 +541,7 @@ flowchart LR
 | `apps/web/app/api/w/[wardId]/actions-to-do/route.vitest.ts` | `web:api` | 1 | 1 |
 | `apps/web/app/api/w/[wardId]/announcements/[announcementId]/route.ts` | `web:api` | 7 | 1 |
 | `apps/web/app/api/w/[wardId]/announcements/route.ts` | `web:api` | 10 | 1 |
-| `apps/web/app/api/w/[wardId]/announcements/route.vitest.ts` | `web:api` | 1 | 1 |
+| `apps/web/app/api/w/[wardId]/announcements/route.vitest.ts` | `web:api` | 2 | 1 |
 | `apps/web/app/api/w/[wardId]/audit-log/route.ts` | `web:api` | 5 | 1 |
 | `apps/web/app/api/w/[wardId]/baptism-programs/[eventId]/print/route.ts` | `web:api` | 8 | 1 |
 | `apps/web/app/api/w/[wardId]/baptism-programs/[eventId]/publish/route.ts` | `web:api` | 8 | 2 |
@@ -680,7 +680,7 @@ flowchart LR
 | `apps/web/app/manual/page.tsx` | `web:app` | 3 | 2 |
 | `apps/web/app/media/[publicToken]/route.ts` | `web:app` | 3 | 1 |
 | `apps/web/app/meetings/[meetingId]/edit/page.tsx` | `web:app` | 15 | 3 |
-| `apps/web/app/meetings/[meetingId]/print/page.tsx` | `web:app` | 13 | 2 |
+| `apps/web/app/meetings/[meetingId]/print/page.tsx` | `web:app` | 14 | 2 |
 | `apps/web/app/meetings/[meetingId]/public-preview/page.tsx` | `web:app` | 1 | 0 |
 | `apps/web/app/meetings/delete-meeting-button.tsx` | `web:app` | 1 | 3 |
 | `apps/web/app/meetings/delete-meeting-button.vitest.tsx` | `web:app` | 2 | 4 |
@@ -834,6 +834,7 @@ flowchart LR
 | `apps/web/e2e/acceptance.spec.ts` | `web:config` | 0 | 3 |
 | `apps/web/e2e/accessibility.spec.ts` | `web:config` | 0 | 1 |
 | `apps/web/e2e/actions-to-do.spec.ts` | `web:config` | 0 | 1 |
+| `apps/web/e2e/all-modules-responsive-audit.spec.ts` | `web:config` | 0 | 1 |
 | `apps/web/e2e/print-preview.spec.ts` | `web:config` | 1 | 1 |
 | `apps/web/e2e/program-template-boundaries.spec.ts` | `web:config` | 0 | 1 |
 | `apps/web/e2e/responsive-dashboard.spec.ts` | `web:config` | 0 | 1 |
@@ -911,7 +912,7 @@ flowchart LR
 | `apps/web/src/db/module-enable-rls.vitest.ts` | `web:db` | 0 | 2 |
 | `apps/web/src/db/p0-rls-isolation.vitest.ts` | `web:db` | 0 | 2 |
 | `apps/web/src/db/program-document-rls.vitest.ts` | `web:db` | 0 | 2 |
-| `apps/web/src/db/program-publication-schema.vitest.ts` | `web:db` | 0 | 4 |
+| `apps/web/src/db/program-publication-schema.vitest.ts` | `web:db` | 0 | 5 |
 | `apps/web/src/db/reusable-block-library-rls.vitest.ts` | `web:db` | 0 | 2 |
 | `apps/web/src/db/reusable-block-library-schema.vitest.ts` | `web:db` | 0 | 3 |
 | `apps/web/src/db/schema.ts` | `web:db` | 0 | 2 |
@@ -965,7 +966,7 @@ flowchart LR
 | `apps/web/src/document-designer/print-types.ts` | `web:document-designer` | 1 | 0 |
 | `apps/web/src/document-designer/public-safety.ts` | `web:document-designer` | 3 | 0 |
 | `apps/web/src/document-designer/public-safety.vitest.ts` | `web:document-designer` | 2 | 1 |
-| `apps/web/src/document-designer/publication-history.ts` | `web:document-designer` | 1 | 0 |
+| `apps/web/src/document-designer/publication-history.ts` | `web:document-designer` | 2 | 0 |
 | `apps/web/src/document-designer/publication-history.vitest.ts` | `web:document-designer` | 2 | 1 |
 | `apps/web/src/document-designer/publication-service.ts` | `web:document-designer` | 4 | 0 |
 | `apps/web/src/document-designer/publication-service.vitest.ts` | `web:document-designer` | 4 | 1 |

@@ -15,6 +15,7 @@ import { resolveDocumentData } from '@/src/document-designer/data-resolver';
 import { renderDocumentHtml } from '@/src/document-designer/renderer';
 import { buildPublicPreviewSource } from '@/src/document-designer/meeting-document-service';
 
+// Authenticated live preview only. Public/share routes serve immutable, safety-versioned snapshots instead.
 export async function GET(_: Request, context: { params: Promise<{ wardId: string; meetingId: string }> }) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, { status: 401 });

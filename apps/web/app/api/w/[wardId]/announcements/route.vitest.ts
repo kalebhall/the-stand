@@ -1,6 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { authMock, canManageMeetingsMock, canViewMeetingsMock, canManageProgramAnnouncementsMock, canManageStandAnnouncementsMock, canViewAnnouncementsMock, moduleEnabledMock, setDbContextMock, queryMock, releaseMock, connectMock } = vi.hoisted(() => ({
+const {
+  authMock,
+  canManageMeetingsMock,
+  canViewMeetingsMock,
+  canManageProgramAnnouncementsMock,
+  canManageStandAnnouncementsMock,
+  canViewAnnouncementsMock,
+  moduleEnabledMock,
+  setDbContextMock,
+  queryMock,
+  releaseMock,
+  connectMock
+} = vi.hoisted(() => ({
   authMock: vi.fn(),
   canManageMeetingsMock: vi.fn(),
   canViewMeetingsMock: vi.fn(),
@@ -31,6 +43,7 @@ vi.mock('@/src/db/client', () => ({
 }));
 
 import { GET, POST } from './route';
+import { PUT as updateAnnouncement } from './[announcementId]/route';
 
 describe('GET and POST /api/w/[wardId]/announcements', () => {
   beforeEach(() => {
@@ -106,11 +119,14 @@ describe('GET and POST /api/w/[wardId]/announcements', () => {
       .mockResolvedValueOnce({})
       .mockResolvedValueOnce({});
 
-    const res = await POST(new Request('http://localhost/api/w/ward-1/announcements', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: 'Program only', includeInProgram: true, includeInStand: true })
-    }), { params: Promise.resolve({ wardId: 'ward-1' }) });
+    const res = await POST(
+      new Request('http://localhost/api/w/ward-1/announcements', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: 'Program only', includeInProgram: true, includeInStand: true })
+      }),
+      { params: Promise.resolve({ wardId: 'ward-1' }) }
+    );
 
     expect(res.status).toBe(201);
     expect(queryMock).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO announcement'), expect.arrayContaining([true, false]));
@@ -153,5 +169,27 @@ describe('GET and POST /api/w/[wardId]/announcements', () => {
       true,
       true
     ]);
+  });
+
+  it('does not let a Program Editor update a stand-only announcement', async () => {
+    authMock.mockResolvedValue({ user: { id: 'user-1', roles: ['PROGRAM_EDITOR'] }, activeWardId: 'ward-1' });
+    canManageProgramAnnouncementsMock.mockReturnValue(true);
+    canManageStandAnnouncementsMock.mockReturnValue(false);
+    queryMock.mockResolvedValueOnce({}); // BEGIN
+    queryMock.mockResolvedValueOnce({ rowCount: 0, rows: [] }); // stand-only row is excluded by UPDATE predicate
+    queryMock.mockResolvedValueOnce({}); // ROLLBACK
+
+    const res = await updateAnnouncement(
+      new Request('http://localhost/api/w/ward-1/announcements/ann-stand', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: 'Changed', includeInProgram: true, includeInStand: true })
+      }),
+      { params: Promise.resolve({ wardId: 'ward-1', announcementId: 'ann-stand' }) }
+    );
+
+    expect(res.status).toBe(404);
+    expect(queryMock).toHaveBeenCalledWith(expect.stringContaining('include_in_stand = FALSE'), expect.any(Array));
+    expect(queryMock).toHaveBeenLastCalledWith('ROLLBACK');
   });
 });

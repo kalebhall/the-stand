@@ -495,7 +495,12 @@ export function WardAuditLogClient({
                   <td className="px-4 py-3 text-right">
                     {hasChanges || hasDetails ? (
                       <div className="space-y-1">
-                        <Button variant="outline" size="sm" onClick={() => setExpandedId(isExpanded ? null : item.id)} className="text-xs">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setExpandedId(isExpanded ? null : item.id)}
+                          className="whitespace-nowrap text-xs"
+                        >
                           {isExpanded ? 'Hide' : hasChanges ? 'View Changes' : 'View Details'}
                         </Button>
                         {isExpanded && (

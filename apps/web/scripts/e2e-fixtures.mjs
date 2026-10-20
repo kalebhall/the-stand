@@ -19,8 +19,10 @@ const ids = {
   wardB: '22222222-2222-4222-8222-222222222222',
   user: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
   meeting: '33333333-3333-4333-8333-333333333333',
+  stalePrintMeeting: '33333333-3333-4333-8333-333333333334',
+  stalePrintDocument: '33333333-3333-4333-8333-333333333335',
   programItem: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
-  render: '66666666-6666-4666-8666-666666666666',
+  render: '66666666-6666-4666-8666-666666666667',
   share: '77777777-7777-4777-8777-777777777777',
   portal: '88888888-8888-4888-8888-888888888888',
   calling: '99999999-9999-4999-8999-999999999999',
@@ -94,6 +96,20 @@ try {
     `INSERT INTO ward_user_role (ward_id, user_id, role_id) VALUES ($1::uuid, $2::uuid, $3::uuid) ON CONFLICT (ward_id, user_id, role_id) DO UPDATE SET revoked_at = NULL`,
     [ids.ward, ids.user, roleId]
   );
+  // Only explicit visual-audit runs grant this disposable fixture user module-management access.
+  if (process.env.E2E_VISUAL_AUDIT === '1') {
+    const standAdminRole = await client.query(
+      `INSERT INTO role (name, scope) VALUES ('STAND_ADMIN', 'WARD') ON CONFLICT (name) DO NOTHING RETURNING id`
+    );
+    const standAdminRoleId =
+      standAdminRole.rows[0]?.id ??
+      (await client.query(`SELECT id FROM role WHERE name = 'STAND_ADMIN' AND scope = 'WARD' LIMIT 1`)).rows[0]?.id;
+    if (!standAdminRoleId) throw new Error('STAND_ADMIN visual-audit fixture is unavailable');
+    await client.query(
+      `INSERT INTO ward_user_role (ward_id, user_id, role_id) VALUES ($1::uuid, $2::uuid, $3::uuid) ON CONFLICT (ward_id, user_id, role_id) DO UPDATE SET revoked_at = NULL`,
+      [ids.ward, ids.user, standAdminRoleId]
+    );
+  }
   await client.query(
     `INSERT INTO ward_module_enablement (ward_id, module_id, enabled, updated_by_user_id) VALUES ($1::uuid, 'actions-to-do', true, $2::uuid), ($1::uuid, 'programs', true, $2::uuid), ($1::uuid, 'membership-ordinances', true, $2::uuid)`,
     [ids.ward, ids.user]
@@ -107,6 +123,16 @@ try {
   await client.query(
     `INSERT INTO meeting (id, ward_id, meeting_date, meeting_type, status) VALUES ($1::uuid, $2::uuid, CURRENT_DATE, 'SACRAMENT', 'PUBLISHED') ON CONFLICT (id) DO UPDATE SET status = 'PUBLISHED', meeting_date = CURRENT_DATE`,
     [ids.meeting, ids.ward]
+  );
+  await client.query(
+    `INSERT INTO meeting (id, ward_id, meeting_date, meeting_type, status) VALUES ($1::uuid, $2::uuid, CURRENT_DATE + 1, 'SACRAMENT', 'PUBLISHED') ON CONFLICT (id) DO UPDATE SET status = 'PUBLISHED', meeting_date = CURRENT_DATE + 1`,
+    [ids.stalePrintMeeting, ids.ward]
+  );
+  await client.query(
+    `INSERT INTO meeting_document (id, ward_id, meeting_id, document_type, schema_version, layout_json, theme_json, updated_by_user_id)
+     VALUES ($1::uuid, $2::uuid, $3::uuid, 'SACRAMENT_PROGRAM', 1, '{"schemaVersion":1}'::jsonb, '{}'::jsonb, $4::uuid)
+     ON CONFLICT (id) DO NOTHING`,
+    [ids.stalePrintDocument, ids.ward, ids.stalePrintMeeting, ids.user]
   );
   await client.query(
     `INSERT INTO ward_stand_template (ward_id, welcome_new_member_template, recognize_baptized_child_template, baby_blessing_template, priesthood_ordination_template, priesthood_advancement_template)
@@ -136,7 +162,7 @@ try {
     [ids.ward, ids.meeting, ids.calling]
   );
   await client.query(
-    `INSERT INTO meeting_program_render (id, ward_id, meeting_id, version, render_html, layout_json, render_data_json, document_type, published_by_user_id, publication_metadata_json) VALUES ($1::uuid, $2::uuid, $3::uuid, 1, $4, '{"schemaVersion":1}'::jsonb, '{"schemaVersion":1}'::jsonb, 'SACRAMENT_PROGRAM', $5::uuid, '{}'::jsonb) ON CONFLICT (id) DO NOTHING`,
+    `INSERT INTO meeting_program_render (id, ward_id, meeting_id, version, render_html, layout_json, render_data_json, document_type, published_by_user_id, publication_metadata_json) VALUES ($1::uuid, $2::uuid, $3::uuid, 2, $4, '{"schemaVersion":1}'::jsonb, '{"schemaVersion":1}'::jsonb, 'SACRAMENT_PROGRAM', $5::uuid, '{"publicSafetyVersion":1,"rendererVersion":"m9"}'::jsonb) ON CONFLICT (id) DO NOTHING`,
     [
       ids.render,
       ids.ward,
@@ -164,6 +190,7 @@ try {
     `
     SELECT
       (SELECT ward_id = $1::uuid AND meeting_type = 'SACRAMENT' AND status = 'PUBLISHED' FROM meeting WHERE id = $2::uuid) AS meeting_ok,
+      (SELECT m.status = 'PUBLISHED' AND d.meeting_id = m.id FROM meeting m JOIN meeting_document d ON d.ward_id = m.ward_id AND d.meeting_id = m.id WHERE m.id = '33333333-3333-4333-8333-333333333334'::uuid AND m.ward_id = $1::uuid) AS stale_print_meeting_ready,
       (SELECT ward_id = $1::uuid AND meeting_id = $2::uuid AND item_type = 'WARD_AND_STAKE_BUSINESS' FROM meeting_program_item WHERE id = $3::uuid) AS program_item_ok,
       (SELECT ward_id = $1::uuid AND calling_assignment_id = $4::uuid AND action_status = 'EXTENDED' FROM calling_action WHERE id = $5::uuid) AS calling_action_ok,
       (SELECT ward_id = $1::uuid AND meeting_id = $2::uuid AND render_html LIKE '%E2E Ward A%' AND render_html LIKE '%Jane Doe%' FROM meeting_program_render WHERE id = $6::uuid) AS render_ok,
@@ -188,6 +215,7 @@ try {
   const state = fixtureState.rows[0];
   if (
     !state?.meeting_ok ||
+    !state?.stale_print_meeting_ready ||
     !state?.program_item_ok ||
     !state?.calling_action_ok ||
     !state?.render_ok ||

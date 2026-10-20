@@ -15,6 +15,10 @@ import type { IntroductionRoles } from '@/src/meetings/types';
 
 type PrintSource = 'draft' | 'published';
 
+export function requiresSafePublishedSnapshot(meetingStatus: string, draft: string | undefined): boolean {
+  return meetingStatus !== 'DRAFT' && draft !== '1';
+}
+
 type StoredMedia = { storage_key: string; mime_type: string };
 
 function isPrivateAddress(address: string): boolean {
@@ -197,7 +201,8 @@ export async function loadPrintDocument(
       ? await client.query(
           `SELECT layout_json, render_data_json, version FROM meeting_program_render
           WHERE meeting_id = $1::uuid AND ward_id = $2::uuid AND version = $3::int
-            AND published_at IS NOT NULL AND layout_json IS NOT NULL AND render_data_json IS NOT NULL LIMIT 1`,
+            AND published_at IS NOT NULL AND layout_json IS NOT NULL AND render_data_json IS NOT NULL
+            AND publication_metadata_json @> '{"publicSafetyVersion":1}'::jsonb LIMIT 1`,
           [meetingId, wardId, version]
         )
       : await client.query(
@@ -209,6 +214,7 @@ export async function loadPrintDocument(
             AND s.active_render_id IS NOT NULL
             AND (s.expires_at IS NULL OR s.expires_at > now())
             AND r.published_at IS NOT NULL AND r.layout_json IS NOT NULL AND r.render_data_json IS NOT NULL
+            AND r.publication_metadata_json @> '{"publicSafetyVersion":1}'::jsonb
           LIMIT 1`,
           [meetingId, wardId]
         );

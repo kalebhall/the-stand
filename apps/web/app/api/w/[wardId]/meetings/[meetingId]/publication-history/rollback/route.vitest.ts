@@ -22,7 +22,11 @@ vi.mock('@/src/audit/service', () => ({ recordAuditEvent: mocks.audit }));
 vi.mock('@/src/db/client', () => ({ pool: { connect: mocks.connect } }));
 vi.mock('@/src/db/context', () => ({ setDbContext: mocks.setDbContext }));
 vi.mock('@/src/modules/service', () => ({ isWardModuleEnabled: mocks.moduleEnabled }));
-vi.mock('@/src/document-designer/publication-service', () => ({ calculatePublicationExpiration: mocks.expiration }));
+vi.mock('@/src/document-designer/publication-service', () => ({
+  calculatePublicationExpiration: mocks.expiration,
+  isSafePublicProgramMetadata: (metadata: unknown) =>
+    !!metadata && typeof metadata === 'object' && (metadata as Record<string, unknown>).publicSafetyVersion === 1
+}));
 
 import { POST } from './route';
 
@@ -33,7 +37,7 @@ function request(body: unknown): Request {
   return new Request('http://localhost', { method: 'POST', body: JSON.stringify(body) });
 }
 
-type QueryState = { meeting?: boolean; settings?: boolean; share?: boolean; target?: boolean; incomplete?: boolean };
+type QueryState = { meeting?: boolean; settings?: boolean; share?: boolean; target?: boolean; incomplete?: boolean; unsafe?: boolean };
 
 function installQueries(options: QueryState = {}): void {
   const state = { meeting: true, settings: true, share: true, target: true, incomplete: false, ...options };
@@ -50,7 +54,19 @@ function installQueries(options: QueryState = {}): void {
     }
     if (sql.includes('FROM meeting_program_render')) {
       return state.target
-        ? { rows: [{ id: 'render-1', version: 1, document_type: 'SACRAMENT_PROGRAM', published_at: '2026-01-01T10:00:00.000Z', layout_json: state.incomplete ? null : { pages: [] }, render_data_json: state.incomplete ? null : { items: [] } }] }
+        ? {
+            rows: [
+              {
+                id: 'render-1',
+                version: 1,
+                document_type: 'SACRAMENT_PROGRAM',
+                published_at: '2026-01-01T10:00:00.000Z',
+                layout_json: state.incomplete ? null : { pages: [] },
+                render_data_json: state.incomplete ? null : { items: [] },
+                publication_metadata_json: state.unsafe ? { rendererVersion: 'm8' } : { publicSafetyVersion: 1 }
+              }
+            ]
+          }
         : { rows: [] };
     }
     if (sql.includes('UPDATE public_program_share')) return {};
@@ -114,11 +130,12 @@ describe('POST publication history rollback route', () => {
     ['the meeting', { meeting: false }],
     ['the public share', { share: false }],
     ['a cross-meeting target', { target: false }],
-    ['an incomplete target', { incomplete: true }]
+    ['an incomplete target', { incomplete: true }],
+    ['an older snapshot without the safety marker', { unsafe: true }]
   ])('rejects when %s is unavailable', async (_label, state: QueryState) => {
     installQueries(state);
     const response = await POST(request({ version: 1 }), { params: Promise.resolve(params) });
-    if (state.incomplete) expect(response.status).toBe(409);
+    if (state.incomplete || state.unsafe) expect(response.status).toBe(409);
     else expect(response.status).toBe(404);
     expect(mocks.query).toHaveBeenCalledWith('ROLLBACK');
     expect(mocks.audit).not.toHaveBeenCalled();
@@ -127,9 +144,18 @@ describe('POST publication history rollback route', () => {
 
   it('uses exact ward and meeting predicates for meeting, share, and target lookups', async () => {
     await POST(request({ version: 1 }), { params: Promise.resolve(params) });
-    expect(mocks.query).toHaveBeenCalledWith(expect.stringContaining('WHERE id = $1::uuid AND ward_id = $2::uuid'), ['meeting-1', 'ward-1']);
-    expect(mocks.query).toHaveBeenCalledWith(expect.stringContaining('WHERE s.ward_id = $1::uuid AND s.meeting_id = $2::uuid'), ['ward-1', 'meeting-1']);
-    expect(mocks.query).toHaveBeenCalledWith(expect.stringContaining('WHERE ward_id = $1::uuid AND meeting_id = $2::uuid AND version = $3::int'), ['ward-1', 'meeting-1', 1]);
+    expect(mocks.query).toHaveBeenCalledWith(expect.stringContaining('WHERE id = $1::uuid AND ward_id = $2::uuid'), [
+      'meeting-1',
+      'ward-1'
+    ]);
+    expect(mocks.query).toHaveBeenCalledWith(expect.stringContaining('WHERE s.ward_id = $1::uuid AND s.meeting_id = $2::uuid'), [
+      'ward-1',
+      'meeting-1'
+    ]);
+    expect(mocks.query).toHaveBeenCalledWith(
+      expect.stringContaining('WHERE ward_id = $1::uuid AND meeting_id = $2::uuid AND version = $3::int'),
+      ['ward-1', 'meeting-1', 1]
+    );
   });
 
   it('rolls back by changing only the public share pointer and expiration', async () => {
@@ -141,10 +167,20 @@ describe('POST publication history rollback route', () => {
       expect.stringContaining('UPDATE public_program_share SET active_render_id = $1::uuid, expires_at = $2::timestamptz'),
       ['render-1', new Date('2026-01-31T10:00:00.000Z'), 'ward-1', 'meeting-1']
     );
-    expect(mocks.query.mock.calls.some(([sql]) => /UPDATE meeting_program_render|INSERT INTO meeting_program_render|DELETE FROM meeting_program_render/.test(String(sql)))).toBe(false);
-    expect(mocks.audit).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
-      action: 'PROGRAM_ROLLBACK', wardId: 'ward-1', userId: 'user-1', entityId: 'meeting-1'
-    }));
+    expect(
+      mocks.query.mock.calls.some(([sql]) =>
+        /UPDATE meeting_program_render|INSERT INTO meeting_program_render|DELETE FROM meeting_program_render/.test(String(sql))
+      )
+    ).toBe(false);
+    expect(mocks.audit).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        action: 'PROGRAM_ROLLBACK',
+        wardId: 'ward-1',
+        userId: 'user-1',
+        entityId: 'meeting-1'
+      })
+    );
     expect(mocks.query).toHaveBeenCalledWith('COMMIT');
   });
 });

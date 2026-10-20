@@ -40,6 +40,9 @@ describe('GET /p/[meetingToken]', () => {
     expect(await response.text()).toBe('<meta name="robots" content="noindex,nofollow"><main>Published</main>');
     expect(response.headers.get('X-Robots-Tag')).toBe('noindex, nofollow');
     expect(queryMock).toHaveBeenCalledWith('SELECT set_config($1, $2, true)', ['app.public_meeting_token', 'token-1']);
+    expect(queryMock).toHaveBeenCalledWith(expect.stringContaining('publication_metadata_json @> \'{"publicSafetyVersion":1}\'::jsonb'), [
+      'token-1'
+    ]);
   });
 
   it('returns 404 when token has no published render', async () => {
@@ -55,5 +58,6 @@ describe('GET /p/[meetingToken]', () => {
 
     expect(response.status).toBe(404);
     await expect(response.json()).resolves.toEqual({ error: 'Not found', code: 'NOT_FOUND' });
+    expect(queryMock).toHaveBeenCalledWith(expect.stringContaining('publicSafetyVersion'), ['missing-token']);
   });
 });

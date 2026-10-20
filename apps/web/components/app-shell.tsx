@@ -123,15 +123,12 @@ export function AppShell({ session, children }: { session: Session | null; child
     };
   }, [session?.activeWardId]);
 
-  const navigationStorageKey = session?.user?.id && session.activeWardId
-    ? `${NAV_GROUP_STORAGE_PREFIX}${session.user.id}:${session.activeWardId}`
-    : null;
-  const sidebarStorageKey = session?.user?.id && session.activeWardId
-    ? `${SIDEBAR_STORAGE_PREFIX}${session.user.id}:${session.activeWardId}`
-    : null;
-  const sidebarPinStorageKey = session?.user?.id && session.activeWardId
-    ? `${SIDEBAR_PIN_STORAGE_PREFIX}${session.user.id}:${session.activeWardId}`
-    : null;
+  const navigationStorageKey =
+    session?.user?.id && session.activeWardId ? `${NAV_GROUP_STORAGE_PREFIX}${session.user.id}:${session.activeWardId}` : null;
+  const sidebarStorageKey =
+    session?.user?.id && session.activeWardId ? `${SIDEBAR_STORAGE_PREFIX}${session.user.id}:${session.activeWardId}` : null;
+  const sidebarPinStorageKey =
+    session?.user?.id && session.activeWardId ? `${SIDEBAR_PIN_STORAGE_PREFIX}${session.user.id}:${session.activeWardId}` : null;
 
   useEffect(() => {
     if (!sidebarStorageKey) return;
@@ -223,11 +220,24 @@ export function AppShell({ session, children }: { session: Session | null; child
   const translateGroup = (id: AppNavGroup['id']): string => tn(id);
   const translateItem = (href: string, fallback: string): string => {
     const keys: Record<string, string> = {
-      '/dashboard': 'dashboard', '/meetings': 'meetings', '/announcements': 'announcements', '/programs': 'programStudio', '/programs/baptism': 'baptismPrograms',
-      '/programs/templates': 'templateGallery', '/programs/templates/admin': 'templateAdministration', '/bishopric': 'bishopric',
-      '/interviews': 'interviews', '/technology': 'technology', '/members': 'members', '/callings': 'callings',
-      '/speakers': 'speakers', '/membership-ordinances': 'membershipOrdinances', '/notifications': 'notifications',
-      '/reports': 'reports', '/imports': 'imports', '/support': 'supportConsole'
+      '/dashboard': 'dashboard',
+      '/meetings': 'meetings',
+      '/announcements': 'announcements',
+      '/programs': 'programStudio',
+      '/programs/baptism': 'baptismPrograms',
+      '/programs/templates': 'templateGallery',
+      '/programs/templates/admin': 'templateAdministration',
+      '/bishopric': 'bishopric',
+      '/interviews': 'interviews',
+      '/technology': 'technology',
+      '/members': 'members',
+      '/callings': 'callings',
+      '/speakers': 'speakers',
+      '/membership-ordinances': 'membershipOrdinances',
+      '/notifications': 'notifications',
+      '/reports': 'reports',
+      '/imports': 'imports',
+      '/support': 'supportConsole'
     };
     return keys[href] ? tn(keys[href]) : fallback;
   };
@@ -259,7 +269,10 @@ export function AppShell({ session, children }: { session: Session | null; child
             <button
               type="button"
               onClick={toggleSidebarPinned}
-              className={cn('inline-flex h-8 w-8 items-center justify-center rounded-md border text-sm transition-colors hover:bg-accent', isSidebarPinned && 'bg-accent text-foreground')}
+              className={cn(
+                'inline-flex h-8 w-8 items-center justify-center rounded-md border text-sm transition-colors hover:bg-accent',
+                isSidebarPinned && 'bg-accent text-foreground'
+              )}
               title={isSidebarPinned ? t('unpinMenu') : t('pinMenu')}
               aria-label={isSidebarPinned ? t('unpinMenu') : t('pinMenu')}
               aria-pressed={isSidebarPinned}
@@ -320,7 +333,7 @@ export function AppShell({ session, children }: { session: Session | null; child
       </aside>
 
       {/* Main Content Area */}
-      <div className={cn('flex flex-1 flex-col', !isSidebarCollapsed && 'md:pl-64')}>
+      <div className={cn('flex min-w-0 flex-1 flex-col', !isSidebarCollapsed && 'md:pl-64')}>
         {/* Mobile top bar */}
         <header
           className={cn(
@@ -361,9 +374,7 @@ export function AppShell({ session, children }: { session: Session | null; child
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            {notificationsEnabled && <NotificationBell wardId={session.activeWardId} />}
-          </div>
+          <div className="flex items-center gap-2">{notificationsEnabled && <NotificationBell wardId={session.activeWardId} />}</div>
         </header>
 
         {isMobileNavOpen ? (
@@ -398,7 +409,10 @@ export function AppShell({ session, children }: { session: Session | null; child
                   <button
                     type="button"
                     onClick={toggleSidebarPinned}
-                    className={cn('inline-flex h-9 w-9 items-center justify-center rounded-md border text-sm hover:bg-accent', isSidebarPinned && 'bg-accent text-foreground')}
+                    className={cn(
+                      'inline-flex h-9 w-9 items-center justify-center rounded-md border text-sm hover:bg-accent',
+                      isSidebarPinned && 'bg-accent text-foreground'
+                    )}
                     title={isSidebarPinned ? t('unpinMenu') : t('pinMenu')}
                     aria-label={isSidebarPinned ? t('unpinMenu') : t('pinMenu')}
                     aria-pressed={isSidebarPinned}

@@ -1,6 +1,14 @@
 export const GLOBAL_ROLES = ['SUPPORT_ADMIN', 'SYSTEM_ADMIN'] as const;
 
-export const WARD_ROLES = ['STAND_ADMIN', 'BISHOPRIC_EDITOR', 'CLERK_EDITOR', 'WARD_CLERK', 'MEMBERSHIP_CLERK', 'CONDUCTOR_VIEW', 'PROGRAM_EDITOR'] as const;
+export const WARD_ROLES = [
+  'STAND_ADMIN',
+  'BISHOPRIC_EDITOR',
+  'CLERK_EDITOR',
+  'WARD_CLERK',
+  'MEMBERSHIP_CLERK',
+  'CONDUCTOR_VIEW',
+  'PROGRAM_EDITOR'
+] as const;
 
 export const STAKE_ROLES = ['STAKE_ADMIN'] as const;
 
@@ -87,41 +95,109 @@ function inActiveWard(session: { roles?: string[]; activeWardId?: string | null 
 }
 
 export function canViewProgramDesigner(session: { roles?: string[]; activeWardId?: string | null }, wardId: string): boolean {
-  return inActiveWard(session, wardId) && (hasRole(session.roles, 'STAND_ADMIN') || hasRole(session.roles, 'BISHOPRIC_EDITOR') || hasRole(session.roles, 'PROGRAM_EDITOR'));
+  return (
+    inActiveWard(session, wardId) &&
+    (hasRole(session.roles, 'STAND_ADMIN') || hasRole(session.roles, 'BISHOPRIC_EDITOR') || hasRole(session.roles, 'PROGRAM_EDITOR'))
+  );
 }
 
 export function canEditProgramDesign(session: { roles?: string[]; activeWardId?: string | null }, wardId: string): boolean {
   return canViewProgramDesigner(session, wardId);
 }
 
-export function canManageWardProgramTemplates(session: { roles?: string[]; activeWardId?: string | null }, wardId: string, profile: ProgramPermissionProfile = {}): boolean {
-  return inActiveWard(session, wardId) && (hasRole(session.roles, 'STAND_ADMIN') || (hasRole(session.roles, 'PROGRAM_EDITOR') && profile.allowProgramEditorCreateTemplates === true));
+export function canEditProgramContent(session: { roles?: string[]; activeWardId?: string | null }, wardId: string): boolean {
+  return inActiveWard(session, wardId) && (hasRole(session.roles, 'STAND_ADMIN') || hasRole(session.roles, 'BISHOPRIC_EDITOR'));
+}
+
+export function canEditProgramNotes(session: { roles?: string[]; activeWardId?: string | null }, wardId: string): boolean {
+  return canEditProgramContent(session, wardId) || (inActiveWard(session, wardId) && hasRole(session.roles, 'PROGRAM_EDITOR'));
+}
+
+export function canEditProgramItemPatch(
+  session: { roles?: string[]; activeWardId?: string | null },
+  wardId: string,
+  patch: { kind: string; field?: string }
+): boolean {
+  return (
+    canEditProgramContent(session, wardId) ||
+    (canEditProgramNotes(session, wardId) && patch.kind === 'TEXT' && patch.field === 'programNotes')
+  );
+}
+
+export function canManageWardProgramTemplates(
+  session: { roles?: string[]; activeWardId?: string | null },
+  wardId: string,
+  profile: ProgramPermissionProfile = {}
+): boolean {
+  return (
+    inActiveWard(session, wardId) &&
+    (hasRole(session.roles, 'STAND_ADMIN') ||
+      (hasRole(session.roles, 'PROGRAM_EDITOR') && profile.allowProgramEditorCreateTemplates === true))
+  );
 }
 
 export function canManageProgramMedia(session: { roles?: string[]; activeWardId?: string | null }, wardId: string): boolean {
   return canViewProgramDesigner(session, wardId);
 }
 
-export function canDeleteProgramMedia(session: { roles?: string[]; activeWardId?: string | null }, wardId: string, profile: ProgramPermissionProfile = {}): boolean {
+export function canDeleteProgramMedia(
+  session: { roles?: string[]; activeWardId?: string | null },
+  wardId: string,
+  profile: ProgramPermissionProfile = {}
+): boolean {
   if (!inActiveWard(session, wardId)) return false;
   if (hasRole(session.roles, 'STAND_ADMIN')) return true;
   return hasRole(session.roles, 'PROGRAM_EDITOR') && profile.allowProgramEditorDeleteMedia === true;
 }
 
-export function canPublishProgram(session: { roles?: string[]; activeWardId?: string | null }, wardId: string, profile: ProgramPermissionProfile = {}): boolean {
-  return inActiveWard(session, wardId) && (hasRole(session.roles, 'STAND_ADMIN') || hasRole(session.roles, 'BISHOPRIC_EDITOR') || (hasRole(session.roles, 'PROGRAM_EDITOR') && profile.allowProgramEditorPublish === true));
+export function canPublishProgram(
+  session: { roles?: string[]; activeWardId?: string | null },
+  wardId: string,
+  profile: ProgramPermissionProfile = {}
+): boolean {
+  return (
+    inActiveWard(session, wardId) &&
+    (hasRole(session.roles, 'STAND_ADMIN') ||
+      hasRole(session.roles, 'BISHOPRIC_EDITOR') ||
+      (hasRole(session.roles, 'PROGRAM_EDITOR') && profile.allowProgramEditorPublish === true))
+  );
 }
 
-export function canRepublishProgram(session: { roles?: string[]; activeWardId?: string | null }, wardId: string, profile: ProgramPermissionProfile = {}): boolean {
-  return inActiveWard(session, wardId) && (hasRole(session.roles, 'STAND_ADMIN') || hasRole(session.roles, 'BISHOPRIC_EDITOR') || (hasRole(session.roles, 'PROGRAM_EDITOR') && profile.allowProgramEditorRepublish === true));
+export function canRepublishProgram(
+  session: { roles?: string[]; activeWardId?: string | null },
+  wardId: string,
+  profile: ProgramPermissionProfile = {}
+): boolean {
+  return (
+    inActiveWard(session, wardId) &&
+    (hasRole(session.roles, 'STAND_ADMIN') ||
+      hasRole(session.roles, 'BISHOPRIC_EDITOR') ||
+      (hasRole(session.roles, 'PROGRAM_EDITOR') && profile.allowProgramEditorRepublish === true))
+  );
 }
 
-export function canRollbackProgram(session: { roles?: string[]; activeWardId?: string | null }, wardId: string, profile: ProgramPermissionProfile = {}): boolean {
-  return inActiveWard(session, wardId) && (hasRole(session.roles, 'STAND_ADMIN') || (hasRole(session.roles, 'PROGRAM_EDITOR') && profile.allowProgramEditorRollback === true));
+export function canRollbackProgram(
+  session: { roles?: string[]; activeWardId?: string | null },
+  wardId: string,
+  profile: ProgramPermissionProfile = {}
+): boolean {
+  return (
+    inActiveWard(session, wardId) &&
+    (hasRole(session.roles, 'STAND_ADMIN') || (hasRole(session.roles, 'PROGRAM_EDITOR') && profile.allowProgramEditorRollback === true))
+  );
 }
 
-export function canUseAdvancedProgramDesigner(session: { roles?: string[]; activeWardId?: string | null }, wardId: string, profile: ProgramPermissionProfile = {}): boolean {
-  return inActiveWard(session, wardId) && (hasRole(session.roles, 'STAND_ADMIN') || hasRole(session.roles, 'BISHOPRIC_EDITOR') || (hasRole(session.roles, 'PROGRAM_EDITOR') && profile.allowAdvancedProgramDesigner === true));
+export function canUseAdvancedProgramDesigner(
+  session: { roles?: string[]; activeWardId?: string | null },
+  wardId: string,
+  profile: ProgramPermissionProfile = {}
+): boolean {
+  return (
+    inActiveWard(session, wardId) &&
+    (hasRole(session.roles, 'STAND_ADMIN') ||
+      hasRole(session.roles, 'BISHOPRIC_EDITOR') ||
+      (hasRole(session.roles, 'PROGRAM_EDITOR') && profile.allowAdvancedProgramDesigner === true))
+  );
 }
 
 export function canViewCallings(session: { roles?: string[]; activeWardId?: string | null }, wardId: string): boolean {
@@ -177,7 +253,11 @@ export function canRunImports(session: { roles?: string[]; activeWardId?: string
 }
 
 function hasStakeRole(session: TemplateAuthorizationSession, stakeId: string): boolean {
-  return session.stakeAssignments?.some((assignment) => assignment.stakeId === stakeId && assignment.roleNames.some((role) => role.trim().toUpperCase() === 'STAKE_ADMIN')) === true;
+  return (
+    session.stakeAssignments?.some(
+      (assignment) => assignment.stakeId === stakeId && assignment.roleNames.some((role) => role.trim().toUpperCase() === 'STAKE_ADMIN')
+    ) === true
+  );
 }
 
 export function canViewStakeTemplates(session: TemplateAuthorizationSession, stakeId: string): boolean {
@@ -195,7 +275,11 @@ export function canManageSystemTemplates(session: TemplateAuthorizationSession):
   return hasRole(session.roles, 'SYSTEM_ADMIN') || hasRole(session.roles, 'SUPPORT_ADMIN');
 }
 
-export function canUseSharedAdvancedProgramDesigner(session: TemplateAuthorizationSession, scope: 'SYSTEM' | 'STAKE', scopeId: string | null): boolean {
+export function canUseSharedAdvancedProgramDesigner(
+  session: TemplateAuthorizationSession,
+  scope: 'SYSTEM' | 'STAKE',
+  scopeId: string | null
+): boolean {
   if (scope === 'SYSTEM') return canManageSystemTemplates(session);
   return Boolean(scopeId && canManageStakeTemplates(session, scopeId));
 }

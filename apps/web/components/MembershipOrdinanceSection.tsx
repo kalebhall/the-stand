@@ -465,13 +465,14 @@ export function MembershipOrdinanceSection({
                     </p>
                   ) : null}
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="rounded-full border px-2 py-1 text-xs">{t(`status_${action.status}`)}</span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="shrink-0 rounded-full border px-2 py-1 text-xs whitespace-nowrap">{t(`status_${action.status}`)}</span>
                   {canManage && action.interview_status && ['needed', 'scheduled'].includes(action.interview_status) ? (
                     <Button
                       type="button"
                       size="sm"
                       variant="outline"
+                      className="whitespace-nowrap"
                       disabled={busy}
                       onClick={() => void updateAction(action.id, 'interview_completed')}
                     >
@@ -483,6 +484,7 @@ export function MembershipOrdinanceSection({
                       type="button"
                       size="sm"
                       variant="outline"
+                      className="whitespace-nowrap"
                       disabled={busy}
                       onClick={() => void updateAction(action.id, 'lcr_completed')}
                     >
@@ -494,6 +496,7 @@ export function MembershipOrdinanceSection({
                       type="button"
                       size="sm"
                       variant="outline"
+                      className="whitespace-nowrap"
                       disabled={busy}
                       onClick={() => void updateAction(action.id, 'announced')}
                     >
@@ -501,7 +504,13 @@ export function MembershipOrdinanceSection({
                     </Button>
                   ) : null}
                   {canManage && action.status === 'action_needed' ? (
-                    <Button type="button" size="sm" disabled={busy} onClick={() => void updateAction(action.id, 'completed')}>
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="whitespace-nowrap"
+                      disabled={busy}
+                      onClick={() => void updateAction(action.id, 'completed')}
+                    >
                       {t('markCompleted')}
                     </Button>
                   ) : null}

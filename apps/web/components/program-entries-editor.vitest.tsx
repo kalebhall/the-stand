@@ -68,10 +68,16 @@ const items: EditorProgramItem[] = [
 ];
 
 const response = (body: unknown, status = 200) => ({ ok: status >= 200 && status < 300, status, json: async () => body });
-const renderEditor = (onSaved = vi.fn()) =>
+const renderEditor = (onSaved = vi.fn(), canEditProgramContent = true, canEditProgramNotes = true) =>
   render(
     <NextIntlClientProvider locale="en-US" messages={MESSAGE_CATALOGS['en-US']}>
-      <ProgramEntriesEditor wardId="ward-1" meetingId="meeting-1" onSaved={onSaved} />
+      <ProgramEntriesEditor
+        wardId="ward-1"
+        meetingId="meeting-1"
+        canEditProgramContent={canEditProgramContent}
+        canEditProgramNotes={canEditProgramNotes}
+        onSaved={onSaved}
+      />
     </NextIntlClientProvider>
   );
 
@@ -102,6 +108,38 @@ describe('ProgramEntriesEditor', () => {
     expect(screen.getAllByText('Program notes appear on the public program. Do not put private information here.').length).toBeGreaterThan(
       1
     );
+  });
+
+  it('lets a limited Program Editor see content, edit only program notes, and never shows internal notes', async () => {
+    const limitedItems = items.map((item) => ({ ...item, notes: null, internalNotesEditable: false }));
+    const limitedPayload = { ...payload, items: limitedItems };
+    const updatedItems = limitedItems.map((item) =>
+      item.id === introductionId ? { ...item, programNotes: 'Welcome and stay afterward.' } : item
+    );
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(response(limitedPayload))
+      .mockResolvedValueOnce(response({ itemId: introductionId, sourceRevision: nextRevision, items: updatedItems }));
+    vi.stubGlobal('fetch', fetchMock);
+    renderEditor(vi.fn(), false, true);
+
+    const introduction = await screen.findByRole('article', { name: '1. Introduction' });
+    expect(within(introduction).getByLabelText('Presiding')).toBeDisabled();
+    expect(within(introduction).getByLabelText('Title')).toBeDisabled();
+    expect(within(introduction).queryByLabelText('Internal notes')).not.toBeInTheDocument();
+    const programNotesLabel = within(introduction).getByText('Program notes').closest('label');
+    if (!programNotesLabel) throw new Error('Program notes label missing');
+    const programNotes = within(programNotesLabel).getByRole('textbox');
+    expect(programNotes).toBeEnabled();
+    fireEvent.change(programNotes, { target: { value: 'Welcome and stay afterward.' } });
+    fireEvent.click(within(introduction).getByRole('button', { name: 'Save entry' }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    const [, options] = fetchMock.mock.calls[1] as [string, RequestInit];
+    expect(JSON.parse(String(options.body))).toEqual({
+      expectedRevision: revision,
+      patch: { kind: 'TEXT', field: 'programNotes', value: 'Welcome and stay afterward.' }
+    });
   });
 
   it('saves a changed Introduction role with the current opaque revision', async () => {

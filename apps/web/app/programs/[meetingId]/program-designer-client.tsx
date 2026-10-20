@@ -59,7 +59,7 @@ type LoadedDocument = {
   sourceTemplateVersion: number | null;
 };
 
-type Props = { wardId: string; meetingId: string };
+type Props = { wardId: string; meetingId: string; canEditProgramContent?: boolean; canEditProgramNotes?: boolean };
 type ReusableLibraryItem = {
   id: string;
   name: string;
@@ -117,7 +117,7 @@ type PendingSave = {
   saveMode: 'SIMPLE' | 'ADVANCED';
 };
 
-export function ProgramDesignerClient({ wardId, meetingId }: Props) {
+export function ProgramDesignerClient({ wardId, meetingId, canEditProgramContent = false, canEditProgramNotes = false }: Props) {
   const t = useTranslations('programs');
   const blockTypeLabel = useCallback((type: DocumentBlock['type']) => t(`blockType.${type}` as never), [t]);
   const blockLabel = useCallback((block: DocumentBlock) => blockTypeLabel(block.type), [blockTypeLabel]);
@@ -1098,21 +1098,25 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
 
   return (
     <main className="mx-auto w-full max-w-[1500px] space-y-4 p-4 sm:p-6">
-      <header className="flex flex-wrap items-start justify-between gap-4 rounded-xl border bg-card p-4 shadow-sm sm:p-5 lg:flex-nowrap">
-        <div className="min-w-0 flex-1">
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight sm:whitespace-nowrap sm:text-3xl">{t('meetingProgram')}</h1>
+      <header className="grid grid-cols-1 gap-3 rounded-xl border bg-card p-4 shadow-sm sm:p-5">
+        <div className="min-w-0">
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">{t('meetingProgram')}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {source?.meetingDate} · {source ? meetingTypeLabel(source.meetingType) : ''}
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="min-w-0 flex flex-wrap items-center justify-end gap-2">
           <Link
             href="/programs/templates"
-            className="rounded-md border bg-background px-3 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-muted"
+            className="whitespace-nowrap rounded-md border bg-background px-3 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-muted"
           >
             {t('templates')}
           </Link>
-          <span role="status" aria-live="polite" className="rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">
+          <span
+            role="status"
+            aria-live="polite"
+            className="min-w-0 max-w-full break-words rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground [overflow-wrap:anywhere]"
+          >
             {message}
           </span>
         </div>
@@ -1211,7 +1215,13 @@ export function ProgramDesignerClient({ wardId, meetingId }: Props) {
         </section>
       ) : null}
       {mode === 'CONTENT' ? (
-        <ProgramEntriesEditor wardId={wardId} meetingId={meetingId} onSaved={() => void refreshPreviewSource()} />
+        <ProgramEntriesEditor
+          wardId={wardId}
+          meetingId={meetingId}
+          canEditProgramContent={canEditProgramContent}
+          canEditProgramNotes={canEditProgramNotes}
+          onSaved={() => void refreshPreviewSource()}
+        />
       ) : (
         <div className="grid items-start gap-4 lg:grid-cols-[240px_minmax(0,1fr)_280px]">
           <aside className="space-y-3 rounded-xl border bg-card p-3 shadow-sm lg:sticky lg:top-16" aria-label={t('approvedBlocks')}>

@@ -76,23 +76,36 @@ function getMembershipOrdinanceNextStepKey(action: MembershipOrdinanceActionRow)
   return 'complete';
 }
 
-function ActionCard({ action, wardId, locale, t }: { action: MembershipOrdinanceActionRow; wardId: string; locale: string; t: Translator }) {
+function ActionCard({
+  action,
+  wardId,
+  locale,
+  t
+}: {
+  action: MembershipOrdinanceActionRow;
+  wardId: string;
+  locale: string;
+  t: Translator;
+}) {
   return (
     <article className="rounded-lg border bg-card p-4 shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t(`action_${action.actionType}`)}</p>
           <h3 className="mt-1 text-lg font-semibold">{action.memberName}</h3>
-          {action.priesthoodOffice ? <p className="mt-1 text-sm text-muted-foreground">{t('office')} {t(`office_${action.priesthoodOffice}`)}</p> : null}
+          {action.priesthoodOffice ? (
+            <p className="mt-1 text-sm text-muted-foreground">
+              {t('office')} {t(`office_${action.priesthoodOffice}`)}
+            </p>
+          ) : null}
         </div>
-        <span className="rounded-full border px-2.5 py-1 text-xs font-medium">
-          {t(`status_${action.status}`)}
-        </span>
+        <span className="rounded-full border px-2.5 py-1 text-xs font-medium">{t(`status_${action.status}`)}</span>
       </div>
 
       <div className="mt-3 grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
         <p>
-          <span className="font-medium text-foreground">{t('meeting')}</span> {displayDate(action.meetingDate, locale, t('noDateSet'))} · {t(`meetingType_${action.meetingType}`)}
+          <span className="font-medium text-foreground">{t('meeting')}</span> {displayDate(action.meetingDate, locale, t('noDateSet'))} ·{' '}
+          {t(`meetingType_${action.meetingType}`)}
         </p>
         <p>
           <span className="font-medium text-foreground">{t('planned')}</span> {displayDate(action.plannedDate, locale, t('noDateSet'))}
@@ -107,10 +120,14 @@ function ActionCard({ action, wardId, locale, t }: { action: MembershipOrdinance
 
       <div className="mt-3 flex flex-wrap gap-2 text-xs">
         {action.interviewStatus !== 'not_required' ? (
-          <span className="rounded bg-muted px-2 py-1">{t('interview')} {t(`interview_${action.interviewStatus}`)}</span>
+          <span className="rounded bg-muted px-2 py-1">
+            {t('interview')} {t(`interview_${action.interviewStatus}`)}
+          </span>
         ) : null}
         {action.lcrFollowUpStatus === 'needed' ? (
-          <span className="rounded bg-amber-500/10 px-2 py-1 font-medium text-amber-700 dark:text-amber-300">{t('lcrUpdateNeededBadge')}</span>
+          <span className="rounded bg-amber-500/10 px-2 py-1 font-medium text-amber-700 dark:text-amber-300">
+            {t('lcrUpdateNeededBadge')}
+          </span>
         ) : null}
         {action.recordFormNeeded && action.officialSystemFollowUpStatus !== 'not_applicable' ? (
           <span className="rounded bg-blue-500/10 px-2 py-1 font-medium text-blue-700 dark:text-blue-300">
@@ -129,13 +146,21 @@ function ActionCard({ action, wardId, locale, t }: { action: MembershipOrdinance
   );
 }
 
-export default async function MembershipOrdinancesPage({ searchParams }: { searchParams: Promise<{ q?: string; action?: string; status?: string; queue?: string; followup?: string }> }) {
+export default async function MembershipOrdinancesPage({
+  searchParams
+}: {
+  searchParams: Promise<{ q?: string; action?: string; status?: string; queue?: string; followup?: string }>;
+}) {
   const t = await getTranslations('membershipOrdinances');
   const locale = await getLocale();
   const session = await requireAuthenticatedSession();
   enforcePasswordRotation(session);
 
-  if (!session.activeWardId || !(await isWardModuleEnabled(session.activeWardId, session.user.id, 'membership-ordinances')) || !canManageMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId)) {
+  if (
+    !session.activeWardId ||
+    !(await isWardModuleEnabled(session.activeWardId, session.user.id, 'membership-ordinances')) ||
+    !canManageMeetings({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId)
+  ) {
     redirect('/dashboard');
   }
 
@@ -196,13 +221,19 @@ export default async function MembershipOrdinancesPage({ searchParams }: { searc
       id: meeting.id,
       label: `${displayDate(meeting.meeting_date, locale, t('noDateSet'))} · ${t(`meetingType_${meeting.meeting_type}`)}`
     }));
-    const actions = allActions.filter((action) => matchesMembershipOrdinanceFilters(action, {
-      query: filters.q,
-      actionType: filters.action,
-      status: filters.status,
-      group: filters.queue,
-      followup: filters.followup
-    }, today));
+    const actions = allActions.filter((action) =>
+      matchesMembershipOrdinanceFilters(
+        action,
+        {
+          query: filters.q,
+          actionType: filters.action,
+          status: filters.status,
+          group: filters.queue,
+          followup: filters.followup
+        },
+        today
+      )
+    );
     const grouped = new Map<MembershipOrdinanceActionGroup, MembershipOrdinanceActionRow[]>([
       ['needs_attention', []],
       ['upcoming', []],
@@ -213,30 +244,48 @@ export default async function MembershipOrdinancesPage({ searchParams }: { searc
     return (
       <main className="mx-auto w-full max-w-6xl space-y-6 p-4 sm:p-6 lg:p-8">
         <section className="space-y-2 rounded-lg border bg-card p-5 shadow-sm">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0">
               <h1 className="text-2xl font-semibold tracking-tight">{t('title')}</h1>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {t('description')}
-              </p>
+              <p className="mt-1 text-sm text-muted-foreground">{t('description')}</p>
             </div>
-            <Link href="/meetings" className={cn(buttonVariants({ variant: 'outline' }))}>
+            <Link
+              href="/meetings"
+              className={cn(buttonVariants({ variant: 'outline' }), 'shrink-0 whitespace-nowrap self-end sm:self-auto')}
+            >
               {t('openMeetings')}
             </Link>
           </div>
           <form method="get" className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
-            <input name="q" defaultValue={filters.q ?? ''} placeholder={t('searchPlaceholder')} className="rounded-md border bg-background px-3 py-2 text-sm lg:col-span-2" />
+            <input
+              name="q"
+              defaultValue={filters.q ?? ''}
+              placeholder={t('searchPlaceholder')}
+              className="rounded-md border bg-background px-3 py-2 text-sm lg:col-span-2"
+            />
             <select name="action" defaultValue={filters.action ?? 'all'} className="rounded-md border bg-background px-3 py-2 text-sm">
               <option value="all">{t('allActions')}</option>
-              {Object.keys(MEMBERSHIP_ORDINANCE_ACTION_LABELS).map((value) => <option key={value} value={value}>{t(`action_${value}`)}</option>)}
+              {Object.keys(MEMBERSHIP_ORDINANCE_ACTION_LABELS).map((value) => (
+                <option key={value} value={value}>
+                  {t(`action_${value}`)}
+                </option>
+              ))}
             </select>
             <select name="status" defaultValue={filters.status ?? 'all'} className="rounded-md border bg-background px-3 py-2 text-sm">
               <option value="all">{t('allStatuses')}</option>
-              {Object.keys(MEMBERSHIP_ORDINANCE_STATUS_LABELS).map((value) => <option key={value} value={value}>{t(`status_${value}`)}</option>)}
+              {Object.keys(MEMBERSHIP_ORDINANCE_STATUS_LABELS).map((value) => (
+                <option key={value} value={value}>
+                  {t(`status_${value}`)}
+                </option>
+              ))}
             </select>
             <select name="queue" defaultValue={filters.queue ?? 'all'} className="rounded-md border bg-background px-3 py-2 text-sm">
               <option value="all">{t('allQueues')}</option>
-              {GROUPS.map((group) => <option key={group.key} value={group.key}>{t(group.titleKey)}</option>)}
+              {GROUPS.map((group) => (
+                <option key={group.key} value={group.key}>
+                  {t(group.titleKey)}
+                </option>
+              ))}
             </select>
             <select name="followup" defaultValue={filters.followup ?? 'all'} className="rounded-md border bg-background px-3 py-2 text-sm">
               <option value="all">{t('allFollowUp')}</option>
@@ -245,7 +294,9 @@ export default async function MembershipOrdinancesPage({ searchParams }: { searc
               <option value="official-record">{t('officialRecordHandoffNeeded')}</option>
               <option value="overdue">{t('overdue')}</option>
             </select>
-            <button type="submit" className={cn(buttonVariants({ size: 'sm' }))}>{t('applyFilters')}</button>
+            <button type="submit" className={cn(buttonVariants({ size: 'sm' }))}>
+              {t('applyFilters')}
+            </button>
           </form>
           <p className="mt-3 text-xs text-muted-foreground">{t('showing', { shown: actions.length, total: allActions.length })}</p>
         </section>
@@ -264,12 +315,16 @@ export default async function MembershipOrdinancesPage({ searchParams }: { searc
           return (
             <section key={group.key} className="space-y-3">
               <div>
-                <h2 className="text-lg font-semibold">{t(group.titleKey)} <span className="text-muted-foreground">({groupActions.length})</span></h2>
+                <h2 className="text-lg font-semibold">
+                  {t(group.titleKey)} <span className="text-muted-foreground">({groupActions.length})</span>
+                </h2>
                 <p className="text-sm text-muted-foreground">{t(group.descriptionKey)}</p>
               </div>
               {groupActions.length ? (
                 <div className="grid gap-3 lg:grid-cols-2">
-                  {groupActions.map((action) => <ActionCard key={action.id} action={action} wardId={session.activeWardId!} locale={locale} t={t} />)}
+                  {groupActions.map((action) => (
+                    <ActionCard key={action.id} action={action} wardId={session.activeWardId!} locale={locale} t={t} />
+                  ))}
                 </div>
               ) : (
                 <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">{t('noActionsInGroup')}</p>

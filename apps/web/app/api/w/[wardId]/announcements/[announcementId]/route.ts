@@ -69,9 +69,21 @@ export async function PUT(request: Request, context: { params: Promise<{ wardId:
               placement = $6,
               include_in_program = $7,
               include_in_stand = CASE WHEN $10::boolean THEN $8 ELSE include_in_stand END
-        WHERE id = $9 AND ward_id = $11
+        WHERE id = $9 AND ward_id = $11 AND ($10::boolean OR include_in_stand = FALSE)
         RETURNING id`,
-      [title, details || null, startDate, endDate, isPermanent, placement, includeInProgram, includeInStand, announcementId, canManageStand, wardId]
+      [
+        title,
+        details || null,
+        startDate,
+        endDate,
+        isPermanent,
+        placement,
+        includeInProgram,
+        includeInStand,
+        announcementId,
+        canManageStand,
+        wardId
+      ]
     );
 
     if (!updated.rowCount) {
@@ -116,11 +128,10 @@ export async function DELETE(_: Request, context: { params: Promise<{ wardId: st
     await client.query('BEGIN');
     await setDbContext(client, { userId: session.user.id, wardId });
 
-    const deleted = await client.query('DELETE FROM announcement WHERE id = $1 AND ward_id = $2 AND ($3::boolean OR include_in_stand = FALSE) RETURNING id, title', [
-      announcementId,
-      wardId,
-      canManageStand
-    ]);
+    const deleted = await client.query(
+      'DELETE FROM announcement WHERE id = $1 AND ward_id = $2 AND ($3::boolean OR include_in_stand = FALSE) RETURNING id, title',
+      [announcementId, wardId, canManageStand]
+    );
 
     if (!deleted.rowCount) {
       await client.query('ROLLBACK');

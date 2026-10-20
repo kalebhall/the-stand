@@ -239,10 +239,10 @@ function BusinessLineRow({
           </p>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <span className="text-xs text-muted-foreground">{t(line.status)}</span>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               {error ? <span className="text-xs text-destructive">{error}</span> : null}
               {canManage && showAnnounce && line.status === 'pending' ? (
-                <Button size="sm" variant="outline" disabled={announcing} onClick={() => void announce()}>
+                <Button size="sm" variant="outline" className="whitespace-nowrap" disabled={announcing} onClick={() => void announce()}>
                   {announcing ? t('marking') : t('markAnnounced')}
                 </Button>
               ) : null}
@@ -274,17 +274,17 @@ function BusinessLineRow({
               {' — '}
               {line.calling_name}
             </span>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="rounded-full border px-2 py-0.5 text-xs font-medium">{actionLabel}</span>
               {line.carried_forward ? <span className="text-xs text-muted-foreground">{t('carriedForward')}</span> : null}
               <span className="text-xs text-muted-foreground">{t(line.status)}</span>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {error ? <span className="text-xs text-destructive">{error}</span> : null}
             {canManage && showAnnounce && line.status === 'pending' ? (
-              <Button size="sm" variant="outline" disabled={announcing} onClick={() => void announce()}>
+              <Button size="sm" variant="outline" className="whitespace-nowrap" disabled={announcing} onClick={() => void announce()}>
                 {announcing ? t('marking') : t('markAnnounced')}
               </Button>
             ) : null}

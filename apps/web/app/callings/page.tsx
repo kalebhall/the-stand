@@ -101,7 +101,7 @@ const ORGANIZATION_ORDER: readonly string[] = [
   'Ward Mission',
   'Temple and Family History',
   'Young Single Adult',
-  'Other Callings',
+  'Other Callings'
 ];
 
 function organizationRank(org: string | null | undefined): number {
@@ -116,7 +116,7 @@ function organizationRank(org: string | null | undefined): number {
 // e.g. "assistant service" before "service coordinator", "ministering secretary" before "secretary".
 // The RANK number controls display order (lower = shown first).
 const CALLING_PRIORITY_RULES: ReadonlyArray<readonly [RegExp, number]> = [
-  [/\bbishop\b(?!ric)/i, 0],                           // "Bishop" but not "Bishopric..."
+  [/\bbishop\b(?!ric)/i, 0], // "Bishop" but not "Bishopric..."
   [/\bpresident\b/i, 10],
   [/\bfirst\s+(counselor|assistant)\b/i, 20],
   [/\bsecond\s+(counselor|assistant)\b/i, 30],
@@ -166,8 +166,8 @@ const CALLING_PRIORITY_RULES: ReadonlyArray<readonly [RegExp, number]> = [
   [/\bindexing\s+worker\b/i, 228],
   [/\bcommittee\s+chair\b/i, 235],
   [/\bcommittee\s+member\b/i, 245],
-  [/\bcoordinator\b/i, 250],                            // generic catch-all after all specific ones
-  [/\bleader\b/i, 255],                                 // generic catch-all (Nursery Leader, etc.)
+  [/\bcoordinator\b/i, 250], // generic catch-all after all specific ones
+  [/\bleader\b/i, 255] // generic catch-all (Nursery Leader, etc.)
 ];
 
 function callingPriority(callingName: string): number {
@@ -194,7 +194,11 @@ export default async function CallingsPage() {
   const session = await requireAuthenticatedSession();
   enforcePasswordRotation(session);
 
-  if (!session.activeWardId || !(await isWardModuleEnabled(session.activeWardId, session.user.id, 'callings')) || !canViewCallings({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId)) {
+  if (
+    !session.activeWardId ||
+    !(await isWardModuleEnabled(session.activeWardId, session.user.id, 'callings')) ||
+    !canViewCallings({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId)
+  ) {
     redirect('/dashboard');
   }
 
@@ -298,7 +302,9 @@ export default async function CallingsPage() {
   // Fetch standard callings from DB for autocomplete, fall back to hardcoded list
   let standardCallings: string[] = STANDARD_CALLINGS;
   try {
-    const scResult = await pool.query(`SELECT name FROM standard_calling WHERE is_active = true AND unit_type = 'ward' ORDER BY sort_order, name`);
+    const scResult = await pool.query(
+      `SELECT name FROM standard_calling WHERE is_active = true AND unit_type = 'ward' ORDER BY sort_order, name`
+    );
     if (scResult.rowCount && scResult.rowCount > 0) {
       standardCallings = scResult.rows.map((r) => r.name as string);
     }
@@ -374,20 +380,22 @@ export default async function CallingsPage() {
     function CallingRow({ calling, showRelease = true }: { calling: CallingQueueRow; showRelease?: boolean }) {
       const transition = canManage ? nextTransition(calling.status) : null;
       return (
-        <li className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
-          <span>
+        <li className="flex flex-col gap-2 rounded-md border px-3 py-2 text-sm sm:flex-row sm:items-center sm:justify-between">
+          <span className="min-w-0 break-words">
             <span className="font-semibold">{calling.member_name}</span> — {calling.calling_name}
             <span className="ml-2 text-xs text-muted-foreground">
               {t('inCalling', { tenure: formatCallingTenure(calling.sustained_date, calling.created_at, t) })}
             </span>
           </span>
-          <div className="flex items-center gap-2">
-            <span className="rounded-full border px-2 py-0.5 text-xs font-medium">{t(`status_${calling.status}`)}</span>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="shrink-0 whitespace-nowrap rounded-full border px-2 py-0.5 text-xs font-medium">
+              {t(`status_${calling.status}`)}
+            </span>
             {transition ? (
               <form action={transitionCalling}>
                 <input type="hidden" name="callingId" value={calling.id} />
                 <input type="hidden" name="toStatus" value={transition.toStatus} />
-                <Button type="submit" size="sm" variant="outline">
+                <Button type="submit" size="sm" variant="outline" className="whitespace-nowrap">
                   {t(transition.labelKey)}
                 </Button>
               </form>
@@ -428,24 +436,32 @@ export default async function CallingsPage() {
         groups.set(group, [...(groups.get(group) ?? []), calling]);
       }
 
-      return <div className="space-y-4">{Array.from(groups, ([group, groupedCallings]) => (
-        <section key={group} className="space-y-2">
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{group}</h3>
-          <ul className="space-y-2">{groupedCallings.map((calling) => <CallingRow key={calling.id} calling={calling} showRelease={showRelease} />)}</ul>
-        </section>
-      ))}</div>;
+      return (
+        <div className="space-y-4">
+          {Array.from(groups, ([group, groupedCallings]) => (
+            <section key={group} className="space-y-2">
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{group}</h3>
+              <ul className="space-y-2">
+                {groupedCallings.map((calling) => (
+                  <CallingRow key={calling.id} calling={calling} showRelease={showRelease} />
+                ))}
+              </ul>
+            </section>
+          ))}
+        </div>
+      );
     }
 
     return (
       <main className="mx-auto w-full max-w-6xl space-y-6 p-4 sm:p-6">
-        <section className="flex items-start justify-between gap-4">
-          <div className="space-y-2">
+        <section className="flex flex-col items-start gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+          <div className="min-w-0 space-y-2">
             <h1 className="text-2xl font-semibold tracking-tight">{t('title')}</h1>
             <p className="text-sm text-muted-foreground">{t('description')}</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex max-w-full flex-wrap items-center gap-2">
             {canManage ? (
-              <Link href="/imports/callings" className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}>
+              <Link href="/imports/callings" className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'whitespace-nowrap')}>
                 {t('importCallings')}
               </Link>
             ) : null}
@@ -505,8 +521,11 @@ export default async function CallingsPage() {
           {setApartQueue.length ? (
             <ul className="space-y-2">
               {sortedSetApartQueue.map((item) => (
-                <li key={item.id} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
-                  <span>
+                <li
+                  key={item.id}
+                  className="flex flex-col gap-2 rounded-md border px-3 py-2 text-sm sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <span className="min-w-0 break-words">
                     <span className="font-semibold">{item.member_name}</span> — {item.calling_name}
                     <span className="ml-2 text-xs text-muted-foreground">
                       {t('inCalling', { tenure: formatCallingTenure(item.sustained_date, item.created_at, t) })}
@@ -525,7 +544,9 @@ export default async function CallingsPage() {
         <section className="section-panel section-panel--service rounded-lg border bg-card p-4">
           <h2 className="text-lg font-semibold">{t('assignments')}</h2>
           {activeCallings.length ? (
-            <div className="mt-3"><CallingGroups callings={activeCallings} /></div>
+            <div className="mt-3">
+              <CallingGroups callings={activeCallings} />
+            </div>
           ) : (
             <p className="mt-3 text-sm text-muted-foreground">{t('noAssignments')}</p>
           )}

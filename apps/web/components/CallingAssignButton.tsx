@@ -46,7 +46,14 @@ export function CallingAssignButton({ wardId, callingId, memberName, callingName
   if (confirming) {
     return (
       <div className="flex items-center gap-2">
-        <Button variant="outline" size="sm" type="button" disabled={assigning} onClick={() => void convertToAssigned()}>
+        <Button
+          variant="outline"
+          size="sm"
+          type="button"
+          className="whitespace-nowrap"
+          disabled={assigning}
+          onClick={() => void convertToAssigned()}
+        >
           {assigning ? t('converting') : t('confirmAssigned')}
         </Button>
         <Button variant="ghost" size="sm" type="button" disabled={assigning} onClick={() => setConfirming(false)}>
@@ -58,7 +65,7 @@ export function CallingAssignButton({ wardId, callingId, memberName, callingName
   }
 
   return (
-    <Button variant="outline" size="sm" type="button" onClick={() => setConfirming(true)}>
+    <Button variant="outline" size="sm" type="button" className="whitespace-nowrap" onClick={() => setConfirming(true)}>
       {t('convertToAssigned')}
     </Button>
   );

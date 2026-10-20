@@ -115,7 +115,10 @@ export function getPublicProgramRenderLabels(locale: Locale, meetingType: string
     announcementLocation: print.announcementLocation,
     announcementContact: print.announcementContact,
     meetingTypeLabel: catalog.meetings[meetingTypeKey],
-    itemLabels: Object.fromEntries(PRINT_ITEM_KEYS.map((itemType) => [itemType, print[`item_${itemType}` as keyof typeof print]]))
+    itemLabels: {
+      ...Object.fromEntries(PRINT_ITEM_KEYS.map((itemType) => [itemType, print[`item_${itemType}` as keyof typeof print]])),
+      SACRAMENT: print.sacramentPrayers
+    }
   };
 }
 

@@ -1,6 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { loadPrintDocument } from './print-data';
+import { loadPrintDocument, requiresSafePublishedSnapshot } from './print-data';
 import { adaptLegacyLayoutToDocument } from './legacy-layout-adapter';
+
+describe('published print fallback policy', () => {
+  it('requires an immutable safe snapshot for non-draft meetings unless draft mode is explicit', () => {
+    expect(requiresSafePublishedSnapshot('PUBLISHED', undefined)).toBe(true);
+    expect(requiresSafePublishedSnapshot('COMPLETED', undefined)).toBe(true);
+    expect(requiresSafePublishedSnapshot('PUBLISHED', '0')).toBe(true);
+    expect(requiresSafePublishedSnapshot('PUBLISHED', '1')).toBe(false);
+    expect(requiresSafePublishedSnapshot('DRAFT', undefined)).toBe(false);
+  });
+});
 
 describe('loadPrintDocument published selection', () => {
   it('uses the rollback-selected active render instead of the latest version', async () => {
@@ -21,8 +31,28 @@ describe('loadPrintDocument published selection', () => {
     expect(loaded?.publishedVersion).toBe(1);
     expect(calls.at(-1)?.sql).toContain('s.active_render_id');
     expect(calls.at(-1)?.sql).toContain('s.ward_id = $1::uuid AND s.meeting_id = $2::uuid');
+    expect(calls.at(-1)?.sql).toContain('publication_metadata_json @> \'{"publicSafetyVersion":1}\'::jsonb');
     expect(calls.at(-1)?.sql).toContain('(s.expires_at IS NULL OR s.expires_at > now())');
     expect(calls.at(-1)?.sql).not.toContain('ORDER BY version DESC');
+  });
+
+  it('returns no published data when the active snapshot lacks the safety marker', async () => {
+    const calls: string[] = [];
+    const client = {
+      query: async (sql: string) => {
+        calls.push(sql);
+        if (sql.includes('FROM meeting m')) {
+          return {
+            rows: [{ ward_name: 'Ward', default_locale: 'en-US', meeting_date: '2026-01-01', meeting_type: 'SACRAMENT', location: null }]
+          };
+        }
+        if (sql.includes('FROM public_program_share')) return { rows: [] };
+        throw new Error(`Unexpected query: ${sql}`);
+      }
+    };
+
+    await expect(loadPrintDocument(client as never, 'ward-1', 'meeting-1', 'published', null)).resolves.toBeNull();
+    expect(calls.at(-1)).toContain('publication_metadata_json @> \'{"publicSafetyVersion":1}\'::jsonb');
   });
 
   it('projects legacy tri-fold layouts into explicit print panels', async () => {

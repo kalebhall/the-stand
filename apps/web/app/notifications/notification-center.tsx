@@ -192,13 +192,13 @@ export function NotificationCenter({ wardId }: { wardId: string }) {
                   </span>
                   <div className="min-w-0 flex-1">
                     <button
-                      className="text-left font-medium underline-offset-2 hover:underline"
+                      className="min-w-0 max-w-full break-words text-left font-medium underline-offset-2 hover:underline"
                       aria-expanded={isExpanded}
                       onClick={() => void toggleExpanded(notification)}
                     >
                       {notification.title}
                     </button>
-                    <p className="mt-1 text-sm text-muted-foreground">{notification.summary}</p>
+                    <p className="mt-1 break-words text-sm text-muted-foreground">{notification.summary}</p>
                     <p className="mt-2 text-xs text-muted-foreground">
                       {relativeTime(notification.createdAt, t)}
                       {isUnread ? ` · ${t('unreadLabel')}` : ''}
@@ -206,7 +206,7 @@ export function NotificationCenter({ wardId }: { wardId: string }) {
                     {isExpanded && (
                       <div className="mt-3 space-y-2 border-t pt-3 text-sm">
                         {detailEntries(notification.details).map(([key, value]) => (
-                          <p key={key}>
+                          <p key={key} className="break-words">
                             <span className="font-medium capitalize">{key}:</span> {value}
                           </p>
                         ))}

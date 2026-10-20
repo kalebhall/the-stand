@@ -61,18 +61,21 @@ for (const locale of ['en-US', 'es'] as const) {
             hymnNumber: null,
             hymnTitle: null
           },
-          { itemType: 'OPENING_HYMN', title: null, notes: null, hymnNumber: '2', hymnTitle: 'The Spirit of God' }
+          { itemType: 'OPENING_HYMN', title: null, notes: null, hymnNumber: '2', hymnTitle: 'The Spirit of God' },
+          { itemType: 'SACRAMENT', title: null, notes: null, hymnNumber: null, hymnTitle: null }
         ]
       });
 
       expect(labels.programTitle).toBe(locale === 'es' ? 'Programa de la reunión sacramental' : 'Sacrament Meeting Program');
       expect(labels.itemLabels.OPENING_HYMN).toBe(locale === 'es' ? 'Himno de apertura' : 'Opening hymn');
-      expect(labels.sacramentPrayers).toBe(locale === 'es' ? 'Oraciones sacramentales' : 'Sacrament Prayers');
+      expect(labels.sacramentPrayers).toBe(locale === 'es' ? 'Administración de la Santa Cena' : 'Administration of the Sacrament');
+      expect(labels.itemLabels.SACRAMENT).toBe(labels.sacramentPrayers);
       expect(html).toContain('Jane Doe');
       expect(html).toContain('Please welcome our speaker.');
       expect(html).toContain('Finding peace through prayer');
       expect(html).toContain('The Spirit of God');
-      expect(html).toContain('O God, the Eternal Father');
+      expect(html).toContain(labels.sacramentPrayers);
+      expect(html).not.toContain('O God, the Eternal Father');
     });
   });
 }

@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 
 import { enforcePasswordRotation, requireAuthenticatedSession } from '@/src/auth/guards';
-import { canViewProgramDesigner } from '@/src/auth/roles';
+import { canEditProgramContent, canEditProgramNotes, canViewProgramDesigner } from '@/src/auth/roles';
 import { isWardModuleEnabled } from '@/src/modules/service';
 import { ProgramDesignerClient } from './program-designer-client';
 
@@ -15,5 +15,12 @@ export default async function ProgramDesignerPage({ params }: { params: Promise<
     !canViewProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId)
   )
     redirect('/meetings');
-  return <ProgramDesignerClient wardId={session.activeWardId} meetingId={meetingId} />;
+  return (
+    <ProgramDesignerClient
+      wardId={session.activeWardId}
+      meetingId={meetingId}
+      canEditProgramContent={canEditProgramContent({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId)}
+      canEditProgramNotes={canEditProgramNotes({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId)}
+    />
+  );
 }

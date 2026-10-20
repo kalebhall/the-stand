@@ -46,7 +46,14 @@ export function CallingDeleteButton({ wardId, callingId, memberName, callingName
   if (confirming) {
     return (
       <div className="flex items-center gap-2">
-        <Button variant="destructive" size="sm" type="button" disabled={deleting} onClick={() => void deleteCalling()}>
+        <Button
+          variant="destructive"
+          size="sm"
+          type="button"
+          className="whitespace-nowrap"
+          disabled={deleting}
+          onClick={() => void deleteCalling()}
+        >
           {deleting ? t('deleting') : t('confirmDelete')}
         </Button>
         <Button variant="ghost" size="sm" type="button" disabled={deleting} onClick={() => setConfirming(false)}>
@@ -58,7 +65,7 @@ export function CallingDeleteButton({ wardId, callingId, memberName, callingName
   }
 
   return (
-    <Button variant="outline" size="sm" type="button" onClick={() => setConfirming(true)}>
+    <Button variant="outline" size="sm" type="button" className="whitespace-nowrap" onClick={() => setConfirming(true)}>
       {t('delete')}
     </Button>
   );

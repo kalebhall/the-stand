@@ -46,7 +46,14 @@ export function CallingReleaseButton({ wardId, callingId, memberName, callingNam
   if (confirming) {
     return (
       <div className="flex items-center gap-2">
-        <Button variant="outline" size="sm" type="button" disabled={releasing} onClick={() => void releaseCalling()}>
+        <Button
+          variant="outline"
+          size="sm"
+          type="button"
+          className="whitespace-nowrap"
+          disabled={releasing}
+          onClick={() => void releaseCalling()}
+        >
           {releasing ? t('releasing') : t('confirmRelease')}
         </Button>
         <Button variant="ghost" size="sm" type="button" disabled={releasing} onClick={() => setConfirming(false)}>
@@ -58,7 +65,7 @@ export function CallingReleaseButton({ wardId, callingId, memberName, callingNam
   }
 
   return (
-    <Button variant="outline" size="sm" type="button" onClick={() => setConfirming(true)}>
+    <Button variant="outline" size="sm" type="button" className="whitespace-nowrap" onClick={() => setConfirming(true)}>
       {t('release')}
     </Button>
   );
