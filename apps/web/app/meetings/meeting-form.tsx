@@ -477,12 +477,16 @@ export function MeetingForm({
       </section>
 
       <section key={mode === 'create' ? meetingType : 'edit'} className="space-y-3 rounded-lg border bg-card p-4">
-        <div className="flex items-end justify-between gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <h2 className="text-lg font-semibold">{t('programItems')}</h2>
-          <div className="flex items-center gap-2">
-            <label className="space-y-1 text-sm">
+          <div className="flex min-w-0 flex-wrap items-center gap-2 sm:shrink-0">
+            <label className="min-w-0 flex-1 space-y-1 text-sm sm:flex-none">
               <span className="font-medium"></span>
-              <select className="rounded-md border px-3 py-2" value={newItemType} onChange={(event) => setNewItemType(event.target.value)}>
+              <select
+                className="w-full min-w-0 rounded-md border px-3 py-2 sm:w-auto"
+                value={newItemType}
+                onChange={(event) => setNewItemType(event.target.value)}
+              >
                 {PROGRAM_ITEM_TYPES.map((value) => (
                   <option key={value} value={value}>
                     {itemLabels[value] ?? getProgramItemLabel(value)}
@@ -493,6 +497,7 @@ export function MeetingForm({
             <Button
               type="button"
               variant="outline"
+              className="shrink-0 whitespace-nowrap"
               onClick={() => setProgramItems((current) => [...current, { itemType: newItemType, ...DEFAULT_PROGRAM_ITEM }])}
             >
               {t('addItem')}

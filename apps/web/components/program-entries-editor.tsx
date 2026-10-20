@@ -20,6 +20,8 @@ import { resolveLocale } from '@/src/i18n/config';
 type Props = {
   wardId: string;
   meetingId: string;
+  canEditProgramContent: boolean;
+  canEditProgramNotes: boolean;
   onSaved?: () => void;
 };
 
@@ -149,7 +151,7 @@ function mergeSavedBaseline(
   });
 }
 
-export function ProgramEntriesEditor({ wardId, meetingId, onSaved }: Props) {
+export function ProgramEntriesEditor({ wardId, meetingId, canEditProgramContent, canEditProgramNotes, onSaved }: Props) {
   const t = useTranslations('programs');
   const locale = useLocale();
   const tMeeting = useTranslations('meetingForm');
@@ -237,7 +239,10 @@ export function ProgramEntriesEditor({ wardId, meetingId, onSaved }: Props) {
   function patchesFor(item: EditorProgramItem, original: EditorProgramItem): PatchProgramItemRequest['patch'][] {
     const patches: PatchProgramItemRequest['patch'][] = [];
     for (const field of ['title', 'topic', 'notes', 'programNotes'] as const) {
-      if (!sameNullable(item[field], original[field])) patches.push({ kind: 'TEXT', field, value: nullable(item[field] ?? '') });
+      const canEditField = field === 'programNotes' ? canEditProgramNotes : canEditProgramContent;
+      if (canEditField && !sameNullable(item[field], original[field])) {
+        patches.push({ kind: 'TEXT', field, value: nullable(item[field] ?? '') });
+      }
     }
     if (item.itemType.toUpperCase() === 'INTRODUCTION') {
       const roles = item.introductionRoles ?? defaultIntroductionRoles(null);
@@ -388,7 +393,9 @@ export function ProgramEntriesEditor({ wardId, meetingId, onSaved }: Props) {
         {items.map((item) => {
           const roles = item.introductionRoles ?? defaultIntroductionRoles(null);
           const state = rowStates[item.id] ?? 'idle';
-          const disabled = item.sourceState === 'MANAGED' || savingId !== null;
+          const locked = item.sourceState === 'MANAGED' || savingId !== null;
+          const contentDisabled = locked || !canEditProgramContent;
+          const programNotesDisabled = locked || !canEditProgramNotes;
           return (
             <article
               key={item.id}
@@ -444,7 +451,7 @@ export function ProgramEntriesEditor({ wardId, meetingId, onSaved }: Props) {
                           <input
                             className="w-full rounded-md border px-3 py-2"
                             value={roles[role.key]}
-                            disabled={disabled}
+                            disabled={contentDisabled}
                             onChange={(event) => updateItem(item.id, { introductionRoles: { ...roles, [role.key]: event.target.value } })}
                           />
                         </label>
@@ -459,7 +466,7 @@ export function ProgramEntriesEditor({ wardId, meetingId, onSaved }: Props) {
                             <button
                               type="button"
                               className="rounded-md border px-3 py-2 text-sm"
-                              disabled={disabled}
+                              disabled={contentDisabled}
                               onClick={() => addVisitingLeader(item.id)}
                             >
                               {tMeeting('addLeader')}
@@ -475,7 +482,7 @@ export function ProgramEntriesEditor({ wardId, meetingId, onSaved }: Props) {
                                 <input
                                   className="w-full rounded-md border px-3 py-2"
                                   value={leader.name}
-                                  disabled={disabled}
+                                  disabled={contentDisabled}
                                   onChange={(event) => updateVisitingLeader(item.id, leaderIndex, 'name', event.target.value)}
                                 />
                               </label>
@@ -484,7 +491,7 @@ export function ProgramEntriesEditor({ wardId, meetingId, onSaved }: Props) {
                                 <input
                                   className="w-full rounded-md border px-3 py-2"
                                   value={leader.calling}
-                                  disabled={disabled}
+                                  disabled={contentDisabled}
                                   onChange={(event) => updateVisitingLeader(item.id, leaderIndex, 'calling', event.target.value)}
                                 />
                               </label>
@@ -493,7 +500,7 @@ export function ProgramEntriesEditor({ wardId, meetingId, onSaved }: Props) {
                                 <select
                                   className="w-full rounded-md border px-3 py-2"
                                   value={leader.recognitionType ?? 'OTHER'}
-                                  disabled={disabled}
+                                  disabled={contentDisabled}
                                   onChange={(event) => updateVisitingLeader(item.id, leaderIndex, 'recognitionType', event.target.value)}
                                 >
                                   {visitingLeaderTypes.map((type) => (
@@ -506,7 +513,7 @@ export function ProgramEntriesEditor({ wardId, meetingId, onSaved }: Props) {
                               <button
                                 type="button"
                                 className="self-end rounded-md border px-3 py-2 text-sm"
-                                disabled={disabled}
+                                disabled={contentDisabled}
                                 onClick={() => removeVisitingLeader(item.id, leaderIndex)}
                               >
                                 {tMeeting('removeVisitingLeader', { number: leaderIndex + 1 })}
@@ -523,7 +530,7 @@ export function ProgramEntriesEditor({ wardId, meetingId, onSaved }: Props) {
                       <input
                         className="w-full rounded-md border px-3 py-2"
                         value={item.title ?? ''}
-                        disabled={disabled}
+                        disabled={contentDisabled}
                         onChange={(event) => updateItem(item.id, { title: event.target.value })}
                       />
                     </label>
@@ -533,7 +540,7 @@ export function ProgramEntriesEditor({ wardId, meetingId, onSaved }: Props) {
                         <input
                           className="w-full rounded-md border px-3 py-2"
                           value={item.topic ?? ''}
-                          disabled={disabled}
+                          disabled={contentDisabled}
                           onChange={(event) => updateItem(item.id, { topic: event.target.value })}
                         />
                       </label>
@@ -546,7 +553,7 @@ export function ProgramEntriesEditor({ wardId, meetingId, onSaved }: Props) {
                         <input
                           className="w-full rounded-md border px-3 py-2"
                           value={item.hymnNumber ?? ''}
-                          disabled={disabled}
+                          disabled={contentDisabled}
                           onChange={(event) => updateItem(item.id, { hymnNumber: event.target.value })}
                         />
                       </label>
@@ -555,7 +562,7 @@ export function ProgramEntriesEditor({ wardId, meetingId, onSaved }: Props) {
                         <input
                           className="w-full rounded-md border px-3 py-2"
                           value={item.hymnTitle ?? ''}
-                          disabled={disabled}
+                          disabled={contentDisabled}
                           onChange={(event) => updateItem(item.id, { hymnTitle: event.target.value })}
                         />
                       </label>
@@ -567,7 +574,7 @@ export function ProgramEntriesEditor({ wardId, meetingId, onSaved }: Props) {
                       <textarea
                         className="min-h-20 w-full rounded-md border px-3 py-2"
                         value={item.notes ?? ''}
-                        disabled={disabled}
+                        disabled={contentDisabled}
                         onChange={(event) => updateItem(item.id, { notes: event.target.value })}
                       />
                       <span className="text-xs text-muted-foreground">{t('internalNotesDescription')}</span>
@@ -578,7 +585,7 @@ export function ProgramEntriesEditor({ wardId, meetingId, onSaved }: Props) {
                     <textarea
                       className="min-h-20 w-full rounded-md border px-3 py-2"
                       value={item.programNotes ?? ''}
-                      disabled={disabled}
+                      disabled={programNotesDisabled}
                       onChange={(event) => updateItem(item.id, { programNotes: event.target.value })}
                     />
                     <span className="text-xs text-amber-900">{t('programNotesDisclaimer')}</span>
@@ -587,7 +594,7 @@ export function ProgramEntriesEditor({ wardId, meetingId, onSaved }: Props) {
                     <button
                       type="button"
                       className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
-                      disabled={disabled}
+                      disabled={locked || (!canEditProgramContent && !canEditProgramNotes)}
                       onClick={() => void saveItem(item.id)}
                     >
                       {state === 'error' ? t('retryProgramEntry') : t('saveProgramEntry')}

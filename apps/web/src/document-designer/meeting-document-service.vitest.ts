@@ -103,6 +103,20 @@ describe('meeting document service', () => {
         hymnTitle: null
       },
       {
+        itemType: 'SACRAMENT',
+        title: 'Prayer text',
+        topic: 'Blessing prayer',
+        programNotes: 'secret prayer words',
+        sequence: 7,
+        hymnTitle: null
+      },
+      {
+        itemType: 'ANNOUNCEMENT',
+        title: 'Draft-only announcement',
+        sequence: 6,
+        hymnTitle: null
+      },
+      {
         itemType: 'introduction',
         title: 'Introduction',
         sequence: 1,
@@ -115,7 +129,14 @@ describe('meeting document service', () => {
         }
       }
     ]);
-    expect(preview.programItems).toHaveLength(3);
+    expect(preview.programItems).toHaveLength(4);
+    expect(JSON.stringify(preview.programItems)).not.toContain('Draft-only announcement');
+    expect(JSON.stringify(preview.programItems)).not.toContain('secret prayer words');
+    expect(preview.programItems[3]).toEqual({
+      order: 7,
+      label: preview.renderLabels.itemLabels.SACRAMENT,
+      details: null
+    });
     expect(preview.programItems[0]).toEqual({
       order: 2,
       label: preview.renderLabels.itemLabels.SPEAKER,

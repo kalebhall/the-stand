@@ -39,7 +39,14 @@ export function CallingSetApartButton({ wardId, callingId }: CallingSetApartButt
 
   return (
     <div className="flex items-center gap-2">
-      <Button type="button" size="sm" variant="outline" disabled={settingApart} onClick={() => void setApart()}>
+      <Button
+        type="button"
+        size="sm"
+        variant="outline"
+        className="whitespace-nowrap"
+        disabled={settingApart}
+        onClick={() => void setApart()}
+      >
         {t('markSetApart')}
       </Button>
       {error ? <span className="text-xs text-destructive">{error}</span> : null}

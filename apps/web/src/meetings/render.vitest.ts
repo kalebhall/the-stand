@@ -157,6 +157,26 @@ describe('buildMeetingRenderHtml', () => {
     expect(html).toContain('Finding peace through prayer');
   });
 
+  it('shows a concise sacrament administration item without publishing prayer text or non-public business rows', () => {
+    const html = buildMeetingRenderHtml({
+      meetingDate: '2026-01-04',
+      meetingType: 'SACRAMENT',
+      programItems: [
+        { itemType: 'SACRAMENT_HYMN', title: null, notes: null, hymnNumber: '191', hymnTitle: 'Behold the Great Redeemer Die' },
+        { itemType: 'SACRAMENT', title: null, notes: null, hymnNumber: null, hymnTitle: null },
+        { itemType: 'ANNOUNCEMENT', title: 'Private announcement', notes: null, hymnNumber: null, hymnTitle: null },
+        { itemType: 'WARD_AND_STAKE_BUSINESS', title: 'Stake agenda', notes: null, hymnNumber: null, hymnTitle: null }
+      ]
+    });
+
+    expect(html).toContain('SACRAMENT HYMN');
+    expect(html).toContain('#191 — Behold the Great Redeemer Die');
+    expect(html).toContain('Administration of the Sacrament');
+    expect(html).not.toContain('O God, the Eternal Father');
+    expect(html).not.toContain('Private announcement');
+    expect(html).not.toContain('Stake agenda');
+  });
+
   it('does not publish stake-business rows or private details', () => {
     const html = buildMeetingRenderHtml({
       meetingDate: '2026-01-04',
@@ -196,7 +216,7 @@ describe('buildMeetingRenderHtml', () => {
         qrDigitalProgram: 'Abrir programa digital',
         qrCode: 'Código QR del programa digital',
         meetingTypeLabel: 'Reunión sacramental',
-        itemLabels: { OPENING_HYMN: 'Himno de apertura' }
+        itemLabels: { OPENING_HYMN: 'Himno de apertura', SACRAMENT: 'Administración de la Santa Cena' }
       }
     });
 
@@ -204,7 +224,7 @@ describe('buildMeetingRenderHtml', () => {
     expect(html).toContain('Reunión sacramental');
     expect(html).toContain('Himno de apertura');
     expect(html).toContain('The Spirit of God');
-    expect(html).toContain('O God, the Eternal Father');
+    expect(html).not.toContain('O God, the Eternal Father');
   });
   it('escapes localized renderer labels', () => {
     const html = buildMeetingRenderHtml({

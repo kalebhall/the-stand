@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import type { Queryable } from './persistence';
-import { buildImmutableRenderInsertPayload, calculatePublicationExpiration, insertImmutableRender, nextPublicationVersion, safePublicationMetadata, updateActivePublicPointer } from './publication-service';
+import {
+  buildImmutableRenderInsertPayload,
+  calculatePublicationExpiration,
+  insertImmutableRender,
+  isSafePublicProgramMetadata,
+  nextPublicationVersion,
+  safePublicationMetadata,
+  updateActivePublicPointer
+} from './publication-service';
 import { DEFAULT_DOCUMENT_LAYOUT } from './schema';
 import type { ResolvedDocumentData } from './render-types';
 
@@ -8,14 +16,23 @@ const data: ResolvedDocumentData = { meetingDate: '2026-01-01', meetingType: 'SA
 function db(rows: Record<string, unknown>[]): Queryable & { sql: string[]; values: readonly unknown[][] } {
   const sql: string[] = [];
   const values: readonly unknown[][] = [];
-  return { sql, values, query: async (text: string, params?: readonly unknown[]) => { sql.push(text); (values as unknown[][]).push([...(params ?? [])]); return { rows }; } };
+  return {
+    sql,
+    values,
+    query: async (text: string, params?: readonly unknown[]) => {
+      sql.push(text);
+      (values as unknown[][]).push([...(params ?? [])]);
+      return { rows };
+    }
+  };
 }
 
 describe('publication service', () => {
   it('sequences versions after a ward-scoped, locked meeting lookup', async () => {
     const client = db([{ id: 'm1' }]);
     client.query = async (text: string, params?: readonly unknown[]) => {
-      client.sql.push(text); (client.values as unknown[][]).push([...(params ?? [])]);
+      client.sql.push(text);
+      (client.values as unknown[][]).push([...(params ?? [])]);
       return { rows: text.includes('next_version') ? [{ next_version: 4 }] : [{ id: 'm1' }] };
     };
     expect(await nextPublicationVersion(client, { wardId: 'w1', meetingId: 'm1' })).toBe(4);
@@ -35,7 +52,20 @@ describe('publication service', () => {
     expect(() => calculatePublicationExpiration(publishedAt, -1)).toThrow(RangeError);
     const sourceLayout = structuredClone(DEFAULT_DOCUMENT_LAYOUT);
     const sourceData = structuredClone(data);
-    const payload = buildImmutableRenderInsertPayload({ wardId: 'w1', meetingId: 'm1', version: 1, renderHtml: '<p>x</p>', layoutJson: sourceLayout, renderDataJson: sourceData, documentType: 'SACRAMENT_PROGRAM', sourceTemplateId: 't1', sourceTemplateVersion: 2, publishedByUserId: 'u1', publishedAt, publicationMetadata: { rendererVersion: 'm8', pageCount: 1, layoutHash: 'h', validationWarningCodes: ['B', 'A', 'A'] } });
+    const payload = buildImmutableRenderInsertPayload({
+      wardId: 'w1',
+      meetingId: 'm1',
+      version: 1,
+      renderHtml: '<p>x</p>',
+      layoutJson: sourceLayout,
+      renderDataJson: sourceData,
+      documentType: 'SACRAMENT_PROGRAM',
+      sourceTemplateId: 't1',
+      sourceTemplateVersion: 2,
+      publishedByUserId: 'u1',
+      publishedAt,
+      publicationMetadata: { rendererVersion: 'm8', pageCount: 1, layoutHash: 'h', validationWarningCodes: ['B', 'A', 'A'] }
+    });
     sourceLayout.theme.accentColor = '#ffffff';
     sourceData.values.DOCUMENT_TITLE = 'changed';
     expect(payload.publicationMetadataJson.validationWarningCodes).toEqual(['A', 'B']);
@@ -47,7 +77,20 @@ describe('publication service', () => {
 
   it('inserts immutable JSON with explicit database casts', async () => {
     const client = db([{ id: 'r1', version: 1 }]);
-    const payload = buildImmutableRenderInsertPayload({ wardId: 'w1', meetingId: 'm1', version: 1, renderHtml: '<p>x</p>', layoutJson: DEFAULT_DOCUMENT_LAYOUT, renderDataJson: data, documentType: 'SACRAMENT_PROGRAM', sourceTemplateId: null, sourceTemplateVersion: null, publishedByUserId: 'u1', publishedAt: new Date('2026-01-01T00:00:00Z'), publicationMetadata: { rendererVersion: 'm8', pageCount: 1, layoutHash: 'h' } });
+    const payload = buildImmutableRenderInsertPayload({
+      wardId: 'w1',
+      meetingId: 'm1',
+      version: 1,
+      renderHtml: '<p>x</p>',
+      layoutJson: DEFAULT_DOCUMENT_LAYOUT,
+      renderDataJson: data,
+      documentType: 'SACRAMENT_PROGRAM',
+      sourceTemplateId: null,
+      sourceTemplateVersion: null,
+      publishedByUserId: 'u1',
+      publishedAt: new Date('2026-01-01T00:00:00Z'),
+      publicationMetadata: { rendererVersion: 'm8', pageCount: 1, layoutHash: 'h' }
+    });
     await expect(insertImmutableRender(client, payload)).resolves.toEqual({ id: 'r1', version: 1 });
     expect(client.sql[0]).toContain('$1::uuid');
     expect(client.sql[0]).toContain('$3::int');
@@ -57,18 +100,46 @@ describe('publication service', () => {
     expect(client.sql[0]).toContain('$12::jsonb');
   });
 
+  it('fails closed for stored snapshots without the current public-safety marker', () => {
+    expect(isSafePublicProgramMetadata(null)).toBe(false);
+    expect(isSafePublicProgramMetadata({ rendererVersion: 'm8' })).toBe(false);
+    expect(isSafePublicProgramMetadata({ publicSafetyVersion: 0 })).toBe(false);
+    expect(isSafePublicProgramMetadata({ publicSafetyVersion: 1 })).toBe(true);
+  });
+
   it('updates only the active pointer, carries expiration, and reports a missing share', async () => {
-    expect(safePublicationMetadata({ rendererVersion: 'm8', pageCount: 1, layoutHash: 'h' })).toEqual({ rendererVersion: 'm8', pageCount: 1, layoutHash: 'h', validationWarningCodes: [] });
+    expect(safePublicationMetadata({ rendererVersion: 'm9', pageCount: 1, layoutHash: 'h' })).toEqual({
+      rendererVersion: 'm9',
+      pageCount: 1,
+      layoutHash: 'h',
+      validationWarningCodes: [],
+      publicSafetyVersion: 1
+    });
     const client = db([{ meeting_id: 'm1' }]);
     const expiresAt = new Date('2026-01-08T00:00:00Z');
     await updateActivePublicPointer(client, { wardId: 'w1', meetingId: 'm1', renderId: 'r1', expiresAt });
-    expect(client.sql[0]).toContain('UPDATE public_program_share');
-    expect(client.sql[0]).toContain('$1::uuid');
-    expect(client.sql[0]).toContain('$2::timestamptz');
-    expect(client.sql[0]).not.toContain('meeting_program_render SET');
-    expect(client.values[0][2]).toBe('w1');
+    expect(client.sql[0]).toContain('FROM meeting_program_render');
+    expect(client.sql[0]).toContain('publication_metadata_json @>');
+    expect(client.sql[1]).toContain('UPDATE public_program_share');
+    expect(client.sql[1]).toContain('$1::uuid');
+    expect(client.sql[1]).toContain('$2::timestamptz');
+    expect(client.sql[1]).not.toContain('meeting_program_render SET');
+    expect(client.values[1][2]).toBe('w1');
 
-    const missing = db([]);
-    await expect(updateActivePublicPointer(missing, { wardId: 'w1', meetingId: 'm1', renderId: 'r1', expiresAt: null })).rejects.toMatchObject({ code: 'ACTIVE_POINTER_FAILED' });
+    const unsafe = db([]);
+    await expect(
+      updateActivePublicPointer(unsafe, { wardId: 'w1', meetingId: 'm1', renderId: 'old-render', expiresAt: null })
+    ).rejects.toMatchObject({ code: 'ACTIVE_RENDER_INVALID' });
+    expect(unsafe.sql).toHaveLength(1);
+
+    const missing = db([{ id: 'r1' }]);
+    missing.query = async (text: string, params?: readonly unknown[]) => {
+      missing.sql.push(text);
+      (missing.values as unknown[][]).push([...(params ?? [])]);
+      return { rows: text.includes('FROM meeting_program_render') ? [{ id: 'r1' }] : [] };
+    };
+    await expect(
+      updateActivePublicPointer(missing, { wardId: 'w1', meetingId: 'm1', renderId: 'r1', expiresAt: null })
+    ).rejects.toMatchObject({ code: 'ACTIVE_POINTER_FAILED' });
   });
 });

@@ -11,6 +11,9 @@ import {
   canViewMeetings,
   canViewProgramDesigner,
   canEditProgramDesign,
+  canEditProgramContent,
+  canEditProgramNotes,
+  canEditProgramItemPatch,
   canManageProgramMedia,
   canPublishProgram,
   canUseAdvancedProgramDesigner,
@@ -82,6 +85,20 @@ describe('program permissions', () => {
     expect(canManageProgramAnnouncements(editor, 'ward-b')).toBe(false);
     expect(canManageStandAnnouncements({ roles: ['BISHOPRIC_EDITOR'], activeWardId: 'ward-a' }, 'ward-a')).toBe(true);
   });
+
+  it('lets Program Editors view program content and edit only program notes in their active ward', () => {
+    expect(canEditProgramContent(active, 'ward-a')).toBe(false);
+    expect(canEditProgramNotes(active, 'ward-a')).toBe(true);
+    expect(canEditProgramContent(active, 'ward-b')).toBe(false);
+    expect(canEditProgramNotes(active, 'ward-b')).toBe(false);
+    expect(canEditProgramContent({ roles: ['BISHOPRIC_EDITOR'], activeWardId: 'ward-a' }, 'ward-a')).toBe(true);
+    expect(canEditProgramNotes({ roles: ['BISHOPRIC_EDITOR'], activeWardId: 'ward-a' }, 'ward-a')).toBe(true);
+    expect(canEditProgramItemPatch(active, 'ward-a', { kind: 'TEXT', field: 'programNotes' })).toBe(true);
+    expect(canEditProgramItemPatch(active, 'ward-a', { kind: 'TEXT', field: 'title' })).toBe(false);
+    expect(canEditProgramItemPatch(active, 'ward-a', { kind: 'INTRODUCTION_ROLE' })).toBe(false);
+    expect(canEditProgramItemPatch(active, 'ward-b', { kind: 'TEXT', field: 'programNotes' })).toBe(false);
+    expect(canEditProgramItemPatch({ roles: ['BISHOPRIC_EDITOR'], activeWardId: 'ward-a' }, 'ward-a', { kind: 'HYMN' })).toBe(true);
+  });
   it('limits PROGRAM_EDITOR to the active ward and program helpers', () => {
     expect(canViewProgramDesigner(active, 'ward-a')).toBe(true);
     expect(canEditProgramDesign(active, 'ward-a')).toBe(true);
@@ -123,7 +140,12 @@ describe('role normalization', () => {
 });
 
 describe('stake template authorization', () => {
-  const stakeAdmin = { roles: [], activeWardId: 'ward-a', activeStakeId: 'stake-a', stakeAssignments: [{ stakeId: 'stake-a', roleNames: ['STAKE_ADMIN' as const] }] };
+  const stakeAdmin = {
+    roles: [],
+    activeWardId: 'ward-a',
+    activeStakeId: 'stake-a',
+    stakeAssignments: [{ stakeId: 'stake-a', roleNames: ['STAKE_ADMIN' as const] }]
+  };
   it('requires explicit stake assignment', () => {
     expect(canViewStakeTemplates(stakeAdmin, 'stake-a')).toBe(true);
     expect(canManageStakeTemplates(stakeAdmin, 'stake-a')).toBe(true);
@@ -136,13 +158,21 @@ describe('stake template authorization', () => {
   });
   it('grants shared Advanced editing to the authorized scope administrator without an active ward', () => {
     expect(canUseSharedAdvancedProgramDesigner({ roles: ['SYSTEM_ADMIN'], activeWardId: null }, 'SYSTEM', null)).toBe(true);
-    expect(canUseSharedAdvancedProgramDesigner({ roles: [], activeWardId: null, stakeAssignments: [{ stakeId: 'stake-a', roleNames: ['STAKE_ADMIN'] }] }, 'STAKE', 'stake-a')).toBe(true);
+    expect(
+      canUseSharedAdvancedProgramDesigner(
+        { roles: [], activeWardId: null, stakeAssignments: [{ stakeId: 'stake-a', roleNames: ['STAKE_ADMIN'] }] },
+        'STAKE',
+        'stake-a'
+      )
+    ).toBe(true);
     expect(canUseSharedAdvancedProgramDesigner({ roles: ['SYSTEM_ADMIN'], activeWardId: null }, 'STAKE', 'stake-a')).toBe(false);
   });
 
   it('copies only published templates visible to the target ward', () => {
     expect(canCopyAvailableTemplate(stakeAdmin, { scopeType: 'STAKE', scopeId: 'stake-a', status: 'PUBLISHED' }, 'ward-a', 'u')).toBe(true);
-    expect(canCopyAvailableTemplate(stakeAdmin, { scopeType: 'STAKE', scopeId: 'stake-b', status: 'PUBLISHED' }, 'ward-a', 'u')).toBe(false);
+    expect(canCopyAvailableTemplate(stakeAdmin, { scopeType: 'STAKE', scopeId: 'stake-b', status: 'PUBLISHED' }, 'ward-a', 'u')).toBe(
+      false
+    );
     expect(canCopyAvailableTemplate(stakeAdmin, { scopeType: 'WARD', scopeId: 'ward-a', status: 'DRAFT' }, 'ward-a', 'u')).toBe(false);
   });
 });

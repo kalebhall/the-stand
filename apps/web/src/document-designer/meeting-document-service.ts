@@ -324,9 +324,16 @@ export function buildPublicPreviewSource(
     wardName: meeting.wardName ?? null,
     ...(Object.keys(publicValues).length ? { publicValues } : {}),
     programItems: programItems
-      .filter((item) => !['WARD_AND_STAKE_BUSINESS', 'INTRODUCTION'].includes(item.itemType.toUpperCase()))
+      .filter((item) => !['WARD_AND_STAKE_BUSINESS', 'INTRODUCTION', 'ANNOUNCEMENT'].includes(item.itemType.toUpperCase()))
       .map((item) => {
         const itemType = item.itemType.toUpperCase();
+        if (itemType === 'SACRAMENT') {
+          return {
+            order: item.sequence,
+            label: labels.itemLabels.SACRAMENT,
+            details: null
+          };
+        }
         const hymnValue =
           item.hymnNumber || item.hymnTitle
             ? [item.hymnNumber ? `#${item.hymnNumber}` : null, item.hymnTitle || null].filter(Boolean).join(' — ')

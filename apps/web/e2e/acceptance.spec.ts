@@ -6,6 +6,7 @@ import { expect, test, type Page } from '@playwright/test';
 const WARD_A = '11111111-1111-4111-8111-111111111111';
 const WARD_B = '22222222-2222-4222-8222-222222222222';
 const PUBLISHED_MEETING = '33333333-3333-4333-8333-333333333333';
+const PUBLISHED_MEETING_WITHOUT_SAFE_SNAPSHOT = '33333333-3333-4333-8333-333333333334';
 const execFileAsync = promisify(execFile);
 
 async function login(page: Page, email: string, password: string) {
@@ -66,6 +67,49 @@ test('ward isolation denies cross-ward API access', async ({ page }) => {
   const response = await apiRequest(page, `/api/w/${WARD_B}/meetings`, 'POST', { meetingDate: '2026-02-01', meetingType: 'SACRAMENT' });
 
   expect(response.status).toBe(403);
+});
+
+test('meeting creation controls stay unwrapped without mobile horizontal overflow', async ({ page }) => {
+  await login(page, 'ward-admin@example.test', 'WardAdminPassword123456789012');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/meetings/new');
+  await expect(page.getByRole('heading', { name: 'Create meeting' })).toBeVisible();
+
+  const addItemButton = page.getByRole('button', { name: 'Add item' });
+  await expect(addItemButton).toBeVisible();
+  await expect
+    .poll(() =>
+      addItemButton.evaluate((button) => {
+        const range = document.createRange();
+        range.selectNodeContents(button);
+        return new Set([...range.getClientRects()].map((rect) => Math.round(rect.top))).size;
+      })
+    )
+    .toBe(1);
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+});
+
+test('membership and ordinances title and action have room on mobile', async ({ page }) => {
+  await login(page, 'ward-admin@example.test', 'WardAdminPassword123456789012');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/membership-ordinances');
+
+  const heading = page.getByRole('heading', { name: 'Membership & Ordinances' });
+  await expect(heading).toBeVisible();
+  await expect.poll(() => heading.evaluate((element) => element.getBoundingClientRect().height)).toBeLessThan(48);
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+
+  const meetingsLink = page.locator('main a[href="/meetings"]');
+  await expect(meetingsLink).toBeVisible();
+  await expect
+    .poll(() =>
+      meetingsLink.evaluate((link) => {
+        const range = document.createRange();
+        range.selectNodeContents(link);
+        return new Set([...range.getClientRects()].map((rect) => Math.round(rect.top))).size;
+      })
+    )
+    .toBe(1);
 });
 
 test('meeting create publish and print flow works', async ({ page }) => {
@@ -176,6 +220,13 @@ test('public portal exposes published snapshot', async ({ page }) => {
   await expect(page.getByText('E2E Ward A')).toBeVisible();
 });
 
+test('published print page fails closed without a safe stored snapshot', async ({ page }) => {
+  await login(page, 'ward-admin@example.test', 'WardAdminPassword123456789012');
+  await page.goto(`/meetings/${PUBLISHED_MEETING_WITHOUT_SAFE_SNAPSHOT}/print`);
+  await expect(page.getByRole('heading', { name: 'Page not found' })).toBeVisible();
+  await expect(page.getByRole('main', { name: 'Sacrament meeting program' })).toHaveCount(0);
+});
+
 test('uniform content editor works without Advanced Layout and persists source rows', async ({ page }) => {
   const browserErrors: string[] = [];
   page.on('pageerror', (error) => browserErrors.push(error.message));
@@ -206,7 +257,33 @@ test('uniform content editor works without Advanced Layout and persists source r
     await expect(page.getByRole('button', { name: 'Advanced Mode' })).toHaveCount(0);
     await expect(page.getByRole('region', { name: 'Add content' })).toBeVisible();
     await expect(page.getByText('Customize layout', { exact: true })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Meeting program' })).toHaveCSS('white-space', 'nowrap');
+    await expect
+      .poll(() => page.getByRole('heading', { name: 'Meeting program' }).evaluate((heading) => heading.getBoundingClientRect().height))
+      .toBeLessThan(48);
+    await page.setViewportSize({ width: 390, height: 844 });
+    const heading = page.locator('main h1');
+    await expect.poll(() => heading.evaluate((element) => element.getBoundingClientRect().height)).toBeLessThan(48);
+
+    const originalHeading = await heading.textContent();
+    await heading.evaluate((element) => {
+      element.textContent = 'Programa de la reunión sacramental del barrio';
+    });
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+    await heading.evaluate((element, original) => {
+      element.textContent = original;
+    }, originalHeading);
+
+    const status = page.locator('header [role="status"]');
+    const originalStatus = await status.textContent();
+    await status.evaluate((element) => {
+      element.textContent = `Error ${'x'.repeat(240)}`;
+    });
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+    await status.evaluate((element, original) => {
+      element.textContent = original;
+    }, originalStatus);
+
+    await page.setViewportSize({ width: 1280, height: 720 });
     await page.getByRole('button', { name: 'Content', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'Program content' })).toBeVisible({ timeout: 120_000 });
 

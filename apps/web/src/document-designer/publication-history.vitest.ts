@@ -1,11 +1,37 @@
 import { describe, expect, it } from 'vitest';
 import type { Queryable } from './persistence';
-import { getActivePublication, listPublicationHistory, selectActivePublication, validateRollbackTarget, PublicationHistoryError } from './publication-history';
+import {
+  getActivePublication,
+  listPublicationHistory,
+  selectActivePublication,
+  validateRollbackTarget,
+  PublicationHistoryError
+} from './publication-history';
 
-const rows = [{ id: 'r1', ward_id: 'w1', meeting_id: 'm1', version: 2, document_type: 'SACRAMENT_PROGRAM', source_template_id: null, source_template_version: null, published_by_user_id: 'u1', published_at: '2026-01-01T00:00:00Z', created_at: '2026-01-01T00:00:00Z' }];
+const rows = [
+  {
+    id: 'r1',
+    ward_id: 'w1',
+    meeting_id: 'm1',
+    version: 2,
+    document_type: 'SACRAMENT_PROGRAM',
+    source_template_id: null,
+    source_template_version: null,
+    published_by_user_id: 'u1',
+    published_at: '2026-01-01T00:00:00Z',
+    created_at: '2026-01-01T00:00:00Z',
+    publication_metadata_json: { publicSafetyVersion: 1 }
+  }
+];
 function client(resultRows: unknown[] = rows): Queryable & { calls: string[] } {
   const calls: string[] = [];
-  return { calls, query: async (sql: string) => { calls.push(sql); return { rows: resultRows as Record<string, unknown>[] }; } };
+  return {
+    calls,
+    query: async (sql: string) => {
+      calls.push(sql);
+      return { rows: resultRows as Record<string, unknown>[] };
+    }
+  };
 }
 
 describe('publication history', () => {
@@ -13,6 +39,8 @@ describe('publication history', () => {
     const db = client();
     const history = await listPublicationHistory(db, { wardId: 'w1', meetingId: 'm1' });
     expect(history[0]).not.toHaveProperty('layoutJson');
+    expect(history[0].safeForPublic).toBe(true);
+    expect(db.calls[0]).toContain('r.publication_metadata_json');
     expect(db.calls[0]).toContain('r.ward_id = $1::uuid AND r.meeting_id = $2::uuid');
   });
 
@@ -26,26 +54,84 @@ describe('publication history', () => {
   });
 
   it('rejects cross-ward and cross-meeting rollback targets plus incomplete inputs', () => {
-    const target = { id: 'r1', wardId: 'w1', meetingId: 'm1', version: 2, documentType: 'SACRAMENT_PROGRAM', sourceTemplateId: null, sourceTemplateVersion: null, publishedByUserId: 'u1', publishedAt: '2026-01-01', createdAt: '2026-01-01', active: false, expiresAt: null, expired: false, activeButExpired: false };
-    expect(() => validateRollbackTarget({ ...target, wardId: 'other' }, { wardId: 'w1', meetingId: 'm1' })).toThrow(PublicationHistoryError);
+    const target = {
+      id: 'r1',
+      wardId: 'w1',
+      meetingId: 'm1',
+      version: 2,
+      documentType: 'SACRAMENT_PROGRAM',
+      sourceTemplateId: null,
+      sourceTemplateVersion: null,
+      publishedByUserId: 'u1',
+      publishedAt: '2026-01-01',
+      createdAt: '2026-01-01',
+      active: false,
+      expiresAt: null,
+      expired: false,
+      activeButExpired: false,
+      safeForPublic: true
+    };
+    expect(() => validateRollbackTarget({ ...target, wardId: 'other' }, { wardId: 'w1', meetingId: 'm1' })).toThrow(
+      PublicationHistoryError
+    );
     expect(() => validateRollbackTarget({ ...target, meetingId: 'other' }, { wardId: 'w1', meetingId: 'm1' })).toThrow(/ward and meeting/);
     expect(() => validateRollbackTarget({ ...target, publishedAt: null }, { wardId: 'w1', meetingId: 'm1' })).toThrow(/immutable/);
     expect(() => validateRollbackTarget({ ...target, version: 0 }, { wardId: 'w1', meetingId: 'm1' })).toThrow(/immutable/);
+    expect(() => validateRollbackTarget({ ...target, safeForPublic: false }, { wardId: 'w1', meetingId: 'm1' })).toThrow(
+      /not safe to restore/
+    );
   });
 
   it('fails when the share row is missing and never updates a render row', async () => {
-    const db = client([{ id: 'r1', ward_id: 'w1', meeting_id: 'm1', layout_json: {}, render_data_json: {}, published_at: '2026-01-01' }]);
+    const db = client([
+      {
+        id: 'r1',
+        ward_id: 'w1',
+        meeting_id: 'm1',
+        layout_json: {},
+        render_data_json: {},
+        published_at: '2026-01-01',
+        publication_metadata_json: { publicSafetyVersion: 1 }
+      }
+    ]);
     db.query = async (sql: string) => {
       db.calls.push(sql);
-      return { rows: db.calls.length === 1 ? [{ id: 'r1', ward_id: 'w1', meeting_id: 'm1', layout_json: {}, render_data_json: {}, published_at: '2026-01-01' }] : [] };
+      return {
+        rows:
+          db.calls.length === 1
+            ? [
+                {
+                  id: 'r1',
+                  ward_id: 'w1',
+                  meeting_id: 'm1',
+                  layout_json: {},
+                  render_data_json: {},
+                  published_at: '2026-01-01',
+                  publication_metadata_json: { publicSafetyVersion: 1 }
+                }
+              ]
+            : []
+      };
     };
-    await expect(selectActivePublication(db, { wardId: 'w1', meetingId: 'm1', renderId: 'r1' })).rejects.toMatchObject({ code: 'ACTIVE_POINTER_NOT_FOUND' });
+    await expect(selectActivePublication(db, { wardId: 'w1', meetingId: 'm1', renderId: 'r1' })).rejects.toMatchObject({
+      code: 'ACTIVE_POINTER_NOT_FOUND'
+    });
     expect(db.calls.at(-1)).toContain('UPDATE public_program_share');
     expect(db.calls.some((sql) => sql.startsWith('UPDATE meeting_program_render'))).toBe(false);
   });
 
   it('selects a complete target when the share update returns a row', async () => {
-    const db = client([{ id: 'r1', ward_id: 'w1', meeting_id: 'm1', layout_json: {}, render_data_json: {}, published_at: '2026-01-01' }]);
+    const db = client([
+      {
+        id: 'r1',
+        ward_id: 'w1',
+        meeting_id: 'm1',
+        layout_json: {},
+        render_data_json: {},
+        published_at: '2026-01-01',
+        publication_metadata_json: { publicSafetyVersion: 1 }
+      }
+    ]);
     await selectActivePublication(db, { wardId: 'w1', meetingId: 'm1', renderId: 'r1' });
     expect(db.calls.at(-1)).toContain('RETURNING meeting_id');
   });

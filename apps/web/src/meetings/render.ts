@@ -66,11 +66,6 @@ const DEFAULT_RENDER_LABELS: MeetingRenderLabels = {
   itemLabels: {}
 };
 
-const SACRAMENT_PRAYERS = [
-  'Bread prayer: O God, the Eternal Father, we ask thee in the name of thy Son, Jesus Christ, to bless and sanctify this bread to the souls of all those who partake of it...',
-  'Water prayer: O God, the Eternal Father, we ask thee in the name of thy Son, Jesus Christ, to bless and sanctify this water to the souls of all those who drink of it...'
-];
-
 function escapeHtml(value: string) {
   return value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;');
 }
@@ -144,8 +139,12 @@ export function buildMeetingRenderHtml({
       : activeAnnouncements.filter((item) => selectedLayout.announcementMode === 'BACK_PANEL' || item.placement === 'PROGRAM_BOTTOM');
 
   const itemsHtml = programItems
-    .filter((item) => item.itemType.toUpperCase() !== 'WARD_AND_STAKE_BUSINESS')
+    .filter((item) => !['WARD_AND_STAKE_BUSINESS', 'ANNOUNCEMENT'].includes(item.itemType.toUpperCase()))
     .map((item) => {
+      if (item.itemType.toUpperCase() === 'SACRAMENT') {
+        const label = labels.itemLabels.SACRAMENT ?? 'Administration of the Sacrament';
+        return `<article class="border-b py-2 text-center"><p class="text-sm font-medium">${escapeHtml(label)}</p></article>`;
+      }
       if (item.itemType.toUpperCase() === INTRODUCTION_ITEM_TYPE) {
         const roles = item.introductionRoles ?? { presiding: '', conducting: '', organist: '', chorister: '' };
         const roleRows = [
@@ -173,9 +172,5 @@ export function buildMeetingRenderHtml({
     })
     .join('');
 
-  const prayersHtml = SACRAMENT_PRAYERS.map(
-    (line) => `<p class="text-xs leading-relaxed text-muted-foreground">${escapeHtml(line)}</p>`
-  ).join('');
-
-  return `${printStyles}<main class="${layoutClass} mx-auto max-w-3xl space-y-6 p-4 sm:p-8" aria-labelledby="public-program-title" data-layout-preset="${selectedLayout.preset}" data-announcement-mode="${selectedLayout.announcementMode}"><header class="public-program__cover space-y-2 border-b pb-4 text-center"><h1 id="public-program-title" class="text-2xl font-semibold">${escapeHtml(labels.programTitle)}</h1>${escapedWard}<p class="text-sm text-muted-foreground">${escapedDate}</p><p class="text-sm text-muted-foreground">${escapedType}</p>${cover}</header>${foldGuide}${renderAnnouncementBlock(topAnnouncements, labels)}<section class="space-y-2">${itemsHtml}</section>${renderAnnouncementBlock(bottomAnnouncements, labels)}<section class="space-y-2"><h2 class="text-base font-semibold">${escapeHtml(labels.sacramentPrayers)}</h2>${prayersHtml}</section>${renderQrCode(publicUrl, labels)}</main>`;
+  return `${printStyles}<main class="${layoutClass} mx-auto max-w-3xl space-y-6 p-4 sm:p-8" aria-labelledby="public-program-title" data-layout-preset="${selectedLayout.preset}" data-announcement-mode="${selectedLayout.announcementMode}"><header class="public-program__cover space-y-2 border-b pb-4 text-center"><h1 id="public-program-title" class="text-2xl font-semibold">${escapeHtml(labels.programTitle)}</h1>${escapedWard}<p class="text-sm text-muted-foreground">${escapedDate}</p><p class="text-sm text-muted-foreground">${escapedType}</p>${cover}</header>${foldGuide}${renderAnnouncementBlock(topAnnouncements, labels)}<section class="space-y-2">${itemsHtml}</section>${renderAnnouncementBlock(bottomAnnouncements, labels)}${renderQrCode(publicUrl, labels)}</main>`;
 }

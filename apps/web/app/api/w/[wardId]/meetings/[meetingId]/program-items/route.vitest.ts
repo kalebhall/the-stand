@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const {
   authMock,
   canEditMock,
+  canEditItemPatchMock,
   canUseNotesMock,
   connectMock,
   queryMock,
@@ -14,6 +15,7 @@ const {
 } = vi.hoisted(() => ({
   authMock: vi.fn(),
   canEditMock: vi.fn(() => true),
+  canEditItemPatchMock: vi.fn(() => true),
   canUseNotesMock: vi.fn(() => true),
   connectMock: vi.fn(),
   queryMock: vi.fn(),
@@ -28,6 +30,7 @@ vi.mock('@/src/auth/auth', () => ({ auth: authMock }));
 vi.mock('@/src/auth/roles', () => ({
   canViewProgramDesigner: vi.fn(() => true),
   canEditProgramDesign: canEditMock,
+  canEditProgramItemPatch: canEditItemPatchMock,
   canUseInternalNotes: canUseNotesMock
 }));
 vi.mock('@/src/db/client', () => ({ pool: { connect: connectMock } }));
@@ -84,6 +87,7 @@ describe('program items routes', () => {
     queryMock.mockReset();
     connectMock.mockReset();
     canEditMock.mockReturnValue(true);
+    canEditItemPatchMock.mockReturnValue(true);
     canUseNotesMock.mockReturnValue(true);
     authMock.mockResolvedValue({ user: { id: 'user-1', roles: ['PROGRAM_EDITOR'], name: 'Editor' }, activeWardId: 'ward-1' });
     moduleEnabledMock.mockResolvedValue(true);
@@ -136,6 +140,16 @@ describe('program items routes', () => {
     canEditMock.mockReturnValue(false);
     const response = await PATCH(
       body({ expectedRevision: 'sr1_' + '0'.repeat(64), patch: { kind: 'TEXT', field: 'title', value: 'No' } }),
+      itemParams()
+    );
+    expect(response.status).toBe(403);
+    expect(connectMock).not.toHaveBeenCalled();
+  });
+
+  it('rejects edits outside the permitted program-notes field', async () => {
+    canEditItemPatchMock.mockReturnValue(false);
+    const response = await PATCH(
+      body({ expectedRevision: 'sr1_' + '0'.repeat(64), patch: { kind: 'TEXT', field: 'title', value: 'Changed' } }),
       itemParams()
     );
     expect(response.status).toBe(403);

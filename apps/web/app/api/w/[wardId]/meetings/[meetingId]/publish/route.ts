@@ -21,7 +21,11 @@ import {
 } from '@/src/document-designer/advanced-schema';
 import { resolveDocumentData } from '@/src/document-designer/data-resolver';
 import { validatePrintLayout } from '@/src/document-designer/overflow';
-import { insertImmutableRender, calculatePublicationExpiration } from '@/src/document-designer/publication-service';
+import {
+  insertImmutableRender,
+  calculatePublicationExpiration,
+  safePublicationMetadata
+} from '@/src/document-designer/publication-service';
 import { validatePublication } from '@/src/document-designer/publication-validation';
 import { renderDocumentHtml } from '@/src/document-designer/renderer';
 import { buildPublicPreviewSource } from '@/src/document-designer/meeting-document-service';
@@ -340,12 +344,12 @@ export async function POST(request: Request, context: { params: Promise<{ wardId
         documentResult.rows[0]?.source_template_version == null ? null : Number(documentResult.rows[0].source_template_version),
       publishedByUserId: session.user.id,
       publishedAt,
-      publicationMetadataJson: {
+      publicationMetadataJson: safePublicationMetadata({
         validationWarningCodes: validation.warningCodes,
-        rendererVersion: 'm8',
+        rendererVersion: 'm9',
         pageCount: printValidation.pageCount,
         layoutHash: createHash('sha256').update(JSON.stringify(publishedLayout)).digest('hex')
-      }
+      })
     });
     if (!inserted.id || !Number.isSafeInteger(inserted.version) || inserted.version < 1 || inserted.version !== version) {
       throw new Error('Publication render insert returned an invalid version');

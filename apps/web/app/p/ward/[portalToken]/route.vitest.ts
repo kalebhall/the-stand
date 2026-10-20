@@ -42,6 +42,9 @@ describe('GET /p/ward/[portalToken]', () => {
     expect(response.headers.get('X-Robots-Tag')).toBe('noindex, nofollow');
     expect(queryMock).toHaveBeenCalledWith('SELECT set_config($1, $2, true)', ['app.public_portal_token', 'portal-1']);
     expect(queryMock).toHaveBeenCalledWith('SELECT set_config($1, $2, true)', ['app.ward_id', 'ward-1']);
+    expect(queryMock).toHaveBeenCalledWith(expect.stringContaining('publication_metadata_json @> \'{"publicSafetyVersion":1}\'::jsonb'), [
+      'ward-1'
+    ]);
   });
 
   it('returns 404 when portal token does not exist', async () => {
@@ -78,5 +81,6 @@ describe('GET /p/ward/[portalToken]', () => {
     expect(html).toContain('No hay ningún programa disponible');
     expect(html).not.toContain('No program available');
     expect(queryMock).toHaveBeenLastCalledWith('COMMIT');
+    expect(queryMock).toHaveBeenCalledWith(expect.stringContaining('publicSafetyVersion'), ['ward-1']);
   });
 });
