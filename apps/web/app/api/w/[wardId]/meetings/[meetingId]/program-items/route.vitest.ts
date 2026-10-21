@@ -4,7 +4,6 @@ const {
   authMock,
   canEditMock,
   canEditItemPatchMock,
-  canUseNotesMock,
   connectMock,
   queryMock,
   releaseMock,
@@ -15,8 +14,7 @@ const {
 } = vi.hoisted(() => ({
   authMock: vi.fn(),
   canEditMock: vi.fn(() => true),
-  canEditItemPatchMock: vi.fn(() => true),
-  canUseNotesMock: vi.fn(() => true),
+  canEditItemPatchMock: vi.fn((_session: unknown, _wardId: string, _patch: { kind: string; field?: string }) => true),
   connectMock: vi.fn(),
   queryMock: vi.fn(),
   releaseMock: vi.fn(),
@@ -30,8 +28,7 @@ vi.mock('@/src/auth/auth', () => ({ auth: authMock }));
 vi.mock('@/src/auth/roles', () => ({
   canViewProgramDesigner: vi.fn(() => true),
   canEditProgramDesign: canEditMock,
-  canEditProgramItemPatch: canEditItemPatchMock,
-  canUseInternalNotes: canUseNotesMock
+  canEditProgramItemPatch: canEditItemPatchMock
 }));
 vi.mock('@/src/db/client', () => ({ pool: { connect: connectMock } }));
 vi.mock('@/src/db/context', () => ({ setDbContext: setDbContextMock }));
@@ -43,6 +40,7 @@ vi.mock('@/src/audit/service', () => ({ recordAuditEvent: auditMock }));
 
 import { GET } from './route';
 import { PATCH } from './[itemId]/route';
+import { programItemsResponseSchema } from '@/src/meetings/program-item-contracts';
 
 const meeting = { id: '00000000-0000-0000-0000-000000000010', meeting_date: '2026-09-20', meeting_type: 'SACRAMENT' };
 const introduction = {
@@ -56,7 +54,13 @@ const introduction = {
   hymn_number: null,
   hymn_title: null,
   hymn_locale: 'en-US',
-  introduction_roles: { presiding: '', conducting: '', organist: '', chorister: '' },
+  introduction_roles: {
+    presiding: '',
+    conducting: '',
+    organist: '',
+    chorister: '',
+    visitingLeaders: [{ name: 'Private Visitor', calling: 'Stake leader', recognitionType: 'HIGH_COUNCILOR' }]
+  },
   speaker_status: null
 };
 const announcement = {
@@ -87,8 +91,7 @@ describe('program items routes', () => {
     queryMock.mockReset();
     connectMock.mockReset();
     canEditMock.mockReturnValue(true);
-    canEditItemPatchMock.mockReturnValue(true);
-    canUseNotesMock.mockReturnValue(true);
+    canEditItemPatchMock.mockImplementation((_session, _wardId, patch) => patch.kind === 'TEXT' && patch.field === 'programNotes');
     authMock.mockResolvedValue({ user: { id: 'user-1', roles: ['PROGRAM_EDITOR'], name: 'Editor' }, activeWardId: 'ward-1' });
     moduleEnabledMock.mockResolvedValue(true);
     moduleEnabledInTxMock.mockResolvedValue(true);
@@ -103,7 +106,8 @@ describe('program items routes', () => {
     expect(connectMock).not.toHaveBeenCalled();
   });
 
-  it('returns stable editor rows and an opaque source revision', async () => {
+  it('never returns internal notes or visiting-leader details for a privileged Program Content viewer', async () => {
+    authMock.mockResolvedValue({ user: { id: 'user-1', roles: ['BISHOPRIC_EDITOR'], name: 'Editor' }, activeWardId: 'ward-1' });
     queryMock.mockResolvedValueOnce({});
     mockRead();
     queryMock.mockResolvedValueOnce({});
@@ -111,20 +115,17 @@ describe('program items routes', () => {
     const payload = await response.json();
     expect(response.status).toBe(200);
     expect(payload.sourceRevision).toMatch(/^sr1_[a-f0-9]{64}$/);
-    expect(payload.items.map((item: { id: string }) => item.id)).toEqual([introduction.id, announcement.id]);
-    expect(payload.items[1]).toMatchObject({ sourceState: 'MANAGED', managedHref: '/announcements' });
-    expect(payload.items[0].notes).toBe('Private');
-  });
-
-  it('redacts internal notes when the caller lacks the internal-notes capability', async () => {
-    canUseNotesMock.mockReturnValue(false);
-    queryMock.mockResolvedValueOnce({});
-    mockRead();
-    queryMock.mockResolvedValueOnce({});
-    const response = await GET(new Request('http://localhost'), collectionParams());
-    const payload = await response.json();
-    expect(response.status).toBe(200);
-    expect(payload.items[0]).toMatchObject({ notes: null, internalNotesEditable: false });
+    const revisionSource = await import('@/src/meetings/program-item-source');
+    expect(payload.sourceRevision).toBe(
+      revisionSource.computeProgramItemsRevision([introduction, announcement], { includeInternalNotes: false })
+    );
+    expect(payload.items[0]).not.toHaveProperty('notes');
+    expect(payload.items[0]).not.toHaveProperty('internalNotesEditable');
+    expect(payload.items[0].introductionRoles).not.toHaveProperty('visitingLeaders');
+    expect(JSON.stringify(payload)).not.toContain('Private Visitor');
+    expect(programItemsResponseSchema.safeParse(payload).success).toBe(true);
+    expect(queryMock).toHaveBeenCalledWith(expect.stringContaining('NULL::text AS notes'), expect.anything());
+    expect(queryMock).toHaveBeenCalledWith(expect.stringContaining("introduction_roles - 'visitingLeaders'"), expect.anything());
   });
 
   it('rejects unknown patch keys before opening a DB connection', async () => {
@@ -139,15 +140,16 @@ describe('program items routes', () => {
   it('rejects a caller outside the active ward before opening a DB connection', async () => {
     canEditMock.mockReturnValue(false);
     const response = await PATCH(
-      body({ expectedRevision: 'sr1_' + '0'.repeat(64), patch: { kind: 'TEXT', field: 'title', value: 'No' } }),
+      body({ expectedRevision: 'sr1_' + '0'.repeat(64), patch: { kind: 'TEXT', field: 'programNotes', value: 'No' } }),
       itemParams()
     );
     expect(response.status).toBe(403);
     expect(connectMock).not.toHaveBeenCalled();
   });
 
-  it('rejects edits outside the permitted program-notes field', async () => {
-    canEditItemPatchMock.mockReturnValue(false);
+  it('rejects content edits through this endpoint even for users allowed to edit program content', async () => {
+    authMock.mockResolvedValue({ user: { id: 'user-1', roles: ['BISHOPRIC_EDITOR'], name: 'Editor' }, activeWardId: 'ward-1' });
+    canEditItemPatchMock.mockReturnValue(true);
     const response = await PATCH(
       body({ expectedRevision: 'sr1_' + '0'.repeat(64), patch: { kind: 'TEXT', field: 'title', value: 'Changed' } }),
       itemParams()
@@ -156,23 +158,39 @@ describe('program items routes', () => {
     expect(connectMock).not.toHaveBeenCalled();
   });
 
-  it('updates an allowed field without touching layout data', async () => {
+  it('saves program notes when only hidden private fields changed and never returns them', async () => {
     queryMock.mockResolvedValueOnce({});
-    mockRead();
+    const privateChangedIntroduction = {
+      ...introduction,
+      notes: 'Changed internal note',
+      introduction_roles: {
+        ...introduction.introduction_roles,
+        visitingLeaders: [{ name: 'Changed Private Visitor', calling: 'Changed stake calling', recognitionType: 'HIGH_COUNCILOR' }]
+      }
+    };
+    mockRead([privateChangedIntroduction, announcement]);
     const revisionSource = await import('@/src/meetings/program-item-source');
-    const expectedRevision = revisionSource.computeProgramItemsRevision([introduction, announcement]);
+    const expectedRevision = revisionSource.computeProgramItemsRevision([introduction, announcement], { includeInternalNotes: false });
+    const updatedIntroduction = { ...privateChangedIntroduction, program_notes: 'Updated public note' };
     queryMock.mockResolvedValueOnce({});
-    queryMock.mockResolvedValueOnce({ rows: [meeting] });
-    queryMock.mockResolvedValueOnce({ rows: [{ ...introduction, notes: 'Changed' }, announcement] });
-    queryMock.mockResolvedValueOnce({ rows: [meeting] });
-    queryMock.mockResolvedValueOnce({ rows: [{ ...introduction, notes: 'Changed' }, announcement] });
+    queryMock.mockResolvedValueOnce({ rows: [] });
+    mockRead([updatedIntroduction, announcement]);
     queryMock.mockResolvedValueOnce({});
-    const response = await PATCH(body({ expectedRevision, patch: { kind: 'TEXT', field: 'notes', value: 'Changed' } }), itemParams());
+    const response = await PATCH(
+      body({ expectedRevision, patch: { kind: 'TEXT', field: 'programNotes', value: 'Updated public note' } }),
+      itemParams()
+    );
+    const payload = await response.json();
     expect(response.status).toBe(200);
     expect(queryMock).toHaveBeenCalledWith(
       expect.stringContaining('UPDATE meeting_program_item'),
-      expect.arrayContaining(['Changed', introduction.id, meeting.id, 'ward-1'])
+      expect.arrayContaining(['Updated public note', introduction.id, meeting.id, 'ward-1'])
     );
+    expect(payload.items[0]).not.toHaveProperty('notes');
+    expect(payload.items[0]).not.toHaveProperty('internalNotesEditable');
+    expect(payload.items[0].introductionRoles).not.toHaveProperty('visitingLeaders');
+    expect(JSON.stringify(payload)).not.toContain('Changed Private Visitor');
+    expect(payload.items[0].programNotes).toBe('Updated public note');
     expect(queryMock).not.toHaveBeenCalledWith(expect.stringContaining('meeting_document'), expect.anything());
     expect(auditMock).toHaveBeenCalledWith(
       expect.anything(),
@@ -180,55 +198,38 @@ describe('program items routes', () => {
     );
   });
 
-  it('rejects internal-note mutations when the caller lacks the internal-notes capability', async () => {
-    canUseNotesMock.mockReturnValue(false);
-    queryMock.mockResolvedValueOnce({});
-    mockRead();
+  it('rejects internal-note mutations in the content section even for internal-note-capable callers', async () => {
     const revisionSource = await import('@/src/meetings/program-item-source');
     const response = await PATCH(
       body({
-        expectedRevision: revisionSource.computeProgramItemsRevision([introduction, announcement]),
+        expectedRevision: revisionSource.computeProgramItemsRevision([introduction, announcement], { includeInternalNotes: false }),
         patch: { kind: 'TEXT', field: 'notes', value: 'No' }
       }),
       itemParams()
     );
     expect(response.status).toBe(403);
     expect((await response.json()).code).toBe('FORBIDDEN');
-    expect(queryMock).not.toHaveBeenCalledWith(expect.stringContaining('UPDATE meeting_program_item'), expect.anything());
+    expect(connectMock).not.toHaveBeenCalled();
   });
 
-  it('persists an atomic Introduction roles patch', async () => {
-    queryMock.mockResolvedValueOnce({});
-    mockRead();
+  it('rejects an Introduction roles patch through the content section', async () => {
     const revisionSource = await import('@/src/meetings/program-item-source');
-    const nextRoles = { presiding: 'Bishop Hall', conducting: 'Sister Hall', organist: '', chorister: '' };
-    queryMock.mockResolvedValueOnce({});
-    queryMock.mockResolvedValueOnce({ rows: [meeting] });
-    queryMock.mockResolvedValueOnce({ rows: [{ ...introduction, introduction_roles: nextRoles }, announcement] });
-    queryMock.mockResolvedValueOnce({});
     const response = await PATCH(
       body({
-        expectedRevision: revisionSource.computeProgramItemsRevision([introduction, announcement]),
-        patch: { kind: 'INTRODUCTION_ROLES', value: nextRoles }
+        expectedRevision: revisionSource.computeProgramItemsRevision([introduction, announcement], { includeInternalNotes: false }),
+        patch: { kind: 'INTRODUCTION_ROLES', value: { presiding: 'Bishop Hall', conducting: '', organist: '', chorister: '' } }
       }),
       itemParams()
     );
-    expect(response.status).toBe(200);
-    expect(queryMock).toHaveBeenCalledWith(
-      expect.stringContaining('SET introduction_roles'),
-      expect.arrayContaining([JSON.stringify(nextRoles), introduction.id, meeting.id, 'ward-1'])
-    );
-    expect(auditMock).toHaveBeenCalledWith(
-      expect.anything(),
-      expect.objectContaining({ details: expect.objectContaining({ field: 'introductionRoles' }) })
-    );
+    expect(response.status).toBe(403);
+    expect(connectMock).not.toHaveBeenCalled();
   });
 
   it('checks the module enablement inside the mutation transaction', async () => {
     moduleEnabledInTxMock.mockResolvedValue(false);
     queryMock.mockResolvedValueOnce({});
     const response = await PATCH(
-      body({ expectedRevision: 'sr1_' + '0'.repeat(64), patch: { kind: 'TEXT', field: 'title', value: 'No' } }),
+      body({ expectedRevision: 'sr1_' + '0'.repeat(64), patch: { kind: 'TEXT', field: 'programNotes', value: 'No' } }),
       itemParams()
     );
     expect(response.status).toBe(403);
@@ -240,7 +241,7 @@ describe('program items routes', () => {
     mockRead();
     queryMock.mockResolvedValueOnce({});
     const response = await PATCH(
-      body({ expectedRevision: 'sr1_' + 'f'.repeat(64), patch: { kind: 'TEXT', field: 'title', value: 'New' } }),
+      body({ expectedRevision: 'sr1_' + 'f'.repeat(64), patch: { kind: 'TEXT', field: 'programNotes', value: 'New' } }),
       itemParams()
     );
     const payload = await response.json();
@@ -258,8 +259,8 @@ describe('program items routes', () => {
     const revisionSource = await import('@/src/meetings/program-item-source');
     const response = await PATCH(
       body({
-        expectedRevision: revisionSource.computeProgramItemsRevision([introduction, announcement]),
-        patch: { kind: 'TEXT', field: 'title', value: 'No' }
+        expectedRevision: revisionSource.computeProgramItemsRevision([introduction, announcement], { includeInternalNotes: false }),
+        patch: { kind: 'TEXT', field: 'programNotes', value: 'No' }
       }),
       managedItemParams
     );
@@ -278,8 +279,8 @@ describe('program items routes', () => {
     const revisionSource = await import('@/src/meetings/program-item-source');
     const response = await PATCH(
       body({
-        expectedRevision: revisionSource.computeProgramItemsRevision(invalidRows),
-        patch: { kind: 'TEXT', field: 'title', value: 'No' }
+        expectedRevision: revisionSource.computeProgramItemsRevision(invalidRows, { includeInternalNotes: false }),
+        patch: { kind: 'TEXT', field: 'programNotes', value: 'No' }
       }),
       itemParams()
     );

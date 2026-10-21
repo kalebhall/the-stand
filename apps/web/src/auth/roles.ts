@@ -117,10 +117,7 @@ export function canEditProgramItemPatch(
   wardId: string,
   patch: { kind: string; field?: string }
 ): boolean {
-  return (
-    canEditProgramContent(session, wardId) ||
-    (canEditProgramNotes(session, wardId) && patch.kind === 'TEXT' && patch.field === 'programNotes')
-  );
+  return canEditProgramNotes(session, wardId) && patch.kind === 'TEXT' && patch.field === 'programNotes';
 }
 
 export function canManageWardProgramTemplates(

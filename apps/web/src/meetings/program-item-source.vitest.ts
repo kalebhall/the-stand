@@ -20,7 +20,13 @@ const base = {
   hymn_number: null,
   hymn_title: null,
   hymn_locale: 'en-US',
-  introduction_roles: { conducting: '', presiding: 'Bishop Hall', organist: '', chorister: '' },
+  introduction_roles: {
+    conducting: '',
+    presiding: 'Bishop Hall',
+    organist: '',
+    chorister: '',
+    visitingLeaders: [{ name: 'Private Visitor', calling: 'Stake leader' }]
+  },
   speaker_status: null
 };
 
@@ -32,6 +38,7 @@ describe('program item source projection', () => {
     ]);
     expect(rows.map((row) => row.id)).toEqual([base.id, '00000000-0000-0000-0000-000000000002']);
     expect(rows[0].introductionRoles?.presiding).toBe('Bishop Hall');
+    expect(rows[0].introductionRoles).not.toHaveProperty('visitingLeaders');
     expect(rows[1].sourceState).toBe('MANAGED');
     expect(rows[1].managedHref).toBe('/announcements');
   });
@@ -76,12 +83,35 @@ describe('program item source projection', () => {
 
   it('computes an opaque revision independent of JSON object key order', () => {
     const one = [base];
-    const two = [{ ...base, introduction_roles: { presiding: 'Bishop Hall', chorister: '', conducting: '', organist: '' } }];
+    const two = [
+      {
+        ...base,
+        introduction_roles: {
+          presiding: 'Bishop Hall',
+          chorister: '',
+          conducting: '',
+          organist: '',
+          visitingLeaders: base.introduction_roles.visitingLeaders
+        }
+      }
+    ];
     expect(canonicalizeProgramItems(one)).toBe(canonicalizeProgramItems(two));
     expect(computeProgramItemsRevision(one)).toMatch(/^sr1_[a-f0-9]{64}$/);
     expect(computeProgramItemsRevision(one)).not.toBe(computeProgramItemsRevision([{ ...base, notes: 'Changed' }]));
     expect(computeProgramItemsRevision(one, { includeInternalNotes: false })).toBe(
-      computeProgramItemsRevision([{ ...base, notes: 'Changed' }], { includeInternalNotes: false })
+      computeProgramItemsRevision(
+        [
+          {
+            ...base,
+            notes: 'Changed',
+            introduction_roles: {
+              ...base.introduction_roles,
+              visitingLeaders: [{ name: 'Different Private Visitor', calling: 'Different stake calling' }]
+            }
+          }
+        ],
+        { includeInternalNotes: false }
+      )
     );
   });
 });

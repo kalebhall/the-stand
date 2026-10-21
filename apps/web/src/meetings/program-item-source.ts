@@ -1,6 +1,11 @@
 import { createHash } from 'node:crypto';
 
-import { defaultIntroductionRoles, type EditorProgramItem, type SourceRevision } from './program-item-contracts';
+import {
+  defaultIntroductionRoles,
+  type EditorIntroductionRoles,
+  type EditorProgramItem,
+  type SourceRevision
+} from './program-item-contracts';
 import type { IntroductionRoles } from './types';
 
 export type ProgramItemSourceRow = {
@@ -81,36 +86,40 @@ export function projectIntroductionRoles(value: unknown, options: EditorProjecti
   return roles;
 }
 
-export function toEditorProgramItem(row: ProgramItemSourceRow, options: EditorProjectionOptions = {}): EditorProgramItem {
+export function projectEditorIntroductionRoles(value: unknown): EditorIntroductionRoles {
+  const roles = defaultIntroductionRoles(value);
+  return {
+    presiding: roles.presiding,
+    conducting: roles.conducting,
+    organist: roles.organist,
+    chorister: roles.chorister
+  };
+}
+
+export function toEditorProgramItem(row: ProgramItemSourceRow): EditorProgramItem {
   const managed = sourceState(row.item_type) === 'MANAGED';
-  const includeInternalNotes = options.includeInternalNotes !== false;
   return {
     id: row.id,
     sequence: row.sequence,
     itemType: row.item_type,
     title: row.title,
-    notes: includeInternalNotes ? row.notes : null,
     topic: row.topic,
     programNotes: row.program_notes,
     hymnNumber: row.hymn_number,
     hymnTitle: row.hymn_title,
     hymnLocale: row.hymn_locale || 'en-US',
-    introductionRoles: row.introduction_roles == null ? null : projectIntroductionRoles(row.introduction_roles, options),
+    introductionRoles: row.introduction_roles == null ? null : projectEditorIntroductionRoles(row.introduction_roles),
     speakerStatus: row.speaker_status,
     sourceState: managed ? 'MANAGED' : 'EDITABLE',
-    managedHref: managed ? (row.item_type.toUpperCase() === 'ANNOUNCEMENT' ? '/announcements' : '/meetings') : null,
-    internalNotesEditable: includeInternalNotes
+    managedHref: managed ? (row.item_type.toUpperCase() === 'ANNOUNCEMENT' ? '/announcements' : '/meetings') : null
   };
 }
 
-export function toEditorProgramItems(
-  rows: ReadonlyArray<ProgramItemSourceRow>,
-  options: EditorProjectionOptions = {}
-): EditorProgramItem[] {
+export function toEditorProgramItems(rows: ReadonlyArray<ProgramItemSourceRow>): EditorProgramItem[] {
   return rows
     .slice()
     .sort((a, b) => a.sequence - b.sequence || a.id.localeCompare(b.id))
-    .map((row) => toEditorProgramItem(row, options));
+    .map((row) => toEditorProgramItem(row));
 }
 
 export type MeetingSource = { id: string; meetingDate: string; meetingType: string };
@@ -123,7 +132,7 @@ export function toProgramItemsResponse(
   return {
     meeting,
     sourceRevision: computeProgramItemsRevision(rows, options),
-    items: toEditorProgramItems(rows, options)
+    items: toEditorProgramItems(rows)
   };
 }
 
