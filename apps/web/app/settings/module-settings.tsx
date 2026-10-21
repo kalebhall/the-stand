@@ -29,7 +29,7 @@ export function ModuleSettings({ wardId, initial }: { wardId: string; initial: M
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ moduleId: module.id, enabled: !module.enabled })
       });
-      const body = await response.json() as { modules?: ModuleSetting[]; error?: string };
+      const body = (await response.json()) as { modules?: ModuleSetting[]; error?: string };
       if (!response.ok || !body.modules) throw new Error(body.error ?? 'Failed to save module setting');
       setModules(body.modules);
     } catch (saveError) {
@@ -41,13 +41,27 @@ export function ModuleSettings({ wardId, initial }: { wardId: string; initial: M
 
   return (
     <div className="space-y-3" aria-label="Module settings">
-      {error ? <p role="alert" className="text-sm text-destructive">{error}</p> : null}
+      {error ? (
+        <p role="alert" className="text-sm text-destructive">
+          {error}
+        </p>
+      ) : null}
       {modules.map((module) => (
         <div key={module.id} className="flex items-center justify-between gap-4 rounded-md border p-3">
           <div>
-            <p className="font-medium">{module.name}</p>
+            <p className="font-medium">
+              {module.name}
+              {module.canDisable ? (
+                <span className="ml-2 inline-flex rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 align-middle text-[10px] font-semibold uppercase tracking-wide text-amber-800 dark:text-amber-300">
+                  Beta
+                </span>
+              ) : null}
+            </p>
             <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{module.description}</p>
-            <p className="text-xs text-muted-foreground">v{module.version}{module.overridden ? ' · Ward override' : module.defaultEnabled ? ' · On by default' : ' · Off by default'}</p>
+            <p className="text-xs text-muted-foreground">
+              v{module.version}
+              {module.overridden ? ' · Ward override' : module.defaultEnabled ? ' · On by default' : ' · Off by default'}
+            </p>
           </div>
           <button
             type="button"

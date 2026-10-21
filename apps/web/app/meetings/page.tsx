@@ -99,19 +99,38 @@ export default async function MeetingsPage() {
                   <span className="rounded-full border px-2 py-1 text-xs font-medium">
                     {t(MEETING_STATUS_KEYS[meeting.status as keyof typeof MEETING_STATUS_KEYS] ?? 'status_UNKNOWN')}
                   </span>
+                  <Link href={`/stand/${meeting.id}`} className={cn(buttonVariants({ size: 'sm' }))}>
+                    {t('atStand')}
+                  </Link>
                   {canManage ? (
                     <Link href={`/meetings/${meeting.id}/edit`} className={cn(buttonVariants({ size: 'sm', variant: 'outline' }))}>
                       {t('edit')}
                     </Link>
                   ) : null}
-                  {canManage ? <DeleteMeetingButton wardId={wardId} meetingId={meeting.id} /> : null}
-                  {canManage && meeting.status === 'PUBLISHED' ? <MeetingCompletionButton wardId={wardId} meetingId={meeting.id} action="complete" label={t('markFinished')} confirmMessage={t('confirmFinish')} /> : null}
-                  <Link href={`/stand/${meeting.id}`} className={cn(buttonVariants({ size: 'sm', variant: 'outline' }))}>
-                    {t('atStand')}
-                  </Link>
-                  <Link href={`/meetings/${meeting.id}/print`} className={cn(buttonVariants({ size: 'sm', variant: 'outline' }))}>
-                    {t('print')}
-                  </Link>
+                  <details className="relative">
+                    <summary
+                      aria-label={t('moreActions')}
+                      title={t('moreActions')}
+                      className="flex size-9 cursor-pointer list-none items-center justify-center rounded-md border text-lg leading-none hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden"
+                    >
+                      <span aria-hidden="true">⋯</span>
+                    </summary>
+                    <div className="absolute right-0 z-30 mt-1 min-w-44 rounded-md border bg-popover p-1 text-popover-foreground shadow-md">
+                      <Link href={`/meetings/${meeting.id}/print`} className="block rounded px-3 py-2 text-sm hover:bg-muted">
+                        {t('print')}
+                      </Link>
+                      {canManage && meeting.status === 'PUBLISHED' ? (
+                        <MeetingCompletionButton
+                          wardId={wardId}
+                          meetingId={meeting.id}
+                          action="complete"
+                          label={t('markFinished')}
+                          confirmMessage={t('confirmFinish')}
+                        />
+                      ) : null}
+                      {canManage ? <DeleteMeetingButton wardId={wardId} meetingId={meeting.id} /> : null}
+                    </div>
+                  </details>
                 </div>
               </article>
             ))}
@@ -135,13 +154,38 @@ export default async function MeetingsPage() {
                 <article key={meeting.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-muted/20 p-4">
                   <div>
                     <p className="text-base font-semibold">{formatMeetingDateForDisplay(meeting.meeting_date)}</p>
-                    <p className="text-sm text-muted-foreground">{t(MEETING_TYPE_KEYS[meeting.meeting_type as keyof typeof MEETING_TYPE_KEYS] ?? 'type_UNKNOWN')}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {t(MEETING_TYPE_KEYS[meeting.meeting_type as keyof typeof MEETING_TYPE_KEYS] ?? 'type_UNKNOWN')}
+                    </p>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="rounded-full border px-2 py-1 text-xs font-medium">{t('status_COMPLETED')}</span>
-                    {canManage ? <MeetingCompletionButton wardId={wardId} meetingId={meeting.id} action="reopen" label={t('reopen')} confirmMessage={t('confirmReopen')} /> : null}
-                    <Link href={`/stand/${meeting.id}`} className={cn(buttonVariants({ size: 'sm', variant: 'outline' }))}>{t('atStand')}</Link>
-                    <Link href={`/meetings/${meeting.id}/print`} className={cn(buttonVariants({ size: 'sm', variant: 'outline' }))}>{t('print')}</Link>
+                    <Link href={`/stand/${meeting.id}`} className={cn(buttonVariants({ size: 'sm' }))}>
+                      {t('atStand')}
+                    </Link>
+                    <details className="relative">
+                      <summary
+                        aria-label={t('moreActions')}
+                        title={t('moreActions')}
+                        className="flex size-9 cursor-pointer list-none items-center justify-center rounded-md border text-lg leading-none hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden"
+                      >
+                        <span aria-hidden="true">⋯</span>
+                      </summary>
+                      <div className="absolute right-0 z-30 mt-1 min-w-44 rounded-md border bg-popover p-1 text-popover-foreground shadow-md">
+                        <Link href={`/meetings/${meeting.id}/print`} className="block rounded px-3 py-2 text-sm hover:bg-muted">
+                          {t('print')}
+                        </Link>
+                        {canManage ? (
+                          <MeetingCompletionButton
+                            wardId={wardId}
+                            meetingId={meeting.id}
+                            action="reopen"
+                            label={t('reopen')}
+                            confirmMessage={t('confirmReopen')}
+                          />
+                        ) : null}
+                      </div>
+                    </details>
                   </div>
                 </article>
               ))}

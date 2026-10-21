@@ -7,6 +7,7 @@ const WARD_A = '11111111-1111-4111-8111-111111111111';
 const WARD_B = '22222222-2222-4222-8222-222222222222';
 const PUBLISHED_MEETING = '33333333-3333-4333-8333-333333333333';
 const PUBLISHED_MEETING_WITHOUT_SAFE_SNAPSHOT = '33333333-3333-4333-8333-333333333334';
+const COMPLETED_MEETING = '33333333-3333-4333-8333-333333333336';
 const execFileAsync = promisify(execFile);
 
 async function login(page: Page, email: string, password: string) {
@@ -67,6 +68,43 @@ test('ward isolation denies cross-ward API access', async ({ page }) => {
   const response = await apiRequest(page, `/api/w/${WARD_B}/meetings`, 'POST', { meetingDate: '2026-02-01', meetingType: 'SACRAMENT' });
 
   expect(response.status).toBe(403);
+});
+
+test('meeting list secondary actions are disclosed in the mobile action menu', async ({ page }) => {
+  await login(page, 'ward-admin@example.test', 'WardAdminPassword123456789012');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/meetings');
+
+  const meetingCard = page.locator(`main a[href="/stand/${PUBLISHED_MEETING}"]`).last().locator('xpath=ancestor::article[1]');
+  await expect(meetingCard).toBeVisible();
+  await expect(meetingCard.getByRole('link', { name: 'At the Stand' })).toBeVisible();
+  await expect(meetingCard.getByRole('link', { name: 'Edit' })).toBeVisible();
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+
+  const actionDisclosure = meetingCard.locator('details');
+  const actionSummary = actionDisclosure.locator('summary[aria-label="More meeting actions"]');
+  const printLink = meetingCard.getByRole('link', { name: 'Print view' });
+  await expect(actionDisclosure).toHaveJSProperty('open', false);
+  await expect(printLink).toBeHidden();
+  await actionSummary.press('Enter');
+  await expect(actionDisclosure).toHaveJSProperty('open', true);
+  await expect(printLink).toBeVisible();
+  await expect(meetingCard.getByRole('button', { name: 'Mark finished' })).toBeVisible();
+  await expect(meetingCard.getByRole('button', { name: 'Delete' })).toBeVisible();
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+
+  await page.goto('/meetings');
+  const finishedSummary = page.locator('main > details > summary').filter({ hasText: 'Finished meetings' }).last();
+  const finishedMeetings = finishedSummary.locator('xpath=..');
+  await expect(finishedMeetings).toHaveJSProperty('open', false);
+  await finishedSummary.press('Enter');
+  await expect(finishedMeetings).toHaveJSProperty('open', true);
+  const finishedCard = page.locator(`main a[href="/stand/${COMPLETED_MEETING}"]`).last().locator('xpath=ancestor::article[1]');
+  const finishedActions = finishedCard.locator('details');
+  await finishedActions.locator('summary[aria-label="More meeting actions"]').press('Enter');
+  await expect(finishedCard.getByRole('link', { name: 'Print view' })).toBeVisible();
+  await expect(finishedCard.getByRole('button', { name: 'Reopen' })).toBeVisible();
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
 });
 
 test('meeting creation controls stay unwrapped without mobile horizontal overflow', async ({ page }) => {

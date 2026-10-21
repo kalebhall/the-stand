@@ -106,6 +106,7 @@
     "type_GENERAL_CONFERENCE": "Pangkalahatang kumperensya",
     "type_UNKNOWN": "Pagpupulong",
     "help": "Tulong sa pagpupulong",
+    "moreActions": "Higit pang mga pagkilos sa pulong",
     "newTitle": "Gumawa ng pulong",
     "newDescription": "Magsimula ng bagong draft ng pulong at bumuo ng mga aytem ng programa."
   },

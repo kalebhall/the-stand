@@ -41,5 +41,7 @@ describe('ModuleSettings', () => {
     expect(screen.getByText('v1.0.0 · Off by default')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Required' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Disabled' })).toBeEnabled();
+    expect(screen.getByText('Beta')).toBeTruthy();
+    expect(screen.getByText('Beta').closest('p')?.textContent).toContain('Programs');
   });
 });
