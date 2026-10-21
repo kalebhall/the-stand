@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { auth } from '@/src/auth/auth';
-import { canViewProgramDesigner, canUseInternalNotes } from '@/src/auth/roles';
+import { canViewProgramDesigner } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 import { isWardModuleEnabled, isWardModuleEnabledInTransaction } from '@/src/modules/service';
@@ -19,8 +19,6 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
   if (!canViewProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId))
     return errorResponse('Forbidden', 'FORBIDDEN', 403);
   if (!(await isWardModuleEnabled(wardId, session.user.id, 'programs'))) return errorResponse('Forbidden', 'FORBIDDEN', 403);
-  const includeInternalNotes = canUseInternalNotes({ roles: session.user.roles, activeWardId: session.activeWardId }, wardId);
-
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -29,13 +27,13 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
       await client.query('ROLLBACK');
       return errorResponse('Forbidden', 'FORBIDDEN', 403);
     }
-    const contextData = await readProgramItems(client, wardId, meetingId, false, { includeInternalNotes });
+    const contextData = await readProgramItems(client, wardId, meetingId, false, { includeInternalNotes: false });
     if (!contextData) {
       await client.query('ROLLBACK');
       return errorResponse('Meeting not found', 'NOT_FOUND', 404);
     }
     await client.query('COMMIT');
-    return NextResponse.json(toProgramItemsResponse(contextData.meeting, contextData.rows, { includeInternalNotes }), {
+    return NextResponse.json(toProgramItemsResponse(contextData.meeting, contextData.rows, { includeInternalNotes: false }), {
       headers: { 'Cache-Control': 'private, no-store, max-age=0' }
     });
   } catch {

@@ -97,7 +97,7 @@ describe('program permissions', () => {
     expect(canEditProgramItemPatch(active, 'ward-a', { kind: 'TEXT', field: 'title' })).toBe(false);
     expect(canEditProgramItemPatch(active, 'ward-a', { kind: 'INTRODUCTION_ROLE' })).toBe(false);
     expect(canEditProgramItemPatch(active, 'ward-b', { kind: 'TEXT', field: 'programNotes' })).toBe(false);
-    expect(canEditProgramItemPatch({ roles: ['BISHOPRIC_EDITOR'], activeWardId: 'ward-a' }, 'ward-a', { kind: 'HYMN' })).toBe(true);
+    expect(canEditProgramItemPatch({ roles: ['BISHOPRIC_EDITOR'], activeWardId: 'ward-a' }, 'ward-a', { kind: 'HYMN' })).toBe(false);
   });
   it('limits PROGRAM_EDITOR to the active ward and program helpers', () => {
     expect(canViewProgramDesigner(active, 'ward-a')).toBe(true);

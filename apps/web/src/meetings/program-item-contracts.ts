@@ -31,22 +31,31 @@ export const introductionRolesSchema = z
   })
   .strict();
 
+export type EditorIntroductionRoles = Pick<IntroductionRoles, 'presiding' | 'conducting' | 'organist' | 'chorister'>;
+
+export const editorIntroductionRolesSchema = z
+  .object({
+    presiding: z.string().max(200),
+    conducting: z.string().max(200),
+    organist: z.string().max(200),
+    chorister: z.string().max(200)
+  })
+  .strict();
+
 export type EditorProgramItem = {
   id: string;
   sequence: number;
   itemType: string;
   title: string | null;
-  notes: string | null;
   topic: string | null;
   programNotes: string | null;
   hymnNumber: string | null;
   hymnTitle: string | null;
   hymnLocale: string;
-  introductionRoles: IntroductionRoles | null;
+  introductionRoles: EditorIntroductionRoles | null;
   speakerStatus: string | null;
   sourceState: 'EDITABLE' | 'MANAGED';
   managedHref: string | null;
-  internalNotesEditable: boolean;
 };
 
 export const editorProgramItemSchema: z.ZodType<EditorProgramItem> = z
@@ -55,17 +64,15 @@ export const editorProgramItemSchema: z.ZodType<EditorProgramItem> = z
     sequence: z.number().int().positive(),
     itemType: z.string().min(1).max(100),
     title: nullableText(500),
-    notes: nullableText(4000),
     topic: nullableText(1000),
     programNotes: nullableText(4000),
     hymnNumber: nullableText(50),
     hymnTitle: nullableText(500),
     hymnLocale: z.string().min(2).max(20),
-    introductionRoles: introductionRolesSchema.nullable(),
+    introductionRoles: editorIntroductionRolesSchema.nullable(),
     speakerStatus: z.string().max(40).nullable(),
     sourceState: z.enum(['EDITABLE', 'MANAGED']),
-    managedHref: z.string().max(500).nullable(),
-    internalNotesEditable: z.boolean()
+    managedHref: z.string().max(500).nullable()
   })
   .strict();
 

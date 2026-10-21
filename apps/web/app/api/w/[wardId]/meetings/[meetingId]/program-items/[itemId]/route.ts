@@ -2,26 +2,19 @@ import { NextResponse } from 'next/server';
 
 import { recordAuditEvent } from '@/src/audit/service';
 import { auth } from '@/src/auth/auth';
-import { canEditProgramDesign, canEditProgramItemPatch, canUseInternalNotes } from '@/src/auth/roles';
+import { canEditProgramDesign, canEditProgramItemPatch } from '@/src/auth/roles';
 import { pool } from '@/src/db/client';
 import { setDbContext } from '@/src/db/context';
 import { isWardModuleEnabledInTransaction } from '@/src/modules/service';
-import { isHymnItem, patchProgramItemRequestSchema, type PatchProgramItemRequest } from '@/src/meetings/program-item-contracts';
+import { patchProgramItemRequestSchema } from '@/src/meetings/program-item-contracts';
 import { isSourceManaged, readProgramItems, synchronizePublicProgramNote, textColumn } from '@/src/meetings/program-item-service';
-import { toProgramItemsResponse, updateIntroductionRole } from '@/src/meetings/program-item-source';
+import { toProgramItemsResponse } from '@/src/meetings/program-item-source';
 import { validateProtectedProgramOrder } from '@/src/meetings/program-item-rules';
 import { enqueueOutboxNotificationJob } from '@/src/notifications/queue';
 import { enqueueNotificationOutboxEvent } from '@/src/notifications/outbox';
 
 function errorResponse(message: string, code: string, status: number, extra: Record<string, unknown> = {}) {
   return NextResponse.json({ error: message, code, ...extra }, { status });
-}
-
-function patchFieldName(patch: PatchProgramItemRequest['patch']): string {
-  if (patch.kind === 'TEXT') return patch.field;
-  if (patch.kind === 'INTRODUCTION_ROLE') return `introductionRoles.${patch.role}`;
-  if (patch.kind === 'INTRODUCTION_ROLES') return 'introductionRoles';
-  return 'hymn';
 }
 
 export async function PATCH(request: Request, context: { params: Promise<{ wardId: string; meetingId: string; itemId: string }> }) {
@@ -31,14 +24,16 @@ export async function PATCH(request: Request, context: { params: Promise<{ wardI
   if (!session?.user?.id) return errorResponse('Unauthorized', 'UNAUTHORIZED', 401);
   const sessionAccess = { roles: session.user.roles, activeWardId: session.activeWardId };
   if (!canEditProgramDesign(sessionAccess, wardId)) return errorResponse('Forbidden', 'FORBIDDEN', 403);
-  const includeInternalNotes = canUseInternalNotes(sessionAccess, wardId);
 
   const parsed = patchProgramItemRequestSchema.safeParse(await requestBody);
   if (!parsed.success) return errorResponse('Invalid program item patch', 'BAD_REQUEST', 400);
-  if (!canEditProgramItemPatch(sessionAccess, wardId, parsed.data.patch))
-    return errorResponse('This role can only edit program notes', 'FORBIDDEN', 403);
-  if (parsed.data.patch.kind === 'TEXT' && parsed.data.patch.field === 'notes' && !includeInternalNotes)
-    return errorResponse('Internal notes are not available to this role', 'FORBIDDEN', 403);
+  if (
+    parsed.data.patch.kind !== 'TEXT' ||
+    parsed.data.patch.field !== 'programNotes' ||
+    !canEditProgramItemPatch(sessionAccess, wardId, parsed.data.patch)
+  ) {
+    return errorResponse('This section only allows authorized program-note edits', 'FORBIDDEN', 403);
+  }
 
   const client = await pool.connect();
   const noteOutboxIds: string[] = [];
@@ -49,7 +44,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ wardI
       await client.query('ROLLBACK');
       return errorResponse('Forbidden', 'FORBIDDEN', 403);
     }
-    const contextData = await readProgramItems(client, wardId, meetingId, true, { includeInternalNotes });
+    const contextData = await readProgramItems(client, wardId, meetingId, true, { includeInternalNotes: false });
     if (!contextData) {
       await client.query('ROLLBACK');
       return errorResponse('Meeting not found', 'NOT_FOUND', 404);
@@ -60,7 +55,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ wardI
       return errorResponse('Program item not found', 'NOT_FOUND', 404);
     }
 
-    const current = toProgramItemsResponse(contextData.meeting, contextData.rows, { includeInternalNotes });
+    const current = toProgramItemsResponse(contextData.meeting, contextData.rows, { includeInternalNotes: false });
     if (parsed.data.expectedRevision !== current.sourceRevision) {
       await client.query('ROLLBACK');
       return errorResponse('The program changed in another session', 'REVISION_CONFLICT', 409, { current });
@@ -86,78 +81,24 @@ export async function PATCH(request: Request, context: { params: Promise<{ wardI
     }
 
     const patch = parsed.data.patch;
-    if (patch.kind === 'TEXT') {
-      if (patch.field === 'topic' && item.item_type.toUpperCase() !== 'SPEAKER') {
-        await client.query('ROLLBACK');
-        return errorResponse('Only speaker entries have topics', 'INVALID_ITEM_PATCH', 422);
-      }
-      await client.query(
-        `UPDATE meeting_program_item
-            SET ${textColumn(patch.field)} = $1
-          WHERE id = $2::uuid AND meeting_id = $3::uuid AND ward_id = $4::uuid`,
-        [patch.value?.trim() || null, itemId, meetingId, wardId]
-      );
-      if (patch.field === 'programNotes') {
-        noteOutboxIds.push(
-          ...(await synchronizePublicProgramNote(client, {
-            wardId,
-            meetingId,
-            programItemId: itemId,
-            noteText: patch.value,
-            userId: session.user.id,
-            actorName: session.user.name || session.user.email || null
-          }))
-        );
-      }
-    } else if (patch.kind === 'INTRODUCTION_ROLE') {
-      if (item.item_type.toUpperCase() !== 'INTRODUCTION') {
-        await client.query('ROLLBACK');
-        return errorResponse('Introduction roles belong to the Introduction entry', 'INVALID_ITEM_PATCH', 422);
-      }
-      if (!includeInternalNotes) {
-        await client.query(
-          `UPDATE meeting_program_item
-              SET introduction_roles = jsonb_set(COALESCE(introduction_roles, '{}'::jsonb), ARRAY[$1::text], to_jsonb($2::text), true)
-            WHERE id = $3::uuid AND meeting_id = $4::uuid AND ward_id = $5::uuid`,
-          [patch.role, patch.value?.trim() ?? '', itemId, meetingId, wardId]
-        );
-      } else {
-        await client.query(
-          `UPDATE meeting_program_item
-              SET introduction_roles = $1::jsonb
-            WHERE id = $2::uuid AND meeting_id = $3::uuid AND ward_id = $4::uuid`,
-          [JSON.stringify(updateIntroductionRole(item.introduction_roles, patch.role, patch.value)), itemId, meetingId, wardId]
-        );
-      }
-    } else if (patch.kind === 'INTRODUCTION_ROLES') {
-      if (item.item_type.toUpperCase() !== 'INTRODUCTION') {
-        await client.query('ROLLBACK');
-        return errorResponse('Introduction roles belong to the Introduction entry', 'INVALID_ITEM_PATCH', 422);
-      }
-      if (!includeInternalNotes) {
-        await client.query('ROLLBACK');
-        return errorResponse('Visiting leader details are not available to this role', 'FORBIDDEN', 403);
-      }
-      await client.query(
-        `UPDATE meeting_program_item
-            SET introduction_roles = $1::jsonb
-          WHERE id = $2::uuid AND meeting_id = $3::uuid AND ward_id = $4::uuid`,
-        [JSON.stringify(patch.value), itemId, meetingId, wardId]
-      );
-    } else {
-      if (!isHymnItem(item.item_type)) {
-        await client.query('ROLLBACK');
-        return errorResponse('Only hymn entries have hymn details', 'INVALID_ITEM_PATCH', 422);
-      }
-      await client.query(
-        `UPDATE meeting_program_item
-            SET hymn_number = $1, hymn_title = $2, hymn_locale = $3
-          WHERE id = $4::uuid AND meeting_id = $5::uuid AND ward_id = $6::uuid`,
-        [patch.number?.trim() || null, patch.title?.trim() || null, patch.locale, itemId, meetingId, wardId]
-      );
-    }
+    await client.query(
+      `UPDATE meeting_program_item
+          SET ${textColumn('programNotes')} = $1
+        WHERE id = $2::uuid AND meeting_id = $3::uuid AND ward_id = $4::uuid`,
+      [patch.value?.trim() || null, itemId, meetingId, wardId]
+    );
+    noteOutboxIds.push(
+      ...(await synchronizePublicProgramNote(client, {
+        wardId,
+        meetingId,
+        programItemId: itemId,
+        noteText: patch.value,
+        userId: session.user.id,
+        actorName: session.user.name || session.user.email || null
+      }))
+    );
 
-    const updated = await readProgramItems(client, wardId, meetingId, true, { includeInternalNotes });
+    const updated = await readProgramItems(client, wardId, meetingId, true, { includeInternalNotes: false });
     if (!updated) {
       await client.query('ROLLBACK');
       return errorResponse('Meeting not found', 'NOT_FOUND', 404);
@@ -170,7 +111,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ wardI
       await client.query('ROLLBACK');
       return errorResponse('The program has an invalid protected order', updatedOrderError.code, 422);
     }
-    const response = toProgramItemsResponse(updated.meeting, updated.rows, { includeInternalNotes });
+    const response = toProgramItemsResponse(updated.meeting, updated.rows, { includeInternalNotes: false });
     await recordAuditEvent(client, {
       wardId,
       userId: session.user.id,
@@ -180,7 +121,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ wardI
       entityId: itemId,
       itemType: item.item_type,
       itemTitle: item.title,
-      details: { meetingId, field: patchFieldName(patch), sourceRevision: response.sourceRevision },
+      details: { meetingId, field: 'programNotes', sourceRevision: response.sourceRevision },
       source: 'manual_ui',
       severity: 'notice'
     });
