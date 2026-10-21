@@ -106,6 +106,7 @@
     "type_GENERAL_CONFERENCE": "[General conference]",
     "type_UNKNOWN": "[Meeting]",
     "help": "Meeting help",
+    "moreActions": "[More meeting actions]",
     "newTitle": "Create meeting",
     "newDescription": "Start a new meeting draft and build program items."
   },

@@ -106,6 +106,7 @@
     "type_GENERAL_CONFERENCE": "Conferencia general",
     "type_UNKNOWN": "Reunión",
     "help": "Ayuda de reuniones",
+    "moreActions": "Más acciones de reunión",
     "newTitle": "Crear reunión",
     "newDescription": "Inicia un borrador de reunión y agrega los elementos del programa."
   },

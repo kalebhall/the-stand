@@ -20,6 +20,7 @@ const ids = {
   user: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
   meeting: '33333333-3333-4333-8333-333333333333',
   stalePrintMeeting: '33333333-3333-4333-8333-333333333334',
+  completedMeeting: '33333333-3333-4333-8333-333333333336',
   stalePrintDocument: '33333333-3333-4333-8333-333333333335',
   programItem: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
   render: '66666666-6666-4666-8666-666666666667',
@@ -128,6 +129,16 @@ try {
     `INSERT INTO meeting (id, ward_id, meeting_date, meeting_type, status) VALUES ($1::uuid, $2::uuid, CURRENT_DATE + 1, 'SACRAMENT', 'PUBLISHED') ON CONFLICT (id) DO UPDATE SET status = 'PUBLISHED', meeting_date = CURRENT_DATE + 1`,
     [ids.stalePrintMeeting, ids.ward]
   );
+  const completedMeetingCollision = await client.query('SELECT ward_id FROM meeting WHERE id = $1::uuid', [ids.completedMeeting]);
+  if (completedMeetingCollision.rows.some((row) => row.ward_id !== ids.ward)) {
+    throw new Error('E2E completed-meeting ID collision outside fixture ward');
+  }
+  await client.query(
+    `INSERT INTO meeting (id, ward_id, meeting_date, meeting_type, status, completed_at, completed_by_user_id)
+     VALUES ($1::uuid, $2::uuid, CURRENT_DATE - 1, 'SACRAMENT', 'COMPLETED', now(), $3::uuid)
+     ON CONFLICT (id) DO UPDATE SET meeting_date = EXCLUDED.meeting_date, meeting_type = EXCLUDED.meeting_type, status = EXCLUDED.status, completed_at = EXCLUDED.completed_at, completed_by_user_id = EXCLUDED.completed_by_user_id`,
+    [ids.completedMeeting, ids.ward, ids.user]
+  );
   await client.query(
     `INSERT INTO meeting_document (id, ward_id, meeting_id, document_type, schema_version, layout_json, theme_json, updated_by_user_id)
      VALUES ($1::uuid, $2::uuid, $3::uuid, 'SACRAMENT_PROGRAM', 1, '{"schemaVersion":1}'::jsonb, '{}'::jsonb, $4::uuid)
@@ -190,6 +201,7 @@ try {
     `
     SELECT
       (SELECT ward_id = $1::uuid AND meeting_type = 'SACRAMENT' AND status = 'PUBLISHED' FROM meeting WHERE id = $2::uuid) AS meeting_ok,
+      (SELECT ward_id = $1::uuid AND meeting_type = 'SACRAMENT' AND status = 'COMPLETED' AND completed_at IS NOT NULL AND completed_by_user_id = $10::uuid FROM meeting WHERE id = $9::uuid) AS completed_meeting_ok,
       (SELECT m.status = 'PUBLISHED' AND d.meeting_id = m.id FROM meeting m JOIN meeting_document d ON d.ward_id = m.ward_id AND d.meeting_id = m.id WHERE m.id = '33333333-3333-4333-8333-333333333334'::uuid AND m.ward_id = $1::uuid) AS stale_print_meeting_ready,
       (SELECT ward_id = $1::uuid AND meeting_id = $2::uuid AND item_type = 'WARD_AND_STAKE_BUSINESS' FROM meeting_program_item WHERE id = $3::uuid) AS program_item_ok,
       (SELECT ward_id = $1::uuid AND calling_assignment_id = $4::uuid AND action_status = 'EXTENDED' FROM calling_action WHERE id = $5::uuid) AS calling_action_ok,
@@ -209,12 +221,15 @@ try {
       ids.callingAction,
       ids.render,
       [ids.welcomeOrdinance, ids.priesthoodOrdinance, ids.baptismFollowUpOrdinance],
-      ids.baptismFollowUpOrdinance
+      ids.baptismFollowUpOrdinance,
+      ids.completedMeeting,
+      ids.user
     ]
   );
   const state = fixtureState.rows[0];
   if (
     !state?.meeting_ok ||
+    !state?.completed_meeting_ok ||
     !state?.stale_print_meeting_ready ||
     !state?.program_item_ok ||
     !state?.calling_action_ok ||
