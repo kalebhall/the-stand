@@ -40,7 +40,12 @@
     "modulesDescription": "Turn optional workflows on or off for this ward. Existing data is preserved.",
     "selectActiveWard": "Select an active ward to manage ward settings and notifications.",
     "language": "Language",
-    "security": "Security"
+    "security": "Security",
+    "personalSettings": "[Personal settings]",
+    "personalSettingsDescription": "[Your language, appearance, and account security.]",
+    "betaBadge": "[Beta]",
+    "betaAddons": "[Beta add-ons]",
+    "betaAddonsDescription": "[Optional ward workflows that are still being refined.]"
   },
   "dashboard": {
     "title": "[Dashboard]",
@@ -112,7 +117,8 @@
     "dashboardCards": "Dashboard cards",
     "dragToReorder": "Drag to reorder, or use the move buttons on touch screens.",
     "moveUp": "Move {title} up",
-    "moveDown": "Move {title} down"
+    "moveDown": "Move {title} down",
+    "moreWardWork": "[More ward work]"
   },
   "navigation": {
     "workspace": "Workspace",

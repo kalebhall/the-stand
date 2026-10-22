@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { canViewDashboardPublicPortalStatus, getNavigationGroups, getNavigationItems, isActiveNavigationItem } from '@/src/auth/navigation';
+import {
+  canViewDashboardPublicPortalStatus,
+  getNavigationGroups,
+  getNavigationItems,
+  isActiveNavigationItem,
+  isNavigationGroupExpanded
+} from '@/src/auth/navigation';
 import { createModuleEnablement } from '@/src/modules/enablement';
 import { DEFAULT_MODULE_REGISTRY } from '@/src/modules/registry';
 
@@ -108,6 +114,20 @@ describe('isActiveNavigationItem', () => {
     expect(isActiveNavigationItem('/programs/templates', '/programs')).toBe(false);
     expect(isActiveNavigationItem('/programs/templates/admin', '/programs/templates')).toBe(false);
     expect(isActiveNavigationItem('/programs/templates/admin', '/programs/templates/admin')).toBe(true);
+  });
+});
+
+describe('isNavigationGroupExpanded', () => {
+  it('defaults to Workspace only while always showing the active route group', () => {
+    expect(isNavigationGroupExpanded('workspace', {}, false)).toBe(true);
+    expect(isNavigationGroupExpanded('ministry', {}, false)).toBe(false);
+    expect(isNavigationGroupExpanded('ministry', {}, true)).toBe(true);
+  });
+
+  it('respects a saved preference except when the group contains the active route', () => {
+    expect(isNavigationGroupExpanded('workspace', { workspace: false }, false)).toBe(false);
+    expect(isNavigationGroupExpanded('ward', { ward: true }, false)).toBe(true);
+    expect(isNavigationGroupExpanded('ward', { ward: false }, true)).toBe(true);
   });
 });
 

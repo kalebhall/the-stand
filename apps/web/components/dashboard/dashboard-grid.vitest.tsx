@@ -10,7 +10,8 @@ import { MESSAGE_CATALOGS } from '@/src/i18n/messages';
 const cards: DashboardCardData[] = [
   { id: 'next-meeting', title: 'Next meeting', value: 'Sunday', detail: 'Upcoming' },
   { id: 'draft-count', title: 'Drafts', value: '2', detail: 'Needs review' },
-  { id: 'last-import', title: 'Last import', value: 'Members', detail: 'Recent' }
+  { id: 'last-import', title: 'Last import', value: 'Members', detail: 'Recent' },
+  { id: 'membership-follow-up', title: 'Membership follow-up', value: '1 waiting', detail: 'Needs attention' }
 ];
 
 describe('DashboardGrid', () => {
@@ -24,14 +25,34 @@ describe('DashboardGrid', () => {
 
   afterEach(() => cleanup());
 
+  it('keeps the first three cards in view and opens secondary work while editing', () => {
+    renderGrid();
+
+    const disclosure = document.querySelector('details');
+    expect(disclosure?.open).toBe(false);
+    expect(disclosure?.querySelector('[data-dashboard-card="membership-follow-up"]')).not.toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit dashboard' }));
+
+    expect(disclosure?.open).toBe(true);
+    expect([...document.querySelectorAll('[data-dashboard-card]')].map((element) => element.getAttribute('data-dashboard-card'))).toEqual([
+      'next-meeting',
+      'draft-count',
+      'last-import',
+      'membership-follow-up'
+    ]);
+  });
+
   it('moves cards with accessible controls', () => {
     renderGrid();
 
     fireEvent.click(screen.getByRole('button', { name: 'Edit dashboard' }));
     fireEvent.click(screen.getByRole('button', { name: 'Move Next meeting down' }));
 
-    const renderedIds = [...document.querySelectorAll('[data-dashboard-card]')].map((element) => element.getAttribute('data-dashboard-card'));
-    expect(renderedIds).toEqual(['draft-count', 'next-meeting', 'last-import']);
+    const renderedIds = [...document.querySelectorAll('[data-dashboard-card]')].map((element) =>
+      element.getAttribute('data-dashboard-card')
+    );
+    expect(renderedIds).toEqual(['draft-count', 'next-meeting', 'last-import', 'membership-follow-up']);
   });
 
   it('resets the local order without a ward request', () => {
@@ -41,8 +62,10 @@ describe('DashboardGrid', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Move Next meeting down' }));
     fireEvent.click(screen.getByRole('button', { name: 'Reset order' }));
 
-    const renderedIds = [...document.querySelectorAll('[data-dashboard-card]')].map((element) => element.getAttribute('data-dashboard-card'));
-    expect(renderedIds).toEqual(['next-meeting', 'draft-count', 'last-import']);
+    const renderedIds = [...document.querySelectorAll('[data-dashboard-card]')].map((element) =>
+      element.getAttribute('data-dashboard-card')
+    );
+    expect(renderedIds).toEqual(['next-meeting', 'draft-count', 'last-import', 'membership-follow-up']);
   });
 
   it('supports pointer drag-and-drop while retaining the keyboard controls', () => {
@@ -64,7 +87,9 @@ describe('DashboardGrid', () => {
     expect(target).toHaveClass('ring-2');
     fireEvent.drop(target, { dataTransfer });
 
-    const renderedIds = [...document.querySelectorAll('[data-dashboard-card]')].map((element) => element.getAttribute('data-dashboard-card'));
-    expect(renderedIds).toEqual(['draft-count', 'last-import', 'next-meeting']);
+    const renderedIds = [...document.querySelectorAll('[data-dashboard-card]')].map((element) =>
+      element.getAttribute('data-dashboard-card')
+    );
+    expect(renderedIds).toEqual(['draft-count', 'last-import', 'next-meeting', 'membership-follow-up']);
   });
 });

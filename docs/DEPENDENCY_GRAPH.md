@@ -62,7 +62,7 @@ flowchart LR
   A6 -->|28| A17
   A5 -->|26| A26
   A5 -->|25| A24
-  A6 -->|21| A21
+  A6 -->|22| A21
   A6 -->|16| A26
   A5 -->|14| A11
   A5 -->|14| A18
@@ -232,8 +232,8 @@ flowchart LR
 | `web:app` | `web:document-designer` | 28 |
 | `web:api` | `web:meetings` | 26 |
 | `web:api` | `web:lib` | 25 |
+| `web:app` | `web:i18n` | 22 |
 | `web:platform` | `web:platform` | 22 |
-| `web:app` | `web:i18n` | 21 |
 | `web:meetings` | `web:meetings` | 20 |
 | `web:modules` | `web:modules` | 17 |
 | `web:app` | `web:meetings` | 16 |
@@ -361,7 +361,7 @@ flowchart LR
 | Importing area | Package/runtime | Imports |
 | --- | --- | ---: |
 | `web:app` | `next` | 110 |
-| `web:app` | `next-intl` | 94 |
+| `web:app` | `next-intl` | 96 |
 | `web:api` | `next` | 92 |
 | `web:app` | `react` | 48 |
 | `web:api` | `vitest` | 42 |
@@ -746,8 +746,8 @@ flowchart LR
 | `apps/web/app/settings/default-program-template-setting.tsx` | `web:app` | 0 | 2 |
 | `apps/web/app/settings/health/page.tsx` | `web:app` | 4 | 4 |
 | `apps/web/app/settings/language-preference.tsx` | `web:app` | 1 | 2 |
-| `apps/web/app/settings/module-settings.tsx` | `web:app` | 0 | 1 |
-| `apps/web/app/settings/module-settings.vitest.tsx` | `web:app` | 1 | 2 |
+| `apps/web/app/settings/module-settings.tsx` | `web:app` | 0 | 2 |
+| `apps/web/app/settings/module-settings.vitest.tsx` | `web:app` | 2 | 3 |
 | `apps/web/app/settings/notification-timezone.tsx` | `web:app` | 0 | 1 |
 | `apps/web/app/settings/notification-timezone.vitest.tsx` | `web:app` | 1 | 4 |
 | `apps/web/app/settings/notifications/notification-subscription-settings.tsx` | `web:app` | 1 | 2 |
