@@ -107,6 +107,29 @@ test('meeting list secondary actions are disclosed in the mobile action menu', a
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
 });
 
+test('meeting edit actions keep secondary links in a compact accessible menu', async ({ page }) => {
+  await login(page, 'ward-admin@example.test', 'WardAdminPassword123456789012');
+
+  for (const width of [1280, 390]) {
+    await page.setViewportSize({ width, height: 844 });
+    await page.goto(`/meetings/${PUBLISHED_MEETING}/edit`);
+    await expect(page.getByRole('heading', { name: 'Edit meeting' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'At the Stand' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Editor help' })).toBeVisible();
+
+    const actionDisclosure = page.locator('main details').first();
+    const actionSummary = actionDisclosure.locator('summary[aria-label="More meeting actions"]');
+    await expect(actionDisclosure).toHaveJSProperty('open', false);
+    await actionSummary.press('Enter');
+    await expect(actionDisclosure).toHaveJSProperty('open', true);
+    await expect(page.getByRole('link', { name: 'Open print view' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Preview public program' })).toBeVisible();
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+    await actionSummary.press('Enter');
+    await expect(actionDisclosure).toHaveJSProperty('open', false);
+  }
+});
+
 test('meeting creation controls stay unwrapped without mobile horizontal overflow', async ({ page }) => {
   await login(page, 'ward-admin@example.test', 'WardAdminPassword123456789012');
   await page.setViewportSize({ width: 390, height: 844 });
