@@ -40,7 +40,12 @@
     "modulesDescription": "I-on o i-off ang mga opsyonal na daloy ng trabaho para sa ward na ito. Pinapanatili ang umiiral na data.",
     "selectActiveWard": "Pumili ng aktibong ward para pamahalaan ang mga setting at notification ng ward.",
     "language": "Wika",
-    "security": "Seguridad"
+    "security": "Seguridad",
+    "personalSettings": "Mga personal na setting",
+    "personalSettingsDescription": "Wika, hitsura, at seguridad ng account mo.",
+    "betaBadge": "Beta",
+    "betaAddons": "Mga Beta na add-on",
+    "betaAddonsDescription": "Mga opsyonal na workflow ng ward na patuloy pang pinapahusay."
   },
   "dashboard": {
     "title": "Dashboard",
@@ -112,7 +117,8 @@
     "dashboardCards": "Mga dashboard card",
     "dragToReorder": "I-drag upang baguhin ang pagkakasunod-sunod, o gamitin ang mga button na ilipat sa mga touch screen.",
     "moveUp": "Ilipat pataas ang {title}",
-    "moveDown": "Ilipat pababa ang {title}"
+    "moveDown": "Ilipat pababa ang {title}",
+    "moreWardWork": "Iba pang gawain ng ward"
   },
   "navigation": {
     "workspace": "Lugar ng Trabaho",

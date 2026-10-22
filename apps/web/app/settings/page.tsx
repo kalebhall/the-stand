@@ -55,28 +55,31 @@ export default async function SettingsPage() {
         <p className="mt-2 text-muted-foreground">{t('description')}</p>
       </div>
 
-      <section className="space-y-4 rounded-lg border bg-card p-5">
-        <h2 className="border-b pb-2 text-xl font-medium">{t('language')}</h2>
-        <LanguagePreference currentLocale={locale} />
-      </section>
-
-      <section className="space-y-4 rounded-lg border bg-card p-5">
-        <h2 className="border-b pb-2 text-xl font-medium">{t('appearance')}</h2>
-        <div className="flex items-center justify-between gap-4">
-          <span>{t('themePreference')}</span>
-          <ThemeToggle />
+      <section className="space-y-5 rounded-lg border bg-card p-5">
+        <div>
+          <h2 className="text-xl font-medium">{t('personalSettings')}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">{t('personalSettingsDescription')}</p>
+        </div>
+        <div className="grid gap-5 sm:grid-cols-2">
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold">{t('language')}</h3>
+            <LanguagePreference currentLocale={locale} />
+          </div>
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold">{t('appearance')}</h3>
+            <div className="flex items-center justify-between gap-4">
+              <span className="text-sm">{t('themePreference')}</span>
+              <ThemeToggle />
+            </div>
+          </div>
+          {session.user.hasPassword && (
+            <div className="space-y-3 border-t pt-4 sm:col-span-2">
+              <h3 className="text-sm font-semibold">{t('security')}</h3>
+              <ChangePasswordForm />
+            </div>
+          )}
         </div>
       </section>
-
-      {session.user.hasPassword && (
-        <section className="space-y-4 rounded-lg border bg-card p-5">
-          <h2 className="border-b pb-2 text-xl font-medium">{t('security')}</h2>
-          <div className="pt-2">
-            <h3 className="mb-4 text-lg font-medium">{t('changePassword')}</h3>
-            <ChangePasswordForm />
-          </div>
-        </section>
-      )}
 
       {(isStandAdmin || canManageNotifications || canManageProgramLayout) && wardId && (
         <section className="space-y-4 rounded-lg border bg-card p-5">
@@ -125,7 +128,10 @@ export default async function SettingsPage() {
 
 function SettingsLink({ href, label }: { href: string; label: string }) {
   return (
-    <Link href={href} className="rounded-md border p-4 text-sm font-medium hover:bg-accent">
+    <Link
+      href={href}
+      className="flex items-center justify-between gap-3 rounded-md border px-3 py-2.5 text-sm font-medium transition-colors hover:bg-accent"
+    >
       {label} <span aria-hidden="true">→</span>
     </Link>
   );

@@ -1,8 +1,10 @@
 // @vitest-environment jsdom
 
 import { cleanup, render, screen } from '@testing-library/react';
+import { NextIntlClientProvider } from 'next-intl';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { MESSAGE_CATALOGS } from '@/src/i18n/messages';
 import { ModuleSettings } from './module-settings';
 
 const modules = [
@@ -35,7 +37,11 @@ describe('ModuleSettings', () => {
   });
 
   it('shows descriptions and default state while protecting Conducting Core', () => {
-    render(<ModuleSettings wardId="ward-1" initial={modules} />);
+    render(
+      <NextIntlClientProvider locale="en-US" messages={MESSAGE_CATALOGS['en-US']}>
+        <ModuleSettings wardId="ward-1" initial={modules} />
+      </NextIntlClientProvider>
+    );
 
     expect(screen.getByText(modules[1].description)).toBeTruthy();
     expect(screen.getByText('v1.0.0 · Off by default')).toBeTruthy();
@@ -43,5 +49,6 @@ describe('ModuleSettings', () => {
     expect(screen.getByRole('button', { name: 'Disabled' })).toBeEnabled();
     expect(screen.getByText('Beta')).toBeTruthy();
     expect(screen.getByText('Beta').closest('p')?.textContent).toContain('Programs');
+    expect(screen.getByText('Beta add-ons').closest('details')?.open).toBe(false);
   });
 });

@@ -23,6 +23,14 @@ export function isActiveNavigationItem(pathname: string | null, href: string): b
   return pathname.startsWith(`${href}/`);
 }
 
+export function isNavigationGroupExpanded(
+  groupId: AppNavGroup['id'],
+  expandedGroups: Record<string, boolean>,
+  hasActiveItem: boolean
+): boolean {
+  return hasActiveItem || (expandedGroups[groupId] ?? groupId === 'workspace');
+}
+
 const CLERK_OR_BISHOPRIC_ROLES = ['BISHOPRIC_EDITOR', 'CLERK_EDITOR', 'WARD_CLERK', 'MEMBERSHIP_CLERK'] as const;
 const MEETING_VIEW_ROLES = [...CLERK_OR_BISHOPRIC_ROLES, 'CONDUCTOR_VIEW'] as const;
 
@@ -66,7 +74,6 @@ export function getNavigationItems(
     add('programs', '/programs/templates', canViewPrograms);
     add('programs', '/programs/templates/admin', canAdministerTemplates);
   }
-
 
   if (hasAnyRole(roles, CLERK_OR_BISHOPRIC_ROLES) || hasRole(roles, 'STAND_ADMIN')) {
     add('bishopric', '/bishopric', true);

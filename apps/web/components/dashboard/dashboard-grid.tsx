@@ -21,6 +21,7 @@ export function DashboardGrid({ wardId, cards }: { wardId: string | null; cards:
   const visibleIds = useMemo(() => cards.map((card) => card.id), [cards]);
   const [order, setOrder] = useState<DashboardCardId[]>(visibleIds);
   const [editing, setEditing] = useState(false);
+  const [secondaryExpanded, setSecondaryExpanded] = useState(false);
   const [status, setStatus] = useState('');
   const [draggedId, setDraggedId] = useState<DashboardCardId | null>(null);
   const [dropTargetId, setDropTargetId] = useState<DashboardCardId | null>(null);
@@ -97,7 +98,7 @@ export function DashboardGrid({ wardId, cards }: { wardId: string | null; cards:
 
   function handleDrop(event: DragEvent<HTMLElement>, targetId: DashboardCardId) {
     event.preventDefault();
-    const sourceId = draggedId ?? event.dataTransfer.getData('text/plain') as DashboardCardId;
+    const sourceId = draggedId ?? (event.dataTransfer.getData('text/plain') as DashboardCardId);
     if (!sourceId || sourceId === targetId) {
       setDraggedId(null);
       setDropTargetId(null);
@@ -118,6 +119,79 @@ export function DashboardGrid({ wardId, cards }: { wardId: string | null; cards:
     void persist(nextOrder);
   }
 
+  const renderCard = (card: DashboardCardData, index: number) => (
+    <article
+      key={card.id}
+      draggable={editing}
+      onDragStart={(event) => handleDragStart(event, card.id)}
+      onDragOver={(event) => {
+        if (editing && draggedId !== card.id) {
+          event.preventDefault();
+          event.dataTransfer.dropEffect = 'move';
+          setDropTargetId(card.id);
+        }
+      }}
+      onDragLeave={(event) => {
+        if (event.currentTarget.contains(event.relatedTarget as Node)) return;
+        setDropTargetId((current) => (current === card.id ? null : current));
+      }}
+      onDrop={(event) => {
+        if (editing) handleDrop(event, card.id);
+      }}
+      onDragEnd={() => {
+        setDraggedId(null);
+        setDropTargetId(null);
+      }}
+      className={cn(
+        'section-panel rounded-lg border bg-card p-5 text-card-foreground shadow-sm motion-safe:transition-[opacity,box-shadow] motion-safe:duration-150 motion-reduce:transition-none',
+        editing && 'select-none cursor-grab active:cursor-grabbing',
+        draggedId === card.id && 'opacity-50',
+        dropTargetId === card.id && 'ring-2 ring-primary ring-offset-2'
+      )}
+      data-dashboard-card={card.id}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-medium text-muted-foreground">{card.title}</p>
+          {editing ? <p className="mt-1 text-xs text-muted-foreground">{t('dragToReorder')}</p> : null}
+        </div>
+        {editing ? (
+          <div className="flex shrink-0 gap-1">
+            <button
+              type="button"
+              className="rounded border px-2 py-1 text-xs"
+              aria-label={t('moveUp', { title: card.title })}
+              disabled={index === 0}
+              onClick={() => move(card.id, -1)}
+            >
+              ↑
+            </button>
+            <button
+              type="button"
+              className="rounded border px-2 py-1 text-xs"
+              aria-label={t('moveDown', { title: card.title })}
+              disabled={index === orderedCards.length - 1}
+              onClick={() => move(card.id, 1)}
+            >
+              ↓
+            </button>
+          </div>
+        ) : null}
+      </div>
+      <p className="mt-2 text-2xl font-semibold tracking-tight">{card.value}</p>
+      <p className="mt-2 text-sm text-muted-foreground">{card.detail}</p>
+      {card.actions?.length ? (
+        <div className="mt-4 flex flex-wrap gap-2">
+          {card.actions.map((action) => (
+            <Link key={action.href} href={action.href} className={cn(buttonVariants({ size: 'sm', variant: 'outline' }))}>
+              {action.label}
+            </Link>
+          ))}
+        </div>
+      ) : null}
+    </article>
+  );
+
   return (
     <>
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -126,7 +200,11 @@ export function DashboardGrid({ wardId, cards }: { wardId: string | null; cards:
         </div>
         {cards.length > 1 ? (
           <div className="flex gap-2">
-            <button type="button" className={cn(buttonVariants({ size: 'sm', variant: editing ? 'secondary' : 'outline' }))} onClick={() => setEditing((value) => !value)}>
+            <button
+              type="button"
+              className={cn(buttonVariants({ size: 'sm', variant: editing ? 'secondary' : 'outline' }))}
+              onClick={() => setEditing((value) => !value)}
+            >
               {editing ? t('doneEditing') : t('editDashboard')}
             </button>
             {editing ? (
@@ -138,67 +216,20 @@ export function DashboardGrid({ wardId, cards }: { wardId: string | null; cards:
         ) : null}
       </div>
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3" aria-label={t('dashboardCards')}>
-        {orderedCards.map((card, index) => (
-          <article
-            key={card.id}
-            draggable={editing}
-            onDragStart={(event) => handleDragStart(event, card.id)}
-            onDragOver={(event) => {
-              if (editing && draggedId !== card.id) {
-                event.preventDefault();
-                event.dataTransfer.dropEffect = 'move';
-                setDropTargetId(card.id);
-              }
-            }}
-            onDragLeave={(event) => {
-              if (event.currentTarget.contains(event.relatedTarget as Node)) return;
-              setDropTargetId((current) => (current === card.id ? null : current));
-            }}
-            onDrop={(event) => {
-              if (editing) handleDrop(event, card.id);
-            }}
-            onDragEnd={() => {
-              setDraggedId(null);
-              setDropTargetId(null);
-            }}
-            className={cn(
-              'section-panel rounded-lg border bg-card p-5 text-card-foreground shadow-sm motion-safe:transition-[opacity,box-shadow] motion-safe:duration-150 motion-reduce:transition-none',
-              editing && 'select-none cursor-grab active:cursor-grabbing',
-              draggedId === card.id && 'opacity-50',
-              dropTargetId === card.id && 'ring-2 ring-primary ring-offset-2'
-            )}
-            data-dashboard-card={card.id}
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">{card.title}</p>
-                {editing ? <p className="mt-1 text-xs text-muted-foreground">{t('dragToReorder')}</p> : null}
-              </div>
-              {editing ? (
-                <div className="flex shrink-0 gap-1">
-                  <button type="button" className="rounded border px-2 py-1 text-xs" aria-label={t('moveUp', { title: card.title })} disabled={index === 0} onClick={() => move(card.id, -1)}>
-                    ↑
-                  </button>
-                  <button type="button" className="rounded border px-2 py-1 text-xs" aria-label={t('moveDown', { title: card.title })} disabled={index === orderedCards.length - 1} onClick={() => move(card.id, 1)}>
-                    ↓
-                  </button>
-                </div>
-              ) : null}
-            </div>
-            <p className="mt-2 text-2xl font-semibold tracking-tight">{card.value}</p>
-            <p className="mt-2 text-sm text-muted-foreground">{card.detail}</p>
-            {card.actions?.length ? (
-              <div className="mt-4 flex flex-wrap gap-2">
-                {card.actions.map((action) => (
-                  <Link key={action.href} href={action.href} className={cn(buttonVariants({ size: 'sm', variant: 'outline' }))}>
-                    {action.label}
-                  </Link>
-                ))}
-              </div>
-            ) : null}
-          </article>
-        ))}
+        {orderedCards.slice(0, 3).map(renderCard)}
       </section>
+      {orderedCards.length > 3 ? (
+        <details
+          className="rounded-lg border bg-card px-4"
+          open={editing || secondaryExpanded}
+          onToggle={(event) => setSecondaryExpanded(event.currentTarget.open)}
+        >
+          <summary className="cursor-pointer py-3 text-sm font-medium marker:text-muted-foreground">{t('moreWardWork')}</summary>
+          <section className="grid gap-4 pb-4 md:grid-cols-2 xl:grid-cols-3" aria-label={t('moreWardWork')}>
+            {orderedCards.slice(3).map((card, index) => renderCard(card, index + 3))}
+          </section>
+        </details>
+      ) : null}
     </>
   );
 }

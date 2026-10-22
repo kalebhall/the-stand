@@ -8,7 +8,7 @@ import type { Session } from 'next-auth';
 
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { getNavigationGroups, isActiveNavigationItem, type AppNavGroup } from '@/src/auth/navigation';
+import { getNavigationGroups, isActiveNavigationItem, isNavigationGroupExpanded, type AppNavGroup } from '@/src/auth/navigation';
 import { DeploymentWatcher } from '@/components/deployment-watcher';
 import { SiteLogo } from '@/components/site-logo';
 import { NotificationBell } from '@/components/notification-bell';
@@ -33,7 +33,7 @@ function NavigationGroups({
   groups: AppNavGroup[];
   pathname: string | null;
   expandedGroups: Record<string, boolean>;
-  onToggle: (groupId: string) => void;
+  onToggle: (groupId: AppNavGroup['id']) => void;
   onNavigate?: () => void;
   ariaLabel: string;
   translateGroup: (id: AppNavGroup['id']) => string;
@@ -43,7 +43,7 @@ function NavigationGroups({
     <nav className="space-y-3" aria-label={ariaLabel}>
       {groups.map((group) => {
         const hasActiveItem = group.items.some((item) => isActiveNavigationItem(pathname, item.href));
-        const isExpanded = hasActiveItem || (expandedGroups[group.id] ?? true);
+        const isExpanded = isNavigationGroupExpanded(group.id, expandedGroups, hasActiveItem);
         return (
           <section key={group.id} aria-labelledby={`${group.id}-navigation-heading`}>
             <button
@@ -167,9 +167,9 @@ export function AppShell({ session, children }: { session: Session | null; child
     }
   }, [navigationStorageKey]);
 
-  const toggleNavigationGroup = (groupId: string) => {
+  const toggleNavigationGroup = (groupId: AppNavGroup['id']) => {
     setExpandedGroups((current) => {
-      const next = { ...current, [groupId]: !(current[groupId] ?? true) };
+      const next = { ...current, [groupId]: !isNavigationGroupExpanded(groupId, current, false) };
       if (navigationStorageKey) {
         try {
           localStorage.setItem(navigationStorageKey, JSON.stringify(next));

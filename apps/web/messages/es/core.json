@@ -40,7 +40,12 @@
     "modulesDescription": "Activa o desactiva flujos de trabajo opcionales para este barrio. Los datos existentes se conservan.",
     "selectActiveWard": "Selecciona un barrio activo para administrar su configuración y sus notificaciones.",
     "language": "Idioma",
-    "security": "Seguridad"
+    "security": "Seguridad",
+    "personalSettings": "Ajustes personales",
+    "personalSettingsDescription": "Tu idioma, apariencia y seguridad de la cuenta.",
+    "betaBadge": "Beta",
+    "betaAddons": "Complementos beta",
+    "betaAddonsDescription": "Flujos de trabajo opcionales del barrio que aún se están perfeccionando."
   },
   "dashboard": {
     "title": "Panel",
@@ -112,7 +117,8 @@
     "dashboardCards": "Tarjetas del panel",
     "dragToReorder": "Arrastra para reordenar o usa los botones de movimiento en pantallas táctiles.",
     "moveUp": "Mover {title} hacia arriba",
-    "moveDown": "Mover {title} hacia abajo"
+    "moveDown": "Mover {title} hacia abajo",
+    "moreWardWork": "Más tareas del barrio"
   },
   "navigation": {
     "workspace": "Espacio de trabajo",

@@ -40,7 +40,12 @@
     "modulesDescription": "Fakamoʻui pe tāmateʻi ʻa e ngaahi founga ngāue ʻoku ʻikai fie maʻú ki he uooti ko ʻení. ʻOku tauhi ʻa e ngaahi fakamatala ʻoku ʻi aí.",
     "selectActiveWard": "Fili ha uooti ʻoku lolotonga ngāue ke ne puleʻi ʻa e ngaahi fokotuʻutuʻu mo e ngaahi fakatokanga ʻo e uōtí.",
     "language": "Lea fakafonua",
-    "security": "Malu'i"
+    "security": "Malu'i",
+    "personalSettings": "Ngaahi fokotuʻutuʻu fakafoʻituitui",
+    "personalSettingsDescription": "Ko hoʻo lea, fōtunga, mo e maluʻi ʻo e ʻakauní.",
+    "betaBadge": "Beta",
+    "betaAddons": "Ngaahi fakalahi Beta",
+    "betaAddonsDescription": "Ngaahi founga ngāue fakaʻatā pē ʻo e uōtí ʻoku kei fakaleleiʻi."
   },
   "dashboard": {
     "title": "Tesipapa",
@@ -112,7 +117,8 @@
     "dashboardCards": "Ngaahi kaati Dashboard",
     "dragToReorder": "Toʻo ke toe fakahokohoko, pe fakaʻaongaʻi ʻa e ngaahi pātene hiki ʻi he ngaahi screen touch.",
     "moveUp": "Hiki ki 'olunga 'a e {title}",
-    "moveDown": "Hiki hifo ʻa e {title} ."
+    "moveDown": "Hiki hifo ʻa e {title} .",
+    "moreWardWork": "Ngaahi ngāue kehe ʻo e uōtí"
   },
   "navigation": {
     "workspace": "Feitu'u ngaue",
