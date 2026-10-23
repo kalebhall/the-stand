@@ -57,6 +57,7 @@ type AnnouncementRow = {
 export default async function EditMeetingPage({ params }: { params: Promise<{ meetingId: string }> }) {
   const session = await requireAuthenticatedSession();
   const t = await getTranslations('meetingEditor');
+  const tMeetings = await getTranslations('meetings');
   enforcePasswordRotation(session);
 
   if (
@@ -206,29 +207,42 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ me
     return (
       <main className="mx-auto w-full max-w-4xl space-y-6 p-4 sm:p-6">
         <section className="flex flex-wrap items-start justify-between gap-3">
-          <div>
+          <div className="min-w-0">
             <h1 className="text-2xl font-semibold tracking-tight">{t('title')}</h1>
-            <p className="text-sm text-muted-foreground">{t('description')}</p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {programsEnabled &&
-            canViewProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId) ? (
-              <Link href={`/programs/${meeting.id}`} className={cn(buttonVariants({ variant: 'default' }))}>
-                {t('programDesigner')}
+            <div className="flex flex-wrap items-center gap-x-2 text-sm text-muted-foreground">
+              <p>{t('description')}</p>
+              <Link href="/manual#meeting-editor" className="font-medium text-foreground underline underline-offset-4">
+                {t('editorHelp')}
               </Link>
-            ) : null}
-            <Link href="/manual#meeting-editor" className="text-sm font-medium underline underline-offset-4">
-              {t('editorHelp')}
-            </Link>
-            <Link href={`/stand/${meeting.id}`} className={cn(buttonVariants({ variant: 'outline' }))}>
+            </div>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <Link href={`/stand/${meeting.id}`} className={cn(buttonVariants())}>
               {t('atStand')}
             </Link>
-            <Link href={`/meetings/${meeting.id}/print`} className={cn(buttonVariants({ variant: 'outline' }))}>
-              {t('printView')}
-            </Link>
-            <Link href={`/meetings/${meeting.id}/public-preview`} className={cn(buttonVariants({ variant: 'outline' }))}>
-              {t('publicPreview')}
-            </Link>
+            <details className="relative">
+              <summary
+                aria-label={tMeetings('moreActions')}
+                title={tMeetings('moreActions')}
+                className="flex size-10 cursor-pointer list-none items-center justify-center rounded-md border text-lg leading-none hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden"
+              >
+                <span aria-hidden="true">⋯</span>
+              </summary>
+              <div className="absolute right-0 z-30 mt-1 min-w-48 rounded-md border bg-popover p-1 text-popover-foreground shadow-md">
+                {programsEnabled &&
+                canViewProgramDesigner({ roles: session.user.roles, activeWardId: session.activeWardId }, session.activeWardId) ? (
+                  <Link href={`/programs/${meeting.id}`} className="block rounded px-3 py-2 text-sm hover:bg-muted">
+                    {t('programDesigner')}
+                  </Link>
+                ) : null}
+                <Link href={`/meetings/${meeting.id}/print`} className="block rounded px-3 py-2 text-sm hover:bg-muted">
+                  {t('printView')}
+                </Link>
+                <Link href={`/meetings/${meeting.id}/public-preview`} className="block rounded px-3 py-2 text-sm hover:bg-muted">
+                  {t('publicPreview')}
+                </Link>
+              </div>
+            </details>
           </div>
         </section>
 

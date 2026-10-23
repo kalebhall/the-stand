@@ -93,7 +93,6 @@ test('meeting list secondary actions are disclosed in the mobile action menu', a
   await expect(meetingCard.getByRole('button', { name: 'Delete' })).toBeVisible();
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
 
-  await page.goto('/meetings');
   const finishedSummary = page.locator('main > details > summary').filter({ hasText: 'Finished meetings' }).last();
   const finishedMeetings = finishedSummary.locator('xpath=..');
   await expect(finishedMeetings).toHaveJSProperty('open', false);
@@ -105,6 +104,29 @@ test('meeting list secondary actions are disclosed in the mobile action menu', a
   await expect(finishedCard.getByRole('link', { name: 'Print view' })).toBeVisible();
   await expect(finishedCard.getByRole('button', { name: 'Reopen' })).toBeVisible();
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+});
+
+test('meeting edit actions keep secondary links in a compact accessible menu', async ({ page }) => {
+  await login(page, 'ward-admin@example.test', 'WardAdminPassword123456789012');
+
+  for (const width of [1280, 390]) {
+    await page.setViewportSize({ width, height: 844 });
+    await page.goto(`/meetings/${PUBLISHED_MEETING}/edit`);
+    await expect(page.getByRole('heading', { name: 'Edit meeting' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'At the Stand' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Editor help' })).toBeVisible();
+
+    const actionDisclosure = page.locator('main details').first();
+    const actionSummary = actionDisclosure.locator('summary[aria-label="More meeting actions"]');
+    await expect(actionDisclosure).toHaveJSProperty('open', false);
+    await actionSummary.press('Enter');
+    await expect(actionDisclosure).toHaveJSProperty('open', true);
+    await expect(page.getByRole('link', { name: 'Open print view' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Preview public program' })).toBeVisible();
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+    await actionSummary.press('Enter');
+    await expect(actionDisclosure).toHaveJSProperty('open', false);
+  }
 });
 
 test('meeting creation controls stay unwrapped without mobile horizontal overflow', async ({ page }) => {
@@ -165,22 +187,33 @@ test('meeting create publish and print flow works', async ({ page }) => {
     expect(createResponse.status).toBe(201);
     const { id } = createResponse.body as { id: string };
     createdMeetingId = id;
+    await page.goto(`/meetings/${id}/edit`);
+    const introductionPresiding = page.locator('input[placeholder="Name"]').first();
+    const saveResponse = page.waitForResponse(
+      (response) => response.url().endsWith(`/api/w/${WARD_A}/meetings/${id}`) && response.request().method() === 'PUT'
+    );
+    await introductionPresiding.fill('Bishop Hall');
+    const savedResponse = await saveResponse;
+    expect(savedResponse.status()).toBe(200);
+    const savedPayload = savedResponse.request().postDataJSON() as {
+      meetingDate: string;
+      meetingType: string;
+      programItems: Array<Record<string, unknown>>;
+    };
+    const savedResult = (await savedResponse.json()) as { sourceRevision: string };
+    const updateResponse = await apiRequest(page, `/api/w/${WARD_A}/meetings/${id}`, 'PUT', {
+      meetingDate: savedPayload.meetingDate,
+      meetingType: savedPayload.meetingType,
+      expectedProgramItemsRevision: savedResult.sourceRevision,
+      programItems: [...savedPayload.programItems, { itemType: 'WELCOME', title: 'Welcome', notes: 'Welcome everyone' }]
+    });
+    expect(updateResponse.status, JSON.stringify(updateResponse.body)).toBe(200);
     const sourceResponse = await apiRequest(page, `/api/w/${WARD_A}/meetings/${id}/program-items`, 'GET');
     expect(sourceResponse.status).toBe(200);
-    const sourceItems = sourceResponse.body as { sourceRevision: string; items: Array<Record<string, unknown>> };
-    const expectedProgramItemsRevision = sourceItems.sourceRevision;
-
-    const updateResponse = await apiRequest(page, `/api/w/${WARD_A}/meetings/${id}`, 'PUT', {
-      meetingDate: '2026-02-08',
-      meetingType: 'SACRAMENT',
-      expectedProgramItemsRevision,
-      programItems: [
-        { ...sourceItems.items[0], title: 'Welcome' },
-        { ...sourceItems.items[1], title: 'Announcements' },
-        { itemType: 'WELCOME', title: 'Welcome', notes: 'Welcome everyone' }
-      ]
-    });
-    expect(updateResponse.status).toBe(200);
+    const sourceItems = sourceResponse.body as { items: Array<{ itemType: string; introductionRoles?: { presiding?: string } }> };
+    expect(sourceItems.items.find((item) => item.itemType.toUpperCase() === 'INTRODUCTION')?.introductionRoles?.presiding).toBe(
+      'Bishop Hall'
+    );
 
     await page.goto(`/meetings/${id}/edit`);
     const wardBusinessHeading = page.getByRole('heading', { name: 'Ward Business' });
@@ -210,7 +243,7 @@ test('meeting create publish and print flow works', async ({ page }) => {
     await expect(page).toHaveURL(new RegExp(`/meetings/${id}/public-preview$`));
 
     const publishResponse = await apiRequest(page, `/api/w/${WARD_A}/meetings/${id}/publish`, 'POST');
-    expect(publishResponse.status).toBe(200);
+    expect(publishResponse.status, JSON.stringify(publishResponse.body)).toBe(200);
 
     await page.goto(`/meetings/${id}/print`);
     await expect(page.getByRole('main', { name: 'Sacrament meeting program' })).toBeVisible();
@@ -326,24 +359,26 @@ test('uniform content editor works without Advanced Layout and persists source r
     await expect(page.getByRole('heading', { name: 'Program content' })).toBeVisible({ timeout: 120_000 });
 
     const introduction = page.getByRole('article', { name: '1. Introduction' });
-    await expect(introduction.getByLabel('Presiding')).toBeVisible();
-    await expect(introduction.getByLabel('Conducting')).toBeVisible();
+    await expect(introduction.getByText('Presiding')).toBeVisible();
+    await expect(introduction.getByText('Conducting')).toBeVisible();
     await expect(page.getByRole('article', { name: '2. Announcements' }).getByRole('link', { name: 'Open Announcements' })).toBeVisible();
-    await page.getByLabel('Presiding').fill('Bishop Hall');
+    await introduction.getByRole('textbox', { name: 'Program notes' }).fill('Welcome to the meeting.');
     await introduction.getByRole('button', { name: 'Save entry' }).click();
     await expect(introduction.getByRole('status')).toHaveText('Saved', { timeout: 120_000 });
 
     const persistedItemsResponse = await apiRequest(page, `/api/w/${WARD_A}/meetings/${meetingId}/program-items`, 'GET');
     expect(persistedItemsResponse.status).toBe(200);
     const persistedIntroduction = (
-      (persistedItemsResponse.body as { items: Array<{ itemType: string; introductionRoles?: { presiding?: string } }> }).items ?? []
+      (persistedItemsResponse.body as { items: Array<{ itemType: string; programNotes?: string | null }> }).items ?? []
     ).find((item) => item.itemType.toUpperCase() === 'INTRODUCTION');
-    expect(persistedIntroduction?.introductionRoles?.presiding).toBe('Bishop Hall');
+    expect(persistedIntroduction?.programNotes).toBe('Welcome to the meeting.');
 
     await page.reload();
     await page.getByRole('button', { name: 'Content', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'Program content' })).toBeVisible({ timeout: 120_000 });
-    await expect(page.getByLabel('Presiding')).toHaveValue('Bishop Hall');
+    await expect(page.getByRole('article', { name: '1. Introduction' }).getByRole('textbox', { name: 'Program notes' })).toHaveValue(
+      'Welcome to the meeting.'
+    );
     expect(browserErrors).toEqual([]);
   } finally {
     if (meetingId) {

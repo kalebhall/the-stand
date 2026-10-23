@@ -13,7 +13,7 @@ export type ProgramItemsDbContext = {
 };
 
 const itemColumns = (includeInternalNotes: boolean) =>
-  `id, sequence, item_type, title, ${includeInternalNotes ? 'notes' : 'NULL::text AS notes'}, topic, program_notes, hymn_number, hymn_title, hymn_locale, ${includeInternalNotes ? 'introduction_roles' : "CASE WHEN introduction_roles IS NULL THEN NULL ELSE introduction_roles - 'visitingLeaders' END AS introduction_roles"}, speaker_status`;
+  `id, sequence, item_type, title, ${includeInternalNotes ? 'notes' : 'NULL::text AS notes'}, topic, program_notes, hymn_number, hymn_title, hymn_locale, ${includeInternalNotes ? 'introduction_roles' : "CASE WHEN jsonb_typeof(introduction_roles) = 'object' THEN introduction_roles - 'visitingLeaders' ELSE NULL END AS introduction_roles"}, speaker_status`;
 
 export type ReadProgramItemsOptions = { includeInternalNotes?: boolean };
 
