@@ -36,7 +36,8 @@ export async function GET(_: Request, context: { params: Promise<{ wardId: strin
     return NextResponse.json(toProgramItemsResponse(contextData.meeting, contextData.rows, { includeInternalNotes: false }), {
       headers: { 'Cache-Control': 'private, no-store, max-age=0' }
     });
-  } catch {
+  } catch (error) {
+    console.error('[program-items] Failed to load program entries', error);
     await client.query('ROLLBACK').catch(() => undefined);
     return errorResponse('Failed to load program entries', 'INTERNAL_ERROR', 500);
   } finally {

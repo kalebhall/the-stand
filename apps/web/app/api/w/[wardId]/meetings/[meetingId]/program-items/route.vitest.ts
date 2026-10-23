@@ -126,6 +126,12 @@ describe('program items routes', () => {
     expect(programItemsResponseSchema.safeParse(payload).success).toBe(true);
     expect(queryMock).toHaveBeenCalledWith(expect.stringContaining('NULL::text AS notes'), expect.anything());
     expect(queryMock).toHaveBeenCalledWith(expect.stringContaining("introduction_roles - 'visitingLeaders'"), expect.anything());
+    expect(queryMock).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "CASE WHEN jsonb_typeof(introduction_roles) = 'object' THEN introduction_roles - 'visitingLeaders' ELSE NULL END"
+      ),
+      expect.anything()
+    );
   });
 
   it('rejects unknown patch keys before opening a DB connection', async () => {
