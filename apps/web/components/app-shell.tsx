@@ -26,6 +26,7 @@ function NavigationGroups({
   expandedGroups,
   onToggle,
   onNavigate,
+  idPrefix,
   ariaLabel,
   translateGroup,
   translateItem
@@ -35,6 +36,7 @@ function NavigationGroups({
   expandedGroups: Record<string, boolean>;
   onToggle: (groupId: AppNavGroup['id']) => void;
   onNavigate?: () => void;
+  idPrefix: 'desktop' | 'mobile';
   ariaLabel: string;
   translateGroup: (id: AppNavGroup['id']) => string;
   translateItem: (href: string, fallback: string) => string;
@@ -44,41 +46,41 @@ function NavigationGroups({
       {groups.map((group) => {
         const hasActiveItem = group.items.some((item) => isActiveNavigationItem(pathname, item.href));
         const isExpanded = isNavigationGroupExpanded(group.id, expandedGroups, hasActiveItem);
+        const headingId = `${idPrefix}-${group.id}-navigation-heading`;
+        const linksId = `${idPrefix}-${group.id}-navigation-links`;
         return (
-          <section key={group.id} aria-labelledby={`${group.id}-navigation-heading`}>
+          <section key={group.id} aria-labelledby={headingId}>
             <button
               type="button"
               className="flex w-full items-center justify-between px-2 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground hover:text-foreground"
               aria-expanded={isExpanded}
-              aria-controls={`${group.id}-navigation-links`}
+              aria-controls={linksId}
               onClick={() => onToggle(group.id)}
             >
-              <span id={`${group.id}-navigation-heading`}>{translateGroup(group.id)}</span>
+              <span id={headingId}>{translateGroup(group.id)}</span>
               <span aria-hidden="true">{isExpanded ? '▾' : '▸'}</span>
             </button>
-            {isExpanded ? (
-              <div id={`${group.id}-navigation-links`} className="mt-1 space-y-1.5">
-                {group.items.map((item) => {
-                  const isActive = isActiveNavigationItem(pathname, item.href);
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={onNavigate}
-                      className={cn(
-                        buttonVariants({ variant: isActive ? 'secondary' : 'ghost', size: 'sm' }),
-                        'w-full justify-start gap-2.5 px-3 py-2 text-sm font-medium',
-                        isActive
-                          ? 'border-l-2 border-primary bg-secondary font-semibold text-secondary-foreground'
-                          : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
-                      )}
-                    >
-                      {translateItem(item.href, item.label)}
-                    </Link>
-                  );
-                })}
-              </div>
-            ) : null}
+            <div id={linksId} hidden={!isExpanded} className="mt-1 space-y-1.5">
+              {group.items.map((item) => {
+                const isActive = isActiveNavigationItem(pathname, item.href);
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={onNavigate}
+                    className={cn(
+                      buttonVariants({ variant: isActive ? 'secondary' : 'ghost', size: 'sm' }),
+                      'w-full justify-start gap-2.5 px-3 py-2 text-sm font-medium',
+                      isActive
+                        ? 'border-l-2 border-primary bg-secondary font-semibold text-secondary-foreground'
+                        : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
+                    )}
+                  >
+                    {translateItem(item.href, item.label)}
+                  </Link>
+                );
+              })}
+            </div>
           </section>
         );
       })}
@@ -297,6 +299,7 @@ export function AppShell({ session, children }: { session: Session | null; child
             pathname={navigationPathname}
             expandedGroups={expandedGroups}
             onToggle={toggleNavigationGroup}
+            idPrefix="desktop"
             onNavigate={() => {
               if (!isSidebarPinned) setIsSidebarCollapsed(true);
             }}
@@ -435,6 +438,7 @@ export function AppShell({ session, children }: { session: Session | null; child
                   pathname={navigationPathname}
                   expandedGroups={expandedGroups}
                   onToggle={toggleNavigationGroup}
+                  idPrefix="mobile"
                   onNavigate={() => setIsMobileNavOpen(false)}
                   ariaLabel={t('mobileNavigationLinks')}
                   translateGroup={translateGroup}

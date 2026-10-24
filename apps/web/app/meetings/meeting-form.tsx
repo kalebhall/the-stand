@@ -585,216 +585,231 @@ export function MeetingForm({
                 <span className="text-xs text-muted-foreground">{t('required')}</span>
               )}
             </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {item.itemType === INTRODUCTION_ITEM_TYPE ? (
-                <div className="grid gap-3 sm:col-span-2">
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    {(
-                      [
-                        ['presiding', t('presiding')],
-                        ['conducting', t('conducting')],
-                        ['organist', t('organistPianist')],
-                        ['chorister', t('chorister')]
-                      ] as const
-                    ).map(([role, label]) => (
-                      <div key={role} className="space-y-1 text-sm">
-                        <span className="font-medium">{label}</span>
+            <details open={item.itemType === INTRODUCTION_ITEM_TYPE} className="rounded-md">
+              <summary className="cursor-pointer rounded py-1 text-sm text-muted-foreground marker:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+                {item.itemType === INTRODUCTION_ITEM_TYPE
+                  ? (itemLabels[item.itemType] ?? getProgramItemLabel(item.itemType))
+                  : isHymnItem(item.itemType)
+                    ? [item.hymnNumber ? `#${item.hymnNumber}` : '', item.hymnTitle].filter(Boolean).join(' · ') || t('hymn')
+                    : item.itemType === ANNOUNCEMENT_ITEM_TYPE
+                      ? t('announcementsAuto')
+                      : item.itemType === BUSINESS_ITEM_TYPE || CALLING_ACTION_ITEM_TYPES.has(item.itemType)
+                        ? (itemLabels[item.itemType.toUpperCase()] ?? getProgramItemLabel(item.itemType))
+                        : item.title || itemTitleLabel(item.itemType)}
+              </summary>
+              <div className="mt-3 space-y-3">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {item.itemType === INTRODUCTION_ITEM_TYPE ? (
+                    <div className="grid gap-3 sm:col-span-2">
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        {(
+                          [
+                            ['presiding', t('presiding')],
+                            ['conducting', t('conducting')],
+                            ['organist', t('organistPianist')],
+                            ['chorister', t('chorister')]
+                          ] as const
+                        ).map(([role, label]) => (
+                          <div key={role} className="space-y-1 text-sm">
+                            <span className="font-medium">{label}</span>
+                            <MemberAutocomplete
+                              wardId={wardId}
+                              value={item.introductionRoles?.[role] ?? ''}
+                              onChange={(value) => updateIntroductionRole(index, role, value)}
+                              className="w-full rounded-md border px-3 py-2"
+                              placeholder={t('name')}
+                              leadershipOnly={role === 'presiding' || role === 'conducting'}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                      <div className="space-y-2 sm:col-span-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-medium">{t('visitingStakeLeaders')}</span>
+                          <Button type="button" variant="outline" size="sm" onClick={() => addVisitingLeader(index)}>
+                            {t('addLeader')}
+                          </Button>
+                        </div>
+                        <p className="text-xs text-muted-foreground">{t('privateVisitingLeaders')}</p>
+                        {(item.introductionRoles?.visitingLeaders ?? []).map((leader, leaderIndex) => (
+                          <div key={leaderIndex} className="grid gap-2 sm:grid-cols-[1fr_1fr_1fr_auto]">
+                            <input
+                              className="rounded-md border px-3 py-2"
+                              value={leader.name}
+                              onChange={(event) => updateVisitingLeader(index, leaderIndex, 'name', event.target.value)}
+                              placeholder={t('name')}
+                              aria-label={t('visitingLeaderName', { number: leaderIndex + 1 })}
+                            />
+                            <input
+                              className="rounded-md border px-3 py-2"
+                              value={leader.calling}
+                              onChange={(event) => updateVisitingLeader(index, leaderIndex, 'calling', event.target.value)}
+                              placeholder={t('callingOrRole')}
+                              aria-label={t('visitingLeaderCalling', { number: leaderIndex + 1 })}
+                            />
+                            <select
+                              className="rounded-md border px-3 py-2"
+                              value={leader.recognitionType ?? 'OTHER'}
+                              onChange={(event) => updateVisitingLeader(index, leaderIndex, 'recognitionType', event.target.value)}
+                              aria-label={t('visitingLeaderType', { number: leaderIndex + 1 })}
+                            >
+                              <option value="PRESIDING_AUTHORITY">{t('visitingLeaderTypePresidingAuthority')}</option>
+                              <option value="HIGH_COUNCILOR">{t('visitingLeaderTypeHighCouncilor')}</option>
+                              <option value="GENERAL_OFFICER">{t('visitingLeaderTypeGeneralOfficer')}</option>
+                              <option value="OTHER">{t('visitingLeaderTypeOther')}</option>
+                            </select>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeVisitingLeader(index, leaderIndex)}
+                              aria-label={t('removeVisitingLeader', { number: leaderIndex + 1 })}
+                            >
+                              ×
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : !isHymnItem(item.itemType) && item.itemType !== BUSINESS_ITEM_TYPE ? (
+                    <div className="space-y-1 text-sm">
+                      <span className="font-medium">{itemTitleLabel(item.itemType)}</span>
+                      {PERSON_ITEM_TYPES.has(item.itemType) ? (
                         <MemberAutocomplete
                           wardId={wardId}
-                          value={item.introductionRoles?.[role] ?? ''}
-                          onChange={(value) => updateIntroductionRole(index, role, value)}
+                          value={item.title}
+                          onChange={(value) => updateProgramItem(index, 'title', value)}
                           className="w-full rounded-md border px-3 py-2"
                           placeholder={t('name')}
-                          leadershipOnly={role === 'presiding' || role === 'conducting'}
+                          minAge={item.itemType === 'SPEAKER' ? 11 : undefined}
+                          leadershipOnly={false}
                         />
-                      </div>
-                    ))}
-                  </div>
-                  <div className="space-y-2 sm:col-span-2">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-medium">{t('visitingStakeLeaders')}</span>
-                      <Button type="button" variant="outline" size="sm" onClick={() => addVisitingLeader(index)}>
-                        {t('addLeader')}
-                      </Button>
-                    </div>
-                    <p className="text-xs text-muted-foreground">{t('privateVisitingLeaders')}</p>
-                    {(item.introductionRoles?.visitingLeaders ?? []).map((leader, leaderIndex) => (
-                      <div key={leaderIndex} className="grid gap-2 sm:grid-cols-[1fr_1fr_1fr_auto]">
+                      ) : item.itemType === ANNOUNCEMENT_ITEM_TYPE ? (
+                        <div className="rounded-md border bg-muted p-3 text-sm">
+                          <p className="mb-2 text-muted-foreground">{t('announcementsAuto')}</p>
+                          {standAnnouncements.length ? (
+                            <ul className="space-y-2">
+                              {standAnnouncements.map((announcement) => (
+                                <li key={`${announcement.title}-${announcement.body ?? ''}`} className="rounded border bg-background p-2">
+                                  <p className="font-medium">{announcement.title}</p>
+                                  {announcement.body ? (
+                                    <p className="mt-1 whitespace-pre-wrap text-muted-foreground">{announcement.body}</p>
+                                  ) : null}
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p className="text-muted-foreground">{t('noActiveAnnouncements')}</p>
+                          )}
+                        </div>
+                      ) : PLACEHOLDER_ITEM_TYPES.has(item.itemType) ? (
                         <input
-                          className="rounded-md border px-3 py-2"
-                          value={leader.name}
-                          onChange={(event) => updateVisitingLeader(index, leaderIndex, 'name', event.target.value)}
-                          placeholder={t('name')}
-                          aria-label={t('visitingLeaderName', { number: leaderIndex + 1 })}
+                          className="w-full rounded-md border px-3 py-2 bg-muted"
+                          value={item.itemType === 'SACRAMENT' ? t('sacramentPlaceholder') : t('testimoniesPlaceholder')}
+                          readOnly
                         />
-                        <input
-                          className="rounded-md border px-3 py-2"
-                          value={leader.calling}
-                          onChange={(event) => updateVisitingLeader(index, leaderIndex, 'calling', event.target.value)}
-                          placeholder={t('callingOrRole')}
-                          aria-label={t('visitingLeaderCalling', { number: leaderIndex + 1 })}
-                        />
-                        <select
-                          className="rounded-md border px-3 py-2"
-                          value={leader.recognitionType ?? 'OTHER'}
-                          onChange={(event) => updateVisitingLeader(index, leaderIndex, 'recognitionType', event.target.value)}
-                          aria-label={t('visitingLeaderType', { number: leaderIndex + 1 })}
-                        >
-                          <option value="PRESIDING_AUTHORITY">{t('visitingLeaderTypePresidingAuthority')}</option>
-                          <option value="HIGH_COUNCILOR">{t('visitingLeaderTypeHighCouncilor')}</option>
-                          <option value="GENERAL_OFFICER">{t('visitingLeaderTypeGeneralOfficer')}</option>
-                          <option value="OTHER">{t('visitingLeaderTypeOther')}</option>
-                        </select>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeVisitingLeader(index, leaderIndex)}
-                          aria-label={t('removeVisitingLeader', { number: leaderIndex + 1 })}
-                        >
-                          ×
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : !isHymnItem(item.itemType) && item.itemType !== BUSINESS_ITEM_TYPE ? (
-                <div className="space-y-1 text-sm">
-                  <span className="font-medium">{itemTitleLabel(item.itemType)}</span>
-                  {PERSON_ITEM_TYPES.has(item.itemType) ? (
-                    <MemberAutocomplete
-                      wardId={wardId}
-                      value={item.title}
-                      onChange={(value) => updateProgramItem(index, 'title', value)}
-                      className="w-full rounded-md border px-3 py-2"
-                      placeholder={t('name')}
-                      minAge={item.itemType === 'SPEAKER' ? 11 : undefined}
-                      leadershipOnly={false}
-                    />
-                  ) : item.itemType === ANNOUNCEMENT_ITEM_TYPE ? (
-                    <div className="rounded-md border bg-muted p-3 text-sm">
-                      <p className="mb-2 text-muted-foreground">{t('announcementsAuto')}</p>
-                      {standAnnouncements.length ? (
-                        <ul className="space-y-2">
-                          {standAnnouncements.map((announcement) => (
-                            <li key={`${announcement.title}-${announcement.body ?? ''}`} className="rounded border bg-background p-2">
-                              <p className="font-medium">{announcement.title}</p>
-                              {announcement.body ? (
-                                <p className="mt-1 whitespace-pre-wrap text-muted-foreground">{announcement.body}</p>
-                              ) : null}
-                            </li>
-                          ))}
-                        </ul>
                       ) : (
-                        <p className="text-muted-foreground">{t('noActiveAnnouncements')}</p>
+                        <input
+                          className={cn('w-full rounded-md border px-3 py-2', CALLING_ACTION_ITEM_TYPES.has(item.itemType) && 'bg-muted')}
+                          value={item.title}
+                          readOnly={CALLING_ACTION_ITEM_TYPES.has(item.itemType)}
+                          onChange={(event) => updateProgramItem(index, 'title', event.target.value)}
+                        />
                       )}
                     </div>
-                  ) : PLACEHOLDER_ITEM_TYPES.has(item.itemType) ? (
-                    <input
-                      className="w-full rounded-md border px-3 py-2 bg-muted"
-                      value={item.itemType === 'SACRAMENT' ? t('sacramentPlaceholder') : t('testimoniesPlaceholder')}
-                      readOnly
-                    />
-                  ) : (
-                    <input
-                      className={cn('w-full rounded-md border px-3 py-2', CALLING_ACTION_ITEM_TYPES.has(item.itemType) && 'bg-muted')}
-                      value={item.title}
-                      readOnly={CALLING_ACTION_ITEM_TYPES.has(item.itemType)}
-                      onChange={(event) => updateProgramItem(index, 'title', event.target.value)}
-                    />
-                  )}
-                </div>
-              ) : null}
+                  ) : null}
 
-              {isHymnItem(item.itemType) ? (
-                <div className="space-y-1 text-sm sm:col-span-2">
-                  <span className="font-medium">{t('hymn')}</span>
-                  <div className="space-y-2">
-                    {ITEM_TYPE_TO_HYMN_POSITION[item.itemType] ? (
-                      <select
-                        className="w-full rounded-md border px-3 py-2"
-                        value={ITEM_TYPE_TO_HYMN_POSITION[item.itemType]}
-                        disabled={Boolean(item.id)}
-                        onChange={(event) => updateHymnPosition(index, event.target.value)}
-                      >
-                        <option value="OPENING">{t('opening')}</option>
-                        <option value="SACRAMENT">{t('sacrament')}</option>
-                        <option value="CLOSING">{t('closing')}</option>
-                        <option value="REST">{t('rest')}</option>
-                        <option value="SPECIAL">{t('special')}</option>
-                      </select>
-                    ) : null}
-                    <HymnAutocomplete
-                      hymnNumber={item.hymnNumber}
-                      hymnTitle={item.hymnTitle}
-                      onChange={(num, title) => updateHymn(index, num, title)}
-                    />
-                  </div>
+                  {isHymnItem(item.itemType) ? (
+                    <div className="space-y-1 text-sm sm:col-span-2">
+                      <span className="font-medium">{t('hymn')}</span>
+                      <div className="space-y-2">
+                        {ITEM_TYPE_TO_HYMN_POSITION[item.itemType] ? (
+                          <select
+                            className="w-full rounded-md border px-3 py-2"
+                            value={ITEM_TYPE_TO_HYMN_POSITION[item.itemType]}
+                            disabled={Boolean(item.id)}
+                            onChange={(event) => updateHymnPosition(index, event.target.value)}
+                          >
+                            <option value="OPENING">{t('opening')}</option>
+                            <option value="SACRAMENT">{t('sacrament')}</option>
+                            <option value="CLOSING">{t('closing')}</option>
+                            <option value="REST">{t('rest')}</option>
+                            <option value="SPECIAL">{t('special')}</option>
+                          </select>
+                        ) : null}
+                        <HymnAutocomplete
+                          hymnNumber={item.hymnNumber}
+                          hymnTitle={item.hymnTitle}
+                          onChange={(num, title) => updateHymn(index, num, title)}
+                        />
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
-              ) : null}
-            </div>
 
-            {canUseInternalNotes && item.id ? (
-              <InternalNotesPanel
-                wardId={wardId}
-                target={{ type: 'PROGRAM_ITEM', programItemId: item.id }}
-                notes={internalNotes.filter((note) => note.program_item_id === item.id)}
-                title={t('internalNotes')}
-              />
-            ) : null}
-            {item.itemType === BUSINESS_ITEM_TYPE ? (
-              <div className="grid gap-3">
-                <label className="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={item.notes.includes('[STAKE_BUSINESS]')}
-                    onChange={(event) =>
-                      updateProgramItem(
-                        index,
-                        'notes',
-                        event.target.checked
-                          ? `${item.notes}\n[STAKE_BUSINESS]`.trim()
-                          : item.notes.replace('\n[STAKE_BUSINESS]', '').replace('[STAKE_BUSINESS]', '').trim()
-                      )
-                    }
+                {canUseInternalNotes && item.id ? (
+                  <InternalNotesPanel
+                    wardId={wardId}
+                    target={{ type: 'PROGRAM_ITEM', programItemId: item.id }}
+                    notes={internalNotes.filter((note) => note.program_item_id === item.id)}
+                    title={t('internalNotes')}
                   />
-                  {t('includesStakeBusiness')}
-                </label>
-                {item.notes.includes('[STAKE_BUSINESS]') ? (
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <label className="space-y-1 text-sm">
-                      <span className="font-medium">{t('stakeBusinessParticipantName')}</span>
+                ) : null}
+                {item.itemType === BUSINESS_ITEM_TYPE ? (
+                  <div className="grid gap-3">
+                    <label className="flex items-center gap-2 text-sm">
                       <input
-                        className="w-full rounded-md border px-3 py-2"
-                        value={item.title}
-                        onChange={(event) => updateProgramItem(index, 'title', event.target.value)}
-                        placeholder={t('stakePresidencyFallback')}
+                        type="checkbox"
+                        checked={item.notes.includes('[STAKE_BUSINESS]')}
+                        onChange={(event) =>
+                          updateProgramItem(
+                            index,
+                            'notes',
+                            event.target.checked
+                              ? `${item.notes}\n[STAKE_BUSINESS]`.trim()
+                              : item.notes.replace('\n[STAKE_BUSINESS]', '').replace('[STAKE_BUSINESS]', '').trim()
+                          )
+                        }
                       />
+                      {t('includesStakeBusiness')}
                     </label>
-                    <label className="space-y-1 text-sm">
-                      <span className="font-medium">{t('stakeBusinessParticipantCalling')}</span>
-                      <input
-                        className="w-full rounded-md border px-3 py-2"
-                        value={item.topic ?? ''}
-                        onChange={(event) => updateProgramItem(index, 'topic', event.target.value)}
-                        placeholder={t('callingOrRole')}
-                      />
-                    </label>
+                    {item.notes.includes('[STAKE_BUSINESS]') ? (
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <label className="space-y-1 text-sm">
+                          <span className="font-medium">{t('stakeBusinessParticipantName')}</span>
+                          <input
+                            className="w-full rounded-md border px-3 py-2"
+                            value={item.title}
+                            onChange={(event) => updateProgramItem(index, 'title', event.target.value)}
+                            placeholder={t('stakePresidencyFallback')}
+                          />
+                        </label>
+                        <label className="space-y-1 text-sm">
+                          <span className="font-medium">{t('stakeBusinessParticipantCalling')}</span>
+                          <input
+                            className="w-full rounded-md border px-3 py-2"
+                            value={item.topic ?? ''}
+                            onChange={(event) => updateProgramItem(index, 'topic', event.target.value)}
+                            placeholder={t('callingOrRole')}
+                          />
+                        </label>
+                      </div>
+                    ) : null}
+                    <WardBusinessSection
+                      wardId={wardId}
+                      meetingId={meetingId ?? ''}
+                      lines={businessLines}
+                      canManage={canManageBusiness}
+                      showAnnounce={false}
+                      showScript={false}
+                      sectionTitle={mode === 'edit' ? businessT('wardBusinessOnlyTitle') : undefined}
+                      membershipSection={index === membershipBusinessIndex ? membershipSection : undefined}
+                      showCallingsWorkspaceLink={canViewCallingsWorkspace && index === membershipBusinessIndex}
+                    />
                   </div>
                 ) : null}
-                <WardBusinessSection
-                  wardId={wardId}
-                  meetingId={meetingId ?? ''}
-                  lines={businessLines}
-                  canManage={canManageBusiness}
-                  showAnnounce={false}
-                  showScript={false}
-                  sectionTitle={mode === 'edit' ? businessT('wardBusinessOnlyTitle') : undefined}
-                  membershipSection={index === membershipBusinessIndex ? membershipSection : undefined}
-                  showCallingsWorkspaceLink={canViewCallingsWorkspace && index === membershipBusinessIndex}
-                />
               </div>
-            ) : null}
+            </details>
           </article>
         ))}
         {membershipSection && membershipBusinessIndex === -1 ? (

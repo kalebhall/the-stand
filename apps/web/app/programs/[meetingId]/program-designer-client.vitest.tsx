@@ -282,7 +282,7 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
       return { ok: true, json: async () => enabledPayload };
     });
     vi.stubGlobal('fetch', fetchMock);
-    renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
+    renderWithMessages(<ProgramDesignerClient initialMode="EDIT" wardId="ward-1" meetingId="meeting-1" />);
 
     await screen.findByRole('region', { name: 'Document canvas' });
     expect(screen.queryByRole('button', { name: 'Advanced Mode' })).not.toBeInTheDocument();
@@ -318,10 +318,35 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
     expect(screen.queryByRole('button', { name: 'Advanced Mode' })).not.toBeInTheDocument();
   });
 
+  it('opens in content mode while keeping the layout editor available', async () => {
+    const enabledPayload = { ...payload, simpleMode: { advancedModeAvailable: true } };
+    const fetchMock = vi.fn().mockImplementation(async (url: string) => {
+      if (url.endsWith('/program-design')) {
+        return { ok: true, json: async () => enabledPayload };
+      }
+      if (url.endsWith('/program-items')) {
+        return { ok: true, json: async () => ({ items: [], sourceRevision: `sr1_${'a'.repeat(64)}` }) };
+      }
+      return { ok: true, json: async () => payload };
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
+
+    const contentMode = await screen.findByRole('button', { name: 'Content' });
+    expect(contentMode).toHaveAttribute('aria-pressed', 'true');
+    expect(await screen.findByRole('heading', { name: 'Program content' })).toBeVisible();
+    expect(screen.queryByRole('region', { name: 'Document canvas' })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    expect(await screen.findByRole('region', { name: 'Document canvas' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Edit' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText('Customize layout', { selector: 'summary' }).closest('details')).not.toHaveAttribute('open');
+  });
+
   it('loads without issuing an initial save and exposes accessible editor regions', async () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => payload });
     vi.stubGlobal('fetch', fetchMock);
-    renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
+    renderWithMessages(<ProgramDesignerClient initialMode="EDIT" wardId="ward-1" meetingId="meeting-1" />);
     expect(await screen.findByRole('region', { name: 'Document canvas' })).toBeInTheDocument();
     expect(screen.getByRole('complementary', { name: 'Approved blocks' })).toBeInTheDocument();
     expect(screen.getByRole('complementary', { name: 'Properties' })).toBeInTheDocument();
@@ -348,7 +373,7 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
         json: async () => ({ revision: 2, document: { ...payload.document, layout: payload.document.layout, revision: 2 } })
       });
     vi.stubGlobal('fetch', fetchMock);
-    renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
+    renderWithMessages(<ProgramDesignerClient initialMode="EDIT" wardId="ward-1" meetingId="meeting-1" />);
     await screen.findByRole('region', { name: 'Document canvas' });
     fireEvent.change(screen.getByLabelText('Visibility'), { target: { value: 'HIDDEN' } });
     await waitFor(
@@ -361,7 +386,7 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
   });
   it('keeps block order controls disabled when the region position is locked', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => lockedPayload }));
-    renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
+    renderWithMessages(<ProgramDesignerClient initialMode="EDIT" wardId="ward-1" meetingId="meeting-1" />);
     await screen.findByRole('region', { name: 'Document canvas' });
 
     const approvedBlocks = screen.getByRole('complementary', { name: 'Approved blocks' });
@@ -379,7 +404,7 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
       return { ok: true, json: async () => blockLockedPayload };
     });
     vi.stubGlobal('fetch', fetchMock);
-    renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
+    renderWithMessages(<ProgramDesignerClient initialMode="EDIT" wardId="ward-1" meetingId="meeting-1" />);
     await screen.findByRole('region', { name: 'Document canvas' });
 
     const approvedBlocks = screen.getByRole('complementary', { name: 'Approved blocks' });
@@ -400,7 +425,7 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
       return { ok: true, json: async () => blockLockedPayload };
     });
     vi.stubGlobal('fetch', fetchMock);
-    renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
+    renderWithMessages(<ProgramDesignerClient initialMode="EDIT" wardId="ward-1" meetingId="meeting-1" />);
     await screen.findByRole('region', { name: 'Document canvas' });
     fireEvent.click(screen.getByText('Customize layout', { selector: 'summary' }));
 
@@ -448,7 +473,7 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
       return { ok: true, json: async () => lockedSourcePayload };
     });
     vi.stubGlobal('fetch', fetchMock);
-    renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
+    renderWithMessages(<ProgramDesignerClient initialMode="EDIT" wardId="ward-1" meetingId="meeting-1" />);
     await screen.findByRole('region', { name: 'Region 1' });
     fireEvent.click(screen.getByText('Customize layout', { selector: 'summary' }));
 
@@ -484,7 +509,7 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
       return { ok: true, json: async () => columnLockedPayload };
     });
     vi.stubGlobal('fetch', fetchMock);
-    renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
+    renderWithMessages(<ProgramDesignerClient initialMode="EDIT" wardId="ward-1" meetingId="meeting-1" />);
     await screen.findByRole('region', { name: 'Document canvas' });
     fireEvent.click(screen.getByText('Customize layout', { selector: 'summary' }));
 
@@ -505,7 +530,7 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
       return { ok: true, json: async () => columnLockedPayload };
     });
     vi.stubGlobal('fetch', fetchMock);
-    renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
+    renderWithMessages(<ProgramDesignerClient initialMode="EDIT" wardId="ward-1" meetingId="meeting-1" />);
     await screen.findByRole('region', { name: 'Document canvas' });
     const approvedBlocks = screen.getByRole('complementary', { name: 'Approved blocks' });
     fireEvent.click(within(approvedBlocks).getByText('Document title', { exact: true }));
@@ -526,7 +551,7 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
       return { ok: true, json: async () => twoColumnSpatialPayload };
     });
     vi.stubGlobal('fetch', fetchMock);
-    renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
+    renderWithMessages(<ProgramDesignerClient initialMode="EDIT" wardId="ward-1" meetingId="meeting-1" />);
     await screen.findByRole('region', { name: 'Document canvas' });
     fireEvent.click(screen.getByText('Customize layout', { selector: 'summary' }));
 
@@ -542,7 +567,7 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
       return { ok: true, json: async () => contentLockedPayload };
     });
     vi.stubGlobal('fetch', fetchMock);
-    renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
+    renderWithMessages(<ProgramDesignerClient initialMode="EDIT" wardId="ward-1" meetingId="meeting-1" />);
     await screen.findByRole('region', { name: 'Document canvas' });
     fireEvent.click(screen.getByText('Customize layout', { selector: 'summary' }));
     fireEvent.change(screen.getByRole('textbox', { name: 'Text' }), { target: { value: 'Forbidden content edit' } });
@@ -561,7 +586,7 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
       return { ok: true, json: async () => styleLockedPayload };
     });
     vi.stubGlobal('fetch', fetchMock);
-    renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
+    renderWithMessages(<ProgramDesignerClient initialMode="EDIT" wardId="ward-1" meetingId="meeting-1" />);
     await screen.findByRole('region', { name: 'Document canvas' });
     fireEvent.click(screen.getByText('Customize layout', { selector: 'summary' }));
     const font = screen.getByRole('combobox', { name: 'Font' });
@@ -595,7 +620,7 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
       return { ok: true, json: async () => reusableContentLockedPayload };
     });
     vi.stubGlobal('fetch', fetchMock);
-    renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
+    renderWithMessages(<ProgramDesignerClient initialMode="EDIT" wardId="ward-1" meetingId="meeting-1" />);
     await screen.findByRole('region', { name: 'Document canvas' });
     fireEvent.click(screen.getByText('Customize layout', { selector: 'summary' }));
     fireEvent.click(screen.getByRole('button', { name: 'Update block' }));
@@ -614,7 +639,7 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
       return { ok: true, json: async () => simplePayloadWithStaleAdvanced };
     });
     vi.stubGlobal('fetch', fetchMock);
-    renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
+    renderWithMessages(<ProgramDesignerClient initialMode="EDIT" wardId="ward-1" meetingId="meeting-1" />);
     await screen.findByRole('region', { name: 'Document canvas' });
     fireEvent.click(within(screen.getByRole('complementary', { name: 'Approved blocks' })).getByText('Document title', { exact: true }));
     fireEvent.change(screen.getByRole('textbox', { name: 'Text' }), { target: { value: 'Immediate simple draft' } });
@@ -637,7 +662,7 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
       return { ok: true, json: async () => simplePayloadWithStaleAdvanced };
     });
     vi.stubGlobal('fetch', fetchMock);
-    renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
+    renderWithMessages(<ProgramDesignerClient initialMode="EDIT" wardId="ward-1" meetingId="meeting-1" />);
     await screen.findByRole('region', { name: 'Document canvas' });
     fireEvent.click(within(screen.getByRole('complementary', { name: 'Approved blocks' })).getByText('Document title', { exact: true }));
     fireEvent.change(screen.getByRole('textbox', { name: 'Text' }), { target: { value: 'Draft survives save failure' } });
@@ -663,7 +688,7 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
       return { ok: true, json: async () => simplePayloadWithStaleAdvanced };
     });
     vi.stubGlobal('fetch', fetchMock);
-    renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
+    renderWithMessages(<ProgramDesignerClient initialMode="EDIT" wardId="ward-1" meetingId="meeting-1" />);
     await screen.findByRole('region', { name: 'Document canvas' });
     fireEvent.click(screen.getByText('Customize layout', { selector: 'summary' }));
     fireEvent.click(within(screen.getByRole('complementary', { name: 'Approved blocks' })).getByText('Document title', { exact: true }));
@@ -699,7 +724,7 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
       return { ok: true, json: async () => simplePayloadWithStaleAdvanced };
     });
     vi.stubGlobal('fetch', fetchMock);
-    renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
+    renderWithMessages(<ProgramDesignerClient initialMode="EDIT" wardId="ward-1" meetingId="meeting-1" />);
     await screen.findByRole('region', { name: 'Document canvas' });
     fireEvent.click(screen.getByRole('button', { name: 'Reusable blocks' }));
     fireEvent.click(screen.getByRole('button', { name: /Simple reusable text/ }));
@@ -723,7 +748,7 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
       return { ok: true, json: async () => payload };
     });
     vi.stubGlobal('fetch', fetchMock);
-    renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
+    renderWithMessages(<ProgramDesignerClient initialMode="EDIT" wardId="ward-1" meetingId="meeting-1" />);
     await screen.findByRole('region', { name: 'Document canvas' });
 
     const approvedBlocks = screen.getByRole('complementary', { name: 'Approved blocks' });
@@ -810,7 +835,7 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
       return { ok: true, json: async () => twoColumnSpatialPayload };
     });
     vi.stubGlobal('fetch', fetchMock);
-    renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
+    renderWithMessages(<ProgramDesignerClient initialMode="EDIT" wardId="ward-1" meetingId="meeting-1" />);
     await screen.findByRole('region', { name: 'Document canvas' });
     fireEvent.click(screen.getByText('Customize layout', { selector: 'summary' }));
 
@@ -870,7 +895,7 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
       return { ok: true, json: async () => multiRegionPayload };
     });
     vi.stubGlobal('fetch', fetchMock);
-    renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
+    renderWithMessages(<ProgramDesignerClient initialMode="EDIT" wardId="ward-1" meetingId="meeting-1" />);
     await screen.findByRole('region', { name: 'Region 1' });
     fireEvent.click(screen.getByText('Customize layout', { selector: 'summary' }));
 
@@ -938,7 +963,7 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
       return { ok: true, json: async () => payload };
     });
     vi.stubGlobal('fetch', fetchMock);
-    renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
+    renderWithMessages(<ProgramDesignerClient initialMode="EDIT" wardId="ward-1" meetingId="meeting-1" />);
     await screen.findByRole('region', { name: 'Front cover' });
     fireEvent.click(screen.getByText('Customize layout', { selector: 'summary' }));
     fireEvent.click(screen.getByRole('button', { name: 'Add to panel' }));
@@ -970,7 +995,7 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
       return { ok: true, json: async () => payload };
     });
     vi.stubGlobal('fetch', fetchMock);
-    renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
+    renderWithMessages(<ProgramDesignerClient initialMode="EDIT" wardId="ward-1" meetingId="meeting-1" />);
     await screen.findByRole('region', { name: 'Front cover' });
     fireEvent.click(screen.getByText('Customize layout', { selector: 'summary' }));
     fireEvent.click(screen.getByRole('button', { name: 'Add to panel' }));
@@ -1005,7 +1030,7 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
       return { ok: true, json: async () => payload };
     });
     vi.stubGlobal('fetch', fetchMock);
-    renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
+    renderWithMessages(<ProgramDesignerClient initialMode="EDIT" wardId="ward-1" meetingId="meeting-1" />);
     await screen.findByRole('region', { name: 'Document canvas' });
     fireEvent.change(screen.getByLabelText('Approved template'), { target: { value: 'classic-bifold' } });
     fireEvent.click(screen.getByRole('button', { name: 'Apply template' }));
@@ -1039,7 +1064,7 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
       return { ok: true, json: async () => advancedTemplatePayload };
     });
     vi.stubGlobal('fetch', fetchMock);
-    renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
+    renderWithMessages(<ProgramDesignerClient initialMode="EDIT" wardId="ward-1" meetingId="meeting-1" />);
     await screen.findByRole('region', { name: 'Document canvas' });
     fireEvent.change(screen.getByLabelText('Approved template'), { target: { value: 'classic-bifold' } });
     fireEvent.click(screen.getByRole('button', { name: 'Apply template' }));
@@ -1051,7 +1076,7 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
   });
   it('renders bi-fold panels, adds to the selected panel, and switches views', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => spatialPayload }));
-    renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
+    renderWithMessages(<ProgramDesignerClient initialMode="EDIT" wardId="ward-1" meetingId="meeting-1" />);
     expect(await screen.findByRole('region', { name: 'Front cover' })).toBeInTheDocument();
     fireEvent.click(screen.getByText('Customize layout', { selector: 'summary' }));
     fireEvent.change(screen.getByLabelText('Target panel'), { target: { value: '2' } });
@@ -1090,7 +1115,7 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
       };
     });
     vi.stubGlobal('fetch', fetchMock);
-    renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
+    renderWithMessages(<ProgramDesignerClient initialMode="EDIT" wardId="ward-1" meetingId="meeting-1" />);
     await screen.findByRole('region', { name: 'Document canvas' });
     fireEvent.click(screen.getByText('Customize layout', { selector: 'summary' }));
     fireEvent.click(screen.getByRole('button', { name: /^Meeting programMeeting data/ }));
@@ -1122,7 +1147,7 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
       };
     });
     vi.stubGlobal('fetch', fetchMock);
-    renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
+    renderWithMessages(<ProgramDesignerClient initialMode="EDIT" wardId="ward-1" meetingId="meeting-1" />);
     await screen.findByRole('region', { name: 'Document canvas' });
     fireEvent.click(screen.getByText('Customize layout', { selector: 'summary' }));
     fireEvent.click(screen.getByRole('button', { name: /^Add announcement list/ }));
@@ -1177,7 +1202,7 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
       };
     });
     vi.stubGlobal('fetch', fetchMock);
-    renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
+    renderWithMessages(<ProgramDesignerClient initialMode="EDIT" wardId="ward-1" meetingId="meeting-1" />);
     await screen.findByRole('region', { name: 'Document canvas' });
     fireEvent.click(screen.getByText('Customize layout', { selector: 'summary' }));
     fireEvent.click(screen.getByRole('button', { name: /^Add section heading/ }));
@@ -1259,7 +1284,7 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
         })
       })
     );
-    renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
+    renderWithMessages(<ProgramDesignerClient initialMode="EDIT" wardId="ward-1" meetingId="meeting-1" />);
     await screen.findByRole('region', { name: 'Document canvas' });
     fireEvent.click(screen.getByText('Customize layout', { selector: 'summary' }));
     fireEvent.click(within(screen.getByRole('region', { name: 'Document canvas' })).getByRole('button', { name: /Announcement list/ }));
@@ -1323,7 +1348,7 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
         })
       })
     );
-    renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
+    renderWithMessages(<ProgramDesignerClient initialMode="EDIT" wardId="ward-1" meetingId="meeting-1" />);
     await screen.findByRole('region', { name: 'Document canvas' });
     fireEvent.click(screen.getByText('Customize layout', { selector: 'summary' }));
     const canvas = screen.getByRole('region', { name: 'Document canvas' });
@@ -1363,7 +1388,7 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
         })
       })
     );
-    renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
+    renderWithMessages(<ProgramDesignerClient initialMode="EDIT" wardId="ward-1" meetingId="meeting-1" />);
     await screen.findByRole('region', { name: 'Document canvas' });
     fireEvent.click(screen.getByText('Customize layout', { selector: 'summary' }));
     fireEvent.click(within(screen.getByRole('region', { name: 'Document canvas' })).getByRole('button', { name: /Meeting program/ }));
@@ -1371,7 +1396,7 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
   });
   it('shows public preview errors without exposing editor controls as publish actions', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => payload }));
-    renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
+    renderWithMessages(<ProgramDesignerClient initialMode="EDIT" wardId="ward-1" meetingId="meeting-1" />);
     await screen.findByRole('region', { name: 'Document canvas' });
     fireEvent.click(screen.getByRole('button', { name: 'Desktop preview' }));
     fireEvent.click(screen.getByRole('checkbox', { name: 'Preview as public visitor' }));
@@ -1413,7 +1438,7 @@ describe('ProgramDesignerClient', { timeout: 15_000 }, () => {
     };
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => advancedOnlyPayload });
     vi.stubGlobal('fetch', fetchMock);
-    renderWithMessages(<ProgramDesignerClient wardId="ward-1" meetingId="meeting-1" />);
+    renderWithMessages(<ProgramDesignerClient initialMode="EDIT" wardId="ward-1" meetingId="meeting-1" />);
     await screen.findByRole('region', { name: 'Document canvas' });
     expect(screen.getByRole('note')).toHaveTextContent('Advanced design controls are temporarily unavailable. Contact a Stand Admin.');
     expect(screen.queryByRole('region', { name: 'Add content' })).not.toBeInTheDocument();

@@ -39,6 +39,62 @@ describe('MeetingForm localization', () => {
     expect(screen.getByText('Crear reunión')).toBeVisible();
   });
 
+  it('keeps the Introduction expanded and lets users open and close other item details', () => {
+    const initialProgramItems = [
+      {
+        itemType: 'INTRODUCTION',
+        title: '',
+        notes: '',
+        topic: '',
+        programNotes: '',
+        hymnNumber: '',
+        hymnTitle: '',
+        introductionRoles: { presiding: 'Bishop', conducting: 'First Counselor', organist: '', chorister: '', visitingLeaders: [] }
+      },
+      {
+        itemType: 'SPEAKER',
+        title: 'Program Speaker',
+        notes: 'PRIVATE NOTES MUST NOT APPEAR IN THE SUMMARY',
+        topic: '',
+        programNotes: '',
+        hymnNumber: '',
+        hymnTitle: ''
+      },
+      {
+        itemType: 'WARD_AND_STAKE_BUSINESS',
+        title: 'PRIVATE BUSINESS PARTICIPANT',
+        notes: 'PRIVATE BUSINESS NOTES',
+        topic: '',
+        programNotes: '',
+        hymnNumber: '',
+        hymnTitle: ''
+      }
+    ];
+    const { container } = render(
+      <NextIntlClientProvider locale="en-US" messages={MESSAGE_CATALOGS['en-US']}>
+        <MeetingForm wardId="ward-1" mode="create" initialProgramItems={initialProgramItems} />
+      </NextIntlClientProvider>
+    );
+
+    const disclosures = container.querySelectorAll<HTMLDetailsElement>('details');
+    expect(disclosures).toHaveLength(3);
+    expect(disclosures[0]?.open).toBe(true);
+    expect(disclosures[1]?.open).toBe(false);
+    expect(disclosures[2]?.open).toBe(false);
+    expect(screen.getByText('Program Speaker')).toBeVisible();
+    expect(screen.queryByText('PRIVATE NOTES MUST NOT APPEAR IN THE SUMMARY')).not.toBeInTheDocument();
+    expect(screen.queryByText('PRIVATE BUSINESS PARTICIPANT')).not.toBeInTheDocument();
+    expect(screen.queryByText('PRIVATE BUSINESS NOTES')).not.toBeInTheDocument();
+
+    const speakerSummary = disclosures[1]?.querySelector('summary');
+    expect(speakerSummary).not.toBeNull();
+    if (!speakerSummary) throw new Error('speaker details disclosure is missing');
+    fireEvent.click(speakerSummary);
+    expect(disclosures[1]?.open).toBe(true);
+    fireEvent.click(speakerSummary);
+    expect(disclosures[1]?.open).toBe(false);
+  });
+
   it('keeps the Ward and Stake Business title during meeting creation', () => {
     render(
       <NextIntlClientProvider locale="en-US" messages={MESSAGE_CATALOGS['en-US']}>
@@ -52,6 +108,12 @@ describe('MeetingForm localization', () => {
       </NextIntlClientProvider>
     );
 
+    const itemHeading = screen.getByRole('heading', { name: /ward and stake business/i, level: 3 });
+    const disclosure = itemHeading.closest('article')?.querySelector('details');
+    const summary = disclosure?.querySelector('summary');
+    expect(summary).not.toBeNull();
+    if (!summary) throw new Error('business details disclosure is missing');
+    fireEvent.click(summary);
     expect(screen.getByRole('heading', { name: 'Ward and Stake Business' })).toBeVisible();
   });
 
@@ -72,6 +134,13 @@ describe('MeetingForm localization', () => {
         <MeetingForm wardId="ward-1" meetingId="meeting-1" mode="edit" initialProgramItems={initialProgramItems} />
       </NextIntlClientProvider>
     );
+
+    const businessHeading = screen.getByRole('heading', { name: /ward and stake business/i });
+    const businessDisclosure = businessHeading.closest('article')?.querySelector('details');
+    const businessSummary = businessDisclosure?.querySelector('summary');
+    expect(businessSummary).not.toBeNull();
+    if (!businessSummary) throw new Error('business details disclosure is missing');
+    fireEvent.click(businessSummary);
 
     const stakeBusinessCheckbox = screen.getByRole('checkbox', { name: 'Includes stake business' });
     expect(screen.queryByLabelText('Stake business participant')).not.toBeInTheDocument();
@@ -103,6 +172,13 @@ describe('MeetingForm localization', () => {
         />
       </NextIntlClientProvider>
     );
+
+    const businessHeading = screen.getByRole('heading', { name: /ward and stake business/i });
+    const businessDisclosure = businessHeading.closest('article')?.querySelector('details');
+    const businessSummary = businessDisclosure?.querySelector('summary');
+    expect(businessSummary).not.toBeNull();
+    if (!businessSummary) throw new Error('business details disclosure is missing');
+    fireEvent.click(businessSummary);
 
     const wardBusinessHeading = screen.getByRole('heading', { name: 'Ward Business' });
     const wardBusinessCard = wardBusinessHeading.closest('section');

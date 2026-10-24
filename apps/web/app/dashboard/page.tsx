@@ -210,8 +210,8 @@ export default async function DashboardPage() {
         nextMeetingValue = `${nextMeeting.meeting_date} (${nextMeeting.meeting_type.replaceAll('_', ' ')})`;
         nextMeetingDetail = `Status: ${nextMeeting.status}`;
         nextMeetingActions = [
-          { href: `/meetings/${nextMeeting.id}/edit`, label: t('edit') },
           { href: `/stand/${nextMeeting.id}`, label: t('stand') },
+          { href: `/meetings/${nextMeeting.id}/edit`, label: t('edit') },
           { href: `/meetings/${nextMeeting.id}/print`, label: t('print') }
         ];
       }
@@ -249,9 +249,15 @@ export default async function DashboardPage() {
   const addCard = (card: DashboardCardData): void => {
     dashboardCards.push(card);
   };
+  const addMetricCard = (card: Omit<Extract<DashboardCardData, { kind: 'metric' }>, 'kind'>): void => {
+    addCard({ kind: 'metric', ...card });
+  };
+  const addBreakdownCard = (card: Omit<Extract<DashboardCardData, { kind: 'breakdown' }>, 'kind'>): void => {
+    addCard({ kind: 'breakdown', ...card });
+  };
 
   if (dashboardModules.actionsToDo)
-    addCard({
+    addMetricCard({
       id: 'actions-to-do',
       title: t('actionsToDo'),
       value: actionsToDoCount,
@@ -259,8 +265,14 @@ export default async function DashboardPage() {
       actions: [{ href: '/actions-to-do', label: t('openActionsToDo') }]
     });
   if (canAccessMeetings) {
-    addCard({ id: 'next-meeting', title: 'Next meeting', value: nextMeetingValue, detail: nextMeetingDetail, actions: nextMeetingActions });
-    addCard({
+    addMetricCard({
+      id: 'next-meeting',
+      title: t('nextMeeting'),
+      value: nextMeetingValue,
+      detail: nextMeetingDetail,
+      actions: nextMeetingActions
+    });
+    addMetricCard({
       id: 'draft-count',
       title: t('draftCount'),
       value: draftCountValue,
@@ -269,51 +281,45 @@ export default async function DashboardPage() {
     });
   }
   if (canAccessMembership) {
-    addCard({
+    addBreakdownCard({
       id: 'membership-follow-up',
       title: t('membershipFollowUp'),
-      value: membershipActionQueueCount,
-      detail: t('announcedActions'),
-      actions: [{ href: '/membership-ordinances?status=action_needed&queue=needs_attention', label: t('openQueue') }]
-    });
-    addCard({
-      id: 'priesthood-preparation',
-      title: t('priesthoodPreparation'),
-      value: priesthoodPreparationCount,
-      detail: t('priesthoodDetail'),
-      actions: [{ href: '/membership-ordinances?action=PRIESTHOOD_ORDINATION&queue=needs_attention', label: t('reviewPreparation') }]
-    });
-    addCard({
-      id: 'interview-follow-up',
-      title: t('interviewFollowUp'),
-      value: actionInterviewQueueCount,
-      detail: t('interviewDetail'),
-      actions: [{ href: '/membership-ordinances?followup=interview&queue=needs_attention', label: 'Review interviews' }]
-    });
-    addCard({
-      id: 'overdue-actions',
-      title: t('overdueActions'),
-      value: overdueActionCount,
-      detail: t('overdueDetail'),
-      actions: [{ href: '/membership-ordinances?followup=overdue&queue=needs_attention', label: 'Review overdue work' }]
-    });
-    addCard({
-      id: 'lcr-follow-up',
-      title: t('lcrFollowUp'),
-      value: lcrFollowUpCount,
-      detail: t('lcrDetail'),
-      actions: [{ href: '/membership-ordinances?followup=lcr&queue=needs_attention', label: 'Review LCR work' }]
-    });
-    addCard({
-      id: 'official-handoff',
-      title: t('officialHandoff'),
-      value: officialRecordHandoffCount,
-      detail: t('officialHandoffDetail'),
-      actions: [{ href: '/membership-ordinances?followup=official-record&queue=needs_attention', label: 'Review handoffs' }]
+      rows: [
+        {
+          label: t('openQueue'),
+          value: membershipActionQueueCount,
+          href: '/membership-ordinances?status=action_needed&queue=needs_attention'
+        },
+        {
+          label: t('priesthoodPreparation'),
+          value: priesthoodPreparationCount,
+          href: '/membership-ordinances?action=PRIESTHOOD_ORDINATION&queue=needs_attention'
+        },
+        {
+          label: t('interviewFollowUp'),
+          value: actionInterviewQueueCount,
+          href: '/membership-ordinances?followup=interview&queue=needs_attention'
+        },
+        {
+          label: t('overdueActions'),
+          value: overdueActionCount,
+          href: '/membership-ordinances?followup=overdue&queue=needs_attention'
+        },
+        {
+          label: t('lcrFollowUp'),
+          value: lcrFollowUpCount,
+          href: '/membership-ordinances?followup=lcr&queue=needs_attention'
+        },
+        {
+          label: t('officialHandoff'),
+          value: officialRecordHandoffCount,
+          href: '/membership-ordinances?followup=official-record&queue=needs_attention'
+        }
+      ]
     });
   }
   if (dashboardModules.bishopric)
-    addCard({
+    addMetricCard({
       id: 'leadership-due',
       title: t('leadershipDue'),
       value: bishopricDueActionCount,
@@ -321,7 +327,7 @@ export default async function DashboardPage() {
       actions: [{ href: '/bishopric', label: 'Open leadership workspace' }]
     });
   if (dashboardModules.leadership)
-    addCard({
+    addMetricCard({
       id: 'scheduled-interviews',
       title: t('scheduledInterviews'),
       value: scheduledInterviewCount,
@@ -329,7 +335,7 @@ export default async function DashboardPage() {
       actions: [{ href: '/interviews', label: 'Open interview schedule' }]
     });
   if (canAccessCallings)
-    addCard({
+    addMetricCard({
       id: 'set-apart-queue',
       title: t('setApartQueue'),
       value: setApartQueueCount,
@@ -337,7 +343,7 @@ export default async function DashboardPage() {
       actions: [{ href: '/callings', label: 'Open callings queue' }]
     });
   if (dashboardModules.notifications)
-    addCard({
+    addMetricCard({
       id: 'notification-health',
       title: t('notificationHealth'),
       value: notificationHealthValue,
@@ -345,7 +351,7 @@ export default async function DashboardPage() {
       actions: [{ href: '/notifications/diagnostics', label: 'Open diagnostics' }]
     });
   if (dashboardModules.imports)
-    addCard({
+    addMetricCard({
       id: 'last-import',
       title: t('lastImport'),
       value: importSummaryValue,
@@ -356,7 +362,7 @@ export default async function DashboardPage() {
       ]
     });
   if (canAccessTechnology)
-    addCard({
+    addMetricCard({
       id: 'technology-readiness',
       title: t('technologyReadiness'),
       value: technologyChecklistCount,
@@ -364,7 +370,7 @@ export default async function DashboardPage() {
       actions: [{ href: '/technology', label: 'Open technology checklist' }]
     });
   if (canAccessPortal)
-    addCard({
+    addMetricCard({
       id: 'public-portal',
       title: t('publicPortal'),
       value: portalStatusValue,
@@ -372,14 +378,14 @@ export default async function DashboardPage() {
       actions: [{ href: '/settings/public-portal', label: 'Manage portal' }]
     });
   if (showSupportCards) {
-    addCard({
+    addMetricCard({
       id: 'support-user-administration',
       title: 'Support: User administration',
       value: 'Global user controls',
       detail: 'Manage all user accounts, review role coverage, and activate or deactivate access across the system.',
       actions: [{ href: '/support/users', label: 'Open user administration' }]
     });
-    addCard({
+    addMetricCard({
       id: 'support-provisioning',
       title: 'Support: Stake & ward provisioning',
       value: 'Provisioning controls',
