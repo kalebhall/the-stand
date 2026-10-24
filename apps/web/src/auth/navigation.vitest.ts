@@ -34,12 +34,24 @@ describe('getNavigationItems', () => {
 
   it('shows template administration to stake, system, and support administrators without exposing ward program editing', () => {
     const enablement = allModulesEnabled();
-    expect(getNavigationItems(['STAKE_ADMIN'], 'ward', enablement)).toContainEqual({ href: '/programs/templates/admin', label: 'Template Administration' });
+    expect(getNavigationItems(['STAKE_ADMIN'], 'ward', enablement)).toContainEqual({
+      href: '/programs/templates/admin',
+      label: 'Template Administration'
+    });
     expect(getNavigationItems(['STAKE_ADMIN'], 'ward', enablement)).not.toContainEqual({ href: '/programs/templates', label: 'Templates' });
     expect(getNavigationItems(['STAKE_ADMIN'], 'ward', enablement)).not.toContainEqual({ href: '/programs', label: 'Programs' });
-    expect(getNavigationItems(['STAKE_ADMIN'], 'ward', enablement)).not.toContainEqual({ href: '/programs/baptism', label: 'Baptism Programs' });
-    expect(getNavigationItems(['SYSTEM_ADMIN'], 'ward', enablement)).toContainEqual({ href: '/programs/templates/admin', label: 'Template Administration' });
-    expect(getNavigationItems(['SUPPORT_ADMIN'], 'ward', enablement)).toContainEqual({ href: '/programs/templates/admin', label: 'Template Administration' });
+    expect(getNavigationItems(['STAKE_ADMIN'], 'ward', enablement)).not.toContainEqual({
+      href: '/programs/baptism',
+      label: 'Baptism Programs'
+    });
+    expect(getNavigationItems(['SYSTEM_ADMIN'], 'ward', enablement)).toContainEqual({
+      href: '/programs/templates/admin',
+      label: 'Template Administration'
+    });
+    expect(getNavigationItems(['SUPPORT_ADMIN'], 'ward', enablement)).toContainEqual({
+      href: '/programs/templates/admin',
+      label: 'Template Administration'
+    });
   });
   it('includes ward management links for stand admin but keeps settings in settings', () => {
     const items = getNavigationItems(['STAND_ADMIN'], 'ward', allModulesEnabled());
@@ -61,7 +73,10 @@ describe('getNavigationItems', () => {
   it('includes meetings for conductor role', () => {
     expect(getNavigationItems(['CONDUCTOR_VIEW'], 'ward', allModulesEnabled())).toContainEqual({ href: '/meetings', label: 'Meetings' });
 
-    expect(getNavigationItems(['CONDUCTOR_VIEW'], 'ward', allModulesEnabled())).not.toContainEqual({ href: '/callings', label: 'Callings' });
+    expect(getNavigationItems(['CONDUCTOR_VIEW'], 'ward', allModulesEnabled())).not.toContainEqual({
+      href: '/callings',
+      label: 'Callings'
+    });
   });
 
   it('includes support console only for support admins', () => {
@@ -150,9 +165,15 @@ describe('getNavigationGroups', () => {
     expect(groups[1]?.items.map((item) => item.href)).toEqual(['/programs', '/programs/baptism', '/programs/templates']);
   });
 
-  it('omits empty groups and keeps support isolated to support users', () => {
+  it('omits empty groups and keeps support links within Administration for support users only', () => {
     const conductorGroups = getNavigationGroups(['CONDUCTOR_VIEW'], 'ward', allModulesEnabled());
     expect(conductorGroups.map((group) => group.id)).toEqual(['workspace']);
-    expect(getNavigationGroups(['SUPPORT_ADMIN'], 'ward', allModulesEnabled()).map((group) => group.id)).toContain('support');
+
+    const supportAdminGroups = getNavigationGroups(['SUPPORT_ADMIN'], 'ward', allModulesEnabled());
+    const administration = supportAdminGroups.find((group) => group.id === 'administration');
+    expect(administration?.items.map((item) => item.href)).toContain('/support');
+
+    const bishopricGroups = getNavigationGroups(['BISHOPRIC_EDITOR'], 'ward', allModulesEnabled());
+    expect(bishopricGroups.flatMap((group) => group.items.map((item) => item.href))).not.toContain('/support');
   });
 });

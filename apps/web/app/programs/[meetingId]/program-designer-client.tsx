@@ -59,7 +59,12 @@ type LoadedDocument = {
   sourceTemplateVersion: number | null;
 };
 
-type Props = { wardId: string; meetingId: string; canEditProgramNotes?: boolean };
+type Props = {
+  wardId: string;
+  meetingId: string;
+  canEditProgramNotes?: boolean;
+  initialMode?: DesignerMode;
+};
 type ReusableLibraryItem = {
   id: string;
   name: string;
@@ -117,7 +122,7 @@ type PendingSave = {
   saveMode: 'SIMPLE' | 'ADVANCED';
 };
 
-export function ProgramDesignerClient({ wardId, meetingId, canEditProgramNotes = false }: Props) {
+export function ProgramDesignerClient({ wardId, meetingId, canEditProgramNotes = false, initialMode = 'CONTENT' }: Props) {
   const t = useTranslations('programs');
   const blockTypeLabel = useCallback((type: DocumentBlock['type']) => t(`blockType.${type}` as never), [t]);
   const blockLabel = useCallback((block: DocumentBlock) => blockTypeLabel(block.type), [blockTypeLabel]);
@@ -134,7 +139,7 @@ export function ProgramDesignerClient({ wardId, meetingId, canEditProgramNotes =
   const [reusableScope, setReusableScope] = useState<'PERSONAL' | 'WARD' | 'STAKE'>('PERSONAL');
 
   const [selectedTemplateId, setSelectedTemplateId] = useState('');
-  const [mode, setMode] = useState<DesignerMode>('EDIT');
+  const [mode, setMode] = useState<DesignerMode>(initialMode);
   const [publicVisitor, setPublicVisitor] = useState(false);
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
   const [blockCategoryFilter, setBlockCategoryFilter] = useState<BlockCategory>('ALL');

@@ -82,7 +82,7 @@ Authorization and ward context are enforced server-side and by PostgreSQL RLS. T
 ## Completed milestone: collapsible canonical navigation groups
 
 - Keep item order and authorization server-derived from `getNavigationItems`.
-- Assign visible links to fixed groups: Workspace, Ward Operations, People and Ministry, Administration, and Support.
+- Assign visible links to fixed groups: Workspace, Ward Operations, People and Ministry, and Administration. Authorized Support destinations are grouped under Administration.
 - Allow each user to collapse or expand groups locally, scoped by user and active ward.
 - Keep the active route visible by forcing its group open.
 - Use the same grouped navigation component in desktop, mobile, and focus mode.
@@ -124,11 +124,78 @@ Authorization and ward context are enforced server-side and by PostgreSQL RLS. T
 - Arbitrary user-created widgets.
 - Changing module enablement or authorization from the dashboard.
 
+## Completed milestone: attention-focused dashboard and compact meeting editor
+
+### Dashboard
+
+- Keep the next-meeting card visible outside the reorderable secondary-card area, regardless of saved card order.
+- Keep **At the Stand** the primary action on that card; retain edit and print actions.
+- Consolidate the six membership/ordinance follow-up panels into one compact summary with all six counts and the same filtered-queue destinations.
+- Keep current server-derived role/module visibility and existing per-user/per-ward ordering/reset behavior. Do not change authorization or create new preference data.
+
+### Meeting editor
+
+- Keep the Introduction item and core presiding/conducting/organist/chorister fields open and immediately visible.
+- Collapse details for other program items, with a summary that identifies the item and its current public/program-facing value.
+- Keep every existing field and workflow reachable, including internal notes, announcements, business, membership actions, drag order, readiness, autosave/conflict resolution, publish, and delete.
+- Use native keyboard-accessible disclosure semantics and verify a narrow viewport.
+
+### Non-goals in this milestone
+
+- Program Studio defaults or layout controls.
+- Calling lifecycle presentation.
+- Sidebar/account-menu redesign.
+- Permission, module, API, database, or public-output behavior changes.
+
+### Acceptance criteria
+
+1. The next meeting and **At the Stand** action remain visible independent of saved dashboard card order; At the Stand remains primary.
+2. All six membership follow-up counts and their existing query-string destinations remain available in one summary card; it is absent when the module/role gate hides membership work.
+3. Secondary dashboard cards remain reorderable, resettable, and preference-scoped as before.
+4. Introduction and core leadership fields remain visible on initial meeting-form render; other item details can be opened and closed with keyboard and pointer.
+5. Collapsed item summaries do not display internal notes or private-only fields.
+6. All existing form capabilities and role/module checks are unchanged.
+7. Focused component tests, full tests (including configured PostgreSQL/RLS), typecheck, lint, build, i18n validation, dependency graph, diff check, and responsive browser acceptance pass.
+
 ## Verification
 
-1. Focused API validation/auth tests.
-2. Dashboard ordering component tests: default order, move controls, reset, failed save.
-3. Live migration/RLS test for `(ward_id, user_id)` isolation.
-4. Full unit/component suite plus serialized live PostgreSQL/RLS suite through `npm test`.
-5. Typecheck, lint, production build, dependency graph check, and `git diff --check`.
-6. Exact-tree review after the final patch.
+1. Focused component tests for dashboard priority/grouped queues and meeting-item disclosures.
+2. Full unit/component suite plus serialized live PostgreSQL/RLS suite through `npm test`.
+3. Typecheck, lint, production build, i18n validation, dependency graph generation/check, and `git diff --check`.
+4. Browser acceptance for desktop/mobile and keyboard interaction.
+5. Exact-tree review after the final patch.
+
+## Completed milestone: Program Studio and workflow-shell hierarchy
+
+### Scope
+
+Continue reducing routine visual scanning while preserving every authorized destination and editor capability:
+
+- Open the meeting program editor in its content-editing mode, while retaining layout editing, digital, mobile, and print modes as explicit accessible choices.
+- Make the next valid calling-lifecycle transition the most prominent row action; keep assignment, release, and delete actions available in a per-row secondary disclosure with unchanged visibility and confirmation behavior.
+- Remove the singleton Support navigation heading by placing its already-authorized destination in Administration; keep canonical link order and all role/module/page/API guards unchanged.
+
+### Acceptance criteria
+
+1. A fresh Program Designer load selects Content and displays program entries; the user can still enter Edit and all preview modes without losing draft state.
+2. Existing layout customization remains collapsed by default and is available only under its current feature/ward capability gates.
+3. Calling rows expose the next safe lifecycle action prominently; secondary actions remain present for precisely the same statuses and permissions, with keyboard operation and row-local confirmation.
+4. Support remains visible only to currently authorized users, appears under Administration, and direct-route behavior is unchanged.
+5. No route, action, role/module condition, persistence behavior, or responsive/keyboard access is removed.
+6. Focused tests, full unit/component and live PostgreSQL/RLS tests, typecheck, lint, build, i18n validation, dependency graph, browser acceptance, diff check, and exact-tree review pass.
+
+### Verification
+
+1. Program Designer component tests for the default mode, editor visibility, mode switching, and collapsed customization.
+2. Calling action tests for primary/secondary action mapping, status and permission visibility, and keyboard activation.
+3. Navigation projection tests for canonical order, grouping, role/module filtering, and empty groups.
+4. Browser acceptance for authenticated destinations, calling action disclosure, Program Designer default mode, and responsive shell behavior.
+5. Run all repository release gates and obtain a fresh exact-tree review after the last edit.
+
+### Verification recorded
+
+- `npm run test --workspace @the-stand/web`: 1,008 unit/component tests passed; configured migration and live PostgreSQL/RLS suites passed.
+- `npm run typecheck --workspace @the-stand/web`, `npm run lint --workspace @the-stand/web`, `npm run i18n:validate`, and dependency-graph generation/check passed.
+- Production build completed successfully.
+- Browser acceptance for `acceptance.spec.ts` and `responsive-dashboard.spec.ts`: 15 passed; the visual-audit-only calling workflow test is skipped in the default fixture and was run separately with `E2E_VISUAL_AUDIT=1`.
+- Exact-tree review and `git diff --check` are required after the final test-only assertion update.

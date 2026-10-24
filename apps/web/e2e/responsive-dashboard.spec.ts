@@ -23,20 +23,15 @@ async function resetDashboardPreference(page: Page) {
   }, WARD_A);
 }
 
-test('settings keeps personal preferences clear and tucks Beta add-ons away', async ({ page }) => {
+test('settings keeps personal preferences clear and ward configuration secondary', async ({ page }) => {
   await login(page);
   await page.goto('/settings');
   await expect(page).toHaveURL(/\/settings/);
 
   await expect(page.getByRole('heading', { name: 'Personal settings' })).toBeVisible();
-  const betaAddons = page.getByText('Beta add-ons', { exact: true }).locator('xpath=ancestor::details');
-  await expect(betaAddons).toHaveJSProperty('open', false);
-  await expect(page.getByText('Conducting Core')).toBeVisible();
-  await betaAddons.locator('summary').click();
-  await expect(
-    betaAddons.getByText('Create and manage meeting programs, templates, and printable program layouts.', { exact: true })
-  ).toBeVisible();
-  await expect(betaAddons.getByText('Beta', { exact: true }).first()).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Ward settings' })).toBeVisible();
+  await expect(page.getByText('Beta add-ons', { exact: true })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'Printed program layout' })).toBeVisible();
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });
@@ -52,16 +47,22 @@ test('dashboard ordering remains usable at desktop and mobile widths', async ({ 
 
   const desktopNavigation = page.getByRole('navigation', { name: 'Desktop Navigation' });
   await expect(desktopNavigation.getByRole('button', { name: 'Workspace' })).toHaveAttribute('aria-expanded', 'true');
-  await expect(desktopNavigation.getByRole('button', { name: 'People and Ministry' })).toHaveAttribute('aria-expanded', 'false');
-  await desktopNavigation.getByRole('button', { name: 'People and Ministry' }).click();
-  await expect(desktopNavigation.getByRole('button', { name: 'People and Ministry' })).toHaveAttribute('aria-expanded', 'true');
-  await desktopNavigation.getByRole('button', { name: 'People and Ministry' }).click();
-  await expect(desktopNavigation.getByRole('button', { name: 'People and Ministry' })).toHaveAttribute('aria-expanded', 'false');
-  const moreWardWork = page.locator('main details').first();
-  await expect(moreWardWork).toHaveJSProperty('open', false);
+  const desktopMinistryToggle = desktopNavigation.getByRole('button', { name: 'People and Ministry' });
+  await expect(desktopMinistryToggle).toHaveAttribute('aria-expanded', 'false');
+  const desktopMinistryLinksId = await desktopMinistryToggle.getAttribute('aria-controls');
+  expect(desktopMinistryLinksId).toBeTruthy();
+  await expect(page.locator(`[id="${desktopMinistryLinksId}"]`)).toHaveAttribute('hidden', '');
+  await desktopMinistryToggle.click();
+  await expect(desktopMinistryToggle).toHaveAttribute('aria-expanded', 'true');
+  await expect(page.locator(`[id="${desktopMinistryLinksId}"]`)).toBeVisible();
+  await desktopMinistryToggle.click();
+  await expect(desktopMinistryToggle).toHaveAttribute('aria-expanded', 'false');
+  await expect(page.locator(`[id="${desktopMinistryLinksId}"]`)).toHaveAttribute('hidden', '');
+  const membershipFollowupCard = page.locator('[data-dashboard-card="membership-follow-up"]').first();
+  await expect(membershipFollowupCard).toBeVisible();
 
   await page.getByRole('button', { name: 'Edit dashboard' }).click();
-  await expect(moreWardWork).toHaveJSProperty('open', true);
+  await expect(membershipFollowupCard).toBeVisible();
   await expect(page.getByRole('button', { name: /Move .* down/ }).first()).toBeVisible();
   await expect(page.getByText('Drag to reorder, or use the move buttons on touch screens.').first()).toBeVisible();
 
@@ -73,6 +74,26 @@ test('dashboard ordering remains usable at desktop and mobile widths', async ({ 
 
   await page.getByRole('button', { name: 'Reset order' }).click();
   await expect(page.getByText('Dashboard order reset.')).toBeVisible();
+
+  const savedOrderStatus = await page.evaluate(async (wardId) => {
+    const response = await fetch(`/api/w/${wardId}/dashboard-preferences`, {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ cardOrder: ['draft-count', 'next-meeting'] })
+    });
+    return response.status;
+  }, WARD_A);
+  expect(savedOrderStatus).toBe(200);
+  await page.reload();
+  await expect.poll(() => page.locator('[data-dashboard-card]').nth(1).getAttribute('data-dashboard-card')).toBe('draft-count');
+  await expect(page.locator('[data-dashboard-card]').first()).toHaveAttribute('data-dashboard-card', 'next-meeting');
+  await expect(page.getByRole('region', { name: 'Next meeting' })).toBeVisible();
+  const standLink = page.getByRole('link', { name: 'Stand', exact: true });
+  await expect(standLink).toBeVisible();
+  await expect(standLink).toHaveClass(/bg-primary/);
+  await resetDashboardPreference(page);
+  await page.reload();
+  await page.getByRole('button', { name: 'Edit dashboard' }).click();
 
   await page.route('**/api/w/*/dashboard-preferences', async (route) => {
     if (route.request().method() === 'PATCH') {

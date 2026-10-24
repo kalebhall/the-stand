@@ -379,6 +379,10 @@ export default async function CallingsPage() {
 
     function CallingRow({ calling, showRelease = true }: { calling: CallingQueueRow; showRelease?: boolean }) {
       const transition = canManage ? nextTransition(calling.status) : null;
+      const canConvertToAssigned = canManage && !['ASSIGNED', 'SET_APART', 'TO_BE_RELEASED'].includes(calling.status);
+      const canRelease = canManage && showRelease && calling.status !== 'TO_BE_RELEASED';
+      const canDelete = canManage && ['PROPOSED', 'EXTENDED', 'TO_BE_RELEASED'].includes(calling.status);
+      const hasSecondaryActions = canConvertToAssigned || canRelease || canDelete;
       return (
         <li className="flex flex-col gap-2 rounded-md border px-3 py-2 text-sm sm:flex-row sm:items-center sm:justify-between">
           <span className="min-w-0 break-words">
@@ -395,34 +399,43 @@ export default async function CallingsPage() {
               <form action={transitionCalling}>
                 <input type="hidden" name="callingId" value={calling.id} />
                 <input type="hidden" name="toStatus" value={transition.toStatus} />
-                <Button type="submit" size="sm" variant="outline" className="whitespace-nowrap">
+                <Button type="submit" size="sm" className="whitespace-nowrap">
                   {t(transition.labelKey)}
                 </Button>
               </form>
             ) : null}
-            {canManage && calling.status !== 'ASSIGNED' && calling.status !== 'SET_APART' && calling.status !== 'TO_BE_RELEASED' ? (
-              <CallingAssignButton
-                wardId={wardId}
-                callingId={calling.id}
-                memberName={calling.member_name}
-                callingName={calling.calling_name}
-              />
-            ) : null}
-            {canManage && showRelease && calling.status !== 'TO_BE_RELEASED' ? (
-              <CallingReleaseButton
-                wardId={wardId}
-                callingId={calling.id}
-                memberName={calling.member_name}
-                callingName={calling.calling_name}
-              />
-            ) : null}
-            {canManage && (calling.status === 'PROPOSED' || calling.status === 'EXTENDED' || calling.status === 'TO_BE_RELEASED') ? (
-              <CallingDeleteButton
-                wardId={wardId}
-                callingId={calling.id}
-                memberName={calling.member_name}
-                callingName={calling.calling_name}
-              />
+            {hasSecondaryActions ? (
+              <details className="relative">
+                <summary className="cursor-pointer list-none rounded-md border px-3 py-1.5 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                  {t('actions')}
+                </summary>
+                <div className="absolute right-0 top-full z-20 mt-1 flex min-w-max flex-col items-stretch gap-2 rounded-md border bg-popover p-2 shadow-md">
+                  {canConvertToAssigned ? (
+                    <CallingAssignButton
+                      wardId={wardId}
+                      callingId={calling.id}
+                      memberName={calling.member_name}
+                      callingName={calling.calling_name}
+                    />
+                  ) : null}
+                  {canRelease ? (
+                    <CallingReleaseButton
+                      wardId={wardId}
+                      callingId={calling.id}
+                      memberName={calling.member_name}
+                      callingName={calling.calling_name}
+                    />
+                  ) : null}
+                  {canDelete ? (
+                    <CallingDeleteButton
+                      wardId={wardId}
+                      callingId={calling.id}
+                      memberName={calling.member_name}
+                      callingName={calling.calling_name}
+                    />
+                  ) : null}
+                </div>
+              </details>
             ) : null}
           </div>
         </li>

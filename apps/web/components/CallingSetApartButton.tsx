@@ -42,7 +42,7 @@ export function CallingSetApartButton({ wardId, callingId }: CallingSetApartButt
       <Button
         type="button"
         size="sm"
-        variant="outline"
+        variant="default"
         className="whitespace-nowrap"
         disabled={settingApart}
         onClick={() => void setApart()}

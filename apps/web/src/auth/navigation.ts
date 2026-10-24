@@ -10,7 +10,7 @@ export type AppNavItem = {
 };
 
 export type AppNavGroup = {
-  id: 'workspace' | 'programs' | 'ward' | 'ministry' | 'administration' | 'support';
+  id: 'workspace' | 'programs' | 'ward' | 'ministry' | 'administration';
   label: string;
   items: AppNavItem[];
 };
@@ -18,8 +18,10 @@ export type AppNavGroup = {
 export function isActiveNavigationItem(pathname: string | null, href: string): boolean {
   if (pathname === href) return true;
   if (!pathname) return false;
-  if (href === '/programs') return /^\/programs\/[^/]+$/.test(pathname) && pathname !== '/programs/baptism' && pathname !== '/programs/templates';
-  if (href === '/programs/templates') return pathname.startsWith('/programs/templates/') && !pathname.startsWith('/programs/templates/admin');
+  if (href === '/programs')
+    return /^\/programs\/[^/]+$/.test(pathname) && pathname !== '/programs/baptism' && pathname !== '/programs/templates';
+  if (href === '/programs/templates')
+    return pathname.startsWith('/programs/templates/') && !pathname.startsWith('/programs/templates/admin');
   return pathname.startsWith(`${href}/`);
 }
 
@@ -103,8 +105,7 @@ const NAV_GROUPS: readonly Omit<AppNavGroup, 'items'>[] = [
   { id: 'programs', label: 'Programs' },
   { id: 'ward', label: 'Ward Operations' },
   { id: 'ministry', label: 'People and Ministry' },
-  { id: 'administration', label: 'Administration' },
-  { id: 'support', label: 'Support' }
+  { id: 'administration', label: 'Administration' }
 ];
 
 const NAV_GROUP_BY_HREF: Readonly<Record<string, AppNavGroup['id']>> = {
@@ -126,7 +127,7 @@ const NAV_GROUP_BY_HREF: Readonly<Record<string, AppNavGroup['id']>> = {
   '/notifications': 'ministry',
   '/reports': 'administration',
   '/imports': 'administration',
-  '/support': 'support'
+  '/support': 'administration'
 };
 
 export function getNavigationGroups(

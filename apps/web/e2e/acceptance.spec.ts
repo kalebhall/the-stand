@@ -135,6 +135,24 @@ test('meeting creation controls stay unwrapped without mobile horizontal overflo
   await page.goto('/meetings/new');
   await expect(page.getByRole('heading', { name: 'Create meeting' })).toBeVisible();
 
+  const itemCards = page.locator('main article.program-item');
+  const introduction = itemCards.first();
+  const introductionDetails = introduction.locator('details');
+  await expect(introductionDetails).toHaveJSProperty('open', true);
+  for (const role of ['Presiding', 'Conducting', 'Organist / Pianist', 'Chorister']) {
+    await expect(introduction.getByText(role, { exact: true })).toBeVisible();
+  }
+
+  const speakerHeading = page.getByRole('heading', { name: 'Speaker', exact: true, level: 3 }).first();
+  const speakerCard = speakerHeading.locator('xpath=ancestor::article[1]');
+  const speakerDetails = speakerCard.locator('details');
+  await expect(speakerDetails).toHaveJSProperty('open', false);
+  const speakerSummary = speakerDetails.locator('summary');
+  await speakerSummary.focus();
+  await speakerSummary.press('Enter');
+  await expect(speakerDetails).toHaveJSProperty('open', true);
+  await expect(speakerCard.getByPlaceholder('Name')).toBeVisible();
+
   const addItemButton = page.getByRole('button', { name: 'Add item' });
   await expect(addItemButton).toBeVisible();
   await expect
@@ -170,6 +188,67 @@ test('membership and ordinances title and action have room on mobile', async ({ 
       })
     )
     .toBe(1);
+});
+
+test('calling rows prioritize the next lifecycle action and disclose secondary actions', async ({ page }) => {
+  test.skip(process.env.E2E_VISUAL_AUDIT !== '1', 'requires the isolated visual-audit fixture to enable callings');
+  await login(page, 'ward-admin@example.test', 'WardAdminPassword123456789012');
+  const memberName = 'E2E Calling Hierarchy';
+  const callingName = 'Ward Activity Coordinator';
+  let callingId: string | null = null;
+  let originalCallingsEnabled = false;
+  let changedModuleSetting = false;
+
+  try {
+    const moduleSettings = await apiRequest(page, `/api/w/${WARD_A}/module-settings`, 'GET');
+    expect(moduleSettings.status, JSON.stringify(moduleSettings.body)).toBe(200);
+    const modules = moduleSettings.body?.modules as Array<{ id: string; enabled: boolean }>;
+    const callingsModule = modules.find((module) => module.id === 'callings');
+    expect(callingsModule).toBeDefined();
+    originalCallingsEnabled = callingsModule!.enabled;
+    if (!originalCallingsEnabled) {
+      const enableResponse = await apiRequest(page, `/api/w/${WARD_A}/module-settings`, 'PATCH', { moduleId: 'callings', enabled: true });
+      expect(enableResponse.status, JSON.stringify(enableResponse.body)).toBe(200);
+      changedModuleSetting = true;
+    }
+
+    const createResponse = await apiRequest(page, `/api/w/${WARD_A}/callings`, 'POST', { memberName, callingName });
+    expect(createResponse.status, JSON.stringify(createResponse.body)).toBe(201);
+    callingId = createResponse.body?.id as string;
+
+    await page.goto('/callings');
+    const row = page
+      .getByRole('listitem')
+      .filter({ hasText: `${memberName} — ${callingName}` })
+      .first();
+    await expect(row).toBeVisible();
+    const primaryAction = row.getByRole('button', { name: 'Mark Extended' });
+    await expect(primaryAction).toHaveClass(/bg-primary/);
+    const secondaryActions = row.locator('details');
+    await expect(secondaryActions).toHaveJSProperty('open', false);
+    const actionSummary = secondaryActions.locator('summary');
+    await actionSummary.focus();
+    await page.keyboard.press('Enter');
+    await expect(secondaryActions).toHaveJSProperty('open', true);
+    await expect(row.getByRole('button', { name: 'Convert to Assigned' })).toBeVisible();
+    await expect(row.getByRole('button', { name: 'Release' })).toBeVisible();
+    await expect(row.getByRole('button', { name: 'Delete' })).toBeVisible();
+    await row.getByRole('button', { name: 'Delete' }).click();
+    await expect(row.getByRole('button', { name: 'Confirm delete' })).toBeVisible();
+    await row.getByRole('button', { name: 'Cancel' }).click();
+  } finally {
+    if (callingId) {
+      const deleteResponse = await apiRequest(page, `/api/w/${WARD_A}/callings/${callingId}`, 'DELETE');
+      expect(deleteResponse.status, JSON.stringify(deleteResponse.body)).toBe(200);
+    }
+    if (changedModuleSetting) {
+      const restoreResponse = await apiRequest(page, `/api/w/${WARD_A}/module-settings`, 'PATCH', {
+        moduleId: 'callings',
+        enabled: originalCallingsEnabled
+      });
+      expect(restoreResponse.status, JSON.stringify(restoreResponse.body)).toBe(200);
+    }
+  }
 });
 
 test('meeting create publish and print flow works', async ({ page }) => {
@@ -324,8 +403,9 @@ test('uniform content editor works without Advanced Layout and persists source r
     const itemsResponse = await apiRequest(page, `/api/w/${WARD_A}/meetings/${meetingId}/program-items`, 'GET');
     if (itemsResponse.status !== 200) throw new Error(`program items load failed: ${JSON.stringify(itemsResponse)}`);
     await page.goto(`/programs/${meetingId}`);
-    await expect(page.getByRole('button', { name: 'Content', exact: true })).toBeVisible({ timeout: 120_000 });
+    await expect(page.getByRole('button', { name: 'Content', exact: true })).toHaveAttribute('aria-pressed', 'true');
     await expect(page.getByRole('button', { name: 'Advanced Mode' })).toHaveCount(0);
+    await page.getByRole('button', { name: 'Edit' }).click();
     await expect(page.getByRole('region', { name: 'Add content' })).toBeVisible();
     await expect(page.getByText('Customize layout', { exact: true })).toBeVisible();
     await expect
@@ -414,6 +494,9 @@ test('Program Designer creates, saves, reloads, and previews structural blocks',
     expect(createResponse.status, JSON.stringify(createResponse.body)).toBe(201);
     meetingId = (createResponse.body as { id: string }).id;
     await page.goto(`/programs/${meetingId}`);
+    await expect(page.getByRole('button', { name: 'Content' })).toHaveAttribute('aria-pressed', 'true', { timeout: 120_000 });
+    await expect(page.getByRole('heading', { name: 'Program content' })).toBeVisible({ timeout: 120_000 });
+    await page.getByRole('button', { name: 'Edit' }).click();
     await expect(page.getByRole('region', { name: 'Document canvas' })).toBeVisible({ timeout: 120_000 });
     await expect(page.getByRole('button', { name: 'Advanced Mode' })).toHaveCount(0);
     await expect(page.getByRole('region', { name: 'Add content' })).toBeVisible({ timeout: 120_000 });
@@ -535,6 +618,8 @@ test('Program Designer creates, saves, reloads, and previews structural blocks',
     expect(JSON.stringify(privateValidationBody)).not.toContain('PRIVATE_SENTINEL');
 
     await page.reload();
+    await expect(page.getByRole('button', { name: 'Content', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    await page.getByRole('button', { name: 'Edit' }).click();
     await expect(page.getByRole('region', { name: 'Document canvas' })).toBeVisible({ timeout: 120_000 });
     await page.getByText('Customize layout', { exact: true }).click();
     const approvedBlocks = page.getByRole('complementary', { name: 'Approved blocks' });
@@ -618,6 +703,8 @@ test('program designer drag reorder persists after reload', async ({ page }) => 
     const initialBlockIds = initialLayout.pages[0].regions[0].blocks.map((block) => block.id);
     expect(initialBlockIds.length).toBeGreaterThan(1);
 
+    await expect(page.getByRole('button', { name: 'Content', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    await page.getByRole('button', { name: 'Edit' }).click();
     await expect(page.getByRole('region', { name: 'Document canvas' })).toBeVisible({ timeout: 120_000 });
     await expect(page.getByRole('button', { name: 'Advanced Mode' })).toHaveCount(0);
     await expect(page.getByRole('region', { name: 'Add content' })).toBeVisible();
@@ -653,6 +740,8 @@ test('program designer drag reorder persists after reload', async ({ page }) => 
     ]);
 
     await page.reload();
+    await expect(page.getByRole('button', { name: 'Content', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    await page.getByRole('button', { name: 'Edit' }).click();
     await expect(page.getByRole('region', { name: 'Document canvas' })).toBeVisible({ timeout: 30_000 });
     const reloadedRows = page.getByRole('complementary', { name: 'Approved blocks' }).locator('ul > li');
     await expect(reloadedRows.nth(0).locator('button').first()).toContainText(secondLabel);
