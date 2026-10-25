@@ -39,7 +39,24 @@ describe('MeetingForm localization', () => {
     expect(screen.getByText('Crear reunión')).toBeVisible();
   });
 
-  it('keeps the Introduction expanded and lets users open and close other item details', () => {
+  it('expands a named speaker whose topic is still missing', () => {
+    const { container } = render(
+      <NextIntlClientProvider locale="en-US" messages={MESSAGE_CATALOGS['en-US']}>
+        <MeetingForm
+          wardId="ward-1"
+          meetingId="meeting-1"
+          mode="edit"
+          initialProgramItems={[
+            { itemType: 'SPEAKER', title: 'Assigned speaker', notes: '', topic: '', programNotes: '', hymnNumber: '', hymnTitle: '' }
+          ]}
+        />
+      </NextIntlClientProvider>
+    );
+
+    expect(container.querySelector<HTMLDetailsElement>('details')?.open).toBe(true);
+  });
+
+  it('keeps unfilled edit entries expanded until the user closes them', () => {
     const initialProgramItems = [
       {
         itemType: 'INTRODUCTION',
@@ -53,8 +70,53 @@ describe('MeetingForm localization', () => {
       },
       {
         itemType: 'SPEAKER',
+        title: '',
+        notes: '',
+        topic: '',
+        programNotes: '',
+        hymnNumber: '',
+        hymnTitle: ''
+      },
+      {
+        itemType: 'SPEAKER',
         title: 'Program Speaker',
         notes: 'PRIVATE NOTES MUST NOT APPEAR IN THE SUMMARY',
+        topic: 'Faith',
+        programNotes: '',
+        hymnNumber: '',
+        hymnTitle: ''
+      },
+      {
+        itemType: 'OPENING_HYMN',
+        title: '',
+        notes: '',
+        topic: '',
+        programNotes: '',
+        hymnNumber: '',
+        hymnTitle: ''
+      },
+      {
+        itemType: 'CLOSING_HYMN',
+        title: '',
+        notes: '',
+        topic: '',
+        programNotes: '',
+        hymnNumber: '100',
+        hymnTitle: 'Nearer, My God, to Thee'
+      },
+      {
+        itemType: 'SACRAMENT',
+        title: '',
+        notes: '',
+        topic: '',
+        programNotes: '',
+        hymnNumber: '',
+        hymnTitle: ''
+      },
+      {
+        itemType: 'TESTIMONIES',
+        title: '',
+        notes: '',
         topic: '',
         programNotes: '',
         hymnNumber: '',
@@ -65,34 +127,140 @@ describe('MeetingForm localization', () => {
         title: 'PRIVATE BUSINESS PARTICIPANT',
         notes: 'PRIVATE BUSINESS NOTES',
         topic: '',
-        programNotes: '',
+        programNotes: 'Ward updates',
         hymnNumber: '',
         hymnTitle: ''
       }
     ];
     const { container } = render(
       <NextIntlClientProvider locale="en-US" messages={MESSAGE_CATALOGS['en-US']}>
-        <MeetingForm wardId="ward-1" mode="create" initialProgramItems={initialProgramItems} />
+        <MeetingForm wardId="ward-1" meetingId="meeting-1" mode="edit" initialProgramItems={initialProgramItems} />
       </NextIntlClientProvider>
     );
 
     const disclosures = container.querySelectorAll<HTMLDetailsElement>('details');
-    expect(disclosures).toHaveLength(3);
-    expect(disclosures[0]?.open).toBe(true);
-    expect(disclosures[1]?.open).toBe(false);
-    expect(disclosures[2]?.open).toBe(false);
-    expect(screen.getByText('Program Speaker')).toBeVisible();
+    expect(disclosures).toHaveLength(8);
+    expect(Array.from(disclosures, (disclosure) => disclosure.open)).toEqual([true, true, false, true, false, true, true, true]);
     expect(screen.queryByText('PRIVATE NOTES MUST NOT APPEAR IN THE SUMMARY')).not.toBeInTheDocument();
     expect(screen.queryByText('PRIVATE BUSINESS PARTICIPANT')).not.toBeInTheDocument();
     expect(screen.queryByText('PRIVATE BUSINESS NOTES')).not.toBeInTheDocument();
 
-    const speakerSummary = disclosures[1]?.querySelector('summary');
-    expect(speakerSummary).not.toBeNull();
-    if (!speakerSummary) throw new Error('speaker details disclosure is missing');
-    fireEvent.click(speakerSummary);
+    const blankSpeakerCard = disclosures[1]?.closest('article');
+    const blankSpeakerName = blankSpeakerCard?.querySelector<HTMLInputElement>('input[placeholder="Name"]');
+    expect(blankSpeakerName).not.toBeNull();
+    if (!blankSpeakerName) throw new Error('blank speaker name input is missing');
+    fireEvent.change(blankSpeakerName, { target: { value: 'A newly assigned speaker' } });
     expect(disclosures[1]?.open).toBe(true);
-    fireEvent.click(speakerSummary);
+
+    const completedSpeakerSummary = disclosures[2]?.querySelector('summary');
+    expect(completedSpeakerSummary).not.toBeNull();
+    if (!completedSpeakerSummary) throw new Error('completed speaker summary is missing');
+    fireEvent.click(completedSpeakerSummary);
+    expect(disclosures[2]?.open).toBe(true);
+    fireEvent.click(completedSpeakerSummary);
+    expect(disclosures[2]?.open).toBe(false);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Add item' }));
+    const expandedDetails = container.querySelectorAll<HTMLDetailsElement>('details');
+    expect(expandedDetails[expandedDetails.length - 1]?.open).toBe(true);
+  });
+
+  it('keeps newly added empty announcement and business sections collapsed', () => {
+    const { container } = render(
+      <NextIntlClientProvider locale="en-US" messages={MESSAGE_CATALOGS['en-US']}>
+        <MeetingForm
+          wardId="ward-1"
+          mode="create"
+          initialProgramItems={[
+            { itemType: 'SPEAKER', title: 'Existing speaker', notes: '', topic: '', programNotes: '', hymnNumber: '', hymnTitle: '' }
+          ]}
+        />
+      </NextIntlClientProvider>
+    );
+    const typeSelect = screen.getAllByRole('combobox')[1];
+    if (!typeSelect) throw new Error('program item type selector is missing');
+    const addButton = screen.getByRole('button', { name: 'Add item' });
+
+    fireEvent.change(typeSelect, { target: { value: 'ANNOUNCEMENT' } });
+    fireEvent.click(addButton);
+    let disclosures = container.querySelectorAll<HTMLDetailsElement>('details');
     expect(disclosures[1]?.open).toBe(false);
+
+    fireEvent.change(typeSelect, { target: { value: 'WARD_AND_STAKE_BUSINESS' } });
+    fireEvent.click(addButton);
+    disclosures = container.querySelectorAll<HTMLDetailsElement>('details');
+    expect(disclosures[2]?.open).toBe(false);
+  });
+
+  it('keeps empty announcement and business sections collapsed until they have content', () => {
+    const initialProgramItems = [
+      { itemType: 'ANNOUNCEMENT', title: '', notes: '', topic: '', programNotes: '', hymnNumber: '', hymnTitle: '' },
+      {
+        itemType: 'WARD_AND_STAKE_BUSINESS',
+        title: 'PRIVATE BUSINESS PARTICIPANT',
+        notes: 'PRIVATE BUSINESS NOTES',
+        topic: 'PRIVATE PARTICIPANT CALLING',
+        programNotes: '',
+        hymnNumber: '',
+        hymnTitle: ''
+      }
+    ];
+    const emptyView = render(
+      <NextIntlClientProvider locale="en-US" messages={MESSAGE_CATALOGS['en-US']}>
+        <MeetingForm wardId="ward-1" meetingId="meeting-1" mode="edit" initialProgramItems={initialProgramItems} />
+      </NextIntlClientProvider>
+    );
+
+    expect(Array.from(emptyView.container.querySelectorAll<HTMLDetailsElement>('details'), (details) => details.open)).toEqual([
+      false,
+      false
+    ]);
+    emptyView.unmount();
+
+    const populatedItems = initialProgramItems.map((item) =>
+      item.itemType === 'WARD_AND_STAKE_BUSINESS' ? { ...item, programNotes: 'Ward meeting updates' } : item
+    );
+    const populatedView = render(
+      <NextIntlClientProvider locale="en-US" messages={MESSAGE_CATALOGS['en-US']}>
+        <MeetingForm
+          wardId="ward-1"
+          meetingId="meeting-1"
+          mode="edit"
+          initialProgramItems={populatedItems}
+          standAnnouncements={[{ title: 'Stake conference', body: 'Next month' }]}
+        />
+      </NextIntlClientProvider>
+    );
+
+    expect(Array.from(populatedView.container.querySelectorAll<HTMLDetailsElement>('details'), (details) => details.open)).toEqual([
+      true,
+      true
+    ]);
+  });
+
+  it('expands an announcement item with public program notes', () => {
+    const { container } = render(
+      <NextIntlClientProvider locale="en-US" messages={MESSAGE_CATALOGS['en-US']}>
+        <MeetingForm
+          wardId="ward-1"
+          meetingId="meeting-1"
+          mode="edit"
+          initialProgramItems={[
+            {
+              itemType: 'ANNOUNCEMENT',
+              title: '',
+              notes: '',
+              topic: '',
+              programNotes: 'Public announcement details',
+              hymnNumber: '',
+              hymnTitle: ''
+            }
+          ]}
+        />
+      </NextIntlClientProvider>
+    );
+
+    expect(container.querySelector<HTMLDetailsElement>('details')?.open).toBe(true);
   });
 
   it('keeps the Ward and Stake Business title during meeting creation', () => {
@@ -113,8 +281,35 @@ describe('MeetingForm localization', () => {
     const summary = disclosure?.querySelector('summary');
     expect(summary).not.toBeNull();
     if (!summary) throw new Error('business details disclosure is missing');
+    expect(disclosure?.open).toBe(false);
     fireEvent.click(summary);
-    expect(screen.getByRole('heading', { name: 'Ward and Stake Business' })).toBeVisible();
+    expect(disclosure?.open).toBe(true);
+    expect(screen.getByRole('heading', { name: 'Ward and Stake Business', level: 2 })).toBeVisible();
+  });
+
+  it('expands a selected stake business entry while participant details are incomplete', () => {
+    const { container } = render(
+      <NextIntlClientProvider locale="en-US" messages={MESSAGE_CATALOGS['en-US']}>
+        <MeetingForm
+          wardId="ward-1"
+          meetingId="meeting-1"
+          mode="edit"
+          initialProgramItems={[
+            {
+              itemType: 'WARD_AND_STAKE_BUSINESS',
+              title: '',
+              notes: '[STAKE_BUSINESS]',
+              topic: '',
+              programNotes: '',
+              hymnNumber: '',
+              hymnTitle: ''
+            }
+          ]}
+        />
+      </NextIntlClientProvider>
+    );
+
+    expect(container.querySelector<HTMLDetailsElement>('details')?.open).toBe(true);
   });
 
   it('shows stake participant fields only when stake business is checked, after the checkbox', () => {

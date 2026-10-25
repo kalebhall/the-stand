@@ -136,7 +136,9 @@ Authorization and ward context are enforced server-side and by PostgreSQL RLS. T
 ### Meeting editor
 
 - Keep the Introduction item and core presiding/conducting/organist/chorister fields open and immediately visible.
-- Collapse details for other program items, with a summary that identifies the item and its current public/program-facing value.
+- Keep completed program entries collapsed by default, but expand blank or incomplete entries so their fields are visible; newly added entries start expanded.
+- Keep Announcements and Ward/Stake Business collapsed when empty; expand them when they contain announcements, business lines/actions, public program content, or a selected stake-business entry.
+- Preserve a user's chosen disclosure state while editing so an entry does not collapse as its fields are filled.
 - Keep every existing field and workflow reachable, including internal notes, announcements, business, membership actions, drag order, readiness, autosave/conflict resolution, publish, and delete.
 - Use native keyboard-accessible disclosure semantics and verify a narrow viewport.
 
@@ -153,9 +155,10 @@ Authorization and ward context are enforced server-side and by PostgreSQL RLS. T
 2. All six membership follow-up counts and their existing query-string destinations remain available in one summary card; it is absent when the module/role gate hides membership work.
 3. Secondary dashboard cards remain reorderable, resettable, and preference-scoped as before.
 4. Introduction and core leadership fields remain visible on initial meeting-form render; other item details can be opened and closed with keyboard and pointer.
-5. Collapsed item summaries do not display internal notes or private-only fields.
-6. All existing form capabilities and role/module checks are unchanged.
-7. Focused component tests, full tests (including configured PostgreSQL/RLS), typecheck, lint, build, i18n validation, dependency graph, diff check, and responsive browser acceptance pass.
+5. Blank/incomplete entries and newly added entries start expanded; complete entries start collapsed; Announcements and Ward/Stake Business stay collapsed without content and expand when populated; editing a field does not auto-collapse it.
+6. Collapsed item summaries do not display internal notes or private-only fields.
+7. All existing form capabilities and role/module checks are unchanged.
+8. Focused component tests, full tests (including configured PostgreSQL/RLS), typecheck, lint, build, i18n validation, dependency graph, diff check, and responsive browser acceptance pass.
 
 ## Verification
 
