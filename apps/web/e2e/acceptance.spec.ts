@@ -146,9 +146,11 @@ test('meeting creation controls stay unwrapped without mobile horizontal overflo
   const speakerHeading = page.getByRole('heading', { name: 'Speaker', exact: true, level: 3 }).first();
   const speakerCard = speakerHeading.locator('xpath=ancestor::article[1]');
   const speakerDetails = speakerCard.locator('details');
-  await expect(speakerDetails).toHaveJSProperty('open', false);
+  await expect(speakerDetails).toHaveJSProperty('open', true);
   const speakerSummary = speakerDetails.locator('summary');
   await speakerSummary.focus();
+  await speakerSummary.press('Enter');
+  await expect(speakerDetails).toHaveJSProperty('open', false);
   await speakerSummary.press('Enter');
   await expect(speakerDetails).toHaveJSProperty('open', true);
   await expect(speakerCard.getByPlaceholder('Name')).toBeVisible();
@@ -260,13 +262,17 @@ test('meeting create publish and print flow works', async ({ page }) => {
       meetingType: 'SACRAMENT',
       programItems: [
         { itemType: 'INTRODUCTION', title: 'Welcome' },
-        { itemType: 'ANNOUNCEMENT', title: 'Announcements' }
+        { itemType: 'ANNOUNCEMENT', title: 'Announcements' },
+        { itemType: 'SPEAKER', title: '', notes: '', topic: '', programNotes: '', hymnNumber: '', hymnTitle: '' }
       ]
     });
     expect(createResponse.status).toBe(201);
     const { id } = createResponse.body as { id: string };
     createdMeetingId = id;
     await page.goto(`/meetings/${id}/edit`);
+    const blankSpeakerCard = page.getByRole('heading', { name: 'Speaker', exact: true, level: 3 }).locator('xpath=ancestor::article[1]');
+    await expect(blankSpeakerCard.locator('details')).toHaveJSProperty('open', true);
+    await expect(blankSpeakerCard.getByPlaceholder('Name')).toBeVisible();
     const introductionPresiding = page.locator('input[placeholder="Name"]').first();
     const saveResponse = page.waitForResponse(
       (response) => response.url().endsWith(`/api/w/${WARD_A}/meetings/${id}`) && response.request().method() === 'PUT'
@@ -274,6 +280,7 @@ test('meeting create publish and print flow works', async ({ page }) => {
     await introductionPresiding.fill('Bishop Hall');
     const savedResponse = await saveResponse;
     expect(savedResponse.status()).toBe(200);
+    await expect(blankSpeakerCard.locator('details')).toHaveJSProperty('open', true);
     const savedPayload = savedResponse.request().postDataJSON() as {
       meetingDate: string;
       meetingType: string;

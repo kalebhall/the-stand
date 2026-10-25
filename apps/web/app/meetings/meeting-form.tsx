@@ -94,6 +94,28 @@ type MeetingFormProps = {
   standAnnouncements?: Array<{ title: string; body: string | null }>;
 };
 
+type ProgramItemDisclosureContext = Pick<MeetingFormProps, 'businessLines' | 'membershipActions' | 'standAnnouncements'>;
+
+function shouldInitiallyExpandProgramItem(item: ProgramItemInput, context: ProgramItemDisclosureContext): boolean {
+  const itemType = item.itemType.toUpperCase();
+  if (itemType === INTRODUCTION_ITEM_TYPE) return true;
+  if (HYMN_ITEM_TYPES.has(itemType)) return !item.hymnNumber?.trim() || !item.hymnTitle?.trim();
+  if (itemType === 'SPEAKER') return !item.title.trim() || !item.topic?.trim();
+  if (PERSON_ITEM_TYPES.has(itemType)) return !item.title.trim();
+  if (itemType === BUSINESS_ITEM_TYPE) {
+    const hasStakeBusinessSelection = item.notes.includes('[STAKE_BUSINESS]');
+    return Boolean(
+      item.programNotes?.trim() || context.businessLines?.length || context.membershipActions?.length || hasStakeBusinessSelection
+    );
+  }
+  if (itemType === ANNOUNCEMENT_ITEM_TYPE) return Boolean(context.standAnnouncements?.length || item.programNotes?.trim());
+  return ![item.title, item.topic, item.programNotes].some((value) => value?.trim());
+}
+
+function getProgramItemDisclosureStates(items: ProgramItemInput[], context: ProgramItemDisclosureContext): boolean[] {
+  return items.map((item) => shouldInitiallyExpandProgramItem(item, context));
+}
+
 const PROGRAM_ITEM_TYPES = [
   'ANNOUNCEMENT',
   'OPENING_HYMN',
@@ -146,6 +168,12 @@ export function MeetingForm({
   const itemLabels = getPublicProgramRenderLabels(resolveLocale(locale), meetingType).itemLabels;
   const [programItems, setProgramItems] = useState<ProgramItemInput[]>(
     initialProgramItems.length ? initialProgramItems : getDefaultProgramItemsForMeetingType(initialMeetingType)
+  );
+  const [programItemDisclosureOpen, setProgramItemDisclosureOpen] = useState<boolean[]>(() =>
+    getProgramItemDisclosureStates(
+      initialProgramItems.length ? initialProgramItems : getDefaultProgramItemsForMeetingType(initialMeetingType),
+      { businessLines, membershipActions, standAnnouncements }
+    )
   );
   const programItemsRevisionRef = useRef(initialProgramItemsRevision);
   const [error, setError] = useState<string | null>(null);
@@ -256,6 +284,13 @@ export function MeetingForm({
     };
   }, [autosaveConflict, autosaveRetryNonce, canSave, meetingDate, meetingId, meetingType, mode, programItems, t, wardId]);
 
+  function updateProgramItemDisclosure(index: number, isOpen: boolean) {
+    setProgramItemDisclosureOpen((current) => {
+      if (current[index] === isOpen) return current;
+      return current.map((open, itemIndex) => (itemIndex === index ? isOpen : open));
+    });
+  }
+
   function updateProgramItem(index: number, field: keyof ProgramItemInput, value: string) {
     setProgramItems((current) => current.map((item, itemIndex) => (itemIndex === index ? { ...item, [field]: value } : item)));
   }
@@ -344,13 +379,21 @@ export function MeetingForm({
       next.splice(toIndex, 0, moved);
       return next;
     });
+    setProgramItemDisclosureOpen((current) => {
+      const next = [...current];
+      const [moved] = next.splice(fromIndex, 1);
+      next.splice(toIndex, 0, moved ?? false);
+      return next;
+    });
   }
 
   function onMeetingTypeChange(nextMeetingType: string) {
     setMeetingType(nextMeetingType);
 
     if (mode === 'create') {
-      setProgramItems(getDefaultProgramItemsForMeetingType(nextMeetingType));
+      const nextItems = getDefaultProgramItemsForMeetingType(nextMeetingType);
+      setProgramItems(nextItems);
+      setProgramItemDisclosureOpen(getProgramItemDisclosureStates(nextItems, { businessLines, membershipActions, standAnnouncements }));
     }
   }
 
@@ -498,7 +541,14 @@ export function MeetingForm({
               type="button"
               variant="outline"
               className="shrink-0 whitespace-nowrap"
-              onClick={() => setProgramItems((current) => [...current, { itemType: newItemType, ...DEFAULT_PROGRAM_ITEM }])}
+              onClick={() => {
+                const newItem = { itemType: newItemType, ...DEFAULT_PROGRAM_ITEM };
+                setProgramItems((current) => [...current, newItem]);
+                setProgramItemDisclosureOpen((current) => [
+                  ...current,
+                  shouldInitiallyExpandProgramItem(newItem, { businessLines, membershipActions, standAnnouncements })
+                ]);
+              }}
             >
               {t('addItem')}
             </Button>
@@ -575,6 +625,7 @@ export function MeetingForm({
                   onClick={() => {
                     if (window.confirm(t('deleteProgramSection'))) {
                       setProgramItems((current) => current.filter((_, itemIndex) => itemIndex !== index));
+                      setProgramItemDisclosureOpen((current) => current.filter((_, itemIndex) => itemIndex !== index));
                     }
                   }}
                   aria-label={t('deleteProgramSection')}
@@ -585,7 +636,11 @@ export function MeetingForm({
                 <span className="text-xs text-muted-foreground">{t('required')}</span>
               )}
             </div>
-            <details open={item.itemType === INTRODUCTION_ITEM_TYPE} className="rounded-md">
+            <details
+              open={programItemDisclosureOpen[index] ?? false}
+              onToggle={(event) => updateProgramItemDisclosure(index, event.currentTarget.open)}
+              className="rounded-md"
+            >
               <summary className="cursor-pointer rounded py-1 text-sm text-muted-foreground marker:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
                 {item.itemType === INTRODUCTION_ITEM_TYPE
                   ? (itemLabels[item.itemType] ?? getProgramItemLabel(item.itemType))
@@ -837,6 +892,13 @@ export function MeetingForm({
               variant="outline"
               onClick={() => {
                 setProgramItems(autosaveConflict.currentProgramItems);
+                setProgramItemDisclosureOpen(
+                  getProgramItemDisclosureStates(autosaveConflict.currentProgramItems, {
+                    businessLines,
+                    membershipActions,
+                    standAnnouncements
+                  })
+                );
                 programItemsRevisionRef.current = autosaveConflict.sourceRevision;
                 autosaveSnapshot.current = JSON.stringify({
                   meetingDate,
