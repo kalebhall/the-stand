@@ -128,7 +128,7 @@ async function createRecipientNotifications(
     const preference = emailPreferences.get(user.id);
     if (!preference) continue;
 
-    if (preference.frequency === 'IMMEDIATE') {
+    if (preference.frequency === 'IMMEDIATE' && event.event_type !== 'MEETING_PROGRAM_ITEM_CHANGED') {
       const message = formatNotificationEmail({
         eventType: event.event_type,
         recipientEmail: user.email,
@@ -153,6 +153,9 @@ async function createRecipientNotifications(
       continue;
     }
 
+    const digestFrequency = event.event_type === 'MEETING_PROGRAM_ITEM_CHANGED' ? 'DAILY' : preference.frequency;
+    if (digestFrequency === 'IMMEDIATE') continue;
+    const deferUntilNextDay = event.event_type === 'MEETING_PROGRAM_ITEM_CHANGED';
     const digestJob = await queueNotificationDigest(client, {
       wardId,
       eventOutboxId: event.id,
@@ -160,8 +163,9 @@ async function createRecipientNotifications(
       title: notification.title,
       summary: notification.summary,
       targetUrl: notification.targetUrl ?? null,
+      deferUntilNextDay,
       preference: {
-        frequency: preference.frequency,
+        frequency: digestFrequency,
         timezone: preference.timezone
       }
     });

@@ -340,7 +340,7 @@ POST /api/w/{wardId}/notifications/mark-all-read
 
 Notification reads and mutations require both matching ward and recipient user identity. PATCH action is `read` or `dismiss`. Invalid event types/channels return `VALIDATION_ERROR`.
 
-Email subscriptions require configured `NOTIFICATION_EMAIL_WEBHOOK_URL`; email delivery is asynchronous, per-recipient, privacy-safe, and independently tracked. Missing configuration records deterministic delivery failure.
+Email subscriptions require configured `NOTIFICATION_EMAIL_WEBHOOK_URL`; email delivery is asynchronous, per-recipient, privacy-safe, and independently tracked. Missing configuration records deterministic delivery failure. `MEETING_PROGRAM_ITEM_CHANGED` is scoped to active ward `PROGRAM_EDITOR` users. Email is sent only to recipients whose email subscription for the event is enabled, in a daily digest at 8:00 AM recipient-local time on the day after the update; Sunday updates are scheduled for Monday morning regardless of the global immediate/weekly email preference.
 
 ====================================================================
 FAILURE RULE
@@ -419,6 +419,12 @@ event. System/stake templates cannot be edited or published by ward users.
 `/programs/templates` is the role-gated template gallery. Meeting creation
 copies the selected published ward template version into `meeting_document`,
 with Full Page Standard as the no-default fallback.
+
+When the ward Programs module is disabled, an active `PROGRAM_EDITOR` retains
+access to `/programs` as a read-only list of upcoming meeting program items.
+This fallback exposes no designer, preview, template, or write actions; other
+roles remain subject to normal module gating. The view omits internal notes and
+is scoped to the active ward.
 
 ====================================================================
 PROGRAM DESIGNER SIMPLE MODE (MILESTONE 4)

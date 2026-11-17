@@ -67,6 +67,7 @@
     "createMeetingFirst": "Create a meeting first, then return here to design its program.",
     "upcomingPrograms": "Upcoming programs",
     "programItems": "{count} program items",
+    "readOnly": "Read only",
     "openDesigner": "Open Program Designer",
     "previewCurrent": "Preview current program",
     "gallery": "Template gallery",

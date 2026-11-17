@@ -26,6 +26,7 @@ export type QueueNotificationDigestParams = {
   summary: string;
   targetUrl: string | null;
   preference: NotificationEmailPreference & { frequency: NotificationDigestFrequency };
+  deferUntilNextDay?: boolean;
 };
 
 export type NotificationDigestJob = {
@@ -39,7 +40,8 @@ export type NotificationDigestJob = {
 export async function queueNotificationDigest(client: DbClient, params: QueueNotificationDigestParams): Promise<NotificationDigestJob> {
   const scheduledFor = getNextDigestDeliveryTime({
     frequency: params.preference.frequency,
-    timeZone: params.preference.timezone
+    timeZone: params.preference.timezone,
+    deferUntilNextDay: params.deferUntilNextDay
   });
 
   const deliveryResult = await client.query(

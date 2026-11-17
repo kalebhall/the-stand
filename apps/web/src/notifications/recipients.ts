@@ -8,6 +8,7 @@ export type RecipientPolicyKey =
   | 'CALLING_MANAGERS'
   | 'MEMBERSHIP_VIEWERS'
   | 'MEETING_VIEWERS'
+  | 'PROGRAM_EDITORS'
   | 'INTERNAL_NOTE_READERS'
   | 'ACCESS_ADMINISTRATORS'
   | 'NO_DEFAULT_RECIPIENTS';
@@ -87,6 +88,7 @@ const REMINDER_EVENTS = new Set<NotificationEventType>([
 ]);
 
 export function getRecipientPolicyKey(eventType: NotificationEventType): RecipientPolicyKey {
+  if (eventType === 'MEETING_PROGRAM_ITEM_CHANGED') return 'PROGRAM_EDITORS';
   if (CALLING_EVENTS.has(eventType)) return 'CALLING_MANAGERS';
   if (MEMBERSHIP_EVENTS.has(eventType)) return 'MEMBERSHIP_VIEWERS';
   if (MEETING_EVENTS.has(eventType)) return 'MEETING_VIEWERS';
@@ -104,6 +106,8 @@ export function getRecipientRoles(policy: RecipientPolicyKey): readonly string[]
       return ['STAND_ADMIN', 'BISHOPRIC_EDITOR', 'CLERK_EDITOR', 'WARD_CLERK', 'MEMBERSHIP_CLERK'];
     case 'MEETING_VIEWERS':
       return ['STAND_ADMIN', 'BISHOPRIC_EDITOR', 'CLERK_EDITOR', 'WARD_CLERK', 'MEMBERSHIP_CLERK', 'CONDUCTOR_VIEW'];
+    case 'PROGRAM_EDITORS':
+      return ['PROGRAM_EDITOR'];
     case 'INTERNAL_NOTE_READERS':
       return ['STAND_ADMIN', 'BISHOPRIC_EDITOR', 'CLERK_EDITOR', 'WARD_CLERK', 'MEMBERSHIP_CLERK'];
     case 'ACCESS_ADMINISTRATORS':

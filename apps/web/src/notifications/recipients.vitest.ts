@@ -13,6 +13,8 @@ describe('notification recipients', () => {
     expect(getRecipientPolicyKey('CALLING_SUGGESTED')).toBe('CALLING_MANAGERS');
     expect(getRecipientPolicyKey('MEMBER_UPDATED')).toBe('MEMBERSHIP_VIEWERS');
     expect(getRecipientPolicyKey('MEETING_PUBLISHED')).toBe('MEETING_VIEWERS');
+    expect(getRecipientPolicyKey('MEETING_PROGRAM_ITEM_CHANGED')).toBe('PROGRAM_EDITORS');
+    expect(getRecipientRoles('PROGRAM_EDITORS')).toEqual(['PROGRAM_EDITOR']);
     expect(getRecipientPolicyKey('NOTE_CREATED')).toBe('INTERNAL_NOTE_READERS');
     expect(getRecipientPolicyKey('ACCESS_REQUEST_SUBMITTED')).toBe('ACCESS_ADMINISTRATORS');
     expect(getRecipientPolicyKey('SYSTEM_FAILURE')).toBe('NO_DEFAULT_RECIPIENTS');

@@ -246,6 +246,7 @@ Permissions:
 - Add and edit program-only announcements
 - Use approved program templates
 - Preview draft programs
+- When the ward Programs module is disabled, view the upcoming program-item list in read-only mode
 
 Restrictions:
 

@@ -67,6 +67,7 @@
     "createMeetingFirst": "Gumawa muna ng meeting, pagkatapos ay bumalik dito para idisenyo ang programa nito.",
     "upcomingPrograms": "Mga paparating na programa",
     "programItems": "Mga aytem ng programang {count}",
+    "readOnly": "Read-only lang",
     "openDesigner": "Tagadisenyo ng Bukas na Programa",
     "previewCurrent": "I-preview ang kasalukuyang programa",
     "gallery": "Galeriya ng template",
