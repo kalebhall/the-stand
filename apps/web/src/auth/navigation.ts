@@ -54,7 +54,12 @@ export function getNavigationItems(
   const add = (moduleId: string, href: string, allowed: boolean): void => {
     if (!allowed) return;
     const item = registry.get(moduleId)?.navigation.find((candidate) => candidate.href === href);
-    if (item && enabledNavigation.has(item.href)) items.push(item);
+    if (
+      item &&
+      (enabledNavigation.has(item.href) || (moduleId === 'programs' && href === '/programs' && hasRole(roles, 'PROGRAM_EDITOR')))
+    ) {
+      items.push(item);
+    }
   };
 
   add('conducting-core', '/dashboard', true);

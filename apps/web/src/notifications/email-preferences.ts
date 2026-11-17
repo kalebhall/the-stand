@@ -148,15 +148,22 @@ function isBeforeDigestTime(local: LocalDateTimeParts): boolean {
   return local.minute < DIGEST_DELIVERY_MINUTE || (local.minute === DIGEST_DELIVERY_MINUTE && local.second === 0);
 }
 
-export function getNextDigestDeliveryTime(params: { frequency: NotificationDigestFrequency; timeZone: string; from?: Date }): Date {
+export function getNextDigestDeliveryTime(params: {
+  frequency: NotificationDigestFrequency;
+  timeZone: string;
+  from?: Date;
+  deferUntilNextDay?: boolean;
+}): Date {
   const timeZone = normalizeNotificationTimeZone(params.timeZone);
   const from = params.from ?? new Date();
   const localNow = parseDateTimeParts(from, timeZone);
 
   if (params.frequency === 'DAILY') {
-    const localDate = isBeforeDigestTime(localNow)
-      ? { year: localNow.year, month: localNow.month, day: localNow.day }
-      : addDays(localNow, 1);
+    const localDate = params.deferUntilNextDay
+      ? addDays(localNow, 1)
+      : isBeforeDigestTime(localNow)
+        ? { year: localNow.year, month: localNow.month, day: localNow.day }
+        : addDays(localNow, 1);
     return zonedDateTimeToUtc({ ...localDate, hour: DIGEST_DELIVERY_HOUR, minute: DIGEST_DELIVERY_MINUTE, second: 0 }, timeZone);
   }
 

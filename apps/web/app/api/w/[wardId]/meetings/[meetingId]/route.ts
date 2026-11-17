@@ -25,7 +25,7 @@ import { sourceRevisionSchema } from '@/src/meetings/program-item-contracts';
 import { validateProtectedProgramOrder } from '@/src/meetings/program-item-rules';
 import { synchronizePublicProgramNote } from '@/src/meetings/program-item-service';
 import { enqueueOutboxNotificationJob } from '@/src/notifications/queue';
-import { enqueueNotificationOutboxEvent } from '@/src/notifications/outbox';
+import { enqueueNotificationOutboxEvent, insertNotificationOutboxEvent } from '@/src/notifications/outbox';
 
 function toTrimmedString(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
@@ -515,6 +515,21 @@ export async function PUT(request: Request, context: { params: Promise<{ wardId:
       );
     }
     const sourceRevision = computeProgramItemsRevision(updatedItems.rows as ProgramItemSourceRow[], { includeInternalNotes });
+    const previousProgramRevision = computeProgramItemsRevision(existingItems.rows as ProgramItemSourceRow[], { includeInternalNotes });
+    if (sourceRevision !== previousProgramRevision) {
+      const eventOutboxId = await insertNotificationOutboxEvent(client, {
+        wardId,
+        aggregateType: 'meeting',
+        aggregateId: meetingId,
+        eventType: 'MEETING_PROGRAM_ITEM_CHANGED',
+        payload: {
+          meetingDate: String(existingMeeting.meeting_date),
+          subject: 'Program updated',
+          actorUserId: session.user.id
+        }
+      });
+      if (eventOutboxId) noteOutboxIds.push(eventOutboxId);
+    }
 
     await client.query(
       `INSERT INTO audit_log (ward_id, user_id, action, details)

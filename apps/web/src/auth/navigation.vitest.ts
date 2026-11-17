@@ -114,6 +114,14 @@ describe('getNavigationItems', () => {
     const groups = getNavigationGroups(['PROGRAM_EDITOR'], 'ward', allModulesEnabled(), DEFAULT_MODULE_REGISTRY, false);
     expect(groups.find((group) => group.id === 'programs')?.items.map((item) => item.href)).toEqual(['/programs/baptism']);
   });
+  it('exposes only the read-only program list to program editors when the Programs module is disabled', () => {
+    const enablement = createModuleEnablement({ ward: { programs: false } });
+    const items = getNavigationItems(['PROGRAM_EDITOR'], 'ward', enablement);
+    expect(items).toContainEqual({ href: '/programs', label: 'Program Studio' });
+    expect(items.map((item) => item.href)).not.toContain('/programs/baptism');
+    expect(items.map((item) => item.href)).not.toContain('/programs/templates');
+  });
+
   it('does not expose program routes when the ward Programs module is off', () => {
     const enablement = createModuleEnablement({ ward: { programs: false } });
     expect(getNavigationGroups(['STAND_ADMIN'], 'ward', enablement).some((group) => group.id === 'programs')).toBe(false);

@@ -67,6 +67,7 @@
     "createMeetingFirst": "Crea una reunión primero y vuelve aquí para diseñar su programa.",
     "upcomingPrograms": "Próximos programas",
     "programItems": "{count} elementos del programa",
+    "readOnly": "Solo lectura",
     "openDesigner": "Abrir diseñador de programas",
     "previewCurrent": "Vista previa del programa actual",
     "gallery": "Galería de plantillas",
